@@ -83,7 +83,7 @@ void fl_ItoI_Model::OptimizeParameters_Private()
 
 void fl_ItoI_Model::CalculateVariables()
 {
-    auto hostguest = HostGuest();
+    auto hostguest = getHostGuestPair();
     qreal value = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);

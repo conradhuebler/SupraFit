@@ -51,6 +51,15 @@ public:
         Guest = 2
     };
 
+    enum {
+        HostGuest = 5,
+        GuestHost = 6
+    };
+
+    enum {
+        HostGuestAssignment = 1025
+    };
+
     AbstractTitrationModel(DataClass* data);
     AbstractTitrationModel(AbstractTitrationModel* other);
     virtual ~AbstractTitrationModel() override;
@@ -171,14 +180,15 @@ protected:
 
     double m_T;
 
-    QPair<bool, bool> HostGuest() const;
+    QPair<bool, bool> getHostGuestPair() const;
     qreal GuessK(int index = 0);
 
-    QString m_ylabel, m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
+    QString m_ylabel = "&delta; /ppm", m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
 
     QVector<QVector<qreal>> m_difference;
 
     QPointer<DataTable> m_concentrations;
 
-    QStringList m_plotmode;
+    QStringList m_plotmode, m_HostAssignmentList;
+    int m_HostAssignment = 0;
 };

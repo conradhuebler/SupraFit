@@ -121,7 +121,6 @@ public:
     QStringList m_names;
 
     int m_maxsize;
-    int m_host_assignment;
     int m_ref_counter = 1;
     QPointer<DataTable> m_dependent_model, m_independent_model;
     DataType m_datatype;
@@ -205,10 +204,8 @@ public:
         d->m_dependent_model->setCheckable(true);
         DependentModelOverride();
     }
-    void SwitchConentrations();
-    virtual QList<qreal> getSignals(QList<int> dealing_signals = QVector<int>(1, 0).toList());
 
-    inline int HostAssignment() const { return d->m_host_assignment; }
+    virtual QList<qreal> getSignals(QList<int> dealing_signals = QVector<int>(1, 0).toList());
 
     inline qreal XValue(int i) const { return PrintOutIndependent(i); }
     /*

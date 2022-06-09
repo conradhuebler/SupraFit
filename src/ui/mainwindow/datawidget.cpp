@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/ui/dialogs/regressionanalysisdialog.h"
@@ -181,24 +181,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     //m_layout->addWidget(m_series_scroll_area, 4, 0, 1, 4);
     m_layout->addWidget(m_series_scroll_area, 3, 0, 1, 4);
-    QHBoxLayout* scaling_layout = new QHBoxLayout;
-    scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
-    for (int i = 0; i < m_data.toStrongRef().data()->getScaling().size(); ++i) {
-        QDoubleSpinBox* spin_box = new QDoubleSpinBox;
-        spin_box->setMaximum(1e8);
-        spin_box->setMinimum(-1e8);
-        spin_box->setValue(m_data.toStrongRef().data()->getScaling()[i]);
-        spin_box->setSingleStep(1e-2);
-        spin_box->setDecimals(7);
-        connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
-        m_scaling_boxes << spin_box;
-        QHBoxLayout* lay = new QHBoxLayout;
-        lay->addWidget(new QLabel(tr("%1. substance").arg(i + 1)));
-        lay->addWidget(spin_box);
-        scaling_layout->addLayout(lay);
-    }
-
-    m_tables_layout->addLayout(scaling_layout, 1, 0, 1, 2);
 
     QSettings settings;
     settings.beginGroup("overview");
@@ -233,16 +215,6 @@ void DataWidget::SetProjectName()
 void DataWidget::setEditable(bool editable)
 {
     m_data.toStrongRef().data()->DependentModel()->setEditable(editable);
-}
-
-void DataWidget::setScaling()
-{
-    QList<qreal> scaling;
-    for (int i = 0; i < m_scaling_boxes.size(); ++i)
-        scaling << m_scaling_boxes[i]->value();
-    m_data.toStrongRef().data()->setScaling(scaling);
-    m_wrapper.toStrongRef().data()->UpdateModel();
-    emit recalculate();
 }
 
 void DataWidget::ShowContextMenu(const QPoint& pos)

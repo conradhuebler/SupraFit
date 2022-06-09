@@ -121,7 +121,7 @@ void uv_vis_IItoI_ItoI_Model::InitialGuess_Private()
 
 void uv_vis_IItoI_ItoI_Model::CalculateVariables()
 {
-    auto hostguest = HostGuest();
+    auto hostguest = getHostGuestPair();
 
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));

@@ -49,7 +49,6 @@
 
 DataClassPrivate::DataClassPrivate()
     : m_maxsize(0)
-    , m_host_assignment(0)
     , m_datatype(DataClassPrivate::Table)
     , m_info(new DataClassPrivateObject)
 {
@@ -70,7 +69,6 @@ DataClassPrivate::DataClassPrivate()
 
 DataClassPrivate::DataClassPrivate(int type)
     : m_maxsize(0)
-    , m_host_assignment(0)
     , m_datatype(DataClassPrivate::Table)
     , m_info(new DataClassPrivateObject)
 {
@@ -97,7 +95,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_systemObject = other.m_systemObject;
     m_uuid = other.m_uuid;
     m_scaling = other.m_scaling;
-    m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
     m_raw_data = other.m_raw_data;
     m_system_parameter = other.m_system_parameter;
@@ -114,7 +111,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_systemObject = other->m_systemObject;
     m_uuid = other->m_uuid;
     m_scaling = other->m_scaling;
-    m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = other->m_raw_data;
     m_system_parameter = other->m_system_parameter;
@@ -225,19 +221,6 @@ QList<double> DataClass::getSignals(QList<int> active_signal)
         }
     }
     return x;
-}
-
-void DataClass::SwitchConentrations()
-{
-#pragma message("a more general post-processing of the input data would be appropriate ...")
-    d->m_host_assignment = !HostAssignment();
-    if (!d->m_host_assignment) {
-        d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host (A)"), Qt::DisplayRole);
-        d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest (B)"), Qt::DisplayRole);
-    } else {
-        d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest (A)"), Qt::DisplayRole);
-        d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host (B)"), Qt::DisplayRole);
-    }
 }
 
 const QJsonObject DataClass::ExportData() const

@@ -145,10 +145,10 @@ public:
     //  virtual QVector<QJsonObject> PostGridSearch(const QList<QJsonObject> &models) const override;
 
 public slots:
-    virtual void UpdateParameter() override;
+    // virtual void UpdateParameter() override;
 
 private:
-    virtual void DeclareSystemParameter() override;
+    //  virtual void DeclareSystemParameter() override;
 
 protected:
     /*
@@ -166,11 +166,9 @@ protected:
 
     qreal GuessK(int index = 0);
 
-    QString m_ylabel, m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
+    QString m_ylabel, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
 
     QVector<QVector<qreal>> m_difference;
 
     QPointer<DataTable> m_concentrations;
-
-    QStringList m_plotmode;
 };
