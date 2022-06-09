@@ -41,7 +41,9 @@ class DataTable : public QAbstractTableModel {
 
 public:
     DataTable(QObject* parent = 0);
-    DataTable(int columns, int rows, QObject* parent);
+    /*!\brief Construct new tabke with int rows and int columns
+     */
+    DataTable(int rows, int columns, QObject* parent);
     DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table, const QStringList& header = QStringList());
     DataTable(Eigen::MatrixXd table);
 

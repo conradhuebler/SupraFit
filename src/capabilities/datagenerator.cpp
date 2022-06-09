@@ -38,8 +38,7 @@ bool DataGenerator::Evaluate()
     if (equations.size() != independent)
         return false;
 
-    DataTable* table = new DataTable(independent, datapoints, this);
-
+    DataTable* table = new DataTable(datapoints, independent, this);
     QJSEngine myEngine;
     for (int indep = 0; indep < independent; ++indep) {
         QString equation = equations[indep];

@@ -64,7 +64,7 @@ CalculateThread::CalculateThread(int rows, int cols, DataTable* X, DataTable* Gl
     m_chai.setInputNames(m_input_names);
     // m_chai.setExecute(m_execute);
     // m_chai.InitialiseChai();
-    m_result = new DataTable(cols, rows, NULL);
+    m_result = new DataTable(rows, cols, NULL);
 }
 
 void CalculateThread::UpdateParameter(DataTable* Global, DataTable* Local)

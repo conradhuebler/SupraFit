@@ -762,7 +762,8 @@ void MetaModel::UpdateSlicedTable()
     if (m_sliced_table)
         delete m_sliced_table;
 
-    m_sliced_table = new DataTable(m_indep_var, m_max_indep_var, this);
+    m_sliced_table = new DataTable(m_max_indep_var, m_indep_var, this);
+
     QStringList header;
     for (int i = 0; i < ModelSize(); ++i) {
         for (const QString& name : m_models[i]->IndependentModel()->header())

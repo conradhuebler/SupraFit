@@ -71,6 +71,7 @@ ImportData::ImportData(QWidget* parent)
     m_generator = new DataGenerator(this);
     setUi();
     DataTable* model = new DataTable(0, 0, this);
+
     m_table->setModel(model);
 }
 
@@ -379,7 +380,7 @@ void ImportData::WriteData(const DataTable* model, int independent)
 
 #pragma message("will this still be true after restructureing")
     if (model->columnCount() - independent == 0) {
-        DataTable* model = new DataTable(m_dependent_rows->value(), indep->rowCount(), this);
+        DataTable* model = new DataTable(indep->rowCount(), m_dependent_rows->value(), this);
         //header_indep = QStringList(header.begin(), header.begin() + independent );
         m_storeddata->setDependentTable(model);
         m_storeddata->setType(DataClassPrivate::DataType::Simulation);

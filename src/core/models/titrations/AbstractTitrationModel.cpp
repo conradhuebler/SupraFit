@@ -119,7 +119,7 @@ QPair<bool, bool> AbstractTitrationModel::HostGuest() const
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if (!m_concentrations) {
-        m_concentrations = new DataTable(equilibrium.rows(), DataPoints(), this);
+        m_concentrations = new DataTable(DataPoints(), equilibrium.rows(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
         m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
         m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);

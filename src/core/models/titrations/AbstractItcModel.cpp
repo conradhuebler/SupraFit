@@ -45,7 +45,7 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
 {
     IndependentModel()->setHeaderData(0, Qt::Horizontal, QString("Inject Volume [%1]").arg(Unicode_mu), Qt::DisplayRole);
 
-    m_c0 = new DataTable(3, DataPoints(), this);
+    m_c0 = new DataTable(DataPoints(), 3, this);
     m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
     m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
@@ -59,7 +59,7 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
     connect(data->Info(), &DataClassPrivateObject::Update, this, [this]() {
         if (m_c0)
             delete m_c0;
-        m_c0 = new DataTable(3, DataPoints(), this);
+        m_c0 = new DataTable(DataPoints(), 3, this);
         m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
         m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
@@ -74,7 +74,7 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
 
     IndependentModel()->setHeaderData(0, Qt::Horizontal, QString("Inject Volume [%1]").arg(Unicode_mu), Qt::DisplayRole);
 
-    m_c0 = new DataTable(3, DataPoints(), this);
+    m_c0 = new DataTable(DataPoints(), 3, this);
     m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
     m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
@@ -92,7 +92,7 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
     connect(data->Info(), &DataClassPrivateObject::Update, this, [this]() {
         if (m_c0)
             delete m_c0;
-        m_c0 = new DataTable(3, DataPoints(), this);
+        m_c0 = new DataTable(DataPoints(), 3, this);
         m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
         m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
@@ -276,7 +276,7 @@ void AbstractItcModel::CalculateConcentrations()
 void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if (!m_concentrations) {
-        m_concentrations = new DataTable(equilibrium.rows(), DataPoints(), this);
+        m_concentrations = new DataTable(DataPoints(), equilibrium.rows(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
         m_concentrations->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         m_concentrations->setHeaderData(2, Qt::Horizontal, QString("Guest (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);

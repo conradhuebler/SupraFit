@@ -111,7 +111,8 @@ DataTable* SpectraHandler::CompileSimpleTable()
     int cols = m_x.size();
     int rows = m_order.size();
     QStringList header;
-    DataTable* table = new DataTable(cols, rows, this);
+    DataTable* table = new DataTable(rows, cols, this);
+
     for (int i = 0; i < m_x.size(); ++i) {
         double x = m_x[i];
         header << QString::number(x);

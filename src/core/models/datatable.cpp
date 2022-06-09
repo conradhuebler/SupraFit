@@ -53,12 +53,11 @@ DataTable::DataTable(QObject* parent)
 {
 }
 
-DataTable::DataTable(int columns, int rows, QObject* parent)
+DataTable::DataTable(int rows, int columns, QObject* parent)
     : QAbstractTableModel(parent)
     , m_checkable(false)
     , m_editable(false)
 {
-    // std::cout << "new table with ptr" << this << std::endl;
     m_table = Eigen::MatrixXd::Zero(rows, columns);
     m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
     for (int i = 0; i < columns; ++i)

@@ -58,8 +58,8 @@ AbstractModel::AbstractModel(DataClass* data)
     private_d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
-    m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
-    m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
+    m_model_signal = new DataTable(DataPoints(), SeriesCount(), this);
+    m_model_error = new DataTable(DataPoints(), SeriesCount(), this);
 
     connect(this, &DataClass::Update, this, [this]() {
         m_model_signal->clear(SeriesCount(), DataPoints());
@@ -100,8 +100,8 @@ AbstractModel::AbstractModel(DataClass* data, const QJsonObject& model)
     private_d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
-    m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
-    m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
+    m_model_signal = new DataTable(DataPoints(), SeriesCount(), this);
+    m_model_error = new DataTable(DataPoints(), SeriesCount(), this);
 
     connect(this, &DataClass::Update, this, [this]() {
         m_model_signal->clear(SeriesCount(), DataPoints());
@@ -140,8 +140,8 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
-    m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
-    m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
+    m_model_signal = new DataTable(DataPoints(), SeriesCount(), this);
+    m_model_error = new DataTable(DataPoints(), SeriesCount(), this);
 
     connect(this, &DataClass::Update, this, [this]() {
         m_model_signal->clear(SeriesCount(), DataPoints());
@@ -222,14 +222,15 @@ void AbstractModel::PrepareParameter(int global, int local)
     QStringList header;
 
     if (!LocalTable())
-        m_local_parameter = new DataTable(local, SeriesCount(), this);
+        m_local_parameter = new DataTable(SeriesCount(), local, this);
     for (int i = 0; i < LocalParameterSize(); ++i)
         header << LocalParameterName(i);
     LocalTable()->setHeader(header);
 
     header = QStringList();
+
     if (!GlobalTable())
-        m_global_parameter = new DataTable(global, 1, this);
+        m_global_parameter = new DataTable(1, global, this);
     for (int i = 0; i < GlobalParameterSize(); ++i)
         header << GlobalParameterName(i);
     GlobalTable()->setHeader(header);
