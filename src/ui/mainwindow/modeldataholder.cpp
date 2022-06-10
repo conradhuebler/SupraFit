@@ -456,6 +456,13 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         //connect(m_metamodelwidget, &MetaModelWidget::Message, this, &ModelDataHolder::Message);
         //connect(m_metamodelwidget, &MetaModelWidget::Warning, this, &ModelDataHolder::Warning);
     }
+    if (m_data.toStrongRef().data()->isSimulation()) {
+        QJsonObject raw = m_data.toStrongRef().data()->RawData();
+        QJsonObject models = raw["models"].toObject();
+        for (const QString& key : models.keys()) {
+            AddModel(models[key].toInt());
+        }
+    }
 }
 
 void ModelDataHolder::SetProjectTabName()
@@ -466,7 +473,6 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::NewModel()
 {
-    qDebug() << m_data.toStrongRef().data()->IndependentModel()->columnCount();
     int input = QInputDialog::getInt(this, tr("Number of input colums"),
         tr("Please give the number of input data :"), m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1, m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1);
 

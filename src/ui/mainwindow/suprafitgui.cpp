@@ -883,6 +883,14 @@ bool SupraFitGui::LoadProject(const QString& filename)
 
         if (keys.contains("data")) {
             return SetData(toplevel, info.baseName(), info.absolutePath());
+        } else if (keys.contains("datapoints") && keys.contains("equations")) {
+#pragma message("move the simulation import to the filehandler soon!")
+            ImportData dialog(filename, this);
+            if (dialog.exec() == QDialog::Accepted) {
+                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+                m_mainsplitter->show();
+                return true;
+            }
         } else {
             bool exit = true;
             int index = 1;

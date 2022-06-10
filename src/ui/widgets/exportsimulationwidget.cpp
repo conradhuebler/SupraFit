@@ -69,7 +69,9 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
 
     m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
     m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_std->setParent(this);
     m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_sey->setParent(this);
     m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
     m_variance = new QDoubleSpinBox;
     m_variance->setMinimum(0);
@@ -81,10 +83,10 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     hlayout->addWidget(m_ideal);
     hlayout->addWidget(m_mc_std);
     hlayout->addWidget(m_mc_sey);
-    if (!m_model.toStrongRef().data()->isSimulation()) {
-        m_mc_std->setHidden(true);
-        m_mc_sey->setHidden(true);
-    }
+
+    m_mc_std->setHidden(m_model.toStrongRef().data()->isSimulation());
+    m_mc_sey->setHidden(m_model.toStrongRef().data()->isSimulation());
+
     hlayout->addWidget(m_mc_user);
     hlayout->addWidget(m_variance);
     layout->addLayout(hlayout, 1, 0, 1, 3);

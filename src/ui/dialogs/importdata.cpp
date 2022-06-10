@@ -199,7 +199,7 @@ QWidget* ImportData::SimulationWidget()
 
     m_datapoints = new QSpinBox;
     m_datapoints->setMinimum(1);
-    m_datapoints->setValue(1);
+    m_datapoints->setValue(20);
     m_datapoints->setPrefix("# = ");
     connect(m_datapoints, &QSpinBox::valueChanged, this, &ImportData::ReshapeTable);
 
@@ -208,10 +208,37 @@ QWidget* ImportData::SimulationWidget()
     m_dependent_rows->setValue(1);
     m_dependent_rows->setPrefix("# = ");
 
+    m_store_generater = new QPushButton(tr("Store Recipe"));
+    connect(m_store_generater, &QPushButton::clicked, this, [this]() {
+        const QString filename = QFileDialog::getSaveFileName(this, tr("Store simulation recipe"), getDir(), "*.json");
+        if (filename.isEmpty() || filename.isNull())
+            return;
+        JsonHandler::WriteJsonFile(Generator(), filename);
+        setLastDir(filename);
+    });
+
+    m_load_generator = new QPushButton(tr("Load Recipe"));
+    connect(m_load_generator, &QPushButton::clicked, this, [this]() {
+        const QString filename = QFileDialog::getOpenFileName(this, tr("Load simulation recipe"), getDir(), "*.json");
+        if (filename.isEmpty() || filename.isNull())
+            return;
+        QJsonObject data;
+        JsonHandler::ReadJsonFile(data, filename);
+        m_independent_rows->setValue(data["independent"].toInt());
+        m_datapoints->setValue(data["datapoints"].toInt());
+        m_dependent_rows->setValue(data["dependent"].toInt());
+        m_equations = data["equations"].toString().split("|");
+
+        Evaluate(data);
+        setLastDir(filename);
+    });
+
     layout->addWidget(new QLabel(tr("Datapoints")));
     layout->addWidget(m_datapoints);
     layout->addWidget(new QLabel(tr("Number Series || Signals")));
     layout->addWidget(m_dependent_rows);
+    layout->addWidget(m_store_generater);
+    layout->addWidget(m_load_generator);
 
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addLayout(layout);
@@ -252,7 +279,17 @@ void ImportData::ReshapeTable()
         while (m_equations.size() > m_independent_rows->value())
             m_equations.removeLast();
     }
-    Evaluate();
+    Evaluate(Generator());
+}
+
+QJsonObject ImportData::Generator() const
+{
+    QJsonObject data;
+    data["independent"] = m_independent_rows->value();
+    data["datapoints"] = m_datapoints->value();
+    data["dependent"] = m_dependent_rows->value();
+    data["equations"] = m_equations.join("|");
+    return data;
 }
 
 void ImportData::Evaluate()
@@ -260,15 +297,17 @@ void ImportData::Evaluate()
     if (!m_simulation->isChecked())
         return;
 
-    QJsonObject data;
-    data["independent"] = m_independent_rows->value();
-    data["datapoints"] = m_datapoints->value();
-    data["equations"] = m_equations.join("|");
+    Evaluate(Generator());
+}
+
+void ImportData::Evaluate(const QJsonObject& data)
+{
     m_generator->setJson(data);
     m_generator->Evaluate();
     m_generated_table = m_generator->Table();
     m_table->setModel(m_generated_table);
-    m_data = data;
+    // m_data = data;
+    setGeneratedData(data);
 }
 
 void ImportData::SelectFile()
@@ -289,7 +328,17 @@ void ImportData::LoadFile()
     } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
         m_projectfile = m_filename;
         JsonHandler::ReadJsonFile(m_project, m_filename);
-        QDialog::accept();
+        if (m_project.keys().contains("datapoints") && m_project.keys().contains("equations")) {
+#pragma message("move the simulation import to the filehandler soon!")
+            m_simulation->setChecked(true);
+            m_independent_rows->setValue(m_project["independent"].toInt());
+            m_datapoints->setValue(m_project["datapoints"].toInt());
+            m_dependent_rows->setValue(m_project["dependent"].toInt());
+            m_equations = m_project["equations"].toString().split("|");
+            Evaluate(m_project);
+            QTimer::singleShot(0, this, &ImportData::accept);
+        } else
+            QDialog::accept();
     } else {
         m_projectfile = m_filename;
         m_line->setText(info.baseName());
@@ -367,6 +416,12 @@ void ImportData::setSpectraData(const QJsonObject& json)
 {
     m_raw = json;
     m_type = DataClassPrivate::Spectrum;
+}
+
+void ImportData::setGeneratedData(const QJsonObject& json)
+{
+    m_raw = json;
+    m_type = DataClassPrivate::Simulation;
 }
 
 void ImportData::WriteData(const DataTable* model, int independent)

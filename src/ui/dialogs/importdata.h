@@ -64,11 +64,14 @@ public:
     void LoadTable(DataTable* model, int independent = 2);
     void setSpectraData(const QJsonObject& json);
     void GenerateData();
+    void setGeneratedData(const QJsonObject& json);
+    QJsonObject Generator() const;
 
 private:
     void setUi();
     void ReshapeTable();
     void Evaluate();
+    void Evaluate(const QJsonObject& data);
 
     void WriteData(const DataTable* model, int independent = 2);
 
@@ -76,7 +79,7 @@ private:
 
     QPointer<DropTable> m_table;
     QPointer<QLineEdit> m_line, m_equation;
-    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_generate_data;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_store_generater, m_load_generator;
     QPointer<QSpinBox> m_independent_rows, m_dependent_rows, m_datapoints;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;

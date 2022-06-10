@@ -1,0 +1,12 @@
+{
+    "datapoints": 20,
+    "equations": "0.001|2*(X-1)/10000",
+    "independent": 2,
+    "dependent": 5,
+    "models" : {
+        "0" : 1,
+        "1" : 2,
+        "2" : 3,
+        "3" : 4
+    }
+}

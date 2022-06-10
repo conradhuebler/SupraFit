@@ -771,8 +771,7 @@ void MetaModel::UpdateSlicedTable()
 
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
-                // m_sliced_table->operator()(k,i + j) = m_models[i]->IndependentModel()->operator()(k,j);
-#warning
+                m_sliced_table->operator()(k, i + j) = m_models[i]->IndependentModel()->operator()(k, j);
                 m_sliced_table->setChecked(k, j, m_models[i]->IndependentModel()->isChecked(k, j));
             }
         }
@@ -809,8 +808,7 @@ void MetaModel::OverrideInDependentTable(DataTable* table)
         m_models[i]->detach();
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
-                // m_models[i]->IndependentModel()->operator()(k,j) = table->operator()(k, i + j);
-#warning
+                m_models[i]->IndependentModel()->operator()(k, j) = table->operator()(k, i + j);
                 m_models[i]->IndependentModel()->setChecked(k, j, table->isChecked(k, j));
             }
         }

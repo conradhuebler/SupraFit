@@ -210,26 +210,22 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
-    // head_layout->addLayout(const_layout);
 
     QGridLayout* fit_layout = new QGridLayout;
     fit_layout->addWidget(new ExportSimulationWidget(m_model, this), 0, 0);
     fit_layout->addWidget(m_global_box, 0, 1);
     fit_layout->addWidget(m_local_box, 0, 2);
-    fit_layout->addWidget(m_minimize_all, 0, 3);
+    if (m_model->Type() != DataClassPrivate::Simulation)
+        fit_layout->addWidget(m_minimize_all, 0, 3);
 
     QGroupBox* fitbox = new QGroupBox;
     fitbox->setTitle(tr("Fit model"));
     fitbox->setAlignment(Qt::AlignHCenter);
     fitbox->setLayout(fit_layout),
-        // if (!m_val_readonly)
-        //     head_layout->addLayout(fit_layout);
-        // head_layout->addWidget(fitbox, 0, Qt::AlignRight);
 
         m_layout->addWidget(fitbox);
     m_layout->addLayout(const_layout);
 
-    // m_layout->addWidget(n);
 
     QHBoxLayout* name_layout = new QHBoxLayout;
     name_layout->addWidget(new QLabel(tr("<h4>Model Name</h4>")));
