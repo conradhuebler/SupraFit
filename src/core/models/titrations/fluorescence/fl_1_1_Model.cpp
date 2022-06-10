@@ -102,9 +102,9 @@ void fl_ItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = (host_0 * LocalTable()->data(0, j) && i == 0)
-                + (host * LocalTable()->data(1, j) && i != 0)
-                + complex * LocalTable()->data(2, j);
+            value = (host_0 * LocalTable()->data(j, 0) && i == 0)
+                + (host * LocalTable()->data(j, 1) && i != 0)
+                + complex * LocalTable()->data(j, 2);
             SetValue(i, j, value);
         }
     }
@@ -123,8 +123,8 @@ QVector<qreal> fl_ItoI_Model::DeCompose(int datapoint, int series) const
 
     host_0 = 1;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << complex / host_0 * LocalTable()->data(1, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << complex / host_0 * LocalTable()->data(series, 1);
 
     return vector;
 }

@@ -47,7 +47,7 @@ bool DataGenerator::Evaluate()
             myEngine.globalObject().setProperty("X", datapoint + 1);
             QJSValue value = myEngine.evaluate(tmp);
             if (value.isNumber()) {
-                table->data(indep, datapoint) = value.toNumber();
+                table->data(datapoint, indep) = value.toNumber();
             }
         }
     }

@@ -89,7 +89,7 @@ void itc_IItoI_Model::EvaluateOptions()
      */
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 1) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -108,10 +108,10 @@ void itc_IItoI_Model::InitialGuess_Private()
     (*GlobalTable())[1] = 6;
 
     LocalTable()->data(0, 0) = GuessdH() / 10.0;
-    LocalTable()->data(1, 0) = GuessdH();
-    LocalTable()->data(2, 0) = -1000;
-    LocalTable()->data(3, 0) = 1;
-    LocalTable()->data(4, 0) = GuessFx();
+    LocalTable()->data(0, 1) = GuessdH();
+    LocalTable()->data(0, 2) = -1000;
+    LocalTable()->data(0, 3) = 1;
+    LocalTable()->data(0, 4) = GuessFx();
 
     qreal K = GuessK(1);
 
@@ -151,13 +151,13 @@ void itc_IItoI_Model::CalculateVariables()
 
     QString dil = getOption(Dilution);
 
-    qreal dH1 = LocalTable()->data(1, 0);
+    qreal dH1 = LocalTable()->data(0, 1);
     qreal dH2 = LocalTable()->data(0, 0) + dH1;
     qreal dH2_ = LocalTable()->data(0, 0);
 
-    qreal dil_heat = LocalTable()->data(2, 0);
-    qreal dil_inter = LocalTable()->data(3, 0);
-    qreal fx = LocalTable()->data(4, 0);
+    qreal dil_heat = LocalTable()->data(0, 2);
+    qreal dil_inter = LocalTable()->data(0, 3);
+    qreal fx = LocalTable()->data(0, 4);
 
     qreal V = m_V;
 
@@ -178,8 +178,8 @@ void itc_IItoI_Model::CalculateVariables()
             dilution = (guest_0 * dil_heat + dil_inter);
         }
 
-        qreal v = IndependentModel()->data(0, i);
-        V += IndependentModel()->data(0, i) * !reservior;
+        qreal v = IndependentModel()->data(i);
+        V += IndependentModel()->data(i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);

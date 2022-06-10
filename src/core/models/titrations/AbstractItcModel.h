@@ -58,8 +58,8 @@ public:
     */
     virtual qreal PrintOutIndependent(int i) const override;
 
-    inline qreal InitialHostConcentration(int i) const { return m_c0->data(1, i); }
-    inline qreal InitialGuestConcentration(int i) const { return m_c0->data(2, i); }
+    inline qreal InitialHostConcentration(int i) const { return m_c0->data(i, 1); }
+    inline qreal InitialGuestConcentration(int i) const { return m_c0->data(i, 2); }
     QString Model2Text_Private() const override;
 
     virtual QString SpeciesName(int i) const

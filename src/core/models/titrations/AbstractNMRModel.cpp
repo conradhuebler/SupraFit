@@ -199,7 +199,7 @@ QString AbstractNMRModel::AdditionalOutput() const
         result += QString("Series %1 ... Individual contributions ...\n").arg(i + 1);
         for (int j = 0; j < DataPoints(); ++j) {
             QVector<qreal> vector = DeCompose(j, i);
-            result += QString("%1\t%2").arg(j + 1).arg(ModelTable()->data(i, j));
+            result += QString("%1\t%2").arg(j + 1).arg(ModelTable()->data(j, i));
             for (int k = 0; k < vector.size(); ++k)
                 result += QString("\t%1").arg(vector[k]);
             result += "\n";
@@ -261,13 +261,13 @@ QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(!m_HostAssignment, i);
+    return d->m_independent_model->data(i, !m_HostAssignment);
 }
 
 qreal AbstractNMRModel::InitialHostConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(m_HostAssignment, i);
+    return d->m_independent_model->data(i, m_HostAssignment);
 }
 
 qreal AbstractNMRModel::GuessK(int index)

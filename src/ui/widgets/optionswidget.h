@@ -38,8 +38,5 @@ public:
 private:
     QWeakPointer<AbstractModel> m_model;
     QHash<int, QPointer<QComboBox>> m_options;
-
-private slots:
-    void setOption();
 };
 

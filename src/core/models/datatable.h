@@ -65,8 +65,8 @@ public:
     virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
-    qreal data(int column, int row) const;
-    qreal& data(int column, int row);
+    qreal data(int row, int column = 0) const;
+    qreal& data(int row, int column = 0);
 
     qreal& operator[](int column);
     qreal& operator()(int column, int row);
@@ -82,11 +82,11 @@ public:
     inline DataTable* BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); }
     QPointer<DataTable> Block(int row_begin, int column_begin, int row_end, int column_end) const;
 
-    bool isChecked(int i, int j) const;
+    bool isChecked(int row, int column) const;
     int isRowChecked(int i) const;
     int EnabledRows() const;
 
-    void setChecked(int i, int j, bool checked);
+    void setChecked(int row, int column, bool checked);
 
     void append(const QPointer<DataTable> table);
     void prepend(const QPointer<DataTable> table);

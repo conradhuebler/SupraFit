@@ -55,9 +55,9 @@ itc_n_ItoI_Model::~itc_n_ItoI_Model()
 void itc_n_ItoI_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH();
-    LocalTable()->data(1, 0) = -1000;
-    LocalTable()->data(2, 0) = 1;
-    LocalTable()->data(3, 0) = 1;
+    LocalTable()->data(0, 1) = -1000;
+    LocalTable()->data(0, 2) = 1;
+    LocalTable()->data(0, 3) = 1;
 
     (*GlobalTable())[1] = GuessK();
 
@@ -83,9 +83,9 @@ void itc_n_ItoI_Model::CalculateVariables()
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);
-    qreal dil_heat = LocalTable()->data(1, 0);
-    qreal dil_inter = LocalTable()->data(2, 0);
-    qreal fx = LocalTable()->data(3, 0);
+    qreal dil_heat = LocalTable()->data(0, 1);
+    qreal dil_inter = LocalTable()->data(0, 2);
+    qreal fx = LocalTable()->data(0, 3);
     qreal V = m_V;
 
     qreal phi_prev = 0;
@@ -94,7 +94,7 @@ void itc_n_ItoI_Model::CalculateVariables()
 
         qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
-        qreal v = IndependentModel()->data(0, i);
+        qreal v = IndependentModel()->data(i);
         if (dil == "auto") {
             dilution = (guest_0 * dil_heat + dil_inter);
         }

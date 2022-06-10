@@ -61,9 +61,9 @@ itc_ItoI_Model::~itc_ItoI_Model()
 void itc_ItoI_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH();
-    LocalTable()->data(1, 0) = -1000;
-    LocalTable()->data(2, 0) = 1;
-    LocalTable()->data(3, 0) = GuessFx();
+    LocalTable()->data(0, 1) = -1000;
+    LocalTable()->data(0, 2) = 1;
+    LocalTable()->data(0, 3) = GuessFx();
 
     (*GlobalTable())[0] = GuessK();
 
@@ -90,9 +90,9 @@ void itc_ItoI_Model::CalculateVariables()
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);
-    qreal dil_heat = LocalTable()->data(1, 0);
-    qreal dil_inter = LocalTable()->data(2, 0);
-    qreal fx = LocalTable()->data(3, 0);
+    qreal dil_heat = LocalTable()->data(0, 1);
+    qreal dil_inter = LocalTable()->data(0, 2);
+    qreal fx = LocalTable()->data(0, 3);
     qreal V = m_V;
 
     qreal complex_prev = 0;
@@ -104,7 +104,7 @@ void itc_ItoI_Model::CalculateVariables()
         host_0 *= fx;
         qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
-        qreal v = IndependentModel()->data(0, i);
+        qreal v = IndependentModel()->data(i);
         if (dil == "auto") {
             dilution = (guest_0 * dil_heat + dil_inter);
         }
@@ -115,7 +115,7 @@ void itc_ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
-        V += IndependentModel()->data(0, i) * !reservior;
+        V += IndependentModel()->data(i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal q_ab = V * (complex - complex_prev * dv) * dH;

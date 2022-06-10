@@ -174,7 +174,7 @@ void AdvancedSearch::SetUi()
         });
 
         connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
-            m_model.toStrongRef()->GlobalTable()->setChecked(i, 0, state);
+            m_model.toStrongRef()->GlobalTable()->setChecked(0, i, state);
         });
 
         m_parameter_list << widget;
@@ -193,7 +193,7 @@ void AdvancedSearch::SetUi()
             });
 
             connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
-                m_model.toStrongRef()->LocalTable()->setChecked(i, 0, state);
+                m_model.toStrongRef()->LocalTable()->setChecked(0, i, state);
             });
 
             m_parameter_list << widget;
@@ -220,7 +220,7 @@ void AdvancedSearch::SetUi()
                 });
 
                 connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i, j](int state) {
-                    m_model.toStrongRef()->LocalTable()->setChecked(i, j, state);
+                    m_model.toStrongRef()->LocalTable()->setChecked(j, i, state);
                 });
 
                 m_parameter_list << widget;

@@ -84,7 +84,7 @@ void nmr_ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(2, i) = 2 * (this->LocalTable()->data(1, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 2) = 2 * (this->LocalTable()->data(i, 1) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -170,12 +170,7 @@ void nmr_ItoI_ItoII_Model::CalculateVariables()
 
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-#pragma message("things got removed, because they seem to be old")
-            // if (method == "NMR")
-            value = host / host_0 * LocalTable()->data(0, j) + complex_11 / host_0 * LocalTable()->data(1, j) + complex_12 / host_0 * LocalTable()->data(2, j);
-            // else if (method == "UV/VIS")
-            //     value = host * LocalTable()->data(0, j) + complex_11 * LocalTable()->data(1, j) + complex_12 * LocalTable()->data(2, j);
-
+            value = host / host_0 * LocalTable()->data(j, 0) + complex_11 / host_0 * LocalTable()->data(j, 1) + complex_12 / host_0 * LocalTable()->data(j, 2);
             SetValue(i, j, value);
         }
     }
@@ -195,9 +190,9 @@ QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
     qreal complex_12 = concentration(4);
     ;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << complex_11 / host_0 * LocalTable()->data(1, series);
-    vector << complex_12 / host_0 * LocalTable()->data(2, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << complex_11 / host_0 * LocalTable()->data(series, 1);
+    vector << complex_12 / host_0 * LocalTable()->data(series, 2);
 
     return vector;
 }

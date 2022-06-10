@@ -331,7 +331,7 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
         QList<QPointF> pp;
         for (int j = 0; j < table->rowCount(); ++j) {
             if (table->isRowChecked(j))
-                pp << QPointF(x[j], table->data(i, j));
+                pp << QPointF(x[j], table->data(j, i));
         }
         QColor color;
         if (m_wrapper->SeriesSize())

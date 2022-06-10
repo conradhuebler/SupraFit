@@ -91,7 +91,7 @@ void itc_ItoII_Model::EvaluateOptions()
      */
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(2, i) = 2 * (this->LocalTable()->data(1, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 2) = 2 * (this->LocalTable()->data(i, 1) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -108,10 +108,10 @@ void itc_ItoII_Model::EvaluateOptions()
 void itc_ItoII_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH();
-    LocalTable()->data(1, 0) = GuessdH() / 10.0;
-    LocalTable()->data(2, 0) = -1000;
-    LocalTable()->data(3, 0) = 1;
-    LocalTable()->data(4, 0) = GuessFx();
+    LocalTable()->data(0, 1) = GuessdH() / 10.0;
+    LocalTable()->data(0, 2) = -1000;
+    LocalTable()->data(0, 3) = 1;
+    LocalTable()->data(0, 4) = GuessFx();
 
     qreal K = GuessK();
 
@@ -148,24 +148,24 @@ void itc_ItoII_Model::CalculateVariables()
 
     QString dil = getOption(Dilution);
 
-    qreal dil_heat = LocalTable()->data(2, 0);
-    qreal dil_inter = LocalTable()->data(3, 0);
-    qreal fx = LocalTable()->data(4, 0);
+    qreal dil_heat = LocalTable()->data(0, 2);
+    qreal dil_inter = LocalTable()->data(0, 3);
+    qreal fx = LocalTable()->data(0, 4);
     qreal V = m_V;
 
     qreal K11 = qPow(10, GlobalParameter(0));
     qreal K12 = qPow(10, GlobalParameter(1));
 
     qreal dH1 = LocalTable()->data(0, 0);
-    qreal dH2 = LocalTable()->data(1, 0) + dH1;
-    qreal dH2_ = LocalTable()->data(1, 0);
+    qreal dH2 = LocalTable()->data(0, 1) + dH1;
+    qreal dH2_ = LocalTable()->data(0, 1);
     qreal complex_11_prev = 0, complex_12_prev = 0;
 
     bool reservior = m_reservior;
 
     for (int i = 0; i < DataPoints(); ++i) {
 
-        qreal v = IndependentModel()->data(0, i);
+        qreal v = IndependentModel()->data(i);
         V += v * !reservior;
         qreal dv = (1 - v / V);
 

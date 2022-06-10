@@ -112,7 +112,7 @@ void itc_IItoII_Model::EvaluateOptions()
      */
     auto local_coop21 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 1) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (coop21 == "noncooperative") {
@@ -142,7 +142,7 @@ void itc_IItoII_Model::EvaluateOptions()
      */
     auto local_coop12 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 3) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (coop12 == "noncooperative") {
@@ -159,11 +159,11 @@ void itc_IItoII_Model::EvaluateOptions()
 void itc_IItoII_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH() / 10.0;
-    LocalTable()->data(1, 0) = GuessdH();
-    LocalTable()->data(2, 0) = GuessdH() / 10.0;
-    LocalTable()->data(3, 0) = -1000;
-    LocalTable()->data(4, 0) = 1;
-    LocalTable()->data(5, 0) = GuessFx();
+    LocalTable()->data(0, 1) = GuessdH();
+    LocalTable()->data(0, 2) = GuessdH() / 10.0;
+    LocalTable()->data(0, 3) = -1000;
+    LocalTable()->data(0, 4) = 1;
+    LocalTable()->data(0, 5) = GuessFx();
 
     qreal K = GuessK(1);
 
@@ -213,15 +213,15 @@ void itc_IItoII_Model::CalculateVariables()
 
     QString dil = getOption(Dilution);
 
-    qreal dH11 = LocalTable()->data(1, 0);
+    qreal dH11 = LocalTable()->data(0, 1);
     qreal dH21 = LocalTable()->data(0, 0) + dH11;
     qreal dH21_ = LocalTable()->data(0, 0);
-    qreal dH12 = LocalTable()->data(2, 0) + dH11;
-    qreal dH12_ = LocalTable()->data(2, 0);
+    qreal dH12 = LocalTable()->data(0, 2) + dH11;
+    qreal dH12_ = LocalTable()->data(0, 2);
 
-    qreal dil_heat = LocalTable()->data(3, 0);
-    qreal dil_inter = LocalTable()->data(4, 0);
-    qreal fx = LocalTable()->data(5, 0);
+    qreal dil_heat = LocalTable()->data(0, 3);
+    qreal dil_inter = LocalTable()->data(0, 4);
+    qreal fx = LocalTable()->data(0, 5);
     qreal V = m_V;
 
     qreal K21 = qPow(10, GlobalParameter(0));
@@ -290,8 +290,8 @@ void itc_IItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        qreal v = IndependentModel()->data(0, i);
-        V += IndependentModel()->data(0, i) * !reservior;
+        qreal v = IndependentModel()->data(i);
+        V += IndependentModel()->data(i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH21 * V;

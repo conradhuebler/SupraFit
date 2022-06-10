@@ -70,7 +70,7 @@ public:
 
     virtual qreal PrintOutIndependent(int i) const override
     {
-        return IndependentModel()->data(0, i);
+        return IndependentModel()->data(i);
     }
 
     virtual inline bool SupportSeries() const override { return false; }

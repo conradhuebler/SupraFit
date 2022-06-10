@@ -76,8 +76,6 @@ DataTable::DataTable(DataTable& other)
 
 DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME whatever
 {
-    //  std::cout << "copying by pointer" << this << std::endl;
-
     m_table = Eigen::MatrixXd(other->m_table);
     m_header = other->m_header;
     m_checked_table = Eigen::MatrixXd(other->m_checked_table);
@@ -212,11 +210,11 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 {
     if (role == Qt::DisplayRole || role == Qt::EditRole)
         if (m_editable)
-            return Print::printDouble(data(index.column(), index.row()), 8);
+            return Print::printDouble(data(index.row(), index.column()), 8);
         else
-            return Print::printDouble(data(index.column(), index.row()), 8);
+            return Print::printDouble(data(index.row(), index.column()), 8);
     else if (role == Qt::CheckStateRole && m_checkable)
-        return isChecked(index.column(), index.row());
+        return isChecked(index.row(), index.column());
     else
         return QVariant();
 }
@@ -224,39 +222,25 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 qreal& DataTable::operator[](int column)
 {
     QReadLocker locker(&mutex);
-#ifdef _DEBUG
-    m_empty = 0;
-
-    if (column < m_table.cols()) {
-        return m_table.operator()(0, column);
-    } else {
-        qDebug() << "Column exceeds size of table!";
-        return m_empty;
-    }
-#else
     return m_table.operator()(0, column);
-#endif
 }
 
 qreal& DataTable::operator()(int column, int row)
 {
     QReadLocker locker(&mutex);
     m_empty = 0;
-#ifdef _DEBUG
-    if (row < m_table.rows())
-        if (column < m_table.cols()) {
-            return m_table.operator()(row, column);
-        } else {
-            qDebug() << "Column exceeds size of table!";
-            return m_empty;
-        }
-    else {
-        qDebug() << "Row exceeds size of table!";
-        return m_empty;
-    }
-#else
     return m_table.operator()(row, column);
-#endif
+}
+
+qreal DataTable::data(int row, int column) const
+{
+    return m_table(row, column);
+}
+
+qreal& DataTable::data(int row, int column)
+{
+    QMutexLocker locker(&m_lock);
+    return m_table.operator()(row, column);
 }
 
 bool DataTable::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -265,7 +249,7 @@ bool DataTable::setData(const QModelIndex& index, const QVariant& value, int rol
         bool ok;
         qreal var = value.toDouble(&ok);
         if (ok) {
-            data(index.column(), index.row()) = var;
+            data(index.row(), index.column()) = var;
             emit dataChanged(index, index);
         }
         return ok;
@@ -342,81 +326,16 @@ void DataTable::PrintCheckedRows() const
     }
 }
 
-bool DataTable::isChecked(int column, int row) const
+bool DataTable::isChecked(int row, int column) const
 {
-#ifdef _DEBUG
-    if (row < m_checked_table.rows())
-        if (column < m_checked_table.cols()) {
-            return m_checked_table(row, column);
-        } else {
-            qDebug() << "Column exceeds size of table!";
-            return 0;
-        }
-    else {
-        qDebug() << "Row exceeds size of table!";
-        return 0;
-    }
-#else
     return m_checked_table(row, column);
-#endif
 }
 
-void DataTable::setChecked(int column, int row, bool checked)
+void DataTable::setChecked(int row, int column, bool checked)
 {
-#ifdef _DEBUG
-    if (row < m_checked_table.rows())
-        if (column < m_checked_table.cols()) {
-            m_checked_table(row, column) = checked;
-        } else {
-            qDebug() << "Column exceeds size of table!";
-        }
-    else {
-        qDebug() << "Row exceeds size of table!";
-    }
-#else
     m_checked_table(row, column) = checked;
-#endif
 }
 
-qreal DataTable::data(int column, int row) const
-{
-#ifdef _DEBUG
-    if (row < m_table.rows())
-        if (column < m_table.cols()) {
-            return m_table(row, column);
-        } else {
-            qDebug() << "Column exceeds size of table!";
-            return 0;
-        }
-    else {
-        qDebug() << "Row exceeds size of table!";
-        return 0;
-    }
-#else
-    return m_table(row, column);
-#endif
-}
-
-qreal& DataTable::data(int column, int row)
-{
-    QMutexLocker locker(&m_lock);
-#ifdef _DEBUG
-    m_empty = 0;
-    if (row < m_table.rows())
-        if (column < m_table.cols()) {
-            return m_table.operator()(row, column);
-        } else {
-            qDebug() << "Column exceeds size of table!";
-            return m_empty;
-        }
-    else {
-        qDebug() << "Row exceeds size of table!";
-        return m_empty;
-    }
-#else
-    return m_table.operator()(row, column);
-#endif
-}
 
 QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_end, int column_end) const
 {
@@ -556,7 +475,7 @@ void DataTable::appendColumns(const DataTable& table, bool keep_header)
 
     for (int i = 0; i < columnCount(); ++i)
         for (int j = 0; j < rowCount(); ++j) {
-            tab(j, i) = data(i, j);
+            tab(i, j) = data(j, i);
             // check(j,i) = m_checked_table(j,i);
         }
 
@@ -591,13 +510,13 @@ void DataTable::prependColumns(const DataTable& table, bool keep_header)
 
     for (int i = 0; i < table.columnCount(); ++i)
         for (int j = 0; j < table.rowCount(); ++j) {
-            tab(j, i) = table.data(i, j);
+            tab(i, j) = table.data(j, i);
             // check(j,columnCount() + i) = m_checked_table(j,i);
         }
 
     for (int i = 0; i < columnCount(); ++i)
         for (int j = 0; j < rowCount(); ++j) {
-            tab(j, table.columnCount() + i) = data(i, j);
+            tab(table.columnCount() + i, j) = data(j, i);
             // check(j,i) = m_checked_table(j,i);
         }
 
@@ -658,7 +577,7 @@ QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double>& Phi, 
             continue;
         for (int i = 0; i < rowCount(); ++i) {
             double randed = Phi(rng);
-            table->data(j, i) += randed;
+            table->data(i, j) += randed;
         }
     }
     return table;
@@ -682,7 +601,7 @@ QPointer<DataTable> DataTable::PrepareMC(QVector<double> stddev, std::mt19937& r
             continue;
         for (int i = 0; i < rowCount(); ++i) {
             double randed = _Phi[j](rng);
-            table->data(j, i) += randed;
+            table->data(i, j) += randed;
         }
     }
     return table;
@@ -694,7 +613,7 @@ QPointer<DataTable> DataTable::PrepareBootStrap(std::uniform_int_distribution<in
     for (int j = 0; j < columnCount(); ++j) {
         for (int i = 0; i < rowCount(); ++i) {
             int randed = Uni(rng);
-            table->data(j, i) += vector[randed];
+            table->data(i, j) += vector[randed];
         }
     }
     return table;
@@ -704,8 +623,8 @@ QString DataTable::ExportAsString() const
 {
     QString str;
     str += "#" + m_header.join("\t") + "\n";
-    for (int j = 0; j < rowCount(); ++j) {
-        for (int i = 0; i < columnCount(); ++i) {
+    for (int i = 0; i < rowCount(); ++i) {
+        for (int j = 0; j < columnCount(); ++j) {
             str += Print::printDouble(data(i, j));
             /*
             if(data(i,j) >= 0)
@@ -714,7 +633,7 @@ QString DataTable::ExportAsString() const
                 str += QString::number(data(i,j), 'e', 6);
             else //and
                 str += QString::number(data(i,j)); // return no digits*/
-            if (i < columnCount() - 1)
+            if (j < columnCount() - 1)
                 str += "\t";
         }
         str += "\n";
@@ -725,9 +644,9 @@ QString DataTable::ExportAsString() const
 QStringList DataTable::ExportAsStringList() const
 {
     QStringList list;
-    for (int j = 0; j < rowCount(); ++j) {
+    for (int i = 0; i < rowCount(); ++i) {
         QString str;
-        for (int i = 0; i < columnCount(); ++i) {
+        for (int j = 0; j < columnCount(); ++j) {
             str += Print::printDouble(data(i, j));
             /*
             if(data(i,j) >= 0)
@@ -736,7 +655,7 @@ QStringList DataTable::ExportAsStringList() const
                 str += Print::printDouble(data(i,j));
             else //and
                 str += QString::number(data(i,j)); // return no digits*/
-            if (i < columnCount() - 1)
+            if (j < columnCount() - 1)
                 str += "\t";
         }
         list << str;
@@ -747,8 +666,8 @@ QStringList DataTable::ExportAsStringList() const
 QVector<qreal> DataTable::toVector() const
 {
     QVector<qreal> vector;
-    for (int j = 0; j < rowCount(); ++j) {
-        for (int i = 0; i < columnCount(); ++i) {
+    for (int i = 0; i < rowCount(); ++i) {
+        for (int j = 0; j < columnCount(); ++j) {
             vector << data(i, j);
         }
     }
@@ -758,8 +677,8 @@ QVector<qreal> DataTable::toVector() const
 QList<qreal> DataTable::toList() const
 {
     QList<qreal> list;
-    for (int j = 0; j < rowCount(); ++j) {
-        for (int i = 0; i < columnCount(); ++i) {
+    for (int i = 0; i < rowCount(); ++i) {
+        for (int j = 0; j < columnCount(); ++j) {
             list << data(i, j);
         }
     }

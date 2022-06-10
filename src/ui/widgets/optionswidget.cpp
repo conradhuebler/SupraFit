@@ -21,6 +21,8 @@
 
 #include "src/core/toolset.h"
 
+#include "src/ui/guitools/flowlayout.h"
+
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QComboBox>
@@ -32,41 +34,34 @@
 OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel> model)
     : m_model(model)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
-
-    QHBoxLayout* hlayout = new QHBoxLayout;
-    layout->setAlignment(Qt::AlignTop);
-    QHBoxLayout* smalllayout;
-    int counter = 1;
-
-    int rows = ToolSet::NiceRows(m_model.toStrongRef().data()->getAllOptions().size(), qApp->instance()->property("ModelParameterColums").toInt());
+    FlowLayout* layout = new FlowLayout;
 
     for (int index : m_model.toStrongRef().data()->getAllOptions()) {
         QString str = m_model.toStrongRef().data()->getOptionName(index);
 
         if (m_model.toStrongRef().data()->getSingleOptionValues(index).size() == 0)
             continue;
+        QGroupBox* boxwidget = new QGroupBox;
+        boxwidget->setTitle(str);
 
-        smalllayout = new QHBoxLayout;
-
-        smalllayout->addWidget(new QLabel(str));
+        QHBoxLayout* boxlayout = new QHBoxLayout;
         QPointer<QComboBox> box = new QComboBox;
         box->setMaximumWidth(200);
         box->setMinimumWidth(200);
         box->addItems(m_model.toStrongRef().data()->getSingleOptionValues(index));
         box->setCurrentText(m_model.toStrongRef().data()->getOption(index));
-        smalllayout->addWidget(box);
+        boxlayout->addWidget(box);
         m_options[index] = box;
-        connect(box, SIGNAL(currentIndexChanged(QString)), this, SLOT(setOption()));
-
-        hlayout->addLayout(smalllayout);
-        if (counter % rows == 0) {
-            layout->addLayout(hlayout);
-            hlayout = new QHBoxLayout;
-        }
-        counter++;
+        connect(box, &QComboBox::currentIndexChanged, this, [this, box]() {
+            for (int index : m_model.toStrongRef().data()->getAllOptions()) {
+                QString value = m_options[index]->currentText();
+                m_model.toStrongRef().data()->setOption(index, value);
+            }
+            m_model.toStrongRef().data()->Calculate();
+        });
+        boxwidget->setLayout(boxlayout);
+        layout->addWidget(boxwidget);
     }
-    layout->addLayout(hlayout);
     setLayout(layout);
     setTitle("Model Option");
 }
@@ -74,13 +69,4 @@ OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel> model)
 OptionsWidget::~OptionsWidget()
 {
     m_model.clear();
-}
-
-void OptionsWidget::setOption()
-{
-    for (int index : m_model.toStrongRef().data()->getAllOptions()) {
-        QString value = m_options[index]->currentText();
-        m_model.toStrongRef().data()->setOption(index, value);
-    }
-    m_model.toStrongRef().data()->Calculate();
 }

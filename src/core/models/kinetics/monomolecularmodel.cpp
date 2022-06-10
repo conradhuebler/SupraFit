@@ -96,7 +96,7 @@ void MonoMolecularModel::CalculateVariables()
     qreal k1 = GlobalParameter(0);
     qreal k2 = GlobalParameter(1);
     for (int i = 0; i < DataPoints(); ++i) {
-        qreal t = IndependentModel()->data(0, i) * getScaling()[0]; ///1000.0/60.0;
+        qreal t = IndependentModel()->data(i) * getScaling()[0]; /// 1000.0/60.0;
         for (int j = 0; j < SeriesCount(); ++j) {
             qreal value = 0;
             value += A0 * qExp(-k1 * t) * (order == "First"); // || order == "Mixed");

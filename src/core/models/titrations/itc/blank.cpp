@@ -64,12 +64,12 @@ void Blank::InitialGuess_Private()
 
     for (int i = 1; i < DataPoints(); ++i) {
         x << PrintOutIndependent(i);
-        y << DependentModel()->data(0, i);
+        y << DependentModel()->data(i);
     }
     QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 1);
     PeakPick::MultiRegression regression = result.first();
     LocalTable()->data(0, 0) = regression.regressions[0].m;
-    LocalTable()->data(1, 0) = regression.regressions[0].n;
+    LocalTable()->data(0, 1) = regression.regressions[0].n;
 
     AbstractModel::Calculate();
 }
@@ -89,7 +89,7 @@ void Blank::CalculateVariables()
 {
 
     qreal dil_heat = LocalTable()->data(0, 0);
-    qreal dil_inter = LocalTable()->data(1, 0);
+    qreal dil_inter = LocalTable()->data(0, 1);
 
     for (int i = 0; i < DataPoints(); ++i) {
 

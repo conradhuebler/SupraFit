@@ -204,7 +204,7 @@ QString AbstractTitrationModel::AdditionalOutput() const
         result += QString("Series %1 ... Individual contributions ...\n").arg(i + 1);
         for (int j = 0; j < DataPoints(); ++j) {
             QVector<qreal> vector = DeCompose(j, i);
-            result += QString("%1\t%2").arg(j + 1).arg(ModelTable()->data(i, j));
+            result += QString("%1\t%2").arg(j + 1).arg(ModelTable()->data(j, i));
             for (int k = 0; k < vector.size(); ++k)
                 result += QString("\t%1").arg(vector[k]);
             result += "\n";

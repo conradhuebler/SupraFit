@@ -82,7 +82,7 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
      */
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 1) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -148,11 +148,11 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
             if (i == 0) {
-                value = (host_0 * LocalTable()->data(0, j));
+                value = (host_0 * LocalTable()->data(j, 0));
             } else {
-                value = (host * LocalTable()->data(1, j))
-                    + complex_21 * LocalTable()->data(2, j)
-                    + complex_11 * LocalTable()->data(3, j);
+                value = (host * LocalTable()->data(j, 1))
+                    + complex_21 * LocalTable()->data(j, 2)
+                    + complex_11 * LocalTable()->data(j, 3);
             }
             //value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j);
             SetValue(i, j, value);
@@ -175,9 +175,9 @@ QVector<qreal> fl_IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
 
     host_0 = 1;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << 2 * complex_21 / host_0 * LocalTable()->data(1, series);
-    vector << complex_11 / host_0 * LocalTable()->data(2, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << 2 * complex_21 / host_0 * LocalTable()->data(series, 1);
+    vector << complex_11 / host_0 * LocalTable()->data(series, 2);
 
     return vector;
 }

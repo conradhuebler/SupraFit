@@ -65,7 +65,7 @@ void Dep_Any::CalculateVariables()
     for (int i = 0; i < DataPoints(); ++i) {
         qreal a = GlobalParameter(0);
         qreal b = GlobalParameter(1);
-        qreal x = IndependentModel()->data(0, i);
+        qreal x = IndependentModel()->data(i);
         qreal value = log2(a) * log2(b) * x * x + log2(a) / x + log2(b) * x;
         SetValue(i, 0, value);
     }

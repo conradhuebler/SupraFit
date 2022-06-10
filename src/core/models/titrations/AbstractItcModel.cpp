@@ -160,9 +160,9 @@ qreal AbstractItcModel::GuessdH()
 
     m_guess_failed = false;
     qreal c0 = m_c0->data(2, 2);
-    qreal c1 = m_c0->data(2, 3);
+    qreal c1 = m_c0->data(3, 2);
     qreal dn = (c1 - c0) * m_V;
-    qreal q = DependentModel()->data(0, 3);
+    qreal q = DependentModel()->data(3);
     return q / dn;
 }
 
@@ -187,7 +187,7 @@ qreal AbstractItcModel::GuessFx()
 
         for (int i = start; i < DataPoints(); ++i) {
             x << InitialGuestConcentration(i) / InitialHostConcentration(i); // Ensure, that the correct x axis will be used.
-            y << DependentModel()->data(0, i);
+            y << DependentModel()->data(i);
         }
         QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
         PeakPick::MultiRegression regression = result.first();
@@ -245,7 +245,7 @@ void AbstractItcModel::CalculateConcentrations()
     qreal cell_0 = V_cell * cell;
     qreal cumulative_shot = 0;
     for (int i = 0; i < DataPoints(); ++i) {
-        qreal shot_vol = IndependentModel()->data(0, i);
+        qreal shot_vol = IndependentModel()->data(i);
 
         /*
          * Assuming constant cell volume, the absolute amount of host changes upon injection
@@ -398,6 +398,7 @@ void AbstractItcModel::UpdateOption(int index, const QString& str)
 {
     Q_UNUSED(index)
     Q_UNUSED(str)
+    AbstractModel::UpdateOption(index, str);
     /*if (index == Reservoir)
         Concentration();*/
 }

@@ -104,7 +104,7 @@ void nmr_IItoI_ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop21 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 1) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (coop21 == "noncooperative") {
@@ -134,7 +134,7 @@ void nmr_IItoI_ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop12 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+            this->LocalTable()->data(i, 3) = 2 * (this->LocalTable()->data(i, 2) - this->LocalTable()->data(i, 0)) + this->LocalTable()->data(i, 0);
     };
 
     if (coop12 == "noncooperative") {
@@ -243,7 +243,7 @@ void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
         for (int j = 0; j < SeriesCount(); ++j) {
 #pragma message("things got removed, because they seem to be old")
             //            if (method == "NMR")
-            value = host / host_0 * LocalTable()->data(0, j) + 2 * complex_21 / host_0 * LocalTable()->data(1, j) + complex_11 / host_0 * LocalTable()->data(2, j) + complex_12 / host_0 * LocalTable()->data(3, j);
+            value = host / host_0 * LocalTable()->data(j, 0) + 2 * complex_21 / host_0 * LocalTable()->data(j, 1) + complex_11 / host_0 * LocalTable()->data(j, 2) + complex_12 / host_0 * LocalTable()->data(j, 3);
             //            else if (method == "UV/VIS")
             //                value = host * LocalTable()->data(0, j) + 2 * complex_21 * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j);
 
@@ -266,10 +266,10 @@ QVector<qreal> nmr_IItoI_ItoI_ItoII_Model::DeCompose(int datapoint, int series) 
 
     QVector<qreal> vector;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << 2 * complex_21 / host_0 * LocalTable()->data(1, series);
-    vector << complex_11 / host_0 * LocalTable()->data(2, series);
-    vector << complex_12 / host_0 * LocalTable()->data(3, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << 2 * complex_21 / host_0 * LocalTable()->data(series, 1);
+    vector << complex_11 / host_0 * LocalTable()->data(series, 2);
+    vector << complex_12 / host_0 * LocalTable()->data(series, 3);
 
     return vector;
 }

@@ -126,7 +126,7 @@ DataTable* SpectraHandler::CompileSimpleTable()
                     val = p.y();
                 }
             }
-            table->data(i, j) = val / 1000.0;
+            table->data(j, i) = val / 1000.0;
         }
     }
     table->setHeader(header);

@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/core/equil.h"
@@ -316,8 +316,8 @@ QList<double> MetaModel::getSignals(QList<int> active_signal)
                 continue;
 
             for (int i = 0; i < m_models[index]->DataPoints(); ++i) {
-                if (m_models[index]->DependentModel()->isChecked(j, i))
-                    x.append(m_models[index]->DependentModel()->data(j, i));
+                if (m_models[index]->DependentModel()->isChecked(i, j))
+                    x.append(m_models[index]->DependentModel()->data(i, j));
             }
         }
     }
@@ -346,8 +346,8 @@ qreal MetaModel::CalculateVariance()
             for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
                 if (!m_models[index]->ActiveSignals(j))
                     continue;
-                if (m_models[index]->DependentModel()->isChecked(j, i)) {
-                    v += qPow(m_models[index]->ErrorTable()->data(j, i) - m_mean, 2);
+                if (m_models[index]->DependentModel()->isChecked(i, j)) {
+                    v += qPow(m_models[index]->ErrorTable()->data(i, j) - m_mean, 2);
                     count++;
                 }
             }
@@ -367,9 +367,9 @@ qreal MetaModel::CalculateCovarianceFit() const
                 if (!m_models[index]->ActiveSignals(j))
                     continue;
 
-                if (m_models[index]->DependentModel()->isChecked(j, i)) {
-                    model += m_model_signal->data(j, i);
-                    data += m_models[index]->DependentModel()->data(j, i);
+                if (m_models[index]->DependentModel()->isChecked(i, j)) {
+                    model += m_model_signal->data(i, j);
+                    data += m_models[index]->DependentModel()->data(i, j);
                     count++;
                 }
             }
@@ -382,9 +382,9 @@ qreal MetaModel::CalculateCovarianceFit() const
             for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
                 if (!m_models[index]->ActiveSignals(j))
                     continue;
-                if (m_models[index]->DependentModel()->isChecked(j, i)) {
-                    cov_data += qPow(m_models[index]->ModelTable()->data(j, i) - mean_model, 2);
-                    cov_model += qPow(m_models[index]->DependentModel()->data(j, i) - mean_data, 2);
+                if (m_models[index]->DependentModel()->isChecked(i, j)) {
+                    cov_data += qPow(m_models[index]->ModelTable()->data(i, j) - mean_model, 2);
+                    cov_model += qPow(m_models[index]->DependentModel()->data(i, j) - mean_data, 2);
                 }
             }
         }
@@ -424,8 +424,8 @@ QList<double> MetaModel::getCalculatedModel()
             if (!m_models[index]->ActiveSignals(j))
                 continue;
             for (int i = 0; i < m_models[index]->DataPoints(); ++i)
-                if (m_models[index]->DependentModel()->isChecked(j, i))
-                    x.append(m_models[index]->ModelTable()->data(j, i));
+                if (m_models[index]->DependentModel()->isChecked(i, j))
+                    x.append(m_models[index]->ModelTable()->data(i, j));
         }
     }
     return x;
@@ -614,12 +614,12 @@ void MetaModel::PrepareTables()
 
     m_local_parameter->clear(m_local_names.size(), 1);
     for (int i = 0; i < m_local_names.size(); ++i)
-        m_local_parameter->data(i, 0) = parameters[m_global_names.size() + i];
+        m_local_parameter->data(0, i) = parameters[m_global_names.size() + i];
     m_local_parameter->setHeader(m_local_names);
 
     m_global_parameter->clear(m_global_names.size(), 1);
     for (int i = 0; i < m_global_names.size(); ++i)
-        m_global_parameter->data(i, 0) = parameters[i];
+        m_global_parameter->data(0, i) = parameters[i];
     m_global_parameter->setHeader(m_global_names);
 }
 
@@ -771,8 +771,9 @@ void MetaModel::UpdateSlicedTable()
 
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
-                m_sliced_table->operator()(i + j, k) = m_models[i]->IndependentModel()->operator()(j, k);
-                m_sliced_table->setChecked(j, k, m_models[i]->IndependentModel()->isChecked(j, k));
+                // m_sliced_table->operator()(k,i + j) = m_models[i]->IndependentModel()->operator()(k,j);
+#warning
+                m_sliced_table->setChecked(k, j, m_models[i]->IndependentModel()->isChecked(k, j));
             }
         }
     }
@@ -808,8 +809,9 @@ void MetaModel::OverrideInDependentTable(DataTable* table)
         m_models[i]->detach();
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
-                m_models[i]->IndependentModel()->operator()(j, k) = table->operator()(i + j, k);
-                m_models[i]->IndependentModel()->setChecked(j, k, table->isChecked(j, k));
+                // m_models[i]->IndependentModel()->operator()(k,j) = table->operator()(k, i + j);
+#warning
+                m_models[i]->IndependentModel()->setChecked(k, j, table->isChecked(k, j));
             }
         }
     }

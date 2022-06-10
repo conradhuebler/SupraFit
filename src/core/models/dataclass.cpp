@@ -216,8 +216,8 @@ QList<double> DataClass::getSignals(QList<int> active_signal)
         if (active_signal[j] != 1)
             continue;
         for (int i = 0; i < DataPoints(); ++i) {
-            if (DependentModel()->isChecked(j, i))
-                x.append(DependentModel()->data(j, i));
+            if (DependentModel()->isChecked(i, j))
+                x.append(DependentModel()->data(i, j));
         }
     }
     return x;

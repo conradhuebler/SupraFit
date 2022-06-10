@@ -287,7 +287,7 @@ void AbstractModel::InitialiseRandom()
     }
     for (int series = 0; series < SeriesCount(); ++series) {
         for (int i = 0; i < LocalParameterSize(); ++i) {
-            LocalTable()->data(i, series) = QRandomGenerator::global()->generateDouble() * (m_random_local[series][i].second - m_random_local[series][i].first) + m_random_local[series][i].first;
+            LocalTable()->data(series, i) = QRandomGenerator::global()->generateDouble() * (m_random_local[series][i].second - m_random_local[series][i].first) + m_random_local[series][i].first;
         }
     }
     Calculate();
@@ -344,7 +344,7 @@ void AbstractModel::clearOptParameter()
 
 void AbstractModel::setGlobalParameter(double value, int parameter)
 {
-    if (GlobalParameter()->isChecked(parameter, 0))
+    if (GlobalParameter()->isChecked(0, parameter))
         (*GlobalTable())[parameter] = value;
 }
 
@@ -358,7 +358,7 @@ void AbstractModel::setGlobalParameter(const QPointer<DataTable> list)
     if (list->columnCount() != GlobalTable()->columnCount())
         return;
     for (int i = 0; i < list->columnCount(); ++i) {
-        if (GlobalParameter()->isChecked(i, 0))
+        if (GlobalParameter()->isChecked(0, i))
             (*GlobalTable())[i] = (*list)[i];
     }
 }
@@ -373,9 +373,9 @@ void AbstractModel::setGlobalParameter(const QList<qreal>& list)
 
 bool AbstractModel::SetValue(int i, int j, qreal value)
 {
-    if (!ActiveSignals(j) || !DependentModel()->isChecked(j, i)) {
-        m_model_error->data(j, i) = 0;
-        m_model_signal->data(j, i) = DependentModel()->data(j, i);
+    if (!ActiveSignals(j) || !DependentModel()->isChecked(i, j)) {
+        m_model_error->data(i, j) = 0;
+        m_model_signal->data(i, j) = DependentModel()->data(i, j);
         return false;
     }
     bool return_value = true;
@@ -388,14 +388,14 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
     QVector<int> used_series(SeriesCount(), 0);
     //if (Type() != 3) {
     if (!m_locked_model)
-        m_model_signal->data(j, i) = value;
-    m_model_error->data(j, i) = m_model_signal->data(j, i) - DependentModel()->data(j, i);
-    m_sum_absolute += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
-    m_sum_squares += qPow(m_model_signal->data(j, i) - DependentModel()->data(j, i), 2);
-    // m_mean += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
-    m_mean += m_model_signal->data(j, i) - DependentModel()->data(j, i);
+        m_model_signal->data(i, j) = value;
+    m_model_error->data(i, j) = m_model_signal->data(i, j) - DependentModel()->data(i, j);
+    m_sum_absolute += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
+    m_sum_squares += qPow(m_model_signal->data(i, j) - DependentModel()->data(i, j), 2);
+    // m_mean += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
+    m_mean += m_model_signal->data(i, j) - DependentModel()->data(i, j);
 
-    mean_series[j] += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
+    mean_series[j] += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
     used_series[j]++;
     m_used_variables++;
     //}
@@ -454,9 +454,9 @@ void AbstractModel::Calculate()
         QVector<qreal> x, y;
         for (int i = 0; i < DataPoints(); ++i)
             for (int j = 0; j < SeriesCount(); ++j) {
-                if (DependentModel()->isChecked(j, i)) {
-                    x << DependentModel()->data(j, i);
-                    y << ModelTable()->data(j, i);
+                if (DependentModel()->isChecked(i, j)) {
+                    x << DependentModel()->data(i, j);
+                    y << ModelTable()->data(i, j);
                 }
             }
         PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x), ToolSet::QVector2DoubleEigVec(y));
@@ -488,9 +488,9 @@ qreal AbstractModel::CalculateVariance()
         for (int j = 0; j < SeriesCount(); ++j) {
             if (!ActiveSignals(j))
                 continue;
-            if (DependentModel()->isChecked(j, i)) {
-                v += qPow(m_model_error->data(j, i) - m_mean, 2);
-                variance[j] += qPow(m_model_error->data(j, i) - m_mean_series[j], 2);
+            if (DependentModel()->isChecked(i, j)) {
+                v += qPow(m_model_error->data(i, j) - m_mean, 2);
+                variance[j] += qPow(m_model_error->data(i, j) - m_mean_series[j], 2);
                 count++;
             }
         }
@@ -541,9 +541,9 @@ qreal AbstractModel::CalculateCovarianceFit() const
             if (!ActiveSignals(j))
                 continue;
 
-            if (DependentModel()->isChecked(j, i)) {
-                model += m_model_signal->data(j, i);
-                data += DependentModel()->data(j, i);
+            if (DependentModel()->isChecked(i, j)) {
+                model += m_model_signal->data(i, j);
+                data += DependentModel()->data(i, j);
                 count++;
             }
         }
@@ -554,9 +554,9 @@ qreal AbstractModel::CalculateCovarianceFit() const
         for (int j = 0; j < SeriesCount(); ++j) {
             if (!ActiveSignals(j))
                 continue;
-            if (DependentModel()->isChecked(j, i)) {
-                cov_data += qPow(m_model_signal->data(j, i) - mean_model, 2);
-                cov_model += qPow(DependentModel()->data(j, i) - mean_data, 2);
+            if (DependentModel()->isChecked(i, j)) {
+                cov_data += qPow(m_model_signal->data(i, j) - mean_model, 2);
+                cov_model += qPow(DependentModel()->data(i, j) - mean_data, 2);
             }
         }
     }
@@ -570,8 +570,8 @@ QList<double> AbstractModel::getCalculatedModel()
         if (!ActiveSignals(j))
             continue;
         for (int i = 0; i < DataPoints(); ++i)
-            if (DependentModel()->isChecked(j, i))
-                x.append(ModelTable()->data(j, i));
+            if (DependentModel()->isChecked(i, j))
+                x.append(ModelTable()->data(i, j));
     }
     return x;
 }
@@ -584,7 +584,7 @@ qreal AbstractModel::SumOfErrors(int i) const
         return sum;
 
     for (int j = 0; j < DataPoints(); ++j) {
-        sum += qPow(m_model_error->data(i, j), 2);
+        sum += qPow(m_model_error->data(j, i), 2);
     }
     return sum;
 }
@@ -631,7 +631,7 @@ qreal AbstractModel::LocalParameter(int parameter, int series) const
     if (series >= LocalTable()->rowCount() || parameter >= LocalTable()->columnCount())
         return 0;
     else
-        return LocalTable()->data(parameter, series);
+        return LocalTable()->data(series, parameter);
 }
 
 QVector<qreal> AbstractModel::getLocalParameterColumn(int parameter) const
@@ -641,36 +641,36 @@ QVector<qreal> AbstractModel::getLocalParameterColumn(int parameter) const
         return column;
     else {
         for (int i = 0; i < LocalTable()->rowCount(); ++i)
-            column << LocalTable()->data(parameter, i);
+            column << LocalTable()->data(i, parameter);
     }
     return column;
 }
 
 void AbstractModel::setLocalParameter(qreal value, const QPair<int, int>& pair)
 {
-    if (LocalTable()->isChecked(pair.first, pair.second))
-        LocalTable()->data(pair.first, pair.second) = value;
+    if (LocalTable()->isChecked(pair.second, pair.first))
+        LocalTable()->data(pair.second, pair.first) = value;
 }
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
-    if (LocalTable()->isChecked(parameter, series))
-        LocalTable()->data(parameter, series) = value;
+    if (LocalTable()->isChecked(series, parameter))
+        LocalTable()->data(series, parameter) = value;
 }
 
 void AbstractModel::forceLocalParameter(qreal value, const QPair<int, int>& pair)
 {
-    LocalTable()->data(pair.first, pair.second) = value;
+    LocalTable()->data(pair.second, pair.first) = value;
 }
 
 void AbstractModel::forceLocalParameter(qreal value, int parameter, int series)
 {
-    LocalTable()->data(parameter, series) = value;
+    LocalTable()->data(series, parameter) = value;
 }
 
 qreal AbstractModel::LocalParameter(const QPair<int, int>& pair) const
 {
-    return LocalTable()->data(pair.first, pair.second);
+    return LocalTable()->data(pair.second, pair.first);
 }
 
 void AbstractModel::setLocalParameterColumn(const QVector<qreal>& vector, int parameter)
@@ -703,7 +703,7 @@ void AbstractModel::addGlobalParameter()
         /* We enable this parameter, since it is used in model calculation, but */
         private_d->m_enabled_global[i] = 1;
         /* we allow to break, if this is unchecked for optimisation*/
-        if (!GlobalTable()->isChecked(i, 0))
+        if (!GlobalTable()->isChecked(0, i))
             continue;
         m_opt_para << &(*GlobalTable())[i];
         m_global_index << QPair<int, int>(i, 0);
@@ -716,7 +716,7 @@ void AbstractModel::addGlobalParameter(int i)
     if (i < GlobalTable()->columnCount()) {
         private_d->m_enabled_global[i] = 1;
         /* see above comment */
-        if (!GlobalTable()->isChecked(i, 0))
+        if (!GlobalTable()->isChecked(0, i))
             return;
         m_opt_para << &(*GlobalTable())[i];
         m_global_index << QPair<int, int>(i, 0);
@@ -729,9 +729,9 @@ void AbstractModel::addLocalParameter(int i)
     for (int j = 0; j < LocalTable()->rowCount(); ++j) {
         if (!ActiveSignals(j))
             continue;
-        if (!LocalTable()->isChecked(i, j))
+        if (!LocalTable()->isChecked(j, i))
             continue;
-        m_opt_para << &LocalTable()->data(i, j);
+        m_opt_para << &LocalTable()->data(j, i);
         m_local_index << QPair<int, int>(i, j);
         m_opt_index << QPair<int, int>(i, 1);
     }
@@ -1141,9 +1141,9 @@ QVector<qreal> AbstractModel::AllParameter() const
 {
     QVector<qreal> parameter = GlobalTable()->toVector();
 
-    for (int r = 0; r < LocalTable()->rowCount(); ++r) {
-        for (int c = 0; c < LocalTable()->columnCount(); ++c) {
-            parameter << LocalTable()->data(c, r);
+    for (int row = 0; row < LocalTable()->rowCount(); ++row) {
+        for (int column = 0; column < LocalTable()->columnCount(); ++column) {
+            parameter << LocalTable()->data(row, column);
         }
     }
     return parameter;

@@ -75,7 +75,7 @@ void Indep_Quadrat::CalculateVariables()
     for (int i = 0; i < DataPoints(); ++i) {
         qreal a = GlobalParameter(0);
         qreal b = GlobalParameter(1);
-        qreal x = IndependentModel()->data(0, i);
+        qreal x = IndependentModel()->data(i);
         if (order == "Linear")
             value = a * x * (i < DataPoints() / 2) + b * x * !(i < DataPoints() / 2);
         else

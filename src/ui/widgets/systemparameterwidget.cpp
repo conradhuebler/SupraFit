@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 #include "src/core/models/AbstractModel.h"
 
 #include <QtWidgets/QCheckBox>
@@ -36,36 +37,31 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
 
 {
     m_textfield = new QLineEdit;
-    // m_textfield->setReadOnly(m_readonly);
     m_boolbox = new QCheckBox;
-    // m_boolbox->setDisabled(m_readonly);
     m_list = new QComboBox;
-    // m_list->setItemDelegate(new HTMLDelegate(this));
-    // m_list->setDisabled(m_readonly);
 
-    QLabel* label = new QLabel(parameter.Name());
-    label->setMinimumWidth(100);
+    setTitle(parameter.Name());
+    QLabel* label = new QLabel(parameter.Description());
+    label->setMinimumWidth(150);
+    label->setWordWrap(true);
     label->setMaximumWidth(200);
-    label->setToolTip(parameter.Description());
     setToolTip(parameter.Description());
 
     connect(m_textfield, SIGNAL(textChanged(QString)), this, SLOT(PrepareChanged()));
     connect(m_boolbox, SIGNAL(stateChanged(int)), this, SLOT(PrepareChanged()));
     connect(m_list, SIGNAL(currentIndexChanged(int)), this, SLOT(PrepareChanged()));
 
-    //setTitle(parameter.Name());
-
     QHBoxLayout* layout = new QHBoxLayout;
-    layout->addWidget(label);
+    layout->addWidget(label, Qt::AlignLeft);
     if (parameter.isScalar() || parameter.isString()) {
-        layout->addWidget(m_textfield);
+        layout->addWidget(m_textfield, Qt::AlignRight);
         m_textfield->setMaximumWidth(150);
         m_textfield->setMinimumWidth(100);
     } else if (parameter.isBool())
-        layout->addWidget(m_boolbox);
+        layout->addWidget(m_boolbox, Qt::AlignRight);
 
     else if (parameter.isList()) {
-        layout->addWidget(m_list);
+        layout->addWidget(m_list, Qt::AlignRight);
         m_list->addItems(parameter.getList());
     }
 
@@ -74,8 +70,9 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
     else
         m_textfield->setText(parameter.value().toString());
     setLayout(layout);
-    setMaximumWidth(300);
-    setMinimumWidth(250);
+    setMaximumWidth(400);
+    setMinimumWidth(350);
+    setMinimumHeight(80);
 }
 
 SystemParameterWidget::~SystemParameterWidget()

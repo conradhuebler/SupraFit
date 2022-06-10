@@ -101,7 +101,7 @@ void uv_vis_ItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + complex * LocalTable()->data(2, j);
+            value = host * LocalTable()->data(j, 0) * hostguest.first + guest * LocalTable()->data(j, 1) * hostguest.second + complex * LocalTable()->data(j, 2);
             SetValue(i, j, value);
         }
     }
@@ -120,8 +120,8 @@ QVector<qreal> uv_vis_ItoI_Model::DeCompose(int datapoint, int series) const
 
     host_0 = 1;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << complex / host_0 * LocalTable()->data(1, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << complex / host_0 * LocalTable()->data(series, 1);
 
     return vector;
 }

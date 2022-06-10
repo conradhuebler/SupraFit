@@ -152,10 +152,10 @@ void ChartWrapper::MakeSeries()
     for (int i = 0; i < rows; ++i) {
         double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
         for (int j = 0; j < cols; ++j) {
-            if (m_working.toStrongRef().data()->DependentModel()->isChecked(j, i)) {
+            if (m_working.toStrongRef().data()->DependentModel()->isChecked(i, j)) {
                 if (j >= m_stored_series.size())
                     continue;
-                m_stored_series[j]->append(x, m_table->data(j, i));
+                m_stored_series[j]->append(x, m_table->data(i, j));
             }
         }
     }

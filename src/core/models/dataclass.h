@@ -289,7 +289,7 @@ public:
         if (!m_plot_x)
             return i + 1;
         else
-            return d->m_independent_model->data(0, i);
+            return d->m_independent_model->data(i, 0);
     }
 
     inline void setPlotMode(bool plot_x) { m_plot_x = plot_x; }

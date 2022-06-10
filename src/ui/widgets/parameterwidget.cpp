@@ -63,7 +63,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
                     if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
-                        check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(i, 0));
+                        check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(0, i));
                     } else {
                         box->setStyleSheet("background-color: " + excluded());
                         check->setEnabled(false);
@@ -81,7 +81,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
 
         connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
             if (this->m_model) {
-                m_model.toStrongRef().data()->LocalTable()->setChecked(i, 0, state);
+                m_model.toStrongRef().data()->LocalTable()->setChecked(0, i, state);
             }
 
         });

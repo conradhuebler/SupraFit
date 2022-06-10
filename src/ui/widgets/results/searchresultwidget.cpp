@@ -173,7 +173,7 @@ QTableView* SearchResultWidget::BuildList()
         int j = 1;
 
         for (int l = 0; l < m_model.toStrongRef().data()->GlobalParameterSize(); ++l) {
-            if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(l, 0) || !m_model.toStrongRef().data()->GlobalEnabled(l))
+            if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(0, l) || !m_model.toStrongRef().data()->GlobalEnabled(l))
                 continue;
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
@@ -193,7 +193,7 @@ QTableView* SearchResultWidget::BuildList()
         int idx = 0;
         for (int k = 0; k < m_model.toStrongRef().data()->SeriesCount(); ++k) {
             for (int l = 0; l < m_model.toStrongRef().data()->LocalParameterSize(); ++l) {
-                if (!m_model.toStrongRef().data()->LocalTable()->isChecked(l, k) || !m_model.toStrongRef().data()->LocalEnabled(l)) {
+                if (!m_model.toStrongRef().data()->LocalTable()->isChecked(k, l) || !m_model.toStrongRef().data()->LocalEnabled(l)) {
                     index++;
                     idx++;
                     continue;
@@ -221,7 +221,7 @@ QTableView* SearchResultWidget::BuildList()
     }
 
     for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
-        if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(i, 0) || !m_model.toStrongRef().data()->GlobalEnabled(i))
+        if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(0, i) || !m_model.toStrongRef().data()->GlobalEnabled(i))
             continue;
         header << tr("%1\n (before)").arg(m_model.toStrongRef().data()->GlobalParameterName(i));
         header << tr("%1\n (after)").arg(m_model.toStrongRef().data()->GlobalParameterName(i));
@@ -235,7 +235,7 @@ QTableView* SearchResultWidget::BuildList()
             series = QString();
 
         for (int l = 0; l < m_model.toStrongRef().data()->LocalParameterSize(); ++l) {
-            if (!m_model.toStrongRef().data()->LocalTable()->isChecked(l, k) || !m_model.toStrongRef().data()->LocalEnabled(l))
+            if (!m_model.toStrongRef().data()->LocalTable()->isChecked(k, l) || !m_model.toStrongRef().data()->LocalEnabled(l))
                 continue;
             header << tr("%1 %2 \n (before)").arg(series).arg(m_model.toStrongRef().data()->LocalParameterName(l));
             header << tr("%1 %2 \n (after)").arg(series).arg(m_model.toStrongRef().data()->LocalParameterName(l));

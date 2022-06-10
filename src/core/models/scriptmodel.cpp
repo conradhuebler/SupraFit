@@ -101,7 +101,7 @@ int CalculateThread::execute()
             for (int parameter = 0; parameter < m_X->columnCount(); ++parameter) {
                 cache.replace(
                     m_input_names[parameter],
-                    QString::number(m_X->data(parameter, i)));
+                    QString::number(m_X->data(i, parameter)));
             }
             int error = 0;
 
@@ -110,7 +110,7 @@ int CalculateThread::execute()
                 cache.replace("var", "");
                 result = m_chai.Evaluate(cache.toUtf8(), error);
             }
-            m_result->data(series, i) = result;
+            m_result->data(i, series) = result;
             // m_result(i, series, result);
         }
     }
@@ -407,7 +407,7 @@ void ScriptModel::CalculateChai()
                ++parameter) {
               cache.replace(
                   m_input_names[parameter],
-                  QString::number(IndependentModel()->data(parameter, i)));
+                  QString::number(IndependentModel()->data(i, parameter)));
           }
           int error = 0;
           double result = 0;

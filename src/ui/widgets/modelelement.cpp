@@ -63,7 +63,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         widget->setFixedWidth(150);
         QCheckBox* check = new QCheckBox;
         connect(check, &QCheckBox::stateChanged, check, [this, i, no](int state) {
-            m_model.toStrongRef().data()->LocalTable()->setChecked(i, no, state);
+            m_model.toStrongRef().data()->LocalTable()->setChecked(no, i, state);
         });
         connect(this, &ModelElement::LocalCheckState, check, &QCheckBox::setChecked);
 
@@ -82,7 +82,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
                 if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
                     constant->setStyleSheet("background-color: " + included());
                     check->setEnabled(true);
-                    check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(i, no));
+                    check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(no, i));
                 } else {
                     constant->setStyleSheet("background-color: " + excluded());
                     check->setEnabled(false);

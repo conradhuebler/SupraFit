@@ -95,7 +95,7 @@ void nmr_ItoI_Model::CalculateVariables()
 #pragma message("things got removed, because they seem to be old")
 
             //            if (method == "NMR")
-            value = host / host_0 * LocalTable()->data(0, j) + complex / host_0 * LocalTable()->data(1, j);
+            value = host / host_0 * LocalTable()->data(j, 0) + complex / host_0 * LocalTable()->data(j, 1);
             //            else if (method == "UV/VIS")
             //                value = host * LocalTable()->data(0, j) + complex * LocalTable()->data(1, j);
             SetValue(i, j, value);
@@ -117,8 +117,8 @@ QVector<qreal> nmr_ItoI_Model::DeCompose(int datapoint, int series) const
     qreal complex = concentration(3);
     ;
 
-    vector << host / host_0 * LocalTable()->data(0, series);
-    vector << complex / host_0 * LocalTable()->data(1, series);
+    vector << host / host_0 * LocalTable()->data(series, 0);
+    vector << complex / host_0 * LocalTable()->data(series, 1);
 
     return vector;
 }

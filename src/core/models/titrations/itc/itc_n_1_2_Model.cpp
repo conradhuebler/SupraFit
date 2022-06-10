@@ -59,11 +59,11 @@ void itc_n_ItoII_Model::InitialGuess_Private()
     (*GlobalTable())[1] = 6;
 
     LocalTable()->data(0, 0) = -4000;
-    LocalTable()->data(1, 0) = 1;
-    LocalTable()->data(2, 0) = -4000;
-    LocalTable()->data(3, 0) = 1;
-    LocalTable()->data(4, 0) = -400;
-    LocalTable()->data(5, 0) = 1;
+    LocalTable()->data(0, 1) = 1;
+    LocalTable()->data(0, 2) = -4000;
+    LocalTable()->data(0, 3) = 1;
+    LocalTable()->data(0, 4) = -400;
+    LocalTable()->data(0, 5) = 1;
 
     /*
     LocalTable()->data(0, 0) = GuessdH();
@@ -98,11 +98,11 @@ void itc_n_ItoII_Model::CalculateVariables()
     QString dil = getOption(Dilution);
 
     qreal dH1 = LocalTable()->data(0, 0);
-    qreal n1 = LocalTable()->data(1, 0);
-    qreal dH2 = LocalTable()->data(2, 0);
-    qreal n2 = LocalTable()->data(3, 0);
-    qreal dil_heat = LocalTable()->data(4, 0);
-    qreal dil_inter = LocalTable()->data(5, 0);
+    qreal n1 = LocalTable()->data(0, 1);
+    qreal dH2 = LocalTable()->data(0, 2);
+    qreal n2 = LocalTable()->data(0, 3);
+    qreal dil_heat = LocalTable()->data(0, 4);
+    qreal dil_inter = LocalTable()->data(0, 5);
     qreal V = m_V / 1e6;
     qreal K1 = qPow(10, GlobalParameter(0));
     qreal K2 = qPow(10, GlobalParameter(1));
@@ -112,7 +112,7 @@ void itc_n_ItoII_Model::CalculateVariables()
     qreal phi1_prev = 0, phi2_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {
 
-        qreal v = IndependentModel()->data(0, i) / 1e6;
+        qreal v = IndependentModel()->data(i) / 1e6;
 
         V += v * !reservior;
         qreal dv = (1 - v / V);

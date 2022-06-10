@@ -158,7 +158,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                     if (this->m_model->GlobalEnabled(i)) {
                         constant->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
-                        check->setChecked(m_model->GlobalTable()->isChecked(i, 0));
+                        check->setChecked(m_model->GlobalTable()->isChecked(0, i));
                     } else {
                         check->setEnabled(false);
                         constant->setStyleSheet("background-color: " + excluded());
@@ -167,7 +167,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             });
         connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
             if (this->m_model) {
-                m_model->GlobalTable()->setChecked(i, 0, state);
+                m_model->GlobalTable()->setChecked(0, i, state);
             }
         });
         connect(m_global_box, &QCheckBox::stateChanged, check, [check](int state) {

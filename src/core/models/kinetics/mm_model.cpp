@@ -62,8 +62,8 @@ void Michaelis_Menten_Model::InitialGuess_Private()
     QVector<qreal> x, y;
 
     for (int i = 1; i < DataPoints(); ++i) {
-        x << 1 / IndependentModel()->data(0, i);
-        y << 1 / DependentModel()->data(0, i);
+        x << 1 / IndependentModel()->data(i);
+        y << 1 / DependentModel()->data(i);
     }
 
     PeakPick::LinearRegression regress = LeastSquares(x, y);
@@ -79,7 +79,7 @@ void Michaelis_Menten_Model::CalculateVariables()
     for (int i = 0; i < DataPoints(); ++i) {
         qreal vmax = GlobalParameter(0);
         qreal Km = GlobalParameter(1);
-        qreal S_0 = IndependentModel()->data(0, i);
+        qreal S_0 = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
             qreal value = vmax * S_0 / (Km + S_0);
             SetValue(i, j, value);

@@ -1,20 +1,20 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -22,6 +22,8 @@
 #include "src/core/models/AbstractModel.h"
 
 #include "src/core/toolset.h"
+
+#include "src/ui/guitools/flowlayout.h"
 
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>
@@ -106,18 +108,11 @@ public:
         : m_data(data)
         , m_readonly(readonly)
     {
-
-        int rows = ToolSet::NiceRows(m_data->getSystemParameterList().size(), qApp->instance()->property("ModelParameterColums").toInt());
-
-        QVBoxLayout* layout = new QVBoxLayout;
-        QHBoxLayout* hlayout = new QHBoxLayout;
-        layout->setAlignment(Qt::AlignTop);
-        int counter = 1;
+        FlowLayout* layout = new FlowLayout;
         for (int index : m_data->getSystemParameterList()) {
             QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), m_readonly, this);
-            hlayout->addWidget(widget);
             connect(widget, &SystemParameterWidget::valueChanged,
-                [index, widget, this]() {
+                [widget, this]() {
                     if (widget) {
                         m_data->setSystemParameter(widget->Value());
                         m_data->WriteSystemParameter();
@@ -130,13 +125,8 @@ public:
                         widget->setValue(m_data->getSystemParameter(index));
                     }
                 });
-            if (counter % rows == 0) {
-                layout->addLayout(hlayout);
-                hlayout = new QHBoxLayout;
-            }
-            counter++;
+            layout->addWidget(widget);
         }
-        layout->addLayout(hlayout);
         setLayout(layout);
     }
 
