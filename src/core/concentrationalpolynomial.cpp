@@ -61,7 +61,6 @@ Vector ConcentrationalPolynomial::FillBVector()
     for (int b = 1; b <= m_B; b++) {
         coeffs(b) = 0;
         for (int a = 1; a <= m_A; ++a) {
-
             double beta = m_stability_constants(Index(a, b));
             coeffs(b) += b * beta * pow(m_cA, a);
         }
@@ -78,34 +77,47 @@ Vector ConcentrationalPolynomial::solver()
     Guess();
 
     Vector coeffs_a, coeffs_b;
-    // Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
-    // bool hasit;
-    // double thresh;
+    Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
+    bool hasit;
+    double thresh;
     for (int iter = 0; iter < m_maxiter; ++iter) {
         // printConcentration(iter);
         coeffs_a = FillAVector();
-
-        // solver.compute(coeffs_a);
+        // std::cout << coeffs_a.transpose() << std::endl;
+        if (abs(coeffs_a(coeffs_a.size() - 1) - 1) < m_converge) {
+            solver.compute(coeffs_a);
+            m_cA = solver.greatestRealRoot(hasit, thresh);
+        } else
+            m_cA = Bisection(0, m_A0, coeffs_a);
 
         // const Eigen::PolynomialSolver<double, Eigen::Dynamic>::RootsType& r1 = solver.roots();
 
         // std::cout << solver.absSmallestRealRoot(hasit, thresh) << std::endl;
 
-        m_cA = Bisection(0, m_A0, coeffs_a); // solver.greatestRealRoot(hasit, thresh);
-
-        // qDebug() << Bisection(0, m_A0, coeffs_a);
-        // qDebug() << m_cA;
+        // m_cA = Bisection(0, m_A0, coeffs_a); // solver.greatestRealRoot(hasit, thresh);
+        //  qDebug() << Bisection(0, m_A0, coeffs_a);
+        //  qDebug() << m_cA;
 
         coeffs_b = FillBVector();
-        // solver.compute(coeffs_b);
-        //  std::cout << coeffs_a.transpose() << "\n"
-        //            << coeffs_b.transpose() << std::endl;
+
+        if (abs(coeffs_b(coeffs_b.size() - 1) - 1) < m_converge) {
+            solver.compute(coeffs_b);
+            m_cB = solver.greatestRealRoot(hasit, thresh);
+        } else
+            m_cB = Bisection(0, m_B0, coeffs_b);
+        /*
+        solver.compute(coeffs_b);
+        m_cB = solver.greatestRealRoot(hasit, thresh);
+        */
+        // m_cB = Bisection(0, m_B0, coeffs_b);
+        //   std::cout << coeffs_a.transpose() << "\n"
+        //             << coeffs_b.transpose() << std::endl;
 
         // const Eigen::PolynomialSolver<double, Eigen::Dynamic>::RootsType& r2 = solver.roots();
         // std::cout << r1 << r2 << std::endl;
 
         // std::cout << solver.absSmallestRealRoot(hasit, thresh) << std::endl;
-        m_cB = Bisection(0, m_B0, coeffs_b); // solver.greatestRealRoot(hasit, thresh);
+        // solver.greatestRealRoot(hasit, thresh);
 
         if ((abs(m_current_concentration(0) - m_cA) + abs(m_current_concentration(1) - m_cB)) < m_converge) {
             return currentConcentration();
@@ -123,35 +135,29 @@ double ConcentrationalPolynomial::Bisection(double min, double max, const Vector
     double y_max = 0;
     double result = mean;
 
-    // std::cout << mean << " ... " <<polynom.transpose() << std::endl;
-    // std::cout << fPolynom(polynom, mean) << std::endl;
-    // y_min = fPolynom(polynom, min);
+    y_min = fPolynom(polynom, min);
+    y_max = fPolynom(polynom, max);
 
-    // y_max = fPolynom(polynom, max);
-    // std::cout << y_min << " --- "  << y_max << std::endl;
-    for (int i = 0; i < 20; ++i) {
-        mean = (min + max) / 2.0;
-        y_min = fPolynom(polynom, min);
-
-        y_max = fPolynom(polynom, max);
+    for (int i = 0; i < 200; ++i) {
         double bisect = fPolynom(polynom, mean);
-        if (std::signbit(y_min) == std::signbit(bisect))
+        if (std::signbit(y_min) == std::signbit(bisect)) {
             min = mean;
-        else if (std::signbit(y_max) == std::signbit(bisect))
+            y_min = fPolynom(polynom, min);
+        } else if (std::signbit(y_max) == std::signbit(bisect)) {
             max = mean;
-        // if(std::abs(result - mean) < m_converge)
-        //     return result;
+            y_max = fPolynom(polynom, max);
+        }
+
         result = mean;
-        // std::cout << mean << " ";
+        mean = (min + max) / 2.0;
+        if (std::abs(result - mean) < 1e-15)
+            return mean;
     }
-    // std::cout << std::endl;
     return result;
 }
 
 double ConcentrationalPolynomial::fPolynom(const Vector& polynom, double x)
 {
-    // std::cout << x << " " << polynom.transpose() << std::endl;
-
     double result = 0.0;
     for (int i = 0; i < polynom.size(); ++i)
         result += polynom(i) * pow(x, i);

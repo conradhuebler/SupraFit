@@ -64,7 +64,8 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 
     m_maxA = parse["MaxA"].toInt();
     m_maxB = parse["MaxB"].toInt();
-
+    m_global_names.clear();
+    m_species_names.clear();
     for (int i = 1; i <= m_maxA; ++i) {
         QString name_i = QString::number(i);
         QString name_i_short = QString::number(i);
@@ -148,7 +149,7 @@ void nmr_any_Model::CalculateVariables()
         vector(0) = i + 1;
         vector(1) = host;
         vector(2) = guest;
-        /*
+
         int index = 3;
         for (int a = 1; a <= m_maxA; ++a) {
             double powA = a*pow(host, a);
@@ -158,7 +159,7 @@ void nmr_any_Model::CalculateVariables()
                 vector(index++) = c;
             }
         }
-        */
+
         for (int j = 0; j < SeriesCount(); ++j) {
             value = host / host_0 * LocalTable()->data(j, 0);
             for (int a = 1; a <= m_maxA; ++a) {
@@ -166,9 +167,7 @@ void nmr_any_Model::CalculateVariables()
                 for (int b = 1; b <= m_maxB; b++) {
                     double beta = constants(poly.Index(a, b));
                     const double c = (beta * pow(guest, b) * powA);
-                    vector(poly.Index(a, b) + 3) = c;
-                    // value += (a * beta * pow(guest, b)*pow(host, a))/host_0*LocalTable()->data(j, a);
-                    value += a * c / host_0 * LocalTable()->data(j, a);
+                    value += a * c / host_0 * LocalTable()->data(j, poly.Index(a, b) + 1);
                 }
             }
 
