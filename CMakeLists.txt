@@ -172,7 +172,6 @@ endif()
 # include the charts, which where formerly part of SupraFit
 add_subdirectory(external/CuteChart)
 
-
 set(core_SRC
     src/core/equil.cpp
     src/core/libmath.cpp
@@ -193,10 +192,9 @@ set(core_SRC
     src/core/toolset.cpp
     src/core/thermogramhandler.cpp
     src/core/spectrahandler.cpp
+    src/core/concentrationalpolynomial.cpp
     src/global.cpp
 )
-
-
 
 IF(_Python)
     set(python_SRC
@@ -250,6 +248,7 @@ set(models_SRC
     src/core/models/titrations/nmr/nmr_1_1_Model.cpp
     src/core/models/titrations/nmr/nmr_2_1_1_1_1_2_Model.cpp
     src/core/models/titrations/nmr/nmr_2_1_1_1_Model.cpp
+    src/core/models/titrations/nmr/nmr_any_Model.cpp
 
     src/core/models/titrations/uv_vis/uv_vis_1_1_1_2_Model.cpp
     src/core/models/titrations/uv_vis/uv_vis_1_1_Model.cpp

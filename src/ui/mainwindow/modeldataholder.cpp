@@ -31,13 +31,18 @@
 #include "src/core/models/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
+#include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/dialogs/importdata.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/statisticdialog.h"
+
 #include "src/ui/guitools/guitools.h"
+
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
+
+#include "src/ui/widgets/preparewidget.h"
 #include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QDateTime>
@@ -216,6 +221,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI);
     m_nmr_model << addModel(SupraFit::nmr_ItoI_ItoII);
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI_ItoII);
+    m_nmr_model << addModel(SupraFit::nmr_any);
+
     //#endif
 
     //#ifdef Fluorescence_Models
@@ -473,25 +480,29 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::NewModel()
 {
-    int input = QInputDialog::getInt(this, tr("Number of input colums"),
-        tr("Please give the number of input data :"), m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1, m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1);
+    QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
+    if (t->DemandInput()) {
+        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), this);
+        GenericWidgetDialog dialog("Define Model", prepareWidget);
+        if (dialog.exec() == QDialog::Accepted) {
+            QVector<QPair<QString, QJsonValue>> elements = prepareWidget->getObject();
+            QJsonObject definition;
 
-    int variables = QInputDialog::getInt(this, tr("Number of variables"),
-        tr("Please give the numbers of variables:"), 1, 1, m_data.toStrongRef().data()->IndependentModel()->rowCount() - 1, 1);
-    QJsonObject definition;
-    definition["GlobalParameterSize"] = variables;
-    definition["InputSize"] = input;
-    definition["Name"] = "Custom Model";
-    QJsonObject model;
-    model["ModelDefinition"] = definition;
+            for (auto& i : elements)
+                definition[i.first] = i.second;
 
-    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
-    if (!t->Complete())
-        return;
+            QJsonObject model;
+            model["ModelDefinition"] = definition;
+            qDebug() << model;
+            t->DefineModel(model);
+            if (!t->Complete())
+                return;
 
-    t->InitialGuess();
-    m_history = false;
-    ActiveModel(t);
+            t->InitialGuess();
+            m_history = false;
+            ActiveModel(t);
+        }
+    }
 }
 
 void ModelDataHolder::AddModel()
@@ -520,6 +531,25 @@ void ModelDataHolder::AddModel(int model)
         emit m_data.toStrongRef()->Message(tr("Tried to add %1 to the workspace.").arg(Model2Name(static_cast<SupraFit::Model>(model))), 1);
         emit m_data.toStrongRef()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
         return;
+    }
+    if (t->DemandInput()) {
+        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), this);
+        GenericWidgetDialog dialog("Define Model", prepareWidget);
+        if (dialog.exec() == QDialog::Accepted) {
+            QVector<QPair<QString, QJsonValue>> elements = prepareWidget->getObject();
+            QJsonObject definition;
+
+            for (auto& i : elements)
+                definition[i.first] = i.second;
+
+            QJsonObject model;
+            model["ModelDefinition"] = definition;
+            qDebug() << model;
+            t->DefineModel(model);
+            if (!t->Complete())
+                return;
+        } else
+            return;
     }
 
     t->InitialGuess();

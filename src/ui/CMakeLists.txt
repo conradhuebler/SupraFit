@@ -45,6 +45,7 @@ set(SFGui_SRC
                 dialogs/configdialog.cpp
                 dialogs/comparedialog.cpp
                 dialogs/resultsdialog.cpp
+                dialogs/genericwidgetdialog.cpp
                 dialogs/thermogram.cpp
                 dialogs/generatedatadialog.cpp
                 widgets/DropTable.h
@@ -58,6 +59,7 @@ set(SFGui_SRC
                 widgets/results/resultswidget.cpp
                 widgets/optionswidget.cpp
                 widgets/systemparameterwidget.cpp
+                widgets/preparewidget.cpp
                 widgets/modelactions.cpp
                 widgets/modelchart.cpp
                 widgets/modelelement.cpp

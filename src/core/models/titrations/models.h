@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@
 #include "nmr/nmr_1_1_Model.h"
 #include "nmr/nmr_2_1_1_1_1_2_Model.h"
 #include "nmr/nmr_2_1_1_1_Model.h"
+#include "nmr/nmr_any_Model.h"
 
 /* UV/VIS */
 #include "uv_vis/uv_vis_1_1_1_2_Model.h"

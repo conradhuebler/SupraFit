@@ -121,17 +121,20 @@ ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
 }
 
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
     m_complete = DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
     m_complete = false;
 }
 

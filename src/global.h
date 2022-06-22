@@ -35,6 +35,7 @@
 #include <iostream>
 
 const QString Unicode_Phi = QChar(0x03C6);
+const QString Unicode_beta = QChar(0x03B2);
 const QString Unicode_delta = QChar(0x03B4);
 const QString Unicode_mu = QChar(0x00B5);
 const QString Unicode_sigma = QChar(0x03C3);
@@ -50,6 +51,13 @@ const QString Unicode_Sup_2 = QChar(0x00B2);
 const QString Unicode_Sub_0 = QChar(0x2080);
 const QString Unicode_Sub_1 = QChar(0x2081);
 const QString Unicode_Sub_2 = QChar(0x2082);
+const QString Unicode_Sub_3 = QChar(0x2083);
+const QString Unicode_Sub_4 = QChar(0x2084);
+const QString Unicode_Sub_5 = QChar(0x2085);
+const QString Unicode_Sub_6 = QChar(0x2086);
+const QString Unicode_Sub_7 = QChar(0x2087);
+const QString Unicode_Sub_8 = QChar(0x2088);
+const QString Unicode_Sub_9 = QChar(0x2089);
 
 const QString Unicode_Integral = QChar(0x222B);
 
@@ -111,6 +119,7 @@ enum Model {
     uv_vis_IItoI_ItoI = 31,
     uv_vis_ItoI_ItoII = 32,
     uv_vis_IItoI_ItoI_ItoII = 33,
+    nmr_any = 34,
     ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
@@ -293,6 +302,9 @@ inline QString Model2Name(SupraFit::Model model)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("1:1/1:2-Model");
     else if (model == SupraFit::nmr_IItoI_ItoI_ItoII)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("2:1/1:1/1:2-Model");
+
+    else if (model == SupraFit::nmr_any)
+        return QString("%1H %2").arg(Unicode_Sup_1).arg("flexible NMR-Model");
 
     else if (model == SupraFit::itc_ItoI)
         return "ITC 1:1-Model";

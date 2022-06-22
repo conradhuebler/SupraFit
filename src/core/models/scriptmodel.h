@@ -64,6 +64,39 @@ private:
     bool m_valid = true;
 };
 
+const QJsonObject ModelName_Json{
+    { "name", "Name" }, // internal name, not to be printed
+    { "title", "Model Name" }, // title, to be printed
+    { "description", "Give the model a nice name" }, // brief description
+    { "default", "Custom Model" }, // default value
+    { "type", 3 } // 1 = int, 2 = double, 3 = string
+};
+
+const QJsonObject InputSize_Json{
+    { "name", "InputSize" }, // internal name, not to be printed
+    { "title", "Columns of Input" }, // title, to be printed
+    { "description", "Set number of columns, which are used as independet variables" }, // brief description
+    { "default", 1 }, // default value
+    { "type", 1 } // 1 = int, 2 = double, 3 = string
+};
+
+const QJsonObject GlobalParameterSize_Json{
+    { "name", "GlobalParameterSize" }, // internal name, not to be printed
+    { "title", "Number of global parameters" },
+    { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
+    { "default", 1 },
+    { "type", 1 } // 1 = int, 2 = double, 3 = string
+
+};
+
+const QJsonObject LocalParameterSize_Json{
+    { "name", "LocalParameterSize" }, // internal name, not to be printed
+    { "title", "Number of local parameters" },
+    { "description", "Set number of parameters to be fitted which act local on a single subset of a data sets" },
+    { "default", 1 },
+    { "type", 1 } // 1 = int, 2 = double, 3 = string
+};
+
 class ScriptModel : public AbstractModel {
     Q_OBJECT
 

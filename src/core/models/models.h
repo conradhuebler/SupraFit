@@ -45,6 +45,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::nmr_IItoI_ItoI_ItoII:
             t = QSharedPointer<nmr_IItoI_ItoI_ItoII_Model>(new nmr_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
+        case SupraFit::nmr_any:
+            t = QSharedPointer<nmr_any_Model>(new nmr_any_Model(data.data()), &QObject::deleteLater);
+            break;
         case SupraFit::Michaelis_Menten:
             t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(data.data()), &QObject::deleteLater);
             break;

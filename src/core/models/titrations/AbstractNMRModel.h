@@ -100,7 +100,7 @@ public:
         return GlobalParameterSize() + 1;
     }
 
-    /*! \brief reimplmented from AbstractModel
+    /*! \brief reimplemented from AbstractModel
      */
     virtual QString Model2Text_Private() const override;
 

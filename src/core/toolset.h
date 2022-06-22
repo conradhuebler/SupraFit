@@ -117,6 +117,7 @@ qreal K2G(qreal logK, qreal T);
 
 /*! \brief Use Gibbs-Helmholtz equation to calculate Entropy */
 qreal GHE(qreal G, qreal H, qreal T);
+QString UnicodeLowerInteger(const QString& str);
 }
 
 namespace Print {

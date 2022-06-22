@@ -102,12 +102,6 @@ void nmr_ItoI_ItoII_Model::InitialGuess_Private()
 {
 
     qreal factor = 1;
-#pragma message("things got removed, because they seem to be old")
-    /*
-        if (getOption(Method) == "UV/VIS") {
-            factor = 1 / InitialHostConcentration(0);
-        }
-        */
     int index_11 = 0;
 
     for (int i = 0; i < DataPoints(); ++i)

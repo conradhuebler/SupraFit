@@ -996,6 +996,21 @@ qreal GHE(qreal G, qreal H, qreal T)
 {
     return -(G - H) / T;
 }
+QString UnicodeLowerInteger(const QString& str)
+{
+    QString tmp = str;
+    tmp = tmp.replace("1", Unicode_Sub_1);
+    tmp = tmp.replace("2", Unicode_Sub_2);
+    tmp = tmp.replace("3", Unicode_Sub_3);
+    tmp = tmp.replace("4", Unicode_Sub_4);
+    tmp = tmp.replace("5", Unicode_Sub_5);
+    tmp = tmp.replace("6", Unicode_Sub_6);
+    tmp = tmp.replace("7", Unicode_Sub_7);
+    tmp = tmp.replace("8", Unicode_Sub_8);
+    tmp = tmp.replace("9", Unicode_Sub_9);
+    tmp = tmp.replace("0", Unicode_Sub_0);
+    return tmp;
+}
 }
 
 namespace Print {
