@@ -35,9 +35,6 @@ void ConcentrationalPolynomial::Guess()
     m_cB = m_cA;
     m_current_concentration(0) = m_cA;
     m_current_concentration(1) = m_cB;
-
-    // std::cout << "## 00 ## " << m_A0 << " " << m_B0 << std::endl;
-    // std::cout << "## 11 ## " << m_cA << " " << m_cB << std::endl;
 }
 
 Vector ConcentrationalPolynomial::FillAVector()
@@ -74,50 +71,48 @@ Vector ConcentrationalPolynomial::solver()
 {
     if (m_A0 < m_converge || m_B0 < m_converge)
         return Eigen::Vector2d(m_A0, m_B0);
-    Guess();
+    ;
 
-    Vector coeffs_a, coeffs_b;
+    Vector coeffs_a(m_A + 1), coeffs_b(m_B + 1);
     Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
     bool hasit;
     double thresh;
     for (int iter = 0; iter < m_maxiter; ++iter) {
-        // printConcentration(iter);
-        coeffs_a = FillAVector();
-        // std::cout << coeffs_a.transpose() << std::endl;
+
+        for (int a = 1; a <= m_A; ++a) {
+            coeffs_a(a) = 0;
+            for (int b = 1; b <= m_B; b++) {
+                double beta = m_stability_constants(Index(a, b));
+                coeffs_a(a) += a * beta * pow(m_cB, b);
+            }
+        }
+        coeffs_a(0) = -m_A0;
+        coeffs_a(1) += 1;
+
+        // coeffs_a = FillAVector();
+
         if (abs(coeffs_a(coeffs_a.size() - 1) - 1) < m_converge) {
             solver.compute(coeffs_a);
             m_cA = solver.greatestRealRoot(hasit, thresh);
         } else
             m_cA = Bisection(0, m_A0, coeffs_a);
 
-        // const Eigen::PolynomialSolver<double, Eigen::Dynamic>::RootsType& r1 = solver.roots();
-
-        // std::cout << solver.absSmallestRealRoot(hasit, thresh) << std::endl;
-
-        // m_cA = Bisection(0, m_A0, coeffs_a); // solver.greatestRealRoot(hasit, thresh);
-        //  qDebug() << Bisection(0, m_A0, coeffs_a);
-        //  qDebug() << m_cA;
-
-        coeffs_b = FillBVector();
+        // coeffs_b = FillBVector();
+        for (int b = 1; b <= m_B; b++) {
+            coeffs_b(b) = 0;
+            for (int a = 1; a <= m_A; ++a) {
+                double beta = m_stability_constants(Index(a, b));
+                coeffs_b(b) += b * beta * pow(m_cA, a);
+            }
+        }
+        coeffs_b(0) = -m_B0;
+        coeffs_b(1) += 1;
 
         if (abs(coeffs_b(coeffs_b.size() - 1) - 1) < m_converge) {
             solver.compute(coeffs_b);
             m_cB = solver.greatestRealRoot(hasit, thresh);
         } else
             m_cB = Bisection(0, m_B0, coeffs_b);
-        /*
-        solver.compute(coeffs_b);
-        m_cB = solver.greatestRealRoot(hasit, thresh);
-        */
-        // m_cB = Bisection(0, m_B0, coeffs_b);
-        //   std::cout << coeffs_a.transpose() << "\n"
-        //             << coeffs_b.transpose() << std::endl;
-
-        // const Eigen::PolynomialSolver<double, Eigen::Dynamic>::RootsType& r2 = solver.roots();
-        // std::cout << r1 << r2 << std::endl;
-
-        // std::cout << solver.absSmallestRealRoot(hasit, thresh) << std::endl;
-        // solver.greatestRealRoot(hasit, thresh);
 
         if ((abs(m_current_concentration(0) - m_cA) + abs(m_current_concentration(1) - m_cB)) < m_converge) {
             return currentConcentration();

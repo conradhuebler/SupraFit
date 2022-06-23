@@ -31,7 +31,6 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt6 6.1 COMPONENTS Core Widgets Charts Qml)
 
-
 set(SFGui_SRC
                 guitools/chartwrapper.cpp
                 guitools/mime.h

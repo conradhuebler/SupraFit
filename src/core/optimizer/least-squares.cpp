@@ -19,6 +19,8 @@
 
 #include "src/global_config.h"
 
+#ifdef experimental
+
 #include "src/core/models/models.h"
 
 #include <QtCore/QDebug>
@@ -198,3 +200,4 @@ int LeastSquaresRookfighter(QWeakPointer<AbstractModel> model, QVector<qreal>& p
     model.toStrongRef()->setConverged(result.iterations < MaxIter);
     return result.iterations;
 }
+#endif

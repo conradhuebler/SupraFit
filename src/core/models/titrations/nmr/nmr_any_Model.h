@@ -27,6 +27,8 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractNMRModel.h"
 
+class ConcentrationalPolynomial;
+
 const QJsonObject MaxA_Json{
     { "name", "MaxA" },
     { "title", "Highest stoichiometry of A" },
@@ -100,6 +102,7 @@ private:
     int m_global_parametersize = 0;
     int m_maxA = 0, m_maxB = 0;
     QStringList m_global_names, m_species_names;
+    QVector<ConcentrationalPolynomial*> m_solvers;
 
 protected:
     virtual void CalculateVariables() override;

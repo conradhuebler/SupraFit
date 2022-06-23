@@ -52,6 +52,7 @@ nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
 
 nmr_any_Model::~nmr_any_Model()
 {
+    qDeleteAll(m_solvers);
 }
 
 bool nmr_any_Model::DefineModel(const QJsonObject& model)
@@ -85,66 +86,83 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 
             m_global_names << QString("lg %1%2%3").arg(Unicode_beta).arg(name_i).arg(name_j);
             m_species_names << QString("A%1B%2").arg(name_i_short).arg(name_j_short);
+
+            QStringList host = QStringList() << "yes"
+                                             << "no";
+            addOption(Host + 1 + Index(i, j), QString("A%1B%2").arg(name_i_short).arg(name_j_short), host);
         }
     }
 
     m_global_parametersize = m_maxA * m_maxB;
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        setOption(Host + 1 + i, "yes");
+
     OptimizeParameters_Private();
     m_complete = true;
+
+    for (int i = 0; i < DataPoints(); ++i) {
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
+
+        ConcentrationalPolynomial* solver = new ConcentrationalPolynomial;
+        m_solvers << solver;
+        solver->setStoichiometry(m_maxA, m_maxB);
+        solver->setInitialConcentrations(host_0, guest_0);
+        solver->Guess();
+    }
     return true;
 }
 
 void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
-    // LocalTable()->setColumn(DependentModel()->lastRow(), 1);
 
-    double guess_K = 4; // GuessK(0);
+    double guess_K = 4;
     (*GlobalTable())[0] = guess_K;
     for (int a = 1; a <= m_maxA; ++a)
         for (int b = 1; b <= m_maxB; ++b) {
             (*GlobalTable())[(Index(a, b))] = guess_K;
-            // qDebug() << a << b << a*b << GlobalEnabled(a*b);
             LocalTable()->setColumn(DependentModel()->lastRow(), 1 + Index(a, b));
-            // addLocalParameter(1+Index(a,b));
         }
     Calculate();
 }
 
 void nmr_any_Model::OptimizeParameters_Private()
 {
-    QString host = getOption(Host);
     for (int a = 1; a <= m_maxA; ++a)
         for (int b = 1; b <= m_maxB; ++b) {
-            addGlobalParameter(Index(a, b));
-            // qDebug() << a << b << a*b << GlobalEnabled(a*b);
-            addLocalParameter(1 + Index(a, b));
+            if (getOption(Host + 1 + Index(a, b)) == "yes") {
+                addGlobalParameter(Index(a, b));
+                addLocalParameter(1 + Index(a, b));
+            }
         }
+    QString host = getOption(Host);
+
     if (host == "no")
         addLocalParameter(0);
 }
 
 void nmr_any_Model::CalculateVariables()
 {
-    ConcentrationalPolynomial poly;
     Vector constants(GlobalParameterSize());
     for (int i = 0; i < GlobalParameterSize(); ++i) {
-        constants(i) = pow(10, GlobalParameter(i));
+        if (GlobalTable()->isChecked(0, i))
+            constants(i) = pow(10, GlobalParameter(i));
+        else
+            constants(i) = 0;
     }
-    poly.setStabilityConstants(constants);
-    poly.setStoichiometry(m_maxA, m_maxB);
     qreal value = 0;
     for (int i = 0; i < DataPoints(); ++i) {
+        m_solvers[i]->Guess();
+        m_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        poly.setInitialConcentrations(host_0, guest_0);
-        auto result = poly.solver();
-        host = result(0);
+        Vector result;
+        result = m_solvers[i]->solver();
+        qreal host = result(0);
         double guest = result(1);
-        // qreal complex = host * guest * pow(10, GlobalParameter(0)); // host_0 - host;
+
         Vector vector(m_species_names.size() + 3);
         vector(0) = i + 1;
         vector(1) = host;
@@ -154,7 +172,7 @@ void nmr_any_Model::CalculateVariables()
         for (int a = 1; a <= m_maxA; ++a) {
             double powA = a*pow(host, a);
             for (int b = 1; b <= m_maxB; b++) {
-                double beta = constants(poly.Index(a, b));
+                double beta = constants(Index(a, b));
                 const double c = (beta * pow(guest, b)*powA);
                 vector(index++) = c;
             }
@@ -165,9 +183,9 @@ void nmr_any_Model::CalculateVariables()
             for (int a = 1; a <= m_maxA; ++a) {
                 double powA = a * pow(host, a);
                 for (int b = 1; b <= m_maxB; b++) {
-                    double beta = constants(poly.Index(a, b));
+                    double beta = constants(Index(a, b));
                     const double c = (beta * pow(guest, b) * powA);
-                    value += a * c / host_0 * LocalTable()->data(j, poly.Index(a, b) + 1);
+                    value += (a * c / host_0 * LocalTable()->data(j, Index(a, b) + 1)) * GlobalTable()->isChecked(0, Index(a, b));
                 }
             }
 

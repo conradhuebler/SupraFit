@@ -161,6 +161,8 @@ QWidget* ResultsWidget::ReductionWidget()
 
         QString name = data["name"].toString();
         LineSeries* serie = new LineSeries;
+#pragma message("actually the other way around, FIXME!")
+        serie->setShowInLegend(false);
         serie->setLineWidth(4);
         QList<QPointF> series;
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
@@ -210,6 +212,10 @@ QWidget* ResultsWidget::ReductionWidget()
         serie->append(QPointF(series.last().x(), value));
         serie->append(QPointF(series.first().x(), value));
         serie->setColor(color);
+
+#pragma message("actually the other way around, FIXME!")
+        serie->setShowInLegend(true);
+
         view->addSeries(serie, i, color, name);
         view->setColor(i, color);
         if (data["type"].toString() != "Global Parameter")

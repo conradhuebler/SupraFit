@@ -52,7 +52,7 @@ public:
     Vector FillAVector();
     Vector FillBVector();
     void Guess();
-
+    inline bool Converged() const { return m_converged; }
     Vector solver();
 
     inline int Index(int a, int b) const { return (a - 1) * m_B + (b - 1); }
@@ -74,4 +74,5 @@ private:
     int m_maxiter = 1000;
     Vector m_stability_constants;
     Vector m_current_concentration;
+    bool m_converged = false;
 };
