@@ -57,6 +57,8 @@ nmr_any_Model::~nmr_any_Model()
 
 bool nmr_any_Model::DefineModel(const QJsonObject& model)
 {
+    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
     m_model_definition = model;
 
     QJsonObject parse = model;
@@ -112,6 +114,8 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
         solver->setInitialConcentrations(host_0, guest_0);
         solver->Guess();
     }
+    // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
+
     return true;
 }
 
@@ -119,11 +123,11 @@ void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
 
-    double guess_K = 4;
+    double guess_K = 3;
     (*GlobalTable())[0] = guess_K;
     for (int a = 1; a <= m_maxA; ++a)
         for (int b = 1; b <= m_maxB; ++b) {
-            (*GlobalTable())[(Index(a, b))] = guess_K;
+            (*GlobalTable())[(Index(a, b))] = guess_K + a + b;
             LocalTable()->setColumn(DependentModel()->lastRow(), 1 + Index(a, b));
         }
     Calculate();
@@ -154,12 +158,15 @@ void nmr_any_Model::CalculateVariables()
             constants(i) = 0;
     }
     qreal value = 0;
+    // int timer = 0;
+    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     for (int i = 0; i < DataPoints(); ++i) {
         m_solvers[i]->Guess();
         m_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
         Vector result;
         result = m_solvers[i]->solver();
+        //  timer += m_solvers[i]->Timer();
         qreal host = result(0);
         double guest = result(1);
 
@@ -195,6 +202,7 @@ void nmr_any_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
     }
+    //  std::cout << timer << "  " << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 }
 /*
 QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const

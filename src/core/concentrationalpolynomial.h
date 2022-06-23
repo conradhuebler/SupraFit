@@ -61,6 +61,24 @@ public:
     {
         std::cout << iter << " " << m_cA << " " << m_cB << std::endl;
     }
+    inline void powA()
+    {
+        double tmp = m_cA;
+        for (int a = 0; a < m_A; ++a) {
+            m_powA[a] = tmp;
+            tmp *= m_cA;
+        }
+    }
+
+    inline void powB()
+    {
+        double tmp = m_cB;
+        for (int b = 0; b < m_B; ++b) {
+            m_powB[b] = tmp;
+            tmp *= m_cB;
+        }
+    }
+    inline int Timer() const { return m_time; }
 signals:
 
 private:
@@ -72,7 +90,9 @@ private:
     double m_converge = 1e-10;
     int m_A = 0, m_B = 0;
     int m_maxiter = 1000;
+    int m_time = 0;
     Vector m_stability_constants;
     Vector m_current_concentration;
+    std::vector<double> m_powA, m_powB;
     bool m_converged = false;
 };
