@@ -482,18 +482,15 @@ void ModelDataHolder::NewModel()
 {
     QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
     if (t->DemandInput()) {
-        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), this);
+        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
-            QVector<QPair<QString, QJsonValue>> elements = prepareWidget->getObject();
+            QHash<QString, QJsonObject> elements = prepareWidget->getObject();
             QJsonObject definition;
-
-            for (auto& i : elements)
-                definition[i.first] = i.second;
 
             QJsonObject model;
             model["ModelDefinition"] = definition;
-            qDebug() << model;
+            t->setModelDefinition(elements);
             t->DefineModel(model);
             if (!t->Complete())
                 return;
@@ -533,18 +530,16 @@ void ModelDataHolder::AddModel(int model)
         return;
     }
     if (t->DemandInput()) {
-        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), this);
+        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
-            QVector<QPair<QString, QJsonValue>> elements = prepareWidget->getObject();
+            QHash<QString, QJsonObject> elements = prepareWidget->getObject();
             QJsonObject definition;
-
-            for (auto& i : elements)
-                definition[i.first] = i.second;
 
             QJsonObject model;
             model["ModelDefinition"] = definition;
-            qDebug() << model;
+            t->setModelDefinition(elements);
+
             t->DefineModel(model);
             if (!t->Complete())
                 return;

@@ -49,6 +49,7 @@
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
+#include "src/ui/widgets/preparewidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
@@ -347,7 +348,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->SystemParameterCount())
         model_tab->addTab(m_system_parameter, "System Parameter");
     if (m_model->SFModel() == SupraFit::ScriptModel) {
-      // QWidget *scriptoverview = new QWidget;
+
+        PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+        connect(widget, &PrepareWidget::changed, this, [this, widget]() {
+            m_model->UpdateModelDefiniton(widget->getObject());
+        });
+
+        // QWidget *scriptoverview = new QWidget;
+        /*
       QTextEdit *execute = new QTextEdit;
       QGridLayout *layout = new QGridLayout;
       layout->addWidget(execute, 0, 0);
@@ -362,8 +370,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
       // QJsonDocument doc(m_model->ScriptDefinition());
       // edit->setMarkdown(QString("```json\n %1
       // \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
-      m_chai_widget = execute;
-      model_tab->addTab(m_chai_widget, "Model Definition");
+      m_chai_widget = execute;*/
+        model_tab->addTab(widget, "Model Definition");
     }
 
     m_splitter->addWidget(model_tab);

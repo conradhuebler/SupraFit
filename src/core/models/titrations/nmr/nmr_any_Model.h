@@ -33,16 +33,18 @@ const QJsonObject MaxA_Json{
     { "name", "MaxA" },
     { "title", "Highest stoichiometry of A" },
     { "description", "Define the a, the highest stoichiometry in which A may appear" },
-    { "default", 1 }, // default value
-    { "type", 1 } // 1 = int, 2 = double, 3 = string
+    { "value", 1 }, // default value
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
 };
 
 const QJsonObject MaxB_Json{
     { "name", "MaxB" },
     { "title", "Highest stoichiometry of B" },
     { "description", "Define the b, the highest stoichiometry in which B may appear" },
-    { "default", 1 }, // default value
-    { "type", 1 } // 1 = int, 2 = double, 3 = string
+    { "value", 1 }, // default value
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
 };
 
 class nmr_any_Model : public AbstractNMRModel {

@@ -39,6 +39,8 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QtMath>
 
+#include <QJSEngine>
+
 #include <cmath>
 #include <iostream>
 
@@ -121,20 +123,20 @@ ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
 }
 
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
     m_complete = DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
     m_complete = false;
 }
 
@@ -169,80 +171,69 @@ bool ScriptModel::DefineModel(const QJsonObject& model)
     QJsonObject parse = model;
     if (parse.contains("ModelDefinition"))
         parse = model["ModelDefinition"].toObject();
-    if (parse.contains("GlobalParameterSize"))
-        m_global_parameter_size = parse["GlobalParameterSize"].toInt();
-    else
-        m_global_parameter_size = 1;
 
-    if (parse.contains("GlobalParameterNames"))
-        m_global_parameter_names = parse["GlobalParameterNames"].toString().split("|");
+    QJsonObject object;
+    object = m_defined_model["GlobalParameterSize"];
+    m_global_parameter_size = object["value"].toInt();
+
+    object = m_defined_model["GlobalParameterNames"];
+    if (!object.isEmpty())
+        m_global_parameter_names = object["value"].toString().split("|");
     else {
+        m_global_parameter_names.clear();
         for (int i = 0; i < m_global_parameter_size; ++i)
             m_global_parameter_names << QString("A%1").arg(i + 1);
     }
-    if (parse.contains("LocalParameterSize"))
-        m_local_parameter_size = parse["LocalParameterSize"].toInt();
-    else
-        m_local_parameter_size = 0;
 
-    if (parse.contains("LocalParameterNames"))
-        m_local_parameter_names = parse["LocalParameterNames"].toString().split("|");
+    object = m_defined_model["LocalParameterSize"];
+    m_local_parameter_size = object["value"].toInt();
 
-    if (parse.contains("InputSize"))
-        m_input_size = parse["InputSize"].toInt();
-    else
-        m_input_size = 1;
-
-    if (parse.contains("Python")) {
-        QJsonObject exec = parse["Python"].toObject();
-        for (int i = 0; i < exec.size(); ++i)
-            m_execute_python << exec[QString::number(i + 1)].toString();
-        m_python = true;
-    }
-    if (parse.contains("ChaiScript")) {
-        // m_execute_chai.clear();
-        QStringList strings;
-        QJsonObject exec = parse["ChaiScript"].toObject();
-        for (const QString& key : exec.keys())
-            // for (int i = 0; i < exec.size(); ++i)
-            strings << exec[key].toString();
-        m_chai_execute = strings.join("\n");
-        m_python = false;
-        m_chai = true;
+    object = m_defined_model["LocalParameterNames"];
+    if (!object.isEmpty())
+        m_local_parameter_names = object["value"].toString().split("|");
+    else {
+        m_local_parameter_names.clear();
+        for (int i = 0; i < m_local_parameter_size; ++i)
+            m_local_parameter_names << QString("A%1").arg(i + 1);
     }
 
-    if (parse.contains("Duktape")) {
-        QJsonObject exec = parse["Duktape"].toObject();
-        for (int i = 0; i < exec.size(); ++i)
-            m_execute_duktape << exec[QString::number(i + 1)].toString();
-        m_python = false;
-        m_chai = false;
-        m_duktape = true;
-    }
-    m_chai = true;
+    object = m_defined_model["InputSize"];
+    m_input_size = object["value"].toInt();
+
+    object = m_defined_model["ChaiScript"];
+
+    QStringList strings;
+    QJsonObject exec = object["value"].toObject();
+
+    for (const QString& key : exec.keys())
+        strings << exec[key].toString();
+    m_chai_execute = strings.join("\n");
     m_python = false;
-    m_duktape = false;
+    m_chai = true;
 
-    /*
-    if (!m_python && !m_chai && !m_duktape) {
-        emit Message("Nothing to do, lets just start it.", 1);
-        return;
-    }
-    */
-    m_name_cached = parse["Name"].toString();
-    m_name = parse["Name"].toString();
+    object = m_defined_model["Name"];
+    m_name = object["value"].toString();
 
-    if (parse.contains("InputNames"))
-        m_input_names = parse["InputNames"].toString().split("|");
-    else
+    object = m_defined_model["InputNames"];
+    if (!object.isEmpty()) {
+        m_input_names = object["value"].toString().split("|");
+    } else {
+        m_input_names.clear();
         for (int i = 0; i < m_input_size; ++i)
             m_input_names << QString("X%1").arg(i + 1);
+    }
 
-    if (parse.contains("DepModelNames"))
-        m_depmodel_names = parse["DepModelNames"].toString().split("|");
-    else
-        for (int i = 0; i < m_depmodel_names.size(); ++i)
-            m_depmodel_names << QString("Y%1").arg(i + 1);
+    object = m_defined_model["DepModelNames"];
+    if (!object.isEmpty()) {
+        m_depmodel_names = object["value"].toString().split("|");
+    } else {
+        m_depmodel_names.clear();
+        for (int i = 0; i < m_input_size; ++i)
+            m_depmodel_names << QString("X%1").arg(i + 1);
+    }
+
+    object = m_defined_model["PrintX"];
+    m_calculate_print = object["value"].toString();
 
     m_model_definition = GenerateModelDefinition();
     try {
@@ -309,20 +300,6 @@ void ScriptModel::UpdateExecute(const QString &execute) {
 void ScriptModel::InitialGuess_Private()
 {
     InitialiseRandom();
-    /*
-    QVector<qreal> x, y;
-
-    for (int i = 1; i < DataPoints(); ++i) {
-        x << 1 / IndependentModel()->data(0, i);
-        y << 1 / DependentModel()->data(0, i);
-    }
-
-    PeakPick::LinearRegression regress = LeastSquares(x, y);
-    double m_vmax = 1 / regress.n;
-    double m_Km = regress.m * m_vmax;
-    (*GlobalTable())[0] = m_vmax;
-    (*GlobalTable())[1] = m_Km;
-    Calculate();*/
 }
 
 void ScriptModel::CalculateVariables()
@@ -403,6 +380,7 @@ void ScriptModel::CalculateChai()
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
     // QString execute = m_execute_chai.join("\n");
+
     for (int series = 0; series < SeriesCount(); ++series) {
         for (int i = 0; i < DataPoints(); ++i) {
           QString cache = m_chai_execute;
@@ -478,6 +456,23 @@ QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
+}
+
+qreal ScriptModel::PrintOutIndependent(int i) const
+{
+    if (m_calculate_print.isEmpty() || m_calculate_print.isNull())
+        return IndependentModel()->data(i);
+    else {
+        QJSEngine engine;
+        for (int cols = 0; cols < IndependentModel()->columnCount(); ++cols) {
+            engine.globalObject().setProperty(QString("X%1").arg(cols + 1), IndependentModel()->data(i, cols));
+        }
+        double result = engine.evaluate(m_calculate_print).toNumber();
+        if (engine.hasError())
+            return IndependentModel()->data(i);
+        else
+            return result;
+    }
 }
 
 #include "scriptmodel.moc"

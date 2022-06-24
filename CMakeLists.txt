@@ -271,7 +271,7 @@ else()
     add_library(models ${models_SRC})
 endif()
 
-target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES})
+target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES} Qt::Qml)
 
 IF(Use_Duktape)
     target_link_libraries(models duke)

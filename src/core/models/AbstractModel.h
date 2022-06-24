@@ -744,6 +744,11 @@ public:
     inline int Threads() const { return m_threads; }
 
     virtual QVector<QJsonObject> getInputBlock() { return m_pre_input; }
+
+    virtual QHash<QString, QJsonObject> getModelDefinitionBlock() { return m_defined_model; }
+
+    inline void setModelDefinition(const QHash<QString, QJsonObject>& model) { m_defined_model = model; }
+    void UpdateModelDefiniton(const QHash<QString, QJsonObject>& model);
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -825,6 +830,7 @@ protected:
     bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false, m_complete = true, m_demand_inialisation = false;
     QJsonObject m_opt_config;
     QVector<QJsonObject> m_pre_input;
+    QHash<QString, QJsonObject> m_defined_model;
 
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;

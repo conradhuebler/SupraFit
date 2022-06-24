@@ -45,7 +45,7 @@ nmr_any_Model::nmr_any_Model(DataClass* data)
 nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
     : AbstractNMRModel(data)
 {
-    DefineModel(m_model_definition);
+    // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
 }
@@ -59,14 +59,22 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 {
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
-    m_model_definition = model;
+    // m_model_definition = model;
 
+    /*
     QJsonObject parse = model;
     if (parse.contains("ModelDefinition"))
         parse = model["ModelDefinition"].toObject();
 
     m_maxA = parse["MaxA"].toInt();
-    m_maxB = parse["MaxB"].toInt();
+    m_maxB = parse["MaxB"].toInt();*/
+
+    QJsonObject object = m_defined_model.value("MaxA");
+    m_maxA = object["value"].toInt();
+
+    object = m_defined_model.value("MaxB");
+    m_maxB = object["value"].toInt();
+
     m_global_names.clear();
     m_species_names.clear();
     for (int i = 1; i <= m_maxA; ++i) {

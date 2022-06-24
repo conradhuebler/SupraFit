@@ -131,8 +131,8 @@ AbstractModel::AbstractModel(AbstractModel* model)
     , m_converged(model->m_converged)
     , m_locked_model(model->m_locked_model)
     , m_fast(true)
-    , m_name_cached(model->Name())
-    , m_model_definition(model->m_model_definition)
+    , m_defined_model(model->m_defined_model)
+    , m_name_cached(model->Name()) // m_model_definition(model->m_model_definition)
 {
     m_opt_config = OptimConfigBlock;
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
@@ -1089,7 +1089,12 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["converged"] = m_converged;
     toplevel["valid"] = !isCorrupt();
     toplevel["name"] = m_name;
-    toplevel["ModelDefinition"] = m_model_definition;
+    QJsonObject definiton;
+    for (const QString& key : m_defined_model.keys()) {
+        definiton[key] = m_defined_model[key];
+    }
+
+    toplevel["ModelDefinition"] = definiton;
     if (m_locked_model || locked) {
 #ifdef _DEBUG
 //         qDebug() << "Writing calculated data to json file";
@@ -1164,7 +1169,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     QJsonObject json = topjson["data"].toObject();
 
     if (topjson.contains("ModelDefinition")) {
-        m_model_definition = topjson["ModelDefinition"].toObject();
+        QJsonObject model = topjson["ModelDefinition"].toObject();
+        for (const QString& key : model.keys()) {
+            m_defined_model.insert(key, model[key].toObject());
+        }
         DefineModel(m_model_definition);
     }
 
@@ -1762,6 +1770,17 @@ qreal AbstractModel::ErrorfTestThreshold(qreal pvalue)
     qreal f_value = finv(pvalue);
     qreal error = SSE();
     return error * (f_value * Parameter() / (Points() - Parameter()) + 1);
+}
+
+void AbstractModel::UpdateModelDefiniton(const QHash<QString, QJsonObject>& model)
+{
+    for (const QString& key : model.keys()) {
+        QJsonObject o = m_defined_model[key];
+        o["value"] = model[key]["value"];
+        m_defined_model[key] = o;
+    }
+    DefineModel(QJsonObject());
+    Calculate();
 }
 
 #include "AbstractModel.moc"

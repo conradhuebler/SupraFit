@@ -27,6 +27,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QSpinBox>
+#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
 #include "src/ui/guitools/flowlayout.h"
@@ -35,6 +36,7 @@
 
 PrepareBox::PrepareBox(const QJsonObject& object, QWidget* parent)
     : QGroupBox(parent)
+    , m_json(object)
 {
     QHBoxLayout* layout = new QHBoxLayout;
 
@@ -45,55 +47,104 @@ PrepareBox::PrepareBox(const QJsonObject& object, QWidget* parent)
 
     setTitle(object["title"].toString());
     m_type = object["type"].toInt();
+    setMaximumWidth(350);
+    setMinimumWidth(350);
+    setMinimumHeight(150);
+    m_name = object["name"].toString();
     if (m_type == 1) {
         m_spinbox = new QSpinBox;
-        m_spinbox->setValue(object["default"].toInt());
-        m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_spinbox->value()));
+        m_spinbox->setValue(object["value"].toInt());
         layout->addWidget(m_spinbox);
         connect(m_spinbox, &QSpinBox::valueChanged, this, [this, object]() {
-            m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_spinbox->value()));
+            m_json["value"] = m_spinbox->value();
+            emit this->changed();
         });
     } else if (m_type == 2) {
         m_doublespinbox = new QDoubleSpinBox;
-        m_doublespinbox->setValue(object["default"].toDouble());
-        m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_doublespinbox->value()));
+        m_doublespinbox->setValue(object["value"].toDouble());
         layout->addWidget(m_doublespinbox);
         connect(m_doublespinbox, &QDoubleSpinBox::valueChanged, this, [this, object]() {
-            m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_doublespinbox->value()));
+            m_json["value"] = m_doublespinbox->value();
+            emit this->changed();
         });
 
     } else if (m_type == 3) {
         m_lineedit = new QLineEdit;
-        m_lineedit->setText(object["default"].toString());
+        m_lineedit->setText(object["value"].toString());
         layout->addWidget(m_lineedit);
-        m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_lineedit->text()));
         connect(m_lineedit, &QLineEdit::textChanged, this, [this, object]() {
-            m_element = QPair<QString, QJsonValue>(object["name"].toString(), QJsonValue(m_lineedit->text()));
+            m_json["value"] = m_lineedit->text();
+            emit this->changed();
         });
+    } else if (m_type == 4) {
+        m_textedit = new QTextEdit;
+        QStringList execute;
+        QJsonObject value = object["value"].toObject();
+        for (const QString& key : value.keys())
+            execute << value[key].toString();
+        m_textedit->setText(execute.join("\n"));
+        layout->addWidget(m_textedit);
+        setMaximumWidth(350);
+        setMinimumWidth(350);
+        setMinimumHeight(150);
+        connect(m_textedit, &QTextEdit::textChanged, this, [this, object]() {
+            QString script = m_textedit->document()->toPlainText();
+            QStringList lines = script.split("\n");
+            QJsonObject json;
+            for (int i = 0; i < lines.size(); ++i)
+                json[QString::number(i)] = lines[i];
+            m_json["value"] = json;
+            emit this->changed();
+        });
+        setMaximumWidth(700);
+        setMinimumWidth(700);
+        setMinimumHeight(150);
     }
     setLayout(layout);
-    setMaximumWidth(350);
-    setMinimumWidth(350);
-    setMinimumHeight(80);
 }
 
-PrepareWidget::PrepareWidget(const QVector<QJsonObject>& objects, QWidget* parent)
+PrepareWidget::PrepareWidget(const QVector<QJsonObject>& objects, bool initial, QWidget* parent)
     : QWidget{ parent }
 {
     FlowLayout* layout = new FlowLayout;
 
     for (const QJsonObject& object : qAsConst(objects)) {
+        if ((object.contains("once") && object.value("once").toBool(false) == true) && initial == false)
+            continue;
+        if (object.isEmpty())
+            continue;
         PrepareBox* box = new PrepareBox(object, this);
         layout->addWidget(box);
+        connect(box, &PrepareBox::changed, this, &PrepareWidget::changed);
         m_stored_objects << box;
     }
     setLayout(layout);
 }
 
-QVector<QPair<QString, QJsonValue>> PrepareWidget::getObject() const
+PrepareWidget::PrepareWidget(const QHash<QString, QJsonObject>& objects, bool initial, QWidget* parent)
+    : QWidget{ parent }
 {
-    QVector<QPair<QString, QJsonValue>> objects;
-    for (const auto i : m_stored_objects)
-        objects << i->getElement();
+    FlowLayout* layout = new FlowLayout;
+
+    for (const QJsonObject& object : qAsConst(objects)) {
+        if ((object.contains("once") && object.value("once").toBool(false) == true) && initial == false)
+            continue;
+        if (object.isEmpty())
+            continue;
+        PrepareBox* box = new PrepareBox(object, this);
+        layout->addWidget(box);
+        connect(box, &PrepareBox::changed, this, &PrepareWidget::changed);
+        m_stored_objects << box;
+    }
+    setLayout(layout);
+}
+
+QHash<QString, QJsonObject> PrepareWidget::getObject() const
+{
+    QHash<QString, QJsonObject> objects;
+    for (const auto i : m_stored_objects) {
+        auto element = i->getElement();
+        objects.insert(element.first, element.second);
+    }
     return objects;
 }

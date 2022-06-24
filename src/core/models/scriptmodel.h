@@ -68,7 +68,7 @@ const QJsonObject ModelName_Json{
     { "name", "Name" }, // internal name, not to be printed
     { "title", "Model Name" }, // title, to be printed
     { "description", "Give the model a nice name" }, // brief description
-    { "default", "Custom Model" }, // default value
+    { "value", "Custom Model" }, // default value
     { "type", 3 } // 1 = int, 2 = double, 3 = string
 };
 
@@ -76,25 +76,43 @@ const QJsonObject InputSize_Json{
     { "name", "InputSize" }, // internal name, not to be printed
     { "title", "Columns of Input" }, // title, to be printed
     { "description", "Set number of columns, which are used as independet variables" }, // brief description
-    { "default", 1 }, // default value
-    { "type", 1 } // 1 = int, 2 = double, 3 = string
+    { "value", 1 }, // default value
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
 };
 
 const QJsonObject GlobalParameterSize_Json{
     { "name", "GlobalParameterSize" }, // internal name, not to be printed
     { "title", "Number of global parameters" },
     { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
-    { "default", 1 },
-    { "type", 1 } // 1 = int, 2 = double, 3 = string
-
+    { "value", 1 },
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
 };
 
 const QJsonObject LocalParameterSize_Json{
     { "name", "LocalParameterSize" }, // internal name, not to be printed
     { "title", "Number of local parameters" },
     { "description", "Set number of parameters to be fitted which act local on a single subset of a data sets" },
-    { "default", 1 },
-    { "type", 1 } // 1 = int, 2 = double, 3 = string
+    { "value", 1 },
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
+const QJsonObject PrintX_Json{
+    { "name", "PrintX" }, // internal name, not to be printed
+    { "title", "Print x values as" },
+    { "description", "Define how the x / independet value has to be printed in the chart (e.g. = X1; 2*X1, X2/X1)" },
+    { "value", "X1" },
+    { "type", 3 } // 1 = int, 2 = double, 3 = string
+};
+
+const QJsonObject ChaiScript_Json{
+    { "name", "ChaiScript" }, // internal name, not to be printed
+    { "title", "Define model equation" },
+    { "description", "The model has to be defined here using a working equation. The equation will be evaluated using the ChaiScript Interpreter." },
+    { "value", "" },
+    { "type", 4 } // 1 = int, 2 = double, 3 = string, 4 = text
 };
 
 class ScriptModel : public AbstractModel {
@@ -133,10 +151,7 @@ public:
     }
     virtual inline int LocalParameterSize(int i = 0) const override { return m_local_parameter_size; }
 
-    virtual qreal PrintOutIndependent(int i) const override
-    {
-        return IndependentModel()->data(i);
-    }
+    virtual qreal PrintOutIndependent(int i) const override;
 
     virtual inline bool SupportSeries() const override { return m_support_series; }
 
@@ -159,6 +174,7 @@ private:
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
     QStringList m_execute_python, m_execute_chai, m_execute_duktape;
     QString m_chai_execute;
+    QString m_calculate_print;
 #ifdef _Models
     ChaiInterpreter m_interp;
 #endif

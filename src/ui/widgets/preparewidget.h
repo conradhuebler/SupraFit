@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QtCore/QJsonObject>
 #include <QtCore/QPair>
 #include <QtCore/QVariant>
 
@@ -28,31 +29,37 @@
 class QDoubleSpinBox;
 class QLineEdit;
 class QSpinBox;
+class QTextEdit;
 
 class PrepareBox : public QGroupBox {
     Q_OBJECT
 public:
     explicit PrepareBox(const QJsonObject& object, QWidget* parent = NULL);
 
-    inline QPair<QString, QJsonValue> getElement() const { return m_element; }
+    inline QPair<QString, QJsonObject> getElement() const { return QPair<QString, QJsonObject>(m_name, m_json); }
 
 private:
     QLineEdit* m_lineedit;
     QSpinBox* m_spinbox;
     QDoubleSpinBox* m_doublespinbox;
-
-    QPair<QString, QJsonValue> m_element;
-
+    QTextEdit* m_textedit;
+    QJsonObject m_json;
+    QString m_name;
     int m_type;
+
+signals:
+    void changed();
 };
 
 class PrepareWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit PrepareWidget(const QVector<QJsonObject>& objects, QWidget* parent = nullptr);
+    explicit PrepareWidget(const QVector<QJsonObject>& objects, bool initial = true, QWidget* parent = nullptr);
+    explicit PrepareWidget(const QHash<QString, QJsonObject>& objects, bool initial = true, QWidget* parent = nullptr);
 
-    QVector<QPair<QString, QJsonValue>> getObject() const;
+    QHash<QString, QJsonObject> getObject() const;
 signals:
+    void changed();
 
 private:
     QVector<PrepareBox*> m_stored_objects;
