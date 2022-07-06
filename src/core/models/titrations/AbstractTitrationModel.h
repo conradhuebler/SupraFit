@@ -38,6 +38,24 @@ struct MassResults {
     Vector Components;
 };
 
+const QJsonObject MaxA_Json{
+    { "name", "MaxA" },
+    { "title", "Highest stoichiometry of A" },
+    { "description", "Define the a, the highest stoichiometry in which A may appear" },
+    { "value", 1 }, // default value
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
+const QJsonObject MaxB_Json{
+    { "name", "MaxB" },
+    { "title", "Highest stoichiometry of B" },
+    { "description", "Define the b, the highest stoichiometry in which B may appear" },
+    { "value", 1 }, // default value
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
 class AbstractTitrationModel : public AbstractModel {
     Q_OBJECT
 

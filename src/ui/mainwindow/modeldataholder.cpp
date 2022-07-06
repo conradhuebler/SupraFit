@@ -251,6 +251,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_fixed_model << addModel(SupraFit::itc_IItoI);
     m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
     m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
+    m_itc_fixed_model << addModel(SupraFit::itc_any);
 
     //m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);

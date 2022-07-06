@@ -110,7 +110,6 @@ QVector<qreal> nmr_ItoI_Model::DeCompose(int datapoint, int series) const
     qreal host = concentration(1);
 
     qreal complex = concentration(3);
-    ;
 
     vector << host / host_0 * LocalTable()->data(series, 0);
     vector << complex / host_0 * LocalTable()->data(series, 1);

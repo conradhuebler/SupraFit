@@ -111,6 +111,7 @@ enum Model {
     itc_n_ItoI = 14,
     itc_n_ItoII = 15,
     itc_blank = 16,
+    itc_any = 17,
     fl_ItoI = 20,
     fl_IItoI_ItoI = 21,
     fl_ItoI_ItoII = 22,
@@ -320,6 +321,8 @@ inline QString Model2Name(SupraFit::Model model)
         return "Two Set Multiple Site";
     else if (model == SupraFit::itc_blank)
         return "Blank Titration";
+    else if (model == SupraFit::itc_any)
+        return "flexible ITC Model";
 
     else if (model == SupraFit::fl_ItoI)
         return QString("%1 %2").arg(Unicode_Phi).arg("1:1-Model");

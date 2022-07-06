@@ -26,20 +26,18 @@
 ConcentrationalPolynomial::ConcentrationalPolynomial(QObject* parent)
     : QObject{ parent }
 {
-    m_current_concentration = Vector(2);
+    m_current_concentration = { 0, 0 };
 }
 
 void ConcentrationalPolynomial::Guess()
 {
-    m_cA = std::min(m_A0, m_B0) / 10.0;
+    m_cA = std::min(m_A0, m_B0) / (10.0 * (m_A + m_B));
     m_cB = m_cA;
-    m_current_concentration(0) = m_cA;
-    m_current_concentration(1) = m_cB;
+    m_current_concentration[0] = m_cA;
+    m_current_concentration[1] = m_cB;
 
     m_powA.resize(m_A);
     m_powB.resize(m_B);
-    powA();
-    powB();
 }
 
 Vector ConcentrationalPolynomial::FillAVector()
@@ -48,7 +46,7 @@ Vector ConcentrationalPolynomial::FillAVector()
     for (int a = 1; a <= m_A; ++a) {
         coeffs(a) = 0;
         for (int b = 1; b <= m_B; b++) {
-            double beta = m_stability_constants(Index(a, b));
+            double beta = m_stability_constants[Index(a, b)];
             coeffs(a) += a * beta * m_powB[b - 1]; // pow(m_cB, b);
         }
     }
@@ -63,7 +61,7 @@ Vector ConcentrationalPolynomial::FillBVector()
     for (int b = 1; b <= m_B; b++) {
         coeffs(b) = 0;
         for (int a = 1; a <= m_A; ++a) {
-            double beta = m_stability_constants(Index(a, b));
+            double beta = m_stability_constants[Index(a, b)];
             coeffs(b) += b * beta * m_powA[a - 1]; // pow(m_cA, a);
         }
     }
@@ -72,37 +70,39 @@ Vector ConcentrationalPolynomial::FillBVector()
     return coeffs;
 }
 
-Vector ConcentrationalPolynomial::solver()
+std::vector<double> ConcentrationalPolynomial::solver()
 {
     if (m_A0 < m_converge || m_B0 < m_converge)
-        return Eigen::Vector2d(m_A0, m_B0);
+        return std::vector<double>{ m_A0, m_B0 };
 
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
-    Vector coeffs_a(m_A + 1), coeffs_b(m_B + 1);
-    Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
-    bool hasit;
-    double thresh;
-    for (int iter = 0; iter < m_maxiter; ++iter) {
+    std::vector<double> coeffs_a(m_A + 1), coeffs_b(m_B + 1);
+    // powA();
+    powB();
+    // Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
+    // bool hasit;
+    // double thresh;
+    for (m_lastIter = 0; m_lastIter < m_maxiter; ++m_lastIter) {
 
         for (int a = 1; a <= m_A; ++a) {
-            coeffs_a(a) = 0;
+            coeffs_a[a] = 0;
             for (int b = 1; b <= m_B; b++) {
-                double beta = m_stability_constants(Index(a, b));
+                double beta = m_stability_constants[Index(a, b)];
                 // coeffs_a(a) += a * beta * pow(m_cB, b);
-                coeffs_a(a) += a * beta * m_powB[b - 1]; // pow(m_cB, b);
+                coeffs_a[a] += a * beta * m_powB[b - 1]; // pow(m_cB, b);
             }
         }
-        coeffs_a(0) = -m_A0;
-        coeffs_a(1) += 1;
+        coeffs_a[0] = -m_A0;
+        coeffs_a[1] += 1;
 
         // coeffs_a = FillAVector();
 
-        if (abs(coeffs_a(coeffs_a.size() - 1) - 1) < m_converge) {
-            solver.compute(coeffs_a);
-            m_cA = solver.greatestRealRoot(hasit, thresh);
-        } else
-            m_cA = Bisection(0, m_A0, coeffs_a);
+        // if (abs(coeffs_a(coeffs_a.size() - 1) - 1) < m_converge) {
+        //     solver.compute(coeffs_a);
+        //     m_cA = solver.greatestRealRoot(hasit, thresh);
+        // } else
+        m_cA = Bisection(0, m_A0, coeffs_a);
         powA();
         /*
         m_powA.resize(0);
@@ -114,21 +114,21 @@ Vector ConcentrationalPolynomial::solver()
     */
         // coeffs_b = FillBVector();
         for (int b = 1; b <= m_B; b++) {
-            coeffs_b(b) = 0;
+            coeffs_b[b] = 0;
             for (int a = 1; a <= m_A; ++a) {
-                double beta = m_stability_constants(Index(a, b));
+                double beta = m_stability_constants[Index(a, b)];
                 // coeffs_b(b) += b * beta * pow(m_cA, a);
-                coeffs_b(b) += b * beta * m_powA[a - 1]; // pow(m_cA, a);
+                coeffs_b[b] += b * beta * m_powA[a - 1]; // pow(m_cA, a);
             }
         }
-        coeffs_b(0) = -m_B0;
-        coeffs_b(1) += 1;
+        coeffs_b[0] = -m_B0;
+        coeffs_b[1] += 1;
 
-        if (abs(coeffs_b(coeffs_b.size() - 1) - 1) < m_converge) {
-            solver.compute(coeffs_b);
-            m_cB = solver.greatestRealRoot(hasit, thresh);
-        } else
-            m_cB = Bisection(0, m_B0, coeffs_b);
+        // if (abs(coeffs_b(coeffs_b.size() - 1) - 1) < m_converge) {
+        //     solver.compute(coeffs_b);
+        //     m_cB = solver.greatestRealRoot(hasit, thresh);
+        //} else
+        m_cB = Bisection(0, m_B0, coeffs_b);
         powB();
         /*
             m_powB.resize(0);
@@ -138,18 +138,19 @@ Vector ConcentrationalPolynomial::solver()
                 m_powB.push_back(m_powB[m_powB.size() -1 ]*m_cB);
             }
     */
-        if ((abs(m_current_concentration(0) - m_cA) + abs(m_current_concentration(1) - m_cB)) < m_converge) {
+        m_lastConv = abs(m_current_concentration[0] - m_cA) + abs(m_current_concentration[1] - m_cB);
+        m_current_concentration[0] = m_cA;
+        m_current_concentration[1] = m_cB;
+        if (m_lastConv < m_converge) {
             m_time = QDateTime::currentMSecsSinceEpoch() - t0;
             return currentConcentration();
         }
-        m_current_concentration(0) = m_cA;
-        m_current_concentration(1) = m_cB;
     }
     m_time = QDateTime::currentMSecsSinceEpoch() - t0;
     return m_current_concentration;
 }
 
-double ConcentrationalPolynomial::Bisection(double min, double max, const Vector& polynom)
+double ConcentrationalPolynomial::Bisection(double min, double max, const std::vector<double>& polynom)
 {
     double mean = (min + max) / 2.0;
     double y_min = 0;
@@ -171,16 +172,16 @@ double ConcentrationalPolynomial::Bisection(double min, double max, const Vector
 
         result = mean;
         mean = (min + max) / 2.0;
-        if (std::abs(result - mean) < 1e-15)
+        if (std::abs(result - mean) < m_converge)
             return mean;
     }
     return result;
 }
 
-double ConcentrationalPolynomial::fPolynom(const Vector& polynom, double x)
+double ConcentrationalPolynomial::fPolynom(const std::vector<double>& polynom, double x)
 {
     double result = 0.0;
     for (int i = 0; i < polynom.size(); ++i)
-        result += polynom(i) * pow(x, i);
+        result += polynom[i] * pow(x, i);
     return result;
 }

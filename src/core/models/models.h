@@ -81,6 +81,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::itc_blank:
             t = QSharedPointer<Blank>(new Blank(data.data()), &QObject::deleteLater);
             break;
+        case SupraFit::itc_any:
+            t = QSharedPointer<itc_any_Model>(new itc_any_Model(data.data()), &QObject::deleteLater);
+            break;
         case SupraFit::fl_ItoI:
             t = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(data.data()), &QObject::deleteLater);
             break;

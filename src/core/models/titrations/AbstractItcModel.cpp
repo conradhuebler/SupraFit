@@ -282,7 +282,16 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
         m_concentrations->setHeaderData(2, Qt::Horizontal, QString("Guest (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         for (int i = 0; i < GlobalParameterSize(); ++i)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
+    } else if (equilibrium.size() != m_concentrations->columnCount()) {
+        delete m_concentrations;
+        m_concentrations = new DataTable(DataPoints(), equilibrium.rows(), this);
+        m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
+        m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+        m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+        for (int i = 0; i < GlobalParameterSize(); ++i)
+            m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
+
     m_concentrations->setRow(equilibrium, i);
     QStringList names = m_concentrations->header();
     names.removeFirst();
