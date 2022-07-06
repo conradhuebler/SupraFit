@@ -149,6 +149,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         globalConstants.clear();
         globalConstants = model.toStrongRef()->OptimizeParameters();
         error_0 = model.toStrongRef()->SSE();
+
 #pragma message("this used to be not here before restructuring")
         model.toStrongRef()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);

@@ -86,6 +86,7 @@ void itc_ItoI_Model::OptimizeParameters_Private()
 
 void itc_ItoI_Model::CalculateVariables()
 {
+    qDebug() << "from within" << OptimizeParameters();
     QString more_info = QString("Inject\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
     QString dil = getOption(Dilution);
 
@@ -119,6 +120,7 @@ void itc_ItoI_Model::CalculateVariables()
         qreal dv = (1 - v / V);
 
         qreal q_ab = V * (complex - complex_prev * dv) * dH;
+        // std::cout << i<< " " << q_ab << std::endl;
         qreal value = q_ab;
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
@@ -135,6 +137,7 @@ void itc_ItoI_Model::CalculateVariables()
         complex_prev = complex;
     }
     m_more_info = more_info;
+    qDebug() << SSE();
 }
 
 QSharedPointer<AbstractModel> itc_ItoI_Model::Clone(bool statistics)

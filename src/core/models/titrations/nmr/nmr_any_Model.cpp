@@ -59,16 +59,6 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 {
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
-    // m_model_definition = model;
-
-    /*
-    QJsonObject parse = model;
-    if (parse.contains("ModelDefinition"))
-        parse = model["ModelDefinition"].toObject();
-
-    m_maxA = parse["MaxA"].toInt();
-    m_maxB = parse["MaxB"].toInt();*/
-
     QJsonObject object = m_defined_model.value("MaxA");
     m_maxA = object["value"].toInt();
 
@@ -121,6 +111,8 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
         solver->setStoichiometry(m_maxA, m_maxB);
         solver->setInitialConcentrations(host_0, guest_0);
         solver->Guess();
+        solver->setMaxIter(1e5);
+        solver->setConvergeThreshold(1e-15);
     }
     // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 
@@ -158,25 +150,27 @@ void nmr_any_Model::OptimizeParameters_Private()
 
 void nmr_any_Model::CalculateVariables()
 {
-    Vector constants(GlobalParameterSize());
+    std::vector<double> constants(GlobalParameterSize());
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         if (GlobalTable()->isChecked(0, i))
-            constants(i) = pow(10, GlobalParameter(i));
+            constants[i] = pow(10, GlobalParameter(i));
         else
-            constants(i) = 0;
+            constants[i] = 0;
     }
     qreal value = 0;
     // int timer = 0;
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     for (int i = 0; i < DataPoints(); ++i) {
-        m_solvers[i]->Guess();
+        // m_solvers[i]->Guess();
         m_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
-        Vector result;
+        std::vector<double> result;
         result = m_solvers[i]->solver();
+        // std::cout << m_solvers[i]->LastIterations() << " " << m_solvers[i]->LastConvergency() << std::endl;
+
         //  timer += m_solvers[i]->Timer();
-        qreal host = result(0);
-        double guest = result(1);
+        double host = result[0];
+        double guest = result[1];
 
         Vector vector(m_species_names.size() + 3);
         vector(0) = i + 1;
@@ -187,7 +181,7 @@ void nmr_any_Model::CalculateVariables()
         for (int a = 1; a <= m_maxA; ++a) {
             double powA = a*pow(host, a);
             for (int b = 1; b <= m_maxB; b++) {
-                double beta = constants(Index(a, b));
+                double beta = constants[Index(a, b)];
                 const double c = (beta * pow(guest, b)*powA);
                 vector(index++) = c;
             }
@@ -198,7 +192,7 @@ void nmr_any_Model::CalculateVariables()
             for (int a = 1; a <= m_maxA; ++a) {
                 double powA = a * pow(host, a);
                 for (int b = 1; b <= m_maxB; b++) {
-                    double beta = constants(Index(a, b));
+                    double beta = constants[Index(a, b)];
                     const double c = (beta * pow(guest, b) * powA);
                     value += (a * c / host_0 * LocalTable()->data(j, Index(a, b) + 1)) * GlobalTable()->isChecked(0, Index(a, b));
                 }

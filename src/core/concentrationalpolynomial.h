@@ -27,10 +27,10 @@
 class ConcentrationalPolynomial : public QObject {
     Q_OBJECT
 public:
-    explicit ConcentrationalPolynomial(QObject* parent = nullptr);
+    ConcentrationalPolynomial(QObject* parent = nullptr);
 
     inline void setMaxIter(int maxiter) { m_maxiter = maxiter; }
-    inline void setStabilityConstants(const Vector& vector)
+    inline void setStabilityConstants(const std::vector<double>& vector)
     {
         m_stability_constants = vector;
     }
@@ -48,12 +48,14 @@ public:
         m_B0 = B;
     }
 
-    Vector currentConcentration() const { return Eigen::Vector2d(m_cA, m_cB); }
+    inline int LastIterations() const { return m_lastIter; }
+    inline double LastConvergency() const { return m_lastConv; }
+    std::vector<double> currentConcentration() const { return std::vector<double>() = { m_cA, m_cB }; }
     Vector FillAVector();
     Vector FillBVector();
     void Guess();
     inline bool Converged() const { return m_converged; }
-    Vector solver();
+    std::vector<double> solver();
 
     inline int Index(int a, int b) const { return (a - 1) * m_B + (b - 1); }
 
@@ -82,8 +84,8 @@ public:
 signals:
 
 private:
-    double Bisection(double min, double max, const Vector& polynom);
-    double fPolynom(const Vector& polynom, double x);
+    double Bisection(double min, double max, const std::vector<double>& polynom);
+    double fPolynom(const std::vector<double>& polynom, double x);
 
     double m_A0 = 0, m_B0 = 0;
     double m_cA = 0, m_cB = 0;
@@ -91,8 +93,10 @@ private:
     int m_A = 0, m_B = 0;
     int m_maxiter = 1000;
     int m_time = 0;
-    Vector m_stability_constants;
-    Vector m_current_concentration;
+    int m_lastIter = 0;
+    double m_lastConv = 0.0;
+    std::vector<double> m_stability_constants;
+    std::vector<double> m_current_concentration;
     std::vector<double> m_powA, m_powB;
     bool m_converged = false;
 };
