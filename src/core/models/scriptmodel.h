@@ -185,8 +185,9 @@ private:
     void CalculateChai();
     void CalculatePython();
     void CalculateDuktape();
+    void CalculateQJSEngine();
 
-    QJsonObject GenerateModelDefinition() const;
+    //   QJsonObject GenerateModelDefinition() const;
 
 protected:
     virtual void CalculateVariables() override;

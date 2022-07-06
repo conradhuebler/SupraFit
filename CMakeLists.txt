@@ -230,6 +230,8 @@ set(models_SRC
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
     src/core/models/photophysics/decayrates.cpp
+    src/core/models/thermodynamics/eyring.cpp
+    src/core/models/thermodynamics/arrhenius.cpp
 
     src/core/models/titrations/fluorescence/fl_1_1_1_2_Model.cpp
     src/core/models/titrations/fluorescence/fl_1_1_Model.cpp

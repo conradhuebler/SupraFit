@@ -104,6 +104,8 @@ enum Model {
     nmr_IItoI_ItoI_ItoII = 4,
     Michaelis_Menten = 5,
     MonoMolecularModel = 6,
+    Arrhenius = 7,
+    Eyring = 8,
     itc_ItoI = 10,
     itc_IItoI = 11,
     itc_ItoII = 12,
@@ -353,6 +355,10 @@ inline QString Model2Name(SupraFit::Model model)
         return "Meta Model";
     else if (model == SupraFit::DecayRates)
         return "Decay Rates";
+    else if (model == SupraFit::Arrhenius)
+        return "Arrhenius Plot";
+    else if (model == SupraFit::Eyring)
+        return "Eyring Plot";
     else
         return "Unknown";
 }

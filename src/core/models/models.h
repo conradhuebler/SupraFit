@@ -25,6 +25,9 @@
 /* Photophysics stuff */
 #include "photophysics/decayrates.h"
 
+/* Thermodynamics  models */
+#include "thermodynamics/models.h"
+
 /* Any other models */
 #include "misc/models.h"
 
@@ -111,6 +114,15 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::DecayRates:
             t = QSharedPointer<DecayRates>(new DecayRates(data.data()), &QObject::deleteLater);
             break;
+
+        case SupraFit::Arrhenius:
+            t = QSharedPointer<ArrheniusFit>(new ArrheniusFit(data.data()), &QObject::deleteLater);
+            break;
+
+        case SupraFit::Eyring:
+            t = QSharedPointer<EyringFit>(new EyringFit(data.data()), &QObject::deleteLater);
+            break;
+
         case SupraFit::MetaModel:
             t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);
             break;

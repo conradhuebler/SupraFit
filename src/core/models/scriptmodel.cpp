@@ -235,7 +235,7 @@ bool ScriptModel::DefineModel(const QJsonObject& model)
     object = m_defined_model["PrintX"];
     m_calculate_print = object["value"].toString();
 
-    m_model_definition = GenerateModelDefinition();
+    //   m_model_definition = GenerateModelDefinition();
     try {
         PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
@@ -267,7 +267,7 @@ bool ScriptModel::DefineModel(const QJsonObject& model)
     return true;
     // InitialThreads();
 }
-
+/*
 QJsonObject ScriptModel::GenerateModelDefinition() const
 {
     QJsonObject definition;
@@ -287,7 +287,7 @@ QJsonObject ScriptModel::GenerateModelDefinition() const
     definition["ChaiScript"] = chai;
     return definition;
 }
-
+*/
 void ScriptModel::UpdateExecute(const QString &execute) {
   m_chai_execute = execute;
   QJsonObject json;
@@ -304,12 +304,46 @@ void ScriptModel::InitialGuess_Private()
 
 void ScriptModel::CalculateVariables()
 {
-    //if (m_python)
-    //    CalculatePython();
-    //else if (m_chai)
-    CalculateChai();
+    // if (m_python)
+    //     CalculatePython();
+    // else if (m_chai)
+    // CalculateChai();
+    CalculateQJSEngine();
     // else if(m_duktape)
     //CalculateDuktape();
+}
+
+void ScriptModel::CalculateQJSEngine()
+{
+    QJSEngine engine;
+    for (int i = 0; i < GlobalParameterSize(); ++i) {
+        engine.globalObject().setProperty(QString("%1").arg(GlobalParameterName(i)), GlobalParameter(i));
+    }
+    /*for(int i = 0; i < LocalParameterSize(); ++i)
+    {
+        engine.globalObject().setProperty(QString("%1").arg(LocalParameterName(i)), LocalParameter(i));
+    }*/
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < DataPoints(); ++i) {
+            QString cache = m_chai_execute;
+            for (int parameter = 0; parameter < InputParameterSize();
+                 ++parameter) {
+                cache.replace(
+                    m_input_names[parameter],
+                    QString::number(IndependentModel()->data(i, parameter)));
+            }
+            int error = 0;
+            double result = 0;
+            bool ok;
+            double tmp_result = cache.toDouble(&ok);
+            if (ok)
+                result = tmp_result;
+            else
+                result = engine.evaluate(cache).toNumber();
+            SetValue(i, series, result);
+            // qDebug() << result << cache;
+        }
+    }
 }
 
 void ScriptModel::CalculatePython()
@@ -450,7 +484,7 @@ QString execute = m_execute_chai.join("\n");
 QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
 {
     QSharedPointer<ScriptModel> model = QSharedPointer<ScriptModel>(new ScriptModel(this), &QObject::deleteLater);
-    model.data()->DefineModel(GenerateModelDefinition());
+    // model.data()->DefineModel(GenerateModelDefinition());
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
