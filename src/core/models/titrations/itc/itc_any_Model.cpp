@@ -120,15 +120,20 @@ bool itc_any_Model::DefineModel(const QJsonObject& model)
 
 void itc_any_Model::InitialGuess_Private()
 {
-    LocalTable()->data(0, 0) = GuessdH();
+    double heat = GuessdH();
+    LocalTable()->data(0, 0) = heat;
+    for (int i = 1; i < m_global_parametersize; ++i)
+        LocalTable()->data(0, i) = heat + heat / 10;
     LocalTable()->data(0, m_global_parametersize) = -1000;
     LocalTable()->data(0, m_global_parametersize + 1) = 1;
+
     LocalTable()->data(0, m_global_parametersize + 2) = GuessFx();
 
-    double factor = 1 / double(GlobalParameterSize());
-    (*GlobalTable())[0] = GuessK();
+    double K = GuessK();
+    (*GlobalTable())[0] = K;
+
     for (int i = 1; i < GlobalParameterSize(); ++i)
-        (*GlobalTable())[1] = (*GlobalTable())[0] * factor;
+        (*GlobalTable())[i] = K + K;
 
     AbstractModel::Calculate();
 }
@@ -150,8 +155,6 @@ void itc_any_Model::OptimizeParameters_Private()
 
 void itc_any_Model::CalculateVariables()
 {
-    //  qDebug() << "from within" << OptimizeParameters();
-
     std::vector<double> constants(GlobalParameterSize());
     Vector vector_prev(m_species_names.size() + 3);
     vector_prev(0) = 0;
@@ -238,12 +241,15 @@ void itc_any_Model::CalculateVariables()
         qreal dv = (1 - v / V);
         Vector qvector(GlobalParameterSize() + 2);
         double value = 0;
+        //  std::cout << i << " ";
         for (int species = 3; species < vector.size(); ++species) {
             const double q = V * (vector(species) - vector_prev(species) * dv) * heats(species - 3);
             // std::cout <<i<< " " <<  q << std::endl;
+            // std::cout << q << " ";
             value += q;
             qvector(species - 3) = q;
         }
+        //  std::cout << " = " << value << std::endl;
         qvector(GlobalParameterSize()) = dilution;
         qvector(GlobalParameterSize() + 1) = value + dilution;
         // std::cout << qvector.transpose() << std::endl;

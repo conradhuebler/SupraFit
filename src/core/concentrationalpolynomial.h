@@ -84,6 +84,8 @@ public:
 signals:
 
 private:
+    double PolynomialSolver(double min, double max, std::vector<double> polynom);
+
     double Bisection(double min, double max, const std::vector<double>& polynom);
     double fPolynom(const std::vector<double>& polynom, double x);
 

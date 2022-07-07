@@ -45,6 +45,8 @@ nmr_any_Model::nmr_any_Model(DataClass* data)
 nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
     : AbstractNMRModel(data)
 {
+    DefineModel(QJsonObject());
+
     // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();

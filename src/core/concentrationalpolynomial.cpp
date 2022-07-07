@@ -102,7 +102,7 @@ std::vector<double> ConcentrationalPolynomial::solver()
         //     solver.compute(coeffs_a);
         //     m_cA = solver.greatestRealRoot(hasit, thresh);
         // } else
-        m_cA = Bisection(0, m_A0, coeffs_a);
+        m_cA = PolynomialSolver(0, m_A0, coeffs_a);
         powA();
         /*
         m_powA.resize(0);
@@ -128,7 +128,7 @@ std::vector<double> ConcentrationalPolynomial::solver()
         //     solver.compute(coeffs_b);
         //     m_cB = solver.greatestRealRoot(hasit, thresh);
         //} else
-        m_cB = Bisection(0, m_B0, coeffs_b);
+        m_cB = PolynomialSolver(0, m_B0, coeffs_b);
         powB();
         /*
             m_powB.resize(0);
@@ -148,6 +148,34 @@ std::vector<double> ConcentrationalPolynomial::solver()
     }
     m_time = QDateTime::currentMSecsSinceEpoch() - t0;
     return m_current_concentration;
+}
+
+double ConcentrationalPolynomial::PolynomialSolver(double min, double max, std::vector<double> polynom)
+{
+    while (polynom[polynom.size() - 1] < m_converge)
+        polynom.erase(polynom.end() - 1);
+
+    if (polynom.size() == 2) {
+        return -polynom[0] / polynom[1];
+    } else if (polynom.size() == 3) {
+        // if(polynom[2] < m_converge)
+        //     return -polynom[0]/polynom[1];
+        double p = polynom[1] / polynom[2];
+        double q = polynom[0] / polynom[2];
+        double p2 = p * 0.5;
+        double psqaure = p2 * p2;
+        double sqrt_eval = sqrt(psqaure - q);
+        double x1 = -p2 + sqrt_eval;
+        double x2 = -p2 - sqrt_eval;
+        if (std::isnan(x1)) {
+            return Bisection(min, max, polynom);
+        }
+        if (min <= x1 && x1 <= max)
+            return x1;
+        else
+            return -p2 - sqrt_eval;
+    } else
+        return Bisection(min, max, polynom);
 }
 
 double ConcentrationalPolynomial::Bisection(double min, double max, const std::vector<double>& polynom)
