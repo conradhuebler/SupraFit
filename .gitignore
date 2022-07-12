@@ -1,2 +1,4 @@
 *autosave
 *.swp
+CMakeLists.txt.*
+*.bak

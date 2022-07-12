@@ -113,7 +113,7 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
         solver->setStoichiometry(m_maxA, m_maxB);
         solver->setInitialConcentrations(host_0, guest_0);
         solver->Guess();
-        solver->setMaxIter(1e5);
+        solver->setMaxIter(m_maxA * m_maxB * 100);
         solver->setConvergeThreshold(1e-15);
     }
     // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
@@ -124,14 +124,31 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
-
-    double guess_K = 3;
+    QVector<double> ratios;
+    double factor = double(m_maxA * m_maxB);
+    double last = 1 / double(InitialGuestConcentration(DataPoints() - 1) / InitialHostConcentration(DataPoints() - 1));
+    for (int i = 0; i < DataPoints(); ++i) {
+        ratios << InitialGuestConcentration(i) / InitialHostConcentration(i) * last * factor;
+    }
+    // qDebug() << ratios;
+    double guess_K = 4;
     (*GlobalTable())[0] = guess_K;
     for (int a = 1; a <= m_maxA; ++a)
         for (int b = 1; b <= m_maxB; ++b) {
-            (*GlobalTable())[(Index(a, b))] = guess_K + a + b;
-            LocalTable()->setColumn(DependentModel()->lastRow(), 1 + Index(a, b));
+            double ratio = b / a;
+            int best_index = 0;
+            double diff = ratios.last();
+            for (int index = 0; index < ratios.size(); ++index) {
+                if (abs(ratio - ratios[index]) < diff) {
+                    best_index = index;
+                    diff = abs(ratio - ratios[index]);
+                }
+            }
+            //       qDebug() << b/a << best_index;
+            (*GlobalTable())[(Index(a, b))] = guess_K + a + b - 2;
+            LocalTable()->setColumn(DependentModel()->Row(best_index), 1 + Index(a, b));
         }
+
     Calculate();
 }
 
@@ -159,15 +176,26 @@ void nmr_any_Model::CalculateVariables()
         else
             constants[i] = 0;
     }
+
+    for (int a = 1; a <= m_maxA; ++a)
+        for (int b = 1; b <= m_maxB; ++b) {
+            if (getOption(Host + 1 + Index(a, b)) == "yes") {
+                constants[Index(a, b)] = pow(10, GlobalParameter(Index(a, b)));
+            } else
+                constants[Index(a, b)] = 0;
+        }
+
     qreal value = 0;
     // int timer = 0;
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    bool failed = false;
     for (int i = 0; i < DataPoints(); ++i) {
         // m_solvers[i]->Guess();
         m_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
         std::vector<double> result;
         result = m_solvers[i]->solver();
+        failed = failed || m_solvers[i]->LastIterations() == (m_solvers[i]->MaxIter());
         // std::cout << m_solvers[i]->LastIterations() << " " << m_solvers[i]->LastConvergency() << std::endl;
 
         //  timer += m_solvers[i]->Timer();
@@ -206,6 +234,8 @@ void nmr_any_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
     }
+    if (failed)
+        m_corrupt = true;
     //  std::cout << timer << "  " << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 }
 /*

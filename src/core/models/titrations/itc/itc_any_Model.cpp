@@ -89,6 +89,10 @@ bool itc_any_Model::DefineModel(const QJsonObject& model)
             m_global_names << QString("lg %1%2%3").arg(Unicode_beta).arg(name_i).arg(name_j);
             m_species_names << QString("A%1B%2").arg(name_i_short).arg(name_j_short);
             m_local_names << QString("%1 H (A%2B%3)").arg(Unicode_delta).arg(name_i_short).arg(name_j_short);
+
+            QStringList host = QStringList() << "yes"
+                                             << "no";
+            addOption(Dilution + 1 + Index(i, j), QString("A%1B%2").arg(name_i_short).arg(name_j_short), host);
         }
     }
     m_local_names << "m (solv H)"
@@ -97,6 +101,8 @@ bool itc_any_Model::DefineModel(const QJsonObject& model)
     m_global_parametersize = m_maxA * m_maxB;
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        setOption(Dilution + 1 + i, "yes");
 
     OptimizeParameters_Private();
     m_complete = true;
@@ -110,7 +116,7 @@ bool itc_any_Model::DefineModel(const QJsonObject& model)
         solver->setStoichiometry(m_maxA, m_maxB);
         solver->setInitialConcentrations(host_0, guest_0);
         solver->Guess();
-        solver->setMaxIter(1e5);
+        solver->setMaxIter(m_maxA * m_maxB * 200);
         solver->setConvergeThreshold(1e-19);
     }
     // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
@@ -140,11 +146,20 @@ void itc_any_Model::InitialGuess_Private()
 
 void itc_any_Model::OptimizeParameters_Private()
 {
+    /*
     for (int i = 0; i < GlobalParameterSize(); ++i) {
+
         addGlobalParameter(i);
         addLocalParameter(i);
     }
-
+    */
+    for (int a = 1; a <= m_maxA; ++a)
+        for (int b = 1; b <= m_maxB; ++b) {
+            if (getOption(Dilution + 1 + Index(a, b)) == "yes") {
+                addGlobalParameter(Index(a, b));
+                addLocalParameter(Index(a, b));
+            }
+        }
     QString dilution = getOption(Dilution);
     if (dilution == "auto") {
         addLocalParameter(m_global_parametersize);
@@ -160,20 +175,38 @@ void itc_any_Model::CalculateVariables()
     vector_prev(0) = 0;
     vector_prev(1) = 0;
     vector_prev(2) = 0;
-    for (int i = 0; i < GlobalParameterSize(); ++i) {
-        if (GlobalTable()->isChecked(0, i))
-            constants[i] = pow(10, GlobalParameter(i));
-        else
-            constants[i] = 0;
-        vector_prev(i + 3) = 0;
-    }
+    Vector heats(GlobalParameterSize());
 
+    for (int a = 1; a <= m_maxA; ++a)
+        for (int b = 1; b <= m_maxB; ++b) {
+            if (getOption(Dilution + 1 + Index(a, b)) == "yes") {
+                constants[Index(a, b)] = pow(10, GlobalParameter(Index(a, b)));
+                heats(Index(a, b)) = LocalTable()->data(0, Index(a, b));
+                //     addGlobalParameter(Index(a, b));
+                //     addLocalParameter(Index(a, b));
+            } else {
+                constants[Index(a, b)] = 0;
+                heats(Index(a, b)) = 0;
+            }
+            vector_prev(Index(a, b) + 3) = 0;
+        }
+    /*
+        for (int i = 0; i < GlobalParameterSize(); ++i) {
+            if (GlobalTable()->isChecked(0, i))
+            {
+                constants[i] = pow(10, GlobalParameter(i));
+                heats(i) = LocalTable()->data(0, i);
+            }
+            else
+            {
+                constants[i] = 0;
+                heats(i) = 0;
+            }
+            vector_prev(i + 3) = 0;
+        }
+    */
     QString more_info = QString("Inject\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
     QString dil = getOption(Dilution);
-
-    Vector heats(GlobalParameterSize());
-    for (int i = 0; i < GlobalParameterSize(); ++i)
-        heats(i) = LocalTable()->data(0, i);
 
     qreal dil_heat = LocalTable()->data(0, heats.size());
     qreal dil_inter = LocalTable()->data(0, heats.size() + 1);

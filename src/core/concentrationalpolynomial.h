@@ -30,6 +30,7 @@ public:
     ConcentrationalPolynomial(QObject* parent = nullptr);
 
     inline void setMaxIter(int maxiter) { m_maxiter = maxiter; }
+    inline int MaxIter() const { return m_maxiter; }
     inline void setStabilityConstants(const std::vector<double>& vector)
     {
         m_stability_constants = vector;

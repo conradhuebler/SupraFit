@@ -152,8 +152,11 @@ std::vector<double> ConcentrationalPolynomial::solver()
 
 double ConcentrationalPolynomial::PolynomialSolver(double min, double max, std::vector<double> polynom)
 {
-    while (polynom[polynom.size() - 1] < m_converge)
+    while (std::abs(polynom[polynom.size() - 1]) < m_converge)
         polynom.erase(polynom.end() - 1);
+
+    if (polynom.size() < 2)
+        return 0;
 
     if (polynom.size() == 2) {
         return -polynom[0] / polynom[1];
