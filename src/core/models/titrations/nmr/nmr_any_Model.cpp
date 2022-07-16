@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include "EqnConc_2.h"
+
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/bc50.h"
@@ -55,6 +58,7 @@ nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
 nmr_any_Model::~nmr_any_Model()
 {
     qDeleteAll(m_solvers);
+    qDeleteAll(m_ext_solvers);
 }
 
 bool nmr_any_Model::DefineModel(const QJsonObject& model)
@@ -115,6 +119,14 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
         solver->Guess();
         solver->setMaxIter(m_maxA * m_maxB * 100);
         solver->setConvergeThreshold(1e-15);
+
+        EqnConc_2x* solver_ext = new EqnConc_2x;
+        m_ext_solvers << solver_ext;
+        solver_ext->setStoichiometry({ m_maxA, m_maxB });
+        solver_ext->setInitialConcentrations({ host_0, guest_0 });
+        solver_ext->Guess();
+        solver_ext->setMaxIter(m_maxA * m_maxB * 100);
+        solver_ext->setConvergeThreshold(1e-16);
     }
     // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 
@@ -191,11 +203,15 @@ void nmr_any_Model::CalculateVariables()
     bool failed = false;
     for (int i = 0; i < DataPoints(); ++i) {
         // m_solvers[i]->Guess();
-        m_solvers[i]->setStabilityConstants(constants);
+        // m_solvers[i]->setStabilityConstants(constants);
+        m_ext_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
         std::vector<double> result;
-        result = m_solvers[i]->solver();
-        failed = failed || m_solvers[i]->LastIterations() == (m_solvers[i]->MaxIter());
+        // result = m_solvers[i]->solver();
+        // failed = failed || m_solvers[i]->LastIterations() == (m_solvers[i]->MaxIter());
+
+        result = m_ext_solvers[i]->solver();
+
         // std::cout << m_solvers[i]->LastIterations() << " " << m_solvers[i]->LastConvergency() << std::endl;
 
         //  timer += m_solvers[i]->Timer();

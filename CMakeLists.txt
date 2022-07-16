@@ -152,7 +152,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/fmt EXCLUDE_FROM_ALL)
 
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/fmt/include ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/ ${PROJECT_SOURCE_DIR}/external/CxxThreadPool/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/ ${PROJECT_SOURCE_DIR}/external/CxxThreadPool/include ${PROJECT_SOURCE_DIR}/external/EqnConc/include)
 #${PROJECT_SOURCE_DIR}/external/CxxClust/ )
 
 configure_file (

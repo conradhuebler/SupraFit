@@ -72,9 +72,10 @@ Vector ConcentrationalPolynomial::FillBVector()
 
 std::vector<double> ConcentrationalPolynomial::solver()
 {
+    /*
     if (m_A0 < m_converge || m_B0 < m_converge)
         return std::vector<double>{ m_A0, m_B0 };
-
+*/
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     std::vector<double> coeffs_a(m_A + 1), coeffs_b(m_B + 1);

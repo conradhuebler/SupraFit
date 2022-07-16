@@ -28,7 +28,7 @@
 #include "src/core/models/titrations/AbstractNMRModel.h"
 
 class ConcentrationalPolynomial;
-
+class EqnConc_2x;
 class nmr_any_Model : public AbstractNMRModel {
     Q_OBJECT
 
@@ -87,6 +87,7 @@ private:
     int m_maxA = 0, m_maxB = 0;
     QStringList m_global_names, m_species_names;
     QVector<ConcentrationalPolynomial*> m_solvers;
+    QVector<EqnConc_2x*> m_ext_solvers;
 
 protected:
     virtual void CalculateVariables() override;
