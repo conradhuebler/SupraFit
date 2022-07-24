@@ -25,20 +25,20 @@
 #include <QtCore/QVector>
 
 #include "src/core/models/dataclass.h"
-#include "src/core/models/titrations/AbstractNMRModel.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h"
 
 class ConcentrationalPolynomial;
 class EqnConc_2x;
-class nmr_any_Model : public AbstractNMRModel {
+class uvvis_any_Model : public AbstractTitrationModel {
     Q_OBJECT
 
 public:
-    nmr_any_Model(DataClass* data);
-    nmr_any_Model(AbstractNMRModel* data);
+    uvvis_any_Model(DataClass* data);
+    uvvis_any_Model(AbstractTitrationModel* data);
 
-    virtual ~nmr_any_Model() override;
+    virtual ~uvvis_any_Model() override;
 
-    virtual inline SupraFit::Model SFModel() const override { return SupraFit::nmr_any; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::uvvis_any; }
 
     virtual void OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }

@@ -23,6 +23,7 @@
 
 #include "src/core/toolset.h"
 
+#include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
 
@@ -264,7 +265,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     QWidget* parameter = new QWidget(this);
     if (m_model) {
         layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
-        QVBoxLayout* layout = new QVBoxLayout;
+        FlowLayout* layout = new FlowLayout;
         for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
@@ -273,7 +274,7 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addWidget(checkbox);
             hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->GlobalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
-            layout->addLayout(hlayout);
+            layout->addItem(hlayout);
 
             connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
@@ -288,7 +289,7 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addWidget(checkbox);
             hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->LocalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
-            layout->addLayout(hlayout);
+            layout->addItem(hlayout);
 
             connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
@@ -468,7 +469,7 @@ QWidget* StatisticDialog::ModelComparison()
     QGroupBox* parameter = new QGroupBox(tr("Parameter"));
     if (m_model) {
         layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
-        QVBoxLayout* layout = new QVBoxLayout;
+        FlowLayout* layout = new FlowLayout;
         for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
@@ -488,7 +489,7 @@ QWidget* StatisticDialog::ModelComparison()
             hlayout->addWidget(label);
             hlayout->addWidget(doublespin);
             hlayout->addStretch(100);
-            layout->addLayout(hlayout);
+            layout->addItem(hlayout);
 
             connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {
@@ -516,7 +517,7 @@ QWidget* StatisticDialog::ModelComparison()
             hlayout->addWidget(label);
             hlayout->addWidget(doublespin);
             hlayout->addStretch(100);
-            layout->addLayout(hlayout);
+            layout->addItem(hlayout);
 
             connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {

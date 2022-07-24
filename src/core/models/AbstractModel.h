@@ -277,6 +277,10 @@ public:
         return QString::number(value);
     }
 
+    virtual void UpdateLinear()
+    {
+    }
+
     virtual inline int Color(int i) const { return i; }
 
     /*! \brief returns Akaike’s Information Criterion (AIC)

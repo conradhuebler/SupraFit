@@ -257,6 +257,8 @@ set(models_SRC
     src/core/models/titrations/uv_vis/uv_vis_1_1_Model.cpp
     src/core/models/titrations/uv_vis/uv_vis_2_1_1_1_1_2_Model.cpp
     src/core/models/titrations/uv_vis/uv_vis_2_1_1_1_Model.cpp
+    src/core/models/titrations/uv_vis/uvvis_any_Model.cpp
+
  )
 
 IF(Use_Duktape)

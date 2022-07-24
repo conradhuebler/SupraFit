@@ -111,6 +111,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::uv_vis_IItoI_ItoI_ItoII:
             t = QSharedPointer<uv_vis_IItoI_ItoI_ItoII_Model>(new uv_vis_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
+        case SupraFit::uvvis_any:
+            t = QSharedPointer<uvvis_any_Model>(new uvvis_any_Model(data.data()), &QObject::deleteLater);
+            break;
         case SupraFit::ScriptModel:
             t = QSharedPointer<ScriptModel>(new ScriptModel(data.data()), &QObject::deleteLater);
             break;

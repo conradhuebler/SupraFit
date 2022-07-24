@@ -73,7 +73,10 @@ struct MyFunctor : Functor<double> {
         for (int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
         model.data()->setParameter(param);
+        // model.data()->UpdateLinear();
+
         model.data()->Calculate();
+
         Variables CalculatedSignals = model.data()->getCalculatedModel();
         for (int i = 0; i < ModelSignals.size(); ++i)
             fvec(i) = CalculatedSignals[i] - ModelSignals[i];

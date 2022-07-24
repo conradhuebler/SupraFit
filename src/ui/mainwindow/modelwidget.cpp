@@ -625,9 +625,13 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimizeLoose()
 {
+    /*
     QJsonObject config = m_model->getOptimizerConfig();
     config["DeltaParameter"] = 1E-1;
     MinimizeModel(config);
+    */
+    m_model->UpdateLinear();
+    m_model->Calculate();
 }
 
 void ModelWidget::GlobalMinimize()

@@ -133,6 +133,7 @@ public:
     bool ImportTable(const QJsonObject& table);
 
     inline Eigen::MatrixXd& Table() { return m_table; }
+    inline void setTable(const Eigen::MatrixXd& table) { m_table = table; }
 
 private:
     Eigen::MatrixXd m_table, m_checked_table;

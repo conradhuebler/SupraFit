@@ -51,3 +51,4 @@
 #include "uv_vis/uv_vis_1_1_Model.h"
 #include "uv_vis/uv_vis_2_1_1_1_1_2_Model.h"
 #include "uv_vis/uv_vis_2_1_1_1_Model.h"
+#include "uv_vis/uvvis_any_Model.h"

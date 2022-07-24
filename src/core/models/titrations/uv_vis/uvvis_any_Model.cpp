@@ -38,17 +38,17 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
-#include "nmr_any_Model.h"
+#include "uvvis_any_Model.h"
 
-nmr_any_Model::nmr_any_Model(DataClass* data)
-    : AbstractNMRModel(data)
+uvvis_any_Model::uvvis_any_Model(DataClass* data)
+    : AbstractTitrationModel(data)
 {
     m_pre_input = { MaxA_Json, MaxB_Json };
     m_complete = false;
 }
 
-nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
-    : AbstractNMRModel(data)
+uvvis_any_Model::uvvis_any_Model(AbstractTitrationModel* data)
+    : AbstractTitrationModel(data)
 {
     DefineModel(QJsonObject());
 
@@ -57,13 +57,13 @@ nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
     DeclareOptions();
 }
 
-nmr_any_Model::~nmr_any_Model()
+uvvis_any_Model::~uvvis_any_Model()
 {
     qDeleteAll(m_solvers);
     qDeleteAll(m_ext_solvers);
 }
 
-bool nmr_any_Model::DefineModel(const QJsonObject& model)
+bool uvvis_any_Model::DefineModel(const QJsonObject& model)
 {
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
@@ -75,6 +75,7 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
 
     m_global_names.clear();
     m_species_names.clear();
+    m_species_names << "B";
     for (int i = 1; i <= m_maxA; ++i) {
         QString name_i = QString::number(i);
         QString name_i_short = QString::number(i);
@@ -135,7 +136,7 @@ bool nmr_any_Model::DefineModel(const QJsonObject& model)
     return true;
 }
 
-void nmr_any_Model::InitialGuess_Private()
+void uvvis_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
     QVector<double> ratios;
@@ -144,7 +145,7 @@ void nmr_any_Model::InitialGuess_Private()
     for (int i = 0; i < DataPoints(); ++i) {
         ratios << InitialGuestConcentration(i) / InitialHostConcentration(i) * last * factor;
     }
-    // qDebug() << ratios;
+
     double guess_K = 4;
     (*GlobalTable())[0] = guess_K;
     for (int a = 1; a <= m_maxA; ++a)
@@ -163,26 +164,28 @@ void nmr_any_Model::InitialGuess_Private()
             (*GlobalTable())[(Index(a, b))] = guess_K + a + b;
             LocalTable()->setColumn(DependentModel()->Row(best_index), 1 + Index(a, b));
         }
-    // UpdateShifts();
+    UpdateShifts();
     Calculate();
 }
 
-void nmr_any_Model::OptimizeParameters_Private()
+void uvvis_any_Model::OptimizeParameters_Private()
 {
-    for (int a = 1; a <= m_maxA; ++a)
+    for (int a = 1; a <= m_maxA; ++a) {
         for (int b = 1; b <= m_maxB; ++b) {
             if (getOption(Host + 1 + Index(a, b)) == "yes") {
                 addGlobalParameter(Index(a, b));
-                addLocalParameter(1 + Index(a, b));
+                addLocalParameter(2 + Index(a, b));
             }
         }
-    QString host = getOption(Host);
+    }
+    // QString host = getOption(Host);
 
-    if (host == "no")
-        addLocalParameter(0);
+    // if (host == "no")
+    addLocalParameter(0);
+    addLocalParameter(1);
 }
 
-void nmr_any_Model::CalculateConcentrations()
+void uvvis_any_Model::CalculateConcentrations()
 {
     std::vector<double> constants(GlobalParameterSize());
     for (int i = 0; i < GlobalParameterSize(); ++i) {
@@ -199,7 +202,7 @@ void nmr_any_Model::CalculateConcentrations()
             } else
                 constants[Index(a, b)] = 0;
         }
-    m_concentrations = Eigen::MatrixXd(DataPoints(), 2 + m_species_names.size());
+    m_concentrations = Eigen::MatrixXd(DataPoints(), 1 + m_species_names.size());
     m_molar_ratios = Eigen::MatrixXd(DataPoints(), 1 + m_species_names.size());
 
     qreal value = 0;
@@ -223,23 +226,23 @@ void nmr_any_Model::CalculateConcentrations()
         double host = result[0];
         double guest = result[1];
         m_concentrations(i, 0) = host;
-        m_concentrations(i, 1) = guest;
+        m_concentrations(i, 1) = 0;
 
-        m_molar_ratios(i, 0) = host / host_0;
+        m_molar_ratios(i, 0) = host;
 
         Vector vector(m_species_names.size() + 3);
         vector(0) = i + 1;
         vector(1) = host;
         vector(2) = guest;
 
-        int index = 3;
+        int index = 2;
         for (int a = 1; a <= m_maxA; ++a) {
             double powA = a * pow(host, a);
             for (int b = 1; b <= m_maxB; b++) {
                 double beta = constants[Index(a, b)];
                 const double c = (beta * pow(guest, b) * powA);
-                m_concentrations(i, index - 1) = c;
-                m_molar_ratios(i, index - 2) = c / host_0;
+                m_concentrations(i, index) = c;
+                m_molar_ratios(i, index - 1) = c;
 
                 vector(index++) = c;
             }
@@ -249,14 +252,14 @@ void nmr_any_Model::CalculateConcentrations()
     }
 }
 
-void nmr_any_Model::UpdateShifts()
+void uvvis_any_Model::UpdateShifts()
 {
     CalculateConcentrations();
     // std::cout << m_concentrations << std::endl <<m_molar_ratios << std::endl;
     Eigen::MatrixXd dep = DependentModel()->Table();
     // std::cout << dep << std::endl;
     // Eigen::MatrixXd x = m_molar_ratios.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(dep);// m_molar_ratios.llt().solve(dep);
-    Eigen::MatrixXd x = m_molar_ratios.colPivHouseholderQr().solve(dep); // m_molar_ratios.llt().solve(dep);
+    Eigen::MatrixXd x = m_concentrations.colPivHouseholderQr().solve(dep); // m_molar_ratios.llt().solve(dep);
 
     // std::cout << x << std::endl;
     qreal value = 0;
@@ -266,7 +269,7 @@ void nmr_any_Model::UpdateShifts()
     LocalParameter()->setTable(x.transpose());
 }
 
-void nmr_any_Model::CalculateVariables()
+void uvvis_any_Model::CalculateVariables()
 {
     /*
     std::vector<double> constants(GlobalParameterSize());
@@ -292,7 +295,7 @@ void nmr_any_Model::CalculateVariables()
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     bool failed = false;
     CalculateConcentrations();
-    Eigen::MatrixXd m = m_molar_ratios * LocalParameter()->Table().transpose();
+    Eigen::MatrixXd m = m_concentrations * LocalParameter()->Table().transpose();
     for (int i = 0; i < DataPoints(); ++i)
         for (int j = 0; j < SeriesCount(); ++j)
             SetValue(i, j, m(i, j));
@@ -351,7 +354,7 @@ void nmr_any_Model::CalculateVariables()
     //  std::cout << timer << "  " << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 }
 /*
-QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const
+QVector<qreal> uvvis_any_Model::DeCompose(int datapoint, int series) const
 {
     QString method = getOption(Method);
 
@@ -371,9 +374,9 @@ QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 */
-QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
+QSharedPointer<AbstractModel> uvvis_any_Model::Clone(bool statistics)
 {
-    QSharedPointer<AbstractModel> model = QSharedPointer<nmr_any_Model>(new nmr_any_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractModel> model = QSharedPointer<uvvis_any_Model>(new uvvis_any_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
@@ -381,15 +384,15 @@ QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
     return model;
 }
 
-QString nmr_any_Model::ModelInfo() const
+QString uvvis_any_Model::ModelInfo() const
 {
-    QString result = AbstractNMRModel::ModelInfo();
+    QString result = AbstractTitrationModel::ModelInfo();
     result += BC50::ItoI::Format_BC50(GlobalParameter(0));
 
     return result;
 }
 
-QString nmr_any_Model::AdditionalOutput() const
+QString uvvis_any_Model::AdditionalOutput() const
 {
     QString result;
     return result;
@@ -421,16 +424,16 @@ QString nmr_any_Model::AdditionalOutput() const
     std::cout << integral.transpose() << std::endl;
 }
 
-QString nmr_any_Model::ParameterComment(int parameter) const
+QString uvvis_any_Model::ParameterComment(int parameter) const
 {
     Q_UNUSED(parameter)
     return QString("Reaction: A + B &#8652; AB");
 }
 
-QString nmr_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+QString uvvis_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
 
-    QString result = AbstractNMRModel::AnalyseMonteCarlo(object, forceAll);
+    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
 
     if (!forceAll)
         return result;
@@ -439,10 +442,10 @@ QString nmr_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
     return bc + result;
 }
 
-QString nmr_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+QString uvvis_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
 
-    QString result = AbstractNMRModel::AnalyseGridSearch(object, forceAll);
+    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
 
     if (!forceAll)
         return result;
@@ -451,4 +454,4 @@ QString nmr_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAl
     return bc + result;
 }
 
-#include "nmr_any_Model.moc"
+#include "uvvis_any_Model.moc"

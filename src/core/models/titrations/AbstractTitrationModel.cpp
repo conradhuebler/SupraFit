@@ -274,13 +274,13 @@ QVector<QJsonObject> AbstractTitrationModel::PostGridSearch(const QList<QJsonObj
 qreal AbstractTitrationModel::InitialGuestConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff")
-    return d->m_independent_model->data(m_HostAssignment, i);
+    return d->m_independent_model->data(i, !m_HostAssignment);
 }
 
 qreal AbstractTitrationModel::InitialHostConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff")
-    return d->m_independent_model->data(m_HostAssignment, i);
+    return d->m_independent_model->data(i, m_HostAssignment);
 }
 
 qreal AbstractTitrationModel::GuessK(int index)

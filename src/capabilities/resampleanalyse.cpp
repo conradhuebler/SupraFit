@@ -219,7 +219,7 @@ void ResampleAnalyse::CrossValidation()
                 QVector<int> indicies;
                 int checked = 0;
                 for (int i = 0; i < vector.size(); ++i) {
-                    checked += m_model->DependentModel()->isRowChecked(vector[i]);
+                    checked += bool(m_model->DependentModel()->isRowChecked(vector[i]));
                     dep_table->DisableRow(vector[i]);
                     indicies << vector[i];
                 }

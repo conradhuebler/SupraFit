@@ -237,6 +237,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI);
     m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI_ItoII);
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI_ItoII);
+    m_uv_vis_model << addModel(SupraFit::uvvis_any);
+
     //#endif
 
 #ifdef Kinetic_Models
