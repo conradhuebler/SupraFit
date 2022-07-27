@@ -27,4 +27,4 @@
 	url = https://github.com/conradhuebler/CxxThreadPool
 [submodule "external/EqnConc"]
 	path = external/EqnConc
-	url = git@github.com:conradhuebler/EqnConc.git
+	url = https://github.com/conradhuebler/EqnConc

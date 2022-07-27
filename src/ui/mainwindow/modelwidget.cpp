@@ -130,7 +130,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
     connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
-
+    m_global_box = new QCheckBox(tr("Global Parameter"));
+    m_global_box->setChecked(true);
 
     m_layout = new QVBoxLayout;
     FlowLayout* const_layout = new FlowLayout;
@@ -181,9 +182,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         group->setLayout(hlayout);
         const_layout->addWidget(group);
     }
-
-    m_global_box = new QCheckBox(tr("Global Parameter"));
-    m_global_box->setChecked(true);
 
     m_local_box = new QCheckBox(tr("Local Parameter"));
     m_local_box->setChecked(true);

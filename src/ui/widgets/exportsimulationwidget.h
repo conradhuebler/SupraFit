@@ -39,41 +39,28 @@ class DnDLabel : public QLabel {
     Q_OBJECT
 
 public:
-    DnDLabel(const QString& str)
+    DnDLabel(const QString& str, int type, QWeakPointer<AbstractModel> model)
+        : m_type(type)
+        , m_model(model)
     {
         setText(str);
     }
 
-    inline void setContent(const QByteArray& str) { m_content = str; }
+    inline void setStd(double stdev)
+    {
+        m_stdev = stdev;
+    }
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override
-    {
-        //QApplication::restoreOverrideCursor();
-        ModelMime* mimeData = new ModelMime;
-        mimeData->setData("application/x-suprafitmodel", m_content);
-        mimeData->setText("SupraFitSimulation");
+    void mousePressEvent(QMouseEvent* event) override;
 
-        QDrag* drag = new QDrag(this);
-        drag->setPixmap(QPixmap(":/misc/suprafit.png"));
-        drag->setMimeData(mimeData);
-        drag->setHotSpot(event->pos());
-        drag->exec();
-    }
-    /*
-    void enterEvent(QEvent* ev) override
-    {
-        //QApplication::setOverrideCursor(Qt::OpenHandCursor);
-        //QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
-    }
-
-    void leaveEvent(QEvent* ev) override
-    {
-        //QApplication::restoreOverrideCursor();
-    }
-    */
 private:
+    void UpdateContent();
+    int m_type = 0;
+    double m_stdev = 0;
+
     QByteArray m_content;
+    QWeakPointer<AbstractModel> m_model;
 };
 
 class ClickLabel : public QLabel {
@@ -93,18 +80,7 @@ protected:
         emit MouseClicked();
         QLabel::mousePressEvent(event);
     }
-    /*
-    void enterEvent(QEvent* ev) override
-    {
-        //QApplication::setOverrideCursor(Qt::PointingHandCursor);
-        //QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
-    }
 
-    void leaveEvent(QEvent* ev) override
-    {
-        //QApplication::restoreOverrideCursor();
-    }
-*/
 signals:
     void MouseClicked();
 };
@@ -114,19 +90,12 @@ class ExportSimulationWidget : public QWidget {
 public:
     explicit ExportSimulationWidget(QWeakPointer<AbstractModel> model, QWidget* parent = nullptr);
 
-signals:
-
-public slots:
-
 private:
     void UpdateVisibility();
 
     QWeakPointer<AbstractModel> m_model;
 
     ClickLabel *m_sse, *m_std, *m_sey;
-    DnDLabel *m_ideal, *m_mc_std, *m_mc_sey, *m_mc_user;
+    DnDLabel *m_ideal, *m_mc_std, *m_mc_sey, *m_mc_user, *m_bs;
     QDoubleSpinBox* m_variance;
-
-private slots:
-    void Update();
 };
