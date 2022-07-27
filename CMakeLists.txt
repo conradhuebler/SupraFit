@@ -176,7 +176,6 @@ set(core_SRC
     src/core/equil.cpp
     src/core/libmath.cpp
     src/core/minimizer.cpp
-    src/core/optimizer/least-squares.cpp
     src/core/optimizer/eigen_levenberg.cpp
     src/capabilities/datagenerator.cpp
     src/capabilities/resampleanalyse.cpp
