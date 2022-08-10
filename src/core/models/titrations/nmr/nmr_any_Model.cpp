@@ -50,7 +50,7 @@ nmr_any_Model::nmr_any_Model(DataClass* data)
 nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
     : AbstractNMRModel(data)
 {
-    DefineModel(QJsonObject());
+    DefineModel();
 
     // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -63,7 +63,7 @@ nmr_any_Model::~nmr_any_Model()
     qDeleteAll(m_ext_solvers);
 }
 
-bool nmr_any_Model::DefineModel(const QJsonObject& model)
+bool nmr_any_Model::DefineModel()
 {
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 

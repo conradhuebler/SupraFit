@@ -47,7 +47,7 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
-    bool DefineModel(const QJsonObject& model) override;
+    bool DefineModel() override;
 
     void CalculateConcentrations();
 

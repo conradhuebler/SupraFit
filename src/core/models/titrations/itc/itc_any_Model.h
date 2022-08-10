@@ -47,7 +47,7 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
-    bool DefineModel(const QJsonObject& model) override;
+    bool DefineModel() override;
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {

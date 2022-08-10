@@ -90,12 +90,30 @@ const QJsonObject GlobalParameterSize_Json{
     { "once", true }
 };
 
+const QJsonObject GlobalParameterNames_Json{
+    { "name", "GlobalParameterNames" }, // internal name, not to be printed
+    { "title", "Number of global parameters" },
+    { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
+    { "value", "" },
+    { "type", 3 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
 const QJsonObject LocalParameterSize_Json{
     { "name", "LocalParameterSize" }, // internal name, not to be printed
     { "title", "Number of local parameters" },
     { "description", "Set number of parameters to be fitted which act local on a single subset of a data sets" },
     { "value", 1 },
     { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
+const QJsonObject LocalParameterNames_Json{
+    { "name", "LocalParameterNames" }, // internal name, not to be printed
+    { "title", "Number of global parameters" },
+    { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
+    { "value", "" },
+    { "type", 3 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
 };
 
@@ -136,9 +154,8 @@ public:
     virtual bool SupportThreads() const override { return true; }
     virtual bool PreventThreads() const override { return false; }
 
-    bool DefineModel(const QJsonObject& model) override;
+    bool DefineModel() override;
 
-    void UpdateExecute(const QString &execute);
     inline QString getExecute() const { return m_chai_execute; }
 
     virtual inline int InputParameterSize() const override { return m_input_size; }
@@ -187,7 +204,7 @@ private:
     void CalculateDuktape();
     void CalculateQJSEngine();
 
-    //   QJsonObject GenerateModelDefinition() const;
+    void UpdateModelDefinition();
 
 protected:
     virtual void CalculateVariables() override;

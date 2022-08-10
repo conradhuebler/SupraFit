@@ -123,6 +123,9 @@ void MetaModel::ApplyConnectType()
                 param[3] = m_global_index[i][j].second;
 
                 QString name = m_models[i]->GlobalParameterName(j);
+#pragma message("maybe remove, once it is fully tested")
+                if (!m_original_global.contains(name))
+                    continue;
 
                 m_mmparameter[m_original_global.indexOf(name)].second << param;
                 m_mmparameter[m_original_global.indexOf(name)].first += m_models[i]->GlobalParameter(j);

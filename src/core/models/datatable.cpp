@@ -225,7 +225,7 @@ qreal& DataTable::operator[](int column)
     return m_table.operator()(0, column);
 }
 
-qreal& DataTable::operator()(int column, int row)
+qreal& DataTable::operator()(int row, int column)
 {
     QReadLocker locker(&mutex);
     m_empty = 0;

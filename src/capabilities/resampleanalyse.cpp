@@ -205,10 +205,10 @@ void ResampleAnalyse::CrossValidation()
 
                 run++;
             }
-#ifdef _DEBUG
+            //#ifdef _DEBUG
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
-#endif
+            //#endif
 
             for (int i = 0; i < vector_block.size(); ++i) {
                 emit Message(tr("Running %1 jobs!").arg(steps));
@@ -240,10 +240,10 @@ void ResampleAnalyse::CrossValidation()
             }
 
         } else if (algorithm == 1) {
-#ifdef _DEBUG
+            //#ifdef _DEBUG
             qDebug() << "Full-Precomputing";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#endif
+            //#endif
             auto IncreaseVector = [this](QVector<int>& vector, int points) {
                 for (int i = vector.size() - 1; i >= 0; --i) {
                     if (vector[i] < points - 1) {
@@ -283,10 +283,10 @@ void ResampleAnalyse::CrossValidation()
                     sum += vector[i];
                 loop = sum < end;
             }
-#ifdef _DEBUG
+            //#ifdef _DEBUG
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
-#endif
+            //#endif
 
             if (vector_block.size() < steps) {
                 emit Message(tr("Running all jobs!"));

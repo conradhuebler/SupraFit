@@ -39,6 +39,7 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/flowlayout.h"
+#include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
 
@@ -346,30 +347,24 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->SystemParameterCount())
         model_tab->addTab(m_system_parameter, "System Parameter");
     if (m_model->SFModel() == SupraFit::ScriptModel) {
-
         PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
         connect(widget, &PrepareWidget::changed, this, [this, widget]() {
             m_model->UpdateModelDefiniton(widget->getObject());
         });
-
-        // QWidget *scriptoverview = new QWidget;
-        /*
-      QTextEdit *execute = new QTextEdit;
-      QGridLayout *layout = new QGridLayout;
-      layout->addWidget(execute, 0, 0);
-      connect(execute, &QTextEdit::textChanged, this, [this, execute]() {
-        qobject_cast<ScriptModel *>(m_model.data())
-            ->UpdateExecute(execute->document()->toPlainText());
-        m_model->Calculate();
-      });
-      execute->setText(
-          qobject_cast<ScriptModel *>(m_model.data())->getExecute());
-      // QTextEdit* edit = new QTextEdit;
-      // QJsonDocument doc(m_model->ScriptDefinition());
-      // edit->setMarkdown(QString("```json\n %1
-      // \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
-      m_chai_widget = execute;*/
         model_tab->addTab(widget, "Model Definition");
+        QPushButton* save = new QPushButton;
+        save->setToolTip(tr("Click here to export the current model definition!"));
+        connect(save, &QPushButton::clicked, this, [this]() {
+            QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
+            if (!str.isEmpty()) {
+                setLastDir(str);
+                QJsonObject json = m_model->ExportModel(false, false)["ModelDefinition"].toObject();
+                JsonHandler::WriteJsonFile(json, str);
+            }
+        });
+        save->setIcon(Icon("document-save"));
+        auto tabbar = model_tab->tabBar();
+        tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, save);
     }
 
     m_splitter->addWidget(model_tab);

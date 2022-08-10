@@ -50,7 +50,7 @@ uvvis_any_Model::uvvis_any_Model(DataClass* data)
 uvvis_any_Model::uvvis_any_Model(AbstractTitrationModel* data)
     : AbstractTitrationModel(data)
 {
-    DefineModel(QJsonObject());
+    DefineModel();
 
     // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -63,7 +63,7 @@ uvvis_any_Model::~uvvis_any_Model()
     qDeleteAll(m_ext_solvers);
 }
 
-bool uvvis_any_Model::DefineModel(const QJsonObject& model)
+bool uvvis_any_Model::DefineModel()
 {
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 

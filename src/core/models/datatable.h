@@ -69,7 +69,7 @@ public:
     qreal& data(int row, int column = 0);
 
     qreal& operator[](int column);
-    qreal& operator()(int column, int row);
+    qreal& operator()(int row, int column);
 
     void CheckRow(int row);
     Vector DisableRow(int row);

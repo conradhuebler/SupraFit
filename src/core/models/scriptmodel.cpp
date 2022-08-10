@@ -123,20 +123,20 @@ ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
 }
 
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
-    m_complete = DefineModel(model);
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
+    m_complete = AbstractModel::DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, LocalParameterSize_Json, PrintX_Json, ChaiScript_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
     m_complete = false;
 }
 
@@ -166,12 +166,13 @@ void ScriptModel::InitialThreads()
     m_thread_pool->setActiveThreadCount(use_threads);
 }
 
-bool ScriptModel::DefineModel(const QJsonObject& model)
+bool ScriptModel::DefineModel()
 {
+    /*
     QJsonObject parse = model;
     if (parse.contains("ModelDefinition"))
         parse = model["ModelDefinition"].toObject();
-
+*/
     QJsonObject object;
     object = m_defined_model["GlobalParameterSize"];
     m_global_parameter_size = object["value"].toInt();
@@ -264,37 +265,20 @@ bool ScriptModel::DefineModel(const QJsonObject& model)
 #ifdef Use_Duktape
     m_duktapeinterp.Initialise();
 #endif
+    UpdateModelDefinition();
     return true;
     // InitialThreads();
 }
-/*
-QJsonObject ScriptModel::GenerateModelDefinition() const
-{
-    QJsonObject definition;
 
-    definition["GlobalParameterSize"] = m_global_parameter_size;
-    definition["GlobalParameterNames"] = m_global_parameter_names.join("|");
-    definition["LocalParameterSize"] = m_local_parameter_size;
-    definition["LocalParameterNames"] = m_local_parameter_names.join("|");
-    definition["InputSize"] = m_input_size;
-    definition["InputNames"] = m_input_names.join("|");
-    definition["Name"] = m_name;
-    definition["DepModelNames"] = m_depmodel_names.join("|");
-    QJsonObject chai;
-    QStringList lines = m_chai_execute.split("\n");
-    for (int i = 0; i < lines.size(); ++i)
-        chai[QString::number(i)] = lines[i];
-    definition["ChaiScript"] = chai;
-    return definition;
-}
-*/
-void ScriptModel::UpdateExecute(const QString &execute) {
-  m_chai_execute = execute;
-  QJsonObject json;
-  QStringList lines = m_chai_execute.split("\n");
-  for (int i = 0; i < lines.size(); ++i)
-    json[QString::number(i)] = lines[i];
-  m_model_definition["ChaiScript"] = json;
+void ScriptModel::UpdateModelDefinition()
+{
+    QJsonObject object = m_defined_model["GlobalParameterNames"];
+    object["value"] = m_global_parameter_names.join("|");
+    m_defined_model["GlobalParameterNames"] = object;
+
+    object = m_defined_model["LocalParameterNames"];
+    object["value"] = m_local_parameter_names.join("|");
+    m_defined_model["LocalParameterNames"] = object;
 }
 
 void ScriptModel::InitialGuess_Private()
@@ -307,10 +291,10 @@ void ScriptModel::CalculateVariables()
     // if (m_python)
     //     CalculatePython();
     // else if (m_chai)
-    // CalculateChai();
-    CalculateQJSEngine();
-    // else if(m_duktape)
-    //CalculateDuktape();
+    CalculateChai();
+    // CalculateQJSEngine();
+    //  else if(m_duktape)
+    // CalculateDuktape();
 }
 
 void ScriptModel::CalculateQJSEngine()

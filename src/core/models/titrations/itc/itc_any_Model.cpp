@@ -49,7 +49,7 @@ itc_any_Model::itc_any_Model(DataClass* data)
 itc_any_Model::itc_any_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
-    DefineModel(QJsonObject());
+    DefineModel();
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
 }
@@ -59,7 +59,7 @@ itc_any_Model::~itc_any_Model()
     qDeleteAll(m_solvers);
 }
 
-bool itc_any_Model::DefineModel(const QJsonObject& model)
+bool itc_any_Model::DefineModel()
 {
     QJsonObject object = m_defined_model.value("MaxA");
     m_maxA = object["value"].toInt();

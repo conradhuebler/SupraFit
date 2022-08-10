@@ -207,7 +207,6 @@ qreal AbstractItcModel::GuessFx()
 
 qreal AbstractItcModel::GuessK(int index)
 {
-
     QSharedPointer<AbstractModel> test = Clone();
     qreal K = BisectParameter(test, index, 1, 10);
     return K;
