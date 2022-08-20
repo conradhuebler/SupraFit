@@ -1,6 +1,7 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
+- add some simple kinetic models
 - more flexible chart configs
 - include FlowLayout from Qt Examples for flexible UI
 - enable ChaiScript, including one example scripted model

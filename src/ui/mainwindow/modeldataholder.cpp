@@ -130,14 +130,14 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 
 void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
 {
-    addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
+    addTab(datawidget, "Data Overview");
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
     m_datawidget = datawidget;
 }
 
 void TabWidget::setMetaTab(QPointer<MetaModelWidget> datawidget)
 {
-    addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
+    addTab(datawidget, "MetaModel Overview");
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
     m_metamodelwidget = datawidget;
 }
@@ -245,6 +245,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
 
     m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
+    m_kinetcs_model << addModel(SupraFit::BiMolecularModel);
+    m_kinetcs_model << addModel(SupraFit::FlexMolecularModel);
+
     m_kinetcs_model << addModel(SupraFit::DecayRates);
 #endif
 
@@ -458,7 +461,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
         connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     } else {
-        m_metamodelwidget = new MetaModelWidget;
+        m_metamodelwidget = new MetaModelWidget();
         m_metamodelwidget->setMetaModel(qobject_cast<MetaModel*>(data));
         m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
@@ -477,7 +480,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
 
 void ModelDataHolder::SetProjectTabName()
 {
-    m_modelsWidget->setTabText(0, "Overview: " + qApp->instance()->property("projectname").toString());
+    m_modelsWidget->setTabText(0, "Overview");
     emit nameChanged();
 }
 
@@ -592,6 +595,19 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 
     m_ReductionCutoff = qMax(m_ReductionCutoff, t->ReductionCutOff());
     m_last_modelwidget = modelwidget;
+    if (m_metamodelwidget) {
+        QStringList colors = modelwidget->Chart().signal_wrapper->ColorList().split("|");
+        colors.removeDuplicates();
+        QColor color;
+        if (colors.size() > 1) {
+            color = Qt::green;
+        } else
+            color = (QColor(colors.first()));
+        m_metamodelwidget->LinkModel(t, color);
+        connect(modelwidget, &ModelWidget::ColorChanged, this, [this, t](const QColor& color) {
+            m_metamodelwidget->UpdateColor(t, color);
+        });
+    }
     emit ModelAdded();
 }
 

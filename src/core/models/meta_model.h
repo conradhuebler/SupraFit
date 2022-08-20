@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -27,6 +27,16 @@
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
+
+/* The structure of the MetaModelParameters MMParameter is as follows
+ * A pair of a double/qreal with a QVector of QVector of four integers - indicies
+ * (double) - (<0,0,0,0>; <1,0,1,0>) ....
+ * (double) represents the value (theta) of the parameter
+ * <a,b,c,d> represents  the identifikation of the submodel and the specific parameter within that model
+ * a represents the index of the model
+ * b can be either 0 (global parameter) or 1 (local parameter)
+ * c,d by the time of writing, couple of years after implementation, I forget them, but I will remember ...
+ */
 
 typedef QPair<qreal, QVector<QVector<int>>> MMParameter;
 

@@ -29,9 +29,9 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
-#include "monomolecularmodel.h"
+#include "flexmolecularmodel.h"
 
-MonoMolecularModel::MonoMolecularModel(DataClass* data)
+FlexMolecularModel::FlexMolecularModel(DataClass* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -39,7 +39,7 @@ MonoMolecularModel::MonoMolecularModel(DataClass* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
 
-MonoMolecularModel::MonoMolecularModel(AbstractModel* data)
+FlexMolecularModel::FlexMolecularModel(AbstractModel* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -47,53 +47,56 @@ MonoMolecularModel::MonoMolecularModel(AbstractModel* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
 
-MonoMolecularModel::~MonoMolecularModel()
+FlexMolecularModel::~FlexMolecularModel()
 {
 }
 
-void MonoMolecularModel::DeclareOptions()
+void FlexMolecularModel::DeclareOptions()
 {
 }
 
-void MonoMolecularModel::DeclareSystemParameter()
+void FlexMolecularModel::DeclareSystemParameter()
 {
 }
 
-void MonoMolecularModel::InitialGuess_Private()
+void FlexMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 0.002;
-    (*GlobalTable())[1] = 1;
+    (*GlobalTable())[1] = 2;
     (*GlobalTable())[2] = 0.01;
+    (*GlobalTable())[3] = 0.01;
 
     Calculate();
 }
 
-void MonoMolecularModel::OptimizeParameters_Private()
+void FlexMolecularModel::OptimizeParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);
     addGlobalParameter(2);
+    addGlobalParameter(3);
 }
 
-void MonoMolecularModel::CalculateVariables()
+void FlexMolecularModel::CalculateVariables()
 {
     UpdateParameter();
     qreal k = GlobalParameter(0);
-    qreal c0 = GlobalParameter(1);
-    qreal ceq = GlobalParameter(2);
+    qreal n = GlobalParameter(1);
+    qreal cA0 = GlobalParameter(2);
+    qreal cAeq = GlobalParameter(3);
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = (c0 - ceq) * (exp(-(t)*k)) + ceq;
+            qreal value = (cA0 - cAeq) * pow(pow(cA0 - cAeq, (n - 1)) * k * t * (n - 1) + 1, 1.0 / (n - 1.0)) + cAeq;
             SetValue(i, j, value);
         }
     }
 }
 
-QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
+QSharedPointer<AbstractModel> FlexMolecularModel::Clone(bool statistics)
 {
-    QSharedPointer<MonoMolecularModel> model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
+    QSharedPointer<FlexMolecularModel> model = QSharedPointer<FlexMolecularModel>(new FlexMolecularModel(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
@@ -102,8 +105,8 @@ QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
     return model;
 }
 
-void MonoMolecularModel::UpdateParameter()
+void FlexMolecularModel::UpdateParameter()
 {
 }
 
-#include "monomolecularmodel.moc"
+#include "flexmolecularmodel.moc"

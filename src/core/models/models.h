@@ -19,6 +19,8 @@
 #include "titrations/models.h"
 
 /* Kinetic Models */
+#include "kinetics/bimolecularmodel.h"
+#include "kinetics/flexmolecularmodel.h"
 #include "kinetics/mm_model.h"
 #include "kinetics/monomolecularmodel.h"
 
@@ -62,6 +64,12 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
             break;
         case SupraFit::MonoMolecularModel:
             t = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::BiMolecularModel:
+            t = QSharedPointer<BiMolecularModel>(new BiMolecularModel(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::FlexMolecularModel:
+            t = QSharedPointer<FlexMolecularModel>(new FlexMolecularModel(data.data()), &QObject::deleteLater);
             break;
         case SupraFit::itc_ItoI:
             t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(data.data()), &QObject::deleteLater);

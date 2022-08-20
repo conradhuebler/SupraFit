@@ -27,12 +27,13 @@
 
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
+#include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
-#include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/waiter.h"
+
 #include "src/ui/widgets/metamodelparameter.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/optionswidget.h"
@@ -102,7 +103,7 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_type, 1, 3);
 
     m_actions = new ModelActions;
-    m_metamodelparameter = new MetaModelParameter(m_model);
+    m_metamodelparameter = new MetaModelParameter(m_model, &m_linked_charts);
     layout->addWidget(m_metamodelparameter, 2, 0, 1, 4);
 
     m_jobmanager = new JobManager(this);

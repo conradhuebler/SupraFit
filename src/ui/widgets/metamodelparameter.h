@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/ui/guitools/chartwrapper.h"
+
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
 #include <QtCore/QMimeData>
@@ -32,7 +34,8 @@ class QTreeView;
 class ParameterTree : public QAbstractItemModel {
     Q_OBJECT
 public:
-    inline ParameterTree(QWeakPointer<MetaModel> model)
+    inline ParameterTree(QWeakPointer<MetaModel> model, QHash<QSharedPointer<AbstractModel>, QColor>* linked_list)
+        : m_linked_list(linked_list)
     {
         m_model = model;
         m_null = &null;
@@ -95,6 +98,8 @@ public:
 
 private:
     QWeakPointer<MetaModel> m_model;
+    QHash<QSharedPointer<AbstractModel>, QColor>* m_linked_list;
+
     qreal null = -1;
     qreal* m_null;
 };
@@ -108,13 +113,16 @@ public:
     }
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    //   void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override;
+
 private:
 };
 
 class MetaModelParameter : public QWidget {
     Q_OBJECT
 public:
-    MetaModelParameter(QSharedPointer<AbstractModel> model);
+    MetaModelParameter(QSharedPointer<AbstractModel> model, QHash<QSharedPointer<AbstractModel>, QColor>* linked_list);
     ~MetaModelParameter();
 
 signals:
@@ -126,6 +134,8 @@ private:
     QWeakPointer<MetaModel> m_model;
     QGridLayout* m_layout;
     ParameterTree* m_treemodel;
+    QHash<QSharedPointer<AbstractModel>, QColor>* m_linked_list;
+
     void setUi();
 
 private slots:

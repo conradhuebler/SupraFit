@@ -172,6 +172,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         }
         LineSeries* xy_series = new LineSeries;
         m_linked_data.insert(xy_series, list);
+        xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
 
         if (data["type"] == "Local Parameter") {
             if (!data.contains("index"))
@@ -180,14 +181,13 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             if (m_model.toStrongRef().data()->SupportSeries()) {
                 if (index < m_wrapper->SeriesSize()) {
                     xy_series->setColor(m_wrapper->Series(index)->color());
+                    qDebug() << index << m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(index));
                     connect(m_wrapper->Series(index), &QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-                    connect(m_wrapper->Series(index), &QXYSeries::colorChanged, this, [i, this](const QColor& color) { this->setAreaColor(i, color); });
+                    connect(m_wrapper->Series(index), &QXYSeries::colorChanged, this, [i, this](const QColor& color) {
+                        this->setAreaColor(i, color);
+                    });
                 }
-            } else
-                xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
-#pragma message("not nice, as the series colors are not consistently selected")
-        } else {
-            xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
+            }
         }
 
         qreal diff = (histogram.last().first-histogram.first().first)/double(histogram.size());

@@ -27,20 +27,20 @@
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
-class MonoMolecularModel : public AbstractModel {
+class FlexMolecularModel : public AbstractModel {
     Q_OBJECT
 
 public:
-    MonoMolecularModel(DataClass* data);
-    MonoMolecularModel(AbstractModel* data);
+    FlexMolecularModel(DataClass* data);
+    FlexMolecularModel(AbstractModel* data);
 
-    virtual ~MonoMolecularModel() override;
+    virtual ~FlexMolecularModel() override;
 
-    virtual inline SupraFit::Model SFModel() const override { return SupraFit::MonoMolecularModel; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::FlexMolecularModel; }
 
     virtual void OptimizeParameters_Private() override;
 
-    inline int GlobalParameterSize() const override { return 3; }
+    inline int GlobalParameterSize() const override { return 4; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
@@ -53,14 +53,19 @@ public:
         if (i == 0)
             return tr("k");
         else if (i == 1)
-            return tr("c0");
+            return tr("n");
         else if (i == 2)
-            return tr("ceq");
+            return tr("cA0");
+        else if (i == 3)
+            return tr("cAeq");
         return QString("");
     }
 
-    virtual int LocalParameterSize(int i = 0) const override { Q_UNUSED(i)
-        return 0; }
+    virtual int LocalParameterSize(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return 0;
+    }
     virtual inline bool SupportSeries() const override { return false; }
     virtual void DeclareOptions() override;
 

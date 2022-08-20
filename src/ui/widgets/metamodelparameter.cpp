@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  */
 
 #include "src/core/models/models.h"
+
+#include "src/ui/guitools/chartwrapper.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
@@ -200,7 +202,28 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
                     }
                 }
             }
-        } else {
+        }
+    } else if (role == Qt::BackgroundRole) {
+        if (index.row() < m_model.toStrongRef().data()->CombinedParameter().size()) {
+            if (!index.parent().isValid()) {
+                MMParameter param = m_model.toStrongRef().data()->CombinedParameter()[index.row()];
+                if (param.second.size() > 1) {
+                    QLinearGradient gradient(QPointF(0, 100), QPointF(1000, 100));
+                    for (int i = 0; i < param.second.size(); ++i) {
+                        QColor color = m_linked_list->value(m_model.toStrongRef().data()->Models()[param.second[i][0]]);
+                        gradient.setColorAt(i / double(m_model.toStrongRef().data()->CombinedParameter().size()), color);
+                    }
+                    return QBrush(gradient);
+                } else if (param.second.size() == 1) {
+                    QColor color = m_linked_list->value(m_model.toStrongRef().data()->Models()[param.second[0][0]]);
+                    return color;
+                }
+            } else if (index.parent().isValid()) {
+                MMParameter param = m_model.toStrongRef().data()->CombinedParameter()[index.parent().row()];
+                // qDebug() << index.row() << index.column()  << param;
+                QColor color = m_linked_list->value(m_model.toStrongRef().data()->Models()[param.second[index.row()][0]]).lighter();
+                return color;
+            }
         }
     }
     return data;
@@ -278,7 +301,22 @@ void ModelParameterEntry::paint(QPainter* painter, const QStyleOptionViewItem& o
     painter->restore();
 }
 
-MetaModelParameter::MetaModelParameter(QSharedPointer<AbstractModel> model)
+QSize ModelParameterEntry::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    if (index.parent().isValid())
+        return QSize(50, 50);
+    else
+        return QSize(100, 50);
+}
+/*
+void ModelParameterEntry::initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const
+{
+    QStyledItemDelegate::initStyleOption(option, index);
+    option->font.setPointSize(60);
+}*/
+
+MetaModelParameter::MetaModelParameter(QSharedPointer<AbstractModel> model, QHash<QSharedPointer<AbstractModel>, QColor>* linked_list)
+    : m_linked_list(linked_list)
 {
     m_model = qSharedPointerCast<MetaModel>(model);
     setUi();
@@ -294,7 +332,7 @@ void MetaModelParameter::setUi()
     m_layout = new QGridLayout;
 
     m_tree = new QTreeView;
-    m_treemodel = new ParameterTree(m_model);
+    m_treemodel = new ParameterTree(m_model, m_linked_list);
     m_tree->setModel(m_treemodel);
 
     m_tree->setDragEnabled(true);

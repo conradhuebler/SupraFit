@@ -224,6 +224,9 @@ set(models_SRC
     src/core/models/chaiinterpreter.cpp
     src/core/models/kinetics/mm_model.cpp
     src/core/models/kinetics/monomolecularmodel.cpp
+    src/core/models/kinetics/bimolecularmodel.cpp
+    src/core/models/kinetics/flexmolecularmodel.cpp
+
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
     src/core/models/misc/indep_quadrat.cpp

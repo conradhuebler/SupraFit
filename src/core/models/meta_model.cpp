@@ -457,6 +457,8 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     ModelTable()->append(model->ModelTable());
 
     m_models << t;
+    QString name = QString("%1 from %2").arg(t->Name()).arg(t->ProjectTitle());
+    t->setName(name);
     connect(model, &DataClass::ProjectTitleChanged, t.data(), &DataClass::setProjectTitle);
     m_glob_param += model->GlobalParameterSize();
     m_inp_param += model->InputParameterSize();
@@ -528,6 +530,9 @@ void MetaModel::RemoveModel(const AbstractModel* model)
 
     m_original_global.removeDuplicates();
     m_local_names.removeDuplicates();
+
+#pragma message("in case it is custom, try to restore the structure")
+    m_connect_type = ConnectType::None;
 
     OptimizeParameters_Private();
     UpdateSlicedTable();
@@ -773,7 +778,7 @@ void MetaModel::UpdateSlicedTable()
             header << QString("%1 | %2").arg(m_models[i]->ProjectTitle()).arg(name);
 
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
-            for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
+            for (int k = 0; k < m_models[i]->DataPoints() && k < m_sliced_table->rowCount(); ++k) {
                 m_sliced_table->operator()(k, i + j) = m_models[i]->IndependentModel()->operator()(k, j);
                 m_sliced_table->setChecked(k, j, m_models[i]->IndependentModel()->isChecked(k, j));
             }

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/ui/guitools/chartwrapper.h"
+
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QWidget>
@@ -50,11 +52,21 @@ public:
     }
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
+    void LinkModel(QSharedPointer<AbstractModel> model, QColor color)
+    {
+        m_linked_charts.insert(model, color);
+    }
+
+    void UpdateColor(QSharedPointer<AbstractModel> model, QColor color)
+    {
+        m_linked_charts[model] = color;
+    }
 public slots:
     void LoadJson(const QJsonObject& object);
 
 private:
     void setUi();
+    QHash<QSharedPointer<AbstractModel>, QColor> m_linked_charts;
 
     QSharedPointer<AbstractModel> m_model;
     QPushButton *m_minimize, *m_calculate;
@@ -67,6 +79,7 @@ private:
     QList<QJsonObject> m_fast_confidence;
     JobManager* m_jobmanager;
     QLineEdit* m_project_name;
+    ChartWrapper* m_wrapper;
 
     void LoadStatistic(const QJsonObject& data);
     void FastConfidence();

@@ -29,9 +29,9 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
-#include "monomolecularmodel.h"
+#include "bimolecularmodel.h"
 
-MonoMolecularModel::MonoMolecularModel(DataClass* data)
+BiMolecularModel::BiMolecularModel(DataClass* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -39,7 +39,7 @@ MonoMolecularModel::MonoMolecularModel(DataClass* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
 
-MonoMolecularModel::MonoMolecularModel(AbstractModel* data)
+BiMolecularModel::BiMolecularModel(AbstractModel* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -47,53 +47,56 @@ MonoMolecularModel::MonoMolecularModel(AbstractModel* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
 
-MonoMolecularModel::~MonoMolecularModel()
+BiMolecularModel::~BiMolecularModel()
 {
 }
 
-void MonoMolecularModel::DeclareOptions()
+void BiMolecularModel::DeclareOptions()
 {
 }
 
-void MonoMolecularModel::DeclareSystemParameter()
+void BiMolecularModel::DeclareSystemParameter()
 {
 }
 
-void MonoMolecularModel::InitialGuess_Private()
+void BiMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 0.002;
     (*GlobalTable())[1] = 1;
     (*GlobalTable())[2] = 0.01;
+    (*GlobalTable())[3] = 0.01;
 
     Calculate();
 }
 
-void MonoMolecularModel::OptimizeParameters_Private()
+void BiMolecularModel::OptimizeParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);
     addGlobalParameter(2);
+    addGlobalParameter(3);
 }
 
-void MonoMolecularModel::CalculateVariables()
+void BiMolecularModel::CalculateVariables()
 {
     UpdateParameter();
     qreal k = GlobalParameter(0);
-    qreal c0 = GlobalParameter(1);
-    qreal ceq = GlobalParameter(2);
+    qreal cA0 = GlobalParameter(1);
+    qreal cAeq = GlobalParameter(2);
+    qreal cc0 = GlobalParameter(3);
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = (c0 - ceq) * (exp(-(t)*k)) + ceq;
+            qreal value = (cA0 * (cA0 - cc0) * exp(k * (t) * (cA0 - cc0))) / (cA0 * exp(k * (t) * (cA0 - cc0)) - cc0) + cAeq;
             SetValue(i, j, value);
         }
     }
 }
 
-QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
+QSharedPointer<AbstractModel> BiMolecularModel::Clone(bool statistics)
 {
-    QSharedPointer<MonoMolecularModel> model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
+    QSharedPointer<BiMolecularModel> model = QSharedPointer<BiMolecularModel>(new BiMolecularModel(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
@@ -102,8 +105,8 @@ QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
     return model;
 }
 
-void MonoMolecularModel::UpdateParameter()
+void BiMolecularModel::UpdateParameter()
 {
 }
 
-#include "monomolecularmodel.moc"
+#include "bimolecularmodel.moc"

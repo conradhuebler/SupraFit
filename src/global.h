@@ -128,6 +128,8 @@ enum Model {
     Indep_Quadrat = 101,
     Dep_Any = 102,
     DecayRates = 103,
+    BiMolecularModel = 107,
+    FlexMolecularModel = 108,
     MetaModel = 200,
     Unknown = 404
 };
@@ -348,9 +350,14 @@ inline QString Model2Name(SupraFit::Model model)
         return "flexible UV/VIS Model";
 
     else if (model == SupraFit::MonoMolecularModel)
-        return "Monomolecular Kinetics";
+        return "Monomoleculare Kinetics";
+    else if (model == SupraFit::BiMolecularModel)
+        return "Bimoleculare Kinetics";
+    else if (model == SupraFit::FlexMolecularModel)
+        return "Flexible kinetic model";
+
     else if (model == SupraFit::Michaelis_Menten)
-        return "Michaelis Menten";
+        return "Michaelis Menten Kinetics";
     else if (model == SupraFit::ScriptModel)
         return "ScriptModel";
     else if (model == SupraFit::Indep_Quadrat)
