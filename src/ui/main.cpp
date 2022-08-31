@@ -71,9 +71,9 @@ int main(int argc, char** argv)
     qInstallMessageHandler(myMessageOutput);
 
     QApplication app(argc, argv);
-#ifdef _WIN32
-    //QApplication::setStyle("Fusion");
-#endif
+    //#ifdef _WIN32
+    QApplication::setStyle("Fusion");
+    //#endif
 
     QCommandLineParser parser;
 

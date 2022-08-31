@@ -122,12 +122,13 @@ public:
 
     int m_maxsize;
     int m_ref_counter = 1;
-    QPointer<DataTable> m_dependent_model, m_independent_model;
+    int m_begin_data = 0, m_end_data = 0;
+    QPointer<DataTable> m_dependent_model, m_independent_model, m_dependent_raw_model, m_independent_raw_model;
+    //  QPointer<StringTableModel> m_dependent_calculation_model, m_independent_calculation_model;
     DataType m_datatype;
     QJsonObject m_raw_data;
     QJsonObject m_systemObject;
 
-    QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
     QVector<QPointer<DataClass>> m_children;
@@ -148,16 +149,7 @@ public:
     virtual ~DataClass();
 
     virtual SupraFit::Model SFModel() const { return SupraFit::Data; }
-    /*
-        inline void addPoint(QVector<qreal> conc, QVector<qreal> data)
-        {
-            d->m_independent_model->insertRow(conc);
-            d->m_dependent_model->insertRow(data);
-            if (conc.size() != d->m_scaling.size())
-                for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-                    d->m_scaling << 1;
-        }
-    */
+
     inline QString UUID() const { return d->m_uuid; }
 
     void NewUUID();
@@ -168,11 +160,22 @@ public:
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_datatype; }
     inline void setType(DataClassPrivate::DataType type) { d->m_datatype = type; }
+
     virtual inline DataTable* IndependentModel() { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() { return d->m_dependent_model; }
     virtual inline DataTable* IndependentModel() const { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() const { return d->m_dependent_model; }
 
+    virtual inline DataTable* IndependentRawModel() { return d->m_independent_raw_model; }
+    virtual inline DataTable* DependentRawModel() { return d->m_dependent_raw_model; }
+    virtual inline DataTable* IndependentRawModel() const { return d->m_independent_raw_model; }
+    virtual inline DataTable* DependentRawModel() const { return d->m_dependent_raw_model; }
+    /*
+        virtual inline DataTable* IndependentCalculationModel() { return d->m_independent_calculation_model; }
+        virtual inline DataTable* DependentCalculationModel() { return d->m_dependent_calculation_model; }
+        virtual inline DataTable* IndependentCalculationModel() const { return d->m_independent_calculation_model; }
+        virtual inline DataTable* DependentCalculationModel() const { return d->m_dependent_calculation_model; }
+    */
     inline bool isSimulation() const { return Type() == DataClassPrivate::DataType::Simulation; }
 
     /*! \brief return text of stored data
@@ -183,27 +186,72 @@ public:
      */
     virtual QString Data2Text_Private() const { return QString(); }
 
+    inline void setIndependentRawTable(DataTable* table)
+    {
+#pragma message("have a look at here, while restructureing stuff")
+        d->m_independent_raw_model = table;
+        d->m_independent_raw_model->setCheckable(false);
+        d->m_independent_model->ImportTable(table->ExportTable(false));
+
+        InitialiseCalculationModel();
+        ApplyCalculationModel();
+    }
+
     inline void setIndependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
         d->m_independent_model = table;
         d->m_independent_model->setCheckable(false);
-        if (d->m_independent_model->columnCount() != d->m_scaling.size())
-            for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-                d->m_scaling << 1;
     }
 
     DataClassPrivateObject* Info() const { return d->m_info; }
 
     inline void Updated() const { emit Info()->Update(); }
 
+    inline void setDependentRawTable(DataTable* table)
+    {
+#pragma message("have a look at here, while restructureing stuff")
+        d->m_dependent_raw_model = table;
+        d->m_dependent_raw_model->setCheckable(true);
+
+        d->m_dependent_model->ImportTable(table->ExportTable(true));
+        d->m_dependent_model->setCheckable(true);
+        InitialiseCalculationModel();
+        ApplyCalculationModel();
+        d->m_begin_data = 0;
+        d->m_end_data = DataPoints();
+        UpdateCheckedState();
+        DependentModelOverride();
+    }
+
     inline void setDependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
         d->m_dependent_model = table;
         d->m_dependent_model->setCheckable(true);
+
         DependentModelOverride();
     }
+
+    void setDataBegin(int i)
+    {
+        d->m_begin_data = i;
+        UpdateCheckedState();
+    }
+    void setDataEnd(int i)
+    {
+        d->m_end_data = i;
+        UpdateCheckedState();
+    }
+
+    void UpdateCheckedState();
+
+    int DataBegin() const { return d->m_begin_data; }
+    int DataEnd() const { return d->m_end_data; }
+
+    void InitialiseCalculationModel();
+
+    void ApplyCalculationModel();
 
     virtual QList<qreal> getSignals(QList<int> dealing_signals = QVector<int>(1, 0).toList());
 
@@ -222,8 +270,6 @@ public:
      */
     bool LegacyImportData(const QJsonObject& topjson, bool forceUUID = true);
 
-    inline QList<qreal> getScaling() const { return d->m_scaling; }
-    inline void setScaling(const QList<qreal>& scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList& strlist);
 
     virtual void OverrideInDependentTable(DataTable* table);
@@ -289,7 +335,7 @@ public:
         if (!m_plot_x)
             return i + 1;
         else
-            return d->m_independent_model->data(i, 0);
+            return IndependentModel()->data(i, 0);
     }
 
     inline void setPlotMode(bool plot_x) { m_plot_x = plot_x; }

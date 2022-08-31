@@ -111,4 +111,5 @@ signals:
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
+    void AddProject(const QJsonObject& project);
 };

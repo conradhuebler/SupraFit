@@ -165,8 +165,8 @@ void FileHandler::ConvertTable()
         dep->clear(m_series, m_stored_table->rowCount()); // rename to stuff to correct rows and cols sometimes
     }
 #pragma message("have a look at here, while restructureing stuff")
-    data->setDependentTable(dep);
-    data->setIndependentTable(indep);
+    data->setDependentRawTable(dep);
+    data->setIndependentRawTable(indep);
     // ende
 
     if (m_filetype == FileType::ITC)

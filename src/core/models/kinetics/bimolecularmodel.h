@@ -31,6 +31,9 @@ class BiMolecularModel : public AbstractModel {
     Q_OBJECT
 
 public:
+    enum {
+        Scale = 1
+    };
     BiMolecularModel(DataClass* data);
     BiMolecularModel(AbstractModel* data);
 
@@ -40,7 +43,7 @@ public:
 
     virtual void OptimizeParameters_Private() override;
 
-    inline int GlobalParameterSize() const override { return 4; }
+    inline int GlobalParameterSize() const override { return 5; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
@@ -58,6 +61,12 @@ public:
             return tr("cAeq");
         else if (i == 3)
             return tr("cc0");
+        else if (i == 4)
+            return tr("fc(cA0)");
+        /*
+        else if (i == 5)
+            return tr("fc(cAeq)");
+            */
         return QString("");
     }
 

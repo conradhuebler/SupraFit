@@ -40,6 +40,8 @@
 #include <QtCore/QUuid>
 #include <QtCore/QtGlobal>
 
+#include <QJSEngine>
+
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -55,16 +57,17 @@ DataClassPrivate::DataClassPrivate()
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
 
+    m_independent_raw_model = new DataTable;
+    m_dependent_raw_model = new DataTable;
+    /*
+        m_independent_calculation_model = new DataTable;
+        m_dependent_calculation_model = new DataTable;
+    */
     QUuid uuid;
     m_uuid = uuid.createUuid().toString();
 
     m_dependent_model->setCheckable(true);
-    if (m_independent_model->columnCount() != m_scaling.size())
-        for (int i = 0; i < m_independent_model->columnCount(); ++i)
-            m_scaling << 1;
-    m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-    m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
-    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(): " << m_ref_counter << this << std::endl;
+    m_independent_model->setCheckable(true);
 }
 
 DataClassPrivate::DataClassPrivate(int type)
@@ -74,49 +77,72 @@ DataClassPrivate::DataClassPrivate(int type)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
+
+    m_independent_raw_model = new DataTable;
+    m_dependent_raw_model = new DataTable;
+    /*
+        m_independent_calculation_model = new DataTable;
+        m_dependent_calculation_model = new DataTable;
+    */
     m_dependent_model->setCheckable(true);
+    m_independent_model->setCheckable(true);
 
     QUuid uuid;
     m_uuid = uuid.createUuid().toString();
-
-    if (m_independent_model->columnCount() != m_scaling.size())
-        for (int i = 0; i < m_independent_model->columnCount(); ++i)
-            m_scaling << 1;
-    m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-    m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
-    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     : QSharedData(other)
     , m_info(other.m_info)
 {
-    m_independent_model = new DataTable(other.m_independent_model);
     m_systemObject = other.m_systemObject;
     m_uuid = other.m_uuid;
-    m_scaling = other.m_scaling;
+
+    m_independent_model = new DataTable(other.m_independent_model);
     m_dependent_model = new DataTable(other.m_dependent_model);
+
+    m_independent_raw_model = new DataTable(other.m_independent_raw_model);
+    m_dependent_raw_model = new DataTable(other.m_dependent_raw_model);
+    /*
+        m_independent_calculation_model = new DataTable(other.m_independent_calculation_model);
+        m_dependent_calculation_model = new DataTable(other.m_dependent_calculation_model);
+    */
     m_raw_data = other.m_raw_data;
     m_system_parameter = other.m_system_parameter;
     m_datatype = other.m_datatype;
     m_title = other.m_title;
     m_root_dir = other.m_root_dir;
+    m_begin_data = other.m_begin_data;
+    m_end_data = other.m_end_data;
+
     m_ref_counter++;
+
+    // InitialiseCalculationModel();
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     : m_info(other->m_info)
 {
-    m_independent_model = new DataTable(other->m_independent_model);
     m_systemObject = other->m_systemObject;
     m_uuid = other->m_uuid;
-    m_scaling = other->m_scaling;
+
+    m_independent_model = new DataTable(other->m_independent_model);
     m_dependent_model = new DataTable(other->m_dependent_model);
+
+    m_independent_raw_model = new DataTable(other->m_independent_raw_model);
+    m_dependent_raw_model = new DataTable(other->m_dependent_raw_model);
+    /*
+        m_independent_calculation_model = new DataTable(other->m_independent_calculation_model);
+        m_dependent_calculation_model = new DataTable(other->m_dependent_calculation_model);
+    */
     m_raw_data = other->m_raw_data;
     m_system_parameter = other->m_system_parameter;
     m_datatype = other->m_datatype;
     m_title = other->m_title;
     m_root_dir = other->m_root_dir;
+    m_begin_data = other->m_begin_data;
+    m_end_data = other->m_end_data;
+
     m_ref_counter++;
 }
 
@@ -229,6 +255,13 @@ const QJsonObject DataClass::ExportData() const
 
     json["independent"] = d->m_independent_model->ExportTable(true);
     json["dependent"] = d->m_dependent_model->ExportTable(true);
+
+    json["independent_raw"] = d->m_independent_raw_model->ExportTable(true);
+    json["dependent_raw"] = d->m_dependent_raw_model->ExportTable(true);
+
+    // json["independent_calculation"] = d->m_independent_calculation_model->ExportTable(true);
+    // json["dependent_calculation"] = d->m_dependent_caclulation_model->ExportTable(true);
+
     json["system"] = d->m_systemObject;
     json["DataType"] = d->m_datatype;
     json["SupraFit"] = qint_version;
@@ -239,6 +272,9 @@ const QJsonObject DataClass::ExportData() const
     json["content"] = d->m_content;
     json["timestamp"] = QDateTime::currentMSecsSinceEpoch();
     json["xaxis"] = m_plot_x;
+    json["begin_data"] = DataBegin();
+    json["end_data"] = DataEnd();
+
     return json;
 }
 
@@ -257,12 +293,24 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     d->m_independent_model->ImportTable(topjson["independent"].toObject());
     d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
 
+    d->m_independent_raw_model->ImportTable(topjson["independent_raw"].toObject());
+    d->m_dependent_raw_model->ImportTable(topjson["dependent_raw"].toObject());
+    /*
+        d->m_independent_calculation_model->ImportTable(topjson["independent_calculation"].toObject());
+        d->m_dependent_caclulation_model->ImportTable(topjson["dependent_calculation"].toObject());
+    */
     d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
     d->m_raw_data = topjson["raw"].toObject();
     d->m_title = topjson["title"].toString();
     d->m_content = topjson["content"].toString();
     m_plot_x = topjson["xaxis"].toBool();
 
+    setDataBegin(topjson["begin_data"].toInt());
+    setDataEnd(topjson["end_data"].toInt());
+    if (DataBegin() == DataEnd()) {
+        setDataBegin(0);
+        setDataEnd(DataPoints());
+    }
     if (forceUUID) {
         if (!topjson["uuid"].toString().isEmpty())
             d->m_uuid = topjson["uuid"].toString();
@@ -271,10 +319,6 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
             d->m_uuid = uuid.createUuid().toString();
         }
     }
-
-    if (d->m_independent_model->columnCount() != d->m_scaling.size())
-        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-            d->m_scaling << 1;
 
     emit Info()->Update();
     return true;
@@ -300,6 +344,12 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
     if (fileversion >= 1601) {
         d->m_independent_model->ImportTable(topjson["independent"].toObject());
         d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
+
+        d->m_independent_raw_model->ImportTable(topjson["independent"].toObject());
+        d->m_dependent_raw_model->ImportTable(topjson["dependent"].toObject());
+
+        InitialiseCalculationModel();
+
     } else {
         QJsonObject concentrationObject, signalObject;
         concentrationObject = topjson["concentrations"].toObject();
@@ -341,6 +391,11 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
             d->m_dependent_model->setRow(signalVector, row);
         }
 
+        d->m_independent_raw_model->ImportTable(d->m_independent_model->ExportTable(true));
+        d->m_dependent_raw_model->ImportTable(d->m_dependent_model->ExportTable(true));
+
+        InitialiseCalculationModel();
+
         QStringList header = topjson["header"].toString().split("|");
         setHeader(header);
     }
@@ -363,9 +418,7 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
         }
     }
 
-    if (d->m_independent_model->columnCount() != d->m_scaling.size())
-        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-            d->m_scaling << 1;
+    setDataEnd(DataPoints() - 1);
 
     return true;
 }
@@ -402,12 +455,22 @@ void DataClass::OverrideInDependentTable(DataTable* table)
 {
     d.detach();
     d->m_independent_model = table;
+    // QStringList header = d->m_independent_raw_model->header();
+    // d->m_independent_raw_model = table;
+    // d->m_independent_raw_model->setHeader(header);
+    // ApplyCalculationModel();
     IndependentModelOverride();
 }
 
 void DataClass::OverrideDependentTable(DataTable* table)
 {
     d.detach();
+    /*
+    QStringList header = d->m_dependent_raw_model->header();
+    table->setCheckedTable(d->m_dependent_model->CheckedTable());
+    d->m_dependent_raw_model = table;
+    d->m_dependent_raw_model->setHeader(header);
+    ApplyCalculationModel();*/
     table->setCheckedTable(d->m_dependent_model->CheckedTable());
     d->m_dependent_model = table;
     DependentModelOverride();
@@ -416,7 +479,8 @@ void DataClass::OverrideDependentTable(DataTable* table)
 void DataClass::OverrideCheckedTable(DataTable* table)
 {
     d.detach();
-    d->m_dependent_model->setCheckedTable(table->CheckedTable());
+    d->m_dependent_raw_model->setCheckedTable(table->CheckedTable());
+    ApplyCalculationModel();
     CheckedModelOverride();
     DependentModelOverride();
 }
@@ -527,4 +591,61 @@ QString DataClass::Data2Text() const
     text += "#### End of Data Description #####\n";
     text += "******************************************************************************************************\n";
     return text;
+}
+
+void DataClass::InitialiseCalculationModel()
+{
+    QStringList header;
+    for (int j = 0; j < IndependentRawModel()->columnCount(); ++j) {
+        header << QString("X%1").arg(j + 1);
+    }
+    IndependentRawModel()->setHeader(header);
+    header.clear();
+    for (int j = 0; j < DependentRawModel()->columnCount(); ++j) {
+        header << QString("Y%1").arg(j + 1);
+    }
+    DependentRawModel()->setHeader(header);
+}
+
+void DataClass::ApplyCalculationModel()
+{
+    QJSEngine engine;
+
+    for (int i = 0; i < IndependentRawModel()->rowCount(); ++i) {
+        for (int j = 0; j < IndependentRawModel()->columnCount(); ++j) {
+            engine.globalObject().setProperty(QString("X%1").arg(j + 1), IndependentRawModel()->data(i, j));
+            double result = engine.evaluate(IndependentRawModel()->header()[j]).toNumber();
+            if (std::isnan(result)) {
+                result = IndependentRawModel()->data(i, j);
+            }
+            if (engine.hasError())
+                IndependentModel()->data(i, j) = IndependentRawModel()->data(i, j);
+            else
+                IndependentModel()->data(i, j) = result;
+        }
+    }
+
+    for (int i = 0; i < DependentRawModel()->rowCount(); ++i) {
+        for (int j = 0; j < DependentRawModel()->columnCount(); ++j) {
+            engine.globalObject().setProperty(QString("Y%1").arg(j + 1), DependentRawModel()->data(i, j));
+
+            double result = engine.evaluate(DependentRawModel()->header()[j]).toNumber();
+            if (std::isnan(result)) {
+                result = DependentRawModel()->data(i, j);
+            }
+            if (engine.hasError())
+                DependentModel()->data(i, j) = DependentRawModel()->data(i, j);
+            else
+                DependentModel()->data(i, j) = result;
+        }
+    }
+
+    emit IndependentModel()->layoutChanged();
+    emit DependentModel()->layoutChanged();
+}
+void DataClass::UpdateCheckedState()
+{
+    d->m_independent_model->setCheckedAll(false);
+    for (int i = DataBegin(); i < DataEnd(); ++i)
+        d->m_independent_model->CheckRow(i, true);
 }

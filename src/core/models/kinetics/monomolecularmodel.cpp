@@ -82,7 +82,8 @@ void MonoMolecularModel::CalculateVariables()
     qreal c0 = GlobalParameter(1);
     qreal ceq = GlobalParameter(2);
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        qDebug() << i;
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
             qreal value = (c0 - ceq) * (exp(-(t)*k)) + ceq;

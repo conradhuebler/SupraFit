@@ -675,6 +675,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
     connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
     connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
+    connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
 
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data) {

@@ -72,6 +72,7 @@ public:
     qreal& operator()(int row, int column);
 
     void CheckRow(int row);
+    void CheckRow(int row, bool check);
     Vector DisableRow(int row);
     void PrintCheckedRows() const;
     void EnableAllRows();
@@ -82,7 +83,7 @@ public:
     inline DataTable* BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); }
     QPointer<DataTable> Block(int row_begin, int column_begin, int row_end, int column_end) const;
 
-    bool isChecked(int row, int column) const;
+    bool isChecked(int row, int column = 0) const;
     int isRowChecked(int i) const;
     int EnabledRows() const;
 

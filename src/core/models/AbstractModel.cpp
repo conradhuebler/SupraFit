@@ -76,6 +76,7 @@ AbstractModel::AbstractModel(DataClass* data)
 
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();
+    setPlotMode(true);
 }
 
 AbstractModel::AbstractModel(DataClass* data, const QJsonObject& model)
@@ -118,6 +119,7 @@ AbstractModel::AbstractModel(DataClass* data, const QJsonObject& model)
 
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();
+    setPlotMode(true);
 }
 
 AbstractModel::AbstractModel(AbstractModel* model)
@@ -155,6 +157,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();
+    setPlotMode(true);
 }
 /*
 void AbstractModel::DefineModel(const QJsonObject &model)
@@ -406,7 +409,7 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
-    if (!LocalTable() || !m_complete)
+    if (!LocalTable() || !m_complete || DataBegin() == DataEnd())
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
     m_mean = 0;
@@ -1464,11 +1467,11 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
     if (topjson.contains("name"))
         m_name = topjson["name"].toString();
-
-    if (d->m_independent_model->columnCount() != d->m_scaling.size())
-        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-            d->m_scaling << 1;
-
+    /*
+        if (d->m_independent_model->columnCount() != d->m_scaling.size())
+            for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+                d->m_scaling << 1;
+    */
     if (SFModel() != SupraFit::MetaModel)
         Calculate();
 

@@ -18,7 +18,10 @@
  */
 
 #include "src/ui/dialogs/regressionanalysisdialog.h"
+
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/guitools.h"
+
 #include "src/ui/widgets/signalelement.h"
 #include "src/ui/widgets/systemparameterwidget.h"
 
@@ -71,6 +74,8 @@ DataWidget::DataWidget()
     m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_concentrations->verticalScrollBar(), SIGNAL(valueChanged(int)), m_signals->verticalScrollBar(), SLOT(setValue(int)));
+    m_concentrations->setContextMenuPolicy(Qt::ActionsContextMenu);
+
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
@@ -83,10 +88,37 @@ DataWidget::DataWidget()
     m_substances = new QLabel;
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
+
+    m_x_model = new QLineEdit;
+    m_y_model = new QLineEdit;
+
+    m_x_string = new QLabel;
+    m_x_string->setFixedWidth(200);
+
+    m_y_string = new QLabel;
+    m_y_string->setFixedWidth(200);
+
+    m_x_raw = new QCheckBox(tr("Show Raw Data"));
+    m_y_raw = new QCheckBox(tr("Show Raw Data"));
+
     m_tables = new QWidget; //(tr("Data Tables"));
+
+    m_range = new QLabel(tr("All data are included!"));
+
     m_tables_layout = new QGridLayout;
-    m_tables_layout->addWidget(m_concentrations, 0, 0);
-    m_tables_layout->addWidget(m_signals, 0, 1);
+
+    m_tables_layout->addWidget(m_range, 0, 0, 1, 6);
+
+    m_tables_layout->addWidget(m_x_raw, 1, 0);
+    m_tables_layout->addWidget(m_x_string, 1, 1);
+    m_tables_layout->addWidget(m_x_model, 1, 2);
+
+    m_tables_layout->addWidget(m_y_raw, 1, 3);
+    m_tables_layout->addWidget(m_y_string, 1, 4);
+    m_tables_layout->addWidget(m_y_model, 1, 5);
+
+    m_tables_layout->addWidget(m_concentrations, 2, 0, 1, 3);
+    m_tables_layout->addWidget(m_signals, 2, 3, 1, 3);
     m_tables->setLayout(m_tables_layout);
 
     m_text_edit = new QTextEdit;
@@ -127,6 +159,21 @@ DataWidget::~DataWidget()
     QSettings settings;
     settings.beginGroup("overview");
     settings.setValue("splitterSizes", m_splitter->saveState());
+}
+
+void DataWidget::UpdateRanges()
+{
+    if (!m_data)
+        return;
+    int begin = m_data.toStrongRef().data()->DataBegin();
+    int end = m_data.toStrongRef().data()->DataEnd();
+
+    double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
+    double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
+    double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);
+    double y1 = m_data.toStrongRef().data()->DependentModel()->data(end);
+
+    m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
 }
 
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
@@ -203,6 +250,78 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         if (m_plot_x->isVisible())
             m_plot_x->hide();
     });
+
+    connect(m_x_raw, &QCheckBox::stateChanged, this, [this]() {
+        if (m_x_raw->isChecked())
+            m_concentrations->setModel(m_data.toStrongRef().data()->IndependentRawModel());
+        else
+            m_concentrations->setModel(m_data.toStrongRef().data()->IndependentModel());
+    });
+
+    connect(m_y_raw, &QCheckBox::stateChanged, this, [this]() {
+        if (m_y_raw->isChecked())
+            m_signals->setModel(m_data.toStrongRef().data()->DependentRawModel());
+        else
+            m_signals->setModel(m_data.toStrongRef().data()->DependentModel());
+    });
+
+    connect(m_concentrations->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
+        m_index_x = i;
+        QString eq = m_data.toStrongRef().data()->IndependentRawModel()->header()[i];
+        m_x_model->setText(eq);
+        m_x_string->setText(QString("Working on column %1").arg(i + 1));
+    });
+
+    connect(m_signals->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
+        m_index_y = i;
+        QString eq = m_data.toStrongRef().data()->DependentRawModel()->header()[i];
+        m_y_model->setText(eq);
+        m_y_string->setText(QString("Working on column %1").arg(i + 1));
+    });
+
+    connect(m_x_model, &QLineEdit::textEdited, this, [this](const QString& string) {
+        if (m_index_x == -1)
+            return;
+        QStringList header = m_data.toStrongRef().data()->IndependentRawModel()->header();
+        header[m_index_x] = string;
+        m_data.toStrongRef().data()->IndependentRawModel()->setHeader(header);
+        m_data.toStrongRef().data()->ApplyCalculationModel();
+    });
+
+    connect(m_y_model, &QLineEdit::textEdited, this, [this](const QString& string) {
+        if (m_index_y == -1)
+            return;
+        QStringList header = m_data.toStrongRef().data()->DependentRawModel()->header();
+        header[m_index_y] = string;
+        m_data.toStrongRef().data()->DependentRawModel()->setHeader(header);
+        m_data.toStrongRef().data()->ApplyCalculationModel();
+    });
+
+    QAction* beginDataAction = new QAction(tr("Begin Data"));
+    beginDataAction->setToolTip(tr("Set the first row to be included in data."));
+    beginDataAction->setIcon(Icon("go-top"));
+    m_concentrations->addAction(beginDataAction);
+
+    connect(beginDataAction, &QAction::triggered, beginDataAction, [this]() {
+        QModelIndex index = m_concentrations->currentIndex();
+        int i = index.row();
+        m_data.toStrongRef().data()->setDataBegin(i);
+        UpdateRanges();
+    });
+
+    QAction* endDataAction = new QAction(tr("End Data"));
+    endDataAction->setToolTip(tr("Set the last row to be included in data."));
+    endDataAction->setIcon(Icon("go-down"));
+    m_concentrations->addAction(endDataAction);
+
+    connect(endDataAction, &QAction::triggered, endDataAction, [this]() {
+        QModelIndex index = m_concentrations->currentIndex();
+        int i = index.row();
+        m_data.toStrongRef().data()->setDataEnd(i);
+        UpdateRanges();
+    });
+
+    UpdateRanges();
 }
 
 void DataWidget::SetProjectName()

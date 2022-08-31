@@ -151,6 +151,8 @@ void ChartWrapper::MakeSeries()
 
     for (int i = 0; i < rows; ++i) {
         double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
+        if (!m_working.toStrongRef().data()->IndependentModel()->isChecked(i))
+            continue;
         for (int j = 0; j < cols; ++j) {
             if (m_working.toStrongRef().data()->DependentModel()->isChecked(i, j)) {
                 if (j >= m_stored_series.size())

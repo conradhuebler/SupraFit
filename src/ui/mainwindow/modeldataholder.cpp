@@ -200,6 +200,12 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_analyse->setIcon(Icon("help-hint"));
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
 
+    m_split_data = new QPushButton(tr("Split Data Set"));
+    m_split_data->setToolTip(tr("Split Data Set Column-Wise."));
+    m_split_data->setFlat(true);
+    m_split_data->setIcon(Icon("split"));
+    connect(m_split_data, &QPushButton::clicked, this, &MDHDockTitleBar::SplitData);
+
     m_close_all = new QPushButton(tr("Remove All"));
     m_close_all->setToolTip(tr("Remove all models from the current project."));
     m_close_all->setFlat(true);
@@ -318,6 +324,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     buttons->addStretch();
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_analyse);
+    buttons->addWidget(m_split_data);
     buttons->addStretch();
     buttons->addWidget(m_close_all);
 
@@ -429,6 +436,7 @@ ModelDataHolder::ModelDataHolder()
             m_compare_dialog->show();
         }
     });
+    connect(m_TitleBarWidget, &MDHDockTitleBar::SplitData, this, &ModelDataHolder::SplitData);
 
     layout->addWidget(m_modelsWidget, 1, 0);
     ActiveBatch();
@@ -995,6 +1003,35 @@ QString ModelDataHolder::Compare() const
     compare += "</table>";
 
     return compare;
+}
+
+void ModelDataHolder::SplitData()
+{
+    if (!m_data)
+        return;
+
+    DataTable* dep = new DataTable;
+    dep->ImportTable(m_data.toStrongRef().data()->DependentModel()->ExportTable(true));
+
+    DataTable* dep_raw = new DataTable;
+    dep_raw->ImportTable(m_data.toStrongRef().data()->DependentRawModel()->ExportTable(true));
+
+    QJsonObject project = m_data.toStrongRef().data()->ExportData();
+    for (int i = 0; i < dep->columnCount(); ++i) {
+        DataTable* tmp1 = dep->BlockColumns(i, 1);
+        DataTable* tmp2 = dep_raw->BlockColumns(i, 1);
+
+        project["dependent"] = tmp1->ExportTable(true);
+        project["dependent_raw"] = tmp2->ExportTable(true);
+
+        delete tmp1;
+        delete tmp2;
+        QUuid uuid;
+        project["uuid"] = uuid.createUuid().toString();
+        QJsonObject d;
+        d["data"] = project;
+        emit AddProject(d);
+    }
 }
 
 #include "modeldataholder.moc"

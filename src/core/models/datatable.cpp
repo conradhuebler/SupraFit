@@ -213,9 +213,10 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
             return Print::printDouble(data(index.row(), index.column()), 8);
         else
             return Print::printDouble(data(index.row(), index.column()), 8);
-    else if (role == Qt::CheckStateRole && m_checkable)
-        return isChecked(index.row(), index.column());
-    else
+    else if (role == Qt::CheckStateRole && m_checkable) {
+        const bool checked = isChecked(index.row(), index.column());
+        return checked;
+    } else
         return QVariant();
 }
 
@@ -261,6 +262,7 @@ bool DataTable::setData(const QModelIndex& index, const QVariant& value, int rol
         emit dataChanged(index, index);
         return true;
     }
+
     return false;
 }
 
@@ -280,6 +282,13 @@ void DataTable::CheckRow(int row)
     bool checked = check < columnCount() / 2;
     for (int i = 0; i < columnCount(); ++i)
         m_checked_table(row, i) = checked;
+    emit layoutChanged();
+}
+
+void DataTable::CheckRow(int row, bool check)
+{
+    for (int i = 0; i < columnCount(); ++i)
+        m_checked_table(row, i) = check;
     emit layoutChanged();
 }
 
@@ -711,10 +720,10 @@ QJsonObject DataTable::ExportTable(bool checked, const QVector<int> checked_tabl
 
 bool DataTable::ImportTable(const QJsonObject& table)
 {
-    int rows = table["rows"].toInt();
-    int cols = table["cols"].toInt();
+    int rows = qMax(table["rows"].toInt(), rowCount());
+    int cols = qMax(table["cols"].toInt(), columnCount());
 
-    if (rows != rowCount() || cols != columnCount()) {
+    if (rowCount() != rows || cols != columnCount()) {
         m_table = Eigen::MatrixXd::Zero(rows, cols);
         m_checked_table = Eigen::MatrixXd::Ones(rows, cols);
     }

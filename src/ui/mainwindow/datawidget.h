@@ -55,13 +55,17 @@ public:
     virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
 
 private:
+    void UpdateRanges();
+
     QCheckBox* m_plot_x;
     QTableView *m_concentrations, *m_signals;
     QTextEdit* m_text_edit;
     QPushButton *m_switch, *m_linear, *m_hide_points;
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
-    QLineEdit* m_name;
+    QLineEdit *m_name, *m_x_model, *m_y_model;
+    QCheckBox *m_x_raw, *m_y_raw;
+    QLabel *m_x_string, *m_y_string, *m_range;
     QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
     QWidget *m_tables, *m_widget;
     QSplitter* m_splitter;
@@ -72,6 +76,8 @@ private:
     QWidget* m_systemwidget;
     bool m_system_parameter_loaded;
     RegressionAnalysisDialog* dialog;
+
+    int m_index_x = -1, m_index_y = -1;
 
 private slots:
     void ShowContextMenu(const QPoint& pos);

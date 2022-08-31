@@ -53,6 +53,11 @@ BiMolecularModel::~BiMolecularModel()
 
 void BiMolecularModel::DeclareOptions()
 {
+    QStringList cooperativity = QStringList() << "yes"
+                                              << "no";
+    addOption(Scale, "Scale", cooperativity);
+
+    AbstractModel::DeclareOptions();
 }
 
 void BiMolecularModel::DeclareSystemParameter()
@@ -65,7 +70,8 @@ void BiMolecularModel::InitialGuess_Private()
     (*GlobalTable())[1] = 1;
     (*GlobalTable())[2] = 0.01;
     (*GlobalTable())[3] = 0.01;
-
+    (*GlobalTable())[4] = 1;
+    // (*GlobalTable())[5] = 1;
     Calculate();
 }
 
@@ -75,6 +81,12 @@ void BiMolecularModel::OptimizeParameters_Private()
     addGlobalParameter(1);
     addGlobalParameter(2);
     addGlobalParameter(3);
+
+    QString scale = getOption(Scale);
+    if (scale == "yes")
+        addGlobalParameter(4);
+
+    //  addGlobalParameter(5);
 }
 
 void BiMolecularModel::CalculateVariables()
@@ -84,11 +96,19 @@ void BiMolecularModel::CalculateVariables()
     qreal cA0 = GlobalParameter(1);
     qreal cAeq = GlobalParameter(2);
     qreal cc0 = GlobalParameter(3);
-
+    qreal q;
+    QString scale = getOption(Scale);
+    if (scale == "yes")
+        q = GlobalParameter(4);
+    else
+        q = 1;
+    //  qreal fccc0 = GlobalParameter(5);
     for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = (cA0 * (cA0 - cc0) * exp(k * (t) * (cA0 - cc0))) / (cA0 * exp(k * (t) * (cA0 - cc0)) - cc0) + cAeq;
+
+            // qreal value = (cA0 * (cA0 - cc0) * exp(k * (t) * (cA0 - cc0))) / (cA0 * exp(k * (t) * (cA0 - cc0)) - cc0) + cAeq;
+            qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0);
             SetValue(i, j, value);
         }
     }

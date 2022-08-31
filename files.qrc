@@ -47,5 +47,8 @@
         <file>icons/thermogram.png</file>
         <file>icons/spectra_ico.png</file>
         <file>BSD.md</file>
+        <file>icons/go-top.png</file>
+        <file>icons/go-bottom.png</file>
+        <file>icons/split.png</file>
     </qresource>
 </RCC>

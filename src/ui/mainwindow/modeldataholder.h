@@ -100,7 +100,7 @@ public:
 
 private:
     QWidget* m_buttons;
-    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_uv_vis, m_add_fl, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse, m_add_script, m_define_model;
+    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_uv_vis, m_add_fl, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse, m_add_script, m_define_model, m_split_data;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_uv_vis_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model;
 
     QAction* m_last_action;
@@ -117,7 +117,7 @@ signals:
     void OptimizeAll();
     void Compare();
     void EditData();
-
+    void SplitData();
 };
 
 class ModelDataHolder : public QWidget {
@@ -199,6 +199,7 @@ private:
 
     void Json2Model(const QJsonObject& object);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
+    void SplitData();
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
 
@@ -233,4 +234,5 @@ signals:
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
+    void AddProject(const QJsonObject& project);
 };
