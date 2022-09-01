@@ -163,6 +163,9 @@ void itc_ItoII_Model::CalculateVariables()
 
     bool reservior = m_reservior;
 
+    /* One note for ITC Models and the "faster" iteration of inlcuded points!
+     * The results depend on the previously calculated concentrations of the complex, hence the loop MUST be complete */
+
     for (int i = 0; i < DataPoints(); ++i) {
 
         qreal v = IndependentModel()->data(i);

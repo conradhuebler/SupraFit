@@ -186,7 +186,8 @@ void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
 
     bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
@@ -202,7 +203,8 @@ void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
     while (m_threadpool->activeThreadCount()) { /*QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/
     }
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         m_time += m_solvers[i]->Time() + m_solvers[i]->LTime();
         if (!m_solvers[i]->Ok()) {

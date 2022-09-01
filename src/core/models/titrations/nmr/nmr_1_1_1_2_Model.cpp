@@ -143,7 +143,8 @@ void nmr_ItoI_ItoII_Model::CalculateVariables()
     qreal K11 = qPow(10, GlobalParameter(0));
     qreal K12 = qPow(10, GlobalParameter(1));
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    // for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
@@ -182,7 +183,6 @@ QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 
     qreal complex_11 = concentration(3);
     qreal complex_12 = concentration(4);
-    ;
 
     vector << host / host_0 * LocalTable()->data(series, 0);
     vector << complex_11 / host_0 * LocalTable()->data(series, 1);

@@ -85,7 +85,8 @@ void fl_ItoI_Model::CalculateVariables()
 {
     auto hostguest = getHostGuestPair();
     qreal value = 0;
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));

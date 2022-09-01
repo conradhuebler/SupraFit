@@ -76,7 +76,8 @@ void Michaelis_Menten_Model::InitialGuess_Private()
 
 void Michaelis_Menten_Model::CalculateVariables()
 {
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal vmax = GlobalParameter(0);
         qreal Km = GlobalParameter(1);
         qreal S_0 = IndependentModel()->data(i);

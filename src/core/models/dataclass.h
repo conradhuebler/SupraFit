@@ -245,6 +245,7 @@ public:
     }
 
     void UpdateCheckedState();
+    void ReReadCheckedState(int row, bool state);
 
     int DataBegin() const { return d->m_begin_data; }
     int DataEnd() const { return d->m_end_data; }
@@ -403,4 +404,5 @@ signals:
     void Deleted();
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
+    void DataRangedChanged();
 };

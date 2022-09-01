@@ -144,4 +144,6 @@ private:
     QMutex m_lock;
 
     bool m_checkable, m_editable;
+signals:
+    void CheckedStateChanged(int row, bool state);
 };

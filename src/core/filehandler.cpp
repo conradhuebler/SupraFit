@@ -131,13 +131,15 @@ void FileHandler::ReadGeneric()
             QStringList items = line.simplified().split(sep);
             double sum = 0;
             for (const QString& item : qAsConst(items)) {
-                if (read_header)
-                    header << QString(item).replace(HashTag, "");
-                else
+                if (read_header) {
+                    QString head = QString(item).replace(HashTag, "");
+                    if (!head.isEmpty() && !head.isNull())
+                        header << head;
+                } else
                     row.append((QString(item).replace(",", ".")).toDouble());
                 sum += (QString(item).replace(",", ".")).toDouble();
             }
-            // qDebug() << header;
+            qDebug() << header;
             if (!header_added) {
                 m_stored_table->setHeader(header);
                 header_added = true;

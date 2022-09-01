@@ -169,7 +169,8 @@ void DecayRates::CalculateVariables()
     qreal B3 = LocalTable()->data(2);
     qreal B4 = LocalTable()->data(3);
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         qreal value = B1 * exp(-1 * t / t1);
         // if(m_z)

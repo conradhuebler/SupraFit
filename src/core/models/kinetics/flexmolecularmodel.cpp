@@ -85,10 +85,13 @@ void FlexMolecularModel::CalculateVariables()
     qreal cA0 = GlobalParameter(2);
     qreal cAeq = GlobalParameter(3);
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = (cA0 - cAeq) * pow(pow(cA0 - cAeq, (n - 1)) * k * t * (n - 1) + 1, 1.0 / (n - 1.0)) + cAeq;
+            qreal inner = -k * t * (1 - n) + pow(cA0 - cAeq, 1 - n);
+            qreal value = pow(inner, 1 / (1 - n)) + cAeq;
+            // qreal value = (cA0 - cAeq) * pow(pow(cA0 - cAeq, (1 - n)) * k * t * (1 -n ) + 1, 1.0 / ( 1.0 - n)) + cAeq;
             SetValue(i, j, value);
         }
     }

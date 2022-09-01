@@ -82,7 +82,8 @@ void ResampleAnalyse::CrossValidation()
     int real_points = 0;
 
     /* I will keep the x-vector in correct length, single rows could be disabled */
-    for (int i = 0; i < m_model->DataPoints(); ++i) {
+    for (int i = m_model->DataBegin(); i < m_model->DataEnd(); ++i) {
+        // for (int i = 0; i < m_model->DataEnd(); ++i) {
         x << m_model->PrintOutIndependent(i);
         real_points += m_model->DependentModel()->isRowChecked(i);
     }
@@ -92,7 +93,8 @@ void ResampleAnalyse::CrossValidation()
     switch (type) {
     case 1:
         blocksize = 1;
-        for (int i = 0; i < m_model->DataPoints(); ++i) {
+        // for (int i = 0; i < m_model->DataEnd(); ++i) {
+        for (int i = m_model->DataBegin(); i < m_model->DataEnd(); ++i) {
             if (!m_model->DependentModel()->isRowChecked(i))
                 continue;
 
@@ -112,10 +114,12 @@ void ResampleAnalyse::CrossValidation()
         break;
     case 2:
         blocksize = 1;
-        for (int i = 0; i < m_model->DataPoints(); ++i) {
+        for (int i = m_model->DataBegin(); i < m_model->DataEnd(); ++i) {
+            // for (int i = 0; i < m_model->DataEnd(); ++i) {
             if (!m_model->DependentModel()->isRowChecked(i))
                 continue;
-            for (int j = i + 1; j < m_model->DataPoints(); ++j) {
+            for (int j = i + 1; i < m_model->DataEnd(); ++i) {
+                // for (int j = i + 1; j < m_model->DataEnd(); ++j) {
                 if (!m_model->DependentModel()->isRowChecked(j))
                     continue;
 
@@ -145,7 +149,7 @@ void ResampleAnalyse::CrossValidation()
         int steps = m_controller["MaxSteps"].toInt();
         int algorithm = m_controller["Algorithm"].toInt();
 
-        int points = m_model->DataPoints();
+        int points = m_model->DataEnd();
 
         int end = X * (points - 1);
         long double maxsteps = tgammal(points + 1) / (tgammal(X + 1) * tgammal(points - X + 1));
@@ -439,12 +443,12 @@ void ResampleAnalyse::PlainReduction()
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     QPointer<DataTable> table = m_model->DependentModel();
-    emit setMaximumSteps(m_model->DataPoints() - 4);
-    int mind_points = 3;
+    emit setMaximumSteps(m_model->DataEnd() - 4);
+    int mind_points = m_model->DataBegin() + 3;
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     if (m_controller["ReductionRuntype"].toInt() == 1 || m_controller["ReductionRuntype"].toInt() == 3) {
-        for (int i = m_model->DataPoints() - 1; i > mind_points && table->EnabledRows() >= mind_points; --i) {
+        for (int i = m_model->DataEnd() - 1; i > mind_points && table->EnabledRows() >= mind_points; --i) {
             QPointer<MonteCarloThread> thread = new MonteCarloThread();
             connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
             thread->setIndex(i);
@@ -458,7 +462,7 @@ void ResampleAnalyse::PlainReduction()
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
     } else if (m_controller["ReductionRuntype"].toInt() == 2 || m_controller["runtype"].toInt() == 3) {
-        for (int i = 1; i < m_model->DataPoints() - 3 && table->EnabledRows() >= mind_points; ++i) {
+        for (int i = 1; i < m_model->DataEnd() - 3 && table->EnabledRows() >= mind_points; ++i) {
             QPointer<MonteCarloThread> thread = new MonteCarloThread();
             connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
             thread->setIndex(i);

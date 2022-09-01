@@ -261,9 +261,9 @@ void ImportData::NoChanged()
     m_independent_rows->setMinimum(1);
     m_independent_rows->setMaximum(m_table->model()->columnCount());
 
-    if (m_table->model()->columnCount() > 2)
-        m_independent_rows->setValue(2);
-    else
+    if (m_table->model()->columnCount() > 2) {
+        m_independent_rows->setValue(qApp->instance()->property("lastSize").toInt());
+    } else
         m_independent_rows->setValue(1);
 }
 
@@ -382,9 +382,9 @@ void ImportData::LoadFile()
         m_independent_rows->setMinimum(1);
         m_independent_rows->setMaximum(m_table->model()->columnCount());
 
-        if (m_table->model()->columnCount() > 2)
-            m_independent_rows->setValue(2);
-        else
+        if (m_table->model()->columnCount() > 2) {
+            m_independent_rows->setValue(qApp->instance()->property("lastSize").toInt());
+        } else
             m_independent_rows->setValue(1);
     }
 }
@@ -472,6 +472,7 @@ void ImportData::accept()
     object["data"] = data;
     m_project = object;
     delete model;
+    qApp->instance()->setProperty("lastSize", m_independent_rows->value());
     QDialog::accept();
 }
 void ImportData::setData(const DataTable* model)

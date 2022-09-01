@@ -1015,7 +1015,7 @@ void ModelDataHolder::SplitData()
 
     DataTable* dep_raw = new DataTable;
     dep_raw->ImportTable(m_data.toStrongRef().data()->DependentRawModel()->ExportTable(true));
-
+    QStringList header = dep->header();
     QJsonObject project = m_data.toStrongRef().data()->ExportData();
     for (int i = 0; i < dep->columnCount(); ++i) {
         DataTable* tmp1 = dep->BlockColumns(i, 1);
@@ -1028,6 +1028,7 @@ void ModelDataHolder::SplitData()
         delete tmp2;
         QUuid uuid;
         project["uuid"] = uuid.createUuid().toString();
+        project["title"] = header[i];
         QJsonObject d;
         d["data"] = project;
         emit AddProject(d);

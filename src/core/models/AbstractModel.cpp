@@ -409,7 +409,7 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
-    if (!LocalTable() || !m_complete || DataBegin() == DataEnd())
+    if (!LocalTable() || !m_complete || (DataBegin() == DataEnd() && SFModel() != SupraFit::MetaModel))
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
     m_mean = 0;

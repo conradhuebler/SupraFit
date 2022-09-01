@@ -89,6 +89,10 @@ void itc_n_ItoI_Model::CalculateVariables()
     qreal V = m_V;
 
     qreal phi_prev = 0;
+
+    /* One note for ITC Models and the "faster" iteration of inlcuded points!
+     * The results depend on the previously calculated concentrations of the complex, hence the loop MUST be complete */
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
 

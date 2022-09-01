@@ -50,5 +50,6 @@
         <file>icons/go-top.png</file>
         <file>icons/go-bottom.png</file>
         <file>icons/split.png</file>
+        <file>icons/window-duplicate.png</file>
     </qresource>
 </RCC>

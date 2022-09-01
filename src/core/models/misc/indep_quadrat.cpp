@@ -72,7 +72,8 @@ void Indep_Quadrat::CalculateVariables()
 {
     QString order = getOption(Order);
     qreal value = 0;
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal a = GlobalParameter(0);
         qreal b = GlobalParameter(1);
         qreal x = IndependentModel()->data(i);

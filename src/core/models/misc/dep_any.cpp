@@ -62,7 +62,8 @@ void Dep_Any::InitialGuess_Private()
 
 void Dep_Any::CalculateVariables()
 {
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal a = GlobalParameter(0);
         qreal b = GlobalParameter(1);
         qreal x = IndependentModel()->data(i);

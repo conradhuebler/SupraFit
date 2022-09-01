@@ -252,6 +252,9 @@ void itc_IItoII_Model::CalculateVariables()
     }
     m_threadpool->waitForDone();
 
+    /* One note for ITC Models and the "faster" iteration of inlcuded points!
+     * The results depend on the previously calculated concentrations of the complex, hence the loop MUST be complete */
+
     for (int i = 0; i < DataPoints(); ++i) {
         if (!m_solvers[i]->Ok()) {
 #ifdef _DEBUG

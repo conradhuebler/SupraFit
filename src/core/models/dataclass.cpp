@@ -178,7 +178,7 @@ DataClass::DataClass(QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate;
-
+    connect(IndependentModel(), &DataTable::CheckedStateChanged, this, &DataClass::ReReadCheckedState);
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
     connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
@@ -189,6 +189,7 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate();
+    connect(IndependentModel(), &DataTable::CheckedStateChanged, this, &DataClass::ReReadCheckedState);
 
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
@@ -202,6 +203,8 @@ DataClass::DataClass(const DataClass& other)
     : QObject()
 {
     d = other.d;
+    connect(IndependentModel(), &DataTable::CheckedStateChanged, this, &DataClass::ReReadCheckedState);
+
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
     connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
@@ -212,6 +215,8 @@ DataClass::DataClass(const DataClass* other)
     : QObject()
 {
     d = other->d;
+    connect(IndependentModel(), &DataTable::CheckedStateChanged, this, &DataClass::ReReadCheckedState);
+
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
     connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
@@ -295,6 +300,17 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 
     d->m_independent_raw_model->ImportTable(topjson["independent_raw"].toObject());
     d->m_dependent_raw_model->ImportTable(topjson["dependent_raw"].toObject());
+    bool load = false;
+    if (d->m_independent_model.data()->rowCount() != d->m_independent_raw_model.data()->rowCount()) {
+        d->m_independent_raw_model->ImportTable(topjson["independent"].toObject());
+        load = true;
+    }
+    if (d->m_dependent_model.data()->rowCount() != d->m_dependent_raw_model.data()->rowCount()) {
+        d->m_dependent_raw_model->ImportTable(topjson["dependent"].toObject());
+        load = true;
+    }
+    if (load)
+        InitialiseCalculationModel();
     /*
         d->m_independent_calculation_model->ImportTable(topjson["independent_calculation"].toObject());
         d->m_dependent_caclulation_model->ImportTable(topjson["dependent_calculation"].toObject());
@@ -479,8 +495,8 @@ void DataClass::OverrideDependentTable(DataTable* table)
 void DataClass::OverrideCheckedTable(DataTable* table)
 {
     d.detach();
-    d->m_dependent_raw_model->setCheckedTable(table->CheckedTable());
-    ApplyCalculationModel();
+    d->m_dependent_model->setCheckedTable(table->CheckedTable());
+    // ApplyCalculationModel();
     CheckedModelOverride();
     DependentModelOverride();
 }
@@ -646,6 +662,28 @@ void DataClass::ApplyCalculationModel()
 void DataClass::UpdateCheckedState()
 {
     d->m_independent_model->setCheckedAll(false);
-    for (int i = DataBegin(); i < DataEnd(); ++i)
+    d->m_dependent_model->setCheckedAll(false);
+
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
         d->m_independent_model->CheckRow(i, true);
+        d->m_dependent_model->CheckRow(i, true);
+    }
+}
+
+void DataClass::ReReadCheckedState(int row, bool state)
+{
+    d->m_independent_model->CheckRow(row, state);
+    d->m_dependent_model->CheckRow(row, state);
+
+    int first = -1, last = -1;
+    for (int i = 0; i < DataPoints(); ++i) {
+        if (IndependentModel()->isChecked(i) && first == -1)
+            first = i;
+        if (IndependentModel()->isChecked(i))
+            last = i;
+    }
+    // qDebug() << row << last << DependentModel()->data(last, 0);
+    d->m_begin_data = first;
+    d->m_end_data = last;
+    emit DataRangedChanged();
 }

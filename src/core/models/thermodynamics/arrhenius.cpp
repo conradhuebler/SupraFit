@@ -76,7 +76,8 @@ void ArrheniusFit::InitialGuess_Private()
 
 void ArrheniusFit::CalculateVariables()
 {
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal A = GlobalParameter(0);
         qreal EA = GlobalParameter(1);
         qreal T = IndependentModel()->data(i);

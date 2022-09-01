@@ -221,7 +221,8 @@ private:
                                                    << "MarkerPointFeedback"
                                                    << "PointFeedback"
                                                    << "ModuloPointFeedback"
-                                                   << "FullShannon";
+                                                   << "FullShannon"
+                                                   << "lastSize";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;
@@ -265,6 +266,7 @@ private slots:
 
     void SaveData(const QModelIndex& index);
     void AddUpData(const QModelIndex& index, bool sign);
+    void Duplicate(const QModelIndex& index);
 
     void CopyModel(const QJsonObject& o, int data, int model);
 

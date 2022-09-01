@@ -105,10 +105,11 @@ void fl_ItoI_ItoII_Model::InitialGuess_Private()
 
     int index_11 = 0;
 
-    for (int i = 0; i < DataPoints(); ++i)
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         if (XValue(i) <= 1)
             index_11 = i;
-
+    }
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
     LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 2);
@@ -151,7 +152,8 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
     qreal K11 = qPow(10, GlobalParameter(0));
     qreal K12 = qPow(10, GlobalParameter(1));
 
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 

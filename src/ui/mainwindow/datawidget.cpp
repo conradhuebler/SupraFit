@@ -166,14 +166,18 @@ void DataWidget::UpdateRanges()
     if (!m_data)
         return;
     int begin = m_data.toStrongRef().data()->DataBegin();
-    int end = m_data.toStrongRef().data()->DataEnd();
+    int end = m_data.toStrongRef().data()->DataEnd() - 1;
 
     double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
     double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
     double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);
     double y1 = m_data.toStrongRef().data()->DependentModel()->data(end);
 
-    m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
+    m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6)").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
+
+    m_wrapper.toStrongRef().data()->stopAnimiation();
+    m_wrapper.toStrongRef().data()->UpdateModel();
+    m_wrapper.toStrongRef().data()->restartAnimation();
 }
 
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
@@ -305,6 +309,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     connect(beginDataAction, &QAction::triggered, beginDataAction, [this]() {
         QModelIndex index = m_concentrations->currentIndex();
         int i = index.row();
+        if (i >= m_data.toStrongRef().data()->DataPoints())
+            return;
         m_data.toStrongRef().data()->setDataBegin(i);
         UpdateRanges();
     });
@@ -316,11 +322,15 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     connect(endDataAction, &QAction::triggered, endDataAction, [this]() {
         QModelIndex index = m_concentrations->currentIndex();
-        int i = index.row();
+        int i = index.row() + 1;
+        // qDebug() << i;
+        if (i <= 0)
+            return;
         m_data.toStrongRef().data()->setDataEnd(i);
         UpdateRanges();
     });
 
+    connect(m_data.toStrongRef().data(), &DataClass::DataRangedChanged, this, &DataWidget::UpdateRanges);
     UpdateRanges();
 }
 

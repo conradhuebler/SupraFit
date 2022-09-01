@@ -103,7 +103,8 @@ void BiMolecularModel::CalculateVariables()
     else
         q = 1;
     //  qreal fccc0 = GlobalParameter(5);
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
         for (int j = 0; j < SeriesCount(); ++j) {
 

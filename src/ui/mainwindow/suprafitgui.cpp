@@ -116,6 +116,14 @@ SupraFitGui::SupraFitGui()
     });
     */
 
+    action = new QAction("Duplicate", m_project_view);
+    m_project_view->addAction(action);
+    action->setIcon(Icon("window-duplicate"));
+
+    connect(action, &QAction::triggered, action, [this]() {
+        Duplicate(m_project_view->currentIndex());
+    });
+
     action = new QAction("Add Up", m_project_view);
     m_project_view->addAction(action);
     action->setIcon(Icon("list-add-blue"));
@@ -1136,6 +1144,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("ModuloPointFeedback") == QVariant())
         qApp->instance()->setProperty("ModuloPointFeedback", 0);
 
+    if (qApp->instance()->property("lastSize") == QVariant())
+        qApp->instance()->setProperty("lastSize", 2);
+
     qApp->instance()->setProperty("lastDir", getDir());
 }
 
@@ -1361,6 +1372,39 @@ void SupraFitGui::SaveData(const QModelIndex& index)
 
     JsonHandler::WriteJsonFile(object, str);
     setLastDir(str);
+}
+
+void SupraFitGui::Duplicate(const QModelIndex& index)
+{
+    // qDebug() << m_project_view->currentIndex() << index << m_project_view->selectionModel()->selectedIndexes();
+    if (!index.isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted. (List is empty, no project loaded?)"));
+        return;
+    }
+
+    if (index.parent().isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You can only add up or substract data to projects, not to models in projects."));
+        return;
+    }
+
+    if (index.row() >= m_project_list.size()) {
+        Info(tr("This is something, that should be impossbile."));
+        return;
+    }
+
+    if (m_project_list[index.row()]->isMetaModel()) {
+        Info(tr("Tables of MetaModels can not be manipulated. Sorry for that."));
+        return;
+    }
+
+    QJsonObject d;
+    QJsonObject project = m_data_list[index.row()].toStrongRef().data()->ExportData();
+    project["title"] = QString("Copy of " + project["title"].toString());
+    QUuid uuid;
+    project["uuid"] = uuid.createUuid().toString();
+
+    d["data"] = project;
+    LoadJson(d);
 }
 
 void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)

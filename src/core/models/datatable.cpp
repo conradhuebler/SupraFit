@@ -260,6 +260,7 @@ bool DataTable::setData(const QModelIndex& index, const QVariant& value, int rol
         else
             m_checked_table(index.row(), index.column()) = 0;
         emit dataChanged(index, index);
+        emit CheckedStateChanged(index.row(), m_checked_table(index.row(), index.column()));
         return true;
     }
 

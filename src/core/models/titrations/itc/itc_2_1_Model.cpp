@@ -167,6 +167,10 @@ void itc_IItoI_Model::CalculateVariables()
     bool reservior = m_reservior;
 
     qreal complex_21_prev = 0, complex_11_prev = 0;
+
+    /* One note for ITC Models and the "faster" iteration of inlcuded points!
+     * The results depend on the previously calculated concentrations of the complex, hence the loop MUST be complete */
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);

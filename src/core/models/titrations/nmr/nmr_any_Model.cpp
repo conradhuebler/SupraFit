@@ -141,7 +141,8 @@ void nmr_any_Model::InitialGuess_Private()
     QVector<double> ratios;
     double factor = double(m_maxA * m_maxB);
     double last = 1 / double(InitialGuestConcentration(DataPoints() - 1) / InitialHostConcentration(DataPoints() - 1));
-    for (int i = 0; i < DataPoints(); ++i) {
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
         ratios << InitialGuestConcentration(i) / InitialHostConcentration(i) * last * factor;
     }
     // qDebug() << ratios;
@@ -206,9 +207,10 @@ void nmr_any_Model::CalculateConcentrations()
     // int timer = 0;
     // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     bool failed = false;
-    for (int i = 0; i < DataPoints(); ++i) {
-        // m_solvers[i]->Guess();
-        // m_solvers[i]->setStabilityConstants(constants);
+    for (int i = DataBegin(); i < DataEnd(); ++i) {
+        // for (int i = 0; i < DataPoints(); ++i) {
+        //  m_solvers[i]->Guess();
+        //  m_solvers[i]->setStabilityConstants(constants);
         m_ext_solvers[i]->setStabilityConstants(constants);
         qreal host_0 = InitialHostConcentration(i);
         std::vector<double> result;
