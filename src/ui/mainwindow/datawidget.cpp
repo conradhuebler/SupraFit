@@ -104,10 +104,14 @@ DataWidget::DataWidget()
     m_tables = new QWidget; //(tr("Data Tables"));
 
     m_range = new QLabel(tr("All data are included!"));
+    m_shift_begin = new QPushButton(tr("Shift begin data"));
+    m_shift_begin->setDisabled(true);
+    m_shift_begin->setFlat(true);
 
     m_tables_layout = new QGridLayout;
 
-    m_tables_layout->addWidget(m_range, 0, 0, 1, 6);
+    m_tables_layout->addWidget(m_range, 0, 0, 1, 4);
+    m_tables_layout->addWidget(m_shift_begin, 0, 4, 1, 2);
 
     m_tables_layout->addWidget(m_x_raw, 1, 0);
     m_tables_layout->addWidget(m_x_string, 1, 1);
@@ -161,29 +165,12 @@ DataWidget::~DataWidget()
     settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
-void DataWidget::UpdateRanges()
-{
-    if (!m_data)
-        return;
-    int begin = m_data.toStrongRef().data()->DataBegin();
-    int end = m_data.toStrongRef().data()->DataEnd() - 1;
-
-    double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
-    double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
-    double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);
-    double y1 = m_data.toStrongRef().data()->DependentModel()->data(end);
-
-    m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6)").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
-
-    m_wrapper.toStrongRef().data()->stopAnimiation();
-    m_wrapper.toStrongRef().data()->UpdateModel();
-    m_wrapper.toStrongRef().data()->restartAnimation();
-}
-
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
 {
     m_data = dataclass;
     m_wrapper = wrapper;
+
+    m_shift_begin->setDisabled(false);
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     m_concentrations->setModel(m_data.toStrongRef().data()->IndependentModel());
@@ -330,8 +317,37 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         UpdateRanges();
     });
 
+    connect(m_shift_begin, &QPushButton::clicked, this, [this]() {
+        int begin = m_data.toStrongRef().data()->DataBegin();
+        double x0 = m_data.toStrongRef().data()->IndependentRawModel()->data(begin);
+        QStringList header = m_data.toStrongRef().data()->IndependentRawModel()->header();
+        if (header.size() != 1)
+            return;
+        header[0] = QString("X1 - %1").arg(x0);
+        m_data.toStrongRef().data()->IndependentRawModel()->setHeader(header);
+        m_data.toStrongRef().data()->ApplyCalculationModel();
+    });
     connect(m_data.toStrongRef().data(), &DataClass::DataRangedChanged, this, &DataWidget::UpdateRanges);
     UpdateRanges();
+}
+
+void DataWidget::UpdateRanges()
+{
+    if (!m_data)
+        return;
+    int begin = m_data.toStrongRef().data()->DataBegin();
+    int end = m_data.toStrongRef().data()->DataEnd() - 1;
+    qDebug() << begin << end;
+    double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
+    double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
+    double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);
+    double y1 = m_data.toStrongRef().data()->DependentModel()->data(end);
+
+    m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6)").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
+
+    m_wrapper.toStrongRef().data()->stopAnimiation();
+    m_wrapper.toStrongRef().data()->UpdateModel();
+    m_wrapper.toStrongRef().data()->restartAnimation();
 }
 
 void DataWidget::SetProjectName()

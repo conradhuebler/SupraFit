@@ -109,7 +109,7 @@ void BiMolecularModel::CalculateVariables()
         for (int j = 0; j < SeriesCount(); ++j) {
 
             // qreal value = (cA0 * (cA0 - cc0) * exp(k * (t) * (cA0 - cc0))) / (cA0 * exp(k * (t) * (cA0 - cc0)) - cc0) + cAeq;
-            qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0);
+            qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0) + cAeq;
             SetValue(i, j, value);
         }
     }

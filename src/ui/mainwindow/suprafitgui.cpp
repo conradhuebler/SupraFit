@@ -1399,7 +1399,7 @@ void SupraFitGui::Duplicate(const QModelIndex& index)
 
     QJsonObject d;
     QJsonObject project = m_data_list[index.row()].toStrongRef().data()->ExportData();
-    project["title"] = QString("Copy of " + project["title"].toString());
+    project["title"] = QString(project["title"].toString() + " - Copy");
     QUuid uuid;
     project["uuid"] = uuid.createUuid().toString();
 

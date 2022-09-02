@@ -325,7 +325,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     setDataEnd(topjson["end_data"].toInt());
     if (DataBegin() == DataEnd()) {
         setDataBegin(0);
-        setDataEnd(DataPoints());
+        setDataEnd(DataPoints() /*- 1*/);
     }
     if (forceUUID) {
         if (!topjson["uuid"].toString().isEmpty())
@@ -682,7 +682,7 @@ void DataClass::ReReadCheckedState(int row, bool state)
         if (IndependentModel()->isChecked(i))
             last = i;
     }
-    // qDebug() << row << last << DependentModel()->data(last, 0);
+    qDebug() << row << last << DependentModel()->data(last, 0);
     d->m_begin_data = first;
     d->m_end_data = last;
     emit DataRangedChanged();

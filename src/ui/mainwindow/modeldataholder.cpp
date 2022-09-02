@@ -76,6 +76,12 @@ TabWidget::TabWidget(QWidget* parent)
     setStyleSheet("QTabBar::tab { height: 20px;}");
 }
 
+void TabWidget::setHeight(int height)
+{
+    m_height = qMax(height, m_height);
+    setStyleSheet(QString("QTabBar::tab { height: %1px;}").arg(m_height));
+}
+
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 {
     addTab(modelwidget, QString());
@@ -109,6 +115,9 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     layout->addWidget(hide);
     layout->addWidget(color);
     QLabel* title_label = new QLabel(modelwidget->Model()->Name());
+    title_label->setWordWrap(true);
+    if (modelwidget->Model()->Name().size() > 40)
+        setHeight(30);
     layout->addWidget(title_label);
     tools->setLayout(layout);
 

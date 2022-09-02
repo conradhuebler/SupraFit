@@ -28,7 +28,7 @@ void ProjectTree::UpdateStructure()
 {
     for (int i = 0; i < m_data_list->size(); ++i) {
         QString uuid = (*m_data_list)[i].toStrongRef().data()->UUID();
-        qDebug() << (*m_data_list)[i].toStrongRef().data()->UUID() << (*m_data_list)[i].toStrongRef().data()->SFModel() << (*m_data_list)[i].toStrongRef().data()->ProjectTitle();
+        // qDebug() << (*m_data_list)[i].toStrongRef().data()->UUID() << (*m_data_list)[i].toStrongRef().data()->SFModel() << (*m_data_list)[i].toStrongRef().data()->ProjectTitle();
 
         if (!m_uuids.contains(uuid)) {
             m_uuids << uuid;

@@ -60,7 +60,7 @@ private:
     QCheckBox* m_plot_x;
     QTableView *m_concentrations, *m_signals;
     QTextEdit* m_text_edit;
-    QPushButton *m_switch, *m_linear, *m_hide_points;
+    QPushButton *m_switch, *m_linear, *m_hide_points, *m_shift_begin;
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit *m_name, *m_x_model, *m_y_model;

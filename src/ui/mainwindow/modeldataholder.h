@@ -76,10 +76,12 @@ public:
     void setMetaTab(QPointer<MetaModelWidget> datawidget);
 
     void addModelsTab(QPointer<ModelWidget> modelwidget);
+    void setHeight(int height);
 
 private:
     QPointer<DataWidget> m_datawidget;
     QPointer<MetaModelWidget> m_metamodelwidget;
+    int m_height = 20;
 };
 
 class MDHDockTitleBar : public QWidget {
