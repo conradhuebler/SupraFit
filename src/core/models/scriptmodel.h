@@ -75,7 +75,7 @@ const QJsonObject ModelName_Json{
 const QJsonObject InputSize_Json{
     { "name", "InputSize" }, // internal name, not to be printed
     { "title", "Columns of Input" }, // title, to be printed
-    { "description", "Set number of columns, which are used as independet variables" }, // brief description
+    { "description", "Set number of columns, which are used as independent variables" }, // brief description
     { "value", 1 }, // default value
     { "type", 1 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
@@ -102,7 +102,7 @@ const QJsonObject GlobalParameterNames_Json{
 const QJsonObject LocalParameterSize_Json{
     { "name", "LocalParameterSize" }, // internal name, not to be printed
     { "title", "Number of local parameters" },
-    { "description", "Set number of parameters to be fitted which act local on a single subset of a data sets" },
+    { "description", "Set number of parameters to be fitted which act locally on a single subset of a data sets" },
     { "value", 1 },
     { "type", 1 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
@@ -192,6 +192,8 @@ private:
     QStringList m_execute_python, m_execute_chai, m_execute_duktape;
     QString m_chai_execute;
     QString m_calculate_print;
+    QMultiMap<double, QString> m_global_names_map;
+
 #ifdef _Models
     ChaiInterpreter m_interp;
 #endif
@@ -200,6 +202,9 @@ private:
 #endif
 
     void CalculateChai();
+    void CalculateChaiV1();
+    void CalculateChaiV2();
+
     void CalculatePython();
     void CalculateDuktape();
     void CalculateQJSEngine();

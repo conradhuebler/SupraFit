@@ -138,6 +138,15 @@ void ConfigDialog::createGeneralTab()
     m_model_element_cols->setMinimum(1);
 
     h_layout = new QHBoxLayout;
+    m_ScriptTimout = new QSpinBox;
+    m_ScriptTimout->setMinimum(-1);
+    m_ScriptTimout->setMaximum(1e6);
+    m_ScriptTimout->setValue(qApp->instance()->property("ScriptTimeout").toInt());
+    h_layout->addWidget(new QLabel(tr("Timeout for Script Model (mscs):")));
+    h_layout->addWidget(m_ScriptTimout);
+    layout->addLayout(h_layout);
+
+    h_layout = new QHBoxLayout;
     h_layout->addWidget(new QLabel(tr("Columns for Model Parameter:")));
     h_layout->addWidget(m_model_element_cols);
     layout->addLayout(h_layout);
@@ -479,6 +488,8 @@ void ConfigDialog::accept()
         m_dirlevel = 2;
 
     qApp->instance()->setProperty("threads", m_threads->value());
+    qApp->instance()->setProperty("ScriptTimeout", m_ScriptTimout->value());
+
     qApp->instance()->setProperty("ModelParameterColums", m_model_element_cols->value());
 
     qApp->instance()->setProperty("workingdir", m_working->text());

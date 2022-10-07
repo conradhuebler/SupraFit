@@ -217,7 +217,7 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
     case QtWarningMsg:
         if (context.line != 0)
             fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        else
+        else if (!localMsg.contains("QFont"))
             fprintf(stderr, "Warning: %s \n", localMsg.constData());
         break;
     case QtCriticalMsg:

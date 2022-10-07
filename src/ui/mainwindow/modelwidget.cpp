@@ -96,6 +96,50 @@
 
 #include "modelwidget.h"
 
+class CPBar : public QWidget {
+    Q_OBJECT
+    qreal p; // progress 0.0 to 1.0
+public:
+    CPBar(QWidget* p = 0)
+        : QWidget(p)
+        , p(0)
+    {
+        setMinimumSize(21, 21);
+    }
+    void upd(qreal pp)
+    {
+        if (p == pp)
+            return;
+        p = pp;
+        update();
+    }
+    void paintEvent(QPaintEvent*)
+    {
+        qreal pd = p * 360;
+        qreal rd = 360 - pd;
+        QPainter p(this);
+        p.fillRect(rect(), Qt::white);
+        p.translate(4, 4);
+        p.setRenderHint(QPainter::Antialiasing);
+        QPainterPath path, path2;
+        path.moveTo(100, 0);
+        path.arcTo(QRectF(0, 0, 20, 20), 90, -pd);
+        QPen pen, pen2;
+        pen.setCapStyle(Qt::FlatCap);
+        pen.setColor(QColor("#30b7e0"));
+        pen.setWidth(8);
+        p.strokePath(path, pen);
+        path2.moveTo(100, 0);
+        pen2.setWidth(8);
+        pen2.setColor(QColor("#d7d7d7"));
+        pen2.setCapStyle(Qt::FlatCap);
+        pen2.setDashPattern(QVector<qreal>{ 0.5, 1.105 });
+        path2.arcTo(QRectF(0, 0, 200, 200), 90, rd);
+        pen2.setDashOffset(2.2);
+        p.strokePath(path2, pen2);
+    }
+};
+
 ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly, QWidget* parent)
     : QWidget(parent)
     , m_model(model)
@@ -110,6 +154,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_splitter->setOrientation(Qt::Vertical);
 
     m_model_widget = new QWidget;
+    m_script_timer = new QTimer;
+    m_script_timer->setSingleShot(true);
+
     Data2Text();
     m_minimizer->setModel(m_model);
 
@@ -346,26 +393,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         model_tab->addTab(m_model_options, "Model Options");
     if (m_model->SystemParameterCount())
         model_tab->addTab(m_system_parameter, "System Parameter");
-    if (m_model->SFModel() == SupraFit::ScriptModel) {
-        PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
-        connect(widget, &PrepareWidget::changed, this, [this, widget]() {
-            m_model->UpdateModelDefiniton(widget->getObject());
-        });
-        model_tab->addTab(widget, "Model Definition");
-        QPushButton* save = new QPushButton;
-        save->setToolTip(tr("Click here to export the current model definition!"));
-        connect(save, &QPushButton::clicked, this, [this]() {
-            QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
-            if (!str.isEmpty()) {
-                setLastDir(str);
-                QJsonObject json = m_model->ExportModel(false, false)["ModelDefinition"].toObject();
-                JsonHandler::WriteJsonFile(json, str);
-            }
-        });
-        save->setIcon(Icon("document-save"));
-        auto tabbar = model_tab->tabBar();
-        tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, save);
-    }
+    if (m_model->SFModel() == SupraFit::ScriptModel)
+        AddScriptModelTab(model_tab);
 
     m_splitter->addWidget(model_tab);
 
@@ -412,7 +441,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
     connect(m_model.data(), &AbstractModel::ChartUpdated, this, &ModelWidget::ChartUpdated);
 
-    m_model->Calculate();
+#pragma message("check if this Calculation is mandantory, it takes much time for Scripted Models")
+    // if (m_model->SFModel() != SupraFit::ScriptModel)
+    // m_model->Calculate();
 
     m_charts_dialogs = new ModalDialog(this);
     m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -466,10 +497,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_SetUpFinished = true;
+    /*
     if (m_model->isSimulation()) {
         QTimer::singleShot(10, this, &ModelWidget::recalculate);
     }
-
+*/
     //    for (int i = 0; i < m_splitter->count(); ++i)
     //        m_splitter->setCollapsible(i, false);
 
@@ -479,6 +511,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(model_ident).toByteArray());
     settings.endGroup();
+    emit m_model->Recalculated();
 }
 
 ModelWidget::~ModelWidget()
@@ -496,6 +529,69 @@ ModelWidget::~ModelWidget()
 
     m_model.clear();
     delete m_model.data();
+}
+
+void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
+{
+    QPushButton* update = new QPushButton;
+    update->setIcon(Icon("dialog-ok-apply"));
+    QScrollArea* scrollArea = new QScrollArea;
+    PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+    QProgressBar* bar = new QProgressBar;
+    bar->setFormat("Model Definition.");
+    connect(m_script_timer, &QTimer::timeout, this, [this, widget, bar]() {
+        if (!m_model)
+            return;
+        m_model->UpdateModelDefiniton(widget->getObject());
+        bar->setValue(0);
+    });
+    auto timer = [bar, this]() {
+        while (m_script_timer->isActive()) {
+            QApplication::processEvents();
+            bar->setValue(qApp->instance()->property("ScriptTimeout").toInt() - m_script_timer->remainingTime());
+        }
+    };
+    connect(widget, &PrepareWidget::changed, this, [this, timer, bar]() {
+        if (qApp->instance()->property("ScriptTimeout").toInt() < 1)
+            return;
+        m_script_timer->start(qApp->instance()->property("ScriptTimeout").toInt());
+        bar->setMaximum(qApp->instance()->property("ScriptTimeout").toInt());
+        timer();
+    });
+    widget->AddTableHeader(m_model->IndependentModel()->header());
+    widget->AddTableHeader(m_model->DependentModel()->header());
+
+    scrollArea->setWidget(widget);
+
+    model_tab->addTab(scrollArea, "Model Definition");
+    QPushButton* save = new QPushButton;
+    save->setToolTip(tr("Click here to export the current model definition!"));
+    connect(save, &QPushButton::clicked, this, [this]() {
+        QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
+        if (!str.isEmpty()) {
+            setLastDir(str);
+            QJsonObject json = m_model->ExportModel(false, false)["ModelDefinition"].toObject();
+            JsonHandler::WriteJsonFile(json, str);
+        }
+    });
+
+    connect(update, &QPushButton::clicked, this, [this, widget, bar]() {
+        if (!m_model)
+            return;
+        m_model->UpdateModelDefiniton(widget->getObject());
+        bar->setValue(0);
+    });
+    save->setIcon(Icon("document-save"));
+    auto tabbar = model_tab->tabBar();
+    tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, bar);
+    tabbar->setTabText(model_tab->count() - 1, "");
+    QWidget* buttonBar = new QWidget;
+    QHBoxLayout* buttonLayout = new QHBoxLayout;
+    buttonBar->setLayout(buttonLayout);
+    buttonLayout->addWidget(update);
+    buttonLayout->addWidget(save);
+
+    tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, buttonBar);
 }
 
 void ModelWidget::setColorList(const QString& str)

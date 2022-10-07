@@ -100,19 +100,23 @@ void ChaiInterpreter::InitialiseChai()
 
 void ChaiInterpreter::UpdateChai()
 {
+
     for (int i = 0; i < m_global_names.size(); ++i) {
       m_chaiinterpreter.set_global(
           chaiscript::const_var(m_global_parameter(0, i)),
           m_global_names[i].toStdString());
+      qDebug() << m_global_parameter(0, i);
     }
 
-    for (int j = 0; j < m_input_names.size(); ++j) {
-        std::vector<double> vector;
-        for (int i = 0; i < m_input.rows(); ++i)
-            vector.push_back(m_input.row(i)[j]);
-        m_chaiinterpreter.set_global(chaiscript::const_var(vector),
-                                     m_input_names[j].toStdString());
-    }
+    /*
+        for (int j = 0; j < m_input_names.size(); ++j) {
+            std::vector<double> vector;
+            for (int i = 0; i < m_input.rows(); ++i)
+                vector.push_back(m_input.row(i)[j]);
+            m_chaiinterpreter.set_global(chaiscript::const_var(vector),
+                                         m_input_names[j].toStdString());
+        }
+        */
 }
 
 double ChaiInterpreter::Evaluate(const char *c, int &errorcode) {

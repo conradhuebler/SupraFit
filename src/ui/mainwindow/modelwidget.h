@@ -50,6 +50,7 @@ class QLineEdit;
 class QSplitter;
 class QPushButton;
 class QVBoxLayout;
+class QTimer;
 
 class AdvancedSearch;
 class ChartView;
@@ -109,6 +110,7 @@ public slots:
     void HideAllWindows();
 
 private:
+    void AddScriptModelTab(QTabWidget* model_tab);
     QSharedPointer<AbstractModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
 
@@ -122,6 +124,8 @@ private:
     QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
     QVBoxLayout* m_layout;
+    QTimer* m_script_timer;
+
     bool m_pending;
     QList<int> ActiveSignals();
     void resizeButtons();

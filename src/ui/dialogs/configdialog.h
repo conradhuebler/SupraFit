@@ -60,7 +60,7 @@ public:
 
 private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
-    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins, *m_ModuloPointFeedback;
+    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins, *m_ModuloPointFeedback, *m_ScriptTimout;
     QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling, *m_MarkerPointFeedbackSize;
     QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins, *m_initialise_random;
     QLineEdit* m_working;

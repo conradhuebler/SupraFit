@@ -222,7 +222,8 @@ private:
                                                    << "PointFeedback"
                                                    << "ModuloPointFeedback"
                                                    << "FullShannon"
-                                                   << "lastSize";
+                                                   << "lastSize"
+                                                   << "ScriptTimeout";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

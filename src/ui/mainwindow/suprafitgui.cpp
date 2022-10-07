@@ -1147,6 +1147,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("lastSize") == QVariant())
         qApp->instance()->setProperty("lastSize", 2);
 
+    if (qApp->instance()->property("ScriptTimeout") == QVariant())
+        qApp->instance()->setProperty("ScriptTimeout", 500);
+
     qApp->instance()->setProperty("lastDir", getDir());
 }
 
