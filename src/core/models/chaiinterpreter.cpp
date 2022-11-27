@@ -105,7 +105,7 @@ void ChaiInterpreter::UpdateChai()
       m_chaiinterpreter.set_global(
           chaiscript::const_var(m_global_parameter(0, i)),
           m_global_names[i].toStdString());
-      qDebug() << m_global_parameter(0, i);
+      //   qDebug() << m_global_parameter(0, i);
     }
 
     /*

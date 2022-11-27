@@ -50,7 +50,11 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 
 bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)
 {
-    QFile saveFile(file);
+    QString filename = file;
+    if (!file.contains("json") && !file.contains("jdat") && !file.contains("suprafit"))
+        filename += ".suprafit";
+
+    QFile saveFile(filename);
 
     if (!saveFile.open(QIODevice::WriteOnly)) {
         qWarning("Couldn't open file .");
@@ -58,10 +62,11 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)
     }
 
     QJsonDocument saveDoc(json);
-    if (file.contains("json"))
+    if (filename.contains("json"))
         saveFile.write(saveDoc.toJson());
-    else if (file.contains("jdat") || file.contains("suprafit"))
+    else if (filename.contains("jdat") || filename.contains("suprafit"))
         saveFile.write(qCompress(saveDoc.toJson(QJsonDocument::Compact), 9));
+
     return true;
 }
 

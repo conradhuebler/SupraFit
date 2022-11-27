@@ -62,7 +62,7 @@ public:
         else if (i == 3)
             return tr("cc0");
         else if (i == 4)
-            return tr("fc(cA0)");
+            return tr("q");
         /*
         else if (i == 5)
             return tr("fc(cAeq)");

@@ -67,11 +67,12 @@ void BiMolecularModel::DeclareSystemParameter()
 void BiMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 0.002;
-    (*GlobalTable())[1] = 1;
-    (*GlobalTable())[2] = 0.01;
-    (*GlobalTable())[3] = 0.01;
+    (*GlobalTable())[1] = DependentModel()->data(DataBegin());
+    (*GlobalTable())[2] = DependentModel()->data(DataEnd());
+    (*GlobalTable())[3] = DependentModel()->data(DataBegin()) / DependentModel()->data(DataEnd());
     (*GlobalTable())[4] = 1;
-    // (*GlobalTable())[5] = 1;
+    QSharedPointer<AbstractModel> test = Clone();
+    (*GlobalTable())[0] = BisectParameter(test, 0, 0, 0.1, 1e-5);
     Calculate();
 }
 
@@ -85,8 +86,6 @@ void BiMolecularModel::OptimizeParameters_Private()
     QString scale = getOption(Scale);
     if (scale == "yes")
         addGlobalParameter(4);
-
-    //  addGlobalParameter(5);
 }
 
 void BiMolecularModel::CalculateVariables()
@@ -102,16 +101,12 @@ void BiMolecularModel::CalculateVariables()
         q = GlobalParameter(4);
     else
         q = 1;
-    //  qreal fccc0 = GlobalParameter(5);
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
         qreal t = IndependentModel()->data(i);
-        for (int j = 0; j < SeriesCount(); ++j) {
-
-            // qreal value = (cA0 * (cA0 - cc0) * exp(k * (t) * (cA0 - cc0))) / (cA0 * exp(k * (t) * (cA0 - cc0)) - cc0) + cAeq;
-            qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0) + cAeq;
-            SetValue(i, j, value);
-        }
+        // for (int j = 0; j < SeriesCount(); ++j) {
+        qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0) + cAeq;
+        SetValue(i, 0, value);
+        //}
     }
 }
 

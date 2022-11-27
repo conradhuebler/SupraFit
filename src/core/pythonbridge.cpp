@@ -46,12 +46,15 @@ CharPtrWrapper* LoadFile(const char* chars)
     ret = (CharPtrWrapper*)malloc(sizeof(CharPtrWrapper));
 
     QString string = saveDoc.toJson(QJsonDocument::Compact);
-    ret->len = string.size();
+    auto b = string.toUtf8();
+    char* c = b.data();
+    ret->len = string.size() * 2;
     ret->data = (char*)malloc(string.size() * sizeof(char));
 
     for (int i = 0; i < ret->len; ++i)
-        ret->data[i] = string[i].toLatin1();
-    //std::cout << ret->data << std::endl;
+        ret->data[i] = c[i];
+
+    // std::cout << ret->data << std::endl;
     return ret;
 }
 

@@ -25,6 +25,21 @@
 
 #include <QtCore/QAbstractItemModel>
 
+#include <QtWidgets/QStyledItemDelegate>
+
+class ProjectTreeEntry : public QStyledItemDelegate {
+    Q_OBJECT
+public:
+    explicit ProjectTreeEntry(QObject* parent = 0)
+        : QStyledItemDelegate(parent)
+    {
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
+private:
+};
+
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
@@ -83,6 +98,8 @@ public:
 
     QString UUID(const QModelIndex& index) const;
 
+    void setActiveIndex(int index);
+
 public slots:
     void UpdateStructure();
 
@@ -93,7 +110,8 @@ private:
     QList<void*> m_ptr_uuids;
 
     QString m_instance;
-
+    QModelIndex m_active_index;
+    int m_active_row = -1;
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);

@@ -35,6 +35,7 @@ set(SFGui_SRC
                 guitools/chartwrapper.cpp
                 guitools/mime.h
                 guitools/flowlayout.cpp
+                dialogs/parameterdialog.cpp
                 dialogs/spectraimport.cpp
                 dialogs/regressionanalysisdialog.cpp
                 dialogs/statisticdialog.cpp

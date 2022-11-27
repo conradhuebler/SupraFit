@@ -73,7 +73,7 @@ void ToolButton::ChangeColor(const QColor& color)
 TabWidget::TabWidget(QWidget* parent)
     : QTabWidget(parent)
 {
-    setStyleSheet("QTabBar::tab { height: 20px;}");
+    setStyleSheet("QTabBar::tab { height: 32px;}");
 }
 
 void TabWidget::setHeight(int height)
@@ -116,8 +116,8 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     layout->addWidget(color);
     QLabel* title_label = new QLabel(modelwidget->Model()->Name());
     title_label->setWordWrap(true);
-    if (modelwidget->Model()->Name().size() > 40)
-        setHeight(30);
+
+    setHeight(modelwidget->Model()->Name().size() / 35 * 32);
     layout->addWidget(title_label);
     tools->setLayout(layout);
 
@@ -808,6 +808,9 @@ void ModelDataHolder::RunJobs(const QJsonObject& job)
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
+        if (i < m_modelsWidget->count())
+            m_modelsWidget->setCurrentIndex(i + 1);
+
         m_statistic_dialog->ShowWidget();
         m_model_widgets[i]->setJob(job);
         m_statistic_dialog->IncrementMainProgress();
@@ -821,10 +824,9 @@ void ModelDataHolder::OptimizeAll()
 {
     for (int i = 1; i < m_modelsWidget->count(); i++) {
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
-            //if (!m_model_widgets[i - 1])
-            //    continue;
             if (!m_model_widgets[i - 1]->isChecked())
                 continue;
+            m_modelsWidget->setCurrentIndex(i);
             ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             model->GlobalMinimize();
         }

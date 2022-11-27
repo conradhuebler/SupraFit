@@ -62,8 +62,11 @@ void MonoMolecularModel::DeclareSystemParameter()
 void MonoMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 0.002;
-    (*GlobalTable())[1] = 1;
-    (*GlobalTable())[2] = 0.01;
+    (*GlobalTable())[1] = DependentModel()->data(DataBegin());
+    (*GlobalTable())[2] = DependentModel()->data(DataEnd());
+
+    QSharedPointer<AbstractModel> test = Clone();
+    (*GlobalTable())[0] = BisectParameter(test, 0, 0, 0.1, 1e-5);
 
     Calculate();
 }
@@ -83,12 +86,11 @@ void MonoMolecularModel::CalculateVariables()
     qreal ceq = GlobalParameter(2);
 
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // qDebug() << i;
         qreal t = IndependentModel()->data(i);
-        for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = (c0 - ceq) * (exp(-(t)*k)) + ceq;
-            SetValue(i, j, value);
-        }
+        // for (int j = 0; j < SeriesCount(); ++j) {
+        qreal value = (c0 - ceq) * (exp(-(t)*k)) + ceq;
+        SetValue(i, 0, value);
+        //}
     }
 }
 

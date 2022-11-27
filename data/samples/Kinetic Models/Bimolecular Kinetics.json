@@ -1,0 +1,62 @@
+{
+    "ChaiScript": {
+        "description": "The model has to be defined here using a working equation. The equation will be evaluated using the ChaiScript Interpreter.",
+        "name": "ChaiScript",
+        "title": "Define model equation",
+        "type": 4,
+        "value": {
+            "0": "(ca0*cc0-ca0*ca0)/(cc0*exp(k*q*X1* (cc0-ca0)  )-ca0) + caeq"
+        }
+    },
+    "DepModelNames": {
+    },
+    "GlobalParameterNames": {
+        "value": "k|ca0|caeq|cc0|q"
+    },
+    "GlobalParameterSize": {
+        "description": "Set number of parameters to be fitted which act globally on several subsets of a data sets",
+        "name": "GlobalParameterSize",
+        "once": true,
+        "title": "Number of global parameters",
+        "type": 1,
+        "value": 5
+    },
+    "InputNames": {
+    },
+    "InputSize": {
+        "description": "Set number of columns, which are used as independet variables",
+        "name": "InputSize",
+        "once": true,
+        "title": "Columns of Input",
+        "type": 1,
+        "value": 1
+    },
+    "LocalParameterNames": {
+        "value": "A1"
+    },
+    "LocalParameterSize": {
+        "description": "Set number of parameters to be fitted which act local on a single subset of a data sets",
+        "name": "LocalParameterSize",
+        "once": true,
+        "title": "Number of local parameters",
+        "type": 1,
+        "value": 1
+    },
+    "Name": {
+        "description": "Give the model a nice name",
+        "name": "Name",
+        "title": "Model Name",
+        "type": 3,
+        "value": "Bimolecular Kinetic Model"
+    },
+    "PrintX": {
+        "description": "Define how the x / independet value has to be printed in the chart (e.g. = X1; 2*X1, X2/X1)",
+        "name": "PrintX",
+        "title": "Print x values as",
+        "type": 3,
+        "value": "X1"
+    },
+        "GlobalParameterGuess" : {
+        "value" : "[0.021879439332019482;0.021879439332019482]|[0.5624740720133314;0.5624740720133314]|[0.040244939252329116;0.040244939252329116]|[2.579623664888787;2.579623664888787]|[0.7432228837273257;0.7432228837273257]"
+    }
+}

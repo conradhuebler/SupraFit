@@ -68,6 +68,53 @@ const QString Unicode_Sub_y = QChar(0x0079); // not really
 
 // const QString Unicode_Sub_AB = QString("%1%2").arg(QChar("A")).arg(QChar("B")); //does not exist yet
 
+struct ParameterBoundary {
+    bool limit_lower = false;
+    bool limit_upper = false;
+
+    double lower_barrier = 0;
+    double upper_barrier = 0;
+
+    double lower_barrier_beta = 10;
+    double upper_barrier_beta = 10;
+
+    double lower_barrier_wall = 10;
+    double upper_barrier_wall = 10;
+};
+
+inline QVector<double> Boundary2Vector(const ParameterBoundary& boundary)
+{
+    QVector<double> vector(8);
+    vector[0] = boundary.limit_lower;
+    vector[1] = boundary.limit_upper;
+    vector[2] = boundary.lower_barrier;
+    vector[3] = boundary.upper_barrier;
+
+    vector[4] = boundary.lower_barrier_beta;
+    vector[5] = boundary.upper_barrier_beta;
+    vector[6] = boundary.lower_barrier_wall;
+    vector[7] = boundary.upper_barrier_wall;
+
+    return vector;
+}
+
+inline ParameterBoundary Vector2Boundary(const QVector<double>& vector)
+{
+    ParameterBoundary boundary;
+    if (vector.size() < 8)
+        return boundary;
+    boundary.limit_lower = vector[0] > 0.5;
+    boundary.limit_upper = vector[1] > 0.5;
+    boundary.lower_barrier = vector[2];
+    boundary.upper_barrier = vector[3];
+
+    boundary.lower_barrier_beta = vector[4];
+    boundary.upper_barrier_beta = vector[5];
+    boundary.lower_barrier_wall = vector[6];
+    boundary.upper_barrier_wall = vector[7];
+    return boundary;
+}
+
 namespace SupraFit {
 
 struct timer {

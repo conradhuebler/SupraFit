@@ -34,6 +34,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/modaldialog.h"
+#include "src/ui/dialogs/parameterdialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
@@ -69,6 +70,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QRandomGenerator>
 #include <QtCore/QSettings>
+#include <QtCore/QSignalBlocker>
 #include <QtCore/QTime>
 #include <QtCore/QTimer>
 #include <QtCore/QtMath>
@@ -193,7 +195,23 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         check->setChecked(true);
         m_constants << constant;
         constant->setDecimals(4);
-
+        /*
+        QPushButton *more_action = new QPushButton(tr("..."));
+        more_action->setMaximumWidth(20);
+        connect(more_action, &QPushButton::clicked, this, [this, i](){
+            ParameterBoundary boundary = m_model.data()->getGlobalBoundary(i);
+            double value = m_model->GlobalParameter(i);
+            ParameterDialog dialog(boundary, value);
+            if(dialog.exec() == QDialog::Accepted)
+            {
+                boundary = dialog.Boundary();
+                value = dialog.Value();
+                m_model->UpdateGlobalBoundary(i, boundary);
+                m_model->setGlobalParameter(value, i);
+                m_model->Calculate();
+            }
+        });
+        */
         constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
         constant->setMaximum(1e9);
@@ -226,6 +244,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
         hlayout->addWidget(constant);
         hlayout->addWidget(check);
+        // hlayout->addWidget(more_action);
+
         check->setHidden(m_model.data()->isSimulation());
         group->setLayout(hlayout);
         const_layout->addWidget(group);
@@ -537,8 +557,8 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     update->setIcon(Icon("dialog-ok-apply"));
     QScrollArea* scrollArea = new QScrollArea;
     PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+    QSignalBlocker block(widget);
     QProgressBar* bar = new QProgressBar;
-    bar->setFormat("Model Definition.");
     connect(m_script_timer, &QTimer::timeout, this, [this, widget, bar]() {
         if (!m_model)
             return;
@@ -585,6 +605,7 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     auto tabbar = model_tab->tabBar();
     tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, bar);
     tabbar->setTabText(model_tab->count() - 1, "");
+
     QWidget* buttonBar = new QWidget;
     QHBoxLayout* buttonLayout = new QHBoxLayout;
     buttonBar->setLayout(buttonLayout);
@@ -592,6 +613,12 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     buttonLayout->addWidget(save);
 
     tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, buttonBar);
+
+    bar->setFormat("Model Definition");
+    bar->setValue(0);
+    bar->setMaximum(qApp->instance()->property("ScriptTimeout").toInt());
+    bar->setMinimumWidth(150);
+    model_tab->setStyleSheet("QTabBar::tab { height: 35px; width: 250px; }");
 }
 
 void ModelWidget::setColorList(const QString& str)
@@ -813,9 +840,9 @@ void ModelWidget::LoadStatistic(const QJsonObject& data)
 
 void ModelWidget::LocalMinimize()
 {
-
     if (m_pending)
         return;
+
     Waiter wait;
     CollectParameters();
     int result = 0;

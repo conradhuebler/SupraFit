@@ -1,0 +1,62 @@
+{
+    "ChaiScript": {
+        "description": "The model has to be defined here using a working equation. The equation will be evaluated using the ChaiScript Interpreter.",
+        "name": "ChaiScript",
+        "title": "Define model equation",
+        "type": 4,
+        "value": {
+            "0": "pow((-k*X1*(1-n)+pow((c0-ceq),(1-n))),(1/(1-n))) + ceq"
+        }
+    },
+    "DepModelNames": {
+    },
+    "GlobalParameterNames": {
+        "value": "k|n|c0|ceq|"
+    },
+    "GlobalParameterSize": {
+        "description": "Set number of parameters to be fitted which act globally on several subsets of a data sets",
+        "name": "GlobalParameterSize",
+        "once": true,
+        "title": "Number of global parameters",
+        "type": 1,
+        "value": 4
+    },
+    "InputNames": {
+    },
+    "InputSize": {
+        "description": "Set number of columns, which are used as independet variables",
+        "name": "InputSize",
+        "once": true,
+        "title": "Columns of Input",
+        "type": 1,
+        "value": 1
+    },
+    "LocalParameterNames": {
+        "value": "A1"
+    },
+    "LocalParameterSize": {
+        "description": "Set number of parameters to be fitted which act local on a single subset of a data sets",
+        "name": "LocalParameterSize",
+        "once": true,
+        "title": "Number of local parameters",
+        "type": 1,
+        "value": 1
+    },
+    "Name": {
+        "description": "Give the model a nice name",
+        "name": "Name",
+        "title": "Model Name",
+        "type": 3,
+        "value": "Flexible kinetic model"
+    },
+    "PrintX": {
+        "description": "Define how the x / independent value has to be printed in the chart (e.g. = X1; 2*X1, X2/X1)",
+        "name": "PrintX",
+        "title": "Print x values as",
+        "type": 3,
+        "value": "X1"
+    },
+    "GlobalParameterGuess" : {
+        "value" : "[0.038354174422770185;0.038354174422770185]|[1.0000010028033293;1.0000010028033293]|[0.5947727919779803;0.5947727919779803]|[0.045934295897164946;0.045934295897164946]"
+    }
+}

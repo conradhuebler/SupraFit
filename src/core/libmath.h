@@ -49,7 +49,7 @@ std::vector<qreal> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<
 qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
 qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
 
-qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end);
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon = 1e-4);
 
 qint64 Factorial(qint64 n);
 

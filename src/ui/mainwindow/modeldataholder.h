@@ -81,7 +81,7 @@ public:
 private:
     QPointer<DataWidget> m_datawidget;
     QPointer<MetaModelWidget> m_metamodelwidget;
-    int m_height = 20;
+    int m_height = 32;
 };
 
 class MDHDockTitleBar : public QWidget {

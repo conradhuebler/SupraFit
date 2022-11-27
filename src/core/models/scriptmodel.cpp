@@ -185,6 +185,8 @@ bool ScriptModel::DefineModel()
         for (int i = 0; i < m_global_parameter_size; ++i)
             m_global_parameter_names << QString("A%1").arg(i + 1);
     }
+    while (m_global_parameter_names.size() > m_global_parameter_size)
+        m_global_parameter_names.removeLast();
 
     object = m_defined_model["LocalParameterSize"];
     m_local_parameter_size = object["value"].toInt();
@@ -197,6 +199,8 @@ bool ScriptModel::DefineModel()
         for (int i = 0; i < m_local_parameter_size; ++i)
             m_local_parameter_names << QString("A%1").arg(i + 1);
     }
+    while (m_local_parameter_names.size() > m_local_parameter_size)
+        m_local_parameter_names.removeLast();
 
     object = m_defined_model["InputSize"];
     m_input_size = object["value"].toInt();
@@ -214,7 +218,8 @@ bool ScriptModel::DefineModel()
 
     object = m_defined_model["Name"];
     m_name = object["value"].toString();
-
+    m_name_cached = m_name;
+    setName(m_name);
     object = m_defined_model["InputNames"];
     if (!object.isEmpty()) {
         m_input_names = object["value"].toString().split("|");
@@ -235,7 +240,7 @@ bool ScriptModel::DefineModel()
 
     object = m_defined_model["PrintX"];
     m_calculate_print = object["value"].toString();
-
+    m_x_printout.clear();
     //   m_model_definition = GenerateModelDefinition();
     try {
         PrepareParameter(GlobalParameterSize(), LocalParameterSize());
@@ -246,6 +251,34 @@ bool ScriptModel::DefineModel()
             emit Info()->Message(tr("You have %1 independet rows available, yet you choose %2 parameters. If you want fewer parameters than rows, just don't include them in the equations.").arg(IndependentModel()->columnCount()).arg(InputParameterSize()));
             return false;
         }
+    }
+
+    object = m_defined_model["GlobalParameterGuess"];
+    QString values = object["value"].toString();
+
+    QStringList limits = values.split("|");
+    for (int i = 0; i < limits.size() && i < m_random_global.size(); ++i) {
+        QStringList minmax = limits[i].split(";");
+        if (minmax.size() != 2)
+            continue;
+        double min = minmax[0].remove("[").toDouble();
+        double max = minmax[1].remove("]").toDouble();
+        m_random_global[i] = QPair<double, double>(min, max);
+    }
+
+    object = m_defined_model["LocalParameterGuess"];
+    values = object["value"].toString();
+
+    limits = values.split("|");
+    for (int i = 0; i < limits.size() && i < m_random_local.size(); ++i) {
+        QStringList minmax = limits[i].split(";");
+        if (minmax.size() != 2)
+            continue;
+        double min = minmax[0].remove("[").toDouble();
+        double max = minmax[1].remove("]").toDouble();
+#pragma message("check, implement and finalise once a day")
+        for (int j = 0; j < SeriesCount(); ++j)
+            m_random_local[j][i] = QPair<double, double>(min, max);
     }
 
     for (int i = 0; i < m_input_names.size(); ++i)
@@ -541,15 +574,20 @@ qreal ScriptModel::PrintOutIndependent(int i) const
     if (m_calculate_print.isEmpty() || m_calculate_print.isNull())
         return IndependentModel()->data(i);
     else {
+        if (i < m_x_printout.size())
+            return m_x_printout[i];
+
         QJSEngine engine;
         for (int cols = 0; cols < IndependentModel()->columnCount(); ++cols) {
             engine.globalObject().setProperty(QString("X%1").arg(cols + 1), IndependentModel()->data(i, cols));
         }
         double result = engine.evaluate(m_calculate_print).toNumber();
-        if (engine.hasError())
+        if (engine.hasError()) {
             return IndependentModel()->data(i);
-        else
+        } else {
+            m_x_printout << result;
             return result;
+        }
     }
 }
 

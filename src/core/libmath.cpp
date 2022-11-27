@@ -277,7 +277,7 @@ qint64 Factorial(qint64 n)
     return n * Factorial(n - 1);
 }
 
-qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end)
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon)
 {
     QVector<qreal> param = model.toStrongRef()->OptimizeParameters();
 
@@ -286,7 +286,7 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
         return mean;
     for (int i = 0; i < 30; ++i) {
 
-        if (qAbs(start - end) < 1e-4)
+        if (qAbs(start - end) < epsilon)
             break;
 
         param[index] = start;
@@ -300,13 +300,18 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
         qreal SSE_1 = model.toStrongRef()->SSE();
 
         mean = (start + end) / 2;
+        param[index] = mean;
+        model.toStrongRef()->setParameter(param);
+        model.toStrongRef()->Calculate();
+        qreal SSE_2 = model.toStrongRef()->SSE();
+
 #ifdef _DEBUG
         qDebug() << SSE_0 << SSE_1 << start << end << mean;
 #endif
-        if (SSE_0 < SSE_1) {
-            end = (start + end) / 2.0;
-        } else {
-            start = (start + end) / 2.0;
+        if (SSE_0 < SSE_2) {
+            end = mean;
+        } else if (SSE_1 < SSE_2) {
+            start = mean;
         }
     }
     return mean;

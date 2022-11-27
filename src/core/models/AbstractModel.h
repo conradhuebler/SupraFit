@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -30,6 +30,7 @@
 #include <QtCore/QtMath>
 
 #include "dataclass.h"
+
 struct ModelOption {
     QStringList values;
     QString value = "unset";
@@ -329,8 +330,8 @@ public:
 
     inline void setGlobalRandom(const QVector<QPair<qreal, qreal>>& random_global)
     {
-        if (random_global.size() == m_random_gobal.size()) {
-            m_random_gobal = random_global;
+        if (random_global.size() == m_random_global.size()) {
+            m_random_global = random_global;
         }
     }
 
@@ -759,6 +760,24 @@ public:
 
     inline void setModelDefinition(const QHash<QString, QJsonObject>& model) { m_defined_model = model; }
     void UpdateModelDefiniton(const QHash<QString, QJsonObject>& model);
+
+    QList<double> getPenalty() const;
+    void UpdateGlobalBoundary(int parameter, const ParameterBoundary& boundary)
+    {
+        m_global_boundaries[parameter] = boundary;
+    }
+    void UpdateLocalBoundary(const ParameterBoundary& boundary, int i, int j = 0)
+    {
+        m_local_boundaries[i][j] = boundary;
+    }
+    ParameterBoundary getGlobalBoundary(int i) const
+    {
+        return m_global_boundaries[i];
+    }
+    ParameterBoundary getLocalBoundary(int i, int j = 0) const
+    {
+        return m_local_boundaries[i][j];
+    }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -844,7 +863,7 @@ protected:
 
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
-    QVector<QPair<qreal, qreal>> m_random_gobal;
+    QVector<QPair<qreal, qreal>> m_random_global;
     QVector<QVector<QPair<qreal, qreal>>> m_random_local;
 
     QString m_more_info, m_name, m_name_cached, m_model_uuid, m_desc;
@@ -857,6 +876,9 @@ protected:
     // int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
     // QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
     // QString m_execute;
+
+    QVector<ParameterBoundary> m_global_boundaries;
+    QVector<QVector<ParameterBoundary>> m_local_boundaries;
 
     QMutex m_mutex;
 signals:

@@ -78,8 +78,9 @@ struct MyFunctor : Functor<double> {
         model.data()->Calculate();
 
         Variables CalculatedSignals = model.data()->getCalculatedModel();
+        Variables Penalty = model.data()->getPenalty();
         for (int i = 0; i < ModelSignals.size(); ++i)
-            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
+            fvec(i) = CalculatedSignals[i] - ModelSignals[i] + Penalty[i];
 
         return 0;
     }

@@ -148,13 +148,11 @@ DataWidget::DataWidget()
     m_splitter->addWidget(area);
 
     QTabWidget* tabWidget = new QTabWidget;
-    tabWidget->addTab(m_text_edit, tr("Project Description"));
-    // tabWidget->addTab(m_splitter, tr("Project Data"));
     tabWidget->addTab(m_tables, tr("Project Data"));
+    tabWidget->addTab(m_text_edit, tr("Project Description"));
+
     m_layout->addWidget(tabWidget, 2, 0, 1, 4);
 
-    //hlayout = new QHBoxLayout;
-    // hlayout->addWidget(m_splitter);
     setLayout(m_layout);
 }
 

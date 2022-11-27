@@ -17,12 +17,22 @@
  *
  */
 
+#include <QtCore/QJsonDocument>
+
+#include "QtGui/QFont"
+
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
 
-#include <QtCore/QJsonDocument>
-
 #include "projecttree.h"
+
+QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    if (index.parent().isValid())
+        return QSize(50, 25);
+    else
+        return QSize(100, 25);
+}
 
 void ProjectTree::UpdateStructure()
 {
@@ -104,6 +114,17 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
         } else if (index.column() == 1 && parent(index).isValid()) {
             // qDebug() << index.row() << (*m_data_list)[index.row()].data()->ProjectTitle();
         }
+    } else if (role == Qt::FontRole) {
+        QFont font("SanSerif", 12);
+        font.setWeight(QFont::Light);
+        if (index.row() == m_active_row && index.column() == 0 && !parent(index).isValid()) {
+            font.setWeight(QFont::ExtraBold);
+            // font.setPointSize(14);
+        } else if (parent(index).isValid()) {
+            font.setItalic(true);
+        }
+
+        return font;
     }
 
     return data;
@@ -433,4 +454,10 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     } else
         return true;
     return true;
+}
+
+void ProjectTree::setActiveIndex(int index)
+{
+    m_active_row = index;
+    layoutChanged();
 }

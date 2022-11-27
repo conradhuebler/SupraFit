@@ -90,6 +90,15 @@ const QJsonObject GlobalParameterSize_Json{
     { "once", true }
 };
 
+const QJsonObject GlobalParameterGuess_Json{
+    { "name", "GlobalParameterGuess" }, // internal name, not to be printed
+    { "title", "Set the initial guess of the global parameters" },
+    { "description", "Set the initial guess of the global parameters as |-separated list of limits: [min;max]|[min;max]" },
+    { "value", "" },
+    { "type", 3 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
 const QJsonObject GlobalParameterNames_Json{
     { "name", "GlobalParameterNames" }, // internal name, not to be printed
     { "title", "Number of global parameters" },
@@ -105,6 +114,15 @@ const QJsonObject LocalParameterSize_Json{
     { "description", "Set number of parameters to be fitted which act locally on a single subset of a data sets" },
     { "value", 1 },
     { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
+const QJsonObject LocalParameterGuess_Json{
+    { "name", "LocalParameterGuess" }, // internal name, not to be printed
+    { "title", "Set the initial guess of the local parameters" },
+    { "description", "Set the initial guess of the local parameters as |-separated list of limits: [min;max]|[min;max]" },
+    { "value", "" },
+    { "type", 3 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
 };
 
@@ -193,7 +211,7 @@ private:
     QString m_chai_execute;
     QString m_calculate_print;
     QMultiMap<double, QString> m_global_names_map;
-
+    mutable QVector<double> m_x_printout;
 #ifdef _Models
     ChaiInterpreter m_interp;
 #endif

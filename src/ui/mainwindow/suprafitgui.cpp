@@ -104,6 +104,8 @@ SupraFitGui::SupraFitGui()
     m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
     m_project_view->setDragEnabled(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragOnly);
+    m_project_view->setItemDelegate(new ProjectTreeEntry());
+    m_project_view->setExpandsOnDoubleClick(false);
     //m_project_view->setSelectionMode(QAbstractItemView::NoSelection);
 
     QAction* action;
@@ -912,7 +914,12 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 exit = exit && SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
                 index++;
             }
+
+            m_project_tree->setActiveIndex(m_last_index - 1);
+            //   m_stack_widget->setCurrentWidget(0);
+
             LoadMetaModels();
+
             return exit;
         }
     }
@@ -1276,6 +1283,7 @@ void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
         m_stack_widget->addWidget(m_project_list[widget]);
     m_stack_widget->setCurrentWidget(m_project_list[widget]);
     m_project_list[widget]->setCurrentTab(tab + 1);
+    m_project_tree->setActiveIndex(widget);
 }
 
 void SupraFitGui::TreeClicked(const QModelIndex& index)

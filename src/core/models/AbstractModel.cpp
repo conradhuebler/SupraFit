@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "dataclass.h"
@@ -222,6 +222,9 @@ void AbstractModel::PrepareParameter(int global, int local)
             throw - 2;
     }
 
+    m_global_boundaries = QList<ParameterBoundary>(global);
+    QList<ParameterBoundary> local_boundaries(SeriesCount());
+    m_local_boundaries = QList<QList<ParameterBoundary>>(local, local_boundaries);
     QStringList header;
 
     if (!LocalTable())
@@ -241,8 +244,8 @@ void AbstractModel::PrepareParameter(int global, int local)
     private_d->m_enabled_global = QVector<int>(global, 0);
     private_d->m_enabled_local = QVector<int>(local, 0);
 
-    while (m_random_gobal.size() < GlobalParameterSize())
-        m_random_gobal << QPair<qreal, qreal>(0, 10);
+    while (m_random_global.size() < GlobalParameterSize())
+        m_random_global << QPair<qreal, qreal>(0, 10);
 
     while (m_random_local.size() < SeriesCount()) {
         QVector<QPair<qreal, qreal>> random;
@@ -285,8 +288,8 @@ void AbstractModel::InitialiseRandom()
     if (!qApp->instance()->property("InitialiseRandom").toBool() || SFModel() == SupraFit::MetaModel)
         return;
 
-    for (int i = 0; i < m_random_gobal.size(); ++i) {
-        (*GlobalTable())[i] = QRandomGenerator::global()->generateDouble() * (m_random_gobal[i].second - m_random_gobal[i].first) + m_random_gobal[i].first;
+    for (int i = 0; i < m_random_global.size(); ++i) {
+        (*GlobalTable())[i] = QRandomGenerator::global()->generateDouble() * (m_random_global[i].second - m_random_global[i].first) + m_random_global[i].first;
     }
     for (int series = 0; series < SeriesCount(); ++series) {
         for (int i = 0; i < LocalParameterSize(); ++i) {
@@ -1066,7 +1069,21 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         json["methods"] = statisticObject;
     }
 
+    QJsonObject globalBoundaries;
+    for (int i = 0; i < m_global_boundaries.size(); ++i) {
+        globalBoundaries[QString::number(i)] = ToolSet::DoubleVec2String(Boundary2Vector((m_global_boundaries[i])));
+    }
+    json["globalBoundaries"] = globalBoundaries;
+
     json["localParameter"] = LocalTable()->ExportTable(true, private_d->m_enabled_local);
+
+    QJsonObject localBoundaries;
+    for (int j = 0; j < m_local_parameter->columnCount() && j < m_local_boundaries.size(); ++j) {
+        for (int i = 0; i < m_local_parameter->rowCount() && i < m_local_boundaries[j].size(); ++i) {
+            localBoundaries[QString::number(i) + "+" + QString::number(j)] = ToolSet::DoubleVec2String(Boundary2Vector(m_local_boundaries[j][i]));
+        }
+    }
+    json["localBoundaries"] = localBoundaries;
 
     json["locked"] = ToolSet::IntVec2String(private_d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
@@ -1224,6 +1241,20 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
     LocalTable()->ImportTable(json["localParameter"].toObject());
 
+    if (json.contains("globalBoundaries")) {
+        QJsonObject globalBoundaries = json["globalBoundaries"].toObject();
+        for (int i = 0; i < m_global_boundaries.size(); ++i) {
+            m_global_boundaries[i] = Vector2Boundary(ToolSet::String2DoubleVec(globalBoundaries[QString::number(i)].toString()));
+        }
+    }
+    if (json.contains("localBoundaries")) {
+        QJsonObject localBoundaries = json["localBoundaries"].toObject();
+        for (int j = 0; j < m_local_parameter->columnCount() && j < m_local_boundaries.size(); ++j) {
+            for (int i = 0; i < m_local_parameter->rowCount() && i < m_local_boundaries[j].size(); ++i) {
+                m_local_boundaries[j][i] = Vector2Boundary(ToolSet::String2DoubleVec(localBoundaries[QString::number(i) + "+" + QString::number(j)].toString()));
+            }
+        }
+    }
     setActiveSignals(active_signals);
 
     if (topjson.contains("locked_model")) {
@@ -1786,4 +1817,37 @@ void AbstractModel::UpdateModelDefiniton(const QHash<QString, QJsonObject>& mode
     Calculate();
 }
 
+QList<double> AbstractModel::getPenalty() const
+{
+    double penalty = 0.0;
+    /*
+    for(int i = 0; i < m_global_boundaries.size(); ++i)
+    {
+        ParameterBoundary global = m_global_boundaries[i];
+        double value = global.lower_barrier_wall * log( 1+ exp(-global.lower_barrier_beta*(global.lower_barrier - GlobalParameter(i))));
+        if(global.limit_lower && !std::isnan(value))
+           penalty += value;
+
+        value = global.upper_barrier_wall * log( 1+ exp(-global.upper_barrier_beta*(global.upper_barrier - GlobalParameter(i))));
+        if(global.limit_upper && !std::isnan(value))
+            penalty += value;
+    }
+    for(int j = 0; j < m_local_parameter->columnCount() ; ++j)
+    {
+        for(int i = 0; i < m_local_parameter->rowCount(); ++i)
+        {
+        ParameterBoundary local = m_local_boundaries[j][i];
+        double value = local.lower_barrier_wall * log10( 1+ exp(-local.lower_barrier_beta*(local.lower_barrier - LocalTable()->data(i,j))));
+        if(local.limit_lower && !std::isnan(value))
+            penalty += value;
+
+        value = local.upper_barrier_wall * log10( 1+ exp(-local.upper_barrier_beta*(local.upper_barrier - LocalTable()->data(i,j))));
+        if(local.limit_upper && !std::isnan(value))
+            penalty += value;
+        }
+    }
+    */
+    QList<double> result(m_used_variables, penalty);
+    return result;
+}
 #include "AbstractModel.moc"
