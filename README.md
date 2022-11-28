@@ -83,12 +83,18 @@ Copy such a table from any spreadsheet application and paste it in the **New tab
 
 SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
 
+## Constrained Optimisation
+Global parameters (local will follow) can now be optimised with respect to boundary conditations. The limits can be set by clicking the three-dotted push button next to the parameter value. This is quite an experimental feature, since the correct math is somehow complicated. 
+The boundary conditions in SupraFit are realised using a logfermi potential as penalty function (see https://xtb-docs.readthedocs.io/en/latest/xcontrol.html#different-potential-shapes). For best optimisation experience, make sure that the initial guess of the parameters lies within the choosen boundaries.
+
+
 ## Statistics
-SupraFit provides some statistical analysis, which will be described in a not yet finished article. Implemented methods are based on the following approaches:
+SupraFit provides some statistical analysis. Implemented methods are based on the following approaches:
 - Monte Carlo simulation (Percentile method based confidence calculation)
 - F-Test based confidence calculation
 - Resampling methods
 
+The Monte Carlo simulation and F-Test based approches are explained in C. Hübler, Chem. Methods 2022, e202200006. DOI [10.1002/cmtd.202200006](https://doi.org/10.1002/cmtd.202200006). Further analysis using Monte Carlo simulation and the Resampling methods are described in more detail in Hübler C. 2022. Analysing binding stoichiometries in NMR titration experiments using Monte Carlo simulation and resampling techniques. PeerJ Analytical Chemistry 4:e23 [https://doi.org/10.7717/peerj-achem.23](https://peerj.com/articles/achem-23/). 
 A detailed handbook will be provided as soon as possbile.
 
 ## Download source code and requirements
@@ -179,7 +185,12 @@ Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)]
 If you obtain results with SupraFit, I kindly ask to include in your citation:
 
 - C. Hübler, Chem. Methods 2022, e202200006. DOI [10.1002/cmtd.202200006](https://doi.org/10.1002/cmtd.202200006)
-- Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
+- C. Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
+
+If the Monte Carlo simulation and Resampling plans were helpfull:
+
+- C. Hübler, PeerJ Analytical Chemistry 2022, 4:e23 [https://doi.org/10.7717/peerj-achem.23](https://peerj.com/articles/achem-23/)
+
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
 <img src="https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster.png" width="300">

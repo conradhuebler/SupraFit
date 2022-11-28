@@ -1820,34 +1820,54 @@ void AbstractModel::UpdateModelDefiniton(const QHash<QString, QJsonObject>& mode
 QList<double> AbstractModel::getPenalty() const
 {
     double penalty = 0.0;
-    /*
+    int individual_parameter = 0;
     for(int i = 0; i < m_global_boundaries.size(); ++i)
     {
+        if (!GlobalEnabled(i))
+            continue;
+        double value = 0.0;
+        double lower;
         ParameterBoundary global = m_global_boundaries[i];
-        double value = global.lower_barrier_wall * log( 1+ exp(-global.lower_barrier_beta*(global.lower_barrier - GlobalParameter(i))));
-        if(global.limit_lower && !std::isnan(value))
-           penalty += value;
-
-        value = global.upper_barrier_wall * log( 1+ exp(-global.upper_barrier_beta*(global.upper_barrier - GlobalParameter(i))));
-        if(global.limit_upper && !std::isnan(value))
-            penalty += value;
+        if (global.limit_lower) {
+            value = LowerLogFermi(GlobalParameter(i), global.lower_barrier, global.lower_barrier_wall, global.lower_barrier_beta); //*(GlobalParameter(i) - global.lower_barrier)));
+            if (!std::isnan(value)) {
+                penalty += value;
+                lower += penalty;
+                individual_parameter++;
+            }
+        }
+        if (global.limit_upper) {
+            value = UpperLogFermi(GlobalParameter(i), global.upper_barrier, global.upper_barrier_wall, global.upper_barrier_beta); // global.upper_barrier_wall * log( 1+ exp(-global.upper_barrier_beta*(global.upper_barrier - GlobalParameter(i))));
+            if (!std::isnan(value)) {
+                penalty += value;
+                individual_parameter++;
+            }
+        }
+        // qDebug() << "Parameter " << i << " Current Value " << GlobalParameter(i) << " Lower Boundary " << global.lower_barrier << " Penalty " << lower << " Upper Boundary " << global.upper_barrier << " Penalty " << value;
     }
+    /*
     for(int j = 0; j < m_local_parameter->columnCount() ; ++j)
     {
+
         for(int i = 0; i < m_local_parameter->rowCount(); ++i)
         {
         ParameterBoundary local = m_local_boundaries[j][i];
-        double value = local.lower_barrier_wall * log10( 1+ exp(-local.lower_barrier_beta*(local.lower_barrier - LocalTable()->data(i,j))));
+        double value = LowerLogFermi(LocalTable()->data(i,j), local.lower_barrier,  local.lower_barrier_wall, local.lower_barrier_beta); //local.lower_barrier_wall * log10( 1+ exp(-local.lower_barrier_beta*(local.lower_barrier - LocalTable()->data(i,j))));
         if(local.limit_lower && !std::isnan(value))
+        {
             penalty += value;
-
-        value = local.upper_barrier_wall * log10( 1+ exp(-local.upper_barrier_beta*(local.upper_barrier - LocalTable()->data(i,j))));
+            individual_parameter++;
+        }
+        value = UpperLogFermi(LocalTable()->data(i,j), local.lower_barrier,  local.lower_barrier_wall, local.lower_barrier_beta); //local.upper_barrier_wall * log10( 1+ exp(-local.upper_barrier_beta*(local.upper_barrier - LocalTable()->data(i,j))));
         if(local.limit_upper && !std::isnan(value))
+        {
             penalty += value;
+            individual_parameter++;
+        }
         }
     }
     */
-    QList<double> result(m_used_variables, penalty);
+    QList<double> result(m_used_variables, penalty / double(m_used_variables + individual_parameter));
     return result;
 }
 #include "AbstractModel.moc"

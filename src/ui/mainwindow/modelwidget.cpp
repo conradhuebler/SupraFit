@@ -195,13 +195,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         check->setChecked(true);
         m_constants << constant;
         constant->setDecimals(4);
-        /*
+
         QPushButton *more_action = new QPushButton(tr("..."));
         more_action->setMaximumWidth(20);
         connect(more_action, &QPushButton::clicked, this, [this, i](){
             ParameterBoundary boundary = m_model.data()->getGlobalBoundary(i);
             double value = m_model->GlobalParameter(i);
-            ParameterDialog dialog(boundary, value);
+            ParameterDialog dialog(boundary, value, m_model->SSE(), m_model->GlobalParameterName(i));
             if(dialog.exec() == QDialog::Accepted)
             {
                 boundary = dialog.Boundary();
@@ -211,7 +211,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 m_model->Calculate();
             }
         });
-        */
+
         constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
         constant->setMaximum(1e9);
@@ -244,7 +244,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
         hlayout->addWidget(constant);
         hlayout->addWidget(check);
-        // hlayout->addWidget(more_action);
+        hlayout->addWidget(more_action);
 
         check->setHidden(m_model.data()->isSimulation());
         group->setLayout(hlayout);

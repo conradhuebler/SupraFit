@@ -1012,6 +1012,8 @@ QString ModelDataHolder::Compare() const
         compare += tr("<tr><td>%1</td><td align='center'>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>").arg(model.toStrongRef()->Name()).arg(model.toStrongRef()->Parameter()).arg(Print::printDouble(model.toStrongRef()->SSE(), 6)).arg(Print::printDouble(model.toStrongRef()->SEy(), 6)).arg(Print::printDouble(model.toStrongRef()->StdDeviation(), 6));
     }
     compare += "</table>";
+    compare += "<h5>More information about the Monte Carlo methods and Resampling plans can be found at:</h5>";
+    compare += "<a href='https://doi.org/10.7717/peerj-achem.23'>C. Hübler, PeerJ Analytical Chemistry, 2022, 4:e23 https://doi.org/10.7717/peerj-achem.23</a>";
 
     return compare;
 }

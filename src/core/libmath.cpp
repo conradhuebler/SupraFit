@@ -277,6 +277,16 @@ qint64 Factorial(qint64 n)
     return n * Factorial(n - 1);
 }
 
+double LowerLogFermi(double x, double x0, double k, double beta)
+{
+    return k * log(1 + exp(-beta * (x - x0)));
+}
+
+double UpperLogFermi(double x, double x0, double k, double beta)
+{
+    return k * log(1 + exp(-beta * (x0 - x)));
+}
+
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon)
 {
     QVector<qreal> param = model.toStrongRef()->OptimizeParameters();

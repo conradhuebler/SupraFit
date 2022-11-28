@@ -75,11 +75,11 @@ struct ParameterBoundary {
     double lower_barrier = 0;
     double upper_barrier = 0;
 
-    double lower_barrier_beta = 10;
-    double upper_barrier_beta = 10;
+    double lower_barrier_beta = 100;
+    double upper_barrier_beta = 100;
 
-    double lower_barrier_wall = 10;
-    double upper_barrier_wall = 10;
+    double lower_barrier_wall = 100;
+    double upper_barrier_wall = 100;
 };
 
 inline QVector<double> Boundary2Vector(const ParameterBoundary& boundary)

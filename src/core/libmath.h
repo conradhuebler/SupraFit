@@ -50,6 +50,8 @@ qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
 qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
 
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon = 1e-4);
+double LowerLogFermi(double x, double x0, double k, double beta);
+double UpperLogFermi(double x, double x0, double k, double beta);
 
 qint64 Factorial(qint64 n);
 

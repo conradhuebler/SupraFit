@@ -1,6 +1,7 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
+- add logfermi potential function to realise constrained optimisation
 - add some simple kinetic models
 - more flexible chart configs
 - include FlowLayout from Qt Examples for flexible UI
