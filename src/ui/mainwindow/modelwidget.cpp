@@ -313,6 +313,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             qobject_cast<LineSeries*>(m_charts.error_wrapper->Series(0))->setShowInLegend(legend);
         });
         name_layout->addWidget(m_legend);
+        QSpinBox* series = new QSpinBox;
+        series->setRange(1, m_model->DependentModel()->rowCount());
+        name_layout->addWidget(series);
+        connect(series, &QSpinBox::valueChanged, this, [this](int value) {
+            m_model->setAppliedSeries(value);
+        });
     }
 
     m_layout->addLayout(name_layout);

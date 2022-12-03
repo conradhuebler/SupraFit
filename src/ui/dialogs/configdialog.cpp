@@ -362,6 +362,15 @@ void ConfigDialog::createChartTab()
     QWidget* chartTab = new QWidget;
     chartTab->setLayout(layout);
 
+    m_MaxSeriesPoints = new QSpinBox;
+    m_MaxSeriesPoints->setRange(0, 1e25);
+    m_MaxSeriesPoints->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
+
+    layout->addWidget(new QLabel(tr("General Chart Settings:")));
+    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Maximal number of visualised points per series.")));
+    hbox->addWidget(m_MaxSeriesPoints);
+
     layout->addWidget(new QLabel(tr("Feedback effects in Charts:")));
 
     m_PointFeedback = new QCheckBox(tr("Highlight #th Point on hovering"));
@@ -374,7 +383,7 @@ void ConfigDialog::createChartTab()
     m_ModuloPointFeedback->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
     m_ModuloPointFeedback->setEnabled(m_PointFeedback->isChecked());
 
-    QHBoxLayout* hbox = new QHBoxLayout;
+    // hbox = new QHBoxLayout;
     // hbox->addWidget(m_PointFeedback);
     // hbox->addWidget(m_ModuloPointFeedback);
     layout->addLayout(hbox);
@@ -525,6 +534,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("PointFeedback", m_PointFeedback->isChecked());
     qApp->instance()->setProperty("ModuloPointFeedback", m_ModuloPointFeedback->value());
     qApp->instance()->setProperty("MarkerPointFeedback", m_MarkerPointFeedbackSize->value());
+    qApp->instance()->setProperty("MaxSeriesPoints", m_MaxSeriesPoints->value());
 
     /* File Save Stuff */
     qApp->instance()->setProperty("StoreRawData", m_StoreRawData->isChecked());

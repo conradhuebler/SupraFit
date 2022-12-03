@@ -94,7 +94,7 @@ void Blank::CalculateVariables()
     for (int i = 0; i < DataPoints(); ++i) {
 
         qreal guest_0 = InitialGuestConcentration(i);
-        SetValue(i, 0, guest_0 * dil_heat + dil_inter);
+        SetValue(i, AppliedSeries(), guest_0 * dil_heat + dil_inter);
     }
 }
 

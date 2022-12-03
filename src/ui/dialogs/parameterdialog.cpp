@@ -319,8 +319,13 @@ void ParameterDialog::Recalculate()
     else
         m_right_boundary->setText(QString("Current upper penalty would %1 be.").arg(UpperLogFermi(m_value_edit->value(), m_maximum_edit->value(), m_lower_barrier_wall->value(), m_lower_barrier_beta->value())));
 
-    ymax = std::max(ymax, LowerLogFermi(m_value_edit->value(), m_minimum_edit->value(), m_lower_barrier_wall->value(), m_lower_barrier_beta->value()));
-    ymax = std::max(ymax, UpperLogFermi(m_value_edit->value(), m_maximum_edit->value(), m_lower_barrier_wall->value(), m_lower_barrier_beta->value()));
+    double tmp = LowerLogFermi(m_value_edit->value(), m_minimum_edit->value(), m_lower_barrier_wall->value(), m_lower_barrier_beta->value());
+    if (!std::isinf(tmp))
+        ymax = std::max(ymax, tmp);
+
+    tmp = UpperLogFermi(m_value_edit->value(), m_maximum_edit->value(), m_lower_barrier_wall->value(), m_lower_barrier_beta->value());
+    if (!std::isinf(tmp))
+        ymax = std::max(ymax, tmp);
 
     m_current_value->append(m_value_edit->value(), 0);
     m_current_value->append(m_value_edit->value(), ymax);

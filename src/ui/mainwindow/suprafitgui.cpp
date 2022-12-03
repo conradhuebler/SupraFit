@@ -1157,6 +1157,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("ScriptTimeout") == QVariant())
         qApp->instance()->setProperty("ScriptTimeout", 500);
 
+    if (qApp->instance()->property("MaxSeriesPoints") == QVariant())
+        qApp->instance()->setProperty("MaxSeriesPoints", 200);
+
     qApp->instance()->setProperty("lastDir", getDir());
 }
 

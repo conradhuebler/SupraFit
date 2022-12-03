@@ -430,10 +430,10 @@ void AbstractModel::Calculate()
         clearChart(str);
 
     //    DependentModel()->Debug("AbstractModel::Calculate");
-
+    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     EvaluateOptions();
     CalculateVariables();
-
+    // qDebug() << (QDateTime::currentMSecsSinceEpoch() - t0) << " msecs for calculation";
     if (!m_complete) {
         return;
     }
@@ -1098,6 +1098,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     json["active_series"] = ToolSet::IntVec2String(m_active_signals.toVector());
 
     toplevel["data"] = json;
+    toplevel["AppliedSeries"] = m_AppliedSeries;
     toplevel["options"] = optionObject;
     toplevel["model"] = SFModel();
     toplevel["SupraFit"] = qint_version;
@@ -1292,6 +1293,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
+    m_AppliedSeries = topjson["AppliedSeries"].toInt(0);
+
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
     if (topjson.contains("name") && !unsafe_copy)
         m_name = topjson["name"].toString();

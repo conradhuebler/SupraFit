@@ -179,7 +179,7 @@ void DecayRates::CalculateVariables()
         value += B3 * exp(-1 * t / t3);
         // if(m_v)
         value += B4 * exp(-1 * t / t4);
-        SetValue(i, 0, value);
+        SetValue(i, AppliedSeries(), value);
     }
 }
 

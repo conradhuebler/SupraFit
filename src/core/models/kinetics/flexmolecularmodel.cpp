@@ -64,7 +64,7 @@ void FlexMolecularModel::InitialGuess_Private()
     (*GlobalTable())[0] = 0.002;
     (*GlobalTable())[1] = 1.001;
     (*GlobalTable())[2] = DependentModel()->data(DataBegin());
-    (*GlobalTable())[3] = DependentModel()->data(DataEnd());
+    (*GlobalTable())[3] = DependentModel()->data(DataEnd() - 1);
 
     Calculate();
 }
@@ -91,7 +91,7 @@ void FlexMolecularModel::CalculateVariables()
         qreal inner = -k * t * (1 - n) + pow(cA0 - cAeq, 1 - n);
         qreal value = pow(inner, 1 / (1 - n)) + cAeq;
         // qreal value = (cA0 - cAeq) * pow(pow(cA0 - cAeq, (1 - n)) * k * t * (1 -n ) + 1, 1.0 / ( 1.0 - n)) + cAeq;
-        SetValue(i, 0, value);
+        SetValue(i, AppliedSeries(), value);
         // }
     }
 }

@@ -81,10 +81,10 @@ void Michaelis_Menten_Model::CalculateVariables()
         qreal vmax = GlobalParameter(0);
         qreal Km = GlobalParameter(1);
         qreal S_0 = IndependentModel()->data(i);
-        for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = vmax * S_0 / (Km + S_0);
-            SetValue(i, j, value);
-        }
+        // for (int j = 0; j < SeriesCount(); ++j) {
+        qreal value = vmax * S_0 / (Km + S_0);
+        SetValue(i, AppliedSeries(), value);
+        //}
     }
 }
 

@@ -68,7 +68,7 @@ void Dep_Any::CalculateVariables()
         qreal b = GlobalParameter(1);
         qreal x = IndependentModel()->data(i);
         qreal value = log2(a) * log2(b) * x * x + log2(a) / x + log2(b) * x;
-        SetValue(i, 0, value);
+        SetValue(i, AppliedSeries(), value);
     }
 }
 

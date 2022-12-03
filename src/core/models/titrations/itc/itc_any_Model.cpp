@@ -301,7 +301,7 @@ void itc_any_Model::CalculateVariables()
         // more += Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         // qDebug() << more;
         more_info += more + "\n";
-        bool usage = SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, AppliedSeries(), value + dilution);
 
         if (!m_fast && usage) {
             SetConcentration(i, vector);

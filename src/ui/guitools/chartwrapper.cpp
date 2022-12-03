@@ -143,13 +143,13 @@ void ChartWrapper::MakeSeries()
 {
     if (!m_table)
         return;
-    for (int j = 0; j < m_stored_series.size(); ++j)
-        m_stored_series[j]->clear();
 
+    QVector<QList<QPointF>> series(m_stored_series.size());
     int rows = m_working.toStrongRef().data()->DataPoints();
     int cols = m_working.toStrongRef().data()->SeriesCount();
-
-    for (int i = 0; i < rows; ++i) {
+    int maxdata = qApp->instance()->property("MaxSeriesPoints").toInt();
+    int step = qMax(1, rows / maxdata);
+    for (int i = 0; i < rows; i += step) {
         double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
         if (!m_working.toStrongRef().data()->IndependentModel()->isChecked(i))
             continue;
@@ -157,9 +157,12 @@ void ChartWrapper::MakeSeries()
             if (m_working.toStrongRef().data()->DependentModel()->isChecked(i, j)) {
                 if (j >= m_stored_series.size())
                     continue;
-                m_stored_series[j]->append(x, m_table->data(i, j));
+                series[j].append(QPointF(x, m_table->data(i, j)));
             }
         }
+    }
+    for (int j = 0; j < m_stored_series.size(); ++j) {
+        m_stored_series[j]->replace(series[j]);
     }
 }
 
@@ -231,7 +234,7 @@ void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
     connect(m_stored_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     m_working = m_stored_model;
     m_transformed = true;
-    MakeSeries();
+    // MakeSeries();
     emit ModelTransformed();
 }
 

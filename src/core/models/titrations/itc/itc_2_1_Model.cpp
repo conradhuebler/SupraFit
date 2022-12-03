@@ -207,7 +207,7 @@ void itc_IItoI_Model::CalculateVariables()
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b_) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        bool usage = SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, AppliedSeries(), value + dilution);
 
         if (!m_fast && usage) {
             SetConcentration(i, vector);

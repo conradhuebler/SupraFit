@@ -40,6 +40,7 @@
 #include <libpeakpick/nxlinregress.h>
 #include <libpeakpick/peakpick.h>
 
+#include "guitools/waiter.h"
 #include "src/core/libmath.h"
 
 #include "src/ui/instance.h"
@@ -111,7 +112,7 @@ void RegressionAnalysisDialog::setUI()
 
 void RegressionAnalysisDialog::UpdatePlots()
 {
-    if (m_data.toStrongRef().data()->isSimulation())
+    if (m_data.toStrongRef().data()->isSimulation() || isHidden())
         return;
 
     m_chart->Clear();
@@ -181,6 +182,7 @@ void RegressionAnalysisDialog::TestPeaks()
 
 void RegressionAnalysisDialog::FitFunctions()
 {
+    Waiter wait;
     m_lists->clear();
     m_result.clear();
     int size = 10;

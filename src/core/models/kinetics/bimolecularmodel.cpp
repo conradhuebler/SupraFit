@@ -68,8 +68,8 @@ void BiMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 0.002;
     (*GlobalTable())[1] = DependentModel()->data(DataBegin());
-    (*GlobalTable())[2] = DependentModel()->data(DataEnd());
-    (*GlobalTable())[3] = DependentModel()->data(DataBegin()) / DependentModel()->data(DataEnd());
+    (*GlobalTable())[2] = DependentModel()->data(DataEnd() - 1);
+    (*GlobalTable())[3] = DependentModel()->data(DataBegin()) / DependentModel()->data(DataEnd() - 1);
     (*GlobalTable())[4] = 1;
     QSharedPointer<AbstractModel> test = Clone();
     (*GlobalTable())[0] = BisectParameter(test, 0, 0, 0.1, 1e-5);
@@ -105,7 +105,7 @@ void BiMolecularModel::CalculateVariables()
         qreal t = IndependentModel()->data(i);
         // for (int j = 0; j < SeriesCount(); ++j) {
         qreal value = (cA0 * cc0 - cA0 * cA0) / (cc0 * exp(cc0 * k * q * t - cA0 * k * q * t) - cA0) + cAeq;
-        SetValue(i, 0, value);
+        SetValue(i, AppliedSeries(), value);
         //}
     }
 }

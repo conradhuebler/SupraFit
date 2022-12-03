@@ -82,7 +82,7 @@ void Indep_Quadrat::CalculateVariables()
         else
             value = a * x * x * (i < DataPoints() / 2) + b * x * x * !(i < DataPoints() / 2);
 
-        SetValue(i, 0, value);
+        SetValue(i, AppliedSeries(), value);
     }
 }
 

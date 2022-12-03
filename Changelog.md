@@ -1,6 +1,7 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
+- make maximal number of points per series changeable
 - add logfermi potential function to realise constrained optimisation
 - add some simple kinetic models
 - more flexible chart configs

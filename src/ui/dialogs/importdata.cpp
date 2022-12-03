@@ -25,6 +25,8 @@
 
 #include "src/global.h"
 
+#include "src/ui/guitools/waiter.h"
+
 #include "src/ui/dialogs/generatedatadialog.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/thermogram.h"
@@ -320,6 +322,7 @@ void ImportData::SelectFile()
 
 void ImportData::LoadFile()
 {
+    Waiter wait;
     QFileInfo info(m_filename);
     QPointer<DataTable> model;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {

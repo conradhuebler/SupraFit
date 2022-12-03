@@ -223,7 +223,8 @@ private:
                                                    << "ModuloPointFeedback"
                                                    << "FullShannon"
                                                    << "lastSize"
-                                                   << "ScriptTimeout";
+                                                   << "ScriptTimeout"
+                                                   << "MaxSeriesPoints";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

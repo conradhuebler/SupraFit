@@ -117,7 +117,7 @@ void itc_n_ItoI_Model::CalculateVariables()
 
         qreal value = V * (phi - phi_prev * (1 - v / V)) * dH;
 
-        SetValue(i, 0, value + dilution);
+        SetValue(i, AppliedSeries(), value + dilution);
         phi_prev = phi;
     }
 }

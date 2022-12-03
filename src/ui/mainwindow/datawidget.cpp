@@ -106,7 +106,7 @@ DataWidget::DataWidget()
     m_range = new QLabel(tr("All data are included!"));
     m_shift_begin = new QPushButton(tr("Shift begin data"));
     m_shift_begin->setDisabled(true);
-    m_shift_begin->setFlat(true);
+    // m_shift_begin->setFlat(true);
 
     m_tables_layout = new QGridLayout;
 
@@ -187,7 +187,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     connect(m_plot_x, &QCheckBox::stateChanged, this, [this](int state) {
         m_data.toStrongRef().data()->setPlotMode(state);
         m_wrapper.toStrongRef().data()->UpdateModel();
-        dialog->UpdatePlots();
+        // dialog->UpdatePlots();
     });
 
     qApp->instance()->setProperty("projectname", m_data.toStrongRef().data()->ProjectTitle());
@@ -198,7 +198,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     // why was this here?
     // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-    dialog->UpdatePlots();
+    // dialog->UpdatePlots();
 
     QVBoxLayout* vlayout = new QVBoxLayout;
     for (int i = 0; i < m_wrapper.toStrongRef().data()->SeriesSize(); ++i) {
@@ -382,6 +382,7 @@ void DataWidget::HidePoint()
 void DataWidget::LinearAnalysis()
 {
     dialog->show();
+    dialog->UpdatePlots();
 }
 
 #include "datawidget.moc"

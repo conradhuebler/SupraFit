@@ -778,6 +778,8 @@ public:
     {
         return m_local_boundaries[i][j];
     }
+    int AppliedSeries() const { return m_AppliedSeries; }
+    void setAppliedSeries(int series) { m_AppliedSeries = series; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -856,6 +858,7 @@ protected:
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom, m_threads = 1;
+    int m_AppliedSeries = 0;
     bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false, m_complete = true, m_demand_inialisation = false;
     QJsonObject m_opt_config;
     QVector<QJsonObject> m_pre_input;

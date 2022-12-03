@@ -81,10 +81,10 @@ void ArrheniusFit::CalculateVariables()
         qreal A = GlobalParameter(0);
         qreal EA = GlobalParameter(1);
         qreal T = IndependentModel()->data(i);
-        for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = A * exp(-EA / R / T);
-            SetValue(i, j, value);
-        }
+        // for (int j = ; j < SeriesCount(); ++j) {
+        qreal value = A * exp(-EA / R / T);
+        SetValue(i, AppliedSeries(), value);
+        //}
     }
 }
 

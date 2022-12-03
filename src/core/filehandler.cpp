@@ -122,6 +122,7 @@ void FileHandler::ReadGeneric()
         return;
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty()) {
+            bool insert_row = true;
             bool read_header = false;
             if (line[0] == HashTag && header_added == false) {
                 read_header = true;
@@ -135,16 +136,18 @@ void FileHandler::ReadGeneric()
                     QString head = QString(item).replace(HashTag, "");
                     if (!head.isEmpty() && !head.isNull())
                         header << head;
-                } else
+                } else if (item[0] != HashTag)
                     row.append((QString(item).replace(",", ".")).toDouble());
+                else
+                    insert_row = false;
                 sum += (QString(item).replace(",", ".")).toDouble();
             }
-            qDebug() << header;
+            // qDebug() << header;
             if (!header_added) {
                 m_stored_table->setHeader(header);
                 header_added = true;
             }
-            if (!read_header)
+            if (!read_header && insert_row)
                 m_stored_table->insertRow(row);
         }
     }

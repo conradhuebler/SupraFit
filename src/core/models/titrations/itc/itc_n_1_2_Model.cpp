@@ -152,7 +152,7 @@ void itc_n_ItoII_Model::CalculateVariables()
         // qreal value = V * ((phi1 - phi1_prev * dv) * dH1 + (phi2 - phi2_prev * dv) * dH2) * host_0;
         qreal value = V * host_0 * (n1 * dH1 * K1 * guest / (1 + K1 * guest) + n2 * dH2 * K2 * guest / (1 + K2 * guest)) * 1e6;
 
-        SetValue(i, 0, value + dilution - oldq);
+        SetValue(i, AppliedSeries(), value + dilution - oldq);
         phi1_prev = phi1;
         phi2_prev = phi2;
         oldq = value;

@@ -202,7 +202,7 @@ void itc_ItoII_Model::CalculateVariables()
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        bool usage = SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, AppliedSeries(), value + dilution);
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
 
