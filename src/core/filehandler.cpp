@@ -114,21 +114,26 @@ void FileHandler::ReadGeneric()
     if (!CheckForTable())
         return;
 
-    m_stored_table = new DataTable;
     int i = 0;
     bool header_added = false;
     //qDebug() << m_filecontent.size();
     if (m_filecontent.size() > 1e4 && qApp->instance()->property("auto_thermo_dialog").toBool())
         return;
+
+    QStringList header;
+    int index = 0;
+    int max_columns = 0;
+    QVector<QVector<double>> rows(m_filecontent.size());
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty()) {
             bool insert_row = true;
             bool read_header = false;
             if (line[0] == HashTag && header_added == false) {
                 read_header = true;
+                insert_row = false;
             }
             QVector<qreal> row;
-            QStringList header;
+            // QStringList header;
             QStringList items = line.simplified().split(sep);
             double sum = 0;
             for (const QString& item : qAsConst(items)) {
@@ -144,13 +149,32 @@ void FileHandler::ReadGeneric()
             }
             // qDebug() << header;
             if (!header_added) {
-                m_stored_table->setHeader(header);
+                // m_stored_table->setHeader(header);
                 header_added = true;
             }
-            if (!read_header && insert_row)
-                m_stored_table->insertRow(row);
+            if (!read_header && insert_row) {
+                // m_stored_table->insertRow(row);
+                rows[index] = row;
+                max_columns = qMax(max_columns, row.size());
+            }
+        }
+        index++;
+    }
+    while (rows[rows.size() - 1].isEmpty())
+        rows.removeLast();
+
+    while (rows[0].isEmpty())
+        rows.removeFirst();
+
+    m_stored_table = new DataTable(rows.size(), max_columns, 0);
+    if (header.size() == max_columns)
+        m_stored_table->setHeader(header);
+    for (int i = 0; i < rows.size(); ++i) {
+        for (int j = 0; j < rows[i].size(); ++j) {
+            m_stored_table->operator()(i, j) = rows[i][j];
         }
     }
+
     ConvertTable();
 }
 
@@ -190,6 +214,7 @@ void FileHandler::ConvertTable()
 bool FileHandler::CheckForTable()
 {
     // int size = 0;
+    QRegularExpression rx("\\b^[a-zA-Z]+$\\b", QRegularExpression::CaseInsensitiveOption);
 #pragma message("rethink about it")
     for (int i = 0; i < m_lines; ++i) {
         // qDebug() << m_filecontent[i];
@@ -209,7 +234,7 @@ bool FileHandler::CheckForTable()
         if (m_table) {
             QStringList elements = m_filecontent[i].split("\n");
             for (int j = 0; j < elements.size(); ++j) {
-                if (elements[j].contains(QRegularExpression("[Aa-Zz]")))
+                if (elements[j].contains(rx))
                     m_allint = false;
             }
         }
