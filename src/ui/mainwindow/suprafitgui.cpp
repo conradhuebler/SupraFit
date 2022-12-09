@@ -731,6 +731,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
 
 void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
 {
+    Waiter wait;
     QStringList uuids = m_project_tree->UUID(index).split("|");
 
     if(uuids.size() != 2)
@@ -1157,7 +1158,7 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("ScriptTimeout") == QVariant())
         qApp->instance()->setProperty("ScriptTimeout", 500);
 
-    if (qApp->instance()->property("MaxSeriesPoints") == QVariant())
+    if (qApp->instance()->property("MaxSeriesPoints") == QVariant() || qApp->instance()->property("MaxSeriesPoints").toInt() == 0)
         qApp->instance()->setProperty("MaxSeriesPoints", 200);
 
     qApp->instance()->setProperty("lastDir", getDir());

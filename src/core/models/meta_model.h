@@ -132,6 +132,8 @@ public:
     virtual QList<double> getSignals(QList<int> active_signal) override;
 
     virtual QList<double> getCalculatedModel() override;
+    virtual QList<qreal> getCalculatedSquaredErrors() override;
+    virtual QList<qreal> getCalculatedAbsoluteErrors() override;
 
     virtual qreal ModelError() const override;
 

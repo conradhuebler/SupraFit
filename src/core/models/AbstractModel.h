@@ -358,6 +358,10 @@ public:
 
     virtual QList<qreal> getCalculatedModel();
 
+    virtual QList<qreal> getCalculatedSquaredErrors();
+
+    virtual QList<qreal> getCalculatedAbsoluteErrors();
+
     /*! \brief returns a List of all Series, that are to be included in optimisation
      */
     inline QList<int> ActiveSignals() const { return m_active_signals; }
@@ -796,6 +800,8 @@ private:
     QSharedDataPointer<AbstractModelPrivate> private_d;
 
     void ParseFastConfidence(const QJsonObject& object);
+
+    QList<double> m_results_list, m_absolute_errors_list, m_squared_errors_list;
 
 protected:
     /*

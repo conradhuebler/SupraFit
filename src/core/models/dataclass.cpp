@@ -225,10 +225,6 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
-#ifdef _DEBUG
-    std::cout << "delete dataclass" << std::endl;
-    d->printReferenz();
-#endif
 }
 
 void DataClass::NewUUID()

@@ -321,7 +321,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         QStringList header = m_data.toStrongRef().data()->IndependentRawModel()->header();
         if (header.size() != 1)
             return;
-        header[0] = QString("X1 - %1").arg(x0);
+        header[0] = QString("(X1 - %1)").arg(x0);
         m_data.toStrongRef().data()->IndependentRawModel()->setHeader(header);
         m_data.toStrongRef().data()->ApplyCalculationModel();
     });

@@ -395,8 +395,53 @@ Vector DataTable::Row(int row, const QList<int>& active) const
 
 void DataTable::append(const QPointer<DataTable> table)
 {
-    for (int i = 0; i < table->rowCount(); ++i)
-        insertRow(table->Row(i), table->CheckedRow(i));
+    QReadLocker locker(&mutex);
+    int oldsize = m_table.rows();
+    if (m_table.cols() == 0) {
+        m_table.conservativeResize(m_table.rows() + table->rowCount(), table->columnCount());
+        m_checked_table.conservativeResize(m_checked_table.rows() + table->rowCount(), table->columnCount());
+    } else {
+        m_table.conservativeResize(m_table.rows() + table->rowCount(), m_table.cols());
+        m_checked_table.conservativeResize(m_checked_table.rows() + table->rowCount(), m_checked_table.cols());
+    }
+    QStringList header = table->header();
+    while (m_header.size() < header.size())
+        m_header << QString::number(m_header.size() + 1);
+
+    for (int i = 0; i < table->rowCount(); ++i) {
+        auto row = table->Row(i);
+        auto checked = table->CheckedRow(i);
+        for (int j = 0; j < row.size(); ++j) {
+            m_table(oldsize + i, j) = row(j);
+            m_checked_table(oldsize + i, j) = checked(j);
+        }
+    }
+    return;
+    /*
+        for (int i = 0; i < table->rowCount(); ++i)
+        //    insertRow(table->Row(i), table->CheckedRow(i));
+        {
+
+        while (m_header.size() < row.size())
+            m_header << QString::number(m_header.size() + 1);
+
+        if (m_table.cols() == 0) {
+            m_table.conservativeResize(m_table.rows() + 1, row.size());
+            m_checked_table.conservativeResize(m_checked_table.rows() + 1, row.size());
+        } else {
+            m_table.conservativeResize(m_table.rows() + 1, m_table.cols());
+            m_checked_table.conservativeResize(m_checked_table.rows() + 1, m_checked_table.cols());
+        }
+
+        // if(checked.size() < row.size())
+        //     checked = Vector::Ones(row.size());
+
+        for (int i = 0; i < row.size(); ++i) {
+            m_table(m_table.rows() - 1, i) = row(i);
+            m_checked_table(m_checked_table.rows() - 1, i) = checked(i);
+        }
+        }
+        */
 }
 void DataTable::prepend(QPointer<DataTable> table)
 {

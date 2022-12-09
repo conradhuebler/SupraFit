@@ -481,25 +481,25 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_jobmanager->setModel(m_model);
 
     connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::prepare, m_advancedsearch, &AdvancedSearch::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress, Qt::DirectConnection);
 
-    connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress, Qt::DirectConnection);
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
-    connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message);
     //connect(m_jobmanager, &JobManager::started, this, &ModelWidget::started);
     //connect(m_jobmanager, &JobManager::finished, this, &ModelWidget::finished, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
-    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
-    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
+    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
     connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
 
-    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));

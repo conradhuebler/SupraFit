@@ -364,7 +364,7 @@ void ConfigDialog::createChartTab()
 
     m_MaxSeriesPoints = new QSpinBox;
     m_MaxSeriesPoints->setRange(0, 1e25);
-    m_MaxSeriesPoints->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
+    m_MaxSeriesPoints->setValue(qApp->instance()->property("MaxSeriesPoints").toInt());
 
     layout->addWidget(new QLabel(tr("General Chart Settings:")));
     QHBoxLayout* hbox = new QHBoxLayout;
