@@ -29,6 +29,13 @@
 
 #include "src/core/models/AbstractModel.h"
 
+struct OptimisationHistory {
+    QVector<double> sse;
+    QVector<QVector<double>> parameter;
+    QStringList names;
+    QStringList colors;
+};
+
 class AbstractModel;
 
 class NonLinearFitThread : public QObject, public QRunnable {
@@ -49,7 +56,7 @@ public:
     inline qreal SumOfError() const { return m_sum_error; }
     inline QVector<qreal> StatisticVector() const { return m_statistic_vector; }
     inline bool Running() const { return m_running; }
-
+    inline OptimisationHistory History() const { return m_history; }
 public slots:
     void start();
 
@@ -63,6 +70,7 @@ private:
     bool m_exc_statistics, m_running = false;
     qreal m_sum_error;
     QVector<qreal> m_statistic_vector;
+    OptimisationHistory m_history;
 
 signals:
     void Message(const QString& str, int priority);
@@ -94,6 +102,7 @@ public:
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, bool start = true);
     inline qreal SumOfError() const { return m_sum_error; }
     inline QSharedPointer<AbstractModel> Model() const { return m_model; }
+    inline OptimisationHistory History() const { return m_history; }
 
 private:
     QSharedPointer<AbstractModel> m_model;
@@ -102,6 +111,7 @@ private:
     QJsonObject m_last_parameter;
     bool m_exc_statistics;
     qreal m_sum_error;
+    OptimisationHistory m_history;
 
 signals:
     void Message(const QString& str, int priority);

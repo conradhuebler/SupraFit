@@ -66,7 +66,7 @@ public:
         qreal* pos = static_cast<qreal*>(index.internalPointer());
         bool ok = false;
         index.data(Qt::DisplayRole).toString().toDouble(&ok);
-
+        qDebug() << ok << index.data(Qt::DisplayRole).toString();
         if (pos == m_null && ok && index.column() == 0)
             flag = Qt::ItemIsEditable;
 

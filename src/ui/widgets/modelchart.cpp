@@ -50,12 +50,12 @@ ModelChartWidget::~ModelChartWidget()
     m_model.clear();
 }
 
-void ModelChartWidget::setUI()
+bool ModelChartWidget::setUI()
 {
     const ModelChart* chart = m_model.toStrongRef()->Chart(m_chart);
 
     if (chart == NULL)
-        return;
+        return false;
 
     QHBoxLayout* layout = new QHBoxLayout;
     setLayout(layout);
@@ -82,13 +82,15 @@ void ModelChartWidget::setUI()
         m_series << series;
     }
     UpdateChart();
+    return true;
 }
 
 void ModelChartWidget::UpdateChart()
 {
     const ModelChart* chart = m_model.toStrongRef()->Chart(m_chart);
     if (chart == NULL || view == NULL)
-        return;
+        if (!setUI())
+            return;
 
     view->setXAxis(chart->x_axis);
     view->setYAxis(chart->y_axis);

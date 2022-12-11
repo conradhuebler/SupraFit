@@ -38,7 +38,7 @@ signals:
 public slots:
 
 private:
-    void setUI();
+    bool setUI();
 
     QPointer<ListChart> view;
     QWeakPointer<AbstractModel> m_model;

@@ -522,6 +522,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
     connect(this, &DataClass::Warning, model, &DataClass::Warning);
+    connect(t.data(), &AbstractModel::Recalculated, this, &AbstractModel::Recalculated);
 
     emit ModelAdded(t);
 }

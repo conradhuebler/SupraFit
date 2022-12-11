@@ -96,7 +96,7 @@ struct MyFunctor : Functor<double> {
 struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 };
 
-int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& sse, QVector<QVector<double>>& parameter_history)
 {
 
 #ifndef extended_f_test
@@ -120,16 +120,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
 
-    /*
-    QString message = QString();
-    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
-    message += "Old vector : ";
-    for (double d : param) {
-        message += QString::number(d) + " ";
-    }
-    message += "\n";
-    emit model.data()->Info()->Message(message, 5);
-    */
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
@@ -153,7 +143,8 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         globalConstants.clear();
         globalConstants = model.toStrongRef()->OptimizeParameters();
         error_0 = model.toStrongRef()->SSE();
-
+        sse << error_0;
+        parameter_history << globalConstants;
 #pragma message("this used to be not here before restructuring")
         model.toStrongRef()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
@@ -165,18 +156,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
             norm += qAbs(globalConstants[i] - constants[i]);
     }
 
-    /*
-    QString result;
-    result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
-    result += "Last Sum of Changes in complexation constants was " + QString::number(norm) + "\n";
-    result += "New vector:";
-    for (int i = 0; i < param.size(); ++i) {
-        result += QString::number(param[i]) + " ";
-    }
-    result += "\n";
-
-    emit model.data()->Info()->Message(result, 4);
-    */
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
     model.toStrongRef()->setConverged(iter < MaxIter);
