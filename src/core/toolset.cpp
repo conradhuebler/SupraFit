@@ -309,15 +309,18 @@ qreal scale(qreal value)
 
 qreal scale(qreal value, qreal& pow)
 {
+    int iter = 0;
     if (qAbs(value) < 1 && value) {
-        while (qAbs(value) < 1) {
+        while (qAbs(value) < 1 && iter < 10) {
             pow /= 10;
             value *= 10;
+            iter++;
         }
     } else if (qAbs(value) > 10) {
-        while (qAbs(value) > 10) {
+        while (qAbs(value) > 10 && iter < 10) {
             pow *= 10;
             value /= 10;
+            iter++;
         }
     }
     return value;

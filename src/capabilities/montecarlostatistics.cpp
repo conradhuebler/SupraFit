@@ -84,7 +84,6 @@ void MonteCarloThread::run()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
-
     m_fit_thread->setModel(m_model, false);
     m_fit_thread->run();
 

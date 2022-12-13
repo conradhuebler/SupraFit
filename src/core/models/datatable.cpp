@@ -167,6 +167,9 @@ Qt::ItemFlags DataTable::flags(const QModelIndex& index) const
     if (m_editable)
         flags = flags | Qt::ItemIsEditable;
 
+    if (m_selectable)
+        flags = flags | Qt::ItemIsSelectable;
+
     return flags;
 }
 
@@ -530,13 +533,13 @@ void DataTable::appendColumns(const DataTable& table, bool keep_header)
 
     for (int i = 0; i < columnCount(); ++i)
         for (int j = 0; j < rowCount(); ++j) {
-            tab(i, j) = data(j, i);
-            // check(j,i) = m_checked_table(j,i);
+            tab(j, i) = m_table(j, i);
+            check(j, i) = m_checked_table(j, i);
         }
 
     for (int i = 0; i < table.columnCount(); ++i)
         for (int j = 0; j < table.rowCount(); ++j) {
-            tab(j, columnCount() + i) = table.data(i, j);
+            tab(j, columnCount() + i) = table.data(j, i);
             // check(j,columnCount() + i) = m_checked_table(j,i);
         }
     m_table = tab;

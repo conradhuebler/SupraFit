@@ -27,6 +27,7 @@
 
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
+#include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
@@ -86,6 +87,9 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_minimize, 1, 1);
     m_minimize->setStyleSheet("background-color: #77d740;");
     layout->addWidget(new QLabel(tr("Connection Strategy for Parameters:")), 1, 2);
+    m_history = new QPushButton(tr("Optimisation History"));
+    layout->addWidget(m_history, 1, 2);
+    m_history->setStyleSheet("background-color: #77d740;");
 
     m_type = new QComboBox;
     m_type->setStyleSheet("background-color: #77d740;");
@@ -100,11 +104,11 @@ void MetaModelWidget::setUi()
 
     //Model()->setConnectType(static_cast<MetaModel::ConnectType>(m_type->currentIndex()));
 
-    layout->addWidget(m_type, 1, 3);
+    layout->addWidget(m_type, 1, 4);
 
     m_actions = new ModelActions;
     m_metamodelparameter = new MetaModelParameter(m_model, &m_linked_charts);
-    layout->addWidget(m_metamodelparameter, 2, 0, 1, 4);
+    layout->addWidget(m_metamodelparameter, 2, 0, 1, 5);
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
@@ -130,15 +134,17 @@ void MetaModelWidget::setUi()
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
 
-    layout->addWidget(m_actions, 3, 0, 1, 4);
-    layout->addWidget(m_statistic_widget, 4, 0, 1, 4);
+    layout->addWidget(m_actions, 3, 0, 1, 5);
+    layout->addWidget(m_statistic_widget, 4, 0, 1, 5);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
     connect(m_calculate, &QPushButton::clicked, this, &MetaModelWidget::Calculate);
+    connect(m_history, &QPushButton::clicked, this, &MetaModelWidget::History);
 
     connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(this->Model()->ConnectionType()); });
     connect(Model(), &DataClass::Message, this, &MetaModelWidget::Message);
     connect(Model(), &DataClass::Warning, this, &MetaModelWidget::Warning);
     connect(Model(), &AbstractModel::Recalculated, m_statistic_widget, &StatisticWidget::Update);
+    connect(Model(), &MetaModel::DemandResortParameter, Model(), &MetaModel::ResortParameter);
 
     setLayout(layout);
 }
@@ -173,6 +179,19 @@ void MetaModelWidget::Minimize()
     m_model->CalculateStatistics(true);
     m_model->setFast(false);
     m_model->Calculate();
+    OptimisationHistory history = thread->History();
+    int series = 0;
+    for (int i = 0; i < m_model->OptimizeParameters().size(); ++i) {
+        auto pair = m_model->IndexParameters(i);
+        if (pair.second == 0) {
+            history.names << m_model->GlobalParameterName(pair.first);
+            history.colors << ChartWrapper::ColorCode(pair.first).toRgb().name();
+        } else {
+            history.names << m_model->LocalParameterName(pair.first);
+            history.colors << ChartWrapper::ColorCode(i).toRgb().name();
+        }
+    }
+    m_optimisationhistory << history;
 
     delete thread;
 
@@ -182,6 +201,37 @@ void MetaModelWidget::Minimize()
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     Model()->Message(QString("Optimisation took %2 msecs for %3 in %4").arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()), 5);
+}
+
+void MetaModelWidget::History()
+{
+    QTabWidget* chart_tab = new QTabWidget;
+    for (int i = 0; i < m_optimisationhistory.size(); ++i) {
+        QList<QPointF> sse_points;
+        QVector<QList<QPointF>> points(m_optimisationhistory[i].parameter[0].size());
+        for (int j = 0; j < m_optimisationhistory[i].sse.size(); ++j) {
+            sse_points.append(QPointF(j, m_optimisationhistory[i].sse[j]));
+            for (int k = 0; k < points.size(); ++k) {
+                points[k].append(QPointF(j, m_optimisationhistory[i].parameter[j][k]));
+            }
+        }
+        LineSeries* sse = new LineSeries;
+        sse->replace(sse_points);
+        QList<LineSeries*> param;
+        for (int k = 0; k < points.size(); ++k) {
+            LineSeries* p = new LineSeries;
+            p->replace(points[k]);
+            param << p;
+        }
+        ListChart* chart = new ListChart;
+        chart->addSeries(sse, 0, sse->color(), "Sum of Squared Errors", false);
+        for (int k = 0; k < points.size(); ++k) {
+            chart->addSeries(param[k], 1 + k, m_optimisationhistory[i].colors[k], m_optimisationhistory[i].names[k], false);
+        }
+        chart_tab->addTab(chart, QString("Optimisation No. %1").arg(1 + i));
+    }
+    GenericWidgetDialog dialog("Optimsation history", chart_tab, this);
+    dialog.exec();
 }
 
 void MetaModelWidget::ToggleStatisticDialog()

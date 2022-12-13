@@ -36,6 +36,7 @@
  * a represents the index of the model
  * b can be either 0 (global parameter) or 1 (local parameter)
  * c,d by the time of writing, couple of years after implementation, I forget them, but I will remember ...
+ * c would most probably be the index of the parameter within the original model
  */
 
 typedef QPair<qreal, QVector<QVector<int>>> MMParameter;
@@ -182,13 +183,13 @@ public:
     DataTable* DependentModel() override;
 
     void OverrideInDependentTable(DataTable* table) override;
+    void ResortParameter();
 
 private slots:
     void UpdateCalculated();
 
 private:
     void ApplyConnectType();
-    void ResortParameter();
 
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
@@ -219,4 +220,5 @@ signals:
     void ModelRemoved();
     void ParameterMoved();
     void ParameterSorted();
+    void DemandResortParameter();
 };

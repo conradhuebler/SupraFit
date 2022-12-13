@@ -258,20 +258,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
     m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
 
-
     m_minimize_all = new QPushButton(tr("Fit"));
-
     QAction* minimize_normal = new QAction(tr("Tight"), this);
     connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
 
     QAction* minimize_loose = new QAction(tr("Progress"), this);
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(History()));
 
-    QAction* fast_conf = new QAction(tr("Confidence"), this);
+    QAction* fast_conf = new QAction(tr("Simplified MOC"), this);
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
-    QMenu* menu = new QMenu(this);
+    QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
@@ -318,7 +316,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         series->setRange(1, m_model->DependentModel()->rowCount());
         name_layout->addWidget(series);
         connect(series, &QSpinBox::valueChanged, this, [this](int value) {
-            m_model->setAppliedSeries(value);
+            m_model->setAppliedSeries(value - 1);
         });
     }
 

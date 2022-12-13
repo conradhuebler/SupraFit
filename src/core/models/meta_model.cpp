@@ -195,21 +195,31 @@ void MetaModel::ApplyConnectType()
 void MetaModel::ResortParameter()
 {
     // return;
-
     QMutexLocker mutex(&m_mutex);
     QMultiMap<qreal, int> indicies;
 
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         qreal index = m_mmparameter[i].second.size();
-        // qreal value = m_mmparameter[i].first;
-        // index += value / pow(10, ceil(log10(abs(value)))) * (-1 * value < 0);
         indicies.insert(-1 * index, i);
     }
     QVector<MMParameter> mmparameter;
 
-    for (const auto& i : indicies)
-        mmparameter << m_mmparameter[i];
-
+    for (const auto& i : indicies) {
+        MMParameter parameter = m_mmparameter[i];
+        double value = 0; // parameter.first;
+        for (int j = 0; j < parameter.second.size(); ++j) {
+            int index_parameter = parameter.second[j][2];
+            int model_index = parameter.second[j][0];
+            if (parameter.second[j][1] == 0) // Global
+            {
+                value += m_models[model_index]->GlobalParameter(index_parameter);
+            } else { // Local
+                value += m_models[model_index]->LocalParameter(index_parameter, parameter.second[j][3]);
+            }
+        }
+        parameter.first = value / double(parameter.second.size());
+        mmparameter << parameter;
+    }
     m_mmparameter = mmparameter;
     emit ParameterSorted();
 }
@@ -522,6 +532,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
     connect(this, &DataClass::Warning, model, &DataClass::Warning);
+    connect(t.data(), &AbstractModel::ParameterChanged, this, &MetaModel::DemandResortParameter);
     connect(t.data(), &AbstractModel::Recalculated, this, &AbstractModel::Recalculated);
 
     emit ModelAdded(t);

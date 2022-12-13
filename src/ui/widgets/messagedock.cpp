@@ -24,9 +24,11 @@
 
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QSystemTrayIcon>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
+#include "qtimer.h"
 #include "src/global.h"
 #include "src/version.h"
 
@@ -62,6 +64,8 @@ MessageDock::MessageDock()
     m_titlebarwidget = new QWidget;
     m_titlebarwidget->setLayout(hlayout);
 
+    m_trayicon = new QSystemTrayIcon(QIcon(":/misc/SupraFit.png"), this);
+
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(m_message, 0, 0);
     setLayout(layout);
@@ -76,6 +80,11 @@ void MessageDock::Message(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
     m_message->append(tr("<pre><p>%1&emsp;<font color='green'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    if (QGuiApplication::applicationState() == Qt::ApplicationInactive) {
+        m_trayicon->show();
+        m_trayicon->showMessage("SupraFit - Message", str, QIcon(":/misc/SupraFit.png"), 2500);
+        QTimer::singleShot(5000, m_trayicon, &QSystemTrayIcon::hide);
+    }
     emit Presence();
 }
 
@@ -83,6 +92,11 @@ void MessageDock::Warning(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
     m_message->append(tr("<pre><p>%1&emsp;<font color='red'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    if (QGuiApplication::applicationState() == Qt::ApplicationInactive) {
+        m_trayicon->show();
+        m_trayicon->showMessage("SupraFit - Warning", str, QIcon(":/misc/SupraFit.png"), 2500);
+        QTimer::singleShot(5000, m_trayicon, &QSystemTrayIcon::hide);
+    }
     emit Attention();
 }
 
@@ -90,5 +104,11 @@ void MessageDock::Info(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
     m_message->append(tr("<pre><p>%1&emsp;<font color='blue'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    if (QGuiApplication::applicationState() == Qt::ApplicationInactive) {
+        m_trayicon->show();
+        m_trayicon->showMessage("SupraFit - Info", str, QIcon(":/misc/SupraFit.png"), 2500);
+        QTimer::singleShot(5000, m_trayicon, &QSystemTrayIcon::hide);
+    }
+
     emit UiInfo();
 }

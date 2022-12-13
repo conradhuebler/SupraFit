@@ -895,6 +895,7 @@ signals:
      * Signal is emitted whenever void Calculate() is finished
      */
     void Recalculated();
+    void ParameterChanged();
     void StatisticChanged();
     void OptionChanged(int index, const QString& value);
     void ChartUpdated(const QString& chart);

@@ -582,6 +582,7 @@ qreal ScriptModel::PrintOutIndependent(int i) const
             engine.globalObject().setProperty(QString("X%1").arg(cols + 1), IndependentModel()->data(i, cols));
         }
         double result = engine.evaluate(m_calculate_print).toNumber();
+        //        qDebug() << i << IndependentModel()->data(i, 0) << result;
         if (engine.hasError()) {
             return IndependentModel()->data(i);
         } else {

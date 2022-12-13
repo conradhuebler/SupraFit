@@ -18,6 +18,7 @@
  */
 
 #pragma once
+#include "src/core/minimizer.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 
@@ -66,10 +67,12 @@ public slots:
 
 private:
     void setUi();
+    void History();
+
     QHash<QSharedPointer<AbstractModel>, QColor> m_linked_charts;
 
     QSharedPointer<AbstractModel> m_model;
-    QPushButton *m_minimize, *m_calculate;
+    QPushButton *m_minimize, *m_calculate, *m_history;
     QComboBox* m_type;
     ModelActions* m_actions;
     ModalDialog *m_dialogs, *m_table_result;
@@ -83,6 +86,7 @@ private:
 
     void LoadStatistic(const QJsonObject& data);
     void FastConfidence();
+    QVector<OptimisationHistory> m_optimisationhistory;
 
 private slots:
     void Calculate();

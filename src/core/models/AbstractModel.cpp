@@ -1322,6 +1322,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (topjson.contains("name") && !unsafe_copy)
         m_name = topjson["name"].toString();
 
+    emit ParameterChanged();
+
     if (SFModel() != SupraFit::MetaModel)
         Calculate();
 

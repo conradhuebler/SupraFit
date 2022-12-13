@@ -79,7 +79,7 @@ struct MyFunctor : Functor<double> {
 
         Variables CalculatedSignals = model.data()->getCalculatedAbsoluteErrors();
         Variables Penalty = model.data()->getPenalty();
-        for (int i = 0; i < ModelSignals.size(); ++i)
+        for (int i = 0; i < CalculatedSignals.size(); ++i)
             fvec(i) = CalculatedSignals[i] + Penalty[i];
 
         return 0;

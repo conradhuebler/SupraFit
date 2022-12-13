@@ -47,6 +47,7 @@ class QStackedWidget;
 class QToolBar;
 class QTabWidget;
 class QTreeView;
+class QSystemTrayIcon;
 
 class DataClass;
 class ChartWidget;

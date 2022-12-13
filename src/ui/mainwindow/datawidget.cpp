@@ -171,11 +171,13 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_shift_begin->setDisabled(false);
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    m_data.toStrongRef().data()->IndependentModel()->setSelectable(false);
     m_concentrations->setModel(m_data.toStrongRef().data()->IndependentModel());
 
-    if (!m_data.toStrongRef().data()->isSimulation())
+    if (!m_data.toStrongRef().data()->isSimulation()) {
+        m_data.toStrongRef().data()->DependentModel()->setSelectable(false);
         m_signals->setModel(m_data.toStrongRef().data()->DependentModel());
-    else
+    } else
         m_linear->hide();
 
     connect(m_data.toStrongRef().data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
@@ -321,9 +323,12 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         QStringList header = m_data.toStrongRef().data()->IndependentRawModel()->header();
         if (header.size() != 1)
             return;
-        header[0] = QString("(X1 - %1)").arg(x0);
+        QString text = QString("(X1 - %1)").arg(x0);
+        header[0] = text;
         m_data.toStrongRef().data()->IndependentRawModel()->setHeader(header);
         m_data.toStrongRef().data()->ApplyCalculationModel();
+        if (m_index_x == 0)
+            m_x_model->setText(text);
     });
     connect(m_data.toStrongRef().data(), &DataClass::DataRangedChanged, this, &DataWidget::UpdateRanges);
     UpdateRanges();
@@ -335,7 +340,7 @@ void DataWidget::UpdateRanges()
         return;
     int begin = m_data.toStrongRef().data()->DataBegin();
     int end = m_data.toStrongRef().data()->DataEnd() - 1;
-    qDebug() << begin << end;
+
     double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
     double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
     double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);

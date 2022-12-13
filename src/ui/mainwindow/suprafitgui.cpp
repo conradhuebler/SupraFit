@@ -1515,7 +1515,7 @@ void SupraFitGui::CopyModel(const QJsonObject& object, int data, int model)
 {
     if (data < m_project_list.size()) {
         m_project_list[data]->Model(model)->ImportModel(object);
-        m_project_list[data]->Model(model)->Calculate();
+        //    m_project_list[data]->Model(model)->Calculate();
     } else
         qDebug() << "not found" << data << model;
 }
