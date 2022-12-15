@@ -281,7 +281,7 @@ qreal AbstractNMRModel::InitialHostConcentration(int i) const
 qreal AbstractNMRModel::GuessK(int index)
 {
     QSharedPointer<AbstractModel> test = Clone();
-    qreal K = BisectParameter(test, index, 1, 5);
+    qreal K = NewtonRoot(test, index, 1, 5);
     return K;
 }
 

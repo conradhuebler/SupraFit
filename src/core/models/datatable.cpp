@@ -115,9 +115,6 @@ DataTable::DataTable(const QJsonObject& table)
 
 DataTable::~DataTable()
 {
-#ifdef _DEBUG
-// std::cout << "deleting table " << this << std::endl;
-#endif
 }
 
 bool DataTable::isValid() const

@@ -287,14 +287,14 @@ double UpperLogFermi(double x, double x0, double k, double beta)
     return k * log(1 + exp(-beta * (x0 - x)));
 }
 
-qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon)
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon, int maxiter)
 {
     QVector<qreal> param = model.toStrongRef()->OptimizeParameters();
 
     qreal mean = end;
     if (param.size() == 0)
         return mean;
-    for (int i = 0; i < 30; ++i) {
+    for (int i = 0; i < maxiter; ++i) {
 
         if (qAbs(start - end) < epsilon)
             break;
@@ -307,22 +307,67 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
         param[index] = end;
         model.toStrongRef()->setParameter(param);
         model.toStrongRef()->Calculate();
-        qreal SSE_1 = model.toStrongRef()->SSE();
+        qreal SSE_2 = model.toStrongRef()->SSE();
 
         mean = (start + end) / 2;
         param[index] = mean;
         model.toStrongRef()->setParameter(param);
         model.toStrongRef()->Calculate();
-        qreal SSE_2 = model.toStrongRef()->SSE();
+        qreal SSE_1 = model.toStrongRef()->SSE();
 
 #ifdef _DEBUG
         qDebug() << SSE_0 << SSE_1 << start << end << mean;
 #endif
-        if (SSE_0 < SSE_2) {
-            end = mean;
-        } else if (SSE_1 < SSE_2) {
+        if (SSE_0 > SSE_1 && SSE_0 > SSE_2) {
             start = mean;
+        } else if (SSE_2 > SSE_0 && SSE_2 > SSE_1) {
+            end = mean;
+        } else {
+            start = start + 1;
+            end = end + 1;
         }
     }
     return mean;
+}
+double NewtonRoot(QWeakPointer<AbstractModel> model, int index, qreal min, qreal max, double epsilon, int maxiter)
+{
+    double x = (min + max) / 2.0;
+    double dx = 1e-4;
+    QVector<qreal> param = model.toStrongRef()->OptimizeParameters();
+
+    for (int iter = 0; iter < maxiter; ++iter) {
+        param[index] = x;
+        model.toStrongRef()->setParameter(param);
+        model.toStrongRef()->Calculate();
+        qreal y = model.toStrongRef()->SSE();
+
+        param[index] = x + dx;
+        model.toStrongRef()->setParameter(param);
+        model.toStrongRef()->Calculate();
+        qreal y1 = model.toStrongRef()->SSE();
+
+        param[index] = x - dx;
+        model.toStrongRef()->setParameter(param);
+        model.toStrongRef()->Calculate();
+        qreal y2 = model.toStrongRef()->SSE();
+
+        double dy = (y2 - y1) / (2 * dx);
+        if (std::abs(dy) < epsilon)
+            break;
+        int inner = 0;
+        double x2 = x;
+        bool loop = true;
+        while (loop) {
+            x2 = x + dy / (y * pow(10, inner));
+            if ((x2 < min || x2 > max))
+                inner++;
+            else
+                loop = false;
+
+            if (inner == 10)
+                return x;
+        }
+        x = x2;
+    }
+    return x;
 }

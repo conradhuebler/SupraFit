@@ -28,6 +28,7 @@
 #include "src/core/models/dataclass.h"
 
 #include "src/core/jsonhandler.h"
+#include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 
@@ -206,9 +207,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             {
                 boundary = dialog.Boundary();
                 value = dialog.Value();
-                m_model->UpdateGlobalBoundary(i, boundary);
-                m_model->setGlobalParameter(value, i);
-                m_model->Calculate();
+                if (dialog.Bisection()) {
+                    QSharedPointer<AbstractModel> model = m_model->Clone(false);
+                    boundary = dialog.Boundary();
+                    double result = NewtonRoot(model, i, boundary.lower_barrier, boundary.upper_barrier, 1e-7);
+                    m_model->setGlobalParameter(result, i);
+                    m_model->Calculate();
+                } else {
+                    m_model->UpdateGlobalBoundary(i, boundary);
+                    m_model->setGlobalParameter(value, i);
+                    m_model->Calculate();
+                }
             }
         });
 

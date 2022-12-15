@@ -37,6 +37,7 @@ public:
     virtual void accept() override;
     inline ParameterBoundary Boundary() const { return m_boundary; }
     inline double Value() const { return m_value; }
+    inline bool Bisection() const { return m_bisection; }
 
 private:
     void showParameter();
@@ -45,7 +46,7 @@ private:
     void Adopt();
 
     QDialogButtonBox* m_buttonbox;
-    QPushButton* m_adopt_and_accept;
+    QPushButton *m_adopt_and_accept, *m_perform_bisection;
     QDoubleSpinBox *m_value_edit, *m_maximum_edit, *m_minimum_edit, *m_lower_barrier_beta, *m_lower_barrier_wall, *m_upper_barrier_beta, *m_upper_barrier_wall;
     QCheckBox *m_lower_limit, *m_upper_limit;
     QLabel *m_general_information, *m_left_boundary, *m_right_boundary;
@@ -55,4 +56,5 @@ private:
     QString m_parameter;
     double m_value = 0, m_SSE = 0;
     int m_focus = 0;
+    bool m_bisection = false;
 };

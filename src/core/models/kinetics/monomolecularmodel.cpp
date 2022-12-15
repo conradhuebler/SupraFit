@@ -66,7 +66,7 @@ void MonoMolecularModel::InitialGuess_Private()
     (*GlobalTable())[2] = DependentModel()->data(DataEnd() - 1);
 
     QSharedPointer<AbstractModel> test = Clone();
-    (*GlobalTable())[0] = BisectParameter(test, 0, 0, 0.1, 1e-5);
+    (*GlobalTable())[0] = NewtonRoot(test, 0, 0, 0.1, 1e-5);
 
     Calculate();
 }

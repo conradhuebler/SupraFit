@@ -89,6 +89,12 @@ void ParameterDialog::setUi()
     m_adopt_and_accept = new QPushButton(tr("Adopt and Accept"));
     connect(m_adopt_and_accept, &QPushButton::clicked, this, &ParameterDialog::Adopt);
 
+    m_perform_bisection = new QPushButton(tr("Single Optimisation"));
+    connect(m_perform_bisection, &QPushButton::clicked, this, [this]() {
+        m_bisection = true;
+        accept();
+    });
+
     m_value_edit = new QDoubleSpinBox;
     m_value_edit->setDecimals(7);
     m_value_edit->setMinimum(-1e27);
@@ -126,7 +132,7 @@ void ParameterDialog::setUi()
     m_lower_limit->setText(tr("Enable Lower Boundary"));
     m_lower_limit->setChecked(m_boundary.limit_lower);
     connect(m_lower_limit, &QCheckBox::stateChanged, this, [this, lowerLabel](int state) {
-        m_minimum_edit->setEnabled(state);
+        // m_minimum_edit->setEnabled(state);
         m_lower_barrier_beta->setEnabled(state);
         m_lower_barrier_wall->setEnabled(state);
         lowerLabel->setEnabled(state);
@@ -138,7 +144,7 @@ void ParameterDialog::setUi()
     m_upper_limit->setText(tr("Enable Upper Boundary"));
     m_upper_limit->setChecked(m_boundary.limit_upper);
     connect(m_upper_limit, &QCheckBox::stateChanged, this, [this, upperLabel](int state) {
-        m_maximum_edit->setEnabled(state);
+        // m_maximum_edit->setEnabled(state);
         m_upper_barrier_beta->setEnabled(state);
         m_upper_barrier_wall->setEnabled(state);
         upperLabel->setEnabled(state);
@@ -184,8 +190,8 @@ void ParameterDialog::setUi()
     layout->addWidget(m_general_information);
 
     QVBoxLayout* lowerLayout = new QVBoxLayout;
-    lowerLayout->addWidget(m_lower_limit);
     lowerLayout->addWidget(m_minimum_edit);
+    lowerLayout->addWidget(m_lower_limit);
     lowerLayout->addWidget(lowerLabel);
     hlayout = new QHBoxLayout;
     hlayout->addWidget(m_lower_barrier_beta);
@@ -194,8 +200,8 @@ void ParameterDialog::setUi()
     lowerLayout->addWidget(m_left_boundary);
 
     QVBoxLayout* upperLayout = new QVBoxLayout;
-    upperLayout->addWidget(m_upper_limit);
     upperLayout->addWidget(m_maximum_edit);
+    upperLayout->addWidget(m_upper_limit);
     upperLayout->addWidget(upperLabel);
     hlayout = new QHBoxLayout;
     hlayout->addWidget(m_upper_barrier_beta);
@@ -210,6 +216,7 @@ void ParameterDialog::setUi()
 
     layout->addWidget(m_chart);
     hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_perform_bisection);
     hlayout->addWidget(m_adopt_and_accept);
     hlayout->addWidget(m_buttonbox);
     layout->addLayout(hlayout);
@@ -229,11 +236,11 @@ void ParameterDialog::setUi()
     layout->addWidget(m_adopt_and_accept, 4, 0, 1, 3);
     layout->addWidget(m_buttonbox, 4, 3, 1, 2);
     */
-    m_minimum_edit->setEnabled(m_boundary.limit_lower);
+    // m_minimum_edit->setEnabled(m_boundary.limit_lower);
     m_lower_barrier_beta->setEnabled(m_boundary.limit_lower);
     m_lower_barrier_wall->setEnabled(m_boundary.limit_lower);
 
-    m_maximum_edit->setEnabled(m_boundary.limit_upper);
+    // m_maximum_edit->setEnabled(m_boundary.limit_upper);
     m_upper_barrier_beta->setEnabled(m_boundary.limit_upper);
     m_upper_barrier_wall->setEnabled(m_boundary.limit_upper);
     m_chart->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
