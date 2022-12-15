@@ -62,5 +62,5 @@ qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param);
-int LeastSquaresRookfighter(QWeakPointer<AbstractModel> model, QVector<qreal>& param);
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& rmsd, QVector<QVector<double>>& parameter);
+int LeastSquaresRookfighter(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& rmsd, QVector<QVector<double>>& parameter);

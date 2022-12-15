@@ -84,7 +84,6 @@ void MonteCarloThread::run()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
-
     m_fit_thread->setModel(m_model, false);
     m_fit_thread->run();
 
@@ -192,7 +191,7 @@ bool MonteCarloStatistics::Run()
         QCoreApplication::processEvents();
 
     m_multicore_time = QDateTime::currentMSecsSinceEpoch() - m_t0;
-    QCoreApplication::processEvents();
+    // QCoreApplication::processEvents();
 
     Collect(threads);
     if (m_models.size() == 0)
@@ -351,7 +350,8 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(false);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        // connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(thread, &MonteCarloBatch::IncrementProgress, this, &MonteCarloStatistics::IncrementProgress, Qt::DirectConnection);
         connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloBatch::Interrupt);
         thread->setModel(m_model);
         threads << thread;

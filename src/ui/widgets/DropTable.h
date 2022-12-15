@@ -44,6 +44,8 @@ public:
         QAction* clear = new QAction(tr("Clear Table"));
         connect(clear, &QAction::triggered, this, &DropTable::clear);
         addAction(clear);
+        setSelectionBehavior(QAbstractItemView::SelectColumns);
+        setSelectionMode(QAbstractItemView::MultiSelection);
     }
     inline virtual ~DropTable() {}
 

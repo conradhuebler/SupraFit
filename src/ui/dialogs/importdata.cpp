@@ -75,6 +75,10 @@ ImportData::ImportData(QWidget* parent)
     DataTable* model = new DataTable(0, 0, this);
 
     m_table->setModel(model);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        auto list = m_table->selectionModel()->selectedColumns();
+        m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+    });
 }
 
 ImportData::ImportData(QWeakPointer<DataClass> data)
@@ -88,6 +92,10 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
         setUi();
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
         m_raw = data.toStrongRef()->ExportData()["raw"].toObject();
         m_systemparameter = data.toStrongRef().data()->getSystemObject();
         QTimer::singleShot(0, this, SLOT(ImportThermogram()));
@@ -96,6 +104,10 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
         setUi();
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
     }
 }
 
@@ -308,7 +320,8 @@ void ImportData::Evaluate(const QJsonObject& data)
     m_generator->Evaluate();
     m_generated_table = m_generator->Table();
     m_table->setModel(m_generated_table);
-    // m_data = data;
+    // m_table->selectAll();
+    //  m_data = data;
     setGeneratedData(data);
 }
 
@@ -363,6 +376,11 @@ void ImportData::LoadFile()
                     m_systemparameter = filehandler->SystemParameter();
                 model->setEditable(true);
                 m_table->setModel(model);
+                connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+                    auto list = m_table->selectionModel()->selectedColumns();
+                    m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+                });
+                // m_table->selectAll();
                 if (model->columnCount() == 2 && model->rowCount() > 100) {
                     if (qApp->instance()->property("auto_thermo_dialog").toBool()) {
                         if (!ImportThermogram(m_filename))
@@ -413,6 +431,10 @@ void ImportData::LoadTable(DataTable* model, int independent)
 {
     m_table->setModel(model);
     m_independent_rows->setValue(independent);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        auto list = m_table->selectionModel()->selectedColumns();
+        m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+    });
 }
 
 void ImportData::setSpectraData(const QJsonObject& json)
@@ -429,15 +451,34 @@ void ImportData::setGeneratedData(const QJsonObject& json)
 
 void ImportData::WriteData(const DataTable* model, int independent)
 {
+    QVector<int> columns;
+    for (const QModelIndex& i : m_table->selectionModel()->selectedColumns()) {
+        columns << i.column();
+    }
+
+    QPointer<DataTable> tmp;
+    for (int i = 0; i < model->columnCount(); ++i) {
+        if (columns.contains(i))
+            continue;
+        DataTable* t = model->BlockColumns(i, 1);
+        if (!tmp) {
+            tmp = t;
+            continue;
+        }
+        tmp->appendColumns(t);
+        delete t;
+    }
     independent = m_independent_rows->value();
     m_storeddata = new DataClass;
-    DataTable* indep = model->BlockColumns(0, independent);
-    DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
+    // DataTable* indep = model->BlockColumns(0, independent);
+    // DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
+    DataTable* indep = tmp->BlockColumns(0, independent);
+    DataTable* dep = tmp->BlockColumns(independent, tmp->columnCount() - independent);
     QStringList header_indep, header_dep;
-    QStringList header = model->header();
+    QStringList header = tmp->header();
 
 #pragma message("will this still be true after restructureing")
-    if (model->columnCount() - independent == 0) {
+    if (tmp->columnCount() - independent == 0) {
         DataTable* model = new DataTable(indep->rowCount(), m_dependent_rows->value(), this);
         //header_indep = QStringList(header.begin(), header.begin() + independent );
         m_storeddata->setDependentTable(model);
@@ -448,7 +489,7 @@ void ImportData::WriteData(const DataTable* model, int independent)
         m_storeddata->setDependentTable(dep);
         //header_dep = QStringList(header.begin() + independent + 1, header.end() );
     }
-
+    delete tmp;
 #pragma message("have a look at here, while restructureing stuff")
     m_storeddata->setIndependentTable(indep);
     m_storeddata->setRawData(m_raw);
@@ -497,6 +538,10 @@ bool ImportData::ImportThermogram(const QString& filename)
         handler->setFileContent(thermogram->Content());
         DataTable* model = handler->getData();
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
         NoChanged();
         m_raw = thermogram->Raw();
         m_type = DataClassPrivate::Thermogram;
@@ -527,6 +572,10 @@ bool ImportData::ImportThermogram()
         handler->setFileContent(thermogram->Content());
         DataTable* model = handler->getData();
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
         NoChanged();
         m_raw = thermogram->Raw();
         m_type = DataClassPrivate::Thermogram;
@@ -550,9 +599,13 @@ bool ImportData::ImportSpectra(const QString& filename)
         QJsonObject table = import->InputTable();
         setSpectraData(import->ProjectData());
         //m_project = import->ProjectData();
-        //qDebug() << m_project;
+
         DataTable* model = new DataTable(table);
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
         NoChanged();
         delete import;
         return true;
@@ -569,6 +622,10 @@ void ImportData::GenerateData()
         DataTable* model = new DataTable(generate->Table());
         QJsonObject data = generate->Data();
         m_table->setModel(model);
+        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+            auto list = m_table->selectionModel()->selectedColumns();
+            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+        });
         m_independent_rows->setMaximum(data["independent"].toInt());
         m_independent_rows->setValue(data["independent"].toInt());
         m_simulation->setChecked(true);

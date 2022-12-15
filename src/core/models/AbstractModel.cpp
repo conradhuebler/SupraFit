@@ -393,17 +393,21 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
     QVector<qreal> mean_series(SeriesCount(), 0);
     QVector<int> used_series(SeriesCount(), 0);
     //if (Type() != 3) {
-    if (!m_locked_model)
+    if (!m_locked_model) {
         m_model_signal->data(i, j) = value;
-    m_model_error->data(i, j) = m_model_signal->data(i, j) - DependentModel()->data(i, j);
-    m_sum_absolute += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
-    m_sum_squares += qPow(m_model_signal->data(i, j) - DependentModel()->data(i, j), 2);
-    // m_mean += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
-    m_mean += m_model_signal->data(i, j) - DependentModel()->data(i, j);
+        m_model_error->data(i, j) = m_model_signal->data(i, j) - DependentModel()->data(i, j);
+        m_sum_absolute += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
+        m_sum_squares += qPow(m_model_signal->data(i, j) - DependentModel()->data(i, j), 2);
+        // m_mean += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
+        m_mean += m_model_signal->data(i, j) - DependentModel()->data(i, j);
 
-    mean_series[j] += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
-    used_series[j]++;
-    m_used_variables++;
+        mean_series[j] += qAbs(m_model_signal->data(i, j) - DependentModel()->data(i, j));
+        used_series[j]++;
+        m_used_variables++;
+        m_results_list.append(value);
+        m_absolute_errors_list.append(m_model_error->data(i, j));
+        m_squared_errors_list.append(m_model_error->data(i, j) * m_model_error->data(i, j));
+    }
     //}
     m_used_series = used_series;
     m_mean_series = mean_series;
@@ -425,6 +429,10 @@ void AbstractModel::Calculate()
     m_sum_squares = 0;
     m_sum_absolute = 0;
     m_squared = 0;
+
+    m_results_list.clear();
+    m_absolute_errors_list.clear();
+    m_squared_errors_list.clear();
 
     for (const QString& str : Charts())
         clearChart(str);
@@ -571,6 +579,8 @@ qreal AbstractModel::CalculateCovarianceFit() const
 
 QList<double> AbstractModel::getCalculatedModel()
 {
+    /*
+
     QList<double> x;
     for (int j = 0; j < SeriesCount(); ++j) {
         if (!ActiveSignals(j))
@@ -580,6 +590,19 @@ QList<double> AbstractModel::getCalculatedModel()
                 x.append(ModelTable()->data(i, j));
     }
     return x;
+    */
+    return m_results_list;
+}
+
+QList<double> AbstractModel::getCalculatedAbsoluteErrors()
+{
+    return m_absolute_errors_list;
+}
+
+QList<double> AbstractModel::getCalculatedSquaredErrors()
+{
+
+    return m_squared_errors_list;
 }
 
 qreal AbstractModel::SumOfErrors(int i) const
@@ -1298,6 +1321,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
     if (topjson.contains("name") && !unsafe_copy)
         m_name = topjson["name"].toString();
+
+    emit ParameterChanged();
 
     if (SFModel() != SupraFit::MetaModel)
         Calculate();

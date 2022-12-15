@@ -173,11 +173,14 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
                         return data;
 
                     QSharedPointer<AbstractModel> model = m_model.toStrongRef().data()->Models()[param.second[0][0]];
-
-                    if (param.second[0][1] == 0)
+                    if (index.column() == 1) {
                         name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
-                    else
-                        name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->LocalParameterName(param.second[0][2]));
+                    } else {
+                        if (param.second[0][1] == 0)
+                            name += ""; //" | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
+                        else
+                            name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->LocalParameterName(param.second[0][2]));
+                    }
                 }
                 data = name;
             } else {

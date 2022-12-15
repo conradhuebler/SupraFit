@@ -358,6 +358,10 @@ public:
 
     virtual QList<qreal> getCalculatedModel();
 
+    virtual QList<qreal> getCalculatedSquaredErrors();
+
+    virtual QList<qreal> getCalculatedAbsoluteErrors();
+
     /*! \brief returns a List of all Series, that are to be included in optimisation
      */
     inline QList<int> ActiveSignals() const { return m_active_signals; }
@@ -797,6 +801,8 @@ private:
 
     void ParseFastConfidence(const QJsonObject& object);
 
+    QList<double> m_results_list, m_absolute_errors_list, m_squared_errors_list;
+
 protected:
     /*
      * This function handles the optimization flags, which get passed by
@@ -889,6 +895,7 @@ signals:
      * Signal is emitted whenever void Calculate() is finished
      */
     void Recalculated();
+    void ParameterChanged();
     void StatisticChanged();
     void OptionChanged(int index, const QString& value);
     void ChartUpdated(const QString& chart);

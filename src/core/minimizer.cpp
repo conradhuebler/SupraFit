@@ -90,7 +90,7 @@ int NonLinearFitThread::NonLinearFit()
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
     //int iter = LeastSquaresRookfighter(m_model, parameter);
-    int iter = NonlinearFit(m_model, parameter);
+    int iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
@@ -145,7 +145,9 @@ int Minimizer::Minimize()
     else
         m_last_parameter = thread->BestIntermediateParameter();
     m_sum_error = thread->SumOfError();
+    m_history = thread->History();
     delete thread;
+
     m_model->ImportModel(m_last_parameter);
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
 

@@ -136,6 +136,8 @@ public:
     inline Eigen::MatrixXd& Table() { return m_table; }
     inline void setTable(const Eigen::MatrixXd& table) { m_table = table; }
 
+    void setSelectable(bool selectable) { m_selectable = selectable; }
+
 private:
     Eigen::MatrixXd m_table, m_checked_table;
     QStringList m_header;
@@ -143,7 +145,7 @@ private:
     QReadWriteLock mutex;
     QMutex m_lock;
 
-    bool m_checkable, m_editable;
+    bool m_checkable, m_editable, m_selectable = true;
 signals:
     void CheckedStateChanged(int row, bool state);
 };

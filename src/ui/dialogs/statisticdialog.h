@@ -175,4 +175,5 @@ signals:
     void Reduction();
     void Interrupt();
     void setMaximumSteps(int steps);
+    void setCurrentProgress(int value);
 };

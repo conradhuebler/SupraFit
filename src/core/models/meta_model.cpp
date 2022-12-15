@@ -73,11 +73,15 @@ qreal MetaModel::GlobalParameter(int i) const
 
 QString MetaModel::GlobalParameterName(int j) const
 {
+    if (j >= m_global_names.size())
+        return QString("");
     return m_global_names[j];
 }
 
 QString MetaModel::LocalParameterName(int j) const
 {
+    if (j >= m_local_names.size())
+        return QString("");
     return m_local_names[j];
 }
 
@@ -191,21 +195,31 @@ void MetaModel::ApplyConnectType()
 void MetaModel::ResortParameter()
 {
     // return;
-
     QMutexLocker mutex(&m_mutex);
     QMultiMap<qreal, int> indicies;
 
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         qreal index = m_mmparameter[i].second.size();
-        // qreal value = m_mmparameter[i].first;
-        // index += value / pow(10, ceil(log10(abs(value)))) * (-1 * value < 0);
         indicies.insert(-1 * index, i);
     }
     QVector<MMParameter> mmparameter;
 
-    for (const auto& i : indicies)
-        mmparameter << m_mmparameter[i];
-
+    for (const auto& i : indicies) {
+        MMParameter parameter = m_mmparameter[i];
+        double value = 0; // parameter.first;
+        for (int j = 0; j < parameter.second.size(); ++j) {
+            int index_parameter = parameter.second[j][2];
+            int model_index = parameter.second[j][0];
+            if (parameter.second[j][1] == 0) // Global
+            {
+                value += m_models[model_index]->GlobalParameter(index_parameter);
+            } else { // Local
+                value += m_models[model_index]->LocalParameter(index_parameter, parameter.second[j][3]);
+            }
+        }
+        parameter.first = value / double(parameter.second.size());
+        mmparameter << parameter;
+    }
     m_mmparameter = mmparameter;
     emit ParameterSorted();
 }
@@ -419,10 +433,11 @@ QVector<qreal> MetaModel::ErrorVector() const
     return error;
 }
 
-QList<double> MetaModel::getCalculatedModel()
+QList<double> MetaModel::getCalculatedSquaredErrors()
 {
     QList<double> x;
     for (int index = 0; index < m_models.size(); ++index) {
+        /*
         for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
             if (!m_models[index]->ActiveSignals(j))
                 continue;
@@ -430,6 +445,44 @@ QList<double> MetaModel::getCalculatedModel()
                 if (m_models[index]->DependentModel()->isChecked(i, j))
                     x.append(m_models[index]->ModelTable()->data(i, j));
         }
+        */
+        x.append(m_models[index]->getCalculatedSquaredErrors());
+    }
+    return x;
+}
+
+QList<double> MetaModel::getCalculatedAbsoluteErrors()
+{
+    QList<double> x;
+    for (int index = 0; index < m_models.size(); ++index) {
+        /*
+        for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
+            if (!m_models[index]->ActiveSignals(j))
+                continue;
+            for (int i = 0; i < m_models[index]->DataPoints(); ++i)
+                if (m_models[index]->DependentModel()->isChecked(i, j))
+                    x.append(m_models[index]->ModelTable()->data(i, j));
+        }
+        */
+        x.append(m_models[index]->getCalculatedAbsoluteErrors());
+    }
+    return x;
+}
+
+QList<double> MetaModel::getCalculatedModel()
+{
+    QList<double> x;
+    for (int index = 0; index < m_models.size(); ++index) {
+        /*
+        for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
+            if (!m_models[index]->ActiveSignals(j))
+                continue;
+            for (int i = 0; i < m_models[index]->DataPoints(); ++i)
+                if (m_models[index]->DependentModel()->isChecked(i, j))
+                    x.append(m_models[index]->ModelTable()->data(i, j));
+        }
+        */
+        x.append(m_models[index]->getCalculatedModel());
     }
     return x;
 }
@@ -451,11 +504,17 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_original_global.removeDuplicates();
     m_local_names.removeDuplicates();
 
+#pragma message("replace append with an replacing function for the tables!")
     /* We shall not use the derived functions but the base functions of DataClass since at the moment, we dont have real data yet */
+
     DataClass::IndependentModel()->append(model->IndependentModel());
     DataClass::DependentModel()->append(model->DependentModel());
     ModelTable()->append(model->ModelTable());
-
+    /*
+        DataClass::IndependentModel()->ImportTable(model->IndependentModel()->ExportTable(true));
+        DataClass::DependentModel()->ImportTable(model->DependentModel()->ExportTable(true));
+        ModelTable()->ImportTable(model->ModelTable()->ExportTable(true));
+    */
     m_models << t;
     QString name = QString("%1 from %2").arg(t->Name()).arg(t->ProjectTitle());
     t->setName(name);
@@ -473,6 +532,8 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
     connect(this, &DataClass::Warning, model, &DataClass::Warning);
+    connect(t.data(), &AbstractModel::ParameterChanged, this, &MetaModel::DemandResortParameter);
+    connect(t.data(), &AbstractModel::Recalculated, this, &AbstractModel::Recalculated);
 
     emit ModelAdded(t);
 }

@@ -34,6 +34,7 @@
 
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
+#include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/dialogs/parameterdialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
@@ -266,20 +267,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
     m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
 
-
     m_minimize_all = new QPushButton(tr("Fit"));
-
     QAction* minimize_normal = new QAction(tr("Tight"), this);
     connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
 
-    QAction* minimize_loose = new QAction(tr("Loose"), this);
-    connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
+    QAction* minimize_loose = new QAction(tr("Progress"), this);
+    connect(minimize_loose, SIGNAL(triggered()), this, SLOT(History()));
 
-    QAction* fast_conf = new QAction(tr("Confidence"), this);
+    QAction* fast_conf = new QAction(tr("Simplified MOC"), this);
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
-    QMenu* menu = new QMenu(this);
+    QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
@@ -326,7 +325,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         series->setRange(1, m_model->DependentModel()->rowCount());
         name_layout->addWidget(series);
         connect(series, &QSpinBox::valueChanged, this, [this](int value) {
-            m_model->setAppliedSeries(value);
+            m_model->setAppliedSeries(value - 1);
         });
     }
 
@@ -490,25 +489,25 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_jobmanager->setModel(m_model);
 
     connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::prepare, m_advancedsearch, &AdvancedSearch::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress, Qt::DirectConnection);
 
-    connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress);
+    connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress, Qt::DirectConnection);
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
-    connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message);
     //connect(m_jobmanager, &JobManager::started, this, &ModelWidget::started);
     //connect(m_jobmanager, &JobManager::finished, this, &ModelWidget::finished, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
-    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
-    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
+    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
     connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
 
-    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -754,15 +753,35 @@ void ModelWidget::CollectParameters()
     m_model->setGlobalParameter(constants);
 }
 
-void ModelWidget::GlobalMinimizeLoose()
+void ModelWidget::History()
 {
-    /*
-    QJsonObject config = m_model->getOptimizerConfig();
-    config["DeltaParameter"] = 1E-1;
-    MinimizeModel(config);
-    */
-    m_model->UpdateLinear();
-    m_model->Calculate();
+    QTabWidget* chart_tab = new QTabWidget;
+    for (int i = 0; i < m_optimisationhistory.size(); ++i) {
+        QList<QPointF> sse_points;
+        QVector<QList<QPointF>> points(m_optimisationhistory[i].parameter[0].size());
+        for (int j = 0; j < m_optimisationhistory[i].sse.size(); ++j) {
+            sse_points.append(QPointF(j, m_optimisationhistory[i].sse[j]));
+            for (int k = 0; k < points.size(); ++k) {
+                points[k].append(QPointF(j, m_optimisationhistory[i].parameter[j][k]));
+            }
+        }
+        LineSeries* sse = new LineSeries;
+        sse->replace(sse_points);
+        QList<LineSeries*> param;
+        for (int k = 0; k < points.size(); ++k) {
+            LineSeries* p = new LineSeries;
+            p->replace(points[k]);
+            param << p;
+        }
+        ListChart* chart = new ListChart;
+        chart->addSeries(sse, 0, sse->color(), "Sum of Squared Errors", false);
+        for (int k = 0; k < points.size(); ++k) {
+            chart->addSeries(param[k], 1 + k, m_optimisationhistory[i].colors[k], m_optimisationhistory[i].names[k], false);
+        }
+        chart_tab->addTab(chart, QString("Optimisation No. %1").arg(1 + i));
+    }
+    GenericWidgetDialog dialog("Optimsation history", chart_tab, this);
+    dialog.exec();
 }
 
 void ModelWidget::GlobalMinimize()
@@ -787,6 +806,23 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     int result;
     result = m_minimizer->Minimize();
 
+    OptimisationHistory history = m_minimizer->History();
+    int series = 0;
+    for (int i = 0; i < m_model->OptimizeParameters().size(); ++i) {
+        auto pair = m_model->IndexParameters(i);
+        if (pair.second == 0) {
+            history.names << m_model->GlobalParameterName(pair.first);
+            history.colors << ChartWrapper::ColorCode(pair.first).toRgb().name();
+        } else {
+            history.names << m_model->LocalParameterName(pair.first);
+            history.colors << m_charts.signal_wrapper->Series(series)->color().toRgb().name();
+
+            series++;
+            if (series >= m_model->SeriesCount())
+                series = 0;
+        }
+    }
+    m_optimisationhistory << history;
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json, false);

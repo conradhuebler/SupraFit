@@ -133,6 +133,9 @@ void StatisticDialog::setUi()
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
     connect(this, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
+    connect(this, &StatisticDialog::setCurrentProgress, m_progress, &QProgressBar::setValue);
+    connect(this, &StatisticDialog::setCurrentProgress, m_main_progress, &QProgressBar::setValue);
+
     setLayout(layout);
     updateUI();
     CalculateError();
@@ -877,6 +880,9 @@ void StatisticDialog::MaximumMainSteps(int steps)
 
 void StatisticDialog::IncrementProgress(int time)
 {
+    if (time < 1)
+        return;
+
     QMutexLocker locker(&mutex);
     if (m_hidden)
         ShowWidget();
@@ -893,8 +899,9 @@ void StatisticDialog::IncrementProgress(int time)
         m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec, %3 msec. .").arg(sec).arg(msec));
     } else {
         m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec, %3 msec .").arg(remain).arg(sec).arg(msec));
-        m_progress->setValue(val);
-        m_main_progress->setValue(m_main_steps * 100 + val / double(m_progress->maximum()) * 100);
+        // m_progress->setValue(val);
+        emit setCurrentProgress(val);
+        // m_main_progress->setValue(m_main_steps * 100 + val / double(m_progress->maximum()) * 100);
     }
 }
 

@@ -367,7 +367,7 @@ void ResampleAnalyse::CrossValidation()
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(true);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
         connect(this, &ResampleAnalyse::InterruptAll, thread, &MonteCarloBatch::Interrupt);
         thread->setModel(m_model);
         threads << thread;
