@@ -256,15 +256,6 @@ QVector<QPointF> String2PointsVector(const QString& str)
     }
     return points;
 }
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-QString Points2String(const QVector<QPointF>& points)
-{
-    QString string;
-    for (int i = 0; i < points.size(); ++i)
-        string += "(" + QString::number(points[i].x()) + ";" + QString::number(points[i].y()) + ") ";
-    return string;
-}
-#endif
 
 QPair<qreal, qreal> QString2QPair(const QString& str)
 {
@@ -447,9 +438,86 @@ QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram)
  * To test it, change the config in the dialog
  */
     if (fullshannon)
-        return QPair<qreal, qreal>(-1 * entropy - log2(d), log2(histogram.size()));
+        return QPair<qreal, qreal>(-1 * entropy - log2(d), log2(d));
     else
-        return QPair<qreal, qreal>(-1 * entropy, log2(histogram.size()));
+        return QPair<qreal, qreal>(-1 * entropy, log2(d));
+}
+
+QJsonObject CalculateShannonEntropy(const QVector<QPair<qreal, qreal>>& histogram)
+{
+    QJsonObject entropy;
+    qreal h0 = 0.0;
+    qreal sum = 0.0;
+    qreal dh0 = 0.0;
+    QVector<qreal> ordered_histogram, final_histogram;
+
+    for (int i = 0; i < histogram.size(); ++i) {
+        sum += histogram[i].second;
+        ordered_histogram << histogram[i].second;
+    }
+    std::sort(ordered_histogram.begin(), ordered_histogram.end(), std::greater<double>());
+    int i = 1;
+    for (double value : ordered_histogram) {
+        if (i % 2 == 0)
+            final_histogram.push_back(value);
+        else
+            final_histogram.push_front(value);
+        i++;
+    }
+
+    /* Since we approximate the real integral
+     * int_(-inf)^(+inf) f(x) log2(f(x)) dx
+     * with sum, I think, we need the d
+     * sum_i^n f(x_i) log2(f(x_i)) d
+     */
+    qreal d = (histogram.last().first - histogram.first().first) / double(histogram.size());
+    qreal lower = 1 / double(histogram.size());
+
+    for (int i = 0; i < histogram.size(); ++i) {
+        qreal value = histogram[i].second / sum;
+        qreal tmp = value * log2(value) * d;
+
+        if (histogram[i].second > lower)
+            h0 += tmp;
+
+        qreal value2 = final_histogram[i] / sum;
+        qreal tmp2 = 0;
+        if (value2 > lower)
+            tmp2 = value2 * log2(value2) * d;
+
+        // qDebug() << value << histogram[i].second;
+        if (!std::isnan(tmp))
+            dh0 += sqrt((tmp - tmp2) * (tmp - tmp2));
+        if (std::isnan(dh0)) {
+            qDebug() << "breakpoint";
+        }
+    }
+    double H0 = -1 * h0;
+    double ld = log2(d);
+    double H = H0 - ld;
+    double max0 = -log2(1 / double(histogram.size()));
+    double max = max0 - ld;
+    double dH0 = dh0;
+    double dH = dH0 - ld;
+
+    entropy["H0"] = H0;
+    entropy["ld"] = ld;
+    entropy["H"] = H;
+    entropy["dH0"] = dH0;
+    entropy["dH"] = dH;
+
+    entropy["max0"] = max0;
+    entropy["max"] = max;
+    entropy["ratio"] = H / dH;
+    entropy["diff"] = qAbs(H0 - dH0);
+
+    // qDebug() << entropy << d << lower;
+    return entropy;
+}
+QJsonObject CalculateShannonEntropy(const QVector<qreal>& vector, int& bins, qreal min, qreal max)
+{
+
+    return CalculateShannonEntropy(List2Histogram(vector, bins, min, max));
 }
 
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
@@ -1084,7 +1152,8 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
         QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
-
+        QJsonObject entropy = ToolSet::CalculateShannonEntropy(histogram);
+        // qDebug() << entropy;
         BoxWhisker box;
 
         /* If old results are used, that don't contain stddev in their json object, recalculate box-plot */
@@ -1106,6 +1175,8 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += "<tr><td colspan=2></th></tr>";
         text += QString("<tr><td colspan='2'>%9 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6  & %7 & %8\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(box.median, 4)).arg(Print::printDouble(box.stddev, 6)).arg(Print::printDouble(pair.first, 6)).arg(Html2Tex(result["name"].toString()));
         text += "<tr><td colspan=2></th></tr>";
+        //     for(const QString &str : entropy.keys())
+        //         text += QString("%1 - %2<br>").arg(str).arg(entropy[str].toDouble());
     }
 
     if (type == SupraFit::Method::WeakenedGridSearch) {

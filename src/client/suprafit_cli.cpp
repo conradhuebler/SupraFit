@@ -120,6 +120,12 @@ bool SupraFitCli::LoadFile()
         m_toplevel = handler->getJsonData();
     }
     m_data_vector << m_toplevel;
+
+    if (m_toplevel.keys().contains("data"))
+        m_data = new DataClass(m_toplevel["data"].toObject());
+    else
+        m_data = new DataClass(m_toplevel);
+
     return true;
 }
 

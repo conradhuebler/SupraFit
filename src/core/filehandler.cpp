@@ -92,18 +92,65 @@ void FileHandler::LoadFile()
     else if (m_filetype == FileType::dH)
         ReaddH();
     else if (m_filetype == FileType::CSV) {
-        ReadCSV();
+        ReadSeperated(",");
     } else
         m_file_supported = false;
 }
 
+void FileHandler::ReadSeperated(const QString& seperator)
+{
+    QStringList header;
+    bool header_added = false;
+    int index = 0;
+    int max_columns = 0;
+    QVector<QVector<double>> rows(m_filecontent.size());
+    for (const QString& line : qAsConst(m_filecontent)) {
+        if (!line.isEmpty()) {
+            bool insert_row = true;
+            bool read_header = false;
+            if (header_added == false) {
+                read_header = true;
+                insert_row = false;
+            }
+            QVector<qreal> row;
+            QStringList items = line.simplified().replace("\"", "").split(seperator);
+            for (const QString& item : qAsConst(items)) {
+                bool convert;
+                QString(item).replace(",", ".").toDouble(&convert);
+                if (convert) {
+                    read_header = false;
+                    insert_row = true;
+                }
+                if (read_header && !convert) {
+                    QString head = QString(item).replace(HashTag, "");
+                    if (!head.isEmpty() && !head.isNull())
+                        header << head;
+                } else if (item[0] != HashTag)
+                    row.append((QString(item).replace(",", ".")).toDouble());
+                else
+                    insert_row = false;
+            }
+            if (!header_added) {
+                header_added = true;
+            }
+            if (!read_header && insert_row) {
+                rows[index] = row;
+                max_columns = qMax(max_columns, row.size());
+            }
+        }
+        index++;
+    }
+    GenerateTable(rows, header, max_columns);
+}
+
 void FileHandler::ReadGeneric()
 {
-    int tab = 0, semi = 0;
+    int tab = 0, semi = 0, comma = 0;
     for (const QString& str : qAsConst(m_filecontent)) {
         tab += str.count("\t");
         tab += str.count(" ");
         semi += str.count(";");
+        comma += str.count(",");
     }
     if (tab > semi)
         sep = " ";
@@ -114,64 +161,23 @@ void FileHandler::ReadGeneric()
     if (!CheckForTable())
         return;
 
-    int i = 0;
-    bool header_added = false;
-    //qDebug() << m_filecontent.size();
-    if (m_filecontent.size() > 1e4 && qApp->instance()->property("auto_thermo_dialog").toBool())
-        return;
+    ReadSeperated(sep);
+}
 
-    QStringList header;
-    int index = 0;
-    int max_columns = 0;
-    QVector<QVector<double>> rows(m_filecontent.size());
-    for (const QString& line : qAsConst(m_filecontent)) {
-        if (!line.isEmpty()) {
-            bool insert_row = true;
-            bool read_header = false;
-            if (line[0] == HashTag && header_added == false) {
-                read_header = true;
-                insert_row = false;
-            }
-            QVector<qreal> row;
-            // QStringList header;
-            QStringList items = line.simplified().split(sep);
-            double sum = 0;
-            for (const QString& item : qAsConst(items)) {
-                if (read_header) {
-                    QString head = QString(item).replace(HashTag, "");
-                    if (!head.isEmpty() && !head.isNull())
-                        header << head;
-                } else if (item[0] != HashTag)
-                    row.append((QString(item).replace(",", ".")).toDouble());
-                else
-                    insert_row = false;
-                sum += (QString(item).replace(",", ".")).toDouble();
-            }
-            // qDebug() << header;
-            if (!header_added) {
-                // m_stored_table->setHeader(header);
-                header_added = true;
-            }
-            if (!read_header && insert_row) {
-                // m_stored_table->insertRow(row);
-                rows[index] = row;
-                max_columns = qMax(max_columns, row.size());
-            }
-        }
-        index++;
-    }
-    while (rows[rows.size() - 1].isEmpty())
-        rows.removeLast();
+void FileHandler::GenerateTable(QVector<QVector<double>>& table, const QStringList& header, int max_columns)
+{
+    while (table[table.size() - 1].isEmpty())
+        table.removeLast();
 
-    while (rows[0].isEmpty())
-        rows.removeFirst();
+    while (table[0].isEmpty())
+        table.removeFirst();
 
-    m_stored_table = new DataTable(rows.size(), max_columns, 0);
+    m_stored_table = new DataTable(table.size(), max_columns, 0);
     if (header.size() == max_columns)
         m_stored_table->setHeader(header);
-    for (int i = 0; i < rows.size(); ++i) {
-        for (int j = 0; j < rows[i].size(); ++j) {
-            m_stored_table->operator()(i, j) = rows[i][j];
+    for (int i = 0; i < table.size(); ++i) {
+        for (int j = 0; j < table[i].size(); ++j) {
+            m_stored_table->operator()(i, j) = table[i][j];
         }
     }
 
@@ -241,75 +247,6 @@ bool FileHandler::CheckForTable()
     }
     m_file_supported = m_allint && m_table;
     return m_allint && m_table;
-}
-
-void FileHandler::ReadCSV()
-{
-    if (!m_filecontent.first().contains(QMarks)) {
-        ReadGeneric();
-        return;
-    }
-    bool header_added = false;
-    m_stored_table = new DataTable;
-
-    for (const QString& line : qAsConst(m_filecontent)) {
-        if (!line.isEmpty()) {
-            bool read_header = false;
-            if (line[0] == HashTag && header_added == false) {
-                read_header = true;
-            }
-            QVector<qreal> row;
-            QStringList header;
-            bool open1 = false;
-            bool open2 = false;
-            QString content;
-            for (const QChar& c : line) {
-                if (c == QMarks && open1 == false) {
-                    open1 = true;
-                    continue;
-                } else if (c == QMarks && open1 == true) {
-                    bool ok = false;
-                    double number = (QString(content).replace(",", ".")).toDouble(&ok);
-                    if (ok)
-                        // qDebug() << item << item.toDouble();
-                        row.append(number);
-                    else {
-                        qDebug() << content << number;
-                        if (content.contains("0"))
-                            row.append(0);
-                    }
-                    // open1 = false;
-                    content = QString();
-                    continue;
-                }
-                content += c;
-            }
-            /*
-            QStringList items = line.simplified().split(QMarks);
-
-            double sum = 0;
-            for (const QString& item : qAsConst(items)) {
-                if (read_header)
-                    header << QString(item).replace(HashTag, "");
-                else
-                {
-                    bool ok = false;
-                    double number = (QString(item).replace(",", ".")).toDouble(&ok);
-                    if(ok)
-                    //qDebug() << item << item.toDouble();
-                        row.append(number);
-                }
-                sum += (QString(item).replace(",", ".")).toDouble();
-            }*/
-            // qDebug() << header;
-            if (!header_added && header.size()) {
-                m_stored_table->setHeader(header);
-                header_added = true;
-            }
-            if (!read_header)
-                m_stored_table->insertRow(row);
-        }
-    }
 }
 
 void FileHandler::ReaddH()

@@ -94,6 +94,9 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int& b
 /*! \brief Calculate the Entropy of a histogram, bin with is already defined */
 QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram);
 
+QJsonObject CalculateShannonEntropy(const QVector<QPair<qreal, qreal>>& histogram);
+QJsonObject CalculateShannonEntropy(const QVector<qreal>& vector, int& bins, qreal min = 0, qreal max = 0);
+
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error);
 BoxWhisker BoxWhiskerPlot(const QList<qreal>& list);
 QJsonObject Box2Object(const BoxWhisker& box);

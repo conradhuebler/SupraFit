@@ -77,8 +77,10 @@ private:
     void ReadJson();
     void ReadITC();
     void ConvertTable();
-    void ReadCSV();
+    void ReadSeperated(const QString& seperator);
     bool CheckForTable();
+
+    void GenerateTable(QVector<QVector<double>>& table, const QStringList& header, int max_columns);
 
     bool m_table, m_allint, m_file_supported, m_thermogram = false, m_plain_thermogram = false;
     QPointer<DataTable> m_stored_table;

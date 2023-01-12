@@ -475,26 +475,32 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
                 QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
                 ToolSet::Normalise(histogram);
                 QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
-
+                // QJsonObject entropy = ToolSet::CalculateShannonEntropy(histogram);
                 if (bins != EntropyBins)
                     bin_info = QString("Bins had been set to %1").arg(bins);
 
                 QString name = result["name"].toString() + " - " + model["name"].toString() + "   " + bin_info;
 
                 if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
-                    hx += qAbs(pair.first);
+                    double h = qAbs(pair.first); // entropy["diff"].toDouble(); ///(0.5*(1+log2(2*pi*box["stddev"].toDouble()*box["stddev"].toDouble())));
+                    // qDebug() << entropy;
+                    //  hx += entropy["ratio"].toDouble();//qAbs(pair.first);
+                    // hx += h;
                     stdev += box["stddev"].toDouble();
-                    individual_entropy.insert(qAbs(pair.first), name);
+                    // individual_entropy.insert(/* qAbs(pair.first) */ entropy["ratio"].toDouble(), name);
+                    individual_entropy.insert(h, name);
                     individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
 
                     if (parameters_stdev.contains(result["name"].toString())) {
                         parameters_stdev[result["name"].toString()] += box["stddev"].toDouble();
-                        parameters_h[result["name"].toString()] += qAbs(pair.first);
+                        // parameters_h[result["name"].toString()] += entropy["ratio"].toDouble();//qAbs(pair.first);
+                        parameters_h[result["name"].toString()] += h;
                         parameters_count[result["name"].toString()]++;
                     } else {
                         parameters_stdev.insert(result["name"].toString(), box["stddev"].toDouble());
-                        parameters_h.insert(result["name"].toString(), qAbs(pair.first));
+                        // parameters_h.insert(result["name"].toString(), entropy["ratio"].toDouble() /*qAbs(pair.first) */);
+                        parameters_h.insert(result["name"].toString(), h);
                         parameters_count.insert(result["name"].toString(), 1);
                     }
                 }
