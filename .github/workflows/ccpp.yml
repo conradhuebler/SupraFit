@@ -74,7 +74,7 @@ jobs:
         run: sh scripts/deploy_unix.sh 
       
       - name: Upload Linux Appimage
-        id: upload-release-asset-linux
+        id: upload-release-asset-linux2
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
