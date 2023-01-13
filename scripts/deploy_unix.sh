@@ -6,26 +6,22 @@ cp misc/SupraFit.png release/bin/linux/
 cd release/bin/
 
 wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-wget -c -nv "https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage"
-wget -c -nv "https://raw.githubusercontent.com/probonopd/AppImages/master/excludelist"
 chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-chmod a+x appimagetool-x86_64.AppImage
 
 cd linux
 
-#./linuxdeployqt-continuous-x86_64.AppImage SupraFit.desktop -qmake=$HOME/5.15.1/gcc_64/bin/qmake -appimage
 mkdir -p lib
 
 mkdir -p plugins
 
 cd plugins
-#cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so//g') .
 
 cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so/iconengines/g') .
 cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so/imageformats/g') .
 cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so/platforms/g') .
 cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so/platforminputcontexts/g') .
 cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so/xcbglintegrations/g') .
+find . -name '*wayland*' -delete
 cd ..
 
 cat <<ab>qt.conf
@@ -38,45 +34,8 @@ Imports = qml
 Qml2Imports = qml
 ab
 
-cd lib
-#for i in $(ldd ../suprafit |awk '{ print $3}' |grep Qt); do cp $i .; done
-#for i in $(ldd ../suprafit |awk '{ print $3}' |grep libic); do cp $i .; done
-for i in $(ldd ../suprafit |awk '{ print $3}'); do
-f=${i##*/}
-if [ $(cat ../../excludelist |grep $f -c ) == "0" ]
-then
-    cp $i .
-fi
-done
-
-#for i in $(ldd ../plugins/platform/libqxcb.so |awk '{ print $3}' |grep libic); do cp $i .; done
-for i in $(ldd ../plugins/xcbglintegrations/libqxcb-egl-integration.so |awk '{ print $3}'); do
-f=${i##*/}
-if [ $(cat ../../excludelist |grep $f -c ) == "0" ]
-then
-    cp $i .
-fi
-done
-
-for i in $(ldd ../plugins/xcbglintegrations/libqxcb-glx-integration.so |awk '{ print $3}'); do
-f=${i##*/}
-if [ $(cat ../../excludelist |grep $f -c ) == "0" ]
-then
-    cp $i .
-fi
-done
-
-for i in $(ldd ../plugins/platforms/libqxcb.so |awk '{ print $3}'); do
-f=${i##*/}
-if [ $(cat ../../excludelist |grep $f -c ) == "0" ]
-then
-    cp $i .
-fi
-done
-
-cd ..
-
-../linuxdeployqt-continuous-x86_64.AppImage SupraFit.desktop -unsupported-allow-new-glibc || true 
-../appimagetool-x86_64.AppImage .
+mkdir -p usr/share/doc/libc6/
+touch usr/share/doc/libc6/copyright
+../linuxdeployqt-continuous-x86_64.AppImage SupraFit.desktop -unsupported-allow-new-glibc -verbose=1 -appimage || true 
 
 cp SupraFit*.AppImage SupraFit-nightly-x86_64.AppImage
