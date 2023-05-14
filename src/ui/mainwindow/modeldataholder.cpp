@@ -262,6 +262,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
     m_kinetcs_model << addModel(SupraFit::BiMolecularModel);
     m_kinetcs_model << addModel(SupraFit::FlexMolecularModel);
+    m_kinetcs_model << addModel(SupraFit::TianModel);
 
     m_kinetcs_model << addModel(SupraFit::DecayRates);
 #endif
@@ -277,6 +278,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
 
     m_itc_fixed_model << addModel(SupraFit::itc_blank);
+
+    m_calorimetry << addModel(SupraFit::TianModel);
 #endif
 
     m_add_script = new QPushButton(tr("Load Model file"));
@@ -368,6 +371,8 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         m_add_itc->setMenu(menu);
         action = menu->addSection(tr("Flexible Stoichiometry"));
         addMenu(m_itc_flex_model, menu);
+        action = menu->addSection(tr("Thermokinetics"));
+        addMenu(m_calorimetry, menu);
     } else if (IndependetCount == 2) {
         addMenu(m_nmr_model, menu);
         m_add_nmr->setMenu(menu);

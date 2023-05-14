@@ -26,6 +26,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QScrollArea>
 
 #include "systemparameterwidget.h"
 
@@ -110,4 +111,37 @@ void SystemParameterWidget::PrepareChanged()
 {
     if (!m_change)
         emit valueChanged();
+}
+
+SPOverview::SPOverview(DataClass* data, bool readonly)
+    : m_data(data)
+    , m_readonly(readonly)
+{
+    QGridLayout* mainlayout = new QGridLayout;
+    QScrollArea* scrollArea = new QScrollArea;
+
+    QWidget* flowidget = new QWidget;
+    mainlayout->addWidget(scrollArea, 1, 0);
+    FlowLayout* layout = new FlowLayout;
+    for (int index : m_data->getSystemParameterList()) {
+        QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), m_readonly, this);
+        connect(widget, &SystemParameterWidget::valueChanged,
+            [widget, this]() {
+                if (widget) {
+                    m_data->setSystemParameter(widget->Value());
+                    m_data->WriteSystemParameter();
+                }
+            });
+
+        connect(m_data, &DataClass::SystemParameterChanged,
+            [index, widget, this]() {
+                if (widget) {
+                    widget->setValue(m_data->getSystemParameter(index));
+                }
+            });
+        layout->addWidget(widget);
+    }
+    flowidget->setLayout(layout);
+    scrollArea->setWidget(flowidget);
+    setLayout(mainlayout);
 }

@@ -20,4 +20,5 @@
 #pragma once
 
 #include "arrhenius.h"
+#include "bet.h"
 #include "eyring.h"

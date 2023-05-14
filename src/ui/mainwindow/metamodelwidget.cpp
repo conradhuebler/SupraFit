@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/waiter.h"
 
+#include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/metamodelparameter.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/optionswidget.h"
@@ -108,7 +109,8 @@ void MetaModelWidget::setUi()
 
     m_actions = new ModelActions;
     m_metamodelparameter = new MetaModelParameter(m_model, &m_linked_charts);
-    layout->addWidget(m_metamodelparameter, 2, 0, 1, 5);
+    layout->addWidget(new ExportSimulationWidget(m_model, this), 2, 0, 1, 5);
+    layout->addWidget(m_metamodelparameter, 3, 0, 1, 5);
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
@@ -134,8 +136,8 @@ void MetaModelWidget::setUi()
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
 
-    layout->addWidget(m_actions, 3, 0, 1, 5);
-    layout->addWidget(m_statistic_widget, 4, 0, 1, 5);
+    layout->addWidget(m_actions, 4, 0, 1, 5);
+    layout->addWidget(m_statistic_widget, 5, 0, 1, 5);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
     connect(m_calculate, &QPushButton::clicked, this, &MetaModelWidget::Calculate);
     connect(m_history, &QPushButton::clicked, this, &MetaModelWidget::History);

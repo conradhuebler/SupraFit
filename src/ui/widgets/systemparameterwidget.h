@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -104,33 +104,12 @@ signals:
 class SPOverview : public QWidget {
     Q_OBJECT
 public:
-    inline SPOverview(DataClass* data, bool readonly)
-        : m_data(data)
-        , m_readonly(readonly)
-    {
-        FlowLayout* layout = new FlowLayout;
-        for (int index : m_data->getSystemParameterList()) {
-            QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), m_readonly, this);
-            connect(widget, &SystemParameterWidget::valueChanged,
-                [widget, this]() {
-                    if (widget) {
-                        m_data->setSystemParameter(widget->Value());
-                        m_data->WriteSystemParameter();
-                    }
-                });
-
-            connect(m_data, &DataClass::SystemParameterChanged,
-                [index, widget, this]() {
-                    if (widget) {
-                        widget->setValue(m_data->getSystemParameter(index));
-                    }
-                });
-            layout->addWidget(widget);
-        }
-        setLayout(layout);
-    }
+    SPOverview(DataClass* data, bool readonly);
 
 private:
+    void ExportParameter();
+    void LoadParameter(const QJsonObject& parameter);
+
     DataClass* m_data;
     bool m_readonly;
 };

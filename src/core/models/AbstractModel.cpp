@@ -1322,6 +1322,11 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (topjson.contains("name") && !unsafe_copy)
         m_name = topjson["name"].toString();
 
+    /* Copy system parameter */
+    QJsonObject systemparameter = json["system"].toObject();
+    qDebug() << topjson["system"].toObject() << json["system"].toObject();
+    for (int i = 0; i < SystemParameterCount(); ++i) {
+    }
     emit ParameterChanged();
 
     if (SFModel() != SupraFit::MetaModel)

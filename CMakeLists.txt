@@ -226,6 +226,8 @@ set(models_SRC
     src/core/models/kinetics/monomolecularmodel.cpp
     src/core/models/kinetics/bimolecularmodel.cpp
     src/core/models/kinetics/flexmolecularmodel.cpp
+    src/core/models/kinetics/tian.cpp
+    src/core/models/kinetics/evap.cpp
 
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
@@ -234,6 +236,7 @@ set(models_SRC
     src/core/models/photophysics/decayrates.cpp
     src/core/models/thermodynamics/eyring.cpp
     src/core/models/thermodynamics/arrhenius.cpp
+    src/core/models/thermodynamics/bet.cpp
 
     src/core/models/titrations/fluorescence/fl_1_1_1_2_Model.cpp
     src/core/models/titrations/fluorescence/fl_1_1_Model.cpp

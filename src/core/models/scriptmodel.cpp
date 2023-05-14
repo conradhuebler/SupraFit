@@ -571,17 +571,20 @@ QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
 
 qreal ScriptModel::PrintOutIndependent(int i) const
 {
+    QJSEngine engine;
+
     if (m_calculate_print.isEmpty() || m_calculate_print.isNull())
         return IndependentModel()->data(i);
     else {
         if (i < m_x_printout.size())
             return m_x_printout[i];
+        QString term = m_calculate_print;
 
-        QJSEngine engine;
         for (int cols = 0; cols < IndependentModel()->columnCount(); ++cols) {
-            engine.globalObject().setProperty(QString("X%1").arg(cols + 1), IndependentModel()->data(i, cols));
+            term.replace(QString("X%1").arg(cols + 1), QString::number(IndependentModel()->data(i, cols)));
+            // engine.globalObject().setProperty(QString("X%1").arg(cols + 1), IndependentModel()->data(i, cols));
         }
-        double result = engine.evaluate(m_calculate_print).toNumber();
+        double result = engine.evaluate(term).toNumber();
         //        qDebug() << i << IndependentModel()->data(i, 0) << result;
         if (engine.hasError()) {
             return IndependentModel()->data(i);

@@ -20,9 +20,11 @@
 
 /* Kinetic Models */
 #include "kinetics/bimolecularmodel.h"
+#include "kinetics/evap.h"
 #include "kinetics/flexmolecularmodel.h"
 #include "kinetics/mm_model.h"
 #include "kinetics/monomolecularmodel.h"
+#include "kinetics/tian.h"
 
 /* Photophysics stuff */
 #include "photophysics/decayrates.h"
@@ -137,6 +139,15 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
             t = QSharedPointer<EyringFit>(new EyringFit(data.data()), &QObject::deleteLater);
             break;
 
+        case SupraFit::TianModel:
+            t = QSharedPointer<TIANModel>(new TIANModel(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::EvapMModel:
+            t = QSharedPointer<EvapMonoModel>(new EvapMonoModel(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::BETModel:
+            t = QSharedPointer<BETModel>(new BETModel(data.data()), &QObject::deleteLater);
+            break;
         case SupraFit::MetaModel:
             t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);
             break;

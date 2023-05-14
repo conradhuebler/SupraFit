@@ -177,6 +177,9 @@ enum Model {
     DecayRates = 103,
     BiMolecularModel = 107,
     FlexMolecularModel = 108,
+    TianModel = 109,
+    EvapMModel = 110,
+    BETModel = 111,
     MetaModel = 200,
     Unknown = 404
 };
@@ -419,6 +422,12 @@ inline QString Model2Name(SupraFit::Model model)
         return "Arrhenius Plot";
     else if (model == SupraFit::Eyring)
         return "Eyring Plot";
+    else if (model == SupraFit::TianModel)
+        return "TIAN Thermokinetic";
+    else if (model == SupraFit::EvapMModel)
+        return "Monomolecular Kinetics with Evaporation";
+    else if (model == SupraFit::BETModel)
+        return "BET Absorption isotherm";
     else
         return "Unknown";
 }

@@ -111,6 +111,8 @@ public slots:
 
 private:
     void AddScriptModelTab(QTabWidget* model_tab);
+    void AddSystemParameterTab(QTabWidget* model_tab);
+
     QSharedPointer<AbstractModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
 

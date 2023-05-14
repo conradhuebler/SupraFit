@@ -417,16 +417,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     area->setWidget(scroll);
     m_model_parameter = area;
 
-    if (m_model->getSystemParameterList().size()) {
-        m_system_parameter = new SPOverview(m_model.data(), m_val_readonly);
-    }
-
     QTabWidget* model_tab = new QTabWidget;
 
     if (m_model->OptionsCount())
         model_tab->addTab(m_model_options, "Model Options");
     if (m_model->SystemParameterCount())
-        model_tab->addTab(m_system_parameter, "System Parameter");
+        AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
 
@@ -633,6 +629,47 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     bar->setMaximum(qApp->instance()->property("ScriptTimeout").toInt());
     bar->setMinimumWidth(150);
     model_tab->setStyleSheet("QTabBar::tab { height: 35px; width: 250px; }");
+}
+
+void ModelWidget::AddSystemParameterTab(QTabWidget* model_tab)
+{
+    if (m_model->getSystemParameterList().size() == 0)
+        return;
+
+    QPushButton* load = new QPushButton;
+    load->setIcon(Icon("document-export"));
+    load->setToolTip(tr("Click here to load experimental conditions / system parameters"));
+
+    QPushButton* save = new QPushButton;
+    save->setIcon(Icon("document-import"));
+    save->setToolTip(tr("Click here to export the current experimental conditions / system parameters!"));
+    connect(save, &QPushButton::clicked, this, [this]() {
+        QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
+        if (!str.isEmpty()) {
+            setLastDir(str);
+            QJsonObject json = m_model->ExportData()["system"].toObject();
+            JsonHandler::WriteJsonFile(json, str);
+        }
+    });
+    m_system_parameter = new SPOverview(m_model.data(), m_val_readonly);
+
+    model_tab->addTab(m_system_parameter, "System Parameter");
+    auto tabbar = model_tab->tabBar();
+    tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, save);
+    tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, load);
+
+    connect(load, &QPushButton::clicked, this, [this]() {
+        QString str = QFileDialog::getOpenFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
+        if (!str.isEmpty()) {
+            setLastDir(str);
+            QJsonObject json;
+            JsonHandler::ReadJsonFile(json, str);
+            qDebug() << json;
+            m_model->setSystemObject(json);
+            m_model->LoadSystemParameter();
+            emit m_model->SystemParameterChanged();
+        }
+    });
 }
 
 void ModelWidget::setColorList(const QString& str)
