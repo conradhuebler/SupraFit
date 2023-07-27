@@ -343,10 +343,13 @@ void DataWidget::UpdateRanges()
 
     double x0 = m_data.toStrongRef().data()->IndependentModel()->data(begin);
     double x1 = m_data.toStrongRef().data()->IndependentModel()->data(end);
+    // if(m_data.toStrongRef().data()->DependentModel()->rowCount())
+    //  {
     double y0 = m_data.toStrongRef().data()->DependentModel()->data(begin);
     double y1 = m_data.toStrongRef().data()->DependentModel()->data(end);
 
     m_range->setText(QString("Data begin with index %1 (X1 = %2, Y1 = %3) and end with index %4 (X1 = %5, Y1 = %6)").arg(begin).arg(x0).arg(y0).arg(end).arg(x1).arg(y1));
+    //}
 
     m_wrapper.toStrongRef().data()->stopAnimiation();
     m_wrapper.toStrongRef().data()->UpdateModel();

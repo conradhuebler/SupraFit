@@ -238,6 +238,15 @@ QWidget* ImportData::SimulationWidget()
             return;
         QJsonObject data;
         JsonHandler::ReadJsonFile(data, filename);
+        if (data.keys().contains("main", Qt::CaseInsensitive)) {
+            QJsonObject tmp;
+            for (auto key : m_project.keys())
+                if (key.compare("main", Qt::CaseInsensitive) == 0) {
+                    tmp = m_project[key].toObject();
+                    data = tmp;
+                    break;
+                }
+        }
         m_independent_rows->setValue(data["independent"].toInt());
         m_datapoints->setValue(data["datapoints"].toInt());
         m_dependent_rows->setValue(data["dependent"].toInt());
@@ -344,13 +353,23 @@ void ImportData::LoadFile()
     } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
         m_projectfile = m_filename;
         JsonHandler::ReadJsonFile(m_project, m_filename);
-        if (m_project.keys().contains("datapoints") && m_project.keys().contains("equations")) {
+        if ((m_project.keys().contains("datapoints") && m_project.keys().contains("equations")) || m_project.keys().contains("main", Qt::CaseInsensitive)) {
 #pragma message("move the simulation import to the filehandler soon!")
             m_simulation->setChecked(true);
+            if (m_project.keys().contains("main", Qt::CaseInsensitive)) {
+                QJsonObject tmp;
+                for (auto key : m_project.keys())
+                    if (key.compare("main", Qt::CaseInsensitive) == 0) {
+                        tmp = m_project[key].toObject();
+                        m_project = tmp;
+                        break;
+                    }
+            }
             m_independent_rows->setValue(m_project["independent"].toInt());
             m_datapoints->setValue(m_project["datapoints"].toInt());
             m_dependent_rows->setValue(m_project["dependent"].toInt());
             m_equations = m_project["equations"].toString().split("|");
+
             Evaluate(m_project);
             QTimer::singleShot(0, this, &ImportData::accept);
         } else

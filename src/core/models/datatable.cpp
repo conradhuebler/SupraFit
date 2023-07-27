@@ -443,12 +443,14 @@ void DataTable::append(const QPointer<DataTable> table)
         }
         */
 }
+
 void DataTable::prepend(QPointer<DataTable> table)
 {
     for (int i = 0; i < rowCount(); ++i)
         table->insertRow(Row(i), CheckedRow(i));
     ImportTable(table->ExportTable(true));
 }
+
 void DataTable::insertRow(const Vector& row, const Vector& checked)
 {
     QReadLocker locker(&mutex);

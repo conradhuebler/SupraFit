@@ -28,6 +28,27 @@
 
 #include "jsonhandler.h"
 
+QJsonObject JsonHandler::LoadFile(const QString& file)
+{
+    QJsonObject json;
+    QFile loadFile(file);
+    if (!loadFile.open(QIODevice::ReadOnly)) {
+        qWarning() << "Couldn't open file!" << loadFile.errorString();
+        return json;
+    }
+
+    QByteArray saveData = loadFile.readAll();
+
+    QJsonDocument loadDoc;
+    QJsonParseError error;
+    if (file.contains("json"))
+        loadDoc = QJsonDocument::fromJson(saveData, &error);
+    else if (file.contains("jdat") || file.contains("suprafit"))
+        loadDoc = QJsonDocument::fromJson(qUncompress(saveData), &error);
+    json = loadDoc.object();
+    return json;
+}
+
 bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
     QFile loadFile(file);

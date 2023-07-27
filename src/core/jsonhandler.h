@@ -37,6 +37,8 @@ public:
     static bool AppendJsonFile(const QJsonObject& json, const QString& filee);
     static bool ReadJsonFile(QJsonObject& json, const QString& file);
 
+    static QJsonObject LoadFile(const QString& file);
+
     static QSharedPointer<AbstractModel> Json2Model(const QJsonObject& object, SupraFit::Model model, DataClass* data);
     static QSharedPointer<AbstractModel> Json2Model(const QJsonObject& object, DataClass* data);
 };

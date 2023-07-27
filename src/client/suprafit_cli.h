@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ public:
     bool LoadFile();
     bool SaveFile();
     bool SaveFile(const QString& file, const QJsonObject& data);
+    bool SaveFiles(const QString& file, const QVector<QJsonObject>& projects);
 
     void PrintFileContent(int index = 0);
     void PrintFileStructure();
@@ -67,9 +68,20 @@ public:
     QJsonObject PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
     inline bool SimulationData() const { return m_simulate_job; }
 
+    inline bool CheckGenerateIndependent() const { return m_generate_independent; }
+    inline bool CheckGenerateDependent() const { return m_generate_dependent; }
+    inline bool CheckGenerateNoisyDependent() { return m_generate_noisy_dependent; }
+    inline bool CheckGenerateNoisyIndependent() { return m_generate_noisy_independent; }
+
+    QVector<QJsonObject> GenerateIndependent();
+    QVector<QJsonObject> GenerateNoisyIndependent(const QJsonObject& json_data);
+    QVector<QJsonObject> GenerateDependent(const QJsonObject& json_data);
+    QVector<QJsonObject> GenerateNoisyDependent(const QJsonObject& json_data);
+
     void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
 
     QVector<QJsonObject> GenerateData();
+    inline QString Extension() const { return m_extension; }
 signals:
 
 public slots:
@@ -80,7 +92,7 @@ protected:
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
     QString m_infile = QString();
-    QString m_outfile = QString(), m_extension = "suprafit";
+    QString m_outfile = QString(), m_extension = "json";
 
     /* Controller json */
     QJsonObject m_main, m_jobs, m_models, m_analyse;
@@ -96,11 +108,16 @@ protected:
     /* Json to be written to a file */
     QJsonObject m_toplevel;
 
-    QPointer<const DataClass> m_data;
+    QPointer<DataClass> m_data;
 
     int m_independent_rows = 2, m_start_point = 0, m_series = 0;
     bool m_guess = false, m_fit = false;
     bool m_simulate_job = false;
+
+    bool m_generate_independent = false;
+    bool m_generate_dependent = false;
+    bool m_generate_noisy_independent = false;
+    bool m_generate_noisy_dependent = false;
 
     bool m_interrupt = false;
 
