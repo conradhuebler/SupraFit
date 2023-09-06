@@ -399,8 +399,8 @@ QVector<QJsonObject> SupraFitCli::GenerateIndependent()
     final_data->setDataEnd(m_data->IndependentModel()->rowCount());
     final_data->setType(DataClassPrivate::DataType::Simulation);
     final_data->setSimulateDependent(dep_columns);
-    qDebug() << m_data->ExportData();
-    qDebug() << final_data->ExportData();
+    DataTable* model = new DataTable(m_data->IndependentModel()->rowCount(), dep_columns, this);
+    final_data->setDependentTable(model);
 
     QJsonObject d;
     d["data"] = final_data->ExportData();
@@ -411,6 +411,17 @@ QVector<QJsonObject> SupraFitCli::GenerateIndependent()
 QVector<QJsonObject> SupraFitCli::GenerateNoisyIndependent(const QJsonObject& json_data)
 {
     QVector<QJsonObject> project_list;
+    DataClass* final_data = new DataClass;
+    final_data->ImportData(json_data["data"].toObject());
+    final_data->setDataType(DataClassPrivate::Table);
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+    DataTable* table = final_data->IndependentModel()->PrepareMC(QVector<double>() << 0.0001, rng);
+    table->Debug();
+    final_data->setIndependentRawTable(table);
+    QJsonObject d;
+    d["data"] = final_data->ExportData();
+    project_list << d;
     SaveFiles("gen_noisy_indep", project_list);
     return project_list;
 }

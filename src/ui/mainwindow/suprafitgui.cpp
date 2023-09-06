@@ -692,13 +692,10 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         disconnect(window);
         delete window;
         return false;
-    } /*
-     if(data.toStrongRef().data()->isSimulation())
-     {
- #pragma message("implement more simulation stuff")
-     }
-     else */
-    if (!data.toStrongRef().data()->Size()) {
+    }
+    if (data.toStrongRef().data()->isSimulation()) {
+#pragma message("implement more simulation stuff")
+    } else if (!data.toStrongRef().data()->Size()) {
         disconnect(window);
         delete window;
         return false;

@@ -197,6 +197,16 @@ int main(int argc, char** argv)
         fmt::print("\n\n##########################################\n\n");
     }
 
+    if (core->CheckGenerateNoisyIndependent()) {
+        fmt::print("\nGeneration of input model data!\n");
+        QVector<QJsonObject> tmp_projects;
+        for (const auto& data : projects)
+            tmp_projects = core->GenerateNoisyIndependent(data);
+        projects = tmp_projects;
+        fmt::print("\nGeneration of input model data finished!\n");
+        fmt::print("\n\n##########################################\n\n");
+    }
+
     QVector<QJsonObject> dependent;
     if (core->CheckGenerateDependent()) {
         for (const QJsonObject& data : qAsConst(projects))
