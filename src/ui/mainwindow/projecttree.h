@@ -117,6 +117,6 @@ signals:
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
     void CopyModel(const QJsonObject& m, int data, int model);
-    void LoadFile(const QString& file);
+    void LoadFile(const QString& file, int file_type);
     void LoadJsonObject(const QJsonObject& object);
 };

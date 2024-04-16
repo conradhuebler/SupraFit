@@ -600,6 +600,8 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
         QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
         if (!str.isEmpty()) {
             setLastDir(str);
+            m_model->Calculate();
+            qobject_cast<ScriptModel*>(m_model)->UpdateModelDefinition();
             QJsonObject json = m_model->ExportModel(false, false)["ModelDefinition"].toObject();
             JsonHandler::WriteJsonFile(json, str);
         }
@@ -612,6 +614,17 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
         bar->setValue(0);
     });
     save->setIcon(Icon("document-save"));
+
+    QPushButton* duplicate = new QPushButton;
+    duplicate->setToolTip(tr("Duplicate current model"));
+    duplicate->setIcon(Icon("list-add-blue"));
+    connect(duplicate, &QPushButton::clicked, this, [this]() {
+        m_model->Calculate();
+        qobject_cast<ScriptModel*>(m_model)->UpdateModelDefinition();
+        QJsonObject json = m_model->ExportModel(false, false)["ModelDefinition"].toObject();
+        emit DuplicateScriptModel(json);
+    });
+
     auto tabbar = model_tab->tabBar();
     tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, bar);
     tabbar->setTabText(model_tab->count() - 1, "");
@@ -621,6 +634,7 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     buttonBar->setLayout(buttonLayout);
     buttonLayout->addWidget(update);
     buttonLayout->addWidget(save);
+    buttonLayout->addWidget(duplicate);
 
     tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, buttonBar);
 

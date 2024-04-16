@@ -363,9 +363,9 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         for (QString str : list) {
             if (!str.isEmpty() && !str.isNull())
 #ifdef _WIN32
-                emit LoadFile(str.remove("file:///"));
+                emit LoadFile(str.remove("file:///"), 0);
 #else
-                emit LoadFile(str.remove("file://"));
+                emit LoadFile(str.remove("file://"), 0);
 #endif
         }
         return true;
@@ -373,7 +373,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
 
     if (!data->urls().isEmpty()) {
         for (const QUrl& url : data->urls()) {
-            emit LoadFile(url.toLocalFile());
+            emit LoadFile(url.toLocalFile(), 0);
         }
         return true;
     }

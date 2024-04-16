@@ -519,6 +519,7 @@ void ImportData::accept()
     qApp->instance()->setProperty("lastSize", m_independent_rows->value());
     QDialog::accept();
 }
+
 void ImportData::setData(const DataTable* model)
 {
     WriteData(model, 2);
@@ -527,7 +528,7 @@ void ImportData::setData(const DataTable* model)
 bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
-    if (!m_filename.isEmpty())
+    if (m_filename.isEmpty())
         thermogram->setExperimentFile(filename);
     thermogram->show();
 

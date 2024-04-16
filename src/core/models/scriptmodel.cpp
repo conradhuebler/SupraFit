@@ -197,7 +197,7 @@ bool ScriptModel::DefineModel()
     else {
         m_local_parameter_names.clear();
         for (int i = 0; i < m_local_parameter_size; ++i)
-            m_local_parameter_names << QString("A%1").arg(i + 1);
+            m_local_parameter_names << QString("B%1").arg(i + 1);
     }
     while (m_local_parameter_names.size() > m_local_parameter_size)
         m_local_parameter_names.removeLast();
@@ -300,6 +300,13 @@ bool ScriptModel::DefineModel()
 #endif
 
     m_global_names_map.clear();
+    if (m_global_parameter_names.size() != GlobalParameterSize()) {
+#pragma message("double")
+        m_global_parameter_names.clear();
+        for (int i = 0; i < GlobalParameterSize(); ++i)
+            m_global_parameter_names << QString("A%1").arg(i + 1);
+    }
+
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         m_global_names_map.insert(1 / double(m_global_parameter_names[i].size()), m_global_parameter_names[i]);
     }
@@ -317,6 +324,14 @@ void ScriptModel::UpdateModelDefinition()
     object = m_defined_model["LocalParameterNames"];
     object["value"] = m_local_parameter_names.join("|");
     m_defined_model["LocalParameterNames"] = object;
+
+    QString guess;
+    for (int i = 0; i < GlobalParameterSize(); ++i) {
+        guess += "[" + QString::number(GlobalParameter(i)) + ";" + QString::number(GlobalParameter(i)) + "]|";
+    }
+    guess.removeLast();
+    object["value"] = guess;
+    m_defined_model["GlobalParameterGuess"] = object;
 }
 
 void ScriptModel::InitialGuess_Private()

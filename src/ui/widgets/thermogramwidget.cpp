@@ -706,10 +706,10 @@ void ThermogramWidget::clear()
 
 void ThermogramWidget::Update()
 {
+    Waiter wait;
     m_peak_list = QVector<PeakPick::Peak>(*m_stored_thermogram->Peaks());
     m_peaks_end->setValue(m_stored_thermogram->ThermogramEnd() - m_calibration_start->value());
     m_peaks_start->setValue(m_stored_thermogram->ThermogramBegin());
-    qDebug() << m_stored_thermogram->ThermogramBegin();
     UpdateTable();
     UpdateSeries();
     UpdateRules();
@@ -737,9 +737,7 @@ void ThermogramWidget::UpdateBaseLine()
 
 void ThermogramWidget::UpdateSeries()
 {
-    Waiter wait;
-    m_thermogram_series->clear();
-    m_thermogram_series->append(m_stored_thermogram->ThermogramSeries());
+    m_thermogram_series->replace(m_stored_thermogram->ThermogramSeries());
 }
 
 void ThermogramWidget::ApplyCalibration()
