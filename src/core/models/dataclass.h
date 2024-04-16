@@ -122,6 +122,7 @@ public:
 
     int m_maxsize;
     int m_ref_counter = 1;
+    int m_simulate_dependent = 1;
     int m_begin_data = 0, m_end_data = 0;
     QPointer<DataTable> m_dependent_model, m_independent_model, m_dependent_raw_model, m_independent_raw_model;
     //  QPointer<StringTableModel> m_dependent_calculation_model, m_independent_calculation_model;
@@ -153,7 +154,7 @@ public:
     inline QString UUID() const { return d->m_uuid; }
 
     void NewUUID();
-
+#pragma message("is it ok to have size and datapoints both beeing dependent data dependent")
     virtual inline int Size() const { return DataPoints(); }
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
     virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
@@ -243,6 +244,8 @@ public:
         d->m_end_data = i;
         UpdateCheckedState();
     }
+
+    inline void setSimulateDependent(int dependent) { d->m_simulate_dependent = dependent; }
 
     void UpdateCheckedState();
     void ReReadCheckedState(int row, bool state);

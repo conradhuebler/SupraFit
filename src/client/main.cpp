@@ -1,20 +1,20 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/capabilities/jobmanager.h"
@@ -165,8 +165,8 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("InitialiseRandom", true);
     qApp->instance()->setProperty("StoreRawData", true);
 
-    QJsonObject infile_json;
-    JsonHandler::ReadJsonFile(infile_json, infile);
+    QJsonObject infile_json = JsonHandler::LoadFile(infile);
+    // JsonHandler::ReadJsonFile(infile_json, infile);
     SupraFitCli* core = new SupraFitCli;
     QVector<QJsonObject> projects;
     if (infile_json.keys().contains("Main", Qt::CaseInsensitive)) {
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
         QJsonObject jobfile_json;
         JsonHandler::ReadJsonFile(jobfile_json, job);
         if (jobfile_json.keys().contains("Main", Qt::CaseInsensitive)) {
-            /* The jobfile defines everythin */
+            /* The jobfile defines everything */
             core->setControlJson(jobfile_json);
         } else {
             /* There must be a infile and a jobfile having at least some information */
@@ -190,18 +190,35 @@ int main(int argc, char** argv)
         std::cout << "Sorry, input file could not be opened." << std::endl;
         return 0;
     }
-    if (core->SimulationData()) {
+    if (core->CheckGenerateIndependent()) {
         fmt::print("\nGeneration of input model data!\n");
-        projects = core->GenerateData();
+        projects = core->GenerateIndependent();
         fmt::print("\nGeneration of input model data finished!\n");
         fmt::print("\n\n##########################################\n\n");
     }
 
-    Simulator* simulator = new Simulator(core);
-    for (const auto& project : qAsConst(projects)) {
-        fmt::print("\nPerforming jobs on generated data!\n");
-        simulator->PerformeJobs(project);
+    if (core->CheckGenerateNoisyIndependent()) {
+        fmt::print("\nGeneration of input model data!\n");
+        QVector<QJsonObject> tmp_projects;
+        for (const auto& data : projects)
+            tmp_projects = core->GenerateNoisyIndependent(data);
+        projects = tmp_projects;
+        fmt::print("\nGeneration of input model data finished!\n");
+        fmt::print("\n\n##########################################\n\n");
     }
+
+    QVector<QJsonObject> dependent;
+    if (core->CheckGenerateDependent()) {
+        for (const QJsonObject& data : qAsConst(projects))
+            dependent << core->GenerateDependent(data);
+    }
+    /*
+        Simulator* simulator = new Simulator(core);
+        for (const auto& project : qAsConst(projects)) {
+            fmt::print("\nPerforming jobs on generated data!\n");
+            simulator->PerformeJobs(project);
+        }
+    */
     //}
     /*
         for (const QString& str : parser.values("j")) {

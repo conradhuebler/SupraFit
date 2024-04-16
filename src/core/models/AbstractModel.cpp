@@ -416,6 +416,7 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
+    qDebug() << LocalTable() << m_complete << static_cast<int>(DataBegin() == DataEnd()) << DataBegin() << DataEnd();
     if (!LocalTable() || !m_complete || (DataBegin() == DataEnd() && SFModel() != SupraFit::MetaModel))
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
@@ -1265,6 +1266,11 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
     LocalTable()->ImportTable(json["localParameter"].toObject());
 
+    if (isSimulation()) {
+        d->m_dependent_model = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
+        m_model_signal = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
+        m_model_error = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
+    }
     if (json.contains("globalBoundaries")) {
         QJsonObject globalBoundaries = json["globalBoundaries"].toObject();
         for (int i = 0; i < m_global_boundaries.size(); ++i) {

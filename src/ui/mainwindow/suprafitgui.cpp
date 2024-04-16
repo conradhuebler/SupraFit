@@ -709,8 +709,9 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         delete window;
         return false;
     }
-
-    if (!data.toStrongRef().data()->Size()) {
+    if (data.toStrongRef().data()->isSimulation()) {
+#pragma message("implement more simulation stuff")
+    } else if (!data.toStrongRef().data()->Size()) {
         disconnect(window);
         delete window;
         return false;
@@ -740,7 +741,6 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     m_hashed_data[data.toStrongRef().data()->UUID()] = data;
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
-
 
     return true;
 }
@@ -921,9 +921,9 @@ bool SupraFitGui::LoadProject(const QString& filename)
         }
         QStringList keys = toplevel.keys();
 
-        if (keys.contains("data")) {
+        if (keys.contains("data", Qt::CaseInsensitive)) {
             return SetData(toplevel, info.baseName(), info.absolutePath());
-        } else if (keys.contains("datapoints") && keys.contains("equations")) {
+        } else if ((keys.contains("datapoints", Qt::CaseInsensitive) && keys.contains("equations", Qt::CaseInsensitive)) || keys.contains("Main", Qt::CaseInsensitive)) {
 #pragma message("move the simulation import to the filehandler soon!")
             ImportData dialog(filename, this);
             if (dialog.exec() == QDialog::Accepted) {

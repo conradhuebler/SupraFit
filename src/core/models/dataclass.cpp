@@ -275,7 +275,7 @@ const QJsonObject DataClass::ExportData() const
     json["xaxis"] = m_plot_x;
     json["begin_data"] = DataBegin();
     json["end_data"] = DataEnd();
-
+    json["simulate_dependent"] = d->m_simulate_dependent;
     return json;
 }
 
@@ -311,6 +311,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
         d->m_independent_calculation_model->ImportTable(topjson["independent_calculation"].toObject());
         d->m_dependent_caclulation_model->ImportTable(topjson["dependent_calculation"].toObject());
     */
+    d->m_simulate_dependent = topjson["simulate_dependent"].toInt();
     d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
     d->m_raw_data = topjson["raw"].toObject();
     d->m_title = topjson["title"].toString();

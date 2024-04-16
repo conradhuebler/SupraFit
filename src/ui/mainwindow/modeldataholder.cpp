@@ -495,7 +495,14 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         QJsonObject raw = m_data.toStrongRef().data()->RawData();
         QJsonObject models = raw["models"].toObject();
         for (const QString& key : models.keys()) {
-            AddModel(models[key].toInt());
+            if (models[key].isString()) {
+                QString file = models[key].toString();
+                Json2Model(JsonHandler::LoadFile(file));
+            } else if (models[key].isObject()) {
+                QJsonObject model = models[key].toObject();
+                Json2Model(model);
+            } else
+                AddModel(models[key].toInt());
         }
     }
 }

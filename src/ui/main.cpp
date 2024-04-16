@@ -89,8 +89,7 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef noto_font
-    QFontDatabase database;
-    QStringList fontfamilies = database.families();
+    QStringList fontfamilies = QFontDatabase::families();
     int smbd = 0, med = 0, light = 0, regular = 0;
     if (!fontfamilies.contains("Noto Sans SemBd")) {
         smbd = QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBold.ttf");

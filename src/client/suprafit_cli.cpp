@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
 
+#include "src/capabilities/datagenerator.h"
 #include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
@@ -85,7 +86,21 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
     }
     if (!m_main.isEmpty()) {
         for (const auto& str : m_main.keys()) {
-            if (str.compare("GenerateData", Qt::CaseInsensitive) == 0) {
+            if (str.compare("Tasks", Qt::CaseInsensitive) == 0) {
+                QString string = m_main[str].toString();
+                QStringList tasks = string.split("|");
+                tasks << string.split(",");
+                tasks << string.split(";");
+
+                if (tasks.contains("GenerateIndependent"))
+                    m_generate_independent = true;
+                if (tasks.contains("GenerateNoisyIndependent"))
+                    m_generate_noisy_independent = true;
+                if (tasks.contains("GenerateDependent"))
+                    m_generate_dependent = true;
+                if (tasks.contains("GenerateNoisyDependent"))
+                    m_generate_noisy_dependent = true;
+
                 m_simulate_job = true;
                 m_simulation = m_main[str].toObject();
             }
@@ -148,7 +163,7 @@ void SupraFitCli::ParseMain()
     qApp->instance()->setProperty("threads", m_main["Threads"].toInt(QThreadPool::globalInstance()->maxThreadCount()));
     m_guess = m_main["Guess"].toBool(false);
     m_fit = m_main["Fit"].toBool(false);
-    m_extension = m_main["Extension"].toString("suprafit");
+    m_extension = m_main["extension"].toString("suprafit");
     if (m_main.contains("OutFile")) {
         m_outfile = m_main["OutFile"].toString();
     }
@@ -185,6 +200,14 @@ bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
         return true;
     }
     return false;
+}
+
+bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& projects)
+{
+    for (int i = 0; i < projects.size(); ++i) {
+        SaveFile(m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension, projects[i]);
+    }
+    return true;
 }
 
 bool SupraFitCli::SaveFile()
@@ -340,27 +363,15 @@ void SupraFitCli::OpenFile()
     LoadFile();
 }
 
-QVector<QJsonObject> SupraFitCli::GenerateData()
+QVector<QJsonObject> SupraFitCli::GenerateIndependent()
 {
-    m_extension = ".suprafit";
-
     QVector<QJsonObject> project_list;
-
-    if (m_main.isEmpty())
-        return project_list;
-
-    if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_main.contains("InFile"))
-            m_infile = m_main["InFile"].toString();
-
-        if (m_infile.isEmpty() || m_infile.isNull())
-            return project_list;
-    }
 
     m_independent_rows = m_main["IndependentRows"].toInt(2);
     m_start_point = m_main["StartPoint"].toInt(0);
     m_series = m_simulation["Series"].toInt();
-
+    int dep_columns = m_main["dependent"].toInt(1);
+    qDebug() << m_main << dep_columns;
     if (!LoadFile())
         return project_list;
 
@@ -368,14 +379,162 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
         m_outfile = m_main["OutFile"].toString();
     }
 
-    if (m_toplevel.isEmpty())
+    QJsonObject independent;
+    DataClass* final_data = new DataClass;
+    DataGenerator* generator = new DataGenerator(this);
+    generator->setJson(m_main);
+    if (!generator->Evaluate())
+        return project_list;
+    independent = generator->Table()->ExportTable(true);
+
+    m_data = new DataClass();
+    m_data->setIndependentTable(generator->Table());
+    m_data->setType(DataClassPrivate::DataType::Simulation);
+    m_data->setSimulateDependent(dep_columns);
+    m_data->setDataBegin(0);
+    m_data->setDataEnd(m_data->IndependentModel()->rowCount());
+
+    final_data->setIndependentTable(generator->Table());
+    final_data->setDataBegin(0);
+    final_data->setDataEnd(m_data->IndependentModel()->rowCount());
+    final_data->setType(DataClassPrivate::DataType::Simulation);
+    final_data->setSimulateDependent(dep_columns);
+    DataTable* model = new DataTable(m_data->IndependentModel()->rowCount(), dep_columns, this);
+    final_data->setDependentTable(model);
+
+    QJsonObject d;
+    d["data"] = final_data->ExportData();
+    project_list << d;
+    SaveFiles("gen_indep", project_list);
+    return project_list;
+}
+QVector<QJsonObject> SupraFitCli::GenerateNoisyIndependent(const QJsonObject& json_data)
+{
+    QVector<QJsonObject> project_list;
+    DataClass* final_data = new DataClass;
+    final_data->ImportData(json_data["data"].toObject());
+    final_data->setDataType(DataClassPrivate::Table);
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+    DataTable* table = final_data->IndependentModel()->PrepareMC(QVector<double>() << 0.0001, rng);
+    table->Debug();
+    final_data->setIndependentRawTable(table);
+    QJsonObject d;
+    d["data"] = final_data->ExportData();
+    project_list << d;
+    SaveFiles("gen_noisy_indep", project_list);
+    return project_list;
+}
+
+QVector<QJsonObject> SupraFitCli::GenerateDependent(const QJsonObject& json_data)
+{
+    QVector<QJsonObject> project_list;
+    DataClass* final_data = new DataClass;
+    final_data->ImportData(json_data["data"].toObject());
+    final_data->setDataType(DataClassPrivate::Table);
+    DataClass* tmp = new DataClass;
+    tmp->ImportData(json_data["data"].toObject());
+
+    QJsonObject models = m_main["models"].toObject();
+    for (const QString& key : models.keys()) {
+        QSharedPointer<AbstractModel> t;
+        if (models[key].isString()) {
+            QString file = models[key].toString();
+            t = JsonHandler::Json2Model(JsonHandler::LoadFile(file), tmp);
+        } else if (models[key].isObject()) {
+            QJsonObject object = models[key].toObject();
+            t = JsonHandler::Json2Model(object, tmp);
+        } else {
+            t = CreateModel(models[key].toInt(), tmp);
+        }
+        final_data->setDependentTable(t->ModelTable());
+        QJsonObject d;
+        d["data"] = final_data->ExportData();
+        project_list << d;
+    }
+    SaveFiles("gen_dep", project_list);
+
+    return project_list;
+}
+
+QVector<QJsonObject> SupraFitCli::GenerateNoisyDependent(const QJsonObject& json_data)
+{
+    QVector<QJsonObject> project_list;
+    SaveFiles("gen_noisy_dep", project_list);
+
+    return project_list;
+}
+
+QVector<QJsonObject> SupraFitCli::GenerateData()
+{
+    QVector<QJsonObject> project_list;
+
+    if (m_main.isEmpty())
+        return project_list;
+    /*
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+        if (m_main.contains("InFile"))
+            m_infile = m_main["InFile"].toString();
+
+        if (m_infile.isEmpty() || m_infile.isNull())
+            return project_list;
+    }
+    */
+    m_independent_rows = m_main["IndependentRows"].toInt(2);
+    m_start_point = m_main["StartPoint"].toInt(0);
+    m_series = m_simulation["Series"].toInt();
+    int dep_columns = m_main["dependent"].toInt(1);
+    if (!LoadFile())
         return project_list;
 
-    if (m_toplevel.keys().contains("data"))
-        m_data = new DataClass(m_toplevel["data"].toObject());
-    else
-        m_data = new DataClass(m_toplevel);
+    if (m_main.contains("OutFile")) {
+        m_outfile = m_main["OutFile"].toString();
+    }
 
+    QJsonObject independent;
+    DataClass* final_data = new DataClass;
+    if (m_toplevel.isEmpty()) {
+        DataGenerator* generator = new DataGenerator(this);
+        generator->setJson(m_main);
+        if (!generator->Evaluate())
+            return project_list;
+        independent = generator->Table()->ExportTable(true);
+        m_data = new DataClass();
+        m_data->setIndependentTable(generator->Table());
+        m_data->setType(DataClassPrivate::DataType::Simulation);
+        m_data->setSimulateDependent(dep_columns);
+        m_data->setDataBegin(0);
+        m_data->setDataEnd(m_data->IndependentModel()->rowCount());
+
+        final_data->setIndependentTable(generator->Table());
+        final_data->setDataBegin(0);
+        final_data->setDataEnd(m_data->IndependentModel()->rowCount());
+    } else {
+        if (m_toplevel.keys().contains("data"))
+            m_data = new DataClass(m_toplevel["data"].toObject());
+        else
+            m_data = new DataClass(m_toplevel);
+    }
+    if (!m_data)
+        return project_list;
+
+    QJsonObject models = m_main["models"].toObject();
+    for (const QString& key : models.keys()) {
+        QSharedPointer<AbstractModel> t;
+        if (models[key].isString()) {
+            QString file = models[key].toString();
+            t = JsonHandler::Json2Model(JsonHandler::LoadFile(file), m_data);
+        } else if (models[key].isObject()) {
+            QJsonObject object = models[key].toObject();
+            t = JsonHandler::Json2Model(object, m_data);
+        } else {
+            t = CreateModel(models[key].toInt(), m_data);
+        }
+        final_data->setDependentTable(t->ModelTable());
+        project_list << final_data->ExportData();
+    }
+
+    /*
     int model = m_simulation["Model"].toInt();
     double variance = m_simulation["Variance"].toDouble();
     int repeat = m_simulation["Repeat"].toInt();
@@ -460,7 +619,7 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
         }
 
         SaveFile(outfile, blob);*/
-    }
+    //}
 
     return project_list;
 }
