@@ -300,6 +300,7 @@ bool ScriptModel::DefineModel()
 #endif
 
     m_global_names_map.clear();
+    m_global_parameter_names.clear();
     if (m_global_parameter_names.size() != GlobalParameterSize()) {
 #pragma message("double")
         m_global_parameter_names.clear();

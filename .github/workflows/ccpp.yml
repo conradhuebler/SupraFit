@@ -28,7 +28,7 @@ jobs:
           prerelease: true
       - name: Clear older release
         id: clear_releases
-        uses: dev-drprasad/delete-older-releases@v0.2.0
+        uses: dev-drprasad/delete-older-releases@v0.3.3
         with:
          # repo: c/<repoName> # defaults to current repo
          keep_latest: 5
@@ -45,10 +45,10 @@ jobs:
         with:
           submodules: true
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           modules: 'addons.qtcharts'
-          version: 6.2.2
+          version: 6.6.3
 
       - name: Update Modules and Build
         run: sh scripts/build_unix_github.sh
@@ -99,11 +99,11 @@ jobs:
             platform: x64
     
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           modules: 'addons.qtcharts'
-          version: 6.2.0
-          arch: 'win64_mingw81'
+          version: 6.6.3
+          arch: 'win64_mingw'
           
       - name: Update Modules and Build
         run: scripts/build_windows_x64_mingw.bat
@@ -129,10 +129,10 @@ jobs:
           submodules: true
           
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
            modules: 'addons.qtcharts'
-           version: 6.2.0
+           version: 6.6.3
 
       - name: Update Modules and Build
         run: sh scripts/build_macOS_github.sh
