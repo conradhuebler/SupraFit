@@ -189,8 +189,8 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series);
     }
-    // if(m_data_mapper->SeriesSize())
-    m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
+    if (m_data_mapper->SeriesSize())
+        m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
 
     m_signalview->formatAxis();
 
