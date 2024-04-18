@@ -199,6 +199,7 @@ public:
     virtual QString YLabel() const override { return m_ylabel; }
 
     inline bool DemandInput() const override { return true; }
+    void UpdateModelDefinition();
 
 private:
     QVector<CalculateThread*> m_threads;
@@ -226,8 +227,6 @@ private:
     void CalculatePython();
     void CalculateDuktape();
     void CalculateQJSEngine();
-
-    void UpdateModelDefinition();
 
 protected:
     virtual void CalculateVariables() override;

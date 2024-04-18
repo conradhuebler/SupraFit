@@ -136,7 +136,7 @@ public:
     virtual QSize sizeHint() const override { return QSize(400, 300); }
 
 public slots:
-    void LoadFile(const QString& file);
+    void LoadFile(const QString& file, int overwrite_type = 0);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
 
 private:
@@ -168,7 +168,7 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_spectra, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
+    QAction *m_new_window, *m_new_table, *m_spectra, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
 
     int m_last_index = -1, m_project_tree_size;
@@ -254,6 +254,7 @@ private slots:
     void NewWindow();
     void NewTable();
     void OpenFile();
+    void OpenThermogram();
     void OpenSpectraDir();
     void setWindowTitle();
     void SaveProjectAction();

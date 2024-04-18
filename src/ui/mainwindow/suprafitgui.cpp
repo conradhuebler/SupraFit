@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -317,6 +317,9 @@ SupraFitGui::SupraFitGui()
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     m_load->setShortcut(QKeySequence::Open);
 
+    m_thermogram = new QAction(Icon("thermogram"), tr("Open Thermograme"), this);
+    connect(m_thermogram, SIGNAL(triggered(bool)), this, SLOT(OpenThermogram()));
+
     m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
     connect(m_spectra, SIGNAL(triggered(bool)), this, SLOT(OpenSpectraDir()));
 
@@ -412,6 +415,7 @@ SupraFitGui::SupraFitGui()
     m_main_toolbar->addSeparator();
     m_main_toolbar->addAction(m_new_table);
     m_main_toolbar->addAction(m_load);
+    m_main_toolbar->addAction(m_thermogram);
     m_main_toolbar->addAction(m_spectra);
     m_main_toolbar->addAction(m_save);
     m_main_toolbar->addAction(m_save_as);
@@ -523,9 +527,21 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
     return projects;
 }
 */
-void SupraFitGui::LoadFile(const QString& file)
+void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
 {
     QFileInfo info(file);
+
+    if (overwrite_type == 2) // This is reservered for thermograms, that can not automatically be deduced by file name (like *.itc)
+    {
+        ImportData dialog(this);
+        dialog.ImportThermogram(file);
+        if (dialog.exec() == QDialog::Accepted) {
+            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+            m_mainsplitter->show();
+        }
+        return;
+    }
+
     if (file.contains("|||")) {
         SpectraImport* spectra = new SpectraImport(file);
 
@@ -863,6 +879,18 @@ void SupraFitGui::OpenFile()
     for (const QString& filename : qAsConst(filenames)) {
         setLastDir(filename);
         LoadFile(filename);
+    }
+    setActionEnabled(true);
+}
+
+void SupraFitGui::OpenThermogram()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(this, "Select file", getDir(), m_supported_files);
+    if (filenames.isEmpty())
+        return;
+    for (const QString& filename : qAsConst(filenames)) {
+        setLastDir(filename);
+        LoadFile(filename, 2);
     }
     setActionEnabled(true);
 }

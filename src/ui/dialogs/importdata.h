@@ -67,6 +67,10 @@ public:
     void setGeneratedData(const QJsonObject& json);
     QJsonObject Generator() const;
 
+public slots:
+    bool ImportThermogram(const QString& filename);
+    bool ImportThermogram();
+
 private:
     void setUi();
     void ReshapeTable();
@@ -103,8 +107,6 @@ private slots:
     void ExportFile();
     void accept() override;
     void NoChanged();
-    bool ImportThermogram(const QString& filename);
-    bool ImportThermogram();
 
     bool ImportSpectra(const QString& filename);
 };

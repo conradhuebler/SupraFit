@@ -191,6 +191,7 @@ signals:
     void Update();
     void Warning(const QString& str, int i);
     void AddModel(const QJsonObject& json);
+    void DuplicateScriptModel(const QJsonObject& json);
     void ToggleSeries(int);
     void IncrementProgress(int value);
     void MaximumSteps(int value);
