@@ -8,7 +8,7 @@ mkdir build_x64
 cd build_x64
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release  ..
 C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\mingw32-make.exe
-
+cmake --build  .
 
 echo Packaging...
 cd %project_dir%
