@@ -31,7 +31,7 @@ jobs:
         uses: dev-drprasad/delete-older-releases@v0.3.3
         with:
          # repo: c/<repoName> # defaults to current repo
-         keep_latest: 5
+         keep_latest: 10
          delete_tag_pattern: 2.5 # defaults to ""
         env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -97,6 +97,7 @@ jobs:
         uses: e-t-l/setup-mingw@patch-1
         with:
             platform: x64
+            version: 12.1.0
     
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
