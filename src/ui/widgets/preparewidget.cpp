@@ -19,6 +19,7 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QPair>
+#include <QtCore/QPointer>
 #include <QtCore/QVariant>
 
 #include <QtWidgets/QDoubleSpinBox>

@@ -1,6 +1,6 @@
 /*
  * <Class to handle thermogram import and manipulation.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,13 +51,14 @@ void ThermogramHandler::Initialise()
         else
             LoadParameter();
     }
+
     if (m_spectrum.size() == 0) {
         std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
         return;
     } else {
-
+        m_thermogram_series.resize(m_spectrum.x().size());
         for (unsigned int i = 0; i < m_spectrum.x().size(); i++) {
-            m_thermogram_series.append(QPointF(m_spectrum.x()[i], m_spectrum.y()[i]));
+            m_thermogram_series[i] = (QPointF(m_spectrum.X(i), m_spectrum.Y(i)));
         }
 
         if (qFuzzyCompare(m_ThermogramEnd, 0))
@@ -85,7 +86,9 @@ void ThermogramHandler::Initialise()
     } else {
         CompressRules();
     }
+
     FitBaseLine();
+
     m_initialised = true;
     std::cout << "ThermogramHandler initialised!" << std::endl;
     emit ThermogramInitialised();

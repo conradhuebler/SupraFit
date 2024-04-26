@@ -317,7 +317,7 @@ SupraFitGui::SupraFitGui()
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     m_load->setShortcut(QKeySequence::Open);
 
-    m_thermogram = new QAction(Icon("thermogram"), tr("Open Thermograme"), this);
+    m_thermogram = new QAction(Icon("thermogram"), tr("Open Thermogram"), this);
     connect(m_thermogram, SIGNAL(triggered(bool)), this, SLOT(OpenThermogram()));
 
     m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);

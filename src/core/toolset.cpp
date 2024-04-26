@@ -939,19 +939,21 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
 
     filecontent = QString(blob).split("\n");
 
-    std::vector<double> entries_x, entries_y;
+    std::vector<double> entries_x(filecontent.size()), entries_y(filecontent.size());
+    int index = 0;
     for (const QString& str : filecontent) {
         if (!str.contains("#")) {
             QStringList elements = str.simplified().split(" ");
             if (elements.size() == 2) {
-                entries_x.push_back(String2Double(elements[0]));
-                entries_y.push_back(String2Double(elements[1]));
+                entries_x[index] = (String2Double(elements[0]));
+                entries_y[index] = (String2Double(elements[1]));
+                index++;
             }
         }
     }
 
-    x = Vector::Map(&entries_x[0], entries_x.size());
-    y = Vector::Map(&entries_y[0], entries_y.size());
+    x = Vector::Map(&entries_x[0], index);
+    y = Vector::Map(&entries_y[0], index);
 
     return QPair<Vector, Vector>(x, y);
 }
