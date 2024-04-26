@@ -568,6 +568,7 @@ void ThermogramWidget::setUi()
         QSettings settings;
         settings.beginGroup("thermogram");
         settings.setValue("peaks_start", value);
+        m_stored_thermogram->setThermogramBegin(value);
     });
 
     connect(m_peaks_time, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {

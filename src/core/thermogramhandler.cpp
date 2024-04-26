@@ -261,7 +261,7 @@ void ThermogramHandler::UpdatePeaks()
         else
             index_end = m_peak_rules[j + 1].x();
         int i = 0;
-        for (i = index_start; i + timestep < m_spectrum.XtoIndex(index_end) + m_ThermogramBegin; i += (timestep)) {
+        for (i = index_start; i + timestep < m_spectrum.XtoIndex(index_end); i += (timestep)) {
             peak = PeakPick::Peak();
             peak.setPeakStart(i);
             peak.setPeakEnd(i + (timestep)-1);
