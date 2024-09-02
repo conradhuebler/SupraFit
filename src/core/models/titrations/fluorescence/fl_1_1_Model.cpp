@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 #include "src/core/models/postprocess/statistic.h"
 
@@ -52,6 +52,24 @@ fl_ItoI_Model::~fl_ItoI_Model()
 {
 }
 
+void fl_ItoI_Model::DeclareOptions()
+{
+    QStringList host = QStringList() << "yes"
+                                     << "no";
+    addOption(Host, "Host dynamic", host);
+    setOption(Host, "no");
+
+    QStringList guest = QStringList() << "dynamic"
+                                      << "silent";
+    addOption(Guest, "Guest (dynamic)", guest);
+    setOption(Guest, "silent");
+
+    QStringList host_only = QStringList() << "yes"
+                                          << "no";
+    addOption(HostOnly, "Host only", host);
+    setOption(HostOnly, "no");
+}
+
 void fl_ItoI_Model::InitialGuess_Private()
 {
     qreal factor = 1;
@@ -60,6 +78,8 @@ void fl_ItoI_Model::InitialGuess_Private()
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 4);
 
     (*GlobalTable())[0] = GuessK(0);
 
@@ -70,23 +90,32 @@ void fl_ItoI_Model::OptimizeParameters_Private()
 {
     QString host = getOption(Host);
     QString guest = getOption(Guest);
+    QString hostonly = getOption(HostOnly);
 
     addGlobalParameter(0);
     //if (host == "no")
-    addLocalParameter(0);
-
-    //if (guest == "no")
-    addLocalParameter(1);
-
-    addLocalParameter(2);
+    if (hostonly == "no") {
+        if (host == "yes") {
+            addLocalParameter(0);
+        }
+        // if (guest == "no")
+        addLocalParameter(1);
+        if (guest == "dynamic")
+            addLocalParameter(2);
+        addLocalParameter(3);
+    }
 }
 
 void fl_ItoI_Model::CalculateVariables()
 {
     auto hostguest = getHostGuestPair();
+    QString guest_option = getOption(Guest);
+    QString host_option = getOption(Host);
+    QString hostonly = getOption(HostOnly);
+
     qreal value = 0;
+    const double K = pow(10, GlobalParameter(0));
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
@@ -103,9 +132,24 @@ void fl_ItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = (host_0 * LocalTable()->data(j, 0) && i == 0)
-                + (host * LocalTable()->data(j, 1) && i != 0)
-                + complex * LocalTable()->data(j, 2);
+            double A0 = LocalTable()->data(j, 0);
+            double A = LocalTable()->data(j, 1);
+            double B = LocalTable()->data(j, 2);
+            double AB = A0 - LocalTable()->data(j, 3);
+            double tau = 1;
+            double guest_part = 0;
+
+            if (host_option == "yes")
+                tau = A / A0;
+            if (guest_option == "dynamic")
+                guest_part = B / A0 * guest;
+
+            if (i == 0)
+                value = host * A0;
+            else
+                value = tau + AB / A * (guest * K) / (1 + guest * K) + guest_part;
+            if (i != 0)
+                value *= m_model_signal->data(0, j);
             SetValue(i, j, value);
         }
     }
