@@ -48,7 +48,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           modules: 'addons.qtcharts'
-          version: 6.6.3
+          version: 6.7.2
 
       - name: Update Modules and Build
         run: sh scripts/build_unix_github.sh
@@ -94,16 +94,16 @@ jobs:
           submodules: true
           
       - name: Set up MinGW
-        uses: e-t-l/setup-mingw@patch-1
+        uses: ocbnet/setup-mingw@patch-1
         with:
             platform: x64
-            version: 12.1.0
+            version: 13.0.0
     
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
           modules: 'addons.qtcharts'
-          version: 6.6.3
+          version: 6.7.2
           arch: 'win64_mingw'
           
       - name: Update Modules and Build
@@ -133,7 +133,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
            modules: 'addons.qtcharts'
-           version: 6.6.3
+           version: 6.7.2
 
       - name: Update Modules and Build
         run: sh scripts/build_macOS_github.sh

@@ -15,7 +15,7 @@ cd build_x64\bin\win
 mkdir SupraFit
 copy suprafit.exe SupraFit
 copy suprafit_cli.exe SupraFit
-copy D:\a\SupraFit\Qt\Tools\mingw1120_64\bin\libgomp-1.dll SupraFit
+copy C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\libgomp-1.dll SupraFit
 
 cd SupraFit
 windeployqt --release --compiler-runtime  suprafit.exe

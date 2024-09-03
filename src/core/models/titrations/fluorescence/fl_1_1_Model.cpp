@@ -79,7 +79,6 @@ void fl_ItoI_Model::InitialGuess_Private()
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 4);
 
     (*GlobalTable())[0] = GuessK(0);
 
