@@ -45,7 +45,7 @@ jobs:
         with:
           submodules: true
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           modules: 'addons.qtcharts'
           version: 6.7.2
@@ -94,13 +94,13 @@ jobs:
           submodules: true
           
       - name: Set up MinGW
-        uses: ocbnet/setup-mingw@patch-1
+        uses: ocbnet/setup-mingw
         with:
             platform: x64
             version: 13.0.0
     
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           modules: 'addons.qtcharts'
           version: 6.7.2
@@ -130,7 +130,7 @@ jobs:
           submodules: true
           
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
            modules: 'addons.qtcharts'
            version: 6.7.2
