@@ -385,7 +385,7 @@ set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
-
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
 
 if(testing)

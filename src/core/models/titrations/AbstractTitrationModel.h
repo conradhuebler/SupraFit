@@ -199,7 +199,7 @@ protected:
     double m_T;
 
     QPair<bool, bool> getHostGuestPair() const;
-    qreal GuessK(int index = 0);
+    qreal GuessK(int index = 0, double min = 1, double max = 5);
 
     QString m_ylabel = "&delta; /ppm", m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
 

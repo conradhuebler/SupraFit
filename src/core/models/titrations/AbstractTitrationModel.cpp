@@ -283,10 +283,11 @@ qreal AbstractTitrationModel::InitialHostConcentration(int i) const
     return d->m_independent_model->data(i, m_HostAssignment);
 }
 
-qreal AbstractTitrationModel::GuessK(int index)
+qreal AbstractTitrationModel::GuessK(int index, double min, double max)
 {
     QSharedPointer<AbstractModel> test = Clone();
-    qreal K = NewtonRoot(test, index, 1, 5);
+    qreal K = NewtonRoot(test, index, min, max);
+    // qDebug() << K << BisectParameter(test, index, min, max);
     return K;
 }
 
