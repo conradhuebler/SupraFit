@@ -291,7 +291,12 @@ bool ScriptModel::DefineModel()
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.setInputNames(m_input_names);
-    // m_interp.setExecute(m_execute_chai);
+
+    // m_exprTk.setInput(IndependentModel()->Table());
+    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
+    m_exprTk.setLocal(LocalParameter()->Table());
+    // m_exprTk.setInputNames(m_input_names);
+    //  m_interp.setExecute(m_execute_chai);
     m_interp.InitialiseChai();
 #endif
 
@@ -345,7 +350,39 @@ void ScriptModel::CalculateVariables()
     // if (m_python)
     //     CalculatePython();
     // else if (m_chai)
-    CalculateChai();
+    // CalculateChai();
+
+    if (!m_formula_prepared) {
+        m_formula_prepared = m_exprTk.PrepareFormula(
+            m_chai_execute,
+            m_input_names,
+            m_global_parameter_names);
+    }
+
+    // Update Parameter
+    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
+    m_exprTk.setLocal(LocalParameter()->Table());
+
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < DataPoints(); ++i) {
+            // Sammle X-Werte für diesen Datenpunkt
+            QVector<QPair<QString, double>> x_values;
+            for (int parameter = 0; parameter < InputParameterSize(); ++parameter) {
+                x_values.append({ m_input_names[parameter],
+                    IndependentModel()->data(i, parameter) });
+            }
+
+            int error = 0;
+            double result = m_exprTk.evaluate(x_values, error);
+
+            if (error == 1) {
+                // Fehlerbehandlung wenn nötig
+            }
+
+            SetValue(i, series, result);
+        }
+    }
+
     // CalculateQJSEngine();
     //  else if(m_duktape)
     // CalculateDuktape();
@@ -456,7 +493,9 @@ void ScriptModel::CalculateChai()
     */
     // delete pool;
 
-    CalculateChaiV1();
+    // CalculateChaiV1();
+    // CalculateExprTk();
+
     // CalculateChaiV2();
 #else
     emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
@@ -534,6 +573,45 @@ void ScriptModel::CalculateChaiV2()
                 cache.replace("var", "");
                 result = m_interp.Evaluate(cache.toUtf8(), error);
             }
+            SetValue(i, series, result);
+        }
+    }
+}
+
+void ScriptModel::CalculateExprTk()
+{
+    auto Matrix = GlobalParameter()->Table();
+
+    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
+    m_exprTk.setLocal(LocalParameter()->Table());
+    // m_exprTk.UpdateVariables();
+    QString expression = m_chai_execute;
+    for (const auto& pair : m_global_names_map) {
+        int i = m_global_parameter_names.indexOf(pair);
+        expression.replace(m_global_parameter_names[i], QString::number(Matrix(0, i)));
+        // qDebug() << Matrix(0, i);
+    }
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < DataPoints(); ++i) {
+            QCoreApplication::processEvents();
+
+            QString formula = expression; // Deine Formel
+
+            // Ersetze Input-Parameter
+            for (int parameter = 0; parameter < InputParameterSize(); ++parameter) {
+                formula.replace(
+                    m_input_names[parameter],
+                    QString::number(IndependentModel()->data(i, parameter)));
+            }
+
+            int error = 0;
+            double result = m_exprTk.evaluate(formula, error);
+
+            if (error == 1) {
+                formula.replace("var", "");
+                result = m_exprTk.evaluate(formula, error);
+            }
+
             SetValue(i, series, result);
         }
     }

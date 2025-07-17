@@ -63,6 +63,10 @@ option (_Models
 option (Use_Duktape
     "Use Duktape script engine" OFF )
 
+
+option(USE_AVX2
+    "Enable AVX2 instructions" OFF)
+
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -120,6 +124,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
             set (openMP ON)
         endif(NOT WIN32)
     endif()
+endif()
+
+
+if(USE_AVX2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+
+endif()
+
+if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/exprtk.hpp)
+  file(DOWNLOAD https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp ${PROJECT_SOURCE_DIR}/external/exprtk.hpp
+       TIMEOUT 60  # seconds
+       #EXPECTED_HASH SHA256=7804b38146921d03374549c9e2a5e3acda097814c43caf2b96a0278e58df26e0
+       TLS_VERIFY ON)
 endif()
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
@@ -206,7 +223,8 @@ ENDIF(_Python)
 if(_Python)
     add_library(core SHARED ${core_SRC})
 else()
-    add_library(core ${core_SRC})
+    add_library(core ${core_SRC}
+        src/core/models/exprtkinterpreter.h src/core/models/exprtkinterpreter.cpp)
 endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
@@ -224,6 +242,8 @@ set(models_SRC
     src/core/models/scriptmodel.cpp
     src/core/models/pymodelinterpreter.cpp
     src/core/models/chaiinterpreter.cpp
+    src/core/models/exprtkinterpreter.cpp
+
     src/core/models/kinetics/mm_model.cpp
     src/core/models/kinetics/monomolecularmodel.cpp
     src/core/models/kinetics/bimolecularmodel.cpp
@@ -344,6 +364,7 @@ else()
 endif(WIN32)
 
 set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 
 

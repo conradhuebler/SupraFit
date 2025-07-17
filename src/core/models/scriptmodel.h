@@ -32,6 +32,7 @@
 
 #include "src/core/models/chaiinterpreter.h"
 #include "src/core/models/dukmodelinterpreter.h"
+#include "src/core/models/exprtkinterpreter.h"
 
 class CalculateThread : public CxxThread {
 public:
@@ -216,6 +217,8 @@ private:
 #ifdef _Models
     ChaiInterpreter m_interp;
 #endif
+    ExprTkInterpreter m_exprTk;
+    bool m_formula_prepared = false;
 #ifdef Use_Duktape
      DuktapeModelInterpreter m_duktapeinterp;
 #endif
@@ -223,6 +226,8 @@ private:
     void CalculateChai();
     void CalculateChaiV1();
     void CalculateChaiV2();
+
+    void CalculateExprTk();
 
     void CalculatePython();
     void CalculateDuktape();
