@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <QtGui/QMouseEvent>
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 
@@ -55,6 +56,14 @@ void DnDLabel::UpdateContent()
 {
     QJsonObject top;
 
+    int begin, end;
+    if (m_export_all) {
+        begin = m_model.toStrongRef().data()->DataBegin();
+        end = m_model.toStrongRef().data()->DataEnd();
+        m_model.toStrongRef().data()->setDataBegin(0);
+        m_model.toStrongRef().data()->setDataEnd(m_model.toStrongRef().data()->DataPoints());
+        m_model.toStrongRef().data()->Calculate();
+    }
     QJsonObject data = m_model.toStrongRef().data()->ExportData();
     data["DataType"] = DataClassPrivate::DataType::Table;
     data["title"] = QString("Simulated Data - %1").arg(QDateTime::currentDateTime().toString());
@@ -113,6 +122,10 @@ void DnDLabel::UpdateContent()
     top["data"] = data;
     QJsonDocument document(top);
     m_content = document.toJson();
+    if (m_export_all) {
+        m_model.toStrongRef().data()->setDataBegin(begin);
+        m_model.toStrongRef().data()->setDataEnd(end);
+    }
 }
 
 ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
@@ -120,6 +133,10 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     , m_model(model)
 {
     QGridLayout* layout = new QGridLayout;
+
+    m_include_deactivated = new QCheckBox(tr("Include All Points"));
+    m_include_deactivated->setToolTip(tr("If checked, all points, even those which were excluded in data overview widget, are exported in the simulated data! Check begin and end data indices and points!"));
+    m_include_deactivated->setChecked(true);
 
     m_std = new ClickLabel;
     connect(m_std, &ClickLabel::MouseClicked, this, [this]() {
@@ -148,13 +165,24 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     }
 
     m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")), 0, m_model);
+    m_ideal->setParent(this);
+    connect(m_include_deactivated, &QCheckBox::stateChanged, m_ideal, &DnDLabel::setExportAll);
+
     m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")), 2, m_model);
     m_mc_std->setParent(this);
+    connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_std, &DnDLabel::setExportAll);
+
     m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")), 1, m_model);
     m_mc_sey->setParent(this);
+    connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_sey, &DnDLabel::setExportAll);
+
     m_bs = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC using BS</b>").arg(QString(":/icons/edit-copy.png")), 4, m_model);
     m_bs->setParent(this);
+    connect(m_include_deactivated, &QCheckBox::stateChanged, m_bs, &DnDLabel::setExportAll);
+
     m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")), 3, m_model);
+    m_mc_user->setParent(this);
+    connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_user, &DnDLabel::setExportAll);
 
     m_variance = new QDoubleSpinBox;
     m_variance->setMinimum(0);
@@ -163,6 +191,7 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     m_variance->setValue(1e-3);
 
     QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_include_deactivated);
     hlayout->addWidget(m_ideal);
     hlayout->addWidget(m_mc_std);
     hlayout->addWidget(m_mc_sey);
@@ -197,4 +226,5 @@ void ExportSimulationWidget::UpdateVisibility()
     m_mc_sey->setVisible(qApp->instance()->property("advanced_ui").toBool());
     m_mc_user->setVisible(qApp->instance()->property("advanced_ui").toBool());
     m_variance->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    m_include_deactivated->setVisible(qApp->instance()->property("advanced_ui").toBool());
 }

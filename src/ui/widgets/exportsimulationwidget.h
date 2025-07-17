@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <QtGui/QMouseEvent>
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QWidget>
@@ -51,6 +52,8 @@ public:
         m_stdev = stdev;
     }
 
+    void setExportAll(int export_all) { m_export_all = export_all; }
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
 
@@ -58,6 +61,7 @@ private:
     void UpdateContent();
     int m_type = 0;
     double m_stdev = 0;
+    int m_export_all = 1;
 
     QByteArray m_content;
     QWeakPointer<AbstractModel> m_model;
@@ -98,4 +102,5 @@ private:
     ClickLabel *m_sse, *m_std, *m_sey;
     DnDLabel *m_ideal, *m_mc_std, *m_mc_sey, *m_mc_user, *m_bs;
     QDoubleSpinBox* m_variance;
+    QCheckBox* m_include_deactivated;
 };

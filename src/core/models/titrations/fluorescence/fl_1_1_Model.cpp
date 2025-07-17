@@ -57,7 +57,7 @@ void fl_ItoI_Model::DeclareOptions()
     QStringList host = QStringList() << "yes"
                                      << "no";
     addOption(Host, "Host dynamic", host);
-    setOption(Host, "no");
+    setOption(Host, "yes");
 
     QStringList guest = QStringList() << "dynamic"
                                       << "silent";
@@ -78,10 +78,12 @@ void fl_ItoI_Model::InitialGuess_Private()
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
-
-    (*GlobalTable())[0] = GuessK(0);
-
+    for (int i = 0; i < SeriesCount(); ++i) {
+        auto IF = (DependentModel()->lastRow()(i) / DependentModel()->firstRow()(i) - 1) * DependentModel()->firstRow()(i) * factor;
+        LocalTable()->data(i, 3) = IF;
+    }
+    QSharedPointer<AbstractModel> test = Clone();
+    (*GlobalTable())[0] = BisectParameter(test, 0, 2, 10, 1e-5, 100);
     Calculate();
 }
 
@@ -134,7 +136,7 @@ void fl_ItoI_Model::CalculateVariables()
             double A0 = LocalTable()->data(j, 0);
             double A = LocalTable()->data(j, 1);
             double B = LocalTable()->data(j, 2);
-            double AB = A0 - LocalTable()->data(j, 3);
+            double AB = LocalTable()->data(j, 3);
             double tau = 1;
             double guest_part = 0;
 

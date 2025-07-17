@@ -110,19 +110,19 @@ public:
     void MakeChartConnections(QPointer<ListChart> chart)
     {
         connect(Instance::GlobalInstance(), &Instance::FontConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
+            chart->updateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
         });
 
         connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
+            chart->updateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
         });
 
-        connect(chart, &ListChart::ConfigurationChanged, this, [chart]() {
-            Instance::GlobalInstance()->UpdateFontConfig(chart->CurrentFontConfig());
+        connect(chart, &ListChart::configurationChanged, this, [chart]() {
+            Instance::GlobalInstance()->UpdateFontConfig(chart->currentFontConfig());
         });
 
-        connect(chart, &ListChart::ExportSettingsFileAdded, this, &Instance::AddFontConfigFile);
-        connect(this, &Instance::FontConfigFileAdded, chart, &ListChart::AddExportSetting);
+        connect(chart, &ListChart::exportSettingsFileAdded, this, &Instance::AddFontConfigFile);
+        connect(this, &Instance::FontConfigFileAdded, chart, &ListChart::addExportSetting);
 
         QMetaObject::Connection connection;
         connection = connect(chart, &ListChart::setUpFinished, this, [this, chart, connection]() {
