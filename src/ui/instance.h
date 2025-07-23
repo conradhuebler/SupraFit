@@ -110,19 +110,19 @@ public:
     void MakeChartConnections(QPointer<ListChart> chart)
     {
         connect(Instance::GlobalInstance(), &Instance::FontConfigurationChanged, chart, [chart]() {
-            chart->updateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
+            chart->UpdateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
         });
 
         connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, chart, [chart]() {
-            chart->updateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
+            chart->UpdateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
         });
+#pragma message ("restore the connection, once cutecharts supports it again")
+        //connect(chart, &ListChart::configurationChanged, this, [chart]() {
+          //  Instance::GlobalInstance()->UpdateFontConfig(chart->currentFontConfig());
+        //});
 
-        connect(chart, &ListChart::configurationChanged, this, [chart]() {
-            Instance::GlobalInstance()->UpdateFontConfig(chart->currentFontConfig());
-        });
-
-        connect(chart, &ListChart::exportSettingsFileAdded, this, &Instance::AddFontConfigFile);
-        connect(this, &Instance::FontConfigFileAdded, chart, &ListChart::addExportSetting);
+        //connect(chart, &ListChart::exportSettingsFileAdded, this, &Instance::AddFontConfigFile);
+        //connect(this, &Instance::FontConfigFileAdded, chart, &ListChart::addExportSetting);
 
         QMetaObject::Connection connection;
         connection = connect(chart, &ListChart::setUpFinished, this, [this, chart, connection]() {

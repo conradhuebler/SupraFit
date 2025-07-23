@@ -23,9 +23,13 @@
 
 #include "src/client/analyser.h"
 #include "src/client/simulator.h"
+#include "src/client/ml_pipeline_manager.h"
 
 #include "src/core/equil.h"
 #include "src/core/jsonhandler.h"
+
+#include <QtCore/QFile>
+#include <QtCore/QIODevice>
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -36,6 +40,7 @@
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
+#include <QtCore/QJsonArray>
 
 #include <QtCore/QRandomGenerator>
 #include <QCoreApplication>
@@ -125,6 +130,23 @@ int main(int argc, char** argv)
         QCoreApplication::translate("main", "4"));
     parser.addOption(threads);
 
+    QCommandLineOption mlPipeline(QStringList() << "ml-pipeline",
+        QCoreApplication::translate("main", "Run ML pipeline mode"),
+        QCoreApplication::translate("main", ""));
+    parser.addOption(mlPipeline);
+
+    QCommandLineOption pipelineStep(QStringList() << "step",
+        QCoreApplication::translate("main", "Pipeline step (1=generate, 2=analyze)"),
+        QCoreApplication::translate("main", "step"),
+        QCoreApplication::translate("main", "1"));
+    parser.addOption(pipelineStep);
+
+    QCommandLineOption batchConfig(QStringList() << "batch-config",
+        QCoreApplication::translate("main", "Batch configuration file for ML pipeline"),
+        QCoreApplication::translate("main", "file"),
+        QCoreApplication::translate("main", ""));
+    parser.addOption(batchConfig);
+
     parser.process(app);
 
     std::cout << aboutSF().toStdString() << std::endl;
@@ -136,9 +158,73 @@ int main(int argc, char** argv)
               << std::endl;
 
     const QString infile = parser.value("i");
-
     const QString print = parser.value("print");
     const QString job = parser.value("j");
+    const bool mlPipelineMode = parser.isSet("ml-pipeline");
+    const int step = parser.value("step").toInt();
+    const QString batchConfigFile = parser.value("batch-config");
+
+    // Handle ML Pipeline mode
+    if (mlPipelineMode || !batchConfigFile.isEmpty()) {
+        std::cout << "Starting ML Pipeline Mode..." << std::endl;
+        
+        MLPipelineManager pipelineManager;
+        
+        if (!batchConfigFile.isEmpty()) {
+            // Batch processing mode
+            std::cout << "Loading batch configuration: " << batchConfigFile.toStdString() << std::endl;
+            QJsonObject batchConfig = JsonHandler::LoadFile(batchConfigFile);
+            
+            if (batchConfig.isEmpty()) {
+                std::cout << "ERROR: Failed to load batch configuration file: " << batchConfigFile.toStdString() << std::endl;
+                return 1;
+            }
+            
+            pipelineManager.setBatchConfig(batchConfig);
+            
+            // Set pipeline steps if configured
+            if (batchConfig.contains("Pipeline") && batchConfig["Pipeline"].toObject().contains("Steps")) {
+                QJsonArray stepsArray = batchConfig["Pipeline"].toObject()["Steps"].toArray();
+                QStringList steps;
+                for (const auto& stepValue : stepsArray) {
+                    steps << stepValue.toString();
+                }
+                pipelineManager.setPipelineSteps(steps);
+            }
+            
+            std::cout << "Running batch pipeline..." << std::endl;
+            pipelineManager.runBatchPipeline();
+            
+            std::cout << "ML Pipeline batch processing completed!" << std::endl;
+            return 0;
+            
+        } else if (!infile.isEmpty()) {
+            // Single pipeline execution
+            std::cout << "Running single pipeline step " << step << " with config: " << infile.toStdString() << std::endl;
+            
+            QJsonObject config = JsonHandler::LoadFile(infile);
+            if (config.isEmpty()) {
+                std::cout << "ERROR: Failed to load configuration file: " << infile.toStdString() << std::endl;
+                return 1;
+            }
+            
+            // Check if this is a pipeline configuration
+            if (config.contains("Pipeline") || 
+                (config.contains("Main") && config["Main"].toObject().contains("GenerateData"))) {
+                
+                pipelineManager.runSinglePipeline(infile);
+                std::cout << "ML Pipeline step completed!" << std::endl;
+                return 0;
+                
+            } else {
+                std::cout << "Configuration file does not contain ML Pipeline settings." << std::endl;
+                std::cout << "Falling back to standard mode..." << std::endl;
+            }
+        } else {
+            std::cout << "ERROR: ML Pipeline mode requires either --batch-config or --input file" << std::endl;
+            return 1;
+        }
+    }
 
     if (infile.isEmpty() && job.isEmpty()) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
@@ -150,6 +236,11 @@ int main(int argc, char** argv)
 
         std::cout << "To run a jobfile on a specific input file, run " << std::endl;
         std::cout << "suprafit_cli -i file.suprafit -j jobfile.json " << std::endl
+                  << std::endl;
+
+        std::cout << "To run ML Pipeline mode, use:" << std::endl;
+        std::cout << "suprafit_cli --ml-pipeline -i ml_config.json" << std::endl;
+        std::cout << "suprafit_cli --batch-config batch_config.json" << std::endl
                   << std::endl;
 
         std::cout << "To print the content of a file just type" << std::endl;
@@ -166,6 +257,29 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("StoreRawData", true);
 
     QJsonObject infile_json = JsonHandler::LoadFile(infile);
+    
+    // Check for ML Pipeline configuration automatically
+    if (infile_json.contains("Pipeline") || 
+        infile_json.contains("BatchConfig") ||
+        infile_json.contains("MLDataStructure")) {
+        
+        std::cout << "ML Pipeline configuration detected. Switching to ML Pipeline mode..." << std::endl;
+        
+        MLPipelineManager pipelineManager;
+        
+        if (infile_json.contains("BatchConfig")) {
+            // This is a batch configuration
+            pipelineManager.setBatchConfig(infile_json);
+            pipelineManager.runBatchPipeline();
+        } else {
+            // Single pipeline step
+            pipelineManager.runSinglePipeline(infile);
+        }
+        
+        std::cout << "ML Pipeline completed successfully!" << std::endl;
+        return 0;
+    }
+    
     // JsonHandler::ReadJsonFile(infile_json, infile);
     SupraFitCli* core = new SupraFitCli;
     QVector<QJsonObject> projects;
@@ -208,9 +322,67 @@ int main(int argc, char** argv)
     }
 
     QVector<QJsonObject> dependent;
-    if (core->CheckGenerateDependent()) {
-        for (const QJsonObject& data : qAsConst(projects))
-            dependent << core->GenerateDependent(data);
+    
+    // Check if this is a DataOnly task (simple load and save without model processing)
+    if (core->CheckDataOnly()) {
+        fmt::print("\nDataOnly task detected - Loading and saving data without model processing!\n");
+        dependent = core->GenerateDataOnly();
+        fmt::print("Data loaded and exported: {} datasets\n", dependent.size());
+        
+        // Save the data
+        core->setDataVector(dependent);
+        for (int i = 0; i < dependent.size(); ++i) {
+            QString filename = QString("%1_%2.json").arg(core->OutFile()).arg(i);
+            QJsonDocument doc(dependent[i]);
+            QFile file(filename);
+            if (file.open(QIODevice::WriteOnly)) {
+                file.write(doc.toJson());
+                file.close();
+                fmt::print("Saved data to: {}\n", filename.toStdString());
+            } else {
+                fmt::print("ERROR: Could not save file {}\n", filename.toStdString());
+            }
+        }
+        fmt::print("DataOnly task completed!\n");
+    }
+    // Check if this is a GenerateInputData task (generate data using mathematical equations)
+    else if (core->CheckGenerateInputData()) {
+        fmt::print("\nGenerateInputData task detected - Generating data using mathematical equations!\n");
+        dependent = core->GenerateInputData();
+        fmt::print("Data generated and exported: {} datasets\n", dependent.size());
+        
+        // Save the data
+        core->setDataVector(dependent);
+        for (int i = 0; i < dependent.size(); ++i) {
+            QString filename = QString("%1_%2.json").arg(core->OutFile()).arg(i);
+            QJsonDocument doc(dependent[i]);
+            QFile file(filename);
+            if (file.open(QIODevice::WriteOnly)) {
+                file.write(doc.toJson());
+                file.close();
+                fmt::print("Saved data to: {}\n", filename.toStdString());
+            } else {
+                fmt::print("ERROR: Could not save file {}\n", filename.toStdString());
+            }
+        }
+        fmt::print("GenerateInputData task completed!\n");
+    }
+    else if (core->CheckGenerateDependent()) {
+        fmt::print("\nGeneration of dependent model data!\n");
+        dependent = core->GenerateData();
+        fmt::print("\nGeneration of dependent model data finished!\n");
+        fmt::print("Generated {} datasets\n", dependent.size());
+        fmt::print("\n\n##########################################\n\n");
+        
+        // Set the generated data for processing with multiple models
+        core->setDataVector(dependent);
+        
+        // Now process the generated data with multiple models and jobs
+        if (!dependent.isEmpty()) {
+            fmt::print("\nProcessing generated data with multiple models!\n");
+            core->Work();
+            fmt::print("\nProcessing completed!\n");
+        }
     }
     /*
         Simulator* simulator = new Simulator(core);
@@ -308,7 +480,7 @@ int main(int argc, char** argv)
         std::cout << "No task is set, lets do the standard stuff ..." << std::endl;
         list = parser.isSet("l");
 
-        if (infile != outfile) {
+        if (!outfile.isEmpty() && infile != outfile) {
             /* Lets load the file (if projects, load several and then save them to the new name */
 
             if (suprafitcli->LoadFile())
@@ -326,9 +498,9 @@ int main(int argc, char** argv)
             std::cout << "For conversation of files type something like: " << std::endl;
             std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
 
-            /* Lets take this as print model details */
-            std::cout << "Print file content." << std::endl;
-            suprafitcli->PrintFileContent();
+            /* Analyze the file content in detail */
+            std::cout << "Analyzing file content..." << std::endl;
+            suprafitcli->AnalyzeFile();
             return 0;
         }
         if (list) {

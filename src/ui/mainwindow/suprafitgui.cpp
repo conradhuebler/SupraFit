@@ -527,62 +527,114 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
     return projects;
 }
 */
+
 void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
 {
+    qDebug() << "LoadFile: Starting to load file:" << file << "with overwrite_type:" << overwrite_type;
+    
     QFileInfo info(file);
+    qDebug() << "LoadFile: File info - exists:" << info.exists() << "size:" << info.size() << "suffix:" << info.suffix();
 
     if (overwrite_type == 2) // This is reservered for thermograms, that can not automatically be deduced by file name (like *.itc)
     {
+        qDebug() << "LoadFile: Processing thermogram with overwrite_type 2";
         ImportData dialog(this);
         dialog.ImportThermogram(file);
+        qDebug() << "LoadFile: ImportThermogram called, showing dialog";
+        
         if (dialog.exec() == QDialog::Accepted) {
+            qDebug() << "LoadFile: Thermogram dialog accepted, calling SetData";
+            qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
             SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
             m_mainsplitter->show();
+            qDebug() << "LoadFile: Thermogram processing completed successfully";
+        } else {
+            qDebug() << "LoadFile: Thermogram dialog was cancelled or rejected";
         }
         return;
     }
 
     if (file.contains("|||")) {
+        qDebug() << "LoadFile: Processing spectra file (contains '|||')";
         SpectraImport* spectra = new SpectraImport(file);
 
         if (spectra->exec()) {
+            qDebug() << "LoadFile: SpectraImport dialog accepted, processing data";
             ImportData dialog(this);
             DataTable* tmp = new DataTable;
             tmp->ImportTable(spectra->InputTable());
+            qDebug() << "LoadFile: DataTable imported, loading into dialog";
+            
             dialog.LoadTable(tmp, 2);
             dialog.setSpectraData(spectra->ProjectData());
+            qDebug() << "LoadFile: Spectra data set, showing ImportData dialog";
+            
             if (dialog.exec() == QDialog::Accepted) {
+                qDebug() << "LoadFile: Spectra ImportData dialog accepted";
+                qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
                 SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
                 m_mainsplitter->show();
+                qDebug() << "LoadFile: Spectra processing completed successfully";
+            } else {
+                qDebug() << "LoadFile: Spectra ImportData dialog was cancelled or rejected";
             }
+        } else {
+            qDebug() << "LoadFile: SpectraImport dialog was cancelled or rejected";
         }
+        delete spectra;
+        qDebug() << "LoadFile: SpectraImport object deleted";
         return;
     }
-    if (file.contains("json") || file.contains("suprafit")) {
+    
+    bool is_json_type = file.contains("json") || file.contains("suprafit");
+    qDebug() << "LoadFile: File type check - is_json_type:" << is_json_type;
+    
+    if (is_json_type) {
+        qDebug() << "LoadFile: Showing splash screen for JSON/SupraFit file";
         QTimer::singleShot(0, m_splash, &QSplashScreen::show);
         m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
     }
+    
     bool invalid_json = false;
-    if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
+    bool is_project_file = file.contains("json") || file.contains("jdat") || file.contains("suprafit");
+    qDebug() << "LoadFile: Project file check - is_project_file:" << is_project_file;
+    
+    if (is_project_file) {
+        qDebug() << "LoadFile: Calling LoadProject for file:" << file;
         invalid_json = !LoadProject(file);
+        qDebug() << "LoadFile: LoadProject returned, invalid_json:" << invalid_json;
+        
         if (!invalid_json) {
+            qDebug() << "LoadFile: Project loaded successfully, cleaning up UI";
             m_mainsplitter->setGraphicsEffect(NULL);
             QTimer::singleShot(1, m_splash, &QSplashScreen::close);
+            qDebug() << "LoadFile: Updating recent list with file:" << file;
             UpdateRecentListProperty(file);
             UpdateRecentList();
+            qDebug() << "LoadFile: Project loading completed successfully";
             return;
+        } else {
+            qDebug() << "LoadFile: Project loading failed, will show error message";
         }
     } else {
+        qDebug() << "LoadFile: Not a project file, calling ImportTable";
         ImportTable(file);
+        qDebug() << "LoadFile: ImportTable completed";
     }
+    
+    qDebug() << "LoadFile: Cleaning up UI effects";
     m_mainsplitter->setGraphicsEffect(NULL);
-
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 
-    if (invalid_json)
+    if (invalid_json) {
+        qDebug() << "LoadFile: Showing error message for invalid JSON";
         QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
-    else
+    } else {
+        qDebug() << "LoadFile: Updating recent list (non-project file)";
         UpdateRecentList();
+    }
+    
+    qDebug() << "LoadFile: Function completed";
 }
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
@@ -907,51 +959,95 @@ void SupraFitGui::ImportTable(const QString& file)
 
 bool SupraFitGui::LoadProject(const QString& filename)
 {
+    qDebug() << "LoadProject: Starting to load project from:" << filename;
+    
     Waiter wait;
     QFileInfo info(filename);
+    
+    qDebug() << "LoadProject: File info - absolute path:" << info.absoluteFilePath();
+    qDebug() << "LoadProject: File info - base name:" << info.baseName();
+    qDebug() << "LoadProject: File exists:" << info.exists();
+    qDebug() << "LoadProject: File is readable:" << info.isReadable();
+    
     qApp->instance()->setProperty("projectpath", info.absoluteFilePath());
     qApp->instance()->setProperty("projectname", info.baseName());
 
     QJsonObject toplevel;
 
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
+        qDebug() << "LoadProject: Successfully read JSON file";
+        qDebug() << "LoadProject: Current m_supr_file:" << m_supr_file;
+        
         if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
             m_supr_file = filename;
             m_filename_line->setText(m_supr_file);
+            qDebug() << "LoadProject: Set m_supr_file to:" << m_supr_file;
         }
+        
         QStringList keys = toplevel.keys();
+        qDebug() << "LoadProject: JSON keys found:" << keys;
 
         if (keys.contains("data", Qt::CaseInsensitive)) {
-            return SetData(toplevel, info.baseName(), info.absolutePath());
+            qDebug() << "LoadProject: Found 'data' key, calling SetData";
+            bool result = SetData(toplevel, info.baseName(), info.absolutePath());
+            qDebug() << "LoadProject: SetData returned:" << result;
+            return result;
         } else if ((keys.contains("datapoints", Qt::CaseInsensitive) && keys.contains("equations", Qt::CaseInsensitive)) || keys.contains("Main", Qt::CaseInsensitive)) {
+            qDebug() << "LoadProject: Found datapoints/equations or Main key, opening ImportData dialog";
 #pragma message("move the simulation import to the filehandler soon!")
             ImportData dialog(filename, this);
             if (dialog.exec() == QDialog::Accepted) {
+                qDebug() << "LoadProject: ImportData dialog accepted";
+                qDebug() << "LoadProject: Project file from dialog:" << dialog.ProjectFile();
+                qDebug() << "LoadProject: Directory:" << getDir();
+                
                 SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
                 m_mainsplitter->show();
+                qDebug() << "LoadProject: Successfully loaded via ImportData dialog";
                 return true;
+            } else {
+                qDebug() << "LoadProject: ImportData dialog was cancelled or rejected";
             }
         } else {
+            qDebug() << "LoadProject: Processing multiple projects";
             bool exit = true;
             int index = 1;
+            int processed_count = 0;
+            
             for (int i = 0; i < keys.size(); ++i) {
                 QApplication::processEvents();
                 QString str = QString("project_%1").arg(i);
-                if (!keys.contains(str))
+                qDebug() << "LoadProject: Looking for key:" << str;
+                
+                if (!keys.contains(str)) {
+                    qDebug() << "LoadProject: Key" << str << "not found, skipping";
                     continue;
+                }
+                
+                qDebug() << "LoadProject: Processing project" << index << "with key:" << str;
                 QJsonObject object = toplevel[str].toObject();
-                exit = exit && SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
+                bool result = SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
+                qDebug() << "LoadProject: SetData for project" << index << "returned:" << result;
+                
+                exit = exit && result;
                 index++;
+                processed_count++;
             }
 
+            qDebug() << "LoadProject: Processed" << processed_count << "projects, overall success:" << exit;
+            qDebug() << "LoadProject: Setting active index to:" << (m_last_index - 1);
             m_project_tree->setActiveIndex(m_last_index - 1);
-            //   m_stack_widget->setCurrentWidget(0);
 
+            qDebug() << "LoadProject: Loading meta models";
             LoadMetaModels();
 
             return exit;
         }
+    } else {
+        qDebug() << "LoadProject: Failed to read JSON file:" << filename;
     }
+    
+    qDebug() << "LoadProject: Returning false - project load failed";
     return false;
 }
 

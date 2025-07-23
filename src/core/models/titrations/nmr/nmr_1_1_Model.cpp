@@ -91,7 +91,6 @@ void nmr_ItoI_Model::CalculateVariables()
 
         if (!m_fast)
             SetConcentration(i, vector);
-
         for (int j = 0; j < SeriesCount(); ++j) {
             value = host / host_0 * LocalTable()->data(j, 0) + complex / host_0 * LocalTable()->data(j, 1);
             SetValue(i, j, value);

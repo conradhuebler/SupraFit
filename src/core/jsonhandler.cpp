@@ -45,28 +45,22 @@ QJsonObject JsonHandler::LoadFile(const QString& file)
         loadDoc = QJsonDocument::fromJson(saveData, &error);
     else if (file.contains("jdat") || file.contains("suprafit"))
         loadDoc = QJsonDocument::fromJson(qUncompress(saveData), &error);
+    
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON Parse Error:" << error.errorString() << "at offset" << error.offset;
+        return json;
+    }
+    
     json = loadDoc.object();
+    qDebug() << "🔍 DEBUG JsonHandler: Loaded JSON with keys:" << json.keys();
     return json;
 }
 
 bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
-    QFile loadFile(file);
-    if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "Couldn't open file!" << loadFile.errorString();
-        return false;
-    }
-
-    QByteArray saveData = loadFile.readAll();
-
-    QJsonDocument loadDoc;
-    QJsonParseError error;
-    if (file.contains("json"))
-        loadDoc = QJsonDocument::fromJson(saveData, &error);
-    else if (file.contains("jdat") || file.contains("suprafit"))
-        loadDoc = QJsonDocument::fromJson(qUncompress(saveData), &error);
-    json = loadDoc.object();
-    return true;
+    // Use unified LoadFile method for consistency
+    json = LoadFile(file);
+    return !json.isEmpty();
 }
 
 bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)

@@ -320,6 +320,7 @@ qt_add_resources(suprafit_SRC files.qrc)
 if(noto_font)
     qt_add_resources(suprafit_SRC fonts.qrc)
 endif(noto_font)
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
 
 
 # generate proper GUI program on specified platform
@@ -372,6 +373,7 @@ set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
                 src/client/analyser.cpp
                 src/client/simulator.cpp
+                src/client/ml_pipeline_manager.cpp
                 src/client/main.cpp
           )
 

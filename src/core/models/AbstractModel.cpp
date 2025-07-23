@@ -680,12 +680,15 @@ void AbstractModel::setLocalParameter(qreal value, const QPair<int, int>& pair)
 {
     if (LocalTable()->isChecked(pair.second, pair.first))
         LocalTable()->data(pair.second, pair.first) = value;
+    LocalTable()->Debug();
+    qDebug() << value << pair;
 }
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
     if (LocalTable()->isChecked(series, parameter))
         LocalTable()->data(series, parameter) = value;
+    LocalTable()->Debug();
 }
 
 void AbstractModel::forceLocalParameter(qreal value, const QPair<int, int>& pair)

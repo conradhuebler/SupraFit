@@ -1,0 +1,18 @@
+{
+    "Main": {
+        "OutFile": "nmr_1_1_titration_data",
+        "IndependentRows": 2,
+        "GenerateData": {
+            "UseDataGenerator": true,
+            "IndependentVariables": 2,
+            "DataPoints": 15,
+            "Equations": "0.001|(X - 1) * 0.0001",
+            "Series": 2,
+            "Model": 1,
+            "Repeat": 3,
+            "Variance": 1e-3,
+            "GlobalRandomLimits": "[2 5]",
+            "LocalRandomLimits": "[6.5 6.9; 6.0 6.4; 2.3 2.6; 2.2 2.5]"
+        }
+    }
+}

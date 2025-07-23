@@ -291,6 +291,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 
     d->m_systemObject = topjson["system"].toObject();
 
+
     d->m_independent_model->ImportTable(topjson["independent"].toObject());
     d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
 
@@ -301,10 +302,11 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
         d->m_independent_raw_model->ImportTable(topjson["independent"].toObject());
         load = true;
     }
-    if (d->m_dependent_model.data()->rowCount() != d->m_dependent_raw_model.data()->rowCount()) {
-        d->m_dependent_raw_model->ImportTable(topjson["dependent"].toObject());
-        load = true;
-    }
+    // TEMPORARILY COMMENTED OUT TO TEST
+    // if (d->m_dependent_model.data()->rowCount() != d->m_dependent_raw_model.data()->rowCount()) {
+    //     d->m_dependent_raw_model->ImportTable(topjson["dependent"].toObject());
+    //     load = true;
+    // }
     if (load)
         InitialiseCalculationModel();
     /*
@@ -679,7 +681,6 @@ void DataClass::ReReadCheckedState(int row, bool state)
         if (IndependentModel()->isChecked(i))
             last = i;
     }
-    qDebug() << row << last << DependentModel()->data(last, 0);
     d->m_begin_data = first;
     d->m_end_data = last;
     emit DataRangedChanged();

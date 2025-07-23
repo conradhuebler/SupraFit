@@ -381,7 +381,12 @@ public:
      */
     virtual QString YLabel() const { return QString("Y"); }
 
-    inline QString Content() const { return d->m_content; }
+    inline QString Content() const 
+    {
+        qDebug() << "this function will be removed";
+         return d->m_content;
+    }
+    inline QString getContent() const { return d->m_content; }
 
     inline void setContent(const QString& str) { d->m_content = str; }
 

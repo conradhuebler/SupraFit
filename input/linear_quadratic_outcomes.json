@@ -1,0 +1,23 @@
+{
+    "Main": {
+        "OutFile": "linear_quadratic_data",
+        "IndependentRows": 3,
+        "GenerateData": {
+            "UseDataGenerator": true,
+            "IndependentVariables": 1,
+            "DataPoints": 20,
+            "Equations": "X",
+            "DependentEquations": "5|X*X|X*X + A_random()",
+            "Series": 3,
+            "Repeat": 1,
+            "RandomParameterLimits": {
+                "A": {
+                    "min": -0.5, 
+                    "max": 0.5,
+                    "distribution": "uniform",
+                    "seed": 12345
+                }
+            }
+        }
+    }
+}

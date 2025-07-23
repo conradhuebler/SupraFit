@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * <SupraFit Command Line Tools for batch processing.>
+ * Copyright (C) 2018 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +72,8 @@ public:
     inline bool CheckGenerateDependent() const { return m_generate_dependent; }
     inline bool CheckGenerateNoisyDependent() { return m_generate_noisy_dependent; }
     inline bool CheckGenerateNoisyIndependent() { return m_generate_noisy_independent; }
+    inline bool CheckDataOnly() const { return m_data_only; }
+    inline bool CheckGenerateInputData() const { return m_generate_input_data; }
 
     QVector<QJsonObject> GenerateIndependent();
     QVector<QJsonObject> GenerateNoisyIndependent(const QJsonObject& json_data);
@@ -81,7 +83,17 @@ public:
     void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
 
     QVector<QJsonObject> GenerateData();
+    QVector<QJsonObject> GenerateDataOnly();
+    QVector<QJsonObject> GenerateInputData();
+    
+    void AnalyzeFile();
+    
+    // Enhanced methods using DataGenerator - Claude Generated
+    QVector<QJsonObject> GenerateDataWithDataGenerator();
+    bool validateDataGeneratorConfig(const QJsonObject& config) const;
+    
     inline QString Extension() const { return m_extension; }
+    inline QString OutFile() const { return m_outfile; }
 signals:
 
 public slots:
@@ -118,6 +130,8 @@ protected:
     bool m_generate_dependent = false;
     bool m_generate_noisy_independent = false;
     bool m_generate_noisy_dependent = false;
+    bool m_data_only = false;
+    bool m_generate_input_data = false;
 
     bool m_interrupt = false;
 

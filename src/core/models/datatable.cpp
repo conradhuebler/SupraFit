@@ -608,17 +608,19 @@ void DataTable::setColumn(const Vector& vector, int column)
 
 void DataTable::setRow(const QVector<qreal>& vector, int row)
 {
-    QReadLocker locker(&mutex);
-    if (m_table.rows() >= row)
-        for (int i = 0; i < vector.size(); ++i)
+    QWriteLocker locker(&mutex);
+    if (m_table.rows() > row) {
+        for (int i = 0; i < vector.size() && i < m_table.cols(); ++i) {
             m_table(row, i) = vector[i];
+        }
+    }
     return;
 }
 
 void DataTable::setRow(const Vector& vector, int row)
 {
-    QReadLocker locker(&mutex);
-    if (m_table.rows() >= row)
+    QWriteLocker locker(&mutex);
+    if (m_table.rows() > row)
         m_table.row(row) = vector;
     return;
 }
@@ -772,8 +774,10 @@ bool DataTable::ImportTable(const QJsonObject& table)
     int cols = qMax(table["cols"].toInt(), columnCount());
 
     if (rowCount() != rows || cols != columnCount()) {
-        m_table = Eigen::MatrixXd::Zero(rows, cols);
-        m_checked_table = Eigen::MatrixXd::Ones(rows, cols);
+        m_table.resize(rows, cols);
+        m_table.setZero();
+        m_checked_table.resize(rows, cols);
+        m_checked_table.setOnes();
     }
 
     bool check = table.contains("checked");
