@@ -1,0 +1,37 @@
+{
+    "Main": {
+        "OutFile": "linear_quadratic_modular_data",
+        "Repeat": 1
+    },
+    "Independent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "DataPoints": 20,
+            "Variables": 1,
+            "Equations": "X"
+        },
+        "Noise": {
+            "Type": "none"
+        }
+    },
+    "Dependent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "Series": 3,
+            "Equations": "5|X*X|X*X + A_random()",
+            "RandomParameters": {
+                "A": {
+                    "min": -0.5,
+                    "max": 0.5,
+                    "distribution": "uniform",
+                    "seed": 12345
+                }
+            }
+        },
+        "Noise": {
+            "Type": "none"
+        }
+    }
+}

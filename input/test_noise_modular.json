@@ -1,0 +1,41 @@
+{
+    "Main": {
+        "OutFile": "test_noise_data",
+        "Repeat": 1
+    },
+    "Independent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "DataPoints": 10,
+            "Variables": 1,
+            "Equations": "X"
+        },
+        "Noise": {
+            "Type": "gaussian",
+            "StdDev": 0.1,
+            "Seed": 123
+        }
+    },
+    "Dependent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "Series": 2,
+            "Equations": "5|X*X",
+            "RandomParameters": {
+                "A": {
+                    "min": -0.2,
+                    "max": 0.2,
+                    "distribution": "uniform",
+                    "seed": 456
+                }
+            }
+        },
+        "Noise": {
+            "Type": "exportMC",
+            "StdDev": 0.05,
+            "Seed": 789
+        }
+    }
+}

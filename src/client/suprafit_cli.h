@@ -1,6 +1,11 @@
 /*
- * <SupraFit Command Line Tools for batch processing.>
+ * SupraFit Command Line Tools for batch processing and data generation
  * Copyright (C) 2018 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This CLI tool provides batch processing capabilities for SupraFit,
+ * including modular data generation with Independent/Dependent structure,
+ * file loading with range selection, and ML pipeline management.
+ * Enhanced with modular structure by Claude Code AI Assistant.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,6 +97,17 @@ public:
     QVector<QJsonObject> GenerateDataWithDataGenerator();
     bool validateDataGeneratorConfig(const QJsonObject& config) const;
     
+    // New modular JSON structure support - Claude Generated
+    QVector<QJsonObject> GenerateDataWithModularStructure();
+    bool parseModularStructure(const QJsonObject& control);
+    QJsonObject generateIndependentDataTable(const QJsonObject& independentConfig);
+    QJsonObject generateDependentDataTable(const QJsonObject& dependentConfig, const QJsonObject& independentTableJson);
+    QJsonObject loadDataTableFromFile(const QJsonObject& fileConfig);
+    QPointer<DataClass> generateIndependentData(const QJsonObject& independentConfig);
+    QPointer<DataClass> generateDependentData(const QJsonObject& dependentConfig, QPointer<DataClass> independentData);
+    QPointer<DataClass> loadDataFromFile(const QJsonObject& fileConfig);
+    QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent);
+    
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
 signals:
@@ -111,6 +127,10 @@ protected:
 
     /* Sub json */
     QJsonObject m_prepare, m_simulation;
+    
+    /* Modular structure support - Claude Generated */
+    QJsonObject m_independent, m_dependent;
+    bool m_use_modular_structure = false;
 
     /* Stored data structure */
     QJsonObject m_data_json;

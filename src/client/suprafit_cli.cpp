@@ -1,6 +1,11 @@
 /*
- * <SupraFit Command Line Tools for batch processing.>
+ * SupraFit Command Line Tools for batch processing and data generation
  * Copyright (C) 2018 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This CLI tool provides batch processing capabilities for SupraFit,
+ * including modular data generation with Independent/Dependent structure,
+ * file loading with range selection, and ML pipeline management.
+ * Enhanced with modular structure by Claude Code AI Assistant.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +45,7 @@
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/toolset.h"
+#include "src/version.h"
 
 #include <fmt/color.h>
 #include <fmt/core.h>
@@ -95,6 +101,25 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             
         if (key.compare("simulation", Qt::CaseInsensitive) == 0)
             m_simulation = control[key].toObject();
+            
+        // New modular structure support - Claude Generated
+        if (key.compare("independent", Qt::CaseInsensitive) == 0) {
+            m_independent = control[key].toObject();
+            m_use_modular_structure = true;
+            m_generate_dependent = true;  // Enable dependent data generation
+            m_simulate_job = true;        // Enable simulation mode
+            fmt::print("🔍 DEBUG setControlJson: Found Independent section with source: {}\n", 
+                      m_independent["Source"].toString().toStdString());
+        }
+        
+        if (key.compare("dependent", Qt::CaseInsensitive) == 0) {
+            m_dependent = control[key].toObject();
+            m_use_modular_structure = true;
+            m_generate_dependent = true;  // Enable dependent data generation
+            m_simulate_job = true;        // Enable simulation mode
+            fmt::print("🔍 DEBUG setControlJson: Found Dependent section with source: {}\n", 
+                      m_dependent["Source"].toString().toStdString());
+        }
     }
     if (!m_main.isEmpty()) {
         for (const auto& str : m_main.keys()) {
@@ -922,8 +947,14 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
 {
     QVector<QJsonObject> project_list;
 
-    if (m_main.isEmpty())
+    if (m_main.isEmpty() && !m_use_modular_structure)
         return project_list;
+    
+    // Check if we should use the new modular structure - Claude Generated
+    if (m_use_modular_structure) {
+        fmt::print("Using new modular Independent/Dependent structure\n");
+        return GenerateDataWithModularStructure();
+    }
     
     // Use DataGenerator for all data generation - Claude Generated Integration
     fmt::print("Using DataGenerator for unified data generation\n");
@@ -1436,6 +1467,424 @@ void SupraFitCli::CheckStopFile()
         file.remove();
     } else
         QTimer::singleShot(100, this, &SupraFitCli::CheckStopFile);
+}
+
+// New modular JSON structure implementation - Claude Generated
+QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
+{
+    QVector<QJsonObject> project_list;
+    
+    fmt::print("🔧 Generating data with modular Independent/Dependent structure\n");
+    
+    // Validate configuration
+    if (m_independent.isEmpty() || m_dependent.isEmpty()) {
+        fmt::print("❌ ERROR: Both Independent and Dependent sections are required\n");
+        return project_list;
+    }
+    
+    // Get repeat count from Main section
+    int repeat = 1;
+    if (!m_main.isEmpty()) {
+        repeat = m_main["Repeat"].toInt(1);
+        if (!m_main.contains("OutFile")) {
+            fmt::print("❌ ERROR: OutFile is required in Main section\n");
+            return project_list;
+        }
+        setOutFile(m_main["OutFile"].toString());
+    }
+    
+    fmt::print("📊 Generating {} dataset(s) with modular structure\n", repeat);
+    
+    // Generate datasets
+    for (int iteration = 0; iteration < repeat; ++iteration) {
+        fmt::print("🔄 Generating dataset {}/{}\n", iteration + 1, repeat);
+        
+        // Step 1: Generate Independent data table as JSON
+        QJsonObject independentTableJson = generateIndependentDataTable(m_independent);
+        if (independentTableJson.isEmpty()) {
+            fmt::print("❌ ERROR: Failed to generate independent data for iteration {}\n", iteration + 1);
+            continue;
+        }
+        
+        // Step 2: Generate Dependent data table as JSON
+        QJsonObject dependentTableJson = generateDependentDataTable(m_dependent, independentTableJson);
+        if (dependentTableJson.isEmpty()) {
+            fmt::print("❌ ERROR: Failed to generate dependent data for iteration {}\n", iteration + 1);
+            continue;
+        }
+        
+        // Step 3: Create DataClass and import JSON tables
+        QPointer<DataClass> fullData = new DataClass();
+        
+        // Import independent data from JSON
+        DataTable* independentTable = new DataTable(independentTableJson);
+        fullData->setIndependentTable(independentTable);
+        fullData->setIndependentRawTable(new DataTable(independentTableJson));
+        
+        // Import dependent data from JSON  
+        DataTable* dependentTable = new DataTable(dependentTableJson);
+        fullData->setDependentTable(dependentTable);
+        fullData->setDependentRawTable(new DataTable(dependentTableJson));
+        
+        fullData->setDataType(DataClassPrivate::Simulation);
+        
+        // Step 3: Apply noise if specified
+        fullData = applyNoise(fullData, m_independent["Noise"].toObject(), true);  // Independent noise
+        fullData = applyNoise(fullData, m_dependent["Noise"].toObject(), false);   // Dependent noise
+        
+        // Step 4: Create project JSON
+        QJsonObject project = fullData->ExportData();
+        project["timestamp"] = QDateTime::currentMSecsSinceEpoch();
+        project["git_commit"] = git_commit_hash;  
+        
+        // Enhanced content with generation info
+        QString content = QString("Generated with modular structure (iteration %1)").arg(iteration + 1);
+        QJsonObject dataObject = project["data"].toObject();
+        dataObject["content"] = content;
+        project["data"] = dataObject;
+        
+        project_list << project;
+        
+        // Save individual file
+        QString filename = QString("%1__%2.json").arg(m_outfile).arg(iteration);
+        if (SaveFile(filename, project)) {
+            fmt::print("✅ {} successfully written to disk\n", filename.toStdString());
+        } else {
+            fmt::print("❌ ERROR: Could not save file {}\n", filename.toStdString());
+        }
+        
+        delete fullData;
+    }
+    
+    fmt::print("🎉 Modular structure generation completed: {} datasets\n", project_list.size());
+    return project_list;
+}
+
+QJsonObject SupraFitCli::generateIndependentDataTable(const QJsonObject& independentConfig)
+{
+    fmt::print("🔧 Generating independent data table...\n");
+    
+    QString source = independentConfig["Source"].toString();
+    
+    if (source == "generator") {
+        QJsonObject generatorConfig = independentConfig["Generator"].toObject();
+        QString type = generatorConfig["Type"].toString();
+        
+        if (type == "equations") {
+            // Generate using DataGenerator equations with careful memory management
+            fmt::print("🔧 Setting up DataGenerator for independent data...\n");
+            
+            // Setup generator configuration
+            QJsonObject genData;
+            genData["independent"] = generatorConfig["Variables"].toInt(1);
+            genData["datapoints"] = generatorConfig["DataPoints"].toInt(20);
+            genData["equations"] = generatorConfig["Equations"].toString("X");
+            
+            fmt::print("🔍 DEBUG: Independent config - DataPoints: {}, Variables: {}, Equations: {}\n", 
+                      genData["datapoints"].toInt(), genData["independent"].toInt(), genData["equations"].toString().toStdString());
+            
+            // Create generator with explicit parent to manage memory
+            DataGenerator* generator = new DataGenerator(this);
+            
+            // Set configuration
+            generator->setJson(genData);
+            
+            // Apply random parameters if specified
+            QJsonObject randomParams = generatorConfig["RandomParameters"].toObject();
+            bool success = false;
+            
+            fmt::print("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
+            
+            if (!randomParams.isEmpty()) {
+                success = generator->EvaluateWithRandomParameters(randomParams);
+            } else {
+                success = generator->Evaluate();
+            }
+            
+            if (!success) {
+                fmt::print("❌ ERROR: DataGenerator failed for independent data\n");
+                delete generator;
+                return QJsonObject();
+            }
+            
+            // Check if generator table is valid
+            if (!generator->Table()) {
+                fmt::print("❌ ERROR: Generator table is null\n");
+                delete generator;
+                return QJsonObject();
+            }
+            
+            // Export table as JSON immediately to avoid pointer issues
+            QJsonObject tableJson = generator->Table()->ExportTable(false);
+            
+            fmt::print("✅ Generated independent data: {} rows x {} cols (via clean pointer management)\n", 
+                      generator->Table()->rowCount(), generator->Table()->columnCount());
+            
+            // Clean up generator immediately after use
+            delete generator;
+            generator = nullptr;
+            
+            fmt::print("🔍 DEBUG: DataGenerator cleaned up successfully\n");
+            
+            return tableJson;
+            
+        } else if (type == "model") {
+            fmt::print("❌ ERROR: Model-based independent generation not yet implemented\n");
+            return QJsonObject();
+        }
+        
+    } else if (source == "file") {
+        QJsonObject fileConfig = independentConfig["File"].toObject();
+        return loadDataTableFromFile(fileConfig);
+    }
+    
+    fmt::print("❌ ERROR: Unknown independent data source: {}\n", source.toStdString());
+    return QJsonObject();
+}
+
+QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependentConfig, const QJsonObject& independentTableJson)
+{
+    fmt::print("🔧 Generating dependent data table...\n");
+    
+    if (independentTableJson.isEmpty()) {
+        fmt::print("❌ ERROR: Independent table JSON is empty\n");
+        return QJsonObject();
+    }
+    
+    QString source = dependentConfig["Source"].toString();
+    
+    if (source == "generator") {
+        QJsonObject generatorConfig = dependentConfig["Generator"].toObject();
+        QString type = generatorConfig["Type"].toString();
+        
+        if (type == "equations") {
+            // Generate dependent data using equations with careful memory management
+            fmt::print("🔧 Setting up DataGenerator for dependent data...\n");
+            
+            // Get independent data dimensions from JSON
+            int dataPoints = independentTableJson["rows"].toInt();
+            
+            // Setup dependent generator configuration
+            QJsonObject genData;
+            genData["independent"] = generatorConfig["Series"].toInt(3);  // Number of dependent columns
+            genData["datapoints"] = dataPoints;
+            genData["equations"] = generatorConfig["Equations"].toString();
+            
+            fmt::print("🔍 DEBUG: Dependent config - DataPoints: {}, Series: {}, Equations: {}\n", 
+                      dataPoints, genData["independent"].toInt(), genData["equations"].toString().toStdString());
+            
+            // Create generator with explicit parent to manage memory
+            DataGenerator* generator = new DataGenerator(this);
+            
+            // Set configuration
+            generator->setJson(genData);
+            
+            // Apply random parameters if specified
+            QJsonObject randomParams = generatorConfig["RandomParameters"].toObject();
+            bool success = false;
+            
+            fmt::print("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
+            
+            if (!randomParams.isEmpty()) {
+                success = generator->EvaluateWithRandomParameters(randomParams);
+            } else {
+                success = generator->Evaluate();
+            }
+            
+            if (!success) {
+                fmt::print("❌ ERROR: DataGenerator failed for dependent data\n");
+                delete generator;
+                return QJsonObject();
+            }
+            
+            // Check if generator table is valid
+            if (!generator->Table()) {
+                fmt::print("❌ ERROR: Generator produced null dependent table\n");
+                delete generator;
+                return QJsonObject();
+            }
+            
+            // Export dependent DataTable as JSON immediately to avoid pointer issues
+            QJsonObject dependentTableJson = generator->Table()->ExportTable(false);
+            
+            fmt::print("✅ Generated dependent data table: {} rows x {} cols (via clean pointer management)\n", 
+                      generator->Table()->rowCount(), generator->Table()->columnCount());
+            
+            // Clean up generator immediately after use
+            delete generator;
+            generator = nullptr;
+            
+            fmt::print("🔍 DEBUG: DataGenerator cleaned up successfully\n");
+            
+            return dependentTableJson;
+            
+        } else if (type == "model") {
+            fmt::print("❌ ERROR: Model-based dependent generation not yet implemented\n");
+            return QJsonObject();
+        }
+        
+    } else if (source == "file") {
+        // Load dependent data from file
+        QJsonObject fileConfig = dependentConfig["File"].toObject();
+        return loadDataTableFromFile(fileConfig);
+    }
+    
+    fmt::print("❌ ERROR: Unknown dependent data source: {}\n", source.toStdString());
+    return QJsonObject();
+}
+
+QJsonObject SupraFitCli::loadDataTableFromFile(const QJsonObject& fileConfig)
+{
+    fmt::print("📁 Loading data table from file...\n");
+    
+    QString path = fileConfig["Path"].toString();
+    int startRow = fileConfig["StartRow"].toInt(0);
+    int startCol = fileConfig["StartCol"].toInt(0);
+    int rows = fileConfig["Rows"].toInt(-1);
+    int cols = fileConfig["Cols"].toInt(-1);
+    
+    if (path.isEmpty()) {
+        fmt::print("❌ ERROR: No file path specified\n");
+        return QJsonObject();
+    }
+    
+    fmt::print("📂 Loading file: {}\n", path.toStdString());
+    fmt::print("🔍 Range: StartRow={}, StartCol={}, Rows={}, Cols={}\n", 
+              startRow, startCol, rows, cols);
+    
+    // Create FileHandler and load the file - Claude Generated
+    FileHandler* handler = new FileHandler(path, this);
+    handler->LoadFile();
+    
+    if (!handler->FileSupported()) {
+        fmt::print("❌ ERROR: File format not supported: {}\n", path.toStdString());
+        delete handler;
+        return QJsonObject();
+    }
+    
+    if (!handler->getData()) {
+        fmt::print("❌ ERROR: No data could be loaded from file: {}\n", path.toStdString());
+        delete handler;
+        return QJsonObject();
+    }
+    
+    fmt::print("✅ File loaded successfully: {} rows x {} cols\n", 
+              handler->getData()->rowCount(), handler->getData()->columnCount());
+    
+    // Calculate end positions based on rows/cols parameters
+    int endRow = (rows > 0) ? startRow + rows - 1 : -1;
+    int endCol = (cols > 0) ? startCol + cols - 1 : -1;
+    
+    // Extract the requested range using FileHandler's new functionality
+    QPointer<DataTable> rangeTable = handler->getDataRange(startRow, endRow, startCol, endCol);
+    
+    if (!rangeTable) {
+        fmt::print("❌ ERROR: Failed to extract requested data range\n");
+        delete handler;
+        return QJsonObject();
+    }
+    
+    fmt::print("✅ Extracted data range: {} rows x {} cols\n", 
+              rangeTable->rowCount(), rangeTable->columnCount());
+    
+    // Export the range as JSON
+    QJsonObject tableJson = rangeTable->ExportTable(false);
+    
+    // Clean up
+    delete handler;
+    
+    fmt::print("✅ Data table converted to JSON successfully\n");
+    
+    return tableJson;
+}
+
+QPointer<DataClass> SupraFitCli::loadDataFromFile(const QJsonObject& fileConfig)
+{
+    fmt::print("📁 Loading data from file...\n");
+    
+    QString path = fileConfig["Path"].toString();
+    int startRow = fileConfig["StartRow"].toInt(0);
+    int startCol = fileConfig["StartCol"].toInt(0);
+    int rows = fileConfig["Rows"].toInt(-1);
+    int cols = fileConfig["Cols"].toInt(-1);
+    
+    fmt::print("❌ ERROR: File loading not yet implemented\n");
+    fmt::print("   Path: {}, StartRow: {}, StartCol: {}, Rows: {}, Cols: {}\n", 
+              path.toStdString(), startRow, startCol, rows, cols);
+    
+    return nullptr;
+}
+
+QPointer<DataClass> SupraFitCli::applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent)
+{
+    if (noiseConfig.isEmpty() || noiseConfig["Type"].toString() == "none") {
+        return data;  // No noise to apply
+    }
+    
+    QString type = noiseConfig["Type"].toString();
+    fmt::print("🔊 Applying {} noise to {} data...\n", type.toStdString(), 
+              isIndependent ? "independent" : "dependent");
+    
+    if (type == "exportMC" || type == "montecarlo" || type == "gaussian") {
+        // All noise types use DataTable's PrepareMC functionality - Claude Generated
+        
+        // Get noise parameters with reasonable defaults
+        double stddev = noiseConfig["StdDev"].toDouble(0.05);  // Default 5% noise
+        int seed = noiseConfig["Seed"].toInt(42);
+        QVector<int> columns;  // Empty means all columns
+        
+        if (noiseConfig.contains("Columns")) {
+            QJsonArray colArray = noiseConfig["Columns"].toArray();
+            for (const auto& col : colArray) {
+                columns.append(col.toInt());
+            }
+        }
+        
+        fmt::print("🔍 DEBUG: Noise - Type: {}, StdDev: {}, Seed: {}, Columns: {}\n", 
+                  type.toStdString(), stddev, seed, columns.isEmpty() ? "all" : QString::number(columns.size()).toStdString());
+        
+        // Setup random number generator and distribution
+        std::mt19937 rng(seed);
+        QVector<double> stddevVector;
+        
+        // Apply noise to appropriate table
+        DataTable* targetTable = isIndependent ? data->IndependentModel() : data->DependentModel();
+        if (!targetTable) {
+            fmt::print("❌ ERROR: Target table is null\n");
+            return data;
+        }
+        
+        // Create stddev vector for each column
+        for (int col = 0; col < targetTable->columnCount(); ++col) {
+            stddevVector.append(stddev);
+        }
+        
+        // Generate noisy table using PrepareMC
+        QPointer<DataTable> noisyTable = targetTable->PrepareMC(stddevVector, rng, columns);
+        
+        if (!noisyTable) {
+            fmt::print("❌ ERROR: Failed to generate noisy table\n");
+            return data;
+        }
+        
+        // Replace the table in DataClass
+        if (isIndependent) {
+            data->setIndependentTable(noisyTable);
+            data->setIndependentRawTable(new DataTable(noisyTable));
+        } else {
+            data->setDependentTable(noisyTable);
+            data->setDependentRawTable(new DataTable(noisyTable));
+        }
+        
+        fmt::print("✅ Applied {} noise: {} rows x {} cols\n", 
+                  type.toStdString(), noisyTable->rowCount(), noisyTable->columnCount());
+        
+    } else {
+        fmt::print("❌ ERROR: Unknown noise type: {}\n", type.toStdString());
+        fmt::print("   Supported types: none, exportMC, montecarlo, gaussian\n");
+    }
+    
+    return data;
 }
 
 /*

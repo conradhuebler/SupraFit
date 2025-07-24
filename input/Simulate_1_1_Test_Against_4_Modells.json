@@ -1,6 +1,6 @@
 {
     "Main": {
-    "InFile" : "tabelle.dat",
+    "InFile" : "input/tabelle.dat",
     "OutFile" : "Simulated_1-1_Model",
     "Guess" : true,
     "Fit"   : true,

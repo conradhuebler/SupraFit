@@ -1,6 +1,10 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * FileHandler - File loading and parsing for SupraFit data formats
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This class handles loading of various file formats (JSON, CSV, ITC, dH)
+ * and provides data range extraction functionality for selective data loading.
+ * Extended with range selection capabilities by Claude Code AI Assistant.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -331,6 +335,56 @@ void FileHandler::ReadITC()
 void FileHandler::ReadJson()
 {
     JsonHandler::ReadJsonFile(m_topjson, m_filename);
+}
+
+QPointer<DataTable> FileHandler::getDataRange(int startRow, int endRow, int startCol, int endCol) const
+{
+    if (!m_stored_table) {
+        qDebug() << "ERROR: No data table loaded";
+        return nullptr;
+    }
+    
+    // Use instance variables if parameters not provided - Claude Generated
+    int actualStartRow = (startRow >= 0) ? startRow : m_start_row;
+    int actualEndRow = (endRow >= 0) ? endRow : m_end_row;
+    int actualStartCol = (startCol >= 0) ? startCol : m_start_col;
+    int actualEndCol = (endCol >= 0) ? endCol : m_end_col;
+    
+    // Validate and adjust ranges
+    int maxRows = m_stored_table->rowCount();
+    int maxCols = m_stored_table->columnCount();
+    
+    if (actualStartRow < 0) actualStartRow = 0;
+    if (actualStartRow >= maxRows) actualStartRow = maxRows - 1;
+    
+    if (actualEndRow < 0 || actualEndRow >= maxRows) actualEndRow = maxRows - 1;
+    if (actualEndRow < actualStartRow) actualEndRow = actualStartRow;
+    
+    if (actualStartCol < 0) actualStartCol = 0;
+    if (actualStartCol >= maxCols) actualStartCol = maxCols - 1;
+    
+    if (actualEndCol < 0 || actualEndCol >= maxCols) actualEndCol = maxCols - 1;
+    if (actualEndCol < actualStartCol) actualEndCol = actualStartCol;
+    
+    // Calculate dimensions
+    int numRows = actualEndRow - actualStartRow + 1;
+    int numCols = actualEndCol - actualStartCol + 1;
+    
+    qDebug() << QString("Extracting data range: rows %1-%2 (%3 rows), cols %4-%5 (%6 cols)")
+                .arg(actualStartRow).arg(actualEndRow).arg(numRows)
+                .arg(actualStartCol).arg(actualEndCol).arg(numCols);
+    
+    // Use DataTable's Block method to extract range
+    QPointer<DataTable> rangeTable = m_stored_table->Block(actualStartRow, actualStartCol, numRows, numCols);
+    
+    if (!rangeTable) {
+        qDebug() << "ERROR: Failed to extract data range";
+        return nullptr;
+    }
+    
+    qDebug() << QString("Successfully extracted %1x%2 data range").arg(rangeTable->rowCount()).arg(rangeTable->columnCount());
+    
+    return rangeTable;
 }
 
 #include "filehandler.moc"

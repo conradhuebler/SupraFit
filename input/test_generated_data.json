@@ -1,0 +1,12 @@
+{
+  "Main": {
+    "OutFile": "test_generated_data",
+    "IndependentRows": 2,
+    "Tasks": "GenerateInputData",
+    "DataGenerator": {
+      "datapoints": 10,
+      "independent": 2,
+      "equations": "X|X*X"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+    "Main": {
+        "OutFile": "test_file_loading_data",
+        "Repeat": 1
+    },
+    "Independent": {
+        "Source": "file",
+        "File": {
+            "Path": "/home/conrad/src/SupraFit/input/1_1_1_2_001.dat",
+            "StartRow": 0,
+            "StartCol": 0,
+            "Rows": 10,
+            "Cols": 2
+        },
+        "Noise": {
+            "Type": "none"
+        }
+    },
+    "Dependent": {
+        "Source": "file", 
+        "File": {
+            "Path": "/home/conrad/src/SupraFit/input/1_1_1_2_001.dat",
+            "StartRow": 5,
+            "StartCol": 2,
+            "Rows": 8,
+            "Cols": 4
+        },
+        "Noise": {
+            "Type": "gaussian",
+            "StdDev": 0.02,
+            "Seed": 555
+        }
+    }
+}

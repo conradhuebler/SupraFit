@@ -1,0 +1,13 @@
+{
+  "Main": {
+    "OutFile": "test_dependent_equations",
+    "IndependentRows": 2,
+    "Tasks": "GenerateInputData",
+    "DataGenerator": {
+      "datapoints": 15,
+      "independent": 2,
+      "equations": "X|2*X+1",
+      "dependent_equations": "Y|Y*Y"
+    }
+  }
+}

@@ -1,6 +1,10 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * FileHandler - File loading and parsing for SupraFit data formats
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This class handles loading of various file formats (JSON, CSV, ITC, dH)
+ * and provides data range extraction functionality for selective data loading.
+ * Extended with range selection capabilities by Claude Code AI Assistant.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +67,17 @@ public:
     inline void setIndependentRows(int rows) { m_rows = rows; }
     inline void setStartPoint(int point) { m_start_point = point; }
     inline void setSeriesCount(int series) { m_series = series; }
+    
+    // Enhanced file loading with range selection - Claude Generated
+    inline void setStartRow(int startRow) { m_start_row = startRow; }
+    inline void setEndRow(int endRow) { m_end_row = endRow; }
+    inline void setStartCol(int startCol) { m_start_col = startCol; }
+    inline void setEndCol(int endCol) { m_end_col = endCol; }
+    inline void setRowRange(int startRow, int endRow) { m_start_row = startRow; m_end_row = endRow; }
+    inline void setColRange(int startCol, int endCol) { m_start_col = startCol; m_end_col = endCol; }
+    
+    // Get a sub-range of the loaded data table
+    QPointer<DataTable> getDataRange(int startRow = -1, int endRow = -1, int startCol = -1, int endCol = -1) const;
     inline QJsonObject getJsonData() const { return m_topjson; }
     inline void setThermogram(bool thermogram) { m_thermogram = thermogram; }
     void setThermogramParameter(const QJsonObject& thermogram_parameter)
@@ -90,6 +105,9 @@ private:
     QStringList m_filecontent;
     int m_lines, m_rows = 2, m_start_point = 0, m_series = 0;
     FileType m_filetype;
+    
+    // Range selection parameters - Claude Generated
+    int m_start_row = 0, m_end_row = -1, m_start_col = 0, m_end_col = -1;
 
     QJsonObject m_systemparameter, m_thermogram_parameter;
     QJsonObject m_topjson;

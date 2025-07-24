@@ -508,9 +508,11 @@ QString DataGenerator::createEnhancedContent(QPointer<DataClass> dataClass, cons
             content += QString("\n  Local Limits: %1").arg(config["LocalRandomLimits"].toString());
         }
         
-        // TODO: Add input JSON block from generator configuration
-        // This should include the original JSON configuration that was used to generate this data
-        // Format: "\nInput Configuration:\n" + QJsonDocument(config).toJson(QJsonDocument::Indented)
+        // Add input JSON configuration to output - Claude Generated
+        if (!config.isEmpty()) {
+            content += "\n\nInput Configuration:\n";
+            content += QJsonDocument(config).toJson(QJsonDocument::Indented);
+        }
     }
     
     return content;
