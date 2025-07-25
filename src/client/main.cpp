@@ -40,6 +40,7 @@
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QDateTime>
 #include <QtCore/QDebug>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 
 #include <QtCore/QRandomGenerator>
@@ -77,6 +78,586 @@ void bt_handler(int sig)
 }
 #endif
 #endif
+
+// File configuration type detection - Claude Generated
+enum FileConfigType {
+    SimpleProject, // Simple SupraFit project (data + optional models)
+    TaskConfig, // Task configuration (Main, GenerateData, Jobs, etc.)
+    MLPipelineConfig, // ML Pipeline configuration
+    InvalidConfig // Invalid or unreadable configuration
+};
+
+// Detect configuration file type based on JSON structure - Claude Generated
+FileConfigType detectConfigType(const QJsonObject& config)
+{
+    if (config.isEmpty()) {
+        return InvalidConfig;
+    }
+
+    // Multi-project file detection (project_0, project_1, etc.)
+    QStringList keys = config.keys();
+    bool hasProjectKeys = false;
+    for (const QString& key : keys) {
+        if (key.startsWith("project_")) {
+            hasProjectKeys = true;
+            break;
+        }
+    }
+    if (hasProjectKeys) {
+        return SimpleProject; // Multi-project files are treated as simple projects
+    }
+
+    // ML Pipeline configuration detection
+    if (config.contains("Pipeline") || config.contains("BatchConfig") || config.contains("MLDataStructure")) {
+        return MLPipelineConfig;
+    }
+
+    // Task configuration detection (has Main section with tasks)
+    if (config.contains("Main") || config.contains("main")) {
+        QJsonObject mainSection = config.contains("Main") ? config["Main"].toObject() : config["main"].toObject();
+        if (mainSection.contains("Tasks") || mainSection.contains("GenerateData") || mainSection.contains("OutFile") || mainSection.contains("Repeat")) {
+            return TaskConfig;
+        }
+    }
+
+    // Check for modular structure (Independent/Dependent)
+    if (config.contains("Independent") && config.contains("Dependent")) {
+        return TaskConfig;
+    }
+
+    // Simple project detection (has data section)
+    if (config.contains("data") || config.contains("SupraFit") || config.contains("DataType") || config.contains("independent")) {
+        return SimpleProject;
+    }
+
+    // Default to task config if it has recognizable sections
+    if (config.contains("Models") || config.contains("Jobs") || config.contains("Analyse")) {
+        return TaskConfig;
+    }
+
+    return InvalidConfig;
+}
+
+// Analyze multi-project file - Claude Generated
+void analyzeMultiProjectFile(const QJsonObject& config)
+{
+    std::cout << "=== Multi-Project File Analysis ===" << std::endl;
+
+    QStringList projectKeys;
+    for (auto it = config.begin(); it != config.end(); ++it) {
+        if (it.key().startsWith("project_")) {
+            projectKeys << it.key();
+        }
+    }
+
+    std::cout << "Total projects found: " << projectKeys.size() << std::endl
+              << std::endl;
+
+    for (const QString& projectKey : projectKeys) {
+        QJsonObject project = config[projectKey].toObject();
+        std::cout << "📁 " << projectKey.toStdString() << ":" << std::endl;
+
+        // Analyze data section
+        if (project.contains("data")) {
+            QJsonObject data = project["data"].toObject();
+            std::cout << "   📊 Data:" << std::endl;
+
+            if (data.contains("title")) {
+                std::cout << "      Title: " << data["title"].toString().toStdString() << std::endl;
+            }
+
+            if (data.contains("independent")) {
+                QJsonObject indep = data["independent"].toObject();
+                std::cout << "      Independent: " << indep["rows"].toInt() << " rows × "
+                          << indep["cols"].toInt() << " cols" << std::endl;
+                if (indep.contains("header")) {
+                    std::cout << "         Headers: " << indep["header"].toString().toStdString() << std::endl;
+                }
+            }
+
+            if (data.contains("dependent")) {
+                QJsonObject dep = data["dependent"].toObject();
+                std::cout << "      Dependent: " << dep["rows"].toInt() << " rows × "
+                          << dep["cols"].toInt() << " cols" << std::endl;
+                if (dep.contains("header")) {
+                    std::cout << "         Headers: " << dep["header"].toString().toStdString() << std::endl;
+                }
+            }
+
+            if (data.contains("DataType")) {
+                std::cout << "      Data Type: " << data["DataType"].toInt() << std::endl;
+            }
+        }
+
+        // Analyze models
+        QStringList modelKeys;
+        for (auto it = project.begin(); it != project.end(); ++it) {
+            if (it.key().startsWith("model_")) {
+                modelKeys << it.key();
+            }
+        }
+
+        if (!modelKeys.isEmpty()) {
+            std::cout << "   🔬 Models (" << modelKeys.size() << "):" << std::endl;
+            for (const QString& modelKey : modelKeys) {
+                QJsonObject model = project[modelKey].toObject();
+                if (model.contains("name")) {
+                    std::cout << "      " << modelKey.toStdString() << ": "
+                              << model["name"].toString().toStdString();
+                    if (model.contains("converged")) {
+                        std::cout << (model["converged"].toBool() ? " [Converged]" : " [Not Converged]");
+                    }
+                    if (model.contains("SSE")) {
+                        std::cout << " (SSE: " << model["SSE"].toDouble() << ")";
+                    }
+                    std::cout << std::endl;
+                }
+            }
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+// Join multiple files into a single multi-project file - Claude Generated
+bool performFileJoin(const QStringList& inputFiles, const QString& outputFile)
+{
+    std::cout << "Joining " << inputFiles.size() << " files into: " << outputFile.toStdString() << std::endl;
+
+    QJsonObject joinedData;
+    int projectCounter = 0;
+
+    for (const QString& inputFile : inputFiles) {
+        std::cout << "Processing: " << inputFile.toStdString() << std::endl;
+
+        // Load input file
+        QJsonObject fileData = JsonHandler::LoadFile(inputFile);
+        if (fileData.isEmpty()) {
+            std::cout << "   ERROR: Could not load file: " << inputFile.toStdString() << std::endl;
+            continue;
+        }
+
+        // Check if this is already a multi-project file
+        QStringList projectKeys;
+        for (auto it = fileData.begin(); it != fileData.end(); ++it) {
+            if (it.key().startsWith("project_")) {
+                projectKeys << it.key();
+            }
+        }
+
+        if (!projectKeys.isEmpty()) {
+            // This is a multi-project file - copy all projects
+            std::cout << "   Multi-project file with " << projectKeys.size() << " projects" << std::endl;
+            for (const QString& projectKey : projectKeys) {
+                QString newProjectKey = QString("project_%1").arg(projectCounter++);
+                joinedData[newProjectKey] = fileData[projectKey];
+                std::cout << "     " << projectKey.toStdString() << " -> " << newProjectKey.toStdString() << std::endl;
+            }
+        } else {
+            // This is a single project file - add it as project_N
+            QString newProjectKey = QString("project_%1").arg(projectCounter++);
+
+            // Check if it has a 'data' section (SupraFit project format)
+            if (fileData.contains("data")) {
+                joinedData[newProjectKey] = fileData;
+                std::cout << "   Single project (SupraFit format) -> " << newProjectKey.toStdString() << std::endl;
+            } else {
+                // Assume the entire file is the data section
+                QJsonObject projectWrapper;
+                projectWrapper["data"] = fileData;
+                joinedData[newProjectKey] = projectWrapper;
+                std::cout << "   Raw data file -> " << newProjectKey.toStdString() << std::endl;
+            }
+        }
+    }
+
+    if (joinedData.isEmpty()) {
+        std::cout << "ERROR: No valid projects found to join." << std::endl;
+        return false;
+    }
+
+    // Write the joined multi-project file
+    if (JsonHandler::WriteJsonFile(joinedData, outputFile)) {
+        std::cout << "Successfully joined " << projectCounter << " projects into: "
+                  << outputFile.toStdString() << std::endl;
+        return true;
+    } else {
+        std::cout << "ERROR: Failed to write joined file: " << outputFile.toStdString() << std::endl;
+        return false;
+    }
+}
+
+// Perform generic file conversion - Claude Generated enhanced with UUID/Title filtering
+bool performGenericConversion(const QString& inputFile, const QString& outputFile, const QString& projectIndex = QString(),
+    const QString& uuidFilter = QString(), const QString& titleFilter = QString(), bool splitOutput = false)
+{
+    std::cout << "Converting: " << inputFile.toStdString() << " -> " << outputFile.toStdString() << std::endl;
+
+    // Load input file
+    QJsonObject inputData = JsonHandler::LoadFile(inputFile);
+    if (inputData.isEmpty()) {
+        std::cout << "ERROR: Could not load input file: " << inputFile.toStdString() << std::endl;
+        return false;
+    }
+
+    // Verify it's a simple project file
+    FileConfigType type = detectConfigType(inputData);
+    if (type != SimpleProject) {
+        std::cout << "ERROR: File is not a simple project file. Use -i for task execution instead." << std::endl;
+        return false;
+    }
+
+    // Check if this is a multi-project file
+    QStringList keys = inputData.keys();
+    bool isMultiProject = false;
+    for (const QString& key : keys) {
+        if (key.startsWith("project_")) {
+            isMultiProject = true;
+            break;
+        }
+    }
+
+    if (isMultiProject) {
+        // Handle multi-project conversion - Claude Generated enhanced with UUID/Title filtering
+        std::cout << "Multi-project file detected." << std::endl;
+
+        // Collect matching projects based on filters - Claude Generated
+        QStringList matchingProjects;
+
+        if (!projectIndex.isEmpty()) {
+            // Legacy -p option: specific project by index
+            bool ok;
+            int index = projectIndex.toInt(&ok);
+            if (!ok) {
+                std::cout << "ERROR: Invalid project index '" << projectIndex.toStdString()
+                          << "'. Must be a number." << std::endl;
+                return false;
+            }
+
+            QString targetProjectKey = QString("project_%1").arg(index);
+            if (inputData.contains(targetProjectKey)) {
+                matchingProjects << targetProjectKey;
+            } else {
+                std::cout << "ERROR: Project " << targetProjectKey.toStdString()
+                          << " not found in file." << std::endl;
+                std::cout << "Available projects: ";
+                QStringList availableProjects;
+                for (auto it = inputData.begin(); it != inputData.end(); ++it) {
+                    if (it.key().startsWith("project_")) {
+                        availableProjects << it.key();
+                    }
+                }
+                std::cout << availableProjects.join(", ").toStdString() << std::endl;
+                return false;
+            }
+        } else if (!uuidFilter.isEmpty() || !titleFilter.isEmpty()) {
+            // New UUID/Title filtering - Claude Generated
+            std::cout << "Filtering projects by ";
+            if (!uuidFilter.isEmpty())
+                std::cout << "UUID: '" << uuidFilter.toStdString() << "'";
+            if (!uuidFilter.isEmpty() && !titleFilter.isEmpty())
+                std::cout << " and ";
+            if (!titleFilter.isEmpty())
+                std::cout << "Title: '" << titleFilter.toStdString() << "'";
+            std::cout << std::endl;
+
+            for (auto it = inputData.begin(); it != inputData.end(); ++it) {
+                if (it.key().startsWith("project_")) {
+                    QJsonObject project = it.value().toObject();
+                    if (project.contains("data")) {
+                        QJsonObject data = project["data"].toObject();
+
+                        bool matchesUuid = uuidFilter.isEmpty();
+                        bool matchesTitle = titleFilter.isEmpty();
+
+                        if (!uuidFilter.isEmpty() && data.contains("uuid")) {
+                            QString projectUuid = data["uuid"].toString();
+                            matchesUuid = projectUuid.contains(uuidFilter, Qt::CaseInsensitive);
+                        }
+
+                        if (!titleFilter.isEmpty() && data.contains("title")) {
+                            QString projectTitle = data["title"].toString();
+                            matchesTitle = projectTitle.contains(titleFilter, Qt::CaseInsensitive);
+                        }
+
+                        if (matchesUuid && matchesTitle) {
+                            matchingProjects << it.key();
+                            std::cout << "   Found match: " << it.key().toStdString();
+                            if (data.contains("title")) {
+                                std::cout << " ('" << data["title"].toString().toStdString() << "')";
+                            }
+                            std::cout << std::endl;
+                        }
+                    }
+                }
+            }
+
+            if (matchingProjects.isEmpty()) {
+                std::cout << "ERROR: No projects match the specified filters." << std::endl;
+                return false;
+            }
+        } else {
+            // No specific filters: extract all projects (original behavior)
+            for (auto it = inputData.begin(); it != inputData.end(); ++it) {
+                if (it.key().startsWith("project_")) {
+                    matchingProjects << it.key();
+                }
+            }
+        }
+
+        // Process matching projects - Claude Generated
+        if (matchingProjects.size() == 1 || (!splitOutput && matchingProjects.size() > 1)) {
+            // Single project OR multiple projects merged into one file
+            if (matchingProjects.size() == 1) {
+                // Extract single project
+                QString projectKey = matchingProjects.first();
+                QJsonObject singleProject = inputData[projectKey].toObject();
+                if (JsonHandler::WriteJsonFile(singleProject, outputFile)) {
+                    std::cout << "Extracted " << projectKey.toStdString()
+                              << " -> " << outputFile.toStdString() << std::endl;
+                    return true;
+                } else {
+                    std::cout << "ERROR: Failed to write project "
+                              << projectKey.toStdString() << std::endl;
+                    return false;
+                }
+            } else {
+                // Merge multiple projects into one multi-project file
+                QJsonObject mergedFile;
+                for (const QString& projectKey : matchingProjects) {
+                    mergedFile[projectKey] = inputData[projectKey];
+                }
+                if (JsonHandler::WriteJsonFile(mergedFile, outputFile)) {
+                    std::cout << "Merged " << matchingProjects.size() << " projects -> "
+                              << outputFile.toStdString() << std::endl;
+                    std::cout << "   Projects: " << matchingProjects.join(", ").toStdString() << std::endl;
+                    return true;
+                } else {
+                    std::cout << "ERROR: Failed to write merged projects file." << std::endl;
+                    return false;
+                }
+            }
+        } else {
+            // Split multiple projects into separate files - Claude Generated
+            std::cout << "Splitting " << matchingProjects.size() << " projects into separate files..." << std::endl;
+
+            QFileInfo outputInfo(outputFile);
+            QString baseName = outputInfo.completeBaseName();
+            QString extension = outputInfo.suffix();
+            QString outputDir = outputInfo.path();
+
+            int projectCount = 0;
+            for (const QString& projectKey : matchingProjects) {
+                QString projectOutputFile = QString("%1/%2_%3.%4")
+                                                .arg(outputDir)
+                                                .arg(baseName)
+                                                .arg(projectKey)
+                                                .arg(extension.isEmpty() ? "suprafit" : extension);
+
+                QJsonObject singleProject = inputData[projectKey].toObject();
+                if (JsonHandler::WriteJsonFile(singleProject, projectOutputFile)) {
+                    std::cout << "   Extracted " << projectKey.toStdString()
+                              << " -> " << projectOutputFile.toStdString() << std::endl;
+                    projectCount++;
+                } else {
+                    std::cout << "   ERROR: Failed to write " << projectKey.toStdString() << std::endl;
+                }
+            }
+
+            std::cout << "Multi-project splitting completed: " << projectCount << " projects extracted." << std::endl;
+            return projectCount > 0;
+        }
+    } else {
+        // Perform standard conversion
+        if (JsonHandler::WriteJsonFile(inputData, outputFile)) {
+            std::cout << "Conversion completed successfully." << std::endl;
+            return true;
+        } else {
+            std::cout << "ERROR: Could not write output file: " << outputFile.toStdString() << std::endl;
+            return false;
+        }
+    }
+}
+
+// Execute task configuration - Claude Generated
+bool executeTaskConfiguration(const QString& inputFile, const QString& outputOverride = "")
+{
+    std::cout << "Executing task configuration: " << inputFile.toStdString() << std::endl;
+
+    QJsonObject config = JsonHandler::LoadFile(inputFile);
+    if (config.isEmpty()) {
+        std::cout << "ERROR: Could not load configuration file: " << inputFile.toStdString() << std::endl;
+        return false;
+    }
+
+    FileConfigType type = detectConfigType(config);
+
+    // Handle ML Pipeline
+    if (type == MLPipelineConfig) {
+        std::cout << "ML Pipeline configuration detected. Switching to ML Pipeline mode..." << std::endl;
+        MLPipelineManager pipelineManager;
+
+        if (config.contains("BatchConfig")) {
+            pipelineManager.setBatchConfig(config);
+            pipelineManager.runBatchPipeline();
+        } else {
+            pipelineManager.runSinglePipeline(inputFile);
+        }
+
+        std::cout << "ML Pipeline completed successfully!" << std::endl;
+        return true;
+    }
+
+    // Handle Task Configuration
+    if (type == TaskConfig) {
+        SupraFitCli* core = new SupraFitCli;
+        core->setControlJson(config);
+
+        // Override output file if specified
+        if (!outputOverride.isEmpty()) {
+            // Extract base name without extension
+            QFileInfo outputInfo(outputOverride);
+            QString baseName = outputInfo.completeBaseName();
+            core->setOutFile(baseName);
+        }
+
+        if (!core->LoadFile()) {
+            std::cout << "ERROR: Could not process input data." << std::endl;
+            delete core;
+            return false;
+        }
+
+        // Execute appropriate tasks
+        QVector<QJsonObject> results;
+
+        if (core->CheckDataOnly()) {
+            std::cout << "Executing DataOnly task..." << std::endl;
+            results = core->GenerateDataOnly();
+        } else if (core->CheckGenerateInputData()) {
+            std::cout << "Executing GenerateInputData task..." << std::endl;
+            results = core->GenerateInputData();
+        } else if (core->CheckGenerateDependent()) {
+            std::cout << "Executing GenerateData task..." << std::endl;
+            results = core->GenerateData();
+
+            // Process with models if available
+            if (!results.isEmpty()) {
+                core->setDataVector(results);
+                core->Work();
+            }
+        } else {
+            std::cout << "No specific task detected. Running standard processing..." << std::endl;
+            if (!core->SaveFile()) {
+                std::cout << "ERROR: Could not save output file." << std::endl;
+                delete core;
+                return false;
+            }
+        }
+
+        std::cout << "Task execution completed successfully." << std::endl;
+        delete core;
+        return true;
+    }
+
+    std::cout << "ERROR: Unrecognized configuration format." << std::endl;
+    return false;
+}
+
+// Show comprehensive help - Claude Generated
+void showComprehensiveHelp()
+{
+    std::cout << "\n=== SupraFit CLI - Command Line Interface ===\n"
+              << std::endl;
+
+    std::cout << "USAGE:\n";
+    std::cout << "  suprafit_cli [file]                           # Analyze configuration file\n";
+    std::cout << "  suprafit_cli -i <config> [-o <output>]        # Execute task configuration\n";
+    std::cout << "  suprafit_cli -i <project> -o <converted>      # Convert project files\n";
+    std::cout << "  suprafit_cli -i <multi> -o <out> [-p <X>]     # Extract project X from multi-project file\n";
+    std::cout << "  suprafit_cli -i <multi> -o <out> [-u <uuid>] # Extract projects matching UUID\n";
+    std::cout << "  suprafit_cli -i <multi> -o <out> [-t <title>] # Extract projects matching title\n";
+    std::cout << "  suprafit_cli -i <file1> -i <file2> -o <out> -j # Join multiple files into multi-project\n";
+    std::cout << "  suprafit_cli -l <file>                        # List file structure\n";
+    std::cout << "  suprafit_cli --ml-pipeline -i <config>        # Run ML pipeline\n"
+              << std::endl;
+
+    std::cout << "MODES:\n";
+    std::cout << "  1. File Analysis (read-only):\n";
+    std::cout << "     suprafit_cli config.json\n";
+    std::cout << "     → Analyzes and displays file content without execution\n\n";
+
+    std::cout << "  2. Generic File Conversion:\n";
+    std::cout << "     suprafit_cli -i project.json -o project.suprafit\n";
+    std::cout << "     suprafit_cli -i data.suprafit -o data.json\n";
+    std::cout << "     → Converts between JSON and SupraFit project formats\n\n";
+
+    std::cout << "  3. Task Execution:\n";
+    std::cout << "     suprafit_cli -i task_config.json\n";
+    std::cout << "     suprafit_cli -i generate_data.json -o results\n";
+    std::cout << "     → Executes data generation, modeling, or analysis tasks\n\n";
+
+    std::cout << "  4. ML Pipeline:\n";
+    std::cout << "     suprafit_cli --ml-pipeline -i ml_config.json\n";
+    std::cout << "     suprafit_cli --batch-config batch.json\n";
+    std::cout << "     → Runs machine learning pipeline workflows\n\n";
+
+    std::cout << "  5. Multi-Project Files:\n";
+    std::cout << "     suprafit_cli projects.json\n";
+    std::cout << "     suprafit_cli -i projects.json -o extracted_projects      # Extract all projects\n";
+    std::cout << "     suprafit_cli -i projects.json -o project.suprafit -p 0   # Extract only project_0\n";
+    std::cout << "     suprafit_cli -i projects.json -o filtered.suprafit -t \"NMR\" # Extract projects with 'NMR' in title\n";
+    std::cout << "     suprafit_cli -i projects.json -o split_projects -t \"Test\" -s # Split matching projects into separate files\n";
+    std::cout << "     → Analyzes/converts files with project_0, project_1, etc.\n\n";
+
+    std::cout << "  6. File Joining:\n";
+    std::cout << "     suprafit_cli -i file1.suprafit -i file2.suprafit -o combined.json -j\n";
+    std::cout << "     suprafit_cli -i nmr_*.suprafit -o nmr_collection.json -j\n";
+    std::cout << "     → Combines multiple individual or multi-project files into one\n\n";
+
+    std::cout << "OPTIONS:\n";
+    std::cout << "  -i, --input <file>     Input configuration or project file\n";
+    std::cout << "  -o, --output <file>    Output file name (overrides config settings)\n";
+    std::cout << "  -p, --project <index>  Extract specific project from multi-project file\n";
+    std::cout << "  -u, --uuid <uuid>      Extract projects matching UUID (supports partial match)\n";
+    std::cout << "  -t, --title <title>    Extract projects matching title (supports partial match)\n";
+    std::cout << "  -s, --split            Split multiple selected projects into separate files\n";
+    std::cout << "  -j, --join             Join multiple input files into single multi-project file\n";
+    std::cout << "  -l, --list             List file structure for debugging\n";
+    std::cout << "  -n, --nproc <N>        Number of parallel threads (default: 4)\n";
+    std::cout << "  --ml-pipeline          Enable ML pipeline mode\n";
+    std::cout << "  --batch-config <file>  Run ML pipeline batch processing\n";
+    std::cout << "  -h, --help             Show this help message\n";
+    std::cout << "  -v, --version          Show version information\n"
+              << std::endl;
+
+    std::cout << "EXAMPLES:\n";
+    std::cout << "  # Analyze a configuration file\n";
+    std::cout << "  suprafit_cli my_config.json\n\n";
+
+    std::cout << "  # Convert project formats\n";
+    std::cout << "  suprafit_cli -i project.json -o project.suprafit\n";
+    std::cout << "  suprafit_cli -i data.suprafit -o converted.json\n\n";
+
+    std::cout << "  # Generate synthetic data\n";
+    std::cout << "  suprafit_cli -i generate_config.json -o synthetic_data\n\n";
+
+    std::cout << "  # Run model fitting\n";
+    std::cout << "  suprafit_cli -i fitting_config.json\n\n";
+
+    std::cout << "  # Debug file structure\n";
+    std::cout << "  suprafit_cli -l complex_project.suprafit\n\n";
+
+    std::cout << "FILE TYPES:\n";
+    std::cout << "  • Simple Projects: SupraFit project files with data and models\n";
+    std::cout << "  • Multi-Projects: Files containing project_0, project_1, etc.\n";
+    std::cout << "  • Task Configs: Configuration files with Main/GenerateData sections\n";
+    std::cout << "  • ML Configs: Machine learning pipeline configurations\n"
+              << std::endl;
+
+    std::cout << "For detailed documentation, visit: https://github.com/conradhuebler/SupraFit\n"
+              << std::endl;
+}
+
 int main(int argc, char** argv)
 {
 #ifndef _WIN32
@@ -93,486 +674,225 @@ int main(int argc, char** argv)
     QCommandLineParser parser;
     Version(&app, &parser);
 
-    QCommandLineOption input(QStringList() << "i"
-                                           << "input",
-        QCoreApplication::translate("main", "Input file name"),
-        QCoreApplication::translate("main", "file"),
-        QCoreApplication::translate("main", ""));
+    // Simplified CLI options - Claude Generated
+    QCommandLineOption input(QStringList() << "i" << "input",
+        "Input configuration or project file", "file");
     parser.addOption(input);
 
-    QCommandLineOption output(QStringList() << "o"
-                                            << "output",
-        QCoreApplication::translate("main", "Output file name\nThis option can be used to convert files (*.json <-> *.suprafit) or to define a base name for simulated experiments."),
-        QCoreApplication::translate("main", "file"),
-        QCoreApplication::translate("main", ""));
+    QCommandLineOption output(QStringList() << "o" << "output",
+        "Output file name (overrides config settings)", "file");
     parser.addOption(output);
 
-    parser.addOption({ { "l", "list" }, "List stored models." });
+    QCommandLineOption list(QStringList() << "l" << "list",
+        "List file structure for debugging");
+    parser.addOption(list);
 
-    QCommandLineOption p(QStringList() << "p"
-                                       << "print",
-        QCoreApplication::translate("main", "Print model details. If empty print everything. Respects the statistic arguments\np - Project number\n m - Model number"),
-        QCoreApplication::translate("main", "p|m"),
-        QCoreApplication::translate("main", "0"));
-    parser.addOption(p);
-
-    QCommandLineOption jobfile(QStringList() << "j"
-                                             << "job",
-        QCoreApplication::translate("main", "Run Content of a Jobfile"),
-        QCoreApplication::translate("main", "jobfile"),
-        QCoreApplication::translate("main", ""));
-    parser.addOption(jobfile);
-
-    QCommandLineOption threads(QStringList() << "n"
-                                             << "nproc",
-        QCoreApplication::translate("main", "Number of process to be run"),
-        QCoreApplication::translate("main", "threads"),
-        QCoreApplication::translate("main", "4"));
+    QCommandLineOption threads(QStringList() << "n" << "nproc",
+        "Number of parallel threads", "threads", "4");
     parser.addOption(threads);
 
+    QCommandLineOption project(QStringList() << "p" << "project",
+        "Extract specific project from multi-project file (e.g., -p 0 for project_0)", "index");
+    parser.addOption(project);
+
+    QCommandLineOption uuid(QStringList() << "u" << "uuid",
+        "Extract projects matching UUID (can select multiple projects)", "uuid");
+    parser.addOption(uuid);
+
+    QCommandLineOption title(QStringList() << "t" << "title",
+        "Extract projects matching title (can select multiple projects)", "title");
+    parser.addOption(title);
+
+    QCommandLineOption split(QStringList() << "s" << "split",
+        "Split multiple selected projects into separate files");
+    parser.addOption(split);
+
+    QCommandLineOption join(QStringList() << "j" << "join",
+        "Join multiple input files into a single multi-project file (use with multiple -i options)");
+    parser.addOption(join);
+
     QCommandLineOption mlPipeline(QStringList() << "ml-pipeline",
-        QCoreApplication::translate("main", "Run ML pipeline mode"),
-        QCoreApplication::translate("main", ""));
+        "Enable ML pipeline mode");
     parser.addOption(mlPipeline);
 
-    QCommandLineOption pipelineStep(QStringList() << "step",
-        QCoreApplication::translate("main", "Pipeline step (1=generate, 2=analyze)"),
-        QCoreApplication::translate("main", "step"),
-        QCoreApplication::translate("main", "1"));
-    parser.addOption(pipelineStep);
-
     QCommandLineOption batchConfig(QStringList() << "batch-config",
-        QCoreApplication::translate("main", "Batch configuration file for ML pipeline"),
-        QCoreApplication::translate("main", "file"),
-        QCoreApplication::translate("main", ""));
+        "Run ML pipeline batch processing", "file");
     parser.addOption(batchConfig);
 
     parser.process(app);
 
+    // Show version info
     std::cout << aboutSF().toStdString() << std::endl;
 
+    // Command line echo
     for (int index = 0; index < argc; ++index)
         std::cout << argv[index] << " ";
     std::cout << std::endl
-              << std::endl
               << std::endl;
 
-    const QString infile = parser.value("i");
-    const QString print = parser.value("print");
-    const QString job = parser.value("j");
+    // Parse command line arguments - Claude Generated
+    const QString inputFile = parser.value("input");
+    const QStringList inputFiles = parser.values("input"); // For multiple -i options
+    const QString outputFile = parser.value("output");
+    const QString projectIndex = parser.value("project");
+    const QString uuidFilter = parser.value("uuid");
+    const QString titleFilter = parser.value("title");
+    const bool splitOutput = parser.isSet("split");
+    const bool joinMode = parser.isSet("join");
+    const bool showList = parser.isSet("list");
     const bool mlPipelineMode = parser.isSet("ml-pipeline");
-    const int step = parser.value("step").toInt();
     const QString batchConfigFile = parser.value("batch-config");
 
-    // Handle ML Pipeline mode
-    if (mlPipelineMode || !batchConfigFile.isEmpty()) {
-        std::cout << "Starting ML Pipeline Mode..." << std::endl;
-        
-        MLPipelineManager pipelineManager;
-        
-        if (!batchConfigFile.isEmpty()) {
-            // Batch processing mode
-            std::cout << "Loading batch configuration: " << batchConfigFile.toStdString() << std::endl;
-            QJsonObject batchConfig = JsonHandler::LoadFile(batchConfigFile);
-            
-            if (batchConfig.isEmpty()) {
-                std::cout << "ERROR: Failed to load batch configuration file: " << batchConfigFile.toStdString() << std::endl;
-                return 1;
-            }
-            
-            pipelineManager.setBatchConfig(batchConfig);
-            
-            // Set pipeline steps if configured
-            if (batchConfig.contains("Pipeline") && batchConfig["Pipeline"].toObject().contains("Steps")) {
-                QJsonArray stepsArray = batchConfig["Pipeline"].toObject()["Steps"].toArray();
-                QStringList steps;
-                for (const auto& stepValue : stepsArray) {
-                    steps << stepValue.toString();
-                }
-                pipelineManager.setPipelineSteps(steps);
-            }
-            
-            std::cout << "Running batch pipeline..." << std::endl;
-            pipelineManager.runBatchPipeline();
-            
-            std::cout << "ML Pipeline batch processing completed!" << std::endl;
-            return 0;
-            
-        } else if (!infile.isEmpty()) {
-            // Single pipeline execution
-            std::cout << "Running single pipeline step " << step << " with config: " << infile.toStdString() << std::endl;
-            
-            QJsonObject config = JsonHandler::LoadFile(infile);
-            if (config.isEmpty()) {
-                std::cout << "ERROR: Failed to load configuration file: " << infile.toStdString() << std::endl;
-                return 1;
-            }
-            
-            // Check if this is a pipeline configuration
-            if (config.contains("Pipeline") || 
-                (config.contains("Main") && config["Main"].toObject().contains("GenerateData"))) {
-                
-                pipelineManager.runSinglePipeline(infile);
-                std::cout << "ML Pipeline step completed!" << std::endl;
-                return 0;
-                
-            } else {
-                std::cout << "Configuration file does not contain ML Pipeline settings." << std::endl;
-                std::cout << "Falling back to standard mode..." << std::endl;
-            }
-        } else {
-            std::cout << "ERROR: ML Pipeline mode requires either --batch-config or --input file" << std::endl;
-            return 1;
-        }
-    }
-
-    if (infile.isEmpty() && job.isEmpty()) {
-        std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
-        std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
-        std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
-        std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl
-                  << std::endl
-                  << std::endl;
-
-        std::cout << "To run a jobfile on a specific input file, run " << std::endl;
-        std::cout << "suprafit_cli -i file.suprafit -j jobfile.json " << std::endl
-                  << std::endl;
-
-        std::cout << "To run ML Pipeline mode, use:" << std::endl;
-        std::cout << "suprafit_cli --ml-pipeline -i ml_config.json" << std::endl;
-        std::cout << "suprafit_cli --batch-config batch_config.json" << std::endl
-                  << std::endl;
-
-        std::cout << "To print the content of a file just type" << std::endl;
-        std::cout << "suprafit_cli -i file.suprafit " << std::endl;
-        parser.showHelp(0);
-    }
-
-    QString outfile = parser.value("o");
-
-    bool list = parser.isSet("l");
-    qApp->instance()->setProperty("threads", parser.value("n").toInt());
+    // Set thread count
+    qApp->instance()->setProperty("threads", parser.value("nproc").toInt());
     qApp->instance()->setProperty("series_confidence", true);
     qApp->instance()->setProperty("InitialiseRandom", true);
     qApp->instance()->setProperty("StoreRawData", true);
 
-    QJsonObject infile_json = JsonHandler::LoadFile(infile);
-    
-    // Check for ML Pipeline configuration automatically
-    if (infile_json.contains("Pipeline") || 
-        infile_json.contains("BatchConfig") ||
-        infile_json.contains("MLDataStructure")) {
-        
-        std::cout << "ML Pipeline configuration detected. Switching to ML Pipeline mode..." << std::endl;
-        
-        MLPipelineManager pipelineManager;
-        
-        if (infile_json.contains("BatchConfig")) {
-            // This is a batch configuration
-            pipelineManager.setBatchConfig(infile_json);
-            pipelineManager.runBatchPipeline();
-        } else {
-            // Single pipeline step
-            pipelineManager.runSinglePipeline(infile);
-        }
-        
-        std::cout << "ML Pipeline completed successfully!" << std::endl;
-        return 0;
-    }
-    
-    // JsonHandler::ReadJsonFile(infile_json, infile);
-    SupraFitCli* core = new SupraFitCli;
-    QVector<QJsonObject> projects;
-    if (infile_json.keys().contains("Main", Qt::CaseInsensitive)) {
-        /**
-          Everything is defined in the input file
-          */
-        core->setControlJson(infile_json);
-    } else {
-        QJsonObject jobfile_json;
-        JsonHandler::ReadJsonFile(jobfile_json, job);
-        if (jobfile_json.keys().contains("Main", Qt::CaseInsensitive)) {
-            /* The jobfile defines everything */
-            core->setControlJson(jobfile_json);
-        } else {
-            /* There must be a infile and a jobfile having at least some information */
-            core->setInFile(infile);
-            core->setControlJson(jobfile_json);
-        }
-    }
-    if (!core->LoadFile()) {
-        std::cout << "Sorry, input file could not be opened." << std::endl;
-        return 0;
-    }
-    if (core->CheckGenerateIndependent()) {
-        fmt::print("\nGeneration of input model data!\n");
-        projects = core->GenerateIndependent();
-        fmt::print("\nGeneration of input model data finished!\n");
-        fmt::print("\n\n##########################################\n\n");
-    }
+    // New simplified CLI logic - Claude Generated
 
-    if (core->CheckGenerateNoisyIndependent()) {
-        fmt::print("\nGeneration of input model data!\n");
-        QVector<QJsonObject> tmp_projects;
-        for (const auto& data : projects)
-            tmp_projects = core->GenerateNoisyIndependent(data);
-        projects = tmp_projects;
-        fmt::print("\nGeneration of input model data finished!\n");
-        fmt::print("\n\n##########################################\n\n");
-    }
+    // 1. Handle special cases first
 
-    QVector<QJsonObject> dependent;
-    
-    // Check if this is a DataOnly task (simple load and save without model processing)
-    if (core->CheckDataOnly()) {
-        fmt::print("\nDataOnly task detected - Loading and saving data without model processing!\n");
-        dependent = core->GenerateDataOnly();
-        fmt::print("Data loaded and exported: {} datasets\n", dependent.size());
-        
-        // Save the data
-        core->setDataVector(dependent);
-        for (int i = 0; i < dependent.size(); ++i) {
-            QString filename = QString("%1_%2.json").arg(core->OutFile()).arg(i);
-            QJsonDocument doc(dependent[i]);
-            QFile file(filename);
-            if (file.open(QIODevice::WriteOnly)) {
-                file.write(doc.toJson());
-                file.close();
-                fmt::print("Saved data to: {}\n", filename.toStdString());
-            } else {
-                fmt::print("ERROR: Could not save file {}\n", filename.toStdString());
-            }
-        }
-        fmt::print("DataOnly task completed!\n");
-    }
-    // Check if this is a GenerateInputData task (generate data using mathematical equations)
-    else if (core->CheckGenerateInputData()) {
-        fmt::print("\nGenerateInputData task detected - Generating data using mathematical equations!\n");
-        dependent = core->GenerateInputData();
-        fmt::print("Data generated and exported: {} datasets\n", dependent.size());
-        
-        // Save the data
-        core->setDataVector(dependent);
-        for (int i = 0; i < dependent.size(); ++i) {
-            QString filename = QString("%1_%2.json").arg(core->OutFile()).arg(i);
-            QJsonDocument doc(dependent[i]);
-            QFile file(filename);
-            if (file.open(QIODevice::WriteOnly)) {
-                file.write(doc.toJson());
-                file.close();
-                fmt::print("Saved data to: {}\n", filename.toStdString());
-            } else {
-                fmt::print("ERROR: Could not save file {}\n", filename.toStdString());
-            }
-        }
-        fmt::print("GenerateInputData task completed!\n");
-    }
-    else if (core->CheckGenerateDependent()) {
-        fmt::print("\nGeneration of dependent model data!\n");
-        dependent = core->GenerateData();
-        fmt::print("\nGeneration of dependent model data finished!\n");
-        fmt::print("Generated {} datasets\n", dependent.size());
-        fmt::print("\n\n##########################################\n\n");
-        
-        // Set the generated data for processing with multiple models
-        core->setDataVector(dependent);
-        
-        // Now process the generated data with multiple models and jobs
-        if (!dependent.isEmpty()) {
-            fmt::print("\nProcessing generated data with multiple models!\n");
-            core->Work();
-            fmt::print("\nProcessing completed!\n");
-        }
-    }
-    /*
-        Simulator* simulator = new Simulator(core);
-        for (const auto& project : qAsConst(projects)) {
-            fmt::print("\nPerforming jobs on generated data!\n");
-            simulator->PerformeJobs(project);
-        }
-    */
-    //}
-    /*
-        for (const QString& str : parser.values("j")) {
-            QVector<QJsonObject> projects;
-            QStringList data_files;
-            QJsonObject job;
-            JsonHandler::ReadJsonFile(job, str);
+    // ML Pipeline batch mode
+    if (!batchConfigFile.isEmpty()) {
+        std::cout << "Running ML Pipeline batch mode with: " << batchConfigFile.toStdString() << std::endl;
 
-            SupraFitCli* simulator = new SupraFitCli;
-            simulator->setInFile(parser.value("i"));
-
-            bool analyse = false;
-            if (job.keys().contains("analyse"))
-                analyse = simulator->setAnalyseJson(job["analyse"].toObject());
-            else if (job.keys().contains("Analyse"))
-                analyse = simulator->setAnalyseJson(job["Analyse"].toObject());
-
-            if (job.keys().contains("main") || job.keys().contains("Main")) {
-                bool generate = false, model = false;
-                bool prepare = false;
-
-                if (job["main"].toObject().contains("Prepare")) {
-                    simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
-                    prepare = true;
-                } else if (job["Main"].toObject().contains("Prepare")) {
-                    simulator->setPreparation(job["Main"].toObject()["Prepare"].toObject());
-                    prepare = true;
-                }
-
-                if (job.contains("main"))
-                    job["Main"] = job["main"].toObject();
-
-                if (job.contains("Main"))
-                    generate = simulator->setMainJson(job["Main"].toObject());
-
-                if (job.contains("model"))
-                    job["Models"] = job["model"].toObject();
-
-                if (job.contains("Models"))
-                    model = simulator->setModelsJson(job["Models"].toObject());
-
-                if (job.contains("job"))
-                    job["Jobs"] = job["jobs"].toObject();
-
-                if (job.contains("Jobs"))
-                    simulator->setJobsJson(job["Jobs"].toObject());
-
-                    if (generate) {
-                        projects = simulator->GenerateData();
-                    } else if (prepare) {
-                        simulator->Prepare();
-                        projects = simulator->Data();
-                    } else {
-                        if (!simulator->LoadFile())
-                            return 0;
-
-                        projects = simulator->Data();
-                    }
-
-                if (model) {
-                    for (const auto& project : qAsConst(projects)) {
-                        simulator->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
-                    }
-                }
-
-                } else {
-                    simulator->OpenFile();
-                }
-                if (analyse)
-                    simulator->Analyse(job["analyse"].toObject());
-
-                delete simulator;
-        }
-
-        return 0;
-    */
-
-    {
-        SupraFitCli* suprafitcli = new SupraFitCli;
-        suprafitcli->setInFile(infile);
-        if (!suprafitcli->LoadFile()) {
-            std::cout << "Can not open file " << infile.toStdString() << std::endl
-                      << "Sorry, going home." << std::endl;
+        QJsonObject batchConfig = JsonHandler::LoadFile(batchConfigFile);
+        if (batchConfig.isEmpty()) {
+            std::cout << "ERROR: Could not load batch configuration file." << std::endl;
             return 1;
         }
-        suprafitcli->setOutFile(outfile);
-        std::cout << "No task is set, lets do the standard stuff ..." << std::endl;
-        list = parser.isSet("l");
 
-        if (!outfile.isEmpty() && infile != outfile) {
-            /* Lets load the file (if projects, load several and then save them to the new name */
+        MLPipelineManager pipelineManager;
+        pipelineManager.setBatchConfig(batchConfig);
+        pipelineManager.runBatchPipeline();
 
-            if (suprafitcli->LoadFile())
-                if (suprafitcli->SaveFile())
-                    return 0;
-                else
-                    return 2; // Cannot save file
-            else
-                return 1; // cannot load file
-        }
-
-        if (!list) {
-
-            std::cout << "Input file and output file are the same AND nothing set to be done." << std::endl;
-            std::cout << "For conversation of files type something like: " << std::endl;
-            std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
-
-            /* Analyze the file content in detail */
-            std::cout << "Analyzing file content..." << std::endl;
-            suprafitcli->AnalyzeFile();
-            return 0;
-        }
-        if (list) {
-            /* Here comes some simple json tree analyser */
-            std::cout << "Print file strucuture." << std::endl;
-            suprafitcli->PrintFileStructure();
-            return 0;
-        }
-
-
+        std::cout << "ML Pipeline batch processing completed!" << std::endl;
         return 0;
     }
 
-    /*
-        std::cout << "Concentration solver 2:1/1:1/1:2 test!" << std::endl
+    // Show help if no arguments
+    if (inputFile.isEmpty() && parser.positionalArguments().isEmpty()) {
+        showComprehensiveHelp();
+        return 0;
+    }
+
+    // 2. Determine input file (from -i or positional argument)
+    QString actualInputFile = inputFile;
+    if (actualInputFile.isEmpty() && !parser.positionalArguments().isEmpty()) {
+        actualInputFile = parser.positionalArguments().first();
+    }
+
+    if (actualInputFile.isEmpty()) {
+        std::cout << "ERROR: No input file specified." << std::endl;
+        showComprehensiveHelp();
+        return 1;
+    }
+
+    // 3. Handle list mode
+    if (showList) {
+        std::cout << "Listing file structure: " << actualInputFile.toStdString() << std::endl;
+
+        SupraFitCli* cli = new SupraFitCli;
+        cli->setInFile(actualInputFile);
+        if (cli->LoadFile()) {
+            cli->PrintFileStructure();
+        } else {
+            std::cout << "ERROR: Could not load file for listing." << std::endl;
+            delete cli;
+            return 1;
+        }
+        delete cli;
+        return 0;
+    }
+
+    // 4. Handle ML Pipeline mode
+    if (mlPipelineMode) {
+        return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+    }
+
+    // 5. Main processing logic
+
+    // Load and analyze input file
+    QJsonObject config = JsonHandler::LoadFile(actualInputFile);
+    if (config.isEmpty()) {
+        std::cout << "ERROR: Could not load input file: " << actualInputFile.toStdString() << std::endl;
+        return 1;
+    }
+
+    FileConfigType configType = detectConfigType(config);
+
+    // Only filename provided (no -i flag) = Analysis mode
+    if (inputFile.isEmpty() && !parser.positionalArguments().isEmpty()) {
+        std::cout << "=== File Analysis Mode ===" << std::endl;
+        std::cout << "File: " << actualInputFile.toStdString() << std::endl;
+
+        // Show file type
+        QString typeStr;
+        switch (configType) {
+        case SimpleProject:
+            typeStr = "Simple SupraFit Project";
+            break;
+        case TaskConfig:
+            typeStr = "Task Configuration";
+            break;
+        case MLPipelineConfig:
+            typeStr = "ML Pipeline Configuration";
+            break;
+        default:
+            typeStr = "Unknown/Invalid";
+            break;
+        }
+        std::cout << "Type: " << typeStr.toStdString() << std::endl
                   << std::endl;
 
-        IItoI_ItoI_ItoII_Solver* solver = new IItoI_ItoI_ItoII_Solver();
-        OptimizerConfig opt_config;
-        opt_config.concen_convergency = 10E-13;
-        opt_config.single_iter = 1500;
-        solver->setConfig(opt_config);
-
-        qreal all_diff_1 = 0, all_diff_2 = 0;
-        int fine = 0, lfine = 0;
-        for (int i = 0; i < exp; ++i) {
-            qreal K11 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
-            qreal K21 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
-            qreal K12 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
-
-            qreal A = QRandomGenerator::global()->bounded(1e-4);
-            qreal B = QRandomGenerator::global()->bounded(1e-4);
-
-            qreal AB = K11 * A * B;
-            qreal A2B = K21 * A * AB;
-            qreal AB2 = K12 * AB * B;
-
-            qreal A0 = 2 * A2B + AB + AB2;
-            qreal B0 = A2B + AB + 2 * AB2;
-
-            solver->setConstants(QList<qreal>() << K21 << K11 << K12);
-            solver->setInput(A0, B0);
-
-            solver->RunTest();
-
-            qreal diff_1 = qAbs(A - solver->Concentrations().first) + qAbs(B - solver->Concentrations().second);
-            qreal diff_2 = qAbs(A - solver->ConcentrationsLegacy().first) + qAbs(B - solver->ConcentrationsLegacy().second);
-
-            if (solver->Ok())
-                all_diff_1 += diff_1;
-            if (solver->LOk())
-                all_diff_2 += diff_2;
-
-            std::cout << log10(K21) << "\t"
-                      << log10(K11) << "\t"
-                      << log10(K12) << "\t"
-                      << A << "\t"
-                      << B << "\t"
-                      << solver->Concentrations().first << "\t"
-                      << solver->Concentrations().second << "\t"
-                      << diff_1 << "\t" << solver->Ok() << "\t"
-                      << solver->ConcentrationsLegacy().first << "\t"
-                      << solver->ConcentrationsLegacy().second << "\t"
-                      << diff_2 << "\t" << solver->LOk() << std::endl;
-            fine += solver->Ok();
-            lfine += solver->LOk();
+        // Check if this is a multi-project file
+        QStringList keys = config.keys();
+        bool isMultiProject = false;
+        for (const QString& key : keys) {
+            if (key.startsWith("project_")) {
+                isMultiProject = true;
+                break;
+            }
         }
-        std::cout << "Mean errors for standard method " << all_diff_1 / double(fine) << "\t and for legacy solver " << all_diff_2 / double(lfine) << std::endl;
-        std::cout << "Time for Solver " << solver->Time() << " Fine Calculation = " << fine << std::endl;
-        std::cout << "Time for Solver " << solver->LTime() << " Fine Calculation = " << lfine << std::endl;
 
-        delete solver;
-*/
+        if (isMultiProject) {
+            // Handle multi-project files specially
+            analyzeMultiProjectFile(config);
+        } else {
+            // Perform standard detailed analysis
+            SupraFitCli* cli = new SupraFitCli;
+            cli->setInFile(actualInputFile);
+            if (cli->LoadFile()) {
+                cli->AnalyzeFile();
+            } else {
+                std::cout << "ERROR: Could not analyze file." << std::endl;
+                delete cli;
+                return 1;
+            }
+            delete cli;
+        }
+        return 0;
+    }
+
+    // -i flag provided = Execution mode
+    if (!inputFile.isEmpty()) {
+        // Special case: Join mode with multiple input files - Claude Generated
+        if (joinMode && inputFiles.size() > 1 && !outputFile.isEmpty()) {
+            return performFileJoin(inputFiles, outputFile) ? 0 : 1;
+        }
+
+        // Check if this is conversion or execution
+        if (!outputFile.isEmpty() && configType == SimpleProject) {
+            // Simple project conversion
+            return performGenericConversion(actualInputFile, outputFile, projectIndex, uuidFilter, titleFilter, splitOutput) ? 0 : 1;
+        } else {
+            // Task execution
+            return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+        }
+    }
+
+    std::cout << "ERROR: Invalid command line arguments." << std::endl;
+    showComprehensiveHelp();
     return 0;
 }

@@ -785,7 +785,9 @@ void SupraFitCli::AnalyzeFile()
     fmt::print("   File size: {} bytes\n", fileInfo.size());
     fmt::print("   File extension: {}\n", fileInfo.suffix().toStdString());
     fmt::print("   Absolute path: {}\n", fileInfo.absoluteFilePath().toStdString());
-    
+    fmt::print("   File exists: {}\n", fileInfo.exists() ? "Yes" : "No");
+    fmt::print("   Last modified: {}\n", fileInfo.lastModified().toString(Qt::ISODate).toStdString());
+
     if (!m_data) {
         fmt::print("   ❌ No data loaded!\n\n");
         return;
@@ -853,8 +855,8 @@ void SupraFitCli::AnalyzeFile()
     } else {
         fmt::print("   ❌ No dependent data found!\n");
     }
-    
-    // Configuration analysis
+
+    // Enhanced Configuration analysis - Claude Generated
     fmt::print("\n⚙️  CONFIGURATION:\n");
     if (!m_main.isEmpty()) {
         fmt::print("   Main configuration found:\n");
@@ -863,16 +865,87 @@ void SupraFitCli::AnalyzeFile()
             QJsonValue value = it.value();
             if (value.isObject()) {
                 fmt::print("      {}: [Object with {} keys]\n", key.toStdString(), value.toObject().size());
+
+                // Special handling for GenerateData configuration
+                if (key == "GenerateData") {
+                    QJsonObject genData = value.toObject();
+                    analyzeGenerateDataConfig(genData);
+                }
             } else if (value.isArray()) {
                 fmt::print("      {}: [Array with {} elements]\n", key.toStdString(), value.toArray().size());
             } else {
                 fmt::print("      {}: '{}'\n", key.toStdString(), value.toVariant().toString().toStdString());
             }
         }
-    } else {
-        fmt::print("   No main configuration found\n");
+    } else if (!m_toplevel.isEmpty()) {
+        // Check if configuration is stored directly in toplevel - Claude Generated
+        fmt::print("   Analyzing top-level configuration:\n");
+        for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
+            QString key = it.key();
+            QJsonValue value = it.value();
+            if (key == "Main" && value.isObject()) {
+                fmt::print("      Main section found with {} keys:\n", value.toObject().size());
+                QJsonObject mainObj = value.toObject();
+                for (auto mainIt = mainObj.begin(); mainIt != mainObj.end(); ++mainIt) {
+                    QString mainKey = mainIt.key();
+                    QJsonValue mainValue = mainIt.value();
+                    if (mainValue.isObject()) {
+                        fmt::print("         {}: [Object with {} keys]\n", mainKey.toStdString(), mainValue.toObject().size());
+
+                        // Special handling for GenerateData configuration in Main section
+                        if (mainKey == "GenerateData") {
+                            QJsonObject genData = mainValue.toObject();
+                            analyzeGenerateDataConfig(genData);
+                        }
+                    } else if (mainValue.isArray()) {
+                        fmt::print("         {}: [Array with {} elements]\n", mainKey.toStdString(), mainValue.toArray().size());
+                    } else {
+                        fmt::print("         {}: '{}'\n", mainKey.toStdString(), mainValue.toVariant().toString().toStdString());
+                    }
+                }
+            } else if (value.isObject()) {
+                fmt::print("      {}: [Object with {} keys]\n", key.toStdString(), value.toObject().size());
+            } else if (value.isArray()) {
+                fmt::print("      {}: [Array with {} elements]\n", key.toStdString(), value.toArray().size());
+            } else {
+                fmt::print("      {}: '{}'\n", key.toStdString(), value.toVariant().toString().toStdString());
+            }
+        }
     }
-    
+
+    // Enhanced modular structure analysis - Claude Generated
+    if (!m_independent.isEmpty() || !m_dependent.isEmpty()) {
+        fmt::print("   Modular structure configuration found:\n");
+        if (!m_independent.isEmpty()) {
+            fmt::print("      Independent: {} configuration keys\n", m_independent.size());
+            if (m_independent.contains("Source")) {
+                fmt::print("         Source: {}\n", m_independent["Source"].toString().toStdString());
+            }
+            if (m_independent.contains("Generator")) {
+                QJsonObject gen = m_independent["Generator"].toObject();
+                fmt::print("         Generator: {} (DataPoints: {})\n",
+                    gen["Type"].toString().toStdString(),
+                    gen["DataPoints"].toInt());
+            }
+        }
+        if (!m_dependent.isEmpty()) {
+            fmt::print("      Dependent: {} configuration keys\n", m_dependent.size());
+            if (m_dependent.contains("Source")) {
+                fmt::print("         Source: {}\n", m_dependent["Source"].toString().toStdString());
+            }
+            if (m_dependent.contains("Generator")) {
+                QJsonObject gen = m_dependent["Generator"].toObject();
+                fmt::print("         Generator: {} (Series: {})\n",
+                    gen["Type"].toString().toStdString(),
+                    gen["Series"].toInt());
+            }
+        }
+    }
+
+    if (m_main.isEmpty() && m_independent.isEmpty() && m_dependent.isEmpty()) {
+        fmt::print("   No configuration sections found\n");
+    }
+
     // Model analysis
     fmt::print("\n🔬 MODELS:\n");
     if (!m_models.isEmpty()) {
@@ -907,9 +980,38 @@ void SupraFitCli::AnalyzeFile()
     } else {
         fmt::print("   No system parameters found\n");
     }
-    
+
+    // Enhanced data type analysis - Claude Generated
+    fmt::print("\n📊 DATA TYPE ANALYSIS:\n");
+    exportData = m_data->ExportData();
+    if (exportData.contains("DataType")) {
+        int dataType = exportData["DataType"].toInt();
+        fmt::print("   DataType code: {}\n", dataType);
+
+        QString dataTypeDescription;
+        switch (dataType) {
+        case 1:
+            dataTypeDescription = "Standard experimental data";
+            break;
+        case 10:
+            dataTypeDescription = "Simulation data (generated)";
+            break;
+        default:
+            dataTypeDescription = "Unknown data type";
+            break;
+        }
+        fmt::print("   Description: {}\n", dataTypeDescription.toStdString());
+
+        if (dataType == 10) {
+            fmt::print("   ⚠️  This is a simulation file - generated data\n");
+            if (exportData.contains("simulate_dependent")) {
+                fmt::print("   Simulate dependent: {}\n", exportData["simulate_dependent"].toInt());
+            }
+        }
+    }
+
     // Comments and instructions
-    fmt::print("\n💬 COMMENTS & INSTRUCTIONS:\n");
+    fmt::print("\n💬 METADATA:\n");
     if (exportData.contains("content")) {
         fmt::print("   Content: '{}'\n", exportData["content"].toString().toStdString());
     }
@@ -919,7 +1021,16 @@ void SupraFitCli::AnalyzeFile()
     if (exportData.contains("instructions")) {
         fmt::print("   Instructions: '{}'\n", exportData["instructions"].toString().toStdString());
     }
-    
+    if (exportData.contains("git_commit")) {
+        fmt::print("   Git commit: {}\n", exportData["git_commit"].toString().toStdString());
+    }
+    if (exportData.contains("timestamp")) {
+        fmt::print("   Timestamp: {}\n", exportData["timestamp"].toVariant().toString().toStdString());
+    }
+    if (exportData.contains("SupraFit")) {
+        fmt::print("   SupraFit version: {}\n", exportData["SupraFit"].toInt());
+    }
+
     // Output file information
     fmt::print("\n📤 OUTPUT SETTINGS:\n");
     if (!m_outfile.isEmpty()) {
@@ -929,10 +1040,192 @@ void SupraFitCli::AnalyzeFile()
     } else {
         fmt::print("   No output file specified\n");
     }
-    
+
+    // File processing recommendations - Claude Generated
+    fmt::print("\n💡 RECOMMENDATIONS:\n");
+    if (exportData.contains("DataType") && exportData["DataType"].toInt() == 10) {
+        fmt::print("   • This is a simulation file with generated data\n");
+        fmt::print("   • Use for testing and validation purposes\n");
+        fmt::print("   • Consider using -i flag for further processing\n");
+    }
+    if (!m_models.isEmpty()) {
+        fmt::print("   • Models configuration detected - ready for fitting\n");
+    }
+    if (!m_independent.isEmpty() && !m_dependent.isEmpty()) {
+        fmt::print("   • Modular structure detected - can generate new data\n");
+    }
+
+    // Update metadata section fix - Claude Generated
+    QJsonObject exportDataCheck = m_data->ExportData();
+
     fmt::print("\n" + std::string(80, '=') + "\n");
     fmt::print("✅ FILE ANALYSIS COMPLETE\n");
     fmt::print(std::string(80, '=') + "\n\n");
+}
+
+// Enhanced DataGenerator configuration analysis - Claude Generated
+void SupraFitCli::analyzeGenerateDataConfig(const QJsonObject& generateDataConfig)
+{
+    fmt::print("         📊 GENERATE DATA CONFIGURATION:\n");
+
+    if (generateDataConfig.contains("UseDataGenerator") && generateDataConfig["UseDataGenerator"].toBool()) {
+        fmt::print("            🔧 DataGenerator Mode: ENABLED\n");
+
+        // Analyze independent variables
+        if (generateDataConfig.contains("IndependentVariables")) {
+            int indepVars = generateDataConfig["IndependentVariables"].toInt();
+            fmt::print("            📈 Independent Variables: {}\n", indepVars);
+        }
+
+        // Analyze data points
+        if (generateDataConfig.contains("DataPoints")) {
+            int dataPoints = generateDataConfig["DataPoints"].toInt();
+            fmt::print("            📊 Data Points: {}\n", dataPoints);
+        }
+
+        // Analyze equations
+        if (generateDataConfig.contains("Equations")) {
+            QString equations = generateDataConfig["Equations"].toString();
+            QStringList equationList = equations.split("|");
+            fmt::print("            🧮 Equations ({} total):\n", equationList.size());
+            for (int i = 0; i < equationList.size(); ++i) {
+                fmt::print("               X{}: {}\n", i + 1, equationList[i].toStdString());
+            }
+        }
+
+        // Analyze dependent equations
+        if (generateDataConfig.contains("DependentEquations")) {
+            QString depEquations = generateDataConfig["DependentEquations"].toString();
+            QStringList depEquationList = depEquations.split("|");
+            fmt::print("            🎯 Dependent Equations ({} total):\n", depEquationList.size());
+            for (int i = 0; i < depEquationList.size(); ++i) {
+                fmt::print("               Y{}: {}\n", i + 1, depEquationList[i].toStdString());
+            }
+        }
+
+        // Analyze series and model
+        if (generateDataConfig.contains("Series")) {
+            int series = generateDataConfig["Series"].toInt();
+            fmt::print("            📈 Series Count: {}\n", series);
+        }
+
+        if (generateDataConfig.contains("Model")) {
+            int model = generateDataConfig["Model"].toInt();
+            fmt::print("            🔬 Model ID: {}\n", model);
+        }
+
+        // Analyze repetition and variance
+        if (generateDataConfig.contains("Repeat")) {
+            int repeat = generateDataConfig["Repeat"].toInt();
+            fmt::print("            🔄 Repeat Count: {}\n", repeat);
+        }
+
+        if (generateDataConfig.contains("Variance")) {
+            double variance = generateDataConfig["Variance"].toDouble();
+            fmt::print("            📊 Variance: {:.2e}\n", variance);
+        }
+
+        // Analyze random parameter limits
+        if (generateDataConfig.contains("RandomParameterLimits")) {
+            QJsonObject randomLimits = generateDataConfig["RandomParameterLimits"].toObject();
+            fmt::print("            🎲 Random Parameter Limits ({} parameters):\n", randomLimits.size());
+            for (auto it = randomLimits.begin(); it != randomLimits.end(); ++it) {
+                QString param = it.key();
+                QJsonObject limits = it.value().toObject();
+                if (limits.contains("min") && limits.contains("max")) {
+                    fmt::print("               {}: [{:.3f}, {:.3f}]\n",
+                        param.toStdString(), limits["min"].toDouble(), limits["max"].toDouble());
+                } else {
+                    fmt::print("               {}: {}\n", param.toStdString(), it.value().toVariant().toString().toStdString());
+                }
+            }
+        }
+
+        // Analyze global and local random limits (legacy format)
+        if (generateDataConfig.contains("GlobalRandomLimits")) {
+            QString globalLimits = generateDataConfig["GlobalRandomLimits"].toString();
+            fmt::print("            🌍 Global Random Limits: {}\n", globalLimits.toStdString());
+        }
+
+        if (generateDataConfig.contains("LocalRandomLimits")) {
+            QString localLimits = generateDataConfig["LocalRandomLimits"].toString();
+            fmt::print("            📍 Local Random Limits: {}\n", localLimits.toStdString());
+        }
+
+        // Validate configuration consistency
+        fmt::print("            ✅ CONFIGURATION VALIDATION:\n");
+        validateGenerateDataConfig(generateDataConfig);
+
+    } else {
+        fmt::print("            🔧 DataGenerator Mode: DISABLED (using traditional model-based generation)\n");
+
+        if (generateDataConfig.contains("Model")) {
+            int model = generateDataConfig["Model"].toInt();
+            fmt::print("            🔬 Model ID: {}\n", model);
+        }
+    }
+}
+
+// Configuration validation for read-only analysis - Claude Generated
+void SupraFitCli::validateGenerateDataConfig(const QJsonObject& config)
+{
+    bool hasErrors = false;
+
+    // Check equations vs independent variables consistency
+    if (config.contains("Equations") && config.contains("IndependentVariables")) {
+        QString equations = config["Equations"].toString();
+        int indepVars = config["IndependentVariables"].toInt();
+        QStringList equationList = equations.split("|");
+
+        if (equationList.size() != indepVars) {
+            fmt::print("               ⚠️  WARNING: Equation count ({}) ≠ Independent Variables ({})\n",
+                equationList.size(), indepVars);
+            hasErrors = true;
+        } else {
+            fmt::print("               ✅ Equations match Independent Variables ({})\n", indepVars);
+        }
+    }
+
+    // Check dependent equations vs series consistency
+    if (config.contains("DependentEquations") && config.contains("Series")) {
+        QString depEquations = config["DependentEquations"].toString();
+        int series = config["Series"].toInt();
+        QStringList depEquationList = depEquations.split("|");
+
+        if (depEquationList.size() != series) {
+            fmt::print("               ⚠️  WARNING: Dependent Equation count ({}) ≠ Series ({})\n",
+                depEquationList.size(), series);
+            hasErrors = true;
+        } else {
+            fmt::print("               ✅ Dependent Equations match Series ({})\n", series);
+        }
+    }
+
+    // Check data points validity
+    if (config.contains("DataPoints")) {
+        int dataPoints = config["DataPoints"].toInt();
+        if (dataPoints <= 0) {
+            fmt::print("               ❌ ERROR: DataPoints must be > 0 (current: {})\n", dataPoints);
+            hasErrors = true;
+        } else {
+            fmt::print("               ✅ DataPoints valid ({})\n", dataPoints);
+        }
+    }
+
+    // Check repeat count
+    if (config.contains("Repeat")) {
+        int repeat = config["Repeat"].toInt();
+        if (repeat <= 0) {
+            fmt::print("               ❌ ERROR: Repeat must be > 0 (current: {})\n", repeat);
+            hasErrors = true;
+        } else {
+            fmt::print("               ✅ Repeat count valid ({})\n", repeat);
+        }
+    }
+
+    if (!hasErrors) {
+        fmt::print("               🎉 Configuration appears valid!\n");
+    }
 }
 
 QVector<QJsonObject> SupraFitCli::GenerateNoisyDependent(const QJsonObject& json_data)

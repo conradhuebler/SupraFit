@@ -92,7 +92,11 @@ public:
     QVector<QJsonObject> GenerateInputData();
     
     void AnalyzeFile();
-    
+
+    // Enhanced analysis methods for read-only mode - Claude Generated
+    void analyzeGenerateDataConfig(const QJsonObject& generateDataConfig);
+    void validateGenerateDataConfig(const QJsonObject& config);
+
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
     bool validateDataGeneratorConfig(const QJsonObject& config) const;
