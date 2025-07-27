@@ -146,6 +146,8 @@ protected:
 
     QPointer<DataClass> m_data;
 
+    QString m_modelContent; // Store enhanced content from model generation - Claude Generated
+
     int m_independent_rows = 2, m_start_point = 0, m_series = 0;
     bool m_guess = false, m_fit = false;
     bool m_simulate_job = false;

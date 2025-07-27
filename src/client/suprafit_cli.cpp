@@ -1324,7 +1324,7 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
         independent = generator->Table()->ExportTable(true);
         m_data = new DataClass();
         m_data->setIndependentTable(generator->Table());
-        m_data->setType(DataClassPrivate::DataType::Simulation);
+        m_data->setType(DataClassPrivate::DataType::Table);
         m_data->setSimulateDependent(dep_columns);
         m_data->setDataBegin(0);
         m_data->setDataEnd(m_data->IndependentModel()->rowCount());
@@ -1336,7 +1336,7 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
             m_data = new DataClass(m_toplevel);
         
         // Ensure the DataClass has the correct configuration
-        m_data->setType(DataClassPrivate::DataType::Simulation);
+        m_data->setType(DataClassPrivate::DataType::Table);
         m_data->setSimulateDependent(dep_columns);
         m_data->setDataBegin(0);
         m_data->setDataEnd(m_data->IndependentModel()->rowCount());
@@ -1490,8 +1490,8 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             dataClass = new DataClass();
             dataClass->setIndependentTable(new DataTable(independentTable));
             dataClass->setIndependentRawTable(new DataTable(independentTable));
-            dataClass->setDataType(DataClassPrivate::Simulation);
-            
+            dataClass->setDataType(DataClassPrivate::Table);
+
             // Generate dependent data if equations are provided - Claude Generated
             DataTable* dependentTable = nullptr;
             if (!dependentEquations.isEmpty()) {
@@ -1818,24 +1818,40 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
         DataTable* dependentTable = new DataTable(dependentTableJson);
         fullData->setDependentTable(dependentTable);
         fullData->setDependentRawTable(new DataTable(dependentTableJson));
-        
-        fullData->setDataType(DataClassPrivate::Simulation);
-        
+
+        fullData->setDataType(DataClassPrivate::Table);
+
         // Step 3: Apply noise if specified
         fullData = applyNoise(fullData, m_independent["Noise"].toObject(), true);  // Independent noise
         fullData = applyNoise(fullData, m_dependent["Noise"].toObject(), false);   // Dependent noise
-        
-        // Step 4: Create project JSON
-        QJsonObject project = fullData->ExportData();
-        project["timestamp"] = QDateTime::currentMSecsSinceEpoch();
-        project["git_commit"] = git_commit_hash;  
-        
-        // Enhanced content with generation info
-        QString content = QString("Generated with modular structure (iteration %1)").arg(iteration + 1);
-        QJsonObject dataObject = project["data"].toObject();
-        dataObject["content"] = content;
-        project["data"] = dataObject;
-        
+
+        // Step 4: Create project JSON with correct structure - Claude Generated
+        QJsonObject innerData = fullData->ExportData();
+        innerData["timestamp"] = QDateTime::currentMSecsSinceEpoch();
+        innerData["git_commit"] = git_commit_hash;
+
+        // Enhanced content with model details and generation info - Claude Generated
+        QString content = m_modelContent;
+        if (content.isEmpty()) {
+            content = QString("Generated with modular structure (iteration %1)").arg(iteration + 1);
+        } else {
+            content += QString("\n\nConfiguration Parameters:\n  DataPoints: %1\n  Series: %2\n  Iteration: %3")
+                           .arg(fullData->DataPoints())
+                           .arg(fullData->SeriesCount())
+                           .arg(iteration + 1);
+            // Add input configuration - Claude Generated
+            QJsonObject inputConfig;
+            inputConfig["Main"] = m_main;
+            inputConfig["Independent"] = m_independent;
+            inputConfig["Dependent"] = m_dependent;
+            content += "\n\nInput Configuration:\n" + QJsonDocument(inputConfig).toJson(QJsonDocument::Compact);
+        }
+        innerData["content"] = content;
+
+        // Wrap everything in "data" object for correct structure
+        QJsonObject project;
+        project["data"] = innerData;
+
         project_list << project;
         
         // Save individual file
@@ -2012,7 +2028,65 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             return dependentTableJson;
             
         } else if (type == "model") {
-            fmt::print("❌ ERROR: Model-based dependent generation not yet implemented\n");
+            // Generate dependent data using DataGenerator's EvaluateWithModel (legacy approach) - Claude Generated
+            fmt::print("🔧 Setting up model-based dependent data generation with EvaluateWithModel...\n");
+
+            QJsonObject modelConfig = generatorConfig["Model"].toObject();
+            int modelId = modelConfig["ID"].toInt(1);
+
+            fmt::print("🔍 DEBUG: Model-based generation - Model ID: {}\n", modelId);
+
+            // Create DataClass with independent data and empty dependent structure (like legacy) - Claude Generated
+            QPointer<DataClass> data = new DataClass();
+            DataTable* independentTable = new DataTable(independentTableJson);
+            data->setIndependentTable(independentTable);
+            data->setIndependentRawTable(new DataTable(independentTableJson));
+            data->setDataType(DataClassPrivate::Table);
+
+            int dataPoints = independentTable->rowCount();
+            int series = generatorConfig["Series"].toInt(2);
+
+            // Create empty dependent data table with correct dimensions (like legacy)
+            DataTable* dependentTable = new DataTable(dataPoints, series, data);
+            data->setDependentTable(dependentTable);
+            data->setDependentRawTable(new DataTable(dependentTable));
+
+            // Set simulation parameters (like legacy)
+            data->setSimulateDependent(series);
+            data->setDataBegin(0);
+            data->setDataEnd(dataPoints);
+
+            fmt::print("🔍 DEBUG: Created DataClass with {} data points, {} series, simulation settings applied\n",
+                dataPoints, series);
+
+            // Use DataGenerator's EvaluateWithModel with random parameters - Claude Generated
+            DataGenerator* generator = new DataGenerator();
+            bool success = generator->EvaluateWithModel(modelId, data, generatorConfig);
+
+            if (success) {
+                DataTable* modelTable = generator->Table();
+                if (modelTable && modelTable->rowCount() > 0 && modelTable->columnCount() > 0) {
+                    QJsonObject dependentTableJson = modelTable->ExportTable(false);
+
+                    // Extract enhanced content from DataClass and store globally for later use - Claude Generated
+                    m_modelContent = data->getContent();
+                    fmt::print("🔍 DEBUG: Extracted model content ({} chars) for later use\n", m_modelContent.length());
+
+                    fmt::print("✅ Generated model-based dependent data: {} rows x {} cols\n",
+                        modelTable->rowCount(), modelTable->columnCount());
+
+                    delete generator;
+                    delete data;
+                    return dependentTableJson;
+                } else {
+                    fmt::print("❌ ERROR: DataGenerator ModelTable is empty or null\n");
+                }
+            } else {
+                fmt::print("❌ ERROR: EvaluateWithModel failed\n");
+            }
+
+            delete generator;
+            delete data;
             return QJsonObject();
         }
         
@@ -2076,7 +2150,7 @@ QJsonObject SupraFitCli::loadDataTableFromFile(const QJsonObject& fileConfig)
         delete handler;
         return QJsonObject();
     }
-    
+
     fmt::print("✅ Extracted data range: {} rows x {} cols\n", 
               rangeTable->rowCount(), rangeTable->columnCount());
     
