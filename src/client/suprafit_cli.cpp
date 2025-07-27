@@ -503,109 +503,6 @@ void SupraFitCli::OpenFile()
     LoadFile();
 }
 
-QVector<QJsonObject> SupraFitCli::GenerateIndependent()
-{
-    /* TASK for CLAUDE: 3
-    nachdem die TASK 1 und 2 fertig sind, checke ob diese Funktion noch gebraucht wird
-    */
-    QVector<QJsonObject> project_list;
-
-    m_independent_rows = m_main["IndependentRows"].toInt(2);
-    m_start_point = m_main["StartPoint"].toInt(0);
-    m_series = m_simulation["Series"].toInt();
-    int dep_columns = m_main["dependent"].toInt(1);
-    qDebug() << m_main << dep_columns;
-    if (!LoadFile())
-        return project_list;
-
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
-    }
-
-    QJsonObject independent;
-    DataClass* final_data = new DataClass;
-    DataGenerator* generator = new DataGenerator(this);
-    generator->setJson(m_main);
-    if (!generator->Evaluate())
-        return project_list;
-    independent = generator->Table()->ExportTable(true);
-
-    m_data = new DataClass();
-    m_data->setIndependentTable(generator->Table());
-    m_data->setType(DataClassPrivate::DataType::Simulation);
-    m_data->setSimulateDependent(dep_columns);
-    m_data->setDataBegin(0);
-    m_data->setDataEnd(m_data->IndependentModel()->rowCount());
-
-    final_data->setIndependentTable(generator->Table());
-    final_data->setDataBegin(0);
-    final_data->setDataEnd(m_data->IndependentModel()->rowCount());
-    final_data->setType(DataClassPrivate::DataType::Simulation);
-    final_data->setSimulateDependent(dep_columns);
-    DataTable* model = new DataTable(m_data->IndependentModel()->rowCount(), dep_columns, this);
-    final_data->setDependentTable(model);
-
-    QJsonObject d;
-    d["data"] = final_data->ExportData();
-    project_list << d;
-    SaveFiles("gen_indep", project_list);
-    return project_list;
-}
-QVector<QJsonObject> SupraFitCli::GenerateNoisyIndependent(const QJsonObject& json_data)
-{
-    /* TASK for CLAUDE: 3
-    nachdem die TASK 1 und 2 fertig sind, checke ob diese Funktion noch gebraucht wird
-    */
-    QVector<QJsonObject> project_list;
-    DataClass* final_data = new DataClass;
-    final_data->ImportData(json_data["data"].toObject());
-    final_data->setDataType(DataClassPrivate::Table);
-    qint64 seed = QDateTime::currentMSecsSinceEpoch();
-    std::mt19937 rng(seed);
-    DataTable* table = final_data->IndependentModel()->PrepareMC(QVector<double>() << 0.0001, rng);
-    table->Debug();
-    final_data->setIndependentRawTable(table);
-    QJsonObject d;
-    d["data"] = final_data->ExportData();
-    project_list << d;
-    SaveFiles("gen_noisy_indep", project_list);
-    return project_list;
-}
-
-QVector<QJsonObject> SupraFitCli::GenerateDependent(const QJsonObject& json_data)
-{
-    /* TASK for CLAUDE: 3
-    nachdem die TASK 1 und 2 fertig sind, checke ob diese Funktion noch gebraucht wird
-    */
-    QVector<QJsonObject> project_list;
-    DataClass* final_data = new DataClass;
-    final_data->ImportData(json_data["data"].toObject());
-    final_data->setDataType(DataClassPrivate::Table);
-    DataClass* tmp = new DataClass;
-    tmp->ImportData(json_data["data"].toObject());
-
-    QJsonObject models = m_main["models"].toObject();
-    for (const QString& key : models.keys()) {
-        QSharedPointer<AbstractModel> t;
-        if (models[key].isString()) {
-            QString file = models[key].toString();
-            t = JsonHandler::Json2Model(JsonHandler::LoadFile(file), tmp);
-        } else if (models[key].isObject()) {
-            QJsonObject object = models[key].toObject();
-            t = JsonHandler::Json2Model(object, tmp);
-        } else {
-            t = CreateModel(models[key].toInt(), tmp);
-        }
-        final_data->setDependentTable(t->ModelTable());
-        QJsonObject d;
-        d["data"] = final_data->ExportData();
-        project_list << d;
-    }
-    SaveFiles("gen_dep", project_list);
-
-    return project_list;
-}
-
 QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
 {
     QVector<QJsonObject> project_list;
@@ -1228,14 +1125,6 @@ void SupraFitCli::validateGenerateDataConfig(const QJsonObject& config)
     }
 }
 
-QVector<QJsonObject> SupraFitCli::GenerateNoisyDependent(const QJsonObject& json_data)
-{
-    QVector<QJsonObject> project_list;
-    SaveFiles("gen_noisy_dep", project_list);
-
-    return project_list;
-}
-
 QVector<QJsonObject> SupraFitCli::GenerateData()
 {
     QVector<QJsonObject> project_list;
@@ -1252,136 +1141,6 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
     // Use DataGenerator for all data generation - Claude Generated Integration
     fmt::print("Using DataGenerator for unified data generation\n");
     return GenerateDataWithDataGenerator();
-    /*
-    if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_main.contains("InFile"))
-            m_infile = m_main["InFile"].toString();
-
-        if (m_infile.isEmpty() || m_infile.isNull())
-            return project_list;
-    }
-    */
-    m_independent_rows = m_main["IndependentRows"].toInt(2);
-    m_start_point = m_main["StartPoint"].toInt(0);
-    m_series = m_simulation["Series"].toInt();
-    int dep_columns = m_main["dependent"].toInt(1);
-    if (!LoadFile())
-        return project_list;
-
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
-    }
-    /* TASK for CLAUDE: 1
-    # unser beispiel hat ein infile -> die tabelle
-    # diese sollten wir verwenden, aber einen check machen, dass die anzahl der independent rows passt
-    # diese checks sind optional und sollten nur als sicherheit dienen
-    # wenn kein infile angegeben ist, dann wird eine neue tabelle generiert
-    # wenn ein infile angegeben ist, dann wird die tabelle aus dem infile geladen
-    # und die unabhängigen werte generiert
-    # der filehandler ist fürs laden zuständig
-    */
-    qDebug() << "Generating data with following parameters:" << m_main;
-    qDebug() << "Independent Rows:" << m_independent_rows;
-    qDebug() << "Start Point:" << m_start_point;
-    qDebug() << "Series Count:" << m_series;
-    qDebug() << "Dependent Columns:" << dep_columns;
-    
-    // TASK 1: Implement input file validation and processing
-    if (!m_infile.isEmpty()) {
-        qDebug() << "Loading input file:" << m_infile;
-        FileHandler infile(m_infile);
-        infile.LoadFile();
-        
-        QJsonObject fileData = infile.getJsonData();
-        qDebug() << "Loaded file data:" << fileData;
-        
-        if (fileData.contains("data")) {
-            QJsonObject dataObj = fileData["data"].toObject();
-            if (dataObj.contains("independent")) {
-                QJsonObject indepTable = dataObj["independent"].toObject();
-                int fileIndepRows = indepTable["cols"].toInt();
-                
-                // Validate that the file's independent columns match our configuration
-                if (m_independent_rows != fileIndepRows) {
-                    qWarning() << "WARNING: Configuration expects" << m_independent_rows 
-                               << "independent rows, but file has" << fileIndepRows;
-                    qDebug() << "Using file's independent row count:" << fileIndepRows;
-                    m_independent_rows = fileIndepRows;
-                }
-                
-                qDebug() << "File validation successful - Independent rows:" << m_independent_rows;
-            }
-        }
-    } else {
-        qDebug() << "No input file specified - will generate new data";
-    }
-    QJsonObject independent;
-    if (m_toplevel.isEmpty()) {
-        DataGenerator* generator = new DataGenerator(this);
-        generator->setJson(m_main);
-        if (!generator->Evaluate())
-            return project_list;
-        independent = generator->Table()->ExportTable(true);
-        m_data = new DataClass();
-        m_data->setIndependentTable(generator->Table());
-        m_data->setType(DataClassPrivate::DataType::Table);
-        m_data->setSimulateDependent(dep_columns);
-        m_data->setDataBegin(0);
-        m_data->setDataEnd(m_data->IndependentModel()->rowCount());
-    } else {
-        // Create DataClass from loaded file data
-        if (m_toplevel.keys().contains("data"))
-            m_data = new DataClass(m_toplevel["data"].toObject());
-        else
-            m_data = new DataClass(m_toplevel);
-        
-        // Ensure the DataClass has the correct configuration
-        m_data->setType(DataClassPrivate::DataType::Table);
-        m_data->setSimulateDependent(dep_columns);
-        m_data->setDataBegin(0);
-        m_data->setDataEnd(m_data->IndependentModel()->rowCount());
-        
-        qDebug() << "Created DataClass from file with" << m_data->IndependentModel()->rowCount() 
-                 << "rows and" << m_data->IndependentModel()->columnCount() << "columns";
-    }
-    if (!m_data)
-        return project_list;
-    /* TASK 2 - COMPLETED by Claude Code AI Assistant
-    Random parameter generation has been implemented with the following enhancements:
-    1. Extended DataGenerator class with EvaluateWithRandomParameters() method
-    2. Added static utility methods for random parameter and value generation
-    3. Created comprehensive unit tests in test_datagenerator.cpp
-    4. All tests pass successfully (9/9)
-    
-    The existing random parameter logic below continues to work as before,
-    but can now be enhanced using the new DataGenerator capabilities.
-    */
-    // TASK 2: Random parameter generation using simulation parameters (COMPLETED)
-    qDebug() << "m_simulation JSON content:" << m_simulation;
-    
-    int model = m_simulation["Model"].toInt();
-    double variance = m_simulation["Variance"].toDouble();
-    int repeat = m_simulation["Repeat"].toInt();
-    
-    qDebug() << "Using simulation parameters - Model:" << model << "Variance:" << variance << "Repeat:" << repeat;
-    
-    // If simulation parameters are not found, try to get them from main
-    if (model == 0) {
-        model = m_main["Model"].toInt();
-        qDebug() << "Using Model from main:" << model;
-    }
-    if (variance == 0) {
-        variance = m_main["Variance"].toDouble();
-        qDebug() << "Using Variance from main:" << variance;
-    }
-    if (repeat == 0) {
-        repeat = m_main["Repeat"].toInt();
-        qDebug() << "Using Repeat from main:" << repeat;
-    }
-    
-    // Old implementation removed - now using unified DataGenerator approach
-    fmt::print("Error: This code path should not be reached - using DataGenerator instead\n");
-    return project_list;
 }
 
 // Enhanced methods using DataGenerator - Claude Generated
@@ -2028,7 +1787,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             return dependentTableJson;
             
         } else if (type == "model") {
-            // Generate dependent data using DataGenerator's EvaluateWithModel (legacy approach) - Claude Generated
+            // Generate dependent data using DataGenerator's EvaluateWithModel - Claude Generated
             fmt::print("🔧 Setting up model-based dependent data generation with EvaluateWithModel...\n");
 
             QJsonObject modelConfig = generatorConfig["Model"].toObject();
@@ -2036,7 +1795,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
 
             fmt::print("🔍 DEBUG: Model-based generation - Model ID: {}\n", modelId);
 
-            // Create DataClass with independent data and empty dependent structure (like legacy) - Claude Generated
+            // Create DataClass with independent data and empty dependent structure - Claude Generated
             QPointer<DataClass> data = new DataClass();
             DataTable* independentTable = new DataTable(independentTableJson);
             data->setIndependentTable(independentTable);
@@ -2046,12 +1805,12 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             int dataPoints = independentTable->rowCount();
             int series = generatorConfig["Series"].toInt(2);
 
-            // Create empty dependent data table with correct dimensions (like legacy)
+            // Create empty dependent data table with correct dimensions
             DataTable* dependentTable = new DataTable(dataPoints, series, data);
             data->setDependentTable(dependentTable);
             data->setDependentRawTable(new DataTable(dependentTable));
 
-            // Set simulation parameters (like legacy)
+            // Set simulation parameters
             data->setSimulateDependent(series);
             data->setDataBegin(0);
             data->setDataEnd(dataPoints);

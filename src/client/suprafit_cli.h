@@ -80,11 +80,6 @@ public:
     inline bool CheckDataOnly() const { return m_data_only; }
     inline bool CheckGenerateInputData() const { return m_generate_input_data; }
 
-    QVector<QJsonObject> GenerateIndependent();
-    QVector<QJsonObject> GenerateNoisyIndependent(const QJsonObject& json_data);
-    QVector<QJsonObject> GenerateDependent(const QJsonObject& json_data);
-    QVector<QJsonObject> GenerateNoisyDependent(const QJsonObject& json_data);
-
     void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
 
     QVector<QJsonObject> GenerateData();

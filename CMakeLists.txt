@@ -21,6 +21,9 @@ set(CMAKE_AUTORCC ON)
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
 
+option (DEBUG_ON
+    "Enable Debugging Output" OFF)
+    
 option (experimental
     "Include experimental functions" OFF)
 

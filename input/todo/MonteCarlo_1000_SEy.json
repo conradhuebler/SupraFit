@@ -1,0 +1,8 @@
+{
+                        "Bootstrap": false,
+                        "IndependentRowVariance": "0 0",
+                        "MaxSteps": 1000,
+                        "OriginalData": false,
+                        "VarianceSource": "SEy",
+                        "Method": 1
+}

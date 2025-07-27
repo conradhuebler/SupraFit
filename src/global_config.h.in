@@ -2,7 +2,7 @@
 
 #cmakedefine BENCHMARK_LEVEL
 #cmakedefine experimental
-#cmakedefine _DEBUG
+#cmakedefine DEBUG_ON
 #cmakedefine _Theme
 #cmakedefine NMR_Models
 #cmakedefine ITC_Models

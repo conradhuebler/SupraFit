@@ -4,9 +4,19 @@
 SupraFit is a C++/Qt framework for supramolecular chemistry analysis. It provides a nice User Interface and statistical post-processing, like Monte Carlo simulation and Resampling Plans. It will now be extended wich Machine Learning functionals for improved Model Suggestion for complex supramolecular systems. 
 
 ## Build System
-- **Main Build**: Use `/blob` or `/release` directories for out-of-source builds
+- **Main Build**: Use `/build/debug` or `/build/release` directories for out-of-source builds
 - **CMake**: `cmake .. && make -j4`
 - **Tests**: `make run_tests` or individual test executables
+
+## General instructions
+
+- Each source code dir has a CLAUDE.md with basic informations of the code, the corresponding knowledge and logic in the directory 
+- If a file is not present or outdated, create or update it
+- Task corresponding to code have to be placed in the correct CLAUDE.md file
+- Each CLAUDE.md may contain a variable part, where short-term information, bugs etc things are stored. Obsolete information have to be removed
+- Each CLAUDE.md has a preserved part, which should no be edited by CLAUDE, only created if not present
+- Each CLAUDE.md may contain an **instructions block** filled by the operator/programmer with future tasks and visions that must be considered during code development
+- Each CLAUDE.md file content should be important for ALL subdirectories
 
 ## Key Components
 
@@ -65,7 +75,7 @@ Pipeline uses JSON configurations for:
 
 ### Building
 ```bash
-cd /home/conrad/src/SupraFit/release
+cd /home/conrad/src/SupraFit/build/debug
 cmake .. && make -j4
 ```
 
@@ -82,10 +92,10 @@ make run_tests
 
 ### CLI Usage
 ```bash
-# Traditional model-based generation
-./bin/suprafit_cli --config input/test_ml_pipeline.json
+# Modular NMR 1:1 titration generation
+./bin/suprafit_cli --config input/NMR_1_1_Modular.json
 
-# New DataGenerator-based generation (Claude Generated)
+# DataGenerator-based generation
 ./bin/suprafit_cli --config input/test_datagenerator_pipeline.json
 
 # Analyze file structure
@@ -134,86 +144,55 @@ input/             # Sample configurations and test data
 - ML pipeline generates structured JSON output with SupraFit project format
 - DataGenerator fully integrated into GenerateData() method for seamless operation
 
-## DataGenerator Integration - COMPLETED ✅
-**TASK 2 fully implemented by Claude Code AI Assistant:**
+## Project Status
 
-1. **Enhanced DataGenerator** (`src/capabilities/datagenerator.h/.cpp`):
-   - `EvaluateWithRandomParameters()` - Random parameter injection via JavaScript
-   - `generateRandomParameters()` - Static utility for configuration
-   - `generateRandomValue()` - Seeded random generation
-   - Comprehensive unit tests (9/9 pass ✅)
+### ✅ Recent Achievements
+- **Modular Structure**: Complete Independent/Dependent JSON configuration system
+- **NMR Integration**: Fully functional 1:1 titration model with realistic parameter generation
+- **Memory Safety**: JSON-based data transfer prevents crashes
+- **Code Cleanup**: Removed obsolete legacy functions and approaches
+- **Documentation**: Comprehensive CLAUDE.md files in all src/ subdirectories
 
-2. **SupraFitCli Integration** (`src/client/suprafit_cli.cpp`):
-   - Automatic DataGenerator detection in `GenerateData()`
-   - `GenerateDataWithDataGenerator()` - Enhanced pipeline
-   - `validateDataGeneratorConfig()` - Configuration validation
-   - Backward compatibility with traditional model approach
+### 🧪 Current Test Status
+- **DataGenerator**: 9/9 tests passing ✅
+- **Basic Functionality**: All core tests passing ✅  
+- **Build System**: Compiles without errors ✅
+- **Integration**: CLI and modular workflows functional ✅
 
-3. **Clean Code**:
-   - Removed redundant/commented code from old implementation
-   - Modern parameter generation replaces legacy approach
-   - Professional error handling and logging
+## Development Guidelines
 
-4. **Usage**: Set `"UseDataGenerator": true` in configuration to enable
-   - Falls back gracefully to traditional approach if disabled
-   - Supports both equation-based and model-based data generation
+### Code Organization
+- Each `src/` subdirectory contains detailed CLAUDE.md documentation
+- Variable sections updated regularly with short-term information
+- Preserved sections contain permanent knowledge and patterns
+- Instructions blocks contain operator-defined future tasks and visions
 
-## Commands to Claude
-- Document all you generated Source Code ✅ 
-- Mark new implemented functions as Claude Generated ✅
-- Add in every source code file you edit a note on what this file/methods/class do in the preambel sections ✅
-- update copyright to include current year ✅
-- Check suprafit_cli and datagenerator for TODOs and fix them ✅
+### Implementation Standards
+- Mark new functions as "Claude Generated" for traceability
+- Document new functions briefly (doxygen ready)
+- Document existing undocumented functions if appearing regulary (briefly and doxygen ready)
+- Remove TODO Hashtags and text done and approve
+- Use modern Qt6 patterns and avoid deprecated functions
+- Implement comprehensive error handling and logging 
+- Debugging output with qDebug() within #ifdef DEBUG_ON #endif #TODO CLAUDE check if this is written correctly (CMakeLists.txt and include) 
+- non-debugging console output is realised with fmt, port away from std::cout if appearing
+- Maintain backward compatibility where possible
+- **Always check and consider instructions blocks** in relevant CLAUDE.md files before implementing 
+- reformulate and clarify task and vision entries if not alredy marked as CLAUDE formatted
 
-## Current Status - Session 2025-01-24
+### CLAUDE.md Structure Template
+```markdown
+# Directory Name - Brief Description
 
-### ✅ Completed Features
+## [Preserved Section - Permanent Documentation]
 
-#### Modular JSON Structure (Independent/Dependent)
-- **File**: `src/client/suprafit_cli.cpp`
-- **Functions**: 
-  - `GenerateDataWithModularStructure()` - Main orchestrator
-  - `generateIndependentDataTable()` - Independent data generation 
-  - `generateDependentDataTable()` - Dependent data generation
-  - `loadDataTableFromFile()` - File loading with range selection
-  - `applyNoise()` - Unified noise application (gaussian, exportMC, montecarlo)
-- **Memory Management**: Fixed crashes using JSON DataTable transfer instead of direct DataClass copying
-- **Testing**: ✅ Working with `input/test_file_loading_modular.json`
+## [Variable Section - Short-term Information]
 
-#### File Range Loading 
-- **File**: `src/core/filehandler.h/.cpp` 
-- **Functions**:
-  - `getDataRange(startRow, endRow, startCol, endCol)` - Extract specific data ranges
-  - Range parameters: `m_start_row`, `m_end_row`, `m_start_col`, `m_end_col`
-- **Testing**: ✅ Loads Independent (10×2) and Dependent (8×4) data with correct offsets
+## [Instructions Block - Operator-Defined Tasks]
+### Future Tasks
+- Task 1: Description
+- Task 2: Description
 
-#### DataGenerator Input Configuration Storage
-- **File**: `src/capabilities/datagenerator.cpp`
-- **Function**: `createEnhancedContent()` - Now saves original JSON input configuration in output
-- **Implementation**: Appends full input JSON to generated content for traceability
-
-#### Code Cleanup
-- **Removed TODOs**: 
-  - ✅ Line 1809 `suprafit_cli.cpp` - Obsolete file loading TODO (already implemented)
-  - ✅ Line 511 `datagenerator.cpp` - Input JSON configuration now stored
-- **Git Hash**: ✅ Already using proper `git_commit_hash` variable from version.h
-
-### 🧪 Test Results
-- **Compilation**: ✅ Success (warnings only, no errors)
-- **DataGenerator Tests**: ✅ 9/9 passing
-- **Modular Structure**: ✅ Successfully generates data from file ranges
-- **File Loading**: ✅ Correctly extracts ranges: Independent (10×2), Dependent (8×4)  
-- **Noise Application**: ✅ Gaussian noise applied (σ=0.02, seed=555)
-- **JSON Output**: ✅ Valid SupraFit project format with git commit hash
-
-### 📁 Sample Outputs
-- `test_file_loading_data__0.json` - Modular structure with file loading
-- Independent data: 10 rows × 2 cols from `/input/1_1_1_2_001.dat` (StartRow=0, StartCol=0)
-- Dependent data: 8 rows × 4 cols from same file (StartRow=5, StartCol=2) with gaussian noise
-
-### 🔧 Key Improvements
-1. **Memory Safety**: JSON-based data transfer prevents pointer crashes
-2. **Modularity**: Clean separation of Independent/Dependent data generation
-3. **Traceability**: Input configurations stored in output for reproducibility
-4. **Range Loading**: Flexible file loading with precise row/column selection
-5. **Unified Noise**: All noise types (gaussian, exportMC, montecarlo) use same PrepareMC implementation
+### Vision
+- Long-term goals and architectural directions
+```
