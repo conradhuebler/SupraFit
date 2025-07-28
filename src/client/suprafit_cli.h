@@ -37,6 +37,7 @@ public:
     ~SupraFitCli();
 
     void setControlJson(const QJsonObject& control);
+    QJsonObject getControlJson() const { return m_main; }
 
     void ParseMain();
     void ParsePrepare();
@@ -107,6 +108,37 @@ public:
     QPointer<DataClass> loadDataFromFile(const QJsonObject& fileConfig);
     QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent);
     
+    // ML Pipeline integration - Claude Generated
+    /**
+     * @brief Complete ML pipeline: data generation → model fitting → evaluation
+     * @return Vector of project files with fitted models and statistical evaluation
+     */
+    QVector<QJsonObject> ProcessMLPipeline();
+    
+    /**
+     * @brief Fit multiple models to simulated or real data for comparison
+     * @param data DataClass containing independent/dependent data
+     * @param modelsConfig JSON configuration specifying which models to test
+     * @return Vector of fitted models with statistical metrics
+     */
+    QVector<QJsonObject> FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig);
+    
+    /**
+     * @brief Evaluate model fit quality and extract statistical features
+     * @param model Fitted model to evaluate
+     * @param trueModelId Original model ID used for data generation (if known)
+     * @return JSON with fit statistics, AIC, SSE, R², and ML features
+     */
+    QJsonObject EvaluateModelFit(QSharedPointer<AbstractModel> model, int trueModelId = -1);
+    
+    /**
+     * @brief Extract ML training features from fitted model for dataset generation
+     * @param model Fitted model with calculated statistics
+     * @param includeStatistics Include advanced statistical metrics (MC, CV)
+     * @return JSON with features suitable for ML training
+     */
+    QJsonObject ExtractMLFeatures(QSharedPointer<AbstractModel> model, bool includeStatistics = true);
+    
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
 signals:
@@ -119,13 +151,16 @@ protected:
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
     QString m_infile = QString();
-    QString m_outfile = QString(), m_extension = "json";
+    QString m_outfile = QString(), m_extension = ".suprafit";
 
     /* Controller json */
     QJsonObject m_main, m_jobs, m_models, m_analyse;
 
     /* Sub json */
     QJsonObject m_prepare, m_simulation;
+    
+    /* Original configuration - Claude Generated */
+    QJsonObject m_original_config;
     
     /* Modular structure support - Claude Generated */
     QJsonObject m_independent, m_dependent;

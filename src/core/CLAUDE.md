@@ -182,8 +182,16 @@ model->Calculate();
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
 ### Future Tasks
-- es gibt unter src/client/suprafit_cli.cpp bereits einen ansatz, die projectfiles zu analysieren, diese struktur sollte in die core-libs wandern und dort für alle teile von suprafit verfügbar sein
-- verbessere skripted models
-
+- **Project Analysis Migration**: Move project file analysis from src/client/suprafit_cli.cpp to core-libs for universal availability
+- **Statistical Analysis Refactoring**: Separate calculation from formatting in src/core/analyse.cpp/h
+  - TODO: Extract statistical calculation functions from string formatting
+  - TODO: Add JSON-based statistical analysis methods (AIC, SSE, R², parameter uncertainty, etc.)
+  - TODO: Implement parameter uncertainty calculation for ML feature extraction
+  - TODO: Implement prediction variance calculation for model evaluation
+  - TODO: Create unified statistical analysis API for client applications
+- **Scripted Models**: Improve scripted model functionality and integration
+- refactor bc50 code, kein inlining mehr
+- refactor optimiser logik, hier ist viel alter code, der teilweise duplicate ist
+- implement bfgs-optimierung für als alternative zum concentration solver (DOI: 10.1039/d4sc03354j, Zitation mit berücksichtigen (  Daniil O. Soloviev and  Christopher A. Hunter;  Chem. Sci., 2024,15, 15299-15310 ))
 ### Vision
 - llm support für suprafit, auf der basis der (siehe oben) geparsten projecte sollte die auswertung mit lokalen llms auch natürlichsprachrig erfolgen (sofern ein llm angebunden ist), die contextinformationen und ggf. fachpublikationenswissen sollten dabei mit geliefert werden oder ggf. bei bedarf mit übergeben 

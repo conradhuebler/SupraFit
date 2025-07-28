@@ -290,17 +290,43 @@ public:
 
     virtual inline int Color(int i) const { return i; }
 
-    /*! \brief returns Akaike’s Information Criterion (AIC)
-    */
-    inline qreal AIC() const { return DataPoints() * log(SSE() / double(DataPoints())) + 2 * (Parameter() + 1); }
 
-    /*! \brief returns a second-order (corrected) Akaike’s Information Criterion (AIC)
+    /*! \brief returns Akaike's Information Criterion (AIC)
     */
-    inline qreal AICc() const
+    inline qreal getAIC() const { return DataPoints() * log(SSE() / double(DataPoints())) + 2 * (Parameter() + 1); }
+    
+    /*! \brief returns Akaike's Information Criterion (AIC)
+     * New getter function for consistency
+     */
+    inline qreal GetAIC() const { return getAIC(); }
+    
+    /*! \brief returns Akaike's Information Criterion (AIC)
+     * @deprecated Use GetAIC() instead
+     */
+    [[deprecated("Use GetAIC() instead")]]
+    inline qreal AIC() const { return GetAIC(); }
+
+    /*! \brief returns a second-order (corrected) Akaike's Information Criterion (AIC)
+    */
+    inline qreal getAICc() const
     {
         int K = Parameter() + 1;
-        return AIC() + (2 * K * (K + 1)) / double(DataPoints() - K - 1);
+        return getAIC() + (2 * K * (K + 1)) / double(DataPoints() - K - 1);
     }
+    
+    /*! \brief returns a second-order (corrected) Akaike's Information Criterion (AIC)
+     * New getter function for consistency
+     */
+    inline qreal GetAICc() const { return getAICc(); }
+    
+    /*! \brief returns a second-order (corrected) Akaike's Information Criterion (AIC)
+     * @deprecated Use GetAICc() instead
+     */
+    [[deprecated("Use GetAICc() instead")]]
+    inline qreal AICc() const { return GetAICc(); }
+
+// ...existing code...
+
 
     inline virtual void ReleaseLocks() {}
 
@@ -399,7 +425,22 @@ public:
 
     inline qreal SSE() const { return m_sum_squares; }
     inline qreal SAE() const { return m_sum_absolute; }
-    inline qreal RSquared() const { return m_squared; }
+    
+    /*! \brief returns R-squared value (primary implementation)
+     */
+    inline qreal getRSquared() const { return m_squared; }
+    
+    /*! \brief returns R-squared value
+     * New getter function for consistency
+     */
+    inline qreal GetRSquared() const { return getRSquared(); }
+    
+    /*! \brief returns R-squared value
+     * @deprecated Use GetRSquared() instead
+     */
+    [[deprecated("Use GetRSquared() instead")]]
+    inline qreal RSquared() const { return GetRSquared(); }
+    
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
@@ -412,6 +453,15 @@ public:
     inline qreal SEy() const { return m_SEy; }
     inline qreal SEy(int i) const { return qSqrt(SumOfErrors(i) / (double(DataPoints() - GlobalParameterSize() - LocalParameterSize(i)))); }
 
+    /*! \brief returns Chi-squared value
+     * New getter function for consistency
+     */
+    inline qreal GetChiSquare() const { return m_chisquared; }
+    
+    /*! \brief returns Chi-squared value
+     * @deprecated Use GetChiSquared() instead
+     */
+    [[deprecated("Use GetChiSquared() instead")]]
     inline qreal ChiSquared() const { return m_chisquared; }
     inline qreal CovFit() const { return m_covfit; }
 

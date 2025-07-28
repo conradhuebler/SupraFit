@@ -197,5 +197,6 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - if loading simulation files using DataGenerator, give comprehensive information and execute datageneration and open generated project file
 - add widget to generate and control simulation input files
 - move all thermogramm analysis to core / or finalise the move
+- projecttree- logik sollte mit core/**Project Analysis Migration** synchronisiert werden
 ### Vision
 <!-- Add long-term architectural goals here -->

@@ -1,0 +1,38 @@
+{
+    "Main": {
+        "OutFile": "simple_ml_test",
+        "Repeat": 1,
+        "FitModels": true
+    },
+    "Independent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "DataPoints": 8,
+            "Variables": 2,
+            "Equations": "0.001|(X - 1) * 0.0001"
+        }
+    },
+    "Dependent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "model",
+            "Series": 2,
+            "Model": {"ID": 1},
+            "GlobalRandomLimits": "[3 4]",
+            "LocalRandomLimits": "[6.5 6.9; 6.0 6.4; 2.3 2.6; 2.2 2.5]"
+        },
+        "Noise": {
+            "Type": "gaussian",
+            "Std": [1e-3, 1e-3],
+            "RandomSeed": 123
+        }
+    },
+    "MLModels": {
+        "nmr_1_1": 1,
+        "nmr_1_2": 2,
+        "nmr_2_1": 3
+    },
+    "UseModularStructure": true,
+    "ProcessMLPipeline": true
+}

@@ -44,6 +44,7 @@
 #include "src/core/analyse.h"
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 #include "src/version.h"
 
@@ -81,6 +82,9 @@ SupraFitCli::~SupraFitCli()
 
 void SupraFitCli::setControlJson(const QJsonObject& control)
 {
+    // Store original configuration for ML Pipeline - Claude Generated
+    m_original_config = control;
+    
     QStringList keys = control.keys();
     fmt::print("🔍 DEBUG setControlJson: Input JSON keys: {}\n", keys.join(", ").toStdString());
     
@@ -1614,7 +1618,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
         project_list << project;
         
         // Save individual file
-        QString filename = QString("%1__%2.json").arg(m_outfile).arg(iteration);
+        QString filename = QString("%1-%2%3").arg(m_outfile).arg(iteration).arg(m_extension);
         if (SaveFile(filename, project)) {
             fmt::print("✅ {} successfully written to disk\n", filename.toStdString());
         } else {
@@ -1939,6 +1943,312 @@ QPointer<DataClass> SupraFitCli::loadDataFromFile(const QJsonObject& fileConfig)
               path.toStdString(), startRow, startCol, rows, cols);
     
     return nullptr;
+}
+
+// ML Pipeline integration - Claude Generated
+QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
+{
+    /**
+     * @brief Complete ML pipeline: data generation → model fitting → evaluation
+     * Combines DataGenerator simulation with multi-model fitting and statistical evaluation
+     * for ML training data generation and model comparison studies.
+     */
+    fmt::print("🚀 Starting ML Pipeline: DataGenerator → Model Fitting → Statistical Evaluation\n");
+    
+    QVector<QJsonObject> results;
+    
+    // Step 1: Generate data using existing modular structure
+    QVector<QJsonObject> simulatedData;
+    if (m_use_modular_structure) {
+        simulatedData = GenerateDataWithModularStructure();
+    } else {
+        simulatedData = GenerateDataWithDataGenerator();
+    }
+    
+    if (simulatedData.isEmpty()) {
+        fmt::print("❌ No data generated, ML pipeline aborted\n");
+        return results;
+    }
+    
+    fmt::print("✅ Generated {} datasets for ML pipeline\n", simulatedData.size());
+    
+    // Step 2: Process each dataset with multiple models
+    for (int i = 0; i < simulatedData.size(); ++i) {
+        const QJsonObject& dataset = simulatedData[i];
+        
+        fmt::print("🔧 Processing dataset {} with multiple models...\n", i + 1);
+        
+        // Create DataClass from generated data
+        QPointer<DataClass> data = new DataClass();
+        if (dataset.contains("data")) {
+            data->ImportData(dataset["data"].toObject());
+        } else {
+            data->ImportData(dataset);
+        }
+        
+        // Define models to test (from configuration or default set)
+        QJsonObject modelsConfig;
+        if (m_original_config.contains("MLModels")) {
+            modelsConfig = m_original_config["MLModels"].toObject();
+            fmt::print("🔍 Using configured MLModels: {} models\n", modelsConfig.size());
+        } else {
+            // Default model set for testing
+            modelsConfig = {
+                {"model_1", 1},  // NMR 1:1
+                {"model_2", 2},  // NMR 1:2  
+                {"model_3", 3},  // NMR 2:1
+                {"model_custom", QJsonObject{{"model", 1}, {"options", QJsonObject()}}}
+            };
+            fmt::print("🔍 Using default models: {} models\n", modelsConfig.size());
+        }
+        
+        // Step 3: Fit models and evaluate
+        QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig);
+        
+        // Step 4: Create SupraFit project with fitted models (like GUI SaveWorkspace)
+        QJsonObject projectFile;
+        projectFile["data"] = dataset["data"];  // Use the generated data
+        
+        // Add fitted models in SupraFit format (model_0, model_1, model_2...)
+        int modelIndex = 0;
+        for (const QJsonObject& modelResult : fittedModels) {
+            if (modelResult.contains("model_export")) {
+                projectFile["model_" + QString::number(modelIndex)] = modelResult["model_export"];
+                modelIndex++;
+            }
+        }
+        
+        // Also create ML training entry 
+        for (const QJsonObject& modelResult : fittedModels) {
+            QJsonObject mlEntry;
+            mlEntry["dataset_id"] = i;
+            mlEntry["original_data"] = dataset;
+            mlEntry["fitted_model"] = modelResult;
+            mlEntry["ml_features"] = modelResult["ml_features"];
+            mlEntry["pipeline_timestamp"] = QDateTime::currentMSecsSinceEpoch();
+            
+            results.append(mlEntry);
+        }
+        
+        // Save the project file with fitted models
+        SaveFile(m_outfile + "-models-" + QString::number(i), projectFile);
+        
+        delete data;
+    }
+    
+    fmt::print("🎉 ML Pipeline completed: {} total model evaluations\n", results.size());
+    return results;
+}
+
+QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig)
+{
+    /**
+     * @brief Fit multiple models to data for comparison and ML feature extraction
+     * Tests various analytical models against simulated or experimental data,
+     * extracting statistical metrics for model selection and ML training.
+     */
+    QVector<QJsonObject> results;
+    
+    if (!data) {
+        fmt::print("❌ Invalid data provided to FitModelsToData\n");
+        return results;
+    }
+    
+    fmt::print("🔍 Fitting {} models to dataset with {} data points\n", 
+        modelsConfig.size(), data->IndependentModel()->rowCount());
+    
+    // Extract true model ID if available from content
+    int trueModelId = -1;
+    QString content = data->getContent();
+    if (content.contains("Model: ")) {
+        // TODO: Extract model ID from content string (if DataGenerator created)
+        // This helps evaluate how well each model performs vs. true model
+    }
+
+    for (auto it = modelsConfig.begin(); it != modelsConfig.end(); ++it) {
+        const QString& modelName = it.key();
+        QJsonValue modelValue = it.value();
+        
+        fmt::print("  📊 Testing model: {}\n", modelName.toStdString());
+        
+        try {
+            // Create model based on configuration
+            QSharedPointer<AbstractModel> model;
+            if (modelValue.isDouble()) {
+                int modelId = modelValue.toInt();
+                model = AddModel(modelId, data);
+            } else if (modelValue.isObject()) {
+                QJsonObject modelObj = modelValue.toObject();
+                int modelId = modelObj["model"].toInt();
+                model = AddModel(modelId, data);
+                if (modelObj.contains("options")) {
+                    model->setOptions(modelObj["options"].toObject());
+                }
+            }
+            
+            if (!model) {
+                fmt::print("    ❌ Failed to create model {}\n", modelName.toStdString());
+                continue;
+            }
+            
+            // Perform initial guess and fitting
+            model->InitialGuess();
+            
+            // Proper model fitting using NonLinearFitThread (like MonteCarloStatistics) - Claude Generated
+            if (m_main.contains("FitModels") && m_main["FitModels"].toBool()) {
+                fmt::print("      Fitting model {}...\n", modelName.toStdString());
+                
+                // Create and configure NonLinearFitThread for optimization
+                NonLinearFitThread* fit_thread = new NonLinearFitThread(false);
+                fit_thread->setModel(model, false);
+                fit_thread->run();
+                
+                // Import fitted parameters and calculate statistics
+                bool converged = fit_thread->Converged();
+                model->ImportModel(fit_thread->ConvergedParameter());
+                model->setFast(true);
+                model->CalculateStatistics(true);
+                model->Calculate();
+                model->setConverged(converged);
+                
+                fmt::print("      Model {} fitting {} (converged: {})\n", 
+                    modelName.toStdString(), 
+                    converged ? "succeeded" : "failed", 
+                    converged);
+                
+                delete fit_thread;
+            } else {
+                // Just calculate with default parameters if fitting disabled
+                model->setFast(false);
+                model->Calculate();
+            }
+            // Evaluate model performance
+            QJsonObject evaluation = EvaluateModelFit(model, trueModelId);
+            evaluation["model_name"] = modelName; // TODO marked as potentially obsolete as we have the name in model
+            evaluation["model_id"] = model->Type();// TODO marked as potentially obsolete as we have the id in model
+            // TODO for Claude -> Analyse json structure of the model and write it to Claude.md in core
+            
+            // Export complete model for saving (like GUI SaveWorkspace)
+            evaluation["model_export"] = model->ExportModel();
+            
+            results.append(evaluation);
+            
+            fmt::print("    ✅ Model {} completed (SSE: {:.2e})\n", 
+                modelName.toStdString(), evaluation["SSE"].toDouble());
+                
+        } catch (const std::exception& e) {
+            fmt::print("    ❌ Model {} failed: {}\n", modelName.toStdString(), e.what());
+        }
+    }
+    return results;
+}
+
+QJsonObject SupraFitCli::EvaluateModelFit(QSharedPointer<AbstractModel> model, int trueModelId)
+{
+    /**
+     * @brief Extract comprehensive statistical evaluation of model fit
+     * Calculates fit quality metrics, parameter statistics, and ML features
+     * for model comparison and machine learning training data generation.
+     */
+    QJsonObject evaluation;
+    
+    if (!model) {
+        evaluation["error"] = "Invalid model provided";
+        return evaluation;
+    }
+    
+    // Basic fit statistics
+    evaluation["SSE"] = model->SSE();
+    evaluation["AIC"] = model->GetAIC();
+    evaluation["AICc"] = model->GetAICc();
+    evaluation["SEy"] = model->SEy();
+    evaluation["RSquared"] = model->GetRSquared();
+    evaluation["ChiSquared"] = model->GetChiSquare();
+    
+    // Parameter information
+    evaluation["parameter_count"] = model->GlobalParameterSize() + model->LocalParameterSize();
+    evaluation["global_parameters"] = model->GlobalParameterSize();
+    evaluation["local_parameters"] = model->LocalParameterSize();
+    
+    // Data information
+    evaluation["data_points"] = model->DataPoints();
+    evaluation["series_count"] = model->SeriesCount();
+    
+    // Model identification
+    evaluation["model_type"] = static_cast<int>(model->Type());
+    evaluation["model_name"] = model->Name();
+    
+    // Calculate relative performance if true model is known
+    if (trueModelId >= 0) {
+        evaluation["true_model_id"] = trueModelId;
+        evaluation["is_correct_model"] = (static_cast<int>(model->Type()) == trueModelId);
+    }
+    
+    // Extract ML features for training
+    evaluation["ml_features"] = ExtractMLFeatures(model, false);
+    
+    return evaluation;
+}
+
+QJsonObject SupraFitCli::ExtractMLFeatures(QSharedPointer<AbstractModel> model, bool includeStatistics)
+{
+    /**
+     * @brief Extract machine learning features from fitted model
+     * Creates feature vector suitable for ML model selection training,
+     * including statistical metrics, parameter characteristics, and fit quality indicators.
+     * 
+     * TODO: Move statistical analysis to src/core/analyse.cpp - separate calculation from formatting
+     * TODO: Use core statistical functions instead of local calculations
+     */
+    QJsonObject features;
+    
+    if (!model) {
+        return features;
+    }
+    
+    // Primary fit quality features
+    double sse = model->SSE();
+    double aic = model->GetAIC();
+    double aic_c = model->GetAICc();
+    double r_squared = model->GetRSquared();
+    double chi_squared = model->GetChiSquare();
+    
+    features["sse"] = sse;
+    features["aic"] = aic;
+    features["aicc"] = aic_c;
+    features["r_squared"] = r_squared;
+    features["chi_squared"] = chi_squared;
+    features["log_sse"] = std::log10(std::max(sse, 1e-15));
+    
+    // Normalized features (relative to data scale)
+    int dataPoints = model->DataPoints();
+    features["sse_per_point"] = sse / std::max(dataPoints, 1);
+    features["rmse"] = std::sqrt(sse / std::max(dataPoints - model->GlobalParameterSize(), 1));
+    
+    // Parameter complexity features
+    features["parameter_count"] = model->GlobalParameterSize() + model->LocalParameterSize();
+    features["global_params"] = model->GlobalParameterSize();
+    features["local_params"] = model->LocalParameterSize();
+    features["data_to_param_ratio"] = double(dataPoints) / std::max(features["parameter_count"].toInt(), 1);
+    
+    // Model characteristics
+    features["model_type"] = static_cast<int>(model->Type());
+    features["series_count"] = model->SeriesCount();
+    features["data_points"] = dataPoints;
+    
+    // Information criteria ratios (for relative comparison)
+    features["aic_aicc_ratio"] = (aic_c > 0) ? aic / aic_c : 1.0;
+    
+    // Advanced statistical features (optional for performance)
+    if (includeStatistics) {
+        // TODO: Move to core statistical analysis functions
+        // TODO: Implement parameter uncertainty calculation in core
+        // TODO: Implement prediction variance calculation in core
+        features["parameter_uncertainty"] = 0.0;  // Placeholder - needs core implementation
+        features["prediction_variance"] = 0.0;    // Placeholder - needs core implementation
+    }
+    
+    return features;
 }
 
 QPointer<DataClass> SupraFitCli::applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent)

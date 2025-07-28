@@ -108,7 +108,8 @@ FileConfigType detectConfigType(const QJsonObject& config)
     }
 
     // ML Pipeline configuration detection
-    if (config.contains("Pipeline") || config.contains("BatchConfig") || config.contains("MLDataStructure")) {
+    if (config.contains("Pipeline") || config.contains("BatchConfig") || config.contains("MLDataStructure") || 
+        (config.contains("ProcessMLPipeline") && config["ProcessMLPipeline"].toBool())) {
         return MLPipelineConfig;
     }
 
@@ -494,18 +495,45 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
 
     // Handle ML Pipeline
     if (type == MLPipelineConfig) {
-        std::cout << "ML Pipeline configuration detected. Switching to ML Pipeline mode..." << std::endl;
-        MLPipelineManager pipelineManager;
+        // Check if this is new ProcessMLPipeline or legacy ML Pipeline
+        if (config.contains("ProcessMLPipeline") && config["ProcessMLPipeline"].toBool()) {
+            std::cout << "New ProcessMLPipeline detected. Using enhanced SupraFitCli workflow..." << std::endl;
+            // Execute using the new SupraFitCli ProcessMLPipeline implementation
+            SupraFitCli* core = new SupraFitCli;
+            core->setControlJson(config);
 
-        if (config.contains("BatchConfig")) {
-            pipelineManager.setBatchConfig(config);
-            pipelineManager.runBatchPipeline();
+            if (!outputOverride.isEmpty()) {
+                QFileInfo outputInfo(outputOverride);
+                QString baseName = outputInfo.completeBaseName();
+                core->setOutFile(baseName);
+            }
+
+            if (!core->LoadFile()) {
+                std::cout << "ERROR: Could not process input data for ProcessMLPipeline." << std::endl;
+                delete core;
+                return false;
+            }
+
+            // Execute ML Pipeline
+            QVector<QJsonObject> results = core->ProcessMLPipeline();
+            
+            std::cout << "ProcessMLPipeline completed successfully!" << std::endl;
+            delete core;
+            return true;
         } else {
-            pipelineManager.runSinglePipeline(inputFile);
-        }
+            std::cout << "Legacy ML Pipeline configuration detected. Switching to ML Pipeline mode..." << std::endl;
+            MLPipelineManager pipelineManager;
 
-        std::cout << "ML Pipeline completed successfully!" << std::endl;
-        return true;
+            if (config.contains("BatchConfig")) {
+                pipelineManager.setBatchConfig(config);
+                pipelineManager.runBatchPipeline();
+            } else {
+                pipelineManager.runSinglePipeline(inputFile);
+            }
+
+            std::cout << "ML Pipeline completed successfully!" << std::endl;
+            return true;
+        }
     }
 
     // Handle Task Configuration
@@ -530,7 +558,12 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
         // Execute appropriate tasks
         QVector<QJsonObject> results;
 
-        if (core->CheckDataOnly()) {
+        // Check if ML Pipeline processing is requested first - Claude Generated
+        QJsonObject config = core->getControlJson();
+        if (config.contains("ProcessMLPipeline") && config["ProcessMLPipeline"].toBool()) {
+            std::cout << "Executing ML Pipeline task..." << std::endl;
+            results = core->ProcessMLPipeline();
+        } else if (core->CheckDataOnly()) {
             std::cout << "Executing DataOnly task..." << std::endl;
             results = core->GenerateDataOnly();
         } else if (core->CheckGenerateInputData()) {

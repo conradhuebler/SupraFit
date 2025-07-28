@@ -182,7 +182,10 @@ QString content = generator->createEnhancedContent(config, iteration);
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
 ### Future Tasks
-<!-- Add tasks here as needed by operator/programmer -->
+- **Statistical Integration**: Connect DataGenerator with core statistical analysis functions
+  - TODO: Use core statistical functions for model evaluation in EvaluateWithModel
+  - TODO: Integrate with new JSON-based statistical analysis API
+  - TODO: Add statistical feature extraction to enhanced content generation
 
 ### Vision
 <!-- Add long-term architectural goals here -->
