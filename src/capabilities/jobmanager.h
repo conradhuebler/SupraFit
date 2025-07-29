@@ -17,6 +17,8 @@
  *
  */
 
+#pragma once
+
 #include "src/global.h"
 
 #include <QtCore/QObject>

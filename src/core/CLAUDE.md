@@ -23,9 +23,14 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
 
 ### Analysis Tools
-- **analyse.cpp/h**: Data analysis and statistical processing
+- **analyse.cpp/h**: **Statistical analysis and data processing with JSON API (Claude Generated)**
+  - **JSON-based statistical methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
+  - **ML feature extraction**: `ExtractModelMLFeatures()` for standardized training data
+  - **Percentile-based confidence intervals**: Monte Carlo analysis with 2.5%/97.5% quantiles
+  - **Legacy string-based functions**: `CompareAIC()`, `CompareMC()`, `CompareCV()`, `AnalyseReductionAnalysis()` for backward compatibility
+  - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to HTML tables
 - **pythonbridge.cpp/h**: Python integration for extended functionality
-- **toolset.cpp/h**: General utility functions
+- **toolset.cpp/h**: General utility functions and statistical calculations
 
 ## Model System
 
@@ -181,17 +186,33 @@ model->Calculate();
 
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
-### Future Tasks
-- **Project Analysis Migration**: Move project file analysis from src/client/suprafit_cli.cpp to core-libs for universal availability
-- **Statistical Analysis Refactoring**: Separate calculation from formatting in src/core/analyse.cpp/h
-  - TODO: Extract statistical calculation functions from string formatting
-  - TODO: Add JSON-based statistical analysis methods (AIC, SSE, R², parameter uncertainty, etc.)
-  - TODO: Implement parameter uncertainty calculation for ML feature extraction
-  - TODO: Implement prediction variance calculation for model evaluation
-  - TODO: Create unified statistical analysis API for client applications
-- **Scripted Models**: Improve scripted model functionality and integration
-- refactor bc50 code, kein inlining mehr
-- refactor optimiser logik, hier ist viel alter code, der teilweise duplicate ist
-- implement bfgs-optimierung für als alternative zum concentration solver (DOI: 10.1039/d4sc03354j, Zitation mit berücksichtigen (  Daniil O. Soloviev and  Christopher A. Hunter;  Chem. Sci., 2024,15, 15299-15310 ))
+### Future Tasks (Restructured 2025-01-28)
+
+#### **🔥 HIGH PRIORITY** - Implement immediately:
+1. **Statistical Analysis JSON API** (Task #1)
+   - NOT: Extract data from strings
+   - INSTEAD: Implement JSON-based statistical methods (`getStatisticsJSON()`)
+   - String output should be based on JSON (`formatStatisticsString(json)`)
+   - Implement: AIC, SSE, R², parameter uncertainty, prediction variance
+   - Goal: Unified statistical analysis API for all client applications
+
+2. **Pre-compiled Headers Implementation** (Task #2)
+   - Add PCH support for faster compilation
+   - `#include "pch.h"` with Qt6/Eigen/fmt headers
+   - Significantly reduced build times during development
+
+3. **ML Pipeline Performance Optimization** (Task #3)
+   - Accelerate data generation for productive use
+   - Optimize DataGenerator algorithms
+   - Focus on speed, not parallelization
+
+#### **⚡ MEDIUM PRIORITY**:
+4. **Project Analysis Migration**: Move analysis from src/client/suprafit_cli.cpp to core-libs
+5. **Scripted Models**: Improve functionality and integration
+
+#### **📋 LOW PRIORITY** - Long-term:
+- Refactor bc50 code, no more inlining
+- Refactor optimizer logic, contains much old duplicate code
+- Implement BFGS optimization as alternative to concentration solver (DOI: 10.1039/d4sc03354j, Citation: Daniil O. Soloviev and Christopher A. Hunter; Chem. Sci., 2024,15, 15299-15310)
 ### Vision
-- llm support für suprafit, auf der basis der (siehe oben) geparsten projecte sollte die auswertung mit lokalen llms auch natürlichsprachrig erfolgen (sofern ein llm angebunden ist), die contextinformationen und ggf. fachpublikationenswissen sollten dabei mit geliefert werden oder ggf. bei bedarf mit übergeben 
+- **LLM Support for SupraFit**: Based on parsed projects, evaluation should be possible in natural language using local LLMs (if connected). Context information and specialist publication knowledge should be provided or passed on as needed. 

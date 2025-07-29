@@ -84,7 +84,12 @@ input/             # Sample configurations and test data
 ## Project Status
 
 ### ✅ Recent Achievements
-- **Documentation**: Comprehensive CLAUDE.md files in all src/ subdirectories
+- **Statistical Analysis JSON API**: Complete migration from string-based to JSON-based statistical methods in `src/core/analyse.cpp`
+- **ML Pipeline Integration**: High-performance data generation and statistical analysis for machine learning workflows
+- **Percentile-based Confidence Intervals**: Monte Carlo analysis using percentile method (2.5%/97.5% quantiles) for accurate uncertainty quantification
+- **Performance Optimizations**: DataGenerator optimized for productive ML pipeline use with batch processing and debug reduction
+- **Architecture Compliance**: Fixed DataClass inheritance issues and made system compatible with SupraFit's core architecture
+- **Documentation**: Comprehensive CLAUDE.md files in all src/ subdirectories with complete ML pipeline capabilities documentation
 
 ### 🧪 Current Test Status
 
@@ -103,7 +108,8 @@ input/             # Sample configurations and test data
 - Remove TODO Hashtags and text if done and approved
 - Use modern Qt6 patterns and avoid deprecated functions
 - Implement comprehensive error handling and logging 
-- Debugging output with qDebug() within #ifdef DEBUG_ON #endif #TODO CLAUDE check if this is written correctly (CMakeLists.txt and include) 
+- Debugging output with qDebug() within #ifdef DEBUG_ON #endif
+  - **TODO CLAUDE** (Task #5): Check if this is written correctly (CMakeLists.txt and include) 
 - non-debugging console output is realised with fmt, port away from std::cout if appearing
 - Maintain backward compatibility where possible
 - **Always check and consider instructions blocks** in relevant CLAUDE.md files before implementing 

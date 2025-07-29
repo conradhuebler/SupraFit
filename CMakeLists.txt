@@ -5,6 +5,9 @@ project(SupraFit
 # set the module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
+# Pre-compiled Headers support (Claude Generated)
+option(USE_PCH "Use pre-compiled headers for faster compilation" ON)
+
 
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
@@ -232,6 +235,11 @@ endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
 
+# Pre-compiled Headers for core library (Claude Generated)
+if(USE_PCH)
+    target_precompile_headers(core PRIVATE src/pch.h)
+endif()
+
 #add_subdirectory(src/core/models/misc)
 set(models_SRC
     src/core/models/dataclass.cpp
@@ -308,6 +316,11 @@ endif()
 
 target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES} Qt::Qml)
 
+# Pre-compiled Headers for models library (Claude Generated)
+if(USE_PCH)
+    target_precompile_headers(models PRIVATE src/pch.h)
+endif()
+
 IF(Use_Duktape)
     target_link_libraries(models duke)
 ENDIF()
@@ -329,6 +342,11 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
     add_executable(suprafit ${suprafit_SRC} suprafit.rc)
+    
+    # Pre-compiled Headers for GUI Windows (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(suprafit PRIVATE src/pch.h)
+    endif()
 
         if(MSVC) # Check if we are using the Visual Studio compiler
             set_target_properties(suprafit PROPERTIES
@@ -355,12 +373,23 @@ elseif(APPLE)
 
     set(target_dir "bin/macOS")
     add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
+    
+    # Pre-compiled Headers for GUI macOS (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(suprafit PRIVATE src/pch.h)
+    endif()
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
     set(target_dir "bin/linux")
 
     add_executable(suprafit ${suprafit_SRC})
+    
+    # Pre-compiled Headers for GUI (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(suprafit PRIVATE src/pch.h)
+    endif()
+    
     set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 else()
@@ -381,6 +410,11 @@ set(suprafit_cli_SRCS
           )
 
 add_executable(suprafit_cli ${suprafit_cli_SRCS})
+
+# Pre-compiled Headers for CLI (Claude Generated)
+if(USE_PCH)
+    target_precompile_headers(suprafit_cli PRIVATE src/pch.h)
+endif()
 
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 

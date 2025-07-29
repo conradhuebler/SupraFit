@@ -59,15 +59,15 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
 QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, bool local = true, int cv_x = 3);
 QString CompareMC(const QVector<QJsonObject> models, bool local = true, int index = 1);
 
-// TODO: Add JSON-based statistical calculation functions - Claude Generated
-// These should replace the string-based functions above for ML pipeline integration
+// JSON-based statistical calculation functions (Claude Generated)
+// These replace string-based functions for ML pipeline integration
 
 /**
  * @brief Calculate AIC comparison metrics without string formatting
  * @param models Vector of fitted models to compare
  * @return QJsonObject with AIC values, rankings, and relative weights
  */
-// TODO: QJsonObject CalculateAICMetrics(const QVector<QWeakPointer<AbstractModel>>& models);
+QJsonObject CalculateAICMetrics(const QVector<QWeakPointer<AbstractModel>>& models);
 
 /**
  * @brief Calculate cross-validation statistics without string formatting  
@@ -75,14 +75,14 @@ QString CompareMC(const QVector<QJsonObject> models, bool local = true, int inde
  * @param cvtype Cross-validation type (1=leave-one-out, etc.)
  * @return QJsonObject with CV metrics, prediction errors, and validation scores
  */
-// TODO: QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype = 1, int cv_x = 3);
+QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype = 1, int cv_x = 3);
 
 /**
  * @brief Calculate Monte Carlo parameter uncertainty without string formatting
  * @param models Vector of model results with MC data
  * @return QJsonObject with parameter uncertainties, confidence intervals, correlation matrix
  */
-// TODO: QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index = 1);
+QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index = 1);
 
 /**
  * @brief Calculate parameter reduction analysis without string formatting
@@ -90,12 +90,20 @@ QString CompareMC(const QVector<QJsonObject> models, bool local = true, int inde
  * @param cutoff Significance threshold for parameter inclusion
  * @return QJsonObject with parameter rankings, significance scores, reduced model suggestions
  */
-// TODO: QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double cutoff = 0.1);
+QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double cutoff = 0.1);
 
 /**
  * @brief Extract ML features from statistical analysis results
  * @param model Single model for feature extraction
  * @return QJsonObject with standardized ML features for training
  */
-// TODO: QJsonObject ExtractModelMLFeatures(QSharedPointer<AbstractModel> model);
+QJsonObject ExtractModelMLFeatures(QSharedPointer<AbstractModel> model);
+
+/**
+ * @brief Format statistical JSON data as human-readable string
+ * @param statisticsJson JSON object with statistical results
+ * @param analysisType Type of analysis ("AIC", "CV", "MC", "Reduction", "MLFeatures")
+ * @return Formatted string for display/output
+ */
+QString FormatStatisticsString(const QJsonObject& statisticsJson, const QString& analysisType);
 }

@@ -144,7 +144,14 @@ QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& nois
 
 ## Variable Section (Short-term information, regularly updated)
 
-### Recent Changes - ML Pipeline Session 2025-01-27/28
+### Recent Changes - Architecture Cleanup 2025-01-29
+- ✅ **ARCHITECTURE**: Statistical analysis completely moved from DataGenerator to JobManager in CLI
+- ✅ **CLEAN SEPARATION**: CLI uses JobManager for post-fit analysis (following modelwidget.cpp pattern)
+- ✅ **REMOVED**: DataGenerator statistical analysis method calls from CLI
+- ✅ **WORKING**: Statistics automatically saved in model JSON via JobManager integration
+- ✅ **BUILD**: All compilation errors fixed after architecture refactoring
+
+### Previous Changes - ML Pipeline Session 2025-01-27/28
 - ✅ **MAJOR**: Complete ML Pipeline Integration - data→fitting→evaluation workflow
 - ✅ **FIX**: m_original_config storage for correct MLModels configuration reading  
 - ✅ **FIX**: NonLinearFitThread integration for proper parameter optimization (not just calculation)
@@ -157,19 +164,22 @@ QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& nois
 - ✅ 2025-01-27: Removed obsolete generation functions (GenerateIndependent, GenerateDependent, GenerateNoisyIndependent, GenerateNoisyDependent)
 - ✅ 2025-01-27: Cleaned up legacy comments and references
 
-### Current Status - ML Pipeline Complete ✅
-- **ML Pipeline**: Full workflow operational - DataGenerator → NonLinearFitThread → Statistical Evaluation
+### Current Status - Clean Architecture ✅
+- **Architecture**: Clean separation between data generation (DataGenerator) and statistical analysis (JobManager)
+- **ML Pipeline**: Full workflow operational - DataGenerator → NonLinearFitThread → JobManager Statistical Analysis
+- **Statistical Analysis**: Automatically saved in model JSON via proper JobManager integration
 - **Model Testing**: Processes exactly configured models (3 models: nmr_1_1, nmr_1_2, nmr_2_1)
 - **Parameter Fitting**: Proper optimization with convergence detection (not just calculation)
 - **File Generation**: Clean filenames with .suprafit extension - `simple_ml_test-0.suprafit` and `simple_ml_test-models-0.suprafit`
 - **Extension Support**: Automatic .suprafit default, .json optional via filename detection
+- **Build Status**: ✅ All compilation errors resolved after architecture cleanup
 - NMR 1:1 modular titration system fully functional
 - Generates realistic chemical shift data with proper random parameters
 - Complete JSON structure with {"data": {...}} wrapper
 - All SupraFit metadata (timestamps, git commits, UUIDs) working
 
 ### Known Issues
-- Model count discrepancy investigation delegated to user (original model may be included in output)
+- None currently identified after architecture cleanup
 
 ### Testing
 - Build: ✅ Success (warnings only, no errors)
@@ -186,19 +196,25 @@ QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& nois
 
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
-### Future Tasks (Active Development)
-- ✅ **ML Pipeline Integration**: Implemented model fitting workflow for DataGenerator-created datasets
-  - ✅ Added `ProcessMLPipeline()` method for complete data→models→evaluation workflow  
-  - ✅ Added `FitModelsToData()` for testing multiple models against simulated data
-  - ✅ Added `EvaluateModelFit()` for statistical model comparison
-  - ✅ Added `ExtractMLFeatures()` for ML training data generation
-- **Statistical Analysis Refactoring**: Move statistical calculations from client to core
-  - TODO: Refactor `ExtractMLFeatures()` to use core statistical analysis functions
-  - TODO: Extract model ID parsing from DataGenerator content strings
-  - TODO: Implement advanced statistical features (parameter uncertainty, prediction variance)
-- **File Naming**: Remove underscores from generated file names  
-- **File Extensions**: Add .suprafit default, .json optional support
-- **Dual CLI Modes**: Support both pipeline mode (1 call) and stepwise mode (separate config files)
-- **Model Testing Pipeline**: suprafit_cli → simulate data → fit multiple models → statistical evaluation → project file output
+### Future Tasks (Restructured 2025-01-28)
+
+#### **✅ COMPLETED**:
+- **ML Pipeline Integration**: Complete workflow implementation
+- **File Naming**: Clean naming without underscores  
+- **File Extensions**: .suprafit default, .json optional support
+- **Architecture Refactoring**: Statistical analysis moved from DataGenerator to JobManager in CLI
+- **JobManager Integration**: Proper post-fit analysis following modelwidget.cpp pattern
+- **Build Fixes**: All compilation errors resolved after architecture cleanup
+
+#### **🔥 HIGH PRIORITY** - Implement immediately:
+6. **Client Refactoring** (Task #6)
+   - Refactor `ExtractMLFeatures()` to use core JSON statistical API (depends on Task #1)
+   - Extract model ID parsing from DataGenerator content strings
+   - Implement advanced statistical features (parameter uncertainty, prediction variance)
+
+#### **⚡ MEDIUM PRIORITY**:
+8. **Dual CLI Modes** (Task #8)
+   - Support both pipeline mode (1 call) and stepwise mode (separate config files)
+   - **Model Testing Pipeline**: suprafit_cli → simulate data → fit multiple models → statistical evaluation → project file output
 ### Vision
-- obige pipeline soll verwendet werden, um daten für KI zu generieren. die aktuelle ml_pipeline ist wahrscheinlich nicht in der lage, da sich erst danach der daten-generier-workflow entwickelt hat: ziel ist also, die aktuelle ml-pipeline in vollständig durch die schon implementierte und zukünftige entwickelte infrastruktur zu überführen
+- **ML Infrastructure Evolution**: The current pipeline should be used to generate data for AI. The current ML pipeline may not be capable since the data generation workflow was developed afterwards. Goal: completely transition the current ML pipeline to the already implemented and future developed infrastructure.

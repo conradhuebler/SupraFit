@@ -55,6 +55,8 @@
 
 SupraFitCli::SupraFitCli()
 {
+    // Initialize JobManager for statistical analysis - Claude Generated
+    m_jobmanager = new JobManager(this);
 }
 
 SupraFitCli::SupraFitCli(SupraFitCli* core)
@@ -72,6 +74,9 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
     m_data_json = core->m_data_json;
     m_toplevel = core->m_toplevel;
     m_data = new DataClass(core->m_data);
+
+    // Initialize JobManager for statistical analysis - Claude Generated
+    m_jobmanager = new JobManager(this);
 
     ParseMain();
 }
@@ -1468,11 +1473,11 @@ QJsonObject SupraFitCli::PerformeJobs(const QJsonObject& data, const QJsonObject
         // Extract model statistics
         QJsonObject modelStats;
         modelStats["SSE"] = model->SSE();
-        modelStats["AIC"] = model->AIC();
-        modelStats["AICc"] = model->AICc();
+        modelStats["AIC"] = model->GetAIC();
+        modelStats["AICc"] = model->GetAICc();
         modelStats["SEy"] = model->SEy();
-        modelStats["ChiSquared"] = model->ChiSquared();
-        modelStats["RSquared"] = model->RSquared();
+        modelStats["ChiSquared"] = model->GetChiSquare();
+        modelStats["RSquared"] = model->GetRSquared();
         modelStats["ModelId"] = modelId;
         modelStats["ModelName"] = modelKey;
         
@@ -1547,6 +1552,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
             return project_list;
         }
         setOutFile(m_main["OutFile"].toString());
+        qDebug() << m_outfile << m_extension;
     }
     
     fmt::print("📊 Generating {} dataset(s) with modular structure\n", repeat);
@@ -1988,23 +1994,44 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         
         // Define models to test (from configuration or default set)
         QJsonObject modelsConfig;
-        if (m_original_config.contains("MLModels")) {
-            modelsConfig = m_original_config["MLModels"].toObject();
-            fmt::print("🔍 Using configured MLModels: {} models\n", modelsConfig.size());
+        QJsonObject globalAnalysisConfig;
+
+        // Debug: Check what configuration sections are available
+        fmt::print("🔍 DEBUG ProcessMLPipeline: Available config sections: {}\n", m_original_config.keys().join(", ").toStdString());
+        fmt::print("🔍 DEBUG ProcessMLPipeline: Contains AddModels? {}\n", m_original_config.contains("AddModels"));
+        fmt::print("🔍 DEBUG ProcessMLPipeline: Contains MLModels? {}\n", m_original_config.contains("MLModels"));
+
+        // Support new AddModels structure (v2.0) or legacy MLModels (v1.0)
+        if (m_original_config.contains("AddModels")) {
+            modelsConfig = m_original_config["AddModels"].toObject();
+            globalAnalysisConfig = m_original_config.contains("PostFitAnalysis") ? m_original_config.value("PostFitAnalysis").toObject() : QJsonObject();
+            fmt::print("🔍 Using AddModels structure (v2.0): {} models with post-fit analysis\n", modelsConfig.size());
+        } else if (m_original_config.contains("MLModels")) {
+            // Convert legacy MLModels to AddModels format for compatibility
+            QJsonObject legacyModels = m_original_config["MLModels"].toObject();
+            for (auto it = legacyModels.begin(); it != legacyModels.end(); ++it) {
+                QJsonObject modelEntry;
+                if (it.value().isDouble()) {
+                    modelEntry["ID"] = it.value().toInt();
+                } else {
+                    modelEntry = it.value().toObject();
+                }
+                modelsConfig[it.key()] = modelEntry;
+            }
+            fmt::print("🔍 Using configured MLModels (v1.0 compatibility): {} models\n", modelsConfig.size());
         } else {
             // Default model set for testing
             modelsConfig = {
-                {"model_1", 1},  // NMR 1:1
-                {"model_2", 2},  // NMR 1:2  
-                {"model_3", 3},  // NMR 2:1
-                {"model_custom", QJsonObject{{"model", 1}, {"options", QJsonObject()}}}
+                { "nmr_1_1", QJsonObject{ { "ID", 1 } } }, // NMR 1:1
+                { "nmr_1_2", QJsonObject{ { "ID", 2 } } }, // NMR 1:2
+                { "nmr_2_1", QJsonObject{ { "ID", 3 } } } // NMR 2:1
             };
             fmt::print("🔍 Using default models: {} models\n", modelsConfig.size());
         }
-        
-        // Step 3: Fit models and evaluate
-        QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig);
-        
+
+        // Step 3: Fit models and evaluate with post-fit analysis
+        QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig, globalAnalysisConfig);
+
         // Step 4: Create SupraFit project with fitted models (like GUI SaveWorkspace)
         QJsonObject projectFile;
         projectFile["data"] = dataset["data"];  // Use the generated data
@@ -2017,7 +2044,19 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
                 modelIndex++;
             }
         }
-        
+
+        // Add post-fit analysis results to project file if available
+        QJsonObject analysisResults;
+        for (const QJsonObject& modelResult : fittedModels) {
+            if (modelResult.contains("post_fit_analysis")) {
+                QString modelName = modelResult["model_name"].toString();
+                analysisResults[modelName + "_analysis"] = modelResult["post_fit_analysis"];
+            }
+        }
+        if (!analysisResults.isEmpty()) {
+            // projectFile["post_fit_analysis"] = analysisResults;
+        }
+
         // Also create ML training entry 
         for (const QJsonObject& modelResult : fittedModels) {
             QJsonObject mlEntry;
@@ -2031,8 +2070,14 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         }
         
         // Save the project file with fitted models
-        SaveFile(m_outfile + "-models-" + QString::number(i), projectFile);
-        
+        QString modelsFilename = m_outfile + "-models-" + QString::number(i);
+        if (m_outfile.endsWith(".json")) {
+            modelsFilename += ".json";
+        } else {
+            modelsFilename += ".suprafit";
+        }
+        SaveFile(modelsFilename, projectFile);
+
         delete data;
     }
     
@@ -2040,7 +2085,7 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
     return results;
 }
 
-QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig)
+QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig, const QJsonObject& globalAnalysisConfig)
 {
     /**
      * @brief Fit multiple models to data for comparison and ML feature extraction
@@ -2072,17 +2117,48 @@ QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, cons
         fmt::print("  📊 Testing model: {}\n", modelName.toStdString());
         
         try {
-            // Create model based on configuration
+            // Create model based on AddModels structure (v2.0) or legacy format
             QSharedPointer<AbstractModel> model;
+            QJsonObject modelSpecificConfig;
+
             if (modelValue.isDouble()) {
+                // Legacy MLModels format: "model_name": model_id
                 int modelId = modelValue.toInt();
                 model = AddModel(modelId, data);
             } else if (modelValue.isObject()) {
                 QJsonObject modelObj = modelValue.toObject();
-                int modelId = modelObj["model"].toInt();
-                model = AddModel(modelId, data);
-                if (modelObj.contains("options")) {
-                    model->setOptions(modelObj["options"].toObject());
+
+                // New AddModels format: "model_name": {"ID": model_id, "Options": {...}, "PostFitAnalysis": {...}}
+                if (modelObj.contains("ID")) {
+                    int modelId = modelObj["ID"].toInt();
+                    model = AddModel(modelId, data);
+
+                    // Apply model-specific options
+                    if (modelObj.contains("Options")) {
+                        QJsonObject options = modelObj["Options"].toObject();
+                        // Apply FastMode, Convergency, MaxIterations, etc.
+                        if (options.contains("FastMode") && options["FastMode"].toBool()) {
+                            model->setFast(true);
+                        }
+                        if (options.contains("Convergency")) {
+                            // model->setConvergence(options["Convergency"].toDouble()); // Method not available in AbstractModel
+                        }
+                        if (options.contains("MaxIterations")) {
+                            // model->setMaxIterations(options["MaxIterations"].toInt()); // Method not available in AbstractModel
+                        }
+                    }
+
+                    // Store model-specific PostFitAnalysis configuration
+                    if (modelObj.contains("PostFitAnalysis")) {
+                        modelSpecificConfig = modelObj["PostFitAnalysis"].toObject();
+                    }
+                } else if (modelObj.contains("model")) {
+                    // Legacy format: {"model": model_id, "options": {...}}
+                    int modelId = modelObj["model"].toInt();
+                    model = AddModel(modelId, data);
+                    if (modelObj.contains("options")) {
+                        model->setOptions(modelObj["options"].toObject());
+                    }
                 }
             }
             
@@ -2122,6 +2198,32 @@ QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, cons
                 model->setFast(false);
                 model->Calculate();
             }
+
+            // Step 4: Execute post-fit analysis if enabled (v2.0 feature)
+            QJsonObject postFitResults;
+            if ((m_main.contains("PostFitAnalysis") && m_main["PostFitAnalysis"].toBool()) || (!modelSpecificConfig.isEmpty() && modelSpecificConfig["enabled"].toBool())) {
+
+                fmt::print("      Running post-fit analysis for model {}...\n", modelName.toStdString());
+
+                // Use JobManager for post-fit analysis (corrected architecture)
+                // Determine which analysis configuration to use (model-specific overrides global)
+                QJsonObject analysisConfig = globalAnalysisConfig;
+                if (!modelSpecificConfig.isEmpty() && modelSpecificConfig["enabled"].toBool()) {
+                    analysisConfig = modelSpecificConfig;
+                    fmt::print("        Using model-specific analysis configuration\n");
+                } else if (!globalAnalysisConfig.isEmpty() && globalAnalysisConfig["enabled"].toBool()) {
+                    fmt::print("        Using global analysis configuration\n");
+                }
+
+                if (!analysisConfig.isEmpty() && analysisConfig["enabled"].toBool()) {
+                    postFitResults = runPostFitAnalysis(model, analysisConfig);
+                    fmt::print("        Post-fit analysis completed with {} methods\n",
+                        postFitResults["methods"].toObject().size());
+                } else {
+                    fmt::print("        Post-fit analysis disabled\n");
+                }
+            }
+
             // Evaluate model performance
             QJsonObject evaluation = EvaluateModelFit(model, trueModelId);
             evaluation["model_name"] = modelName; // TODO marked as potentially obsolete as we have the name in model
@@ -2129,8 +2231,13 @@ QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, cons
             // TODO for Claude -> Analyse json structure of the model and write it to Claude.md in core
             
             // Export complete model for saving (like GUI SaveWorkspace)
-            evaluation["model_export"] = model->ExportModel();
-            
+            evaluation["model_export"] = model->ExportModel(true, true);
+
+            // Include post-fit analysis results if available
+            if (!postFitResults.isEmpty()) {
+                evaluation["post_fit_analysis"] = postFitResults;
+            }
+
             results.append(evaluation);
             
             fmt::print("    ✅ Model {} completed (SSE: {:.2e})\n", 
@@ -2321,6 +2428,91 @@ QPointer<DataClass> SupraFitCli::applyNoise(QPointer<DataClass> data, const QJso
     }
     
     return data;
+}
+
+// Execute post-fit statistical analysis using JobManager - Claude Generated
+QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model, const QJsonObject& analysisConfig)
+{
+    QJsonObject results;
+
+    if (!analysisConfig.contains("enabled") || !analysisConfig["enabled"].toBool()) {
+        return results;
+    }
+
+    if (!analysisConfig.contains("methods") || !analysisConfig["methods"].isArray()) {
+        fmt::print("❌ ERROR: PostFitAnalysis configuration missing 'methods' array\n");
+        return results;
+    }
+
+    // Set the model for JobManager (like in modelwidget.cpp)
+    m_jobmanager->setModel(model);
+
+    QJsonArray methodsArray = analysisConfig["methods"].toArray();
+    QJsonObject methodResults;
+
+    for (const QJsonValue& methodValue : methodsArray) {
+        QJsonObject methodConfig = methodValue.toObject();
+        if (!methodConfig.contains("Method")) {
+            continue;
+        }
+
+        int methodType = methodConfig["Method"].toInt();
+        QString methodName = SupraFit::Method2Name(static_cast<SupraFit::Method>(methodType));
+
+        fmt::print("        Running {} analysis (Method: {})\n", methodName.toStdString(), methodType);
+
+        // Create job configuration (like in modelwidget.cpp)
+        QJsonObject job = methodConfig;
+        job["Method"] = methodType;
+
+        // Add default parameters if not specified
+        if (!job.contains("MaxSteps")) {
+            job["MaxSteps"] = 1000;
+        }
+
+        // For Monte Carlo (Method 1), ensure VarianceSource is set
+        if (methodType == static_cast<int>(SupraFit::Method::MonteCarlo)) {
+            if (!job.contains("VarianceSource")) {
+                job["VarianceSource"] = 2; // SEy (model error) - recommended default
+            }
+            if (!job.contains("EntropyBins")) {
+                job["EntropyBins"] = 50;
+            }
+        }
+
+        try {
+            // Execute job using JobManager (like in modelwidget.cpp)
+            m_jobmanager->AddSingleJob(job);
+            m_jobmanager->RunJobs();
+
+            // Get results from model after job completion
+            // The JobManager stores results in the model itself
+            QJsonObject methodResult;
+            methodResult["method"] = methodType;
+            methodResult["method_name"] = methodName;
+            methodResult["configuration"] = job;
+            methodResult["completed"] = true;
+
+            methodResults[QString::number(methodType)] = methodResult;
+
+        } catch (const std::exception& e) {
+            fmt::print("❌ ERROR: Failed to execute {} analysis: {}\n",
+                methodName.toStdString(), e.what());
+
+            QJsonObject errorResult;
+            errorResult["method"] = methodType;
+            errorResult["method_name"] = methodName;
+            errorResult["error"] = QString::fromStdString(e.what());
+            errorResult["completed"] = false;
+
+            methodResults[QString::number(methodType)] = errorResult;
+        }
+    }
+
+    results["methods"] = methodResults;
+    results["analysis_completed"] = true;
+
+    return results;
 }
 
 /*

@@ -29,6 +29,9 @@
 
 #include "src/core/models/models.h"
 
+// Forward declaration to avoid multiple includes
+class JobManager;
+
 class SupraFitCli : public QObject {
     Q_OBJECT
 public:
@@ -121,8 +124,8 @@ public:
      * @param modelsConfig JSON configuration specifying which models to test
      * @return Vector of fitted models with statistical metrics
      */
-    QVector<QJsonObject> FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig);
-    
+    QVector<QJsonObject> FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig, const QJsonObject& globalAnalysisConfig = QJsonObject());
+
     /**
      * @brief Evaluate model fit quality and extract statistical features
      * @param model Fitted model to evaluate
@@ -138,7 +141,15 @@ public:
      * @return JSON with features suitable for ML training
      */
     QJsonObject ExtractMLFeatures(QSharedPointer<AbstractModel> model, bool includeStatistics = true);
-    
+
+    /**
+     * @brief Execute post-fit statistical analysis using JobManager (replaces DataGenerator logic)
+     * @param model Fitted model to analyze
+     * @param analysisConfig JSON configuration for analysis methods
+     * @return JSON with analysis results from JobManager
+     */
+    QJsonObject runPostFitAnalysis(QSharedPointer<AbstractModel> model, const QJsonObject& analysisConfig);
+
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
 signals:
@@ -175,6 +186,9 @@ protected:
     QJsonObject m_toplevel;
 
     QPointer<DataClass> m_data;
+
+    // JobManager for statistical analysis - Claude Generated
+    JobManager* m_jobmanager;
 
     QString m_modelContent; // Store enhanced content from model generation - Claude Generated
 

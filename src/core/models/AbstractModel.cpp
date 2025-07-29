@@ -278,7 +278,7 @@ AbstractModel::~AbstractModel()
 
     qDeleteAll(m_model_charts);
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     std::cout << "Model to be deleted" << std::endl;
 #endif
 }
@@ -416,7 +416,9 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
-    qDebug() << LocalTable() << m_complete << static_cast<int>(DataBegin() == DataEnd()) << DataBegin() << DataEnd();
+#ifdef DEBUG_ON
+// qDebug() << LocalTable() << m_complete << static_cast<int>(DataBegin() == DataEnd()) << DataBegin() << DataEnd();
+#endif
     if (!LocalTable() || !m_complete || (DataBegin() == DataEnd() && SFModel() != SupraFit::MetaModel))
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
@@ -680,15 +682,12 @@ void AbstractModel::setLocalParameter(qreal value, const QPair<int, int>& pair)
 {
     if (LocalTable()->isChecked(pair.second, pair.first))
         LocalTable()->data(pair.second, pair.first) = value;
-    LocalTable()->Debug();
-    qDebug() << value << pair;
 }
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
     if (LocalTable()->isChecked(series, parameter))
         LocalTable()->data(series, parameter) = value;
-    LocalTable()->Debug();
 }
 
 void AbstractModel::forceLocalParameter(qreal value, const QPair<int, int>& pair)
@@ -1144,7 +1143,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 
     toplevel["ModelDefinition"] = definiton;
     if (m_locked_model || locked) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() << "Writing calculated data to json file";
 #endif
         toplevel["locked_model"] = true;
@@ -1210,7 +1209,7 @@ void AbstractModel::setOptions(const QJsonObject& options)
 
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 // quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
 
@@ -1291,7 +1290,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     setActiveSignals(active_signals);
 
     if (topjson.contains("locked_model")) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() << "Loaded calculated data from json file";
 #endif
         m_locked_model = true;
@@ -1314,7 +1313,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
                 ModelTable()->setRow(concentrationsVector, row);
         }
     }
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     //  quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     //  qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
@@ -1333,7 +1332,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     /* Copy system parameter */
     QJsonObject systemparameter = json["system"].toObject();
-    qDebug() << topjson["system"].toObject() << json["system"].toObject();
+#ifndef DEBUG_ON
+//    qDebug() << topjson["system"].toObject() << json["system"].toObject();
+#endif
     for (int i = 0; i < SystemParameterCount(); ++i) {
     }
     emit ParameterChanged();
@@ -1341,16 +1342,16 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (SFModel() != SupraFit::MetaModel)
         Calculate();
 
-#ifdef _DEBUG
-        // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-        // qDebug() << "calculation took " << t2 - t1 << " msecs";
+#ifdef DEBUG_ON
+    // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
+    // qDebug() << "calculation took " << t2 - t1 << " msecs";
 #endif
     return true;
 }
 
 bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
 {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
     if (topjson[Name()].isNull()) {
@@ -1503,7 +1504,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     setActiveSignals(active_signals);
 
     if (topjson.contains("locked_model")) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() << "Loaded calculated data from json file";
 #endif
         m_locked_model = true;
@@ -1526,7 +1527,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
                 ModelTable()->setRow(concentrationsVector, row);
         }
     }
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
@@ -1548,7 +1549,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     if (SFModel() != SupraFit::MetaModel)
         Calculate();
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
     qDebug() << "calculation took " << t2 - t1 << " msecs";
 #endif

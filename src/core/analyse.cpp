@@ -19,12 +19,15 @@
 
 #include <QDebug>
 
+#include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMultiMap>
 #include <QtCore/QPair>
 #include <QtCore/QString>
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
+
+#include <limits>
 
 #include "src/core/models/AbstractModel.h"
 
@@ -629,4 +632,565 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
     result += "For more information on AIC see H. Motulsky, A. Christopoulos, Fitting Models to Biological Data using Linear and Nonlinear Regression. A practical guide to curve fitting. GraphPad Software Inc., San Diego CA, 2003";
     return result;
 }
+
+// JSON-based statistical calculation functions (Claude Generated)
+
+QJsonObject CalculateAICMetrics(const QVector<QWeakPointer<AbstractModel>>& models)
+{
+    QJsonObject result;
+    QJsonArray modelMetrics;
+    QMap<qreal, QString> aicRanking;
+
+    qreal minAIC = std::numeric_limits<qreal>::max();
+
+    // Calculate AIC for each model
+    for (int i = 0; i < models.size(); ++i) {
+        if (auto model = models[i].toStrongRef()) {
+            QJsonObject modelData;
+            modelData["index"] = i;
+            modelData["name"] = model->Name();
+            modelData["aic"] = model->AIC();
+            modelData["aicc"] = model->AICc();
+            modelData["parameters"] = model->GlobalParameterSize() + model->LocalParameterSize();
+            modelData["datapoints"] = model->DataPoints();
+
+            modelMetrics.append(modelData);
+
+            aicRanking.insert(model->AIC(), QString::number(i) + " - " + model->Name());
+
+            if (model->AIC() < minAIC)
+                minAIC = model->AIC();
+        }
+    }
+
+    // Calculate evidence ratios and rankings
+    QJsonArray aicRankingArray;
+    int rank = 1;
+
+    for (auto it = aicRanking.begin(); it != aicRanking.end(); ++it, ++rank) {
+        QJsonObject rankData;
+        rankData["rank"] = rank;
+        rankData["model"] = it.value();
+        rankData["aic"] = it.key();
+        rankData["evidence_ratio"] = 1.0 / exp(-0.5 * (minAIC - it.key()));
+        aicRankingArray.append(rankData);
+    }
+
+    result["models"] = modelMetrics;
+    result["aic_ranking"] = aicRankingArray;
+    result["best_aic"] = minAIC;
+
+    return result;
 }
+
+QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype, int cv_x)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    QMultiMap<qreal, QString> entropyRanking, stdevRanking;
+    QHash<QString, qreal> parameterStdev, parameterEntropy;
+    QHash<QString, int> parameterCount;
+
+    QString cvTypeStr = (cvtype == 1) ? "L0O" : (cvtype == 2) ? "L2O"
+                                                              : "CXO";
+
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        QJsonArray parameterResults;
+
+        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : statistics.keys()) {
+            QJsonObject method = statistics[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+
+            if (AccessCI(controller, "Method").toInt() != 4 || controller["CXO"].toInt() != cvtype)
+                continue;
+
+            if (cvtype == 3 && controller["X"].toInt() != cv_x)
+                continue;
+
+            int bins = controller["EntropyBins"].toInt(50);
+
+            for (const QString& paramKey : method.keys()) {
+                if (paramKey == "controller")
+                    continue;
+
+                QJsonObject param = method[paramKey].toObject();
+                QJsonObject box = param["boxplot"].toObject();
+
+                QVector<qreal> rawData = ToolSet::String2DoubleVec(param["data"].toObject()["raw"].toString());
+                QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(rawData, bins);
+                ToolSet::Normalise(histogram);
+                QPair<qreal, qreal> entropy = ToolSet::Entropy(histogram);
+
+                QJsonObject paramResult;
+                paramResult["name"] = param["name"].toString();
+                paramResult["type"] = param["type"].toString();
+                paramResult["entropy"] = qAbs(entropy.first);
+                paramResult["stddev"] = box["stddev"].toDouble();
+                paramResult["mean"] = box["mean"].toDouble();
+                paramResult["median"] = box["median"].toDouble();
+                paramResult["bins"] = bins;
+
+                parameterResults.append(paramResult);
+
+                QString paramName = param["name"].toString();
+                entropyRanking.insert(qAbs(entropy.first), paramName + " - " + model["name"].toString());
+                stdevRanking.insert(box["stddev"].toDouble(), paramName + " - " + model["name"].toString());
+
+                if (parameterStdev.contains(paramName)) {
+                    parameterStdev[paramName] += box["stddev"].toDouble();
+                    parameterEntropy[paramName] += qAbs(entropy.first);
+                    parameterCount[paramName]++;
+                } else {
+                    parameterStdev[paramName] = box["stddev"].toDouble();
+                    parameterEntropy[paramName] = qAbs(entropy.first);
+                    parameterCount[paramName] = 1;
+                }
+            }
+        }
+
+        modelData["parameters"] = parameterResults;
+        modelResults.append(modelData);
+    }
+
+    // Calculate average parameter statistics
+    QJsonArray parameterAverages;
+    for (auto it = parameterStdev.begin(); it != parameterStdev.end(); ++it) {
+        QJsonObject avg;
+        avg["parameter"] = it.key();
+        avg["avg_stddev"] = it.value() / parameterCount[it.key()];
+        avg["avg_entropy"] = parameterEntropy[it.key()] / parameterCount[it.key()];
+        avg["model_count"] = parameterCount[it.key()];
+        parameterAverages.append(avg);
+    }
+
+    result["cv_type"] = cvTypeStr;
+    result["cv_x"] = cv_x;
+    result["models"] = modelResults;
+    result["parameter_averages"] = parameterAverages;
+
+    return result;
+}
+
+QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    QMultiMap<qreal, QString> entropyRanking, stdevRanking;
+    QHash<QString, qreal> parameterStdev, parameterEntropy;
+    QHash<QString, int> parameterCount;
+
+    int maxSteps = -1;
+    double variance = 0.0;
+
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        QJsonArray parameterResults;
+
+        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : statistics.keys()) {
+            QJsonObject method = statistics[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::MonteCarlo)
+                continue;
+
+            if (maxSteps == -1) {
+                maxSteps = controller["MaxSteps"].toInt();
+                variance = controller["Variance"].toDouble();
+            }
+
+            if (maxSteps != controller["MaxSteps"].toInt())
+                continue;
+
+            int bins = controller["EntropyBins"].toInt(50);
+
+            for (const QString& paramKey : method.keys()) {
+                if (paramKey == "controller")
+                    continue;
+
+                QJsonObject param = method[paramKey].toObject();
+                QJsonObject box = param["boxplot"].toObject();
+
+                QVector<qreal> rawData = ToolSet::String2DoubleVec(param["data"].toObject()["raw"].toString());
+                QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(rawData, bins);
+                ToolSet::Normalise(histogram);
+                QPair<qreal, qreal> entropy = ToolSet::Entropy(histogram);
+
+                QJsonObject paramResult;
+                paramResult["name"] = param["name"].toString();
+                paramResult["type"] = param["type"].toString();
+                paramResult["entropy"] = qAbs(entropy.first);
+                paramResult["stddev"] = box["stddev"].toDouble();
+                paramResult["mean"] = box["mean"].toDouble();
+                paramResult["median"] = box["median"].toDouble();
+
+                // Use percentile-based confidence intervals from existing data - Claude Generated
+                if (param.contains("confidence")) {
+                    QJsonObject confidence = param["confidence"].toObject();
+                    paramResult["confidence_lower"] = confidence["lower"].toDouble();
+                    paramResult["confidence_upper"] = confidence["upper"].toDouble();
+                    paramResult["confidence_error"] = confidence["error"].toDouble();
+                    paramResult["confidence_range"] = confidence["upper"].toDouble() - confidence["lower"].toDouble();
+                    paramResult["relative_uncertainty"] = (confidence["error"].toDouble() / param["value"].toDouble()) * 100.0;
+                }
+
+                // Boxplot quartiles for additional uncertainty measures - Claude Generated
+                paramResult["lower_quartile"] = box["lower_quantile"].toDouble();
+                paramResult["upper_quartile"] = box["upper_quantile"].toDouble();
+                paramResult["iqr"] = box["upper_quantile"].toDouble() - box["lower_quantile"].toDouble();
+                paramResult["bins"] = bins;
+
+                parameterResults.append(paramResult);
+
+                QString paramName = param["name"].toString();
+                entropyRanking.insert(qAbs(entropy.first), paramName + " - " + model["name"].toString());
+                stdevRanking.insert(box["stddev"].toDouble(), paramName + " - " + model["name"].toString());
+
+                if (parameterStdev.contains(paramName)) {
+                    parameterStdev[paramName] += box["stddev"].toDouble();
+                    parameterEntropy[paramName] += qAbs(entropy.first);
+                    parameterCount[paramName]++;
+                } else {
+                    parameterStdev[paramName] = box["stddev"].toDouble();
+                    parameterEntropy[paramName] = qAbs(entropy.first);
+                    parameterCount[paramName] = 1;
+                }
+            }
+        }
+
+        modelData["parameters"] = parameterResults;
+        modelResults.append(modelData);
+    }
+
+    // Calculate parameter correlations and averages
+    QJsonArray parameterAverages;
+    for (auto it = parameterStdev.begin(); it != parameterStdev.end(); ++it) {
+        QJsonObject avg;
+        avg["parameter"] = it.key();
+        avg["avg_stddev"] = it.value() / parameterCount[it.key()];
+        avg["avg_entropy"] = parameterEntropy[it.key()] / parameterCount[it.key()];
+        avg["relative_uncertainty"] = (it.value() / parameterCount[it.key()]) * 100.0; // Percentage
+        avg["model_count"] = parameterCount[it.key()];
+        parameterAverages.append(avg);
+    }
+
+    result["max_steps"] = maxSteps;
+    result["variance"] = variance;
+    result["models"] = modelResults;
+    result["parameter_averages"] = parameterAverages;
+
+    return result;
+}
+
+QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double cutoff)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    QMultiMap<qreal, QString> significanceRanking;
+    QHash<QString, qreal> parameterSignificance;
+    QHash<QString, int> parameterCount;
+
+    QVector<qreal> cutoffValues;
+
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        QJsonArray parameterResults;
+
+        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : methods.keys()) {
+            QJsonObject method = methods[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::Reduction)
+                continue;
+
+            if (cutoffValues.isEmpty()) {
+                cutoffValues = ToolSet::String2DoubleVec(controller["x"].toString());
+            }
+
+            for (const QString& paramKey : method.keys()) {
+                if (paramKey == "controller")
+                    continue;
+
+                QJsonObject param = method[paramKey].toObject();
+                QVector<qreal> yValues = ToolSet::String2DoubleVec(param["y"].toString());
+                QVector<qreal> yValuesCorr = ToolSet::String2DoubleVec(param["y_corr"].toString());
+
+                QJsonObject paramResult;
+                paramResult["name"] = param["name"].toString();
+                paramResult["x_values"] = QJsonArray::fromVariantList(
+                    QVariantList(cutoffValues.begin(), cutoffValues.end()));
+                paramResult["y_values"] = QJsonArray::fromVariantList(
+                    QVariantList(yValues.begin(), yValues.end()));
+                paramResult["y_corrected"] = QJsonArray::fromVariantList(
+                    QVariantList(yValuesCorr.begin(), yValuesCorr.end()));
+
+                // Find significance at cutoff
+                double significance = 0.0;
+                for (int i = 0; i < cutoffValues.size(); ++i) {
+                    if (cutoffValues[i] >= cutoff) {
+                        significance = (i < yValues.size()) ? yValues[i] : 0.0;
+                        break;
+                    }
+                }
+
+                paramResult["significance_at_cutoff"] = significance;
+                paramResult["is_significant"] = significance > cutoff;
+
+                parameterResults.append(paramResult);
+
+                QString paramName = param["name"].toString();
+                significanceRanking.insert(significance, paramName + " - " + model["name"].toString());
+
+                if (parameterSignificance.contains(paramName)) {
+                    parameterSignificance[paramName] += significance;
+                    parameterCount[paramName]++;
+                } else {
+                    parameterSignificance[paramName] = significance;
+                    parameterCount[paramName] = 1;
+                }
+            }
+        }
+
+        modelData["parameters"] = parameterResults;
+        modelResults.append(modelData);
+    }
+
+    // Calculate parameter importance ranking
+    QJsonArray parameterRanking;
+    QMultiMap<qreal, QString> avgSignificance;
+    for (auto it = parameterSignificance.begin(); it != parameterSignificance.end(); ++it) {
+        double avg = it.value() / parameterCount[it.key()];
+        avgSignificance.insert(avg, it.key());
+    }
+
+    int rank = 1;
+    auto reverseIt = avgSignificance.end();
+    while (reverseIt != avgSignificance.begin()) {
+        --reverseIt;
+        QJsonObject rankData;
+        rankData["rank"] = rank;
+        rankData["parameter"] = reverseIt.value();
+        rankData["avg_significance"] = reverseIt.key();
+        rankData["is_important"] = reverseIt.key() > cutoff;
+        parameterRanking.append(rankData);
+        ++rank;
+    }
+
+    result["cutoff"] = cutoff;
+    result["models"] = modelResults;
+    result["parameter_ranking"] = parameterRanking;
+
+    return result;
+}
+
+QJsonObject ExtractModelMLFeatures(QSharedPointer<AbstractModel> model)
+{
+    QJsonObject features;
+
+    if (!model) {
+        return features;
+    }
+
+    // Basic model characteristics
+    features["model_name"] = model->Name();
+    features["model_id"] = model->SFModel();
+    features["global_parameters"] = model->GlobalParameterSize();
+    features["local_parameters"] = model->LocalParameterSize();
+    features["total_parameters"] = model->GlobalParameterSize() + model->LocalParameterSize();
+    features["datapoints"] = model->DataPoints();
+    features["series_count"] = model->SeriesCount();
+
+    // Fit quality metrics
+    features["aic"] = model->GetAIC();
+    features["aicc"] = model->GetAICc();
+    features["sse"] = model->SSE();
+    features["rmse"] = std::sqrt(model->SSE() / model->DataPoints());
+    features["sigma"] = model->sigma();
+    features["converged"] = model->isConverged();
+
+    // Degrees of freedom and complexity
+    int dof = model->DataPoints() - (model->GlobalParameterSize() + model->LocalParameterSize());
+    features["degrees_of_freedom"] = dof;
+    features["complexity_ratio"] = double(model->GlobalParameterSize() + model->LocalParameterSize()) / model->DataPoints();
+
+    // Parameter values for ML training
+    QJsonArray globalParams, localParams;
+    for (int i = 0; i < model->GlobalParameterSize(); ++i) {
+        globalParams.append(model->GlobalParameter(i));
+    }
+
+    for (int i = 0; i < model->LocalParameterSize(); ++i) {
+        QJsonArray seriesParams;
+        for (int j = 0; j < model->SeriesCount(); ++j) {
+            seriesParams.append(model->LocalParameter(i, j));
+        }
+        localParams.append(seriesParams);
+    }
+
+    features["global_parameter_values"] = globalParams;
+    features["local_parameter_values"] = localParams;
+
+    // Statistical indicators
+    if (dof > 0) {
+        features["reduced_chi_squared"] = model->SSE() / dof;
+        features["normalized_rmse"] = std::sqrt(model->SSE() / model->DataPoints()) / model->sigma();
+    }
+
+    return features;
+}
+
+QString FormatStatisticsString(const QJsonObject& statisticsJson, const QString& analysisType)
+{
+    QString result;
+
+    if (analysisType == "AIC") {
+        result = "<h3>Akaike Information Criterion Analysis</h3><table>";
+        result += "<tr><th>Model</th><th>AIC</th><th>Evidence Ratio</th></tr>";
+
+        QJsonArray ranking = statisticsJson["aic_ranking"].toArray();
+        for (const auto& entry : ranking) {
+            QJsonObject rank = entry.toObject();
+            result += QString("<tr><td>%1</td><td>%2</td><td>%3</td></tr>")
+                          .arg(rank["model"].toString())
+                          .arg(Print::printDouble(rank["aic"].toDouble()))
+                          .arg(Print::printDouble(rank["evidence_ratio"].toDouble()));
+        }
+        result += "</table>";
+
+    } else if (analysisType == "MC") {
+        result = "<h3>Monte Carlo Parameter Uncertainty Analysis</h3>";
+        result += QString("<p>Simulation Steps: %1, Variance: %2</p>")
+                      .arg(statisticsJson["max_steps"].toInt())
+                      .arg(statisticsJson["variance"].toDouble());
+
+        QJsonArray models = statisticsJson["models"].toArray();
+        for (const auto& modelEntry : models) {
+            QJsonObject model = modelEntry.toObject();
+            result += QString("<h4>Model: %1</h4><table>").arg(model["name"].toString());
+            result += "<tr><th>Parameter</th><th>Mean</th><th>Std Dev</th><th>Confidence Interval</th><th>Entropy</th></tr>";
+
+            QJsonArray params = model["parameters"].toArray();
+            for (const auto& paramEntry : params) {
+                QJsonObject param = paramEntry.toObject();
+                QString confInterval = QString("[%1, %2]")
+                                           .arg(Print::printDouble(param["confidence_lower"].toDouble()))
+                                           .arg(Print::printDouble(param["confidence_upper"].toDouble()));
+
+                result += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>")
+                              .arg(param["name"].toString())
+                              .arg(Print::printDouble(param["mean"].toDouble()))
+                              .arg(Print::printDouble(param["stddev"].toDouble()))
+                              .arg(confInterval)
+                              .arg(Print::printDouble(param["entropy"].toDouble()));
+            }
+            result += "</table>";
+        }
+
+    } else if (analysisType == "CV") {
+        result = QString("<h3>Cross Validation Analysis (%1)</h3>").arg(statisticsJson["cv_type"].toString());
+
+        QJsonArray models = statisticsJson["models"].toArray();
+        for (const auto& modelEntry : models) {
+            QJsonObject model = modelEntry.toObject();
+            result += QString("<h4>Model: %1</h4><table>").arg(model["name"].toString());
+            result += "<tr><th>Parameter</th><th>Type</th><th>Std Dev</th><th>Entropy</th></tr>";
+
+            QJsonArray params = model["parameters"].toArray();
+            for (const auto& paramEntry : params) {
+                QJsonObject param = paramEntry.toObject();
+                result += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>")
+                              .arg(param["name"].toString())
+                              .arg(param["type"].toString())
+                              .arg(Print::printDouble(param["stddev"].toDouble()))
+                              .arg(Print::printDouble(param["entropy"].toDouble()));
+            }
+            result += "</table>";
+        }
+
+    } else if (analysisType == "Reduction") {
+        result = QString("<h3>Parameter Reduction Analysis (Cutoff: %1)</h3>")
+                     .arg(statisticsJson["cutoff"].toDouble());
+
+        result += "<table><tr><th>Rank</th><th>Parameter</th><th>Significance</th><th>Important</th></tr>";
+        QJsonArray ranking = statisticsJson["parameter_ranking"].toArray();
+        for (const auto& entry : ranking) {
+            QJsonObject rank = entry.toObject();
+            result += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>")
+                          .arg(rank["rank"].toInt())
+                          .arg(rank["parameter"].toString())
+                          .arg(Print::printDouble(rank["avg_significance"].toDouble()))
+                          .arg(rank["is_important"].toBool() ? "Yes" : "No");
+        }
+        result += "</table>";
+
+    } else if (analysisType == "MLFeatures") {
+        result = "<h3>ML Feature Extraction</h3><table>";
+        result += QString("<tr><td>Model</td><td>%1</td></tr>").arg(statisticsJson["model_name"].toString());
+        result += QString("<tr><td>Parameters</td><td>%1</td></tr>").arg(statisticsJson["total_parameters"].toInt());
+        result += QString("<tr><td>Data Points</td><td>%1</td></tr>").arg(statisticsJson["datapoints"].toInt());
+        result += QString("<tr><td>AIC</td><td>%1</td></tr>").arg(Print::printDouble(statisticsJson["aic"].toDouble()));
+        result += QString("<tr><td>RMSE</td><td>%1</td></tr>").arg(Print::printDouble(statisticsJson["rmse"].toDouble()));
+        result += QString("<tr><td>Converged</td><td>%1</td></tr>").arg(statisticsJson["converged"].toBool() ? "Yes" : "No");
+        result += "</table>";
+
+    } else if (analysisType == "PostFit") {
+        result = QString("<h3>Post-Fit Analysis Results</h3>");
+        result += QString("<p><strong>Analysis Timestamp:</strong> %1</p>").arg(statisticsJson["analysis_timestamp"].toString());
+        result += QString("<p><strong>Model:</strong> %1 (ID: %2)</p>")
+                      .arg(statisticsJson["model_name"].toString())
+                      .arg(statisticsJson["model_id"].toInt());
+
+        QJsonObject methods = statisticsJson["methods"].toObject();
+
+        // Format Monte Carlo results
+        if (methods.contains("MonteCarlo")) {
+            QJsonObject mcResult = methods["MonteCarlo"].toObject();
+            if (mcResult["execution_status"].toString() == "success") {
+                result += FormatStatisticsString(mcResult, "MC");
+            } else {
+                result += QString("<h4>Monte Carlo Analysis</h4><p>❌ %1</p>").arg(mcResult["error"].toString());
+            }
+        }
+
+        // Format Cross-Validation results
+        if (methods.contains("CrossValidation")) {
+            QJsonObject cvResult = methods["CrossValidation"].toObject();
+            if (cvResult["execution_status"].toString() == "success") {
+                result += FormatStatisticsString(cvResult, "CV");
+            } else {
+                result += QString("<h4>Cross-Validation Analysis</h4><p>❌ %1</p>").arg(cvResult["error"].toString());
+            }
+        }
+
+        // Format Reduction results
+        if (methods.contains("Reduction")) {
+            QJsonObject reductionResult = methods["Reduction"].toObject();
+            if (reductionResult["execution_status"].toString() == "success") {
+                result += FormatStatisticsString(reductionResult, "Reduction");
+            } else {
+                result += QString("<h4>Parameter Reduction Analysis</h4><p>❌ %1</p>").arg(reductionResult["error"].toString());
+            }
+        }
+
+        // Format Model Comparison results
+        if (methods.contains("ModelComparison")) {
+            QJsonObject compResult = methods["ModelComparison"].toObject();
+            if (compResult["execution_status"].toString() == "success") {
+                result += FormatStatisticsString(compResult, "AIC");
+                result += QString("<p><strong>Confidence Level:</strong> %1%</p>").arg(compResult["confidence_level"].toDouble());
+            } else {
+                result += QString("<h4>Model Comparison Analysis</h4><p>❌ %1</p>").arg(compResult["error"].toString());
+            }
+        }
+    }
+
+    return result;
+}
+
+} // namespace StatisticTool

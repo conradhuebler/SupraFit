@@ -33,8 +33,14 @@
 #include <random>
 
 // For model integration - Claude Generated
+#include "src/core/analyse.h"
 #include "src/core/models/models.h"
 #include "src/core/toolset.h"
+
+// For post-fit analysis - Claude Generated
+#include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/resampleanalyse.h"
 
 #include "datagenerator.h"
 
@@ -294,22 +300,29 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
         qDebug() << "🔍 DEBUG EvaluateWithModel: dataClass is null";
         return false;
     }
-    
-    qDebug() << "🔍 DEBUG EvaluateWithModel: Creating model" << modelId << "with dataClass having"
-             << dataClass->IndependentModel()->rowCount() << "independent rows,"
-             << dataClass->DependentModel()->rowCount() << "dependent rows,"
-             << dataClass->DependentModel()->columnCount() << "dependent columns";
-    
-    // Create the model
+
+    // Performance mode: Reduce debug output for faster generation - Claude Generated
+    if (!m_performanceMode) {
+        qDebug() << "🔍 DEBUG EvaluateWithModel: Creating model" << modelId << "with dataClass having"
+                 << dataClass->IndependentModel()->rowCount() << "independent rows,"
+                 << dataClass->DependentModel()->rowCount() << "dependent rows,"
+                 << dataClass->DependentModel()->columnCount() << "dependent columns";
+    }
+
+    // Create model - caching removed due to DataClass inheritance architecture - Claude Generated
     QSharedPointer<AbstractModel> model = CreateModel(modelId, dataClass);
     if (!model) {
-        qDebug() << "🔍 DEBUG EvaluateWithModel: Failed to create model" << modelId;
+        if (!m_performanceMode)
+            qDebug() << "🔍 DEBUG EvaluateWithModel: Failed to create model" << modelId;
         return false;
     }
-    
-    qDebug() << "🔍 DEBUG EvaluateWithModel: Successfully created model" << modelId
-             << "DataPoints:" << model->DataPoints() << "SeriesCount:" << model->SeriesCount();
-    
+    m_modelCreationCount++;
+
+    if (!m_performanceMode) {
+        qDebug() << "🔍 DEBUG EvaluateWithModel: Successfully created model" << modelId
+                 << "DataPoints:" << model->DataPoints() << "SeriesCount:" << model->SeriesCount();
+    }
+
     // Set model to simulation mode to avoid error calculation
     
     // Apply randomization if specified
@@ -320,31 +333,36 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
         // Apply GlobalRandomLimits (stability constants)
         if (config.contains("GlobalRandomLimits")) {
             QString globalLimits = config["GlobalRandomLimits"].toString();
-            qDebug() << "🔍 DEBUG EvaluateWithModel: Applying GlobalRandomLimits:" << globalLimits;
+            if (!m_performanceMode)
+                qDebug() << "🔍 DEBUG EvaluateWithModel: Applying GlobalRandomLimits:" << globalLimits;
             applyGlobalRandomLimits(model, globalLimits);
         }
         
         // Apply LocalRandomLimits as model parameters (chemical shifts)
         if (config.contains("LocalRandomLimits")) {
             QString localLimits = config["LocalRandomLimits"].toString();
-            qDebug() << "🔍 DEBUG EvaluateWithModel: Applying LocalRandomLimits:" << localLimits;
+            if (!m_performanceMode)
+                qDebug() << "🔍 DEBUG EvaluateWithModel: Applying LocalRandomLimits:" << localLimits;
             applyLocalRandomLimits(model, localLimits);
         }
     }
     
     // Calculate the model with the set parameters
     model->Calculate();
-    qDebug() << model->ExportModel();
+    if (!m_performanceMode)
+        qDebug() << model->ExportModel();
     // Get the model table and apply noise if specified
     DataTable* modelTable = model->ModelTable();
     if (!modelTable) {
         qDebug() << "🔍 DEBUG EvaluateWithModel: ModelTable() returned null";
         return false;
     }
-    
-    qDebug() << "🔍 DEBUG EvaluateWithModel: ModelTable has" << modelTable->rowCount() 
-             << "rows," << modelTable->columnCount() << "columns";
-    
+
+    if (!m_performanceMode) {
+        qDebug() << "🔍 DEBUG EvaluateWithModel: ModelTable has" << modelTable->rowCount()
+                 << "rows," << modelTable->columnCount() << "columns";
+    }
+
     // Apply noise if variance is specified using PrepareMC
     if (config.contains("Variance")) {
         double variance = config["Variance"].toDouble();
@@ -352,8 +370,9 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
             // Create variance vector for all columns
             QVector<double> stddevVector(modelTable->columnCount(), variance);
             modelTable = modelTable->PrepareMC(stddevVector, m_rng);
-            
-            qDebug() << "🔍 DEBUG EvaluateWithModel: Applied noise with variance" << variance << "to" << modelTable->columnCount() << "columns";
+
+            if (!m_performanceMode)
+                qDebug() << "🔍 DEBUG EvaluateWithModel: Applied noise with variance" << variance << "to" << modelTable->columnCount() << "columns";
         }
     }
     
@@ -362,12 +381,15 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
         delete m_table;
     }
     m_table = new DataTable(modelTable);
-    
+
     // Enhance content with model parameters and configuration - Claude Generated
-    QString originalContent = dataClass->getContent();
-    QString enhancedContent = createEnhancedContent(dataClass, originalContent, config, model);
-    dataClass->setContent(enhancedContent);
-    
+    // Performance mode: Skip content enhancement for faster generation
+    if (!m_performanceMode) {
+        QString originalContent = dataClass->getContent();
+        QString enhancedContent = createEnhancedContent(dataClass, originalContent, config, model);
+        dataClass->setContent(enhancedContent);
+    }
+
     return true;
 }
 
@@ -507,11 +529,14 @@ QString DataGenerator::createEnhancedContent(QPointer<DataClass> dataClass, cons
         if (config.contains("LocalRandomLimits")) {
             content += QString("\n  Local Limits: %1").arg(config["LocalRandomLimits"].toString());
         }
-        
-        // Add input JSON configuration to output - Claude Generated
-        if (!config.isEmpty()) {
+
+        // Add input JSON configuration to output - Claude Generated (Performance optimized)
+        if (!config.isEmpty() && !m_performanceMode) {
             content += "\n\nInput Configuration:\n";
-            content += QJsonDocument(config).toJson(QJsonDocument::Indented);
+            if (m_cachedContent.isEmpty() || config != m_lastConfig) {
+                m_cachedContent = QJsonDocument(config).toJson(QJsonDocument::Indented);
+            }
+            content += m_cachedContent;
         }
     }
     
@@ -551,4 +576,67 @@ double DataGenerator::generateControlledRandomValue(double min, double max, cons
         qDebug() << "🔍 DEBUG generateControlledRandomValue: Unknown distribution" << distribution << ", using uniform";
         return min + (max - min) * uniformDist(m_rng);
     }
+}
+
+// Batch processing for multiple datasets - Claude Generated
+bool DataGenerator::EvaluateWithModelBatch(int modelId, QPointer<DataClass> dataClass,
+    const QVector<QJsonObject>& configs,
+    QVector<DataTable*>& results)
+{
+    if (!dataClass) {
+        qDebug() << "🔍 DEBUG EvaluateWithModelBatch: dataClass is null";
+        return false;
+    }
+
+    results.clear();
+    results.reserve(configs.size());
+
+    // Enable performance mode for batch processing
+    bool originalPerformanceMode = m_performanceMode;
+    enablePerformanceMode(true);
+
+    bool allSuccessful = true;
+    for (int i = 0; i < configs.size(); ++i) {
+        if (EvaluateWithModel(modelId, dataClass, configs[i])) {
+            // Clone the result table for each successful evaluation
+            results.append(new DataTable(m_table));
+        } else {
+            qDebug() << "🔍 DEBUG EvaluateWithModelBatch: Failed at configuration" << i;
+            allSuccessful = false;
+            results.append(nullptr);
+        }
+    }
+
+    // Restore original performance mode
+    enablePerformanceMode(originalPerformanceMode);
+
+    return allSuccessful;
+}
+
+// Post-fit analysis integration with JobManager - Claude Generated
+bool DataGenerator::EvaluateWithModelAndAnalyze(int modelId, QPointer<DataClass> dataClass, const QJsonObject& config)
+{
+    // Analysis now handled in core/analyse.cpp via JobManager - just do data generation
+    return EvaluateWithModel(modelId, dataClass, config);
+}
+
+// Enhanced method for new JSON structure v2.0 - Claude Generated
+bool DataGenerator::EvaluateWithModelAndAnalyzeV2(int modelId, QPointer<DataClass> dataClass,
+    const QJsonObject& config,
+    const QJsonObject& globalAnalysisConfig,
+    const QJsonObject& modelSpecificConfig)
+{
+    // Analysis now handled in core/analyse.cpp via JobManager - just do data generation
+    Q_UNUSED(globalAnalysisConfig)
+    Q_UNUSED(modelSpecificConfig)
+    return EvaluateWithModel(modelId, dataClass, config);
+}
+
+// Common post-fit analysis execution - Claude Generated
+// Statistical analysis methods removed - now handled by JobManager in CLI - Claude Generated
+
+// Performance monitoring methods - Claude Generated
+void DataGenerator::resetPerformanceCounters()
+{
+    m_modelCreationCount = 0;
 }

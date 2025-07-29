@@ -382,7 +382,7 @@ void ResampleAnalyse::CrossValidation()
     if (more_message)
         emit Message(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
     bool left_out_points = m_controller["LeftOutPoints"].toBool();
-    // TODO some times, I will parallise it at all
+    // NOTE: Parallelization candidate for future implementation - Claude Generated
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();
     QJsonObject chart_block;
     int calculation = 0;

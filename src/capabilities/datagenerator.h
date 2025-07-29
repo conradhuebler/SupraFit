@@ -32,6 +32,7 @@
 #include <QJSEngine>
 #include <random> // Claude Generated
 
+#include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
 class DataGenerator : public QObject {
@@ -51,7 +52,33 @@ public:
     // Model-based generation - Claude Generated Integration
     bool EvaluateWithModel(int modelId, QPointer<DataClass> dataClass, const QJsonObject& config = QJsonObject());
     bool GenerateModelBasedData(int modelId, QPointer<DataClass> inputData, const QJsonObject& modelConfig);
-    
+
+    // Performance optimization - Claude Generated
+    void enablePerformanceMode(bool enabled = true) { m_performanceMode = enabled; }
+
+    // Batch processing for multiple datasets - Claude Generated
+    bool EvaluateWithModelBatch(int modelId, QPointer<DataClass> dataClass,
+        const QVector<QJsonObject>& configs,
+        QVector<DataTable*>& results);
+
+    // Post-fit analysis integration with JobManager - Claude Generated
+    bool EvaluateWithModelAndAnalyze(int modelId, QPointer<DataClass> dataClass, const QJsonObject& config);
+
+    // Enhanced method for JSON structure v2.0 - Claude Generated
+    bool EvaluateWithModelAndAnalyzeV2(int modelId, QPointer<DataClass> dataClass,
+        const QJsonObject& config,
+        const QJsonObject& globalAnalysisConfig,
+        const QJsonObject& modelSpecificConfig = QJsonObject());
+
+    QJsonObject executePostFitAnalysis(QSharedPointer<AbstractModel> model, const QJsonObject& analysisConfig);
+
+    // Performance monitoring - Claude Generated
+    void resetPerformanceCounters();
+    int getModelCreationCount() const { return m_modelCreationCount; }
+
+private:
+    // Post-fit analysis now handled by JobManager in CLI - Claude Generated
+
     // Utility methods for parameter generation
     static QJsonObject generateRandomParameters(const QJsonObject& limits, quint64 seed = 0);
     static double generateRandomValue(double min, double max, quint64 seed = 0);
@@ -76,7 +103,15 @@ private:
     
     // Member variable for storing random parameters - Claude Generated
     QJsonObject m_randomParams;
-    
+
+    // Performance optimization - Claude Generated
+    bool m_performanceMode = false;
+    QString m_cachedContent; // Reuse content template for JSON formatting
+    QJsonObject m_lastConfig; // Track configuration changes for content caching
+
+    // Performance monitoring - Claude Generated
+    mutable int m_modelCreationCount = 0;
+
 public slots:
     // Qt slots for JavaScript integration - Claude Generated
     double generateControlledRandom(const QString& parameterName);
