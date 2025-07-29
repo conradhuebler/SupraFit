@@ -76,12 +76,12 @@ public:
     void resetPerformanceCounters();
     int getModelCreationCount() const { return m_modelCreationCount; }
 
-private:
-    // Post-fit analysis now handled by JobManager in CLI - Claude Generated
-
-    // Utility methods for parameter generation
+    // Test utility methods - Claude Generated (moved to public for testing)
     static QJsonObject generateRandomParameters(const QJsonObject& limits, quint64 seed = 0);
     static double generateRandomValue(double min, double max, quint64 seed = 0);
+
+private:
+    // Post-fit analysis now handled by JobManager in CLI - Claude Generated
     static bool applyModelRandomization(QSharedPointer<class AbstractModel> model, const QJsonObject& config, int series = 1);
     void applyGlobalRandomLimits(QSharedPointer<class AbstractModel> model, const QString& globalLimits); // Claude Generated
     void applyLocalRandomLimits(QSharedPointer<class AbstractModel> model, const QString& localLimits); // Claude Generated

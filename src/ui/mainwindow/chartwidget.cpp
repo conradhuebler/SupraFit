@@ -137,14 +137,14 @@ ChartWidget::ChartWidget()
 {
     m_signalview = new ChartView;
     m_signalview->setName("signalview");
-    connect(m_signalview, &ChartView::LastDirChanged, this, [](const QString& str) {
+    connect(m_signalview, &ChartView::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(m_signalview);
 
     m_errorview = new ChartView;
     m_errorview->setName("errorview");
-    connect(m_errorview, &ChartView::LastDirChanged, this, [](const QString& str) {
+    connect(m_errorview, &ChartView::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(m_errorview);
@@ -153,8 +153,8 @@ ChartWidget::ChartWidget()
     layout->addWidget(m_signalview, 1, 0);
     layout->addWidget(m_errorview, 2, 0);
 
-    m_signalview->Chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
-    m_errorview->Chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_signalview->chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_errorview->chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
 
     restartAnimation();
     setLayout(layout);
@@ -341,15 +341,15 @@ void ChartWidget::updateUI()
 
 void ChartWidget::stopAnimiation()
 {
-    m_signalview->Chart()->setAnimationOptions(QChart::NoAnimation);
-    m_errorview->Chart()->setAnimationOptions(QChart::NoAnimation);
+    m_signalview->chart()->setAnimationOptions(QChart::NoAnimation);
+    m_errorview->chart()->setAnimationOptions(QChart::NoAnimation);
 }
 
 void ChartWidget::restartAnimation()
 {
     if (qApp->instance()->property("chartanimation").toBool()) {
-        m_signalview->Chart()->setAnimationOptions(QChart::SeriesAnimations);
-        m_errorview->Chart()->setAnimationOptions(QChart::SeriesAnimations);
+        m_signalview->chart()->setAnimationOptions(QChart::SeriesAnimations);
+        m_errorview->chart()->setAnimationOptions(QChart::SeriesAnimations);
     }
 }
 

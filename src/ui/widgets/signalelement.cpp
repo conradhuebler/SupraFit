@@ -137,14 +137,14 @@ void SignalElement::ToggleSeries(int i)
 
 void SignalElement::ShowLine(int i)
 {
-    m_data_series->ShowLine(i);
+    m_data_series->showLine(i);
 }
 
 void SignalElement::setName(const QString& str)
 {
     m_data_series->setName(str);
     m_data.toStrongRef().data()->DependentModel()->setHeaderData(m_index, Qt::Horizontal, str, Qt::DisplayRole);
-    emit m_data_series->NameChanged(str);
+    emit m_data_series->nameChanged(str);
 }
 
 void SignalElement::HideSeries()

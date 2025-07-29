@@ -186,8 +186,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     }
 
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
-    connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
-    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
+    connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(showLine(int)));
+    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(showLine(int)));
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     toggleActive();
     Update();
@@ -213,8 +213,8 @@ void ModelElement::toggleActive()
 void ModelElement::DisableSignal(int state)
 {
     m_show->setChecked(state);
-    m_error_series->ShowLine(state);
-    m_signal_series->ShowLine(state);
+    m_error_series->showLine(state);
+    m_signal_series->showLine(state);
     for (int i = 0; i < m_constants.size(); ++i) {
         m_constants[i]->setEnabled(m_include->isChecked());
     }

@@ -61,7 +61,7 @@ bool ModelChartWidget::setUI()
     setLayout(layout);
 
     view = new ListChart;
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(view);
@@ -96,7 +96,7 @@ void ModelChartWidget::UpdateChart()
     view->setYAxis(chart->y_axis);
 
     if (m_series.size() != chart->m_series.size()) {
-        view->Clear();
+        view->clear();
         m_series.clear();
 
         for (int i = 0; i < chart->m_series.size(); ++i) {
@@ -113,5 +113,5 @@ void ModelChartWidget::UpdateChart()
         }
     }
     view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.toStrongRef()->Name()));
-    view->Chart()->formatAxis();
+    view->chart()->formatAxis();
 }

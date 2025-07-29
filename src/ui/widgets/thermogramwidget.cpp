@@ -88,16 +88,16 @@ void ThermogramWidget::setUi()
     m_thermogram = new ChartView;
     m_thermogram->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
 
-    connect(m_thermogram, &ChartView::LastDirChanged, this, [](const QString& str) {
+    connect(m_thermogram, &ChartView::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(m_thermogram, &ChartView::AddRect, this, &ThermogramWidget::AddRectanglePeak);
+    connect(m_thermogram, &ChartView::addRect, this, &ThermogramWidget::AddRectanglePeak);
     connect(m_thermogram, &ChartView::scaleUp, this, &ThermogramWidget::scaleUp);
     connect(m_thermogram, &ChartView::scaleDown, this, &ThermogramWidget::scaleDown);
 
-    connect(m_thermogram, &ChartView::EscapeSelectMode, this, [this]() {
-        m_thermogram->setSelectStrategy(SelectStrategy::S_None);
-        m_thermogram->setZoomStrategy(ZoomStrategy::Z_Rectangular);
+    connect(m_thermogram, &ChartView::escapeSelectMode, this, [this]() {
+        m_thermogram->setSelectStrategy(SelectStrategy::None);
+        m_thermogram->setZoomStrategy(ZoomStrategy::Rectangular);
 
         m_peak_start_line->hide();
         m_peak_end_line->hide();
@@ -105,12 +105,12 @@ void ThermogramWidget::setUi()
         ResetGuideLabel();
     });
 
-    connect(m_thermogram, &ChartView::RightKey, this, [this]() {
+    connect(m_thermogram, &ChartView::rightKey, this, [this]() {
         if (m_peak_edit_mode)
             PeakDoubleClicked(m_current_peak + 1);
     });
 
-    connect(m_thermogram, &ChartView::LeftKey, this, [this]() {
+    connect(m_thermogram, &ChartView::leftKey, this, [this]() {
         if (m_peak_edit_mode)
             PeakDoubleClicked(m_current_peak - 1);
     });
@@ -255,7 +255,7 @@ void ThermogramWidget::setUi()
 
     m_get_peaks_start = new QPushButton(tr("Click to Select"));
     m_get_peaks_start->setIcon(Icon("edit-select"));
-    connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
+    connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
         if (!m_get_time_from_thermogram) {
@@ -309,7 +309,7 @@ void ThermogramWidget::setUi()
 
     m_get_calibration_start = new QPushButton(tr("Click to Select"));
     m_get_calibration_start->setIcon(Icon("edit-select"));
-    connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
+    connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     m_get_calibration_start->setMaximumWidth(100);
     m_get_calibration_start->setToolTip(tr("Click and select the starting time for the calibration from the thermogram."));
@@ -829,7 +829,7 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
 
     m_thermogram->setXRange(xmin_0, xmax_0);
     m_thermogram->setYRange(ymin, ymax);
-    m_thermogram->setSelectStrategy(SelectStrategy::S_Horizontal);
+    m_thermogram->setSelectStrategy(SelectStrategy::Horizontal);
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
     setGuideText(QString("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
 }
@@ -913,8 +913,8 @@ void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& po
     if (!m_peak_edit_mode)
         return;
 
-    m_thermogram->setSelectStrategy(SelectStrategy::S_None);
-    m_thermogram->setZoomStrategy(ZoomStrategy::Z_Rectangular);
+    m_thermogram->setSelectStrategy(SelectStrategy::None);
+    m_thermogram->setZoomStrategy(ZoomStrategy::Rectangular);
 
     m_peak_start_line->hide();
     m_peak_end_line->hide();
@@ -987,7 +987,7 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
 
 void ThermogramWidget::scaleUp()
 {
-    qreal position = m_thermogram->Chart()->mapToValue(m_thermogram->currentMousePosition()).y();
+    qreal position = m_thermogram->chart()->mapToValue(m_thermogram->currentMousePosition()).y();
     qreal max = m_thermogram->YMaxRange();
     qreal min = m_thermogram->YMinRange();
     qreal next = (max - min) * 0.1;
@@ -1004,7 +1004,7 @@ void ThermogramWidget::scaleUp()
 
 void ThermogramWidget::scaleDown()
 {
-    qreal position = m_thermogram->Chart()->mapToValue(m_thermogram->currentMousePosition()).y();
+    qreal position = m_thermogram->chart()->mapToValue(m_thermogram->currentMousePosition()).y();
     qreal max = m_thermogram->YMaxRange();
     qreal min = m_thermogram->YMinRange();
     qreal next = (max - min) * 0.1;

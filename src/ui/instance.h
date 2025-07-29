@@ -89,7 +89,7 @@ public:
         //  config["emphasizeAxis"] = qApp->instance()->property("empAxis").toBool();
     }
 
-    inline void UpdateChartConfig(const QJsonObject& config)
+    inline void updateChartConfig(const QJsonObject& config)
     {
         WriteChartConfig(config);
         emit ConfigurationUpdated();
@@ -110,11 +110,11 @@ public:
     void MakeChartConnections(QPointer<ListChart> chart)
     {
         connect(Instance::GlobalInstance(), &Instance::FontConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
+            chart->updateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
         });
 
         connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
+            chart->updateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
         });
 #pragma message ("restore the connection, once cutecharts supports it again")
         //connect(chart, &ListChart::configurationChanged, this, [chart]() {
@@ -134,22 +134,22 @@ public:
     void MakeChartConnections(QPointer<ChartView> chart)
     {
         if (!m_fontconfig.isEmpty())
-            chart->UpdateChartConfig(m_fontconfig, true);
+            chart->updateChartConfig(m_fontconfig, true);
 
         connect(Instance::GlobalInstance(), &Instance::FontConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
+            chart->updateChartConfig(Instance::GlobalInstance()->FontConfig(), false);
         });
 
         connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, chart, [chart]() {
-            chart->UpdateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
+            chart->updateChartConfig(Instance::GlobalInstance()->ChartConfig(), true);
         });
 
-        connect(chart, &ChartView::ConfigurationChanged, this, [chart]() {
-            Instance::GlobalInstance()->UpdateFontConfig(chart->CurrentFontConfig());
+        connect(chart, &ChartView::configurationChanged, this, [chart]() {
+            Instance::GlobalInstance()->UpdateFontConfig(chart->currentFontConfig());
         });
 
-        connect(chart, &ChartView::ExportSettingsFileAdded, this, &Instance::AddFontConfigFile);
-        connect(this, &Instance::FontConfigFileAdded, chart, &ChartView::AddExportSetting);
+        connect(chart, &ChartView::exportSettingsFileAdded, this, &Instance::AddFontConfigFile);
+        connect(this, &Instance::FontConfigFileAdded, chart, &ChartView::addExportSetting);
 
         QMetaObject::Connection connection;
         connection = connect(chart, &ChartView::setUpFinished, this, [this, chart, connection]() {

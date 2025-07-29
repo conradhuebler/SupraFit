@@ -136,12 +136,12 @@ void MCResultsWidget::setUi()
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     QPointer<ListChart> view = new ListChart;
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(view);
 
-    view->Chart()->setZoomStrategy(ZoomStrategy::Z_Horizontal);
+    view->chart()->setZoomStrategy(ZoomStrategy::Horizontal);
     view->setName("montecarlochart");
     view->setMinimumSize(300, 400);
     bool formated = false;
@@ -235,7 +235,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 {
     QPointer<ListChart> boxplot = new ListChart;
-    connect(boxplot, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(boxplot, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(boxplot);
@@ -271,7 +271,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
     }
 
     if (has_boxplot) {
-        QValueAxis* y_axis = qobject_cast<QValueAxis*>(boxplot->Chart()->axisY());
+        QValueAxis* y_axis = qobject_cast<QValueAxis*>(boxplot->chart()->axisY());
         y_axis->setMin(min * 0.99);
         y_axis->setMax(max * 1.01);
     }
@@ -294,7 +294,7 @@ QPointer<QWidget> MCResultsWidget::MakeScatter()
 QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
 {
     QPointer<ListChart> view = new ListChart;
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(view);
@@ -302,7 +302,7 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
     QJsonObject controller = m_data["controller"].toObject();
     QJsonObject chart_block = controller["chart"].toObject();
 
-    view->Chart()->setZoomStrategy(ZoomStrategy::Z_Rectangular);
+    view->chart()->setZoomStrategy(ZoomStrategy::Rectangular);
     view->setXAxis(controller["xlabel"].toString());
     view->setYAxis(controller["ylabel"].toString());
     view->setName("serieschart");

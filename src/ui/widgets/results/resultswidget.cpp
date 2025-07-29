@@ -145,7 +145,7 @@ QWidget* ResultsWidget::ReductionWidget()
     QString parameter_text;
     QPointer<ListChart> view = new ListChart;
     view->setName("reductionchart");
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(view);
@@ -219,7 +219,7 @@ QWidget* ResultsWidget::ReductionWidget()
         view->addSeries(serie, i, color, name);
         view->setColor(i, color);
         if (data["type"].toString() != "Global Parameter")
-            view->HideSeries(i);
+            view->hideSeries(i);
     }
     for (const QString& string : text)
         m_text += string + "\n";
@@ -264,7 +264,7 @@ QWidget* ResultsWidget::GridSearchWidget()
 
     ListChart* view = new ListChart;
     view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(view);

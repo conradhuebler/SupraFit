@@ -440,7 +440,7 @@ inline bool FuzzyCompare(qreal a, qreal b, int prec = 3)
 inline QJsonValue AccessCI(const QJsonObject& object, const QString& str)
 {
     QStringList keys = object.keys();
-    for (const QString& key : qAsConst(keys)) {
+    for (const QString& key : std::as_const(keys)) {
         if (key.compare(str, Qt::CaseInsensitive) == 0)
             return object[key];
     }

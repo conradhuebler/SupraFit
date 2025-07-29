@@ -103,7 +103,7 @@ void ScatterWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
-    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     view->setName("scatterwidget");
@@ -237,8 +237,8 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     m_var_1 = var_1;
     m_var_2 = var_2;
     Waiter wait;
-    view->Clear();
-    view->Chart()->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
+    view->clear();
+    view->chart()->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
 
     QColor color = ChartWrapper::ColorCode(m_model.data()->Color(0)).lighter(50);
     m_xy_series = new QScatterSeries;

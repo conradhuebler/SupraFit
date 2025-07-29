@@ -154,10 +154,10 @@ void SpectraWidget::setUI()
     m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     m_spectra_view->setVerticalLineEnabled(true);
     //m_spectra_view->setZoomStrategy(ZoomStrategy::Z_Horizontal);
-    m_spectra_view->setSelectStrategy(SelectStrategy::S_Horizontal);
+    m_spectra_view->setSelectStrategy(SelectStrategy::Horizontal);
 
-    m_spectra_view->PrivateView()->setVerticalLinePrec(0);
-    m_spectra_view->PrivateView()->setVerticalLinesPrec(-1);
+    m_spectra_view->privateView()->setVerticalLinePrec(0);
+    m_spectra_view->privateView()->setVerticalLinesPrec(-1);
 
     chart_layout->addWidget(m_spectra_view, 1, 0, 1, 9);
 
@@ -196,7 +196,7 @@ void SpectraWidget::setUI()
 
     setLayout(layout);
 
-    connect(m_spectra_view, &ChartView::PointDoubleClicked, this, &SpectraWidget::PointDoubleClicked);
+    connect(m_spectra_view, &ChartView::pointDoubleClicked, this, &SpectraWidget::PointDoubleClicked);
     connect(m_handler, &SpectraHandler::Updated, this, &SpectraWidget::UpdateData);
 
     connect(m_accept_x, &QPushButton::clicked, this, [this]() {
@@ -217,7 +217,7 @@ void SpectraWidget::setUI()
         UpdateData();
     });
 
-    connect(m_spectra_view, &ChartView::AddRect, this, &SpectraWidget::UpdateXRange);
+    connect(m_spectra_view, &ChartView::addRect, this, &SpectraWidget::UpdateXRange);
 
     connect(m_export_table, &QPushButton::clicked, this, &SpectraWidget::SaveToFile);
 }
@@ -244,13 +244,13 @@ void SpectraWidget::setDirectory(const QString& directry, const QString& type)
 void SpectraWidget::clear()
 {
     m_handler->clearFiles();
-    m_spectra_view->ClearChart();
+    m_spectra_view->clearChart();
     m_files->clear();
 }
 
 void SpectraWidget::UpdateSpectra()
 {
-    m_spectra_view->ClearChart();
+    m_spectra_view->clearChart();
     m_files->clear();
     for (const auto& string : m_handler->getOrder()) {
         QList<QPointF> xy = m_handler->Data(string);
@@ -329,9 +329,9 @@ void SpectraWidget::UpdateXValues()
 
 void SpectraWidget::UpdateVerticaLines()
 {
-    m_spectra_view->PrivateView()->removeAllVerticalLines();
+    m_spectra_view->privateView()->removeAllVerticalLines();
     for (auto d : m_handler->XValues())
-        m_spectra_view->PrivateView()->addVerticalLine(d);
+        m_spectra_view->privateView()->addVerticalLine(d);
 }
 
 void SpectraWidget::UpdateXRange(const QPointF& point1, const QPointF& point2)

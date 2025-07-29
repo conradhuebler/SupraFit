@@ -70,7 +70,7 @@ void RegressionAnalysisDialog::setUI()
     m_functions->setRange(1, 1);
 
     m_chart = new ListChart;
-    connect(m_chart, &ListChart::LastDirChanged, this, [](const QString& str) {
+    connect(m_chart, &ListChart::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
     Instance::GlobalInstance()->MakeChartConnections(m_chart);
@@ -115,7 +115,7 @@ void RegressionAnalysisDialog::UpdatePlots()
     if (m_data.toStrongRef().data()->isSimulation() || isHidden())
         return;
 
-    m_chart->Clear();
+    m_chart->clear();
     m_output->clear();
     m_series = m_wrapper.toStrongRef().data()->CloneSeries(m_swap_xy->isChecked());
     m_fit->setEnabled(m_series.size());

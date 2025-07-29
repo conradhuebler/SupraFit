@@ -246,7 +246,7 @@ void Thermogram::setUi()
     m_data_view = new ChartView;
     m_data_view->setModal(true);
     m_data_view->setMinimumSize(400, 300);
-    connect(m_data_view, &ChartView::LastDirChanged, this, [](const QString& str) {
+    connect(m_data_view, &ChartView::lastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
 
