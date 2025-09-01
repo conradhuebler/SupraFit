@@ -481,7 +481,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
 }
 
 // Execute task configuration - Claude Generated
-bool executeTaskConfiguration(const QString& inputFile, const QString& outputOverride = "")
+bool executeTaskConfiguration(const QString& inputFile, const QString& outputOverride = "", bool autoExportML = false, const QString& mlOutputFile = "")
 {
     std::cout << "Executing task configuration: " << inputFile.toStdString() << std::endl;
 
@@ -518,6 +518,30 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             QVector<QJsonObject> results = core->ProcessMLPipeline();
             
             std::cout << "ProcessMLPipeline completed successfully!" << std::endl;
+            
+            // Auto-export ML training data if requested - Claude Generated
+            if (autoExportML) {
+                std::cout << "Auto-exporting ML training data..." << std::endl;
+                
+                // Determine output file name
+                QString outputFileName = mlOutputFile;
+                if (outputFileName.isEmpty()) {
+                    QFileInfo inputInfo(inputFile);
+                    outputFileName = inputInfo.completeBaseName() + "_ml_training.json";
+                }
+                
+                // Export with JSON file containing ML RawData (with iteration number)
+                QVector<QString> processedFiles;
+                processedFiles.append(core->OutFile() + "-0.json");
+                
+                bool exportSuccess = core->exportMLTrainingData(processedFiles, outputFileName);
+                if (exportSuccess) {
+                    std::cout << "ML training data exported to: " << outputFileName.toStdString() << std::endl;
+                } else {
+                    std::cout << "WARNING: ML training data export failed." << std::endl;
+                }
+            }
+            
             delete core;
             return true;
         } else {
@@ -751,6 +775,27 @@ int main(int argc, char** argv)
     QCommandLineOption batchConfig(QStringList() << "batch-config",
         "Run ML pipeline batch processing", "file");
     parser.addOption(batchConfig);
+    
+    QCommandLineOption showPostProcessing(QStringList() << "show-post-processing",
+        "Show detailed post-processing statistics for all methods");
+    parser.addOption(showPostProcessing);
+
+    // ML Training Data Export Options - Claude Generated
+    QCommandLineOption exportMLTraining(QStringList() << "export-ml-training",
+        "Export compact ML training data from ML pipeline files", "files");
+    parser.addOption(exportMLTraining);
+    
+    QCommandLineOption mlOutput(QStringList() << "ml-output",
+        "Output filename for ML training data export", "output.json");
+    parser.addOption(mlOutput);
+    
+    QCommandLineOption autoExportML(QStringList() << "auto-export-ml",
+        "Automatically export ML training data after ML pipeline execution");
+    parser.addOption(autoExportML);
+    
+    QCommandLineOption exportMLBatch(QStringList() << "export-ml-batch",
+        "Batch export ML training data from directory", "directory");
+    parser.addOption(exportMLBatch);
 
     parser.process(app);
 
@@ -775,6 +820,12 @@ int main(int argc, char** argv)
     const bool showList = parser.isSet("list");
     const bool mlPipelineMode = parser.isSet("ml-pipeline");
     const QString batchConfigFile = parser.value("batch-config");
+    
+    // ML Training Data Export Parameters - Claude Generated
+    const bool exportMLTrainingMode = parser.isSet("export-ml-training");
+    const QString mlOutputFile = parser.value("ml-output");
+    const bool autoExportMLMode = parser.isSet("auto-export-ml");
+    const QString exportMLBatchDirectory = parser.value("export-ml-batch");
 
     // Set thread count
     qApp->instance()->setProperty("threads", parser.value("nproc").toInt());
@@ -839,12 +890,44 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    // 4. Handle ML Pipeline mode
-    if (mlPipelineMode) {
-        return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+    // 4. Handle ML Training Data Export mode - Claude Generated
+    if (exportMLTrainingMode) {
+        std::cout << "Exporting ML training data from: " << actualInputFile.toStdString() << std::endl;
+        
+        SupraFitCli* cli = new SupraFitCli;
+        bool success = false;
+        
+        if (!exportMLBatchDirectory.isEmpty()) {
+            // Batch export mode
+            std::cout << "Batch export mode - processing directory: " << exportMLBatchDirectory.toStdString() << std::endl;
+            success = cli->exportMLTrainingDataBatch(exportMLBatchDirectory, 
+                                                   mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+        } else {
+            // Single file export mode
+            QVector<QString> inputFiles;
+            inputFiles.append(actualInputFile);
+            success = cli->exportMLTrainingData(inputFiles, 
+                                              mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+        }
+        
+        if (success) {
+            std::cout << "ML training data export completed successfully!" << std::endl;
+        } else {
+            std::cout << "ERROR: ML training data export failed." << std::endl;
+            delete cli;
+            return 1;
+        }
+        
+        delete cli;
+        return 0;
     }
 
-    // 5. Main processing logic
+    // 5. Handle ML Pipeline mode
+    if (mlPipelineMode) {
+        return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
+    }
+
+    // 6. Main processing logic
 
     // Load and analyze input file
     QJsonObject config = JsonHandler::LoadFile(actualInputFile);
@@ -896,6 +979,7 @@ int main(int argc, char** argv)
             // Perform standard detailed analysis
             SupraFitCli* cli = new SupraFitCli;
             cli->setInFile(actualInputFile);
+            cli->setShowPostProcessingDetails(parser.isSet(showPostProcessing));
             if (cli->LoadFile()) {
                 cli->AnalyzeFile();
             } else {
@@ -921,7 +1005,7 @@ int main(int argc, char** argv)
             return performGenericConversion(actualInputFile, outputFile, projectIndex, uuidFilter, titleFilter, splitOutput) ? 0 : 1;
         } else {
             // Task execution
-            return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+            return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
         }
     }
 

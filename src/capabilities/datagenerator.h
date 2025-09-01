@@ -88,6 +88,9 @@ private:
     
     // Content enhancement - Claude Generated
     QString createEnhancedContent(QPointer<DataClass> dataClass, const QString& originalContent, const QJsonObject& config, QSharedPointer<class AbstractModel> model = nullptr);
+    
+    // ML Pipeline RawData creation - Claude Generated
+    QJsonObject createMLRawData(const QJsonObject& inputConfig, QSharedPointer<class AbstractModel> groundTruthModel, const QJsonObject& noiseConfig = QJsonObject());
 
 private:
     double m_generator_version = 1.0;

@@ -23,12 +23,14 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
 
 ### Analysis Tools
-- **analyse.cpp/h**: **Statistical analysis and data processing with JSON API (Claude Generated)**
-  - **JSON-based statistical methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
+- **analyse.cpp/h**: **Complete JSON-based statistical analysis API (Claude Generated)**
+  - **Core JSON methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
+  - **Extended JSON methods**: `CalculateWGSMetrics()`, `CalculateModelComparisonMetrics()`, `CalculateFastConfidenceMetrics()`, `CalculateGlobalSearchMetrics()`
   - **ML feature extraction**: `ExtractModelMLFeatures()` for standardized training data
   - **Percentile-based confidence intervals**: Monte Carlo analysis with 2.5%/97.5% quantiles
+  - **Method coverage**: All 7 post-processing methods (MonteCarlo, WeakenedGridSearch, ModelComparison, CrossValidation, Reduction, FastConfidence, GlobalSearch)
   - **Legacy string-based functions**: `CompareAIC()`, `CompareMC()`, `CompareCV()`, `AnalyseReductionAnalysis()` for backward compatibility
-  - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to HTML tables
+  - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to console/HTML format
 - **pythonbridge.cpp/h**: Python integration for extended functionality
 - **toolset.cpp/h**: General utility functions and statistical calculations
 

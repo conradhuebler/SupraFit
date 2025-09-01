@@ -793,9 +793,30 @@ QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index)
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
         for (const QString& methodKey : statistics.keys()) {
             QJsonObject method = statistics[methodKey].toObject();
-            QJsonObject controller = method["controller"].toObject();
+            
+            // Look for controller - it might be nested under numeric keys
+            QJsonObject controller;
+            bool foundController = false;
+            
+            if (method.contains("controller")) {
+                controller = method["controller"].toObject();
+                foundController = true;
+            } else {
+                // Check for nested controller under numeric keys (like "0", "1", etc.)
+                for (auto subIt = method.begin(); subIt != method.end(); ++subIt) {
+                    if (subIt.value().isObject()) {
+                        QJsonObject subMethod = subIt.value().toObject();
+                        if (subMethod.contains("controller")) {
+                            controller = subMethod["controller"].toObject();
+                            foundController = true;
+                            method = subMethod; // Use the submethod for parameter extraction
+                            break;
+                        }
+                    }
+                }
+            }
 
-            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::MonteCarlo)
+            if (!foundController || AccessCI(controller, "Method").toInt() != SupraFit::Method::MonteCarlo)
                 continue;
 
             if (maxSteps == -1) {
@@ -827,6 +848,9 @@ QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index)
                 paramResult["stddev"] = box["stddev"].toDouble();
                 paramResult["mean"] = box["mean"].toDouble();
                 paramResult["median"] = box["median"].toDouble();
+                
+                // Add raw data for Print::TextFromConfidence histogram analysis - Claude Generated
+                paramResult["raw_data"] = param["data"].toObject()["raw"].toString();
 
                 // Use percentile-based confidence intervals from existing data - Claude Generated
                 if (param.contains("confidence")) {
@@ -1190,6 +1214,227 @@ QString FormatStatisticsString(const QJsonObject& statisticsJson, const QString&
         }
     }
 
+    return result;
+}
+
+// Additional JSON-based statistical calculation functions - Claude Generated
+
+QJsonObject CalculateWGSMetrics(const QVector<QJsonObject>& models)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    result["method_type"] = "WeakenedGridSearch";
+    result["execution_status"] = "success";
+    
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        QJsonArray parameterResults;
+        
+        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : methods.keys()) {
+            QJsonObject method = methods[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+            
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::WeakenedGridSearch)
+                continue;
+                
+            // Extract grid search parameters
+            for (const QString& paramKey : method.keys()) {
+                if (paramKey == "controller")
+                    continue;
+                    
+                QJsonObject param = method[paramKey].toObject();
+                QJsonObject paramResult;
+                paramResult["name"] = param["name"].toString();
+                paramResult["type"] = param["type"].toString();
+                
+                // Grid search specific data
+                if (param.contains("grid_values")) {
+                    QVector<qreal> gridValues = ToolSet::String2DoubleVec(param["grid_values"].toString());
+                    paramResult["grid_values"] = QJsonArray::fromVariantList(
+                        QVariantList(gridValues.begin(), gridValues.end()));
+                    paramResult["grid_size"] = gridValues.size();
+                }
+                
+                parameterResults.append(paramResult);
+            }
+        }
+        
+        modelData["parameters"] = parameterResults;
+        if (!parameterResults.isEmpty()) {
+            modelResults.append(modelData);
+        }
+    }
+    
+    result["models"] = modelResults;
+    result["summary"] = QJsonObject{
+        {"total_blocks", modelResults.size()},
+        {"method_description", "Weakened Grid Search parameter exploration"}
+    };
+    
+    return result;
+}
+
+QJsonObject CalculateModelComparisonMetrics(const QVector<QJsonObject>& models)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    result["method_type"] = "ModelComparison";
+    result["execution_status"] = "success";
+    
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        
+        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : methods.keys()) {
+            QJsonObject method = methods[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+            
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::ModelComparison)
+                continue;
+                
+            // Extract model comparison data
+            modelData["confidence_level"] = controller["ConfidenceLevel"].toDouble(95.0);
+            modelData["comparison_method"] = controller["ComparisonMethod"].toString("F-Test");
+            
+            // Extract comparison results if available
+            QJsonArray comparisonResults;
+            for (const QString& compKey : method.keys()) {
+                if (compKey == "controller")
+                    continue;
+                    
+                QJsonObject comp = method[compKey].toObject();
+                QJsonObject compResult;
+                compResult["comparison_id"] = compKey;
+                compResult["f_statistic"] = comp["f_statistic"].toDouble();
+                compResult["p_value"] = comp["p_value"].toDouble();
+                compResult["significant"] = comp["p_value"].toDouble() < (1.0 - controller["ConfidenceLevel"].toDouble(95.0)/100.0);
+                
+                comparisonResults.append(compResult);
+            }
+            modelData["comparisons"] = comparisonResults;
+        }
+        
+        if (modelData.contains("confidence_level")) {
+            modelResults.append(modelData);
+        }
+    }
+    
+    result["models"] = modelResults;
+    result["summary"] = QJsonObject{
+        {"total_blocks", modelResults.size()},
+        {"method_description", "Statistical model comparison using F-tests"}
+    };
+    
+    return result;
+}
+
+QJsonObject CalculateFastConfidenceMetrics(const QVector<QJsonObject>& models)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    result["method_type"] = "FastConfidence";
+    result["execution_status"] = "success";
+    
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        QJsonArray parameterResults;
+        
+        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : methods.keys()) {
+            QJsonObject method = methods[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+            
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::FastConfidence)
+                continue;
+                
+            // Extract fast confidence parameters
+            for (const QString& paramKey : method.keys()) {
+                if (paramKey == "controller")
+                    continue;
+                    
+                QJsonObject param = method[paramKey].toObject();
+                QJsonObject paramResult;
+                paramResult["name"] = param["name"].toString();
+                paramResult["type"] = param["type"].toString();
+                paramResult["confidence_interval"] = param["confidence_interval"].toObject();
+                paramResult["confidence_level"] = controller["ConfidenceLevel"].toDouble(95.0);
+                
+                parameterResults.append(paramResult);
+            }
+        }
+        
+        modelData["parameters"] = parameterResults;
+        if (!parameterResults.isEmpty()) {
+            modelResults.append(modelData);
+        }
+    }
+    
+    result["models"] = modelResults;
+    result["summary"] = QJsonObject{
+        {"total_blocks", modelResults.size()},
+        {"method_description", "Simplified confidence interval estimation"}
+    };
+    
+    return result;
+}
+
+QJsonObject CalculateGlobalSearchMetrics(const QVector<QJsonObject>& models)
+{
+    QJsonObject result;
+    QJsonArray modelResults;
+    result["method_type"] = "GlobalSearch";
+    result["execution_status"] = "success";
+    
+    for (const auto& model : models) {
+        QJsonObject modelData;
+        modelData["name"] = model["name"].toString();
+        
+        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        for (const QString& methodKey : methods.keys()) {
+            QJsonObject method = methods[methodKey].toObject();
+            QJsonObject controller = method["controller"].toObject();
+            
+            if (AccessCI(controller, "Method").toInt() != SupraFit::Method::GlobalSearch)
+                continue;
+                
+            // Extract global search parameters
+            modelData["max_iterations"] = controller["MaxIterations"].toInt();
+            modelData["convergence_tolerance"] = controller["ConvergenceTolerance"].toDouble();
+            modelData["search_algorithm"] = controller["SearchAlgorithm"].toString("Multi-Start");
+            
+            // Extract search results
+            QJsonArray searchResults;
+            for (const QString& searchKey : method.keys()) {
+                if (searchKey == "controller")
+                    continue;
+                    
+                QJsonObject search = method[searchKey].toObject();
+                QJsonObject searchResult;
+                searchResult["iteration"] = searchKey.toInt();
+                searchResult["final_sse"] = search["sse"].toDouble();
+                searchResult["converged"] = search["converged"].toBool();
+                searchResult["iterations_used"] = search["iterations_used"].toInt();
+                
+                searchResults.append(searchResult);
+            }
+            modelData["search_results"] = searchResults;
+        }
+        
+        if (modelData.contains("max_iterations")) {
+            modelResults.append(modelData);
+        }
+    }
+    
+    result["models"] = modelResults;
+    result["summary"] = QJsonObject{
+        {"total_blocks", modelResults.size()},
+        {"method_description", "Global parameter space exploration"}
+    };
+    
     return result;
 }
 

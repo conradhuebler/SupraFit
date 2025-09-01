@@ -389,6 +389,26 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
         QString enhancedContent = createEnhancedContent(dataClass, originalContent, config, model);
         dataClass->setContent(enhancedContent);
     }
+    
+    // Create ML Pipeline RawData - Claude Generated
+    QJsonObject noiseConfig;
+    if (config.contains("Variance")) {
+        noiseConfig["type"] = "variance";
+        noiseConfig["variance"] = config["Variance"].toDouble();
+    }
+    if (config.contains("Std")) {
+        noiseConfig["type"] = "gaussian";
+        noiseConfig["std"] = config["Std"];
+    }
+    if (config.contains("RandomSeed")) {
+        noiseConfig["seed"] = config["RandomSeed"];
+    }
+    
+    QJsonObject mlRawData;
+    mlRawData["ml_pipeline"] = createMLRawData(config, model, noiseConfig);
+    qDebug() << "📊 DEBUG: Created ML RawData with" << mlRawData.keys().size() << "keys:" << mlRawData.keys();
+    dataClass->setRawData(mlRawData);
+    qDebug() << "📊 DEBUG: Verified RawData storage with" << dataClass->RawData().keys().size() << "keys";
 
     return true;
 }
@@ -541,6 +561,61 @@ QString DataGenerator::createEnhancedContent(QPointer<DataClass> dataClass, cons
     }
     
     return content;
+}
+
+// ML Pipeline RawData creation - Claude Generated
+QJsonObject DataGenerator::createMLRawData(const QJsonObject& inputConfig, QSharedPointer<AbstractModel> groundTruthModel, const QJsonObject& noiseConfig)
+{
+    QJsonObject mlData;
+    mlData["version"] = "ml_pipeline_v1.0";
+    mlData["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    
+    // Generation configuration
+    QJsonObject generationConfig;
+    generationConfig["input_json"] = inputConfig;
+    
+    // Ground truth model parameters
+    if (groundTruthModel) {
+        QJsonObject groundTruthData;
+        groundTruthData["id"] = groundTruthModel->SFModel();
+        groundTruthData["name"] = groundTruthModel->Name();
+        
+        // Extract global parameters (stability constants)
+        QJsonArray globalParams;
+        for (int i = 0; i < groundTruthModel->GlobalParameterSize(); ++i) {
+            globalParams.append(groundTruthModel->GlobalParameter(i));
+        }
+        groundTruthData["global_parameters"] = globalParams;
+        
+        // Extract local parameters (chemical shifts) organized by parameter and series
+        QJsonArray localParams;
+        for (int param = 0; param < groundTruthModel->LocalParameterSize(); ++param) {
+            QJsonArray seriesValues;
+            for (int series = 0; series < groundTruthModel->SeriesCount(); ++series) {
+                seriesValues.append(groundTruthModel->LocalParameter(param, series));
+            }
+            localParams.append(seriesValues);
+        }
+        groundTruthData["local_parameters"] = localParams;
+        
+        // Model characteristics
+        groundTruthData["series_count"] = groundTruthModel->SeriesCount();
+        groundTruthData["datapoints"] = groundTruthModel->DataPoints();
+        
+        generationConfig["ground_truth_model"] = groundTruthData;
+    }
+    
+    // Noise configuration applied during generation
+    if (!noiseConfig.isEmpty()) {
+        generationConfig["noise_applied"] = noiseConfig;
+    }
+    
+    mlData["generation_config"] = generationConfig;
+    
+    // Initialize empty fitted_models array (will be populated during ML pipeline)
+    mlData["fitted_models"] = QJsonArray();
+    
+    return mlData;
 }
 
 // Qt slots for JavaScript integration - Claude Generated
