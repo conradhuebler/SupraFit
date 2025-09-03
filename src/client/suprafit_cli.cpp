@@ -47,6 +47,7 @@
 #include "src/core/analyse.h"
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/jsonutils.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 #include "src/version.h"
@@ -333,8 +334,12 @@ void SupraFitCli::ParseMain()
     m_guess = m_main["Guess"].toBool(false);
     m_fit = m_main["Fit"].toBool(false);
     m_extension = m_main["extension"].toString("suprafit");
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
 
     /*
@@ -522,7 +527,10 @@ bool SupraFitCli::Prepare()
     }
 
     if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_mainjson["OutFile"].toString();
+        }
     }
 
     LoadFile();
@@ -585,8 +593,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     if (!LoadFile())
         return project_list;
     
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     qDebug() << "GenerateDataOnly: Loading data from" << m_infile;
@@ -705,8 +717,12 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
     }
     
     // Set output file name
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     // Export the generated data and wrap in proper SupraFit project structure
@@ -1718,8 +1734,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
     }
     
     // Set output file name from configuration - Claude Generated
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     int repeat = m_simulation["Repeat"].toInt(1);
@@ -2079,11 +2099,15 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
     int repeat = 1;
     if (!m_main.isEmpty()) {
         repeat = m_main["Repeat"].toInt(1);
-        if (!m_main.contains("OutFile")) {
-            fmt::print("❌ ERROR: OutFile is required in Main section\n");
-            return project_list;
+        
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            if (!m_main.contains("OutFile")) {
+                fmt::print("❌ ERROR: OutFile is required in Main section when -o option is not used\n");
+                return project_list;
+            }
+            setOutFile(m_main["OutFile"].toString());
         }
-        setOutFile(m_main["OutFile"].toString());
         qDebug() << m_outfile << m_extension;
     }
     
@@ -2574,48 +2598,68 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         // Step 3: Fit models and evaluate with post-fit analysis
         QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig, globalAnalysisConfig);
 
-        // Step 3.5: Integrate fitted models into ML RawData - Claude Generated
-        QJsonObject currentRawData = data->RawData();
-        if (currentRawData.contains("ml_pipeline")) {
-            QJsonObject mlPipeline = currentRawData["ml_pipeline"].toObject();
-            QJsonArray fittedModelsArray = mlPipeline["fitted_models"].toArray();
-            
-            // Add each fitted model to the ML pipeline
-            for (const QJsonObject& modelResult : fittedModels) {
-                QJsonObject fittedModelEntry;
-                fittedModelEntry["model_name"] = modelResult["model_name"];
-                fittedModelEntry["model_id"] = modelResult["model_id"];
-                fittedModelEntry["convergence"] = modelResult["converged"];
-                fittedModelEntry["sse"] = modelResult["SSE"];
-                fittedModelEntry["fit_quality"] = modelResult["ml_features"];
-                fittedModelEntry["fitted_parameters"] = modelResult["fitted_parameters"];
-                if (modelResult.contains("post_fit_analysis")) {
-                    fittedModelEntry["post_fit_analysis"] = modelResult["post_fit_analysis"];
-                }
-                fittedModelEntry["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-                
-                fittedModelsArray.append(fittedModelEntry);
-            }
-            
-            mlPipeline["fitted_models"] = fittedModelsArray;
-            currentRawData["ml_pipeline"] = mlPipeline;
-            data->setRawData(currentRawData);
-            
-            fmt::print("🔍 DEBUG: Added {} fitted models to ML RawData\n", fittedModels.size());
-            
-            // Re-save the updated dataset with fitted models in ML RawData - Claude Generated
-            QString datasetFilename = m_outfile + "-" + QString::number(i);
-            if (m_outfile.endsWith(".json")) {
-                datasetFilename += ".json";
-            } else {
-                datasetFilename += ".json";  // Always save dataset as JSON
-            }
-            
-            QJsonObject updatedDataset;
-            updatedDataset["data"] = data->ExportData();  // Export updated DataClass with fitted models
-            SaveFile(datasetFilename, updatedDataset);
-            fmt::print("🔍 DEBUG: Re-saved dataset '{}' with fitted models in ML RawData\n", datasetFilename.toStdString());
+        // Step 3.5: Create Multi-Project architecture instead of Type C ml_pipeline - Claude Generated
+        // Convert fitted models to individual projects using project_X format
+        QJsonObject multiProjectData;
+        multiProjectData["format_version"] = "2.0";
+        multiProjectData["generation_timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+        multiProjectData["base_data"] = data->ExportData();
+        
+        // Extract ground truth model information from content for ML labeling - Claude Generated
+        QString content = data->getContent();
+        if (content.contains("Model: ¹H 1:1-Model")) {
+            QJsonObject groundTruth;
+            groundTruth["model_id"] = 1;
+            groundTruth["model_name"] = "¹H 1:1-Model";
+            groundTruth["source"] = "data_generation_content";
+            multiProjectData["ground_truth"] = groundTruth;
+        } else if (content.contains("Model: ¹H 1:2-Model")) {
+            QJsonObject groundTruth;
+            groundTruth["model_id"] = 2; 
+            groundTruth["model_name"] = "¹H 1:2-Model";
+            groundTruth["source"] = "data_generation_content";
+            multiProjectData["ground_truth"] = groundTruth;
         }
+        
+        // Create individual project entries for each fitted model
+        for (int modelIndex = 0; modelIndex < fittedModels.size(); ++modelIndex) {
+            const QJsonObject& modelResult = fittedModels[modelIndex];
+            QString projectKey = QString("project_%1").arg(modelIndex);
+            
+            QJsonObject projectData;
+            projectData["model_name"] = modelResult["model_name"];
+            projectData["model_id"] = modelResult["model_id"];
+            projectData["convergence"] = modelResult["converged"];
+            projectData["sse"] = modelResult["SSE"];
+            projectData["fitted_parameters"] = modelResult["fitted_parameters"];
+            projectData["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+            
+            // Include post-fit analysis if available
+            if (modelResult.contains("post_fit_analysis")) {
+                projectData["post_fit_analysis"] = modelResult["post_fit_analysis"];
+            }
+            
+            // Include ML features if available
+            if (modelResult.contains("ml_features")) {
+                projectData["ml_features"] = modelResult["ml_features"];
+            }
+            
+            multiProjectData[projectKey] = projectData;
+        }
+        
+        fmt::print("🔍 DEBUG: Created Multi-Project structure with {} projects\n", fittedModels.size());
+        
+        // Save the Multi-Project dataset - Claude Generated
+        QString datasetFilename = m_outfile + "-" + QString::number(i);
+        if (m_outfile.endsWith(".json")) {
+            datasetFilename += ".json";
+        } else {
+            datasetFilename += ".json";  // Always save dataset as JSON
+        }
+        
+        SaveFile(datasetFilename, multiProjectData);
+        fmt::print("🔍 DEBUG: Saved Multi-Project dataset '{}' with {} projects\n", 
+                  datasetFilename.toStdString(), fittedModels.size());
 
         // Step 4: Create SupraFit project with fitted models (like GUI SaveWorkspace)
         QJsonObject projectFile;
@@ -3071,12 +3115,35 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
             m_jobmanager->RunJobs();
 
             // Get results from model after job completion
-            // The JobManager stores results in the model itself
+            // The JobManager stores results in the model itself - Claude Generated
             QJsonObject methodResult;
             methodResult["method"] = methodType;
             methodResult["method_name"] = methodName;
             methodResult["configuration"] = job;
             methodResult["completed"] = true;
+            
+            // Extract actual analysis results from model after JobManager execution - Claude Generated
+            // JobManager stores the real statistical results in the model - use JsonUtils to extract them
+            // CRITICAL: Must use ExportModel(true, false) to include statistics in export!
+            QJsonObject modelExport = model->ExportModel(true, false);
+            QJsonObject actualResults = SupraFit::JsonUtils::getStatisticalMethod(modelExport, static_cast<SupraFit::Method>(methodType));
+            
+            if (!actualResults.isEmpty()) {
+                methodResult["results"] = actualResults;
+                fmt::print("✅ Extracted {} results from model: {} entries\n", 
+                          methodName.toStdString(), actualResults.keys().size());
+            } else {
+                fmt::print("⚠️  Warning: No results found for {} in model export\n", methodName.toStdString());
+                
+                // Fallback: Create empty structure with debug info
+                QJsonObject fallbackResults;
+                fallbackResults["max_steps"] = -1;
+                fallbackResults["models"] = QJsonArray();
+                fallbackResults["parameter_averages"] = QJsonArray(); 
+                fallbackResults["variance"] = 0;
+                fallbackResults["debug_info"] = "JobManager execution completed but no results found in model";
+                methodResult["results"] = fallbackResults;
+            }
 
             methodResults[QString::number(methodType)] = methodResult;
 
@@ -3176,6 +3243,161 @@ bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const
     fmt::print("🔍 Found {} JSON files in directory {}\n", inputFiles.size(), inputDirectory.toStdString());
     
     return exportMLTrainingData(inputFiles, outputFile);
+}
+
+// Claude Generated: Extract and display fitted model parameters
+bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
+{
+    if (m_toplevel.isEmpty()) {
+        fmt::print("❌ ERROR: No data loaded. File structure is empty.\n");
+        return false;
+    }
+
+    // Check if this is a models file
+    QStringList keys = m_toplevel.keys();
+    QStringList modelKeys;
+    for (const QString& key : keys) {
+        if (key.startsWith("model_")) {
+            modelKeys << key;
+        }
+    }
+
+    if (modelKeys.isEmpty()) {
+        fmt::print("❌ ERROR: No models found in file. Expected model_0, model_1, etc.\n");
+        fmt::print("Available keys: {}\n", keys.join(", ").toStdString());
+        return false;
+    }
+
+    fmt::print("📊 Found {} models in file\n", modelKeys.size());
+
+    // Filter models if specific index requested
+    QStringList targetsToProcess;
+    if (!modelIndexStr.isEmpty()) {
+        QString targetKey = QString("model_%1").arg(modelIndexStr);
+        if (modelKeys.contains(targetKey)) {
+            targetsToProcess << targetKey;
+        } else {
+            fmt::print("❌ ERROR: Model {} not found. Available models: {}\n", 
+                      targetKey.toStdString(), modelKeys.join(", ").toStdString());
+            return false;
+        }
+    } else {
+        targetsToProcess = modelKeys;
+    }
+
+    // Extract and display parameters for each model
+    fmt::print("\n=== Model Parameter Extraction ===\n\n");
+    
+    for (const QString& modelKey : targetsToProcess) {
+        QJsonObject model = m_toplevel[modelKey].toObject();
+        
+        fmt::print("🔬 Model: {}\n", modelKey.toStdString());
+        
+        // Basic model information
+        if (model.contains("name")) {
+            fmt::print("   Name: {}\n", model["name"].toString().toStdString());
+        }
+        
+        if (model.contains("converged")) {
+            bool converged = model["converged"].toBool();
+            fmt::print("   Status: {}\n", converged ? "✅ Converged" : "❌ Not Converged");
+        }
+        
+        // Fit quality metrics
+        if (model.contains("SSE")) {
+            double sse = model["SSE"].toDouble();
+            fmt::print("   SSE: {:.6e}\n", sse);
+        }
+        
+        if (model.contains("AIC")) {
+            double aic = model["AIC"].toDouble();
+            if (aic != std::numeric_limits<double>::infinity() && aic > -999) {
+                fmt::print("   AIC: {:.6e}\n", aic);
+            }
+        }
+        
+        if (model.contains("AICc")) {
+            double aicc = model["AICc"].toDouble();
+            if (aicc != std::numeric_limits<double>::infinity() && aicc > -999) {
+                fmt::print("   AICc: {:.6e}\n", aicc);
+            }
+        }
+        
+        // Extract fitted parameters
+        if (model.contains("parameter")) {
+            QJsonObject params = model["parameter"].toObject();
+            fmt::print("   📈 Fitted Parameters:\n");
+            
+            for (auto it = params.begin(); it != params.end(); ++it) {
+                QString paramName = it.key();
+                QJsonValue paramValue = it.value();
+                
+                if (paramValue.isDouble()) {
+                    double value = paramValue.toDouble();
+                    if (value != std::numeric_limits<double>::infinity() && 
+                        value != -std::numeric_limits<double>::infinity() &&
+                        !std::isnan(value)) {
+                        fmt::print("      {}: {:.6e}\n", paramName.toStdString(), value);
+                    } else {
+                        fmt::print("      {}: [Invalid/Infinite]\n", paramName.toStdString());
+                    }
+                } else if (paramValue.isArray()) {
+                    QJsonArray paramArray = paramValue.toArray();
+                    fmt::print("      {}:", paramName.toStdString());
+                    for (int i = 0; i < paramArray.size(); ++i) {
+                        double value = paramArray[i].toDouble();
+                        if (value != std::numeric_limits<double>::infinity() && 
+                            value != -std::numeric_limits<double>::infinity() &&
+                            !std::isnan(value)) {
+                            fmt::print(" {:.6e}", value);
+                        } else {
+                            fmt::print(" [Invalid]");
+                        }
+                    }
+                    fmt::print("\n");
+                } else {
+                    fmt::print("      {}: {}\n", paramName.toStdString(), 
+                              paramValue.toString().toStdString());
+                }
+            }
+        }
+        
+        // Extract confidence intervals if available
+        if (model.contains("confidence_intervals")) {
+            QJsonObject ci = model["confidence_intervals"].toObject();
+            fmt::print("   📊 Confidence Intervals:\n");
+            
+            for (auto it = ci.begin(); it != ci.end(); ++it) {
+                QString paramName = it.key();
+                QJsonObject interval = it.value().toObject();
+                
+                if (interval.contains("lower") && interval.contains("upper")) {
+                    double lower = interval["lower"].toDouble();
+                    double upper = interval["upper"].toDouble();
+                    fmt::print("      {}: [{:.6e}, {:.6e}]\n", 
+                              paramName.toStdString(), lower, upper);
+                }
+            }
+        }
+        
+        // Extract standard errors if available
+        if (model.contains("standard_errors")) {
+            QJsonObject se = model["standard_errors"].toObject();
+            fmt::print("   📏 Standard Errors:\n");
+            
+            for (auto it = se.begin(); it != se.end(); ++it) {
+                QString paramName = it.key();
+                double error = it.value().toDouble();
+                if (!std::isnan(error) && error != std::numeric_limits<double>::infinity()) {
+                    fmt::print("      {}: {:.6e}\n", paramName.toStdString(), error);
+                }
+            }
+        }
+        
+        fmt::print("\n");
+    }
+    
+    return true;
 }
 
 /*

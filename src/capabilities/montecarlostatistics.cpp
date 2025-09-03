@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -237,7 +237,13 @@ bool MonteCarloStatistics::Run()
 
 QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
-    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    // Claude Generated: Support configurable RandomSeed for reproducibility
+    qint64 seed;
+    if (m_controller.contains("RandomSeed")) {
+        seed = m_controller["RandomSeed"].toVariant().toLongLong();
+    } else {
+        seed = QDateTime::currentMSecsSinceEpoch();
+    }
     rng.seed(seed);
     m_model->setFast(false);
     m_model->Calculate();

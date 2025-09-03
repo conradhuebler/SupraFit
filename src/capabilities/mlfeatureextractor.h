@@ -137,68 +137,16 @@ private:
     QJsonObject extractStatisticalFeatures(const QJsonObject& postFitAnalysis);
 
     // Statistical method feature extraction functions - Claude Generated
+    // Primitive extraction methods removed - Claude Generated
+    // Now using robust JsonUtils + analyse.cpp functions instead
+    
     /**
-     * @brief Extract Monte Carlo confidence intervals and parameter distributions
-     * @param methodData Monte Carlo analysis results from post-processing
-     * @return QJsonObject with confidence intervals, parameter uncertainties, distributions
-     */
-    QJsonObject extractMonteCarloFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Cross-Validation metrics and fold statistics
-     * @param methodData Cross-Validation results from post-processing
-     * @return QJsonObject with CV scores, fold statistics, prediction variance
-     */
-    QJsonObject extractCrossValidationFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Model Comparison statistics (AIC, BIC, etc.)
-     * @param methodData Model comparison results from post-processing
-     * @return QJsonObject with information criteria, likelihood ratios, model probabilities
-     */
-    QJsonObject extractModelComparisonFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Reduction Analysis convergence metrics
-     * @param methodData Reduction analysis results from post-processing
-     * @return QJsonObject with convergence statistics, stability measures
-     */
-    QJsonObject extractReductionFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Weakened Grid Search exploration data
-     * @param methodData Grid search results from post-processing
-     * @return QJsonObject with search space exploration metrics, optimization landscape
-     */
-    QJsonObject extractGridSearchFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Fast Confidence bootstrap statistics
-     * @param methodData Fast confidence results from post-processing
-     * @return QJsonObject with bootstrap confidence intervals, parameter stability
-     */
-    QJsonObject extractFastConfidenceFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract Global Search optimization metrics
-     * @param methodData Global search results from post-processing
-     * @return QJsonObject with optimization metrics, search convergence
-     */
-    QJsonObject extractGlobalSearchFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Extract basic metrics from any statistical method
-     * @param methodData Generic statistical method results
-     * @return QJsonObject with basic statistical metrics available in any method
-     */
-    QJsonObject extractBasicMethodFeatures(const QJsonObject& methodData);
-
-    /**
-     * @brief Parse noise configuration from content string (SupraFit metadata)
-     * @param content Content string from data.content field
-     * @return QJsonObject with extracted noise configuration
+     * @brief Parse noise configuration from base_data content string
+     * @param content The content string containing JSON configuration
+     * @return QJsonObject with parsed noise parameters (type, std, random_seed)
      */
     QJsonObject parseNoiseFromContent(const QString& content);
+
 
     /**
      * @brief Parse matrix string limits from input_json (GlobalRandomLimits/LocalRandomLimits)

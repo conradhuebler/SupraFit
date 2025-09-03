@@ -33,6 +33,14 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - **TESTED**: Works (by operator feedback)
 - **APPROVED**: Move to changelog, remove from CLAUDE.md
 
+## Documentation
+
+- [JSON Data Structure and I/O Functions](./JSON_datastruture.md)
+- [Statistical Post-Processing Configuration](./src/capabilities/STATISTICAL_POSTPROCESSING.md)
+- [Model ID Reference](./src/core/models/MODEL_ID_REFERENCE.md)
+- [ML Integration Plan](./ml_integration_plan/README.md)
+- [CLI Usage Examples](./src/client/usage_example.md)
+
 ## Key Components
 
 ### Core Libraries

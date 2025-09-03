@@ -223,6 +223,7 @@ set(core_SRC
     src/capabilities/jobmanager.cpp
     src/capabilities/mlfeatureextractor.cpp
     src/core/analyse.cpp
+    src/core/jsonutils.cpp
     src/core/jsonhandler.cpp
     src/core/filehandler.cpp
     src/core/toolset.cpp

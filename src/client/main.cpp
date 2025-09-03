@@ -30,6 +30,7 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QIODevice>
+#include <QtCore/QDir>
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -505,6 +506,14 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             if (!outputOverride.isEmpty()) {
                 QFileInfo outputInfo(outputOverride);
                 QString baseName = outputInfo.completeBaseName();
+                QString outputDir = outputInfo.absolutePath();
+                
+                // Change to output directory if specified
+                QString originalDir = QDir::currentPath();
+                if (outputDir != "." && outputDir != originalDir) {
+                    QDir::setCurrent(outputDir);
+                }
+                
                 core->setOutFile(baseName);
             }
 
@@ -570,6 +579,14 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             // Extract base name without extension
             QFileInfo outputInfo(outputOverride);
             QString baseName = outputInfo.completeBaseName();
+            QString outputDir = outputInfo.absolutePath();
+            
+            // Change to output directory if specified
+            QString originalDir = QDir::currentPath();
+            if (outputDir != "." && outputDir != originalDir) {
+                QDir::setCurrent(outputDir);
+            }
+            
             core->setOutFile(baseName);
         }
 
@@ -683,6 +700,7 @@ void showComprehensiveHelp()
     std::cout << "  -n, --nproc <N>        Number of parallel threads (default: 4)\n";
     std::cout << "  --ml-pipeline          Enable ML pipeline mode\n";
     std::cout << "  --batch-config <file>  Run ML pipeline batch processing\n";
+    std::cout << "  -x, --extract-parameters [N]  Extract fitted parameters from models file (optional: specify model index)\n";
     std::cout << "  -h, --help             Show this help message\n";
     std::cout << "  -v, --version          Show version information\n"
               << std::endl;
@@ -703,6 +721,12 @@ void showComprehensiveHelp()
 
     std::cout << "  # Debug file structure\n";
     std::cout << "  suprafit_cli -l complex_project.suprafit\n\n";
+
+    std::cout << "  # Extract fitted parameters from all models\n";
+    std::cout << "  suprafit_cli -x project-models-0.suprafit\n\n";
+
+    std::cout << "  # Extract parameters from specific model\n";
+    std::cout << "  suprafit_cli -x 2 project-models-0.suprafit\n\n";
 
     std::cout << "FILE TYPES:\n";
     std::cout << "  • Simple Projects: SupraFit project files with data and models\n";
@@ -797,6 +821,15 @@ int main(int argc, char** argv)
         "Batch export ML training data from directory", "directory");
     parser.addOption(exportMLBatch);
 
+    // Claude Generated: Add parameter extraction option
+    QCommandLineOption extractParameters(QStringList() << "x" << "extract-parameters",
+        "Extract fitted model parameters from results file");
+    parser.addOption(extractParameters);
+    
+    QCommandLineOption extractModel("extract-model",
+        "Specific model index to extract (use with --extract-parameters)", "model_index");
+    parser.addOption(extractModel);
+
     parser.process(app);
 
     // Show version info
@@ -826,6 +859,10 @@ int main(int argc, char** argv)
     const QString mlOutputFile = parser.value("ml-output");
     const bool autoExportMLMode = parser.isSet("auto-export-ml");
     const QString exportMLBatchDirectory = parser.value("export-ml-batch");
+    
+    // Claude Generated: Parameter extraction parameters
+    const bool extractParametersMode = parser.isSet("extract-parameters");
+    const QString modelIndex = parser.value("extract-model");
 
     // Set thread count
     qApp->instance()->setProperty("threads", parser.value("nproc").toInt());
@@ -890,7 +927,27 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    // 4. Handle ML Training Data Export mode - Claude Generated
+    // 4. Handle Parameter Extraction mode - Claude Generated
+    if (extractParametersMode) {
+        std::cout << "Extracting model parameters from: " << actualInputFile.toStdString() << std::endl;
+        
+        SupraFitCli* cli = new SupraFitCli;
+        cli->setInFile(actualInputFile);
+        
+        if (!cli->LoadFile()) {
+            std::cout << "ERROR: Could not load file for parameter extraction." << std::endl;
+            delete cli;
+            return 1;
+        }
+        
+        // Extract and display model parameters
+        bool success = cli->ExtractModelParameters(modelIndex);
+        
+        delete cli;
+        return success ? 0 : 1;
+    }
+
+    // 5. Handle ML Training Data Export mode - Claude Generated
     if (exportMLTrainingMode) {
         std::cout << "Exporting ML training data from: " << actualInputFile.toStdString() << std::endl;
         

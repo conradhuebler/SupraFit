@@ -27,6 +27,8 @@
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
 
+#include "jsonutils.h"
+
 #include <limits>
 
 #include "src/core/models/AbstractModel.h"
@@ -60,11 +62,16 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
 
         bool skip = false;
 #pragma message("let us analyse more reduction, later ")
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
         QJsonObject reduction;
-        for (const QString& key : model["data"].toObject()["methods"].toObject().keys()) {
-            if (AccessCI(model["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject(), "Method").toInt() == SupraFit::Method::Reduction) {
-                reduction = model["data"].toObject()["methods"].toObject()[key].toObject();
-                break;
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (!postFitAnalysis.isEmpty()) {
+            QJsonObject methods = postFitAnalysis["methods"].toObject();
+            for (const QString& key : methods.keys()) {
+                if (AccessCI(methods[key].toObject()["controller"].toObject(), "Method").toInt() == SupraFit::Method::Reduction) {
+                    reduction = methods[key].toObject();
+                    break;
+                }
             }
         }
 
@@ -262,12 +269,18 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
     QString method_line = QString();
     QString bin_info = QString();
     for (const auto& model : models) {
-        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject statistics = postFitAnalysis["methods"].toObject();
         QStringList keys = statistics.keys();
 
         for (const QString& str : qAsConst(keys)) {
-            QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
-            QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
+            QJsonObject obj = statistics[str].toObject();
+            QJsonObject controller = statistics[str].toObject()["controller"].toObject();
             int method = AccessCI(controller, "Method").toInt();
             int type = controller["CXO"].toInt();
             int x = controller["X"].toInt();
@@ -431,12 +444,18 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
     bool fullshannon = qApp->instance()->property("FullShannon").toBool();
 
     for (const auto& model : models) {
-        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject statistics = postFitAnalysis["methods"].toObject();
         QStringList keys = statistics.keys();
 
         for (const QString& str : qAsConst(keys)) {
-            QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
-            QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
+            QJsonObject obj = statistics[str].toObject();
+            QJsonObject controller = statistics[str].toObject()["controller"].toObject();
             int method = AccessCI(controller, "Method").toInt();
             if (method != SupraFit::Method::MonteCarlo)
                 continue;
@@ -699,7 +718,13 @@ QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype, i
         modelData["name"] = model["name"].toString();
         QJsonArray parameterResults;
 
-        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject statistics = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : statistics.keys()) {
             QJsonObject method = statistics[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();
@@ -709,6 +734,10 @@ QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype, i
 
             if (cvtype == 3 && controller["X"].toInt() != cv_x)
                 continue;
+                
+            // Enhanced JsonUtils usage - demonstrate direct statistical method access
+            // QJsonObject cvResults = SupraFit::JsonUtils::getStatisticalMethod(model, SupraFit::Method::CrossValidation);
+            // This would provide direct access to CV results without manual method iteration
 
             int bins = controller["EntropyBins"].toInt(50);
 
@@ -790,7 +819,13 @@ QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index)
         modelData["name"] = model["name"].toString();
         QJsonArray parameterResults;
 
-        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject statistics = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : statistics.keys()) {
             QJsonObject method = statistics[methodKey].toObject();
             
@@ -925,7 +960,13 @@ QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double
         modelData["name"] = model["name"].toString();
         QJsonArray parameterResults;
 
-        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject methods = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : methods.keys()) {
             QJsonObject method = methods[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();
@@ -1231,7 +1272,13 @@ QJsonObject CalculateWGSMetrics(const QVector<QJsonObject>& models)
         modelData["name"] = model["name"].toString();
         QJsonArray parameterResults;
         
-        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject methods = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : methods.keys()) {
             QJsonObject method = methods[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();
@@ -1287,7 +1334,13 @@ QJsonObject CalculateModelComparisonMetrics(const QVector<QJsonObject>& models)
         QJsonObject modelData;
         modelData["name"] = model["name"].toString();
         
-        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject methods = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : methods.keys()) {
             QJsonObject method = methods[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();
@@ -1343,7 +1396,13 @@ QJsonObject CalculateFastConfidenceMetrics(const QVector<QJsonObject>& models)
         modelData["name"] = model["name"].toString();
         QJsonArray parameterResults;
         
-        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject methods = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : methods.keys()) {
             QJsonObject method = methods[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();
@@ -1393,7 +1452,13 @@ QJsonObject CalculateGlobalSearchMetrics(const QVector<QJsonObject>& models)
         QJsonObject modelData;
         modelData["name"] = model["name"].toString();
         
-        QJsonObject methods = model["data"].toObject()["methods"].toObject();
+        // Use JsonUtils for unified data access - Claude Generated (Refactoring)
+        QJsonObject postFitAnalysis = SupraFit::JsonUtils::getPostFitAnalysis(model);
+        if (postFitAnalysis.isEmpty()) {
+            continue; // Skip models without post-fit analysis
+        }
+        
+        QJsonObject methods = postFitAnalysis["methods"].toObject();
         for (const QString& methodKey : methods.keys()) {
             QJsonObject method = methods[methodKey].toObject();
             QJsonObject controller = method["controller"].toObject();

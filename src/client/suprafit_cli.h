@@ -133,6 +133,9 @@ public:
     void displayPostProcessingMethod(const QString& methodName, const QString& emoji, 
                                     int blockCount, const QJsonObject& methodData, int methodType);
     ModelStatistics extractModelStatistics(const QString& key, const QJsonObject& modelObj);
+    
+    // Claude Generated: Extract and display fitted model parameters
+    bool ExtractModelParameters(const QString& modelIndexStr = QString());
 
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
