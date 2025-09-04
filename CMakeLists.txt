@@ -253,6 +253,34 @@ if(USE_PCH)
     target_precompile_headers(core PRIVATE src/pch.h)
 endif()
 
+# Neural Network ML Library (Claude Generated - 2025)
+option(ML_NEURAL_NETWORKS "Enable Neural Network ML Library" ON)
+
+if(ML_NEURAL_NETWORKS)
+    set(ml_SRC
+        src/ml/activation_functions.cpp
+        src/ml/neural_layer.cpp
+        src/ml/neural_network.cpp
+        src/ml/loss_functions.cpp
+        src/ml/optimizer.cpp
+        src/ml/tutorial/tutorial_manager.cpp
+        src/ml/tutorial/examples/xor_tutorial.cpp
+        src/ml/tutorial/examples/nmr_model_selection_tutorial.cpp
+        src/ml/tutorial/examples/training_tutorial.cpp
+    )
+    
+    add_library(ml ${ml_SRC})
+    target_link_libraries(ml Qt::Core fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML library (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml PRIVATE src/pch.h)
+    endif()
+    
+    # Add ML library to core dependencies
+    target_link_libraries(core ml)
+endif()
+
 #add_subdirectory(src/core/models/misc)
 set(models_SRC
     src/core/models/dataclass.cpp
@@ -478,6 +506,20 @@ endif()
 
 # CLI executable - always built (needs Core + Qml for DataGenerator)
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
+
+# ML CLI executable with Neural Network tutorials (Claude Generated - 2025)
+if(ML_NEURAL_NETWORKS)
+    add_executable(ml_cli_main
+        src/client/ml_cli_main.cpp
+    )
+    
+    target_link_libraries(ml_cli_main Qt::Core models core ml fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML CLI (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml_cli_main PRIVATE src/pch.h)
+    endif()
+endif()
 
 if(testing)
     enable_testing()

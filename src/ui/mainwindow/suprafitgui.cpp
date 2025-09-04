@@ -1084,38 +1084,8 @@ void SupraFitGui::SaveProjectAction()
     setLastDir(m_supr_file);
 }
 
-void SupraFitGui::SaveAsProjectAction()
-{
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
-    if (!str.isEmpty()) {
-        m_supr_file = str;
-        m_filename_line->setText(m_supr_file);
 
-        Waiter wait;
-        QMultiMap<QString, QJsonObject> projects;
-        for (int i = 0; i < m_project_list.size(); i++) {
-            QPointer<MainWindow> project_widget = m_project_list[i];
-            projects.insert(project_widget->Name(), project_widget->SaveProject());
-        }
-        if (projects.isEmpty())
-            return;
-        else if (projects.size() == 1) {
-            JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
-        } else {
-            QJsonObject json;
-
-            int i = 0;
-            for (const auto& model : projects) {
-                json["project_" + QString::number(i)] = model;
-                i++;
-            }
-            JsonHandler::WriteJsonFile(json, m_supr_file);
-        }
-        setLastDir(str);
-    }
-}
-
-void SupraFitGui::SettingsDialog()
+dann oid SupraFitGui::SettingsDialog()
 {
     ConfigDialog dialog(m_opt_config, this);
     if (dialog.exec() == QDialog::Accepted) {

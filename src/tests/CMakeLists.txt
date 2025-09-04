@@ -28,6 +28,11 @@ set(TEST_COMMON_LIBS
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
+# Add ML library if enabled (Claude Generated - 2025)
+if(ML_NEURAL_NETWORKS)
+    set(TEST_COMMON_LIBS ${TEST_COMMON_LIBS} ml)
+endif()
+
 # Add Unix-specific libraries like suprafit_cli
 if(UNIX)
     set(TEST_COMMON_LIBS ${TEST_COMMON_LIBS} pthread dl)
@@ -334,3 +339,102 @@ message(STATUS "  Multi-Project:      ./test_multi_project")
 message(STATUS "  File Operations:    ./test_file_operations")
 message(STATUS "  Integration:        ./test_integration")
 message(STATUS "  Real Data Analysis: ./test_comprehensive_real_data")
+
+# Neural Network ML Tests (Claude Generated - 2025)
+if(ML_NEURAL_NETWORKS)
+    # Activation Functions Test
+    add_executable(test_activation_functions
+        test_activation_functions.cpp
+    )
+    
+    target_link_libraries(test_activation_functions
+        ${TEST_COMMON_LIBS}
+    )
+    
+    add_test(NAME ActivationFunctionsTest COMMAND test_activation_functions)
+    
+    set_tests_properties(ActivationFunctionsTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    # Neural Layer Test
+    add_executable(test_neural_layer
+        test_neural_layer.cpp
+    )
+    
+    target_link_libraries(test_neural_layer
+        ${TEST_COMMON_LIBS}
+    )
+    
+    add_test(NAME NeuralLayerTest COMMAND test_neural_layer)
+    
+    set_tests_properties(NeuralLayerTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    # Neural Network Test
+    add_executable(test_neural_network
+        test_neural_network.cpp
+    )
+    
+    target_link_libraries(test_neural_network
+        ${TEST_COMMON_LIBS}
+    )
+    
+    add_test(NAME NeuralNetworkTest COMMAND test_neural_network)
+    
+    set_tests_properties(NeuralNetworkTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    # XOR Tutorial Test
+    add_executable(test_xor_tutorial
+        test_xor_tutorial.cpp
+    )
+    
+    target_link_libraries(test_xor_tutorial
+        ${TEST_COMMON_LIBS}
+    )
+    
+    add_test(NAME XORTutorialTest COMMAND test_xor_tutorial)
+    
+    set_tests_properties(XORTutorialTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    # ML Integration Test
+    add_executable(test_ml_integration
+        test_ml_integration.cpp
+    )
+    
+    target_link_libraries(test_ml_integration
+        ${TEST_COMMON_LIBS}
+    )
+    
+    add_test(NAME MLIntegrationTest COMMAND test_ml_integration)
+    
+    set_tests_properties(MLIntegrationTest PROPERTIES
+        TIMEOUT 120
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    # Add ML tests to main test targets
+    add_custom_target(run_ml_tests
+        COMMAND ${CMAKE_CTEST_COMMAND} --verbose -R "(ActivationFunctions|NeuralLayer|NeuralNetwork|XORTutorial|MLIntegration)Test"
+        DEPENDS test_activation_functions test_neural_layer test_neural_network test_xor_tutorial test_ml_integration
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+    
+    message(STATUS "")
+    message(STATUS "Neural Network ML Tests (Claude Generated 2025-09-03):")
+    message(STATUS "  Activation Functions: ./test_activation_functions")
+    message(STATUS "  Neural Layer:         ./test_neural_layer")
+    message(STATUS "  Neural Network:       ./test_neural_network")
+    message(STATUS "  XOR Tutorial:         ./test_xor_tutorial")
+    message(STATUS "  ML Integration:       ./test_ml_integration")
+    message(STATUS "  Run ML tests only:    make run_ml_tests")
+endif()
