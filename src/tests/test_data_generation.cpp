@@ -147,6 +147,8 @@ QJsonObject TestDataGeneration::loadGeneratedFile(const QString& filename)
 
 bool TestDataGeneration::verifyDataStructure(const QJsonObject& data, const QString& expectedType)
 {
+    Q_UNUSED(expectedType)
+    
     if (!data.contains("format_version")) return false;
     if (!data.contains("base_data")) return false;
     

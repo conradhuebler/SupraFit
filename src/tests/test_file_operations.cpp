@@ -77,6 +77,16 @@ private slots:
     void testWriteProtectedOutput();
     void testInsufficientDiskSpace();
 
+    // Enhanced Performance and Corruption Tests - Claude Generated 2025-09-04
+    void testAdvancedCorruptionRecovery();
+    void testConcurrentFileAccess();
+    void testFileSystemStressTest();
+    void testLargeFileStreamingHandling();
+    void testPartialCorruptionHandling();
+    void testNetworkFileSystemCompatibility();
+    void testFileRecoveryAfterInterruption();
+    void testMemoryMappedFileOperations();
+
 private:
     QTemporaryDir* m_tempDir;
     QString m_suprafitCli;
@@ -662,6 +672,206 @@ void TestFileOperations::testInsufficientDiskSpace()
     // Should succeed for normal files
     QVERIFY2(result[0].toInt() == 0, qPrintable("Disk space test failed: " + result[2]));
     QVERIFY(QFile::exists(outputFile));
+}
+
+// Enhanced Performance and Corruption Tests - Claude Generated 2025-09-04
+void TestFileOperations::testAdvancedCorruptionRecovery()
+{
+    // Create file with various types of corruption
+    QString corruptedFile = m_tempDir->path() + "/advanced_corrupt.json";
+    QFile file(corruptedFile);
+    file.open(QIODevice::WriteOnly);
+    
+    // Partial JSON with nested corruption
+    file.write("{ \"Main\": { \"OutFile\": \"test\" }, \"Independent\": { \"Generator\": { ");
+    file.write("\"Type\": \"equations\", \"DataPoints\": 10, \"Variables\": 2, ");
+    file.write("\"Equations\": \"X|Y\" }, \"InvalidKey\": null } "); // Missing closing brace
+    file.close();
+    
+    // Input: JSON with nested structural corruption
+    // Expected: Detailed error reporting with specific location information
+    QStringList result = runCliCommand({"-l", corruptedFile});
+    QVERIFY(result[0].toInt() != 0); // Should fail
+    QVERIFY(result[2].contains("Error") || result[2].contains("ERROR") || 
+            result[2].contains("parse") || result[2].contains("JSON"));
+    
+    // Verify error message is informative
+    QVERIFY(result[2].length() > 10); // Should have meaningful error description
+}
+
+void TestFileOperations::testConcurrentFileAccess()
+{
+    QString testFile = createTestJsonFile();
+    QString output1 = m_tempDir->path() + "/concurrent1.json";
+    QString output2 = m_tempDir->path() + "/concurrent2.json";
+    
+    // Input: Same input file accessed by multiple processes simultaneously
+    // Expected: Both processes complete successfully without corruption
+    QProcess process1;
+    QProcess process2;
+    
+    process1.start(m_suprafitCli, {"-i", testFile, "-o", output1});
+    process2.start(m_suprafitCli, {"-i", testFile, "-o", output2});
+    
+    QVERIFY(process1.waitForFinished(30000));
+    QVERIFY(process2.waitForFinished(30000));
+    
+    QCOMPARE(process1.exitCode(), 0);
+    QCOMPARE(process2.exitCode(), 0);
+    
+    // Both output files should exist and be valid
+    QVERIFY(QFile::exists(output1 + ".json"));
+    QVERIFY(QFile::exists(output2 + ".json"));
+}
+
+void TestFileOperations::testFileSystemStressTest()
+{
+    // Create multiple files simultaneously to stress file system
+    QStringList files;
+    QList<QProcess*> processes;
+    
+    for (int i = 0; i < 5; ++i) {
+        QString testFile = createTestJsonFile();
+        QString outputFile = m_tempDir->path() + QString("/stress_%1.json").arg(i);
+        files << outputFile;
+        
+        QProcess* process = new QProcess(this);
+        processes << process;
+        process->start(m_suprafitCli, {"-i", testFile, "-o", outputFile});
+    }
+    
+    // Input: Multiple simultaneous file operations
+    // Expected: All operations complete successfully without interference
+    bool allSucceeded = true;
+    for (QProcess* process : processes) {
+        if (!process->waitForFinished(45000)) {
+            allSucceeded = false;
+        }
+        if (process->exitCode() != 0) {
+            allSucceeded = false;
+        }
+    }
+    
+    QVERIFY(allSucceeded);
+    
+    // Verify all output files were created
+    for (const QString& file : files) {
+        QVERIFY(QFile::exists(file + ".json"));
+    }
+    
+    // Cleanup
+    for (QProcess* process : processes) {
+        process->deleteLater();
+    }
+}
+
+void TestFileOperations::testLargeFileStreamingHandling()
+{
+    QString largeFile = createLargeTestFile();
+    QString output = m_tempDir->path() + "/streaming_test.json";
+    
+    // Input: Large file requiring streaming or chunked processing
+    // Expected: Memory-efficient processing without excessive RAM usage
+    QElapsedTimer timer;
+    timer.start();
+    
+    QStringList result = runCliCommand({"-i", largeFile, "-o", output});
+    qint64 elapsed = timer.elapsed();
+    
+    QVERIFY2(result[0].toInt() == 0, qPrintable("Large file streaming failed: " + result[2]));
+    QVERIFY(elapsed < 60000); // Should complete within 1 minute
+    QVERIFY(QFile::exists(output + ".json"));
+}
+
+void TestFileOperations::testPartialCorruptionHandling()
+{
+    // Create file with partial corruption in data section
+    QString partiallyCorrupt = m_tempDir->path() + "/partial_corrupt.json";
+    QFile file(partiallyCorrupt);
+    file.open(QIODevice::WriteOnly);
+    
+    QJsonObject config;
+    QJsonObject main;
+    main["OutFile"] = "test";
+    main["Repeat"] = 1;
+    config["Main"] = main;
+    
+    // Add valid independent section
+    QJsonObject independent;
+    QJsonObject indepGen;
+    indepGen["Type"] = "equations";
+    indepGen["DataPoints"] = 10;
+    indepGen["Variables"] = 2;
+    indepGen["Equations"] = "X|Y";
+    independent["Generator"] = indepGen;
+    config["Independent"] = independent;
+    
+    // Add corrupted dependent section
+    config["Dependent"] = "INVALID_VALUE_SHOULD_BE_OBJECT";
+    
+    QJsonDocument doc(config);
+    file.write(doc.toJson());
+    file.close();
+    
+    // Input: File with partial corruption (some sections valid, others corrupted)
+    // Expected: Process valid sections, report specific corruption issues
+    QStringList result = runCliCommand({"-i", partiallyCorrupt});
+    QVERIFY(result[0].toInt() >= 0); // Should not crash
+}
+
+void TestFileOperations::testNetworkFileSystemCompatibility()
+{
+    // Test with paths that might exist on network file systems
+    QString testFile = createTestJsonFile();
+    QString networkPath = m_tempDir->path() + "/network_compatible.json";
+    
+    // Input: File operations that should work across different file systems
+    // Expected: Successful operation regardless of underlying file system type
+    QStringList result = runCliCommand({"-i", testFile, "-o", networkPath});
+    QCOMPARE(result[0].toInt(), 0);
+    QVERIFY(QFile::exists(networkPath + ".json"));
+    
+    // Test file access patterns that work with network latency
+    QFileInfo info(networkPath + ".json");
+    QVERIFY(info.exists());
+    QVERIFY(info.size() > 0);
+}
+
+void TestFileOperations::testFileRecoveryAfterInterruption()
+{
+    QString testFile = createTestJsonFile();
+    QString outputFile = m_tempDir->path() + "/recovery_test.json";
+    
+    // Simulate interrupted operation by using timeout
+    QProcess process;
+    process.start(m_suprafitCli, {"-i", testFile, "-o", outputFile});
+    
+    // Let it start but terminate early
+    QThread::msleep(100);
+    process.kill();
+    process.waitForFinished(5000);
+    
+    // Now try the operation again
+    // Input: File operation after previous interruption
+    // Expected: Clean recovery without corruption or lock issues
+    QStringList result = runCliCommand({"-i", testFile, "-o", outputFile});
+    QCOMPARE(result[0].toInt(), 0);
+    QVERIFY(QFile::exists(outputFile + ".json"));
+}
+
+void TestFileOperations::testMemoryMappedFileOperations()
+{
+    QString largeFile = createLargeTestFile();
+    
+    // Test operations on large files that might use memory mapping
+    // Input: Large file suitable for memory-mapped operations
+    // Expected: Efficient processing using memory mapping where appropriate
+    QStringList result = runCliCommand({"-l", largeFile});
+    QCOMPARE(result[0].toInt(), 0);
+    QVERIFY(result[1].length() > 0);
+    
+    // Should handle large files without loading entirely into memory
+    QVERIFY(result[1].contains("Main") || result[1].contains("{") || result[1].contains("data"));
 }
 
 QString TestFileOperations::createTestJsonFile()

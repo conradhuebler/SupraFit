@@ -387,6 +387,12 @@ if(BUILD_GUI)
 endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
 
+# Enable CTest integration for unified 'make test' command (Claude Generated - 2025-09-04)
+enable_testing()
+
+# Include test configuration from tests subdirectory
+include(CTest)
+
 
 # Generate proper GUI program on specified platform - only if BUILD_GUI is ON
 if(BUILD_GUI)
@@ -456,9 +462,9 @@ endif(BUILD_GUI)
 
 set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
-                src/client/analyser.cpp
-                src/client/simulator.cpp
                 src/client/ml_pipeline_manager.cpp
+                src/client/cli_command_parser.cpp
+                src/client/cli_command_dispatcher.cpp
                 src/client/main.cpp
           )
 

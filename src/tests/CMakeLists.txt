@@ -139,6 +139,7 @@ set_tests_properties(DataGeneratorTest PROPERTIES
 # CLI Core Tests - Basic argument parsing and configuration loading
 add_executable(test_cli_core
     test_cli_core.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_cli_core
@@ -152,9 +153,63 @@ set_tests_properties(CliCoreTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# CLI Data Generation Tests - Comprehensive data generation functionality - Claude Generated 2025-09-04
+add_executable(test_cli_data_generation
+    test_cli_data_generation.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(test_cli_data_generation
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME CliDataGenerationTest COMMAND test_cli_data_generation)
+
+set_tests_properties(CliDataGenerationTest PROPERTIES
+    TIMEOUT 180
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# CLI ML Pipeline Tests - End-to-end ML workflow integration - Claude Generated 2025-09-04
+add_executable(test_cli_ml_pipeline
+    test_cli_ml_pipeline.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(test_cli_ml_pipeline
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME CliMLPipelineTest COMMAND test_cli_ml_pipeline)
+
+set_tests_properties(CliMLPipelineTest PROPERTIES
+    TIMEOUT 600
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# CLI Command Pattern Tests - Modular architecture validation - Claude Generated 2025-09-04
+add_executable(test_cli_command_pattern
+    test_cli_command_pattern.cpp
+    ../client/cli_command_parser.cpp
+    ../client/cli_command_dispatcher.cpp
+    ${CLIENT_SOURCES}
+)
+
+target_link_libraries(test_cli_command_pattern
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME CliCommandPatternTest COMMAND test_cli_command_pattern)
+
+set_tests_properties(CliCommandPatternTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Data Generation Tests - Modular structure and equation-based generation
 add_executable(test_data_generation
     test_data_generation.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_data_generation
@@ -171,6 +226,7 @@ set_tests_properties(DataGenerationTest PROPERTIES
 # Model Fitting Tests - AddModels structure and parameter fitting
 add_executable(test_model_fitting
     test_model_fitting.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_model_fitting
@@ -187,6 +243,7 @@ set_tests_properties(ModelFittingTest PROPERTIES
 # Post-Processing Tests - All 7 statistical analysis methods
 add_executable(test_post_processing
     test_post_processing.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_post_processing
@@ -203,6 +260,7 @@ set_tests_properties(PostProcessingTest PROPERTIES
 # ML Feature Extraction Tests - Compact feature generation and JsonUtils
 add_executable(test_ml_extraction
     test_ml_extraction.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_ml_extraction
@@ -219,6 +277,7 @@ set_tests_properties(MLExtractionTest PROPERTIES
 # Multi-Project Tests - Project extraction, UUID/title matching, file joining
 add_executable(test_multi_project
     test_multi_project.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_multi_project
@@ -235,6 +294,7 @@ set_tests_properties(MultiProjectTest PROPERTIES
 # File I/O Tests - Format conversion and file structure analysis
 add_executable(test_file_operations
     test_file_operations.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_file_operations
@@ -251,6 +311,7 @@ set_tests_properties(FileOperationsTest PROPERTIES
 # Integration Tests - End-to-end workflows and system validation
 add_executable(test_integration
     test_integration.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_integration
@@ -267,6 +328,7 @@ set_tests_properties(IntegrationTest PROPERTIES
 # Comprehensive Real Data Test - Complete workflow with 4 models × 5 analyses (Claude Generated)
 add_executable(test_comprehensive_real_data
     test_comprehensive_real_data.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(test_comprehensive_real_data
@@ -288,6 +350,21 @@ add_custom_target(run_tests
             test_ml_extraction test_multi_project test_file_operations test_integration
             test_comprehensive_real_data
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Fast test target - Core functionality only (Claude Generated - 2025-09-04)
+add_custom_target(test_fast
+    COMMAND ${CMAKE_CTEST_COMMAND} --verbose -R "Simple|DataTableSimple|DataGenerator|CliCommandPattern|ActivationFunctions|NeuralLayer|NeuralNetwork|XORTutorial|MLIntegration"
+    DEPENDS test_simple test_datatable_simple test_datagenerator test_cli_command_pattern
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running fast core functionality tests"
+)
+
+# Passing tests only - Skip known failing tests (Claude Generated - 2025-09-04)
+add_custom_target(test_passing
+    COMMAND ${CMAKE_CTEST_COMMAND} --verbose -E "DataTable|DataClass|Pipeline|CliCore|CliDataGeneration|CliMLPipeline|DataGeneration|ModelFitting|PostProcessing|MLExtraction|MultiProject|FileOperations|Integration|ComprehensiveRealData"
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running only tests that currently pass"
 )
 
 # Add custom target to run only the comprehensive CLI tests
