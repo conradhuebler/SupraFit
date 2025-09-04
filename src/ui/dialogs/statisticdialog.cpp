@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -648,11 +648,41 @@ QWidget* StatisticDialog::CVWidget()
     m_cv_lxo = new QSpinBox;
     m_cv_lxo->setMinimum(1);
     m_cv_lxo->setPrefix(tr("X = "));
+
+
+    m_cv_runs = new QSpinBox;
+    m_cv_runs->setMinimum(1);
+    m_cv_runs->setMaximum(10000000);
+    m_cv_runs->setValue(10000);
+    m_cv_runs->setSuffix(tr(" # steps"));
+
+
     if (m_model) {
         m_cv_lxo->setMaximum(m_model.toStrongRef().data()->DataPoints() - 1);
         QLabel* max_runs = new QLabel;
         connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this, layout](int value) {
-            long double maxsteps = tgammal(m_model.toStrongRef().data()->DataPoints() + 1) / (tgammal(value + 1) * tgammal(m_model.toStrongRef().data()->DataPoints() - value + 1));
+            int n = m_model.toStrongRef().data()->DataPoints();
+            int k = value;
+            
+            // Safety check to prevent overflow - Claude Generated
+            if (k > n || k < 0 || n <= 0) {
+                max_runs->setText(tr("Invalid combination parameters"));
+                return;
+            }
+            
+            // Calculate binomial coefficient C(n,k) with overflow protection - Claude Generated
+            long double maxsteps = 1.0;
+            if (k > n - k) k = n - k; // Take advantage of symmetry
+            
+            for (int i = 0; i < k; ++i) {
+                maxsteps = maxsteps * (n - i) / (i + 1);
+                // Check for overflow - Claude Generated
+                if (maxsteps > 1e15) {
+                    this->m_cv_runs->setMaximum(maxsteps);
+                    max_runs->setText(tr("Maximal number of runs > 10^15 (too large)"));
+                    return;
+                }
+            }
 
             max_runs->setText(tr("Maximal number of runs = %1").arg(QString::number(maxsteps, 'g')));
         });
@@ -661,11 +691,6 @@ QWidget* StatisticDialog::CVWidget()
     }
     m_cv_lxo->setValue(3);
 
-    m_cv_runs = new QSpinBox;
-    m_cv_runs->setMinimum(1);
-    m_cv_runs->setMaximum(1e10);
-    m_cv_runs->setValue(1e4);
-    m_cv_runs->setSuffix(tr(" # steps"));
 
     QGroupBox* cv_algo = new QGroupBox;
 
@@ -854,7 +879,12 @@ QJsonObject StatisticDialog::RunCrossValidation() const
     else {
         controller["CXO"] = 3;
         controller["X"] = m_cv_lxo->value();
-        controller["MaxSteps"] = m_cv_runs->value();
+        // Ensure positive MaxSteps value - Claude Generated
+        int maxSteps = m_cv_runs->value();
+        if (maxSteps <= 0) {
+            maxSteps = 1000; // Default fallback value
+        }
+        controller["MaxSteps"] = maxSteps;
     }
     if (m_cv_automap->isChecked())
         controller["Algorithm"] = 2;
