@@ -274,6 +274,13 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         else if (m_controller["VarianceSource"].toString() == "bootstrap")
             bootstrap = true;
     }
+    
+    // Claude Generated - Fix invalid negative or zero standard deviation
+    if (sigma <= 0.0) {
+        qDebug() << "Warning: Invalid sigma value" << sigma << "- using default 0.01";
+        sigma = 0.01;  // Use small positive default
+    }
+    
     Phi = std::normal_distribution<double>(0, sigma);
 
     m_controller["Variance"] = sigma;
@@ -291,7 +298,14 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     QVector<QPointer<MonteCarloBatch>> threads;
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorVector();
-    Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
+    
+    // Claude Generated - Fix invalid uniform_int_distribution range when vector is empty
+    if (vector.isEmpty()) {
+        qDebug() << "Warning: ErrorVector is empty - creating minimal distribution range";
+        Uni = std::uniform_int_distribution<int>(0, 0);  // Single point distribution
+    } else {
+        Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
+    }
 
     bool original = m_controller["OriginalData"].toBool();
 

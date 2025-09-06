@@ -219,6 +219,40 @@ void analyzeMultiProjectFile(const QJsonObject& config)
     }
 }
 
+// Output path validation function - Claude Generated
+bool validateOutputPath(const QString& outputPath)
+{
+    if (outputPath.isEmpty()) {
+        return true; // No output path specified is valid
+    }
+    
+    QFileInfo fileInfo(outputPath);
+    QDir parentDir = fileInfo.dir();
+    
+    // Check if parent directory exists
+    if (!parentDir.exists()) {
+        std::cerr << "ERROR: Output directory does not exist: " << parentDir.absolutePath().toStdString() << std::endl;
+        return false;
+    }
+    
+    // Check if parent directory is writable
+    QFileInfo dirInfo(parentDir.absolutePath());
+    if (!dirInfo.isWritable()) {
+        std::cerr << "ERROR: Cannot write to output directory (insufficient permissions): " 
+                  << parentDir.absolutePath().toStdString() << std::endl;
+        return false;
+    }
+    
+    // If file already exists, check if it's writable
+    if (fileInfo.exists() && !fileInfo.isWritable()) {
+        std::cerr << "ERROR: Cannot overwrite existing file (insufficient permissions): " 
+                  << outputPath.toStdString() << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
 // Join multiple files into a single multi-project file - Claude Generated
 bool performFileJoin(const QStringList& inputFiles, const QString& outputFile)
 {
@@ -858,6 +892,22 @@ int main(int argc, char** argv)
     const bool autoExportMLMode = parser.isSet("auto-export-ml");
     const QString exportMLBatchDirectory = parser.value("export-ml-batch");
     
+    // Claude Generated - Thread count parsing and validation
+    const QString threadCountStr = parser.value("nproc");
+    int threadCount = 4;  // Default value
+    
+    if (!threadCountStr.isEmpty()) {
+        bool ok;
+        threadCount = threadCountStr.toInt(&ok);
+        
+        // Validate thread count
+        if (!ok || threadCount <= 0 || threadCount > 256) {
+            std::cout << "ERROR: Invalid thread count '" << threadCountStr.toStdString() 
+                      << "'. Must be a positive integer between 1 and 256." << std::endl;
+            return 1;
+        }
+    }
+    
     // Claude Generated: Parameter extraction parameters
     const bool extractParametersMode = parser.isSet("extract-parameters");
     const QString modelIndex = parser.value("extract-model");
@@ -908,9 +958,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // 3. Handle list mode
+    // 3. Handle list mode - Claude Generated with improved error handling
     if (showList) {
         std::cout << "Listing file structure: " << actualInputFile.toStdString() << std::endl;
+        
+        // Check if file exists before attempting to load
+        if (!QFile::exists(actualInputFile)) {
+            std::cout << "ERROR: Could not load file for listing." << std::endl;
+            return 1;
+        }
 
         SupraFitCli* cli = new SupraFitCli;
         cli->setInFile(actualInputFile);
@@ -979,6 +1035,10 @@ int main(int argc, char** argv)
 
     // 5. Handle ML Pipeline mode
     if (mlPipelineMode) {
+        // Claude Generated - Validate output path before ML pipeline execution
+        if (!validateOutputPath(outputFile)) {
+            return 1;
+        }
         return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
     }
 
@@ -1057,14 +1117,22 @@ int main(int argc, char** argv)
         // Check if this is conversion or execution
         if (!outputFile.isEmpty() && configType == SimpleProject) {
             // Simple project conversion
+            // Claude Generated - Validate output path before conversion
+            if (!validateOutputPath(outputFile)) {
+                return 1;
+            }
             return performGenericConversion(actualInputFile, outputFile, projectIndex, uuidFilter, titleFilter, splitOutput) ? 0 : 1;
         } else {
             // Task execution
+            // Claude Generated - Validate output path before task execution
+            if (!validateOutputPath(outputFile)) {
+                return 1;
+            }
             return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
         }
     }
 
     std::cout << "ERROR: Invalid command line arguments." << std::endl;
     showComprehensiveHelp();
-    return 0;
+    return 1;  // Claude Generated - Fix: Invalid arguments should return failure code
 }

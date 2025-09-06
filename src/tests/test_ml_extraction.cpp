@@ -23,6 +23,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
+
+#include "test_utils.h"
 #include <QtCore/QElapsedTimer>
 
 class TestMLExtraction : public QObject
@@ -75,12 +77,10 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createMLDataFile();
     QString createMultiProjectFile();
     QString createInvalidMLFile();
-    QStringList runCliCommand(const QStringList& arguments);
     QJsonObject loadMLExportFile(const QString& filename);
     bool verifyMLTrainingStructure(const QJsonObject& data);
     bool verifyCompactFeatures(const QJsonObject& features);
@@ -95,16 +95,9 @@ void TestMLExtraction::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestMLExtraction::cleanupTestCase()
@@ -113,19 +106,7 @@ void TestMLExtraction::cleanupTestCase()
     qDebug() << "ML Feature Extraction tests completed.";
 }
 
-QStringList TestMLExtraction::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(60000); // 60 second timeout
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestMLExtraction::loadMLExportFile(const QString& filename)
 {
@@ -230,7 +211,7 @@ void TestMLExtraction::testMLTrainingDataExport()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/ml_export_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("ML training data export failed: " + result[2]));
     
     // Verify export was successful
@@ -251,7 +232,7 @@ void TestMLExtraction::testMLOutputSpecification()
     QString mlDataFile = createMLDataFile();
     QString customOutput = m_tempDir->path() + "/custom_ml_output.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", customOutput});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", customOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Custom ML output specification failed: " + result[2]));
     
     // Verify custom output file was created
@@ -268,7 +249,7 @@ void TestMLExtraction::testExportFromMultipleFiles()
     QString outputFile = m_tempDir->path() + "/multi_file_export.json";
     
     // Test with multiple input files (if supported)
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile1, mlDataFile2, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile1, mlDataFile2, "--ml-output", outputFile});
     
     // Should either succeed with multiple files or fail gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -285,7 +266,7 @@ void TestMLExtraction::testEmptyMLExport()
     QString emptyFile = createInvalidMLFile();
     QString outputFile = m_tempDir->path() + "/empty_export.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", emptyFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", emptyFile, "--ml-output", outputFile});
     
     // Should handle empty/invalid files gracefully
     QVERIFY(result[0].toInt() >= 0);
@@ -300,7 +281,7 @@ void TestMLExtraction::testCompactFeatureExtraction()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/compact_features_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Compact feature extraction failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -330,7 +311,7 @@ void TestMLExtraction::testShannonEntropyCalculation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/entropy_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Shannon entropy test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -373,7 +354,7 @@ void TestMLExtraction::testRelativeUncertaintyCalculation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/uncertainty_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Relative uncertainty test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -416,7 +397,7 @@ void TestMLExtraction::testConfidenceScoreCalculation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/confidence_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Confidence score test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -460,7 +441,7 @@ void TestMLExtraction::testParameterDistributionFeatures()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/distribution_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter distribution test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -480,7 +461,7 @@ void TestMLExtraction::testJsonUtilsFeatureExtraction()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/jsonutils_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("JsonUtils feature extraction test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -505,7 +486,7 @@ void TestMLExtraction::testStatisticalMethodProcessing()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/method_processing_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Statistical method processing test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -531,7 +512,7 @@ void TestMLExtraction::testParameterFilteringLogic()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/filtering_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter filtering test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -557,7 +538,7 @@ void TestMLExtraction::testFeatureCompactness()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/compactness_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Feature compactness test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -586,7 +567,7 @@ void TestMLExtraction::testBatchExportFromDirectory()
     
     QString outputDir = m_tempDir->path() + "/batch_output";
     
-    QStringList result = runCliCommand({"--export-ml-batch", batchDir});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-batch", batchDir});
     
     // Batch export might not be implemented or might work differently
     // Test should handle gracefully
@@ -606,7 +587,7 @@ void TestMLExtraction::testBatchExportValidation()
     QFile::copy(createMLDataFile(), batchDir + "/valid.json");
     QFile::copy(createInvalidMLFile(), batchDir + "/invalid.json");
     
-    QStringList result = runCliCommand({"--export-ml-batch", batchDir});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-batch", batchDir});
     
     // Should handle mixed valid/invalid files gracefully
     QVERIFY(result[0].toInt() >= 0);
@@ -616,7 +597,7 @@ void TestMLExtraction::testBatchProcessingErrors()
 {
     QString nonexistentDir = m_tempDir->path() + "/nonexistent";
     
-    QStringList result = runCliCommand({"--export-ml-batch", nonexistentDir});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-batch", nonexistentDir});
     
     // Should fail gracefully with nonexistent directory
     QVERIFY(result[0].toInt() != 0);
@@ -629,7 +610,7 @@ void TestMLExtraction::testFeatureCompleteness()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/completeness_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Feature completeness test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -661,7 +642,7 @@ void TestMLExtraction::testFeatureAccuracy()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/accuracy_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Feature accuracy test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -706,7 +687,7 @@ void TestMLExtraction::testNoiseFreeFeatures()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/noisefree_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Noise-free features test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -731,7 +712,7 @@ void TestMLExtraction::testGroundTruthPreservation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/groundtruth_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Ground truth preservation test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -753,7 +734,7 @@ void TestMLExtraction::testLargeDatasetExtraction()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     
     qint64 elapsedMs = timer.elapsed();
     
@@ -766,7 +747,7 @@ void TestMLExtraction::testMultipleModelExtraction()
     QString mlDataFile = createMultiProjectFile();
     QString outputFile = m_tempDir->path() + "/multi_model_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple model extraction test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -798,7 +779,7 @@ void TestMLExtraction::testExtractionPerformance()
         QElapsedTimer timer;
         timer.start();
         
-        QStringList result = runCliCommand({"--export-ml-training", mlDataFile, "--ml-output", testOutput});
+        QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", testOutput});
         
         qint64 elapsed = timer.elapsed();
         executionTimes.append(elapsed);
@@ -819,7 +800,7 @@ void TestMLExtraction::testInvalidMLFiles()
     QString invalidFile = createInvalidMLFile();
     QString outputFile = m_tempDir->path() + "/invalid_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", invalidFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", invalidFile, "--ml-output", outputFile});
     
     // Should fail gracefully with invalid input
     QVERIFY(result[0].toInt() != 0);
@@ -841,7 +822,7 @@ void TestMLExtraction::testCorruptedStatisticalData()
     
     QString outputFile = m_tempDir->path() + "/corrupted_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", corruptedFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", corruptedFile, "--ml-output", outputFile});
     
     // Should handle corrupted data gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -862,7 +843,7 @@ void TestMLExtraction::testMissingRequiredFields()
     
     QString outputFile = m_tempDir->path() + "/incomplete_test.json";
     
-    QStringList result = runCliCommand({"--export-ml-training", incompleteFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", incompleteFile, "--ml-output", outputFile});
     
     // Should handle missing fields gracefully
     QVERIFY(result[0].toInt() >= 0);
@@ -930,7 +911,7 @@ QString TestMLExtraction::createMLDataFile()
     QString outputBase = m_tempDir->path() + "/ml_test_data";
     
     // Generate the ML data
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputBase});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputBase});
     
     if (result[0].toInt() == 0) {
         QString generatedFile = outputBase + "-0.json";

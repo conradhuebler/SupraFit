@@ -378,9 +378,10 @@ void TestDataClass::testImportWithStatistics()
     QJsonObject testProject = createTestProjectJson();
     
     // Add some statistics metadata
-    testProject["statistics"] = QJsonObject();
-    testProject["statistics"].toObject()["aic"] = 123.45;
-    testProject["statistics"].toObject()["bic"] = 134.56;
+    QJsonObject stats;
+    stats["aic"] = 123.45;
+    stats["bic"] = 134.56;
+    testProject["statistics"] = stats;
     
     DataClass* dc = new DataClass(testProject);
     

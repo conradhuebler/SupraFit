@@ -24,6 +24,8 @@
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QDir>
 
+#include "test_utils.h"
+
 class TestIntegration : public QObject
 {
     Q_OBJECT
@@ -81,14 +83,12 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createRealisticDataConfig();
     QString createLargeScaleConfig();
     QString createComplexModelConfig();
     QString createMinimalConfig();
     QString createProblematicConfig();
-    QStringList runCliCommand(const QStringList& arguments, int timeoutMs = 60000);
     QJsonObject loadResultFile(const QString& filename);
     bool verifyWorkflowCompletion(const QStringList& result);
     bool verifyDataQuality(const QJsonObject& data);
@@ -103,16 +103,9 @@ void TestIntegration::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestIntegration::cleanupTestCase()
@@ -121,19 +114,7 @@ void TestIntegration::cleanupTestCase()
     qDebug() << "Integration tests completed.";
 }
 
-QStringList TestIntegration::runCliCommand(const QStringList& arguments, int timeoutMs)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(timeoutMs);
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestIntegration::loadResultFile(const QString& filename)
 {
@@ -247,7 +228,7 @@ void TestIntegration::testCompleteDataGenerationWorkflow()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     
     qint64 elapsed = timer.elapsed();
     
@@ -269,7 +250,7 @@ void TestIntegration::testCompleteModelFittingWorkflow()
     QString configFile = createComplexModelConfig();
     QString outputFile = m_tempDir->path() + "/complete_model_workflow";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile}, 120000); // 2 minute timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile}, 120000); // 2 minute timeout
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Complete model fitting workflow failed: " + result[2]));
     QVERIFY2(verifyWorkflowCompletion(result), "Model fitting workflow completion not detected");
@@ -284,7 +265,7 @@ void TestIntegration::testCompleteStatisticalAnalysisWorkflow()
     QString configFile = createComplexModelConfig();
     QString outputFile = m_tempDir->path() + "/complete_stats_workflow";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile}, 180000); // 3 minute timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile}, 180000); // 3 minute timeout
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Complete statistical analysis workflow failed: " + result[2]));
     QVERIFY2(verifyWorkflowCompletion(result), "Statistical analysis workflow completion not detected");
@@ -301,13 +282,13 @@ void TestIntegration::testCompleteMLPipelineWorkflow()
     QString mlOutputFile = m_tempDir->path() + "/ml_pipeline_features.json";
     
     // Step 1: Generate data with models and statistical analysis
-    QStringList result1 = runCliCommand({"-i", configFile, "-o", dataOutputFile}, 180000);
+    QStringList result1 = TestUtils::executeCliCommand({"-i", configFile, "-o", dataOutputFile}, 180000);
     QVERIFY2(result1[0].toInt() == 0, qPrintable("ML pipeline data generation failed: " + result1[2]));
     
     // Step 2: Extract ML features
     QString generatedDataFile = dataOutputFile + "-0.json";
     if (QFile::exists(generatedDataFile)) {
-        QStringList result2 = runCliCommand({"--export-ml-training", generatedDataFile, "--ml-output", mlOutputFile});
+        QStringList result2 = TestUtils::executeCliCommand({"--export-ml-training", generatedDataFile, "--ml-output", mlOutputFile});
         
         if (result2[0].toInt() == 0) {
             QVERIFY(QFile::exists(mlOutputFile));
@@ -324,14 +305,14 @@ void TestIntegration::testDataGenerationToModelFitting()
     QString dataOutput = m_tempDir->path() + "/data_to_model";
     
     // Generate data
-    QStringList dataResult = runCliCommand({"-i", dataConfig, "-o", dataOutput});
+    QStringList dataResult = TestUtils::executeCliCommand({"-i", dataConfig, "-o", dataOutput});
     QVERIFY2(dataResult[0].toInt() == 0, qPrintable("Data generation step failed: " + dataResult[2]));
     
     QString generatedFile = dataOutput + "-0.json";
     QVERIFY(QFile::exists(generatedFile));
     
     // Analyze generated data structure
-    QStringList analysisResult = runCliCommand({"-l", generatedFile});
+    QStringList analysisResult = TestUtils::executeCliCommand({"-l", generatedFile});
     QVERIFY2(analysisResult[0].toInt() == 0, qPrintable("Data analysis failed: " + analysisResult[2]));
     
     // Should show structure suitable for model fitting
@@ -345,7 +326,7 @@ void TestIntegration::testModelFittingToPostProcessing()
     QString modelOutput = m_tempDir->path() + "/model_to_stats";
     
     // Run model fitting with post-processing
-    QStringList result = runCliCommand({"-i", modelConfig, "-o", modelOutput}, 180000);
+    QStringList result = TestUtils::executeCliCommand({"-i", modelConfig, "-o", modelOutput}, 180000);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model fitting to post-processing failed: " + result[2]));
     
     // Should show both model fitting and statistical analysis
@@ -360,7 +341,7 @@ void TestIntegration::testPostProcessingToMLExtraction()
     QString complexOutput = m_tempDir->path() + "/stats_to_ml";
     
     // Generate data with statistical analysis
-    QStringList result1 = runCliCommand({"-i", complexConfig, "-o", complexOutput}, 180000);
+    QStringList result1 = TestUtils::executeCliCommand({"-i", complexConfig, "-o", complexOutput}, 180000);
     
     if (result1[0].toInt() == 0) {
         QString analysisFile = complexOutput + "-0.json";
@@ -368,7 +349,7 @@ void TestIntegration::testPostProcessingToMLExtraction()
             QString mlOutput = m_tempDir->path() + "/extracted_features.json";
             
             // Extract ML features
-            QStringList result2 = runCliCommand({"--export-ml-training", analysisFile, "--ml-output", mlOutput});
+            QStringList result2 = TestUtils::executeCliCommand({"--export-ml-training", analysisFile, "--ml-output", mlOutput});
             
             if (result2[0].toInt() == 0) {
                 QVERIFY(QFile::exists(mlOutput));
@@ -390,13 +371,13 @@ void TestIntegration::testFullPipelineIntegration()
     totalTimer.start();
     
     // Complete pipeline execution
-    QStringList pipelineResult = runCliCommand({"-i", pipelineConfig, "-o", pipelineOutput}, 300000); // 5 minute timeout
+    QStringList pipelineResult = TestUtils::executeCliCommand({"-i", pipelineConfig, "-o", pipelineOutput}, 300000); // 5 minute timeout
     QVERIFY2(pipelineResult[0].toInt() == 0, qPrintable("Full pipeline integration failed: " + pipelineResult[2]));
     
     // ML feature extraction
     QString pipelineFile = pipelineOutput + "-0.json";
     if (QFile::exists(pipelineFile)) {
-        QStringList mlResult = runCliCommand({"--export-ml-training", pipelineFile, "--ml-output", mlFeaturesOutput});
+        QStringList mlResult = TestUtils::executeCliCommand({"--export-ml-training", pipelineFile, "--ml-output", mlFeaturesOutput});
         
         if (mlResult[0].toInt() == 0) {
             QVERIFY(QFile::exists(mlFeaturesOutput));
@@ -412,7 +393,7 @@ void TestIntegration::testRealDataAnalysis()
     QString realisticConfig = createRealisticDataConfig();
     QString analysisOutput = m_tempDir->path() + "/real_data_analysis";
     
-    QStringList result = runCliCommand({"-i", realisticConfig, "-o", analysisOutput}, 120000);
+    QStringList result = TestUtils::executeCliCommand({"-i", realisticConfig, "-o", analysisOutput}, 120000);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Real data analysis failed: " + result[2]));
     
     // Verify realistic output
@@ -438,7 +419,7 @@ void TestIntegration::testLargeDatasetProcessing()
     
     qint64 memoryBefore = measureMemoryUsage();
     
-    QStringList result = runCliCommand({"-i", largeConfig, "-o", largeOutput}, 300000); // 5 minute timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", largeConfig, "-o", largeOutput}, 300000); // 5 minute timeout
     
     qint64 memoryAfter = measureMemoryUsage();
     qint64 elapsed = timer.elapsed();
@@ -458,7 +439,7 @@ void TestIntegration::testComplexModelStructures()
     QString complexConfig = createComplexModelConfig();
     QString complexOutput = m_tempDir->path() + "/complex_models";
     
-    QStringList result = runCliCommand({"-i", complexConfig, "-o", complexOutput}, 180000);
+    QStringList result = TestUtils::executeCliCommand({"-i", complexConfig, "-o", complexOutput}, 180000);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Complex model structures failed: " + result[2]));
     
     // Should handle multiple models and complex analysis
@@ -471,7 +452,7 @@ void TestIntegration::testMultipleModelComparison()
     QString multiModelConfig = createComplexModelConfig(); // Contains multiple models
     QString comparisonOutput = m_tempDir->path() + "/model_comparison";
     
-    QStringList result = runCliCommand({"-i", multiModelConfig, "-o", comparisonOutput}, 180000);
+    QStringList result = TestUtils::executeCliCommand({"-i", multiModelConfig, "-o", comparisonOutput}, 180000);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple model comparison failed: " + result[2]));
     
     // Should show comparison between multiple models
@@ -488,7 +469,7 @@ void TestIntegration::testSmallDatasetPerformance()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-i", smallConfig, "-o", smallOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", smallConfig, "-o", smallOutput});
     
     qint64 elapsed = timer.elapsed();
     
@@ -504,7 +485,7 @@ void TestIntegration::testMediumDatasetPerformance()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-i", mediumConfig, "-o", mediumOutput}, 120000);
+    QStringList result = TestUtils::executeCliCommand({"-i", mediumConfig, "-o", mediumOutput}, 120000);
     
     qint64 elapsed = timer.elapsed();
     
@@ -520,7 +501,7 @@ void TestIntegration::testLargeDatasetPerformance()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-i", largeConfig, "-o", largeOutput}, 300000); // 5 minutes
+    QStringList result = TestUtils::executeCliCommand({"-i", largeConfig, "-o", largeOutput}, 300000); // 5 minutes
     
     qint64 elapsed = timer.elapsed();
     
@@ -540,7 +521,7 @@ void TestIntegration::testMemoryUsageScaling()
         qint64 memoryBefore = measureMemoryUsage();
         
         QString output = m_tempDir->path() + QString("/memory_test_%1").arg(memoryUsages.size());
-        QStringList result = runCliCommand({"-i", config, "-o", output}, 180000);
+        QStringList result = TestUtils::executeCliCommand({"-i", config, "-o", output}, 180000);
         
         qint64 memoryAfter = measureMemoryUsage();
         
@@ -568,7 +549,7 @@ void TestIntegration::testRecoveryFromBadData()
     QString badDataConfig = createProblematicConfig();
     QString recoveryOutput = m_tempDir->path() + "/bad_data_recovery";
     
-    QStringList result = runCliCommand({"-i", badDataConfig, "-o", recoveryOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", badDataConfig, "-o", recoveryOutput});
     
     // Should handle bad data gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -623,7 +604,7 @@ void TestIntegration::testRecoveryFromModelFailure()
     file.close();
     
     QString failureOutput = m_tempDir->path() + "/model_failure_recovery";
-    QStringList result = runCliCommand({"-i", configFile, "-o", failureOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", failureOutput});
     
     // Should handle model failure gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -677,7 +658,7 @@ void TestIntegration::testRecoveryFromStatisticalErrors()
     file.close();
     
     QString errorOutput = m_tempDir->path() + "/stats_error_recovery";
-    QStringList result = runCliCommand({"-i", configFile, "-o", errorOutput}, 120000);
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", errorOutput}, 120000);
     
     // Should handle statistical errors gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -689,7 +670,7 @@ void TestIntegration::testPartialWorkflowCompletion()
     QString partialOutput = m_tempDir->path() + "/partial_workflow";
     
     // Run with limited timeout to potentially interrupt the process
-    QStringList result = runCliCommand({"-i", partialConfig, "-o", partialOutput}, 30000); // 30 second timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", partialConfig, "-o", partialOutput}, 30000); // 30 second timeout
     
     // Even if interrupted, should handle gracefully
     QVERIFY(result[0].toInt() >= 0); // No negative exit codes (crashes)
@@ -708,7 +689,7 @@ void TestIntegration::testMinimalDataSets()
     QString minimalConfig = createMinimalConfig();
     QString minimalOutput = m_tempDir->path() + "/minimal_dataset";
     
-    QStringList result = runCliCommand({"-i", minimalConfig, "-o", minimalOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", minimalConfig, "-o", minimalOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Minimal dataset test failed: " + result[2]));
     
     // Should handle minimal data gracefully
@@ -724,7 +705,7 @@ void TestIntegration::testMaximalDataSets()
     QString maximalConfig = createLargeScaleConfig();
     QString maximalOutput = m_tempDir->path() + "/maximal_dataset";
     
-    QStringList result = runCliCommand({"-i", maximalConfig, "-o", maximalOutput}, 300000); // 5 minute timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", maximalConfig, "-o", maximalOutput}, 300000); // 5 minute timeout
     QVERIFY2(result[0].toInt() == 0, qPrintable("Maximal dataset test failed: " + result[2]));
     
     // Should handle large datasets
@@ -776,7 +757,7 @@ void TestIntegration::testExtremeParameterValues()
     file.close();
     
     QString extremeOutput = m_tempDir->path() + "/extreme_params_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", extremeOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", extremeOutput});
     
     // Should handle extreme values gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -788,12 +769,12 @@ void TestIntegration::testBoundaryConditions()
     QString testFile = m_tempDir->path() + "/boundary_test.json";
     createTestDataFile(testFile, 1, 1); // Minimal: 1 row, 1 column
     
-    QStringList result1 = runCliCommand({"-l", testFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-l", testFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Boundary condition test failed: " + result1[2]));
     
     // Test with maximum reasonable values
     createTestDataFile(testFile, 10000, 50); // Large but not excessive
-    QStringList result2 = runCliCommand({"-l", testFile});
+    QStringList result2 = TestUtils::executeCliCommand({"-l", testFile});
     QVERIFY2(result2[0].toInt() == 0, qPrintable("Large boundary condition test failed: " + result2[2]));
 }
 
@@ -810,7 +791,7 @@ void TestIntegration::testMultiThreadedProcessing()
         timer.start();
         
         QString output = threadOutput + QString("_%1").arg(threads);
-        QStringList result = runCliCommand({"-n", QString::number(threads), "-i", threadConfig, "-o", output}, 180000);
+        QStringList result = TestUtils::executeCliCommand({"-n", QString::number(threads), "-i", threadConfig, "-o", output}, 180000);
         
         qint64 elapsed = timer.elapsed();
         
@@ -826,7 +807,7 @@ void TestIntegration::testParallelStatisticalAnalysis()
     QString parallelConfig = createComplexModelConfig();
     QString parallelOutput = m_tempDir->path() + "/parallel_stats";
     
-    QStringList result = runCliCommand({"-n", "4", "-i", parallelConfig, "-o", parallelOutput}, 180000);
+    QStringList result = TestUtils::executeCliCommand({"-n", "4", "-i", parallelConfig, "-o", parallelOutput}, 180000);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parallel statistical analysis failed: " + result[2]));
     
     // Should show parallel execution indicators
@@ -840,7 +821,7 @@ void TestIntegration::testResourceContention()
     QString contentionOutput = m_tempDir->path() + "/resource_contention";
     
     // Run with high thread count to test resource contention
-    QStringList result = runCliCommand({"-n", "8", "-i", contentionConfig, "-o", contentionOutput}, 300000);
+    QStringList result = TestUtils::executeCliCommand({"-n", "8", "-i", contentionConfig, "-o", contentionOutput}, 300000);
     
     // Should complete even with high resource usage
     QVERIFY(result[0].toInt() >= 0); // No crashes due to resource contention
@@ -851,7 +832,7 @@ void TestIntegration::testFileSystemIntegration()
     QString fsConfig = createRealisticDataConfig();
     QString fsOutput = m_tempDir->path() + "/filesystem_test";
     
-    QStringList result = runCliCommand({"-i", fsConfig, "-o", fsOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", fsConfig, "-o", fsOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("File system integration failed: " + result[2]));
     
     // Verify file system operations
@@ -868,7 +849,7 @@ void TestIntegration::testTemporaryFileHandling()
     QString tempConfig = createRealisticDataConfig();
     QString tempOutput = m_tempDir->path() + "/temp_handling";
     
-    QStringList result = runCliCommand({"-i", tempConfig, "-o", tempOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", tempConfig, "-o", tempOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Temporary file handling failed: " + result[2]));
     
     // Should not leave temporary files in system temp directory
@@ -887,7 +868,7 @@ void TestIntegration::testResourceCleanup()
     QString cleanupConfig = createRealisticDataConfig();
     QString cleanupOutput = m_tempDir->path() + "/resource_cleanup";
     
-    QStringList result = runCliCommand({"-i", cleanupConfig, "-o", cleanupOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", cleanupConfig, "-o", cleanupOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Resource cleanup test failed: " + result[2]));
     
     // Give system time to clean up
@@ -909,7 +890,7 @@ void TestIntegration::testLongRunningProcesses()
     timer.start();
     
     // Long-running process with extended timeout
-    QStringList result = runCliCommand({"-i", longConfig, "-o", longOutput}, 600000); // 10 minute timeout
+    QStringList result = TestUtils::executeCliCommand({"-i", longConfig, "-o", longOutput}, 600000); // 10 minute timeout
     
     qint64 elapsed = timer.elapsed();
     

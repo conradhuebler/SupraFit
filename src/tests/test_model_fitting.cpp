@@ -22,6 +22,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 
+#include "test_utils.h"
+
 class TestModelFitting : public QObject
 {
     Q_OBJECT
@@ -71,12 +73,10 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createAddModelsConfig(const QJsonObject& models, bool postFitAnalysis = false);
     QString createDataForModel(int modelId, int dataPoints = 20);
     QJsonObject loadResultFile(const QString& filename);
-    QStringList runCliCommand(const QStringList& arguments);
     bool verifyModelFit(const QJsonObject& modelData, const QString& modelName);
     bool verifyConvergence(const QJsonObject& modelData);
     double extractSSE(const QJsonObject& modelData);
@@ -89,16 +89,9 @@ void TestModelFitting::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestModelFitting::cleanupTestCase()
@@ -107,19 +100,7 @@ void TestModelFitting::cleanupTestCase()
     qDebug() << "Model Fitting tests completed.";
 }
 
-QStringList TestModelFitting::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(60000); // 60 second timeout for model fitting
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestModelFitting::loadResultFile(const QString& filename)
 {
@@ -174,7 +155,7 @@ void TestModelFitting::testAddModelsStructure()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/addmodels_structure_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("AddModels structure test failed: " + result[2]));
     
     // Should mention AddModels processing
@@ -195,7 +176,7 @@ void TestModelFitting::testSingleModelFitting()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/single_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Single model fitting failed: " + result[2]));
     
     // Should show model fitting progress
@@ -223,7 +204,7 @@ void TestModelFitting::testMultipleModelFitting()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/multiple_models_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple model fitting failed: " + result[2]));
     
     // Should show both models being processed
@@ -240,7 +221,7 @@ void TestModelFitting::testModelIdValidation()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/invalid_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     // Should handle invalid model ID gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
 }
@@ -263,7 +244,7 @@ void TestModelFitting::testNMRModels()
         QString configFile = createAddModelsConfig(models);
         QString outputFile = m_tempDir->path() + "/nmr_model_test_" + QString::number(i);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("NMR model %1 test failed: %2").arg(nmrModels[i], result[2])));
     }
 }
@@ -281,7 +262,7 @@ void TestModelFitting::testITCModels()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/itc_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("ITC model test failed: " + result[2]));
 }
 
@@ -298,7 +279,7 @@ void TestModelFitting::testFluorescenceModels()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/fl_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Fluorescence model test failed: " + result[2]));
 }
 
@@ -315,7 +296,7 @@ void TestModelFitting::testKineticsModels()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/kinetic_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Kinetics model test failed: " + result[2]));
 }
 
@@ -333,7 +314,7 @@ void TestModelFitting::testParameterConvergence()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/convergence_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter convergence test failed: " + result[2]));
     
     // Should show convergence information
@@ -351,7 +332,7 @@ void TestModelFitting::testGlobalParameterFitting()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/global_param_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Global parameter fitting failed: " + result[2]));
     
     // Check that the generated data contains the expected structure
@@ -372,7 +353,7 @@ void TestModelFitting::testLocalParameterFitting()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/local_param_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Local parameter fitting failed: " + result[2]));
 }
 
@@ -393,7 +374,7 @@ void TestModelFitting::testParameterBoundaries()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/boundaries_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter boundaries test failed: " + result[2]));
 }
 
@@ -407,7 +388,7 @@ void TestModelFitting::testSSECalculation()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/sse_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("SSE calculation test failed: " + result[2]));
     
     // Should show SSE value in output
@@ -425,7 +406,7 @@ void TestModelFitting::testAICCalculation()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/aic_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("AIC calculation test failed: " + result[2]));
     
     // Should show AIC value or model statistics
@@ -450,7 +431,7 @@ void TestModelFitting::testConvergenceDetection()
         QString configFile = createAddModelsConfig(models);
         QString outputFile = m_tempDir->path() + "/convergence_" + QString::number(conv);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("Convergence detection test failed for %1: %2").arg(conv).arg(result[2])));
     }
 }
@@ -468,7 +449,7 @@ void TestModelFitting::testFitQualityMetrics()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/quality_metrics_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Fit quality metrics test failed: " + result[2]));
     
     // Should show quality metrics
@@ -491,7 +472,7 @@ void TestModelFitting::testModelRanking()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/ranking_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model ranking test failed: " + result[2]));
     
     // Should process both models for comparison
@@ -519,7 +500,7 @@ void TestModelFitting::testBestModelSelection()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/best_model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Best model selection test failed: " + result[2]));
     
     // Should show model comparison results
@@ -536,7 +517,7 @@ void TestModelFitting::testModelStatistics()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/statistics_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model statistics test failed: " + result[2]));
     
     // Should provide statistical information
@@ -559,7 +540,7 @@ void TestModelFitting::testModelOptions()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/options_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model options test failed: " + result[2]));
 }
 
@@ -580,7 +561,7 @@ void TestModelFitting::testFastModeOptions()
         QString configFile = createAddModelsConfig(models);
         QString outputFile = m_tempDir->path() + "/fastmode_" + (fastMode ? "true" : "false");
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("FastMode %1 test failed: %2").arg(fastMode ? "true" : "false", result[2])));
     }
 }
@@ -602,7 +583,7 @@ void TestModelFitting::testConvergencySettings()
         QString configFile = createAddModelsConfig(models);
         QString outputFile = m_tempDir->path() + "/conv_" + QString::number(conv);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("Convergency %1 test failed: %2").arg(conv).arg(result[2])));
     }
 }
@@ -620,7 +601,7 @@ void TestModelFitting::testInvalidModelIds()
         QString configFile = createAddModelsConfig(models);
         QString outputFile = m_tempDir->path() + "/invalid_id_" + QString::number(id);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         // Should handle gracefully without crashing
         QVERIFY(result[0].toInt() >= 0);
     }
@@ -640,7 +621,7 @@ void TestModelFitting::testInvalidParameterRanges()
     QString configFile = createAddModelsConfig(models);
     QString outputFile = m_tempDir->path() + "/invalid_ranges_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     // Should handle invalid ranges gracefully
     QVERIFY(result[0].toInt() >= 0);
 }
@@ -689,7 +670,7 @@ void TestModelFitting::testPoorlyConditionedData()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/poorly_conditioned_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     
     // Should handle poorly conditioned data without crashing
     QVERIFY(result[0].toInt() >= 0);

@@ -24,6 +24,8 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QElapsedTimer>
 
+#include "test_utils.h"
+
 class TestFileOperations : public QObject
 {
     Q_OBJECT
@@ -89,14 +91,12 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createTestJsonFile();
     QString createTestSuprafitFile();
     QString createLargeTestFile();
     QString createCorruptedJsonFile();
     QString createComplexStructureFile();
-    QStringList runCliCommand(const QStringList& arguments);
     QJsonObject loadJsonFile(const QString& filename);
     bool filesAreEquivalent(const QString& file1, const QString& file2);
     bool verifyFileStructure(const QString& output, const QString& expectedContent);
@@ -109,16 +109,9 @@ void TestFileOperations::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestFileOperations::cleanupTestCase()
@@ -127,19 +120,7 @@ void TestFileOperations::cleanupTestCase()
     qDebug() << "File I/O Operations tests completed.";
 }
 
-QStringList TestFileOperations::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(30000); // 30 second timeout
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestFileOperations::loadJsonFile(const QString& filename)
 {
@@ -191,7 +172,7 @@ void TestFileOperations::testFileStructureListing()
 {
     QString testFile = createTestJsonFile();
     
-    QStringList result = runCliCommand({"-l", testFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", testFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("File structure listing failed: " + result[2]));
     
     // Should show file structure information
@@ -208,7 +189,7 @@ void TestFileOperations::testListOptionWithValidFile()
 {
     QString testFile = createComplexStructureFile();
     
-    QStringList result = runCliCommand({"--list", testFile});
+    QStringList result = TestUtils::executeCliCommand({"--list", testFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("--list option failed: " + result[2]));
     
     // Should display detailed structure
@@ -224,7 +205,7 @@ void TestFileOperations::testListOptionWithInvalidFile()
 {
     QString invalidFile = createCorruptedJsonFile();
     
-    QStringList result = runCliCommand({"-l", invalidFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", invalidFile});
     
     // Should handle invalid files gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -249,7 +230,7 @@ void TestFileOperations::testListOptionWithMultiProjectFile()
     file.write(QJsonDocument(multiProject).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-l", multiProjectFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", multiProjectFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multi-project listing failed: " + result[2]));
     
     // Should show multi-project structure
@@ -264,7 +245,7 @@ void TestFileOperations::testJsonToSuprafitConversion()
     QString jsonFile = createTestJsonFile();
     QString suprafitFile = m_tempDir->path() + "/converted.suprafit";
     
-    QStringList result = runCliCommand({"-i", jsonFile, "-o", suprafitFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", jsonFile, "-o", suprafitFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("JSON to SupraFit conversion failed: " + result[2]));
     
     // Verify output file exists
@@ -281,7 +262,7 @@ void TestFileOperations::testSuprafitToJsonConversion()
     QString suprafitFile = createTestSuprafitFile();
     QString jsonFile = m_tempDir->path() + "/converted.json";
     
-    QStringList result = runCliCommand({"-i", suprafitFile, "-o", jsonFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", suprafitFile, "-o", jsonFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("SupraFit to JSON conversion failed: " + result[2]));
     
     // Verify output file exists
@@ -299,11 +280,11 @@ void TestFileOperations::testBidirectionalConversion()
     QString backToJson = m_tempDir->path() + "/bidirectional.json";
     
     // JSON → SupraFit
-    QStringList result1 = runCliCommand({"-i", originalJson, "-o", suprafitFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", originalJson, "-o", suprafitFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("First conversion failed: " + result1[2]));
     
     // SupraFit → JSON
-    QStringList result2 = runCliCommand({"-i", suprafitFile, "-o", backToJson});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", suprafitFile, "-o", backToJson});
     QVERIFY2(result2[0].toInt() == 0, qPrintable("Second conversion failed: " + result2[2]));
     
     // Verify files exist
@@ -331,8 +312,8 @@ void TestFileOperations::testConversionPreservesData()
     QString backConverted = m_tempDir->path() + "/data_preservation_back.json";
     
     // Convert and back-convert
-    QStringList result1 = runCliCommand({"-i", originalFile, "-o", convertedFile});
-    QStringList result2 = runCliCommand({"-i", convertedFile, "-o", backConverted});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", originalFile, "-o", convertedFile});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", convertedFile, "-o", backConverted});
     
     if (result1[0].toInt() == 0 && result2[0].toInt() == 0) {
         QJsonObject original = loadJsonFile(originalFile);
@@ -355,11 +336,11 @@ void TestFileOperations::testInputParameterValidation()
     QString nonExistentFile = m_tempDir->path() + "/nonexistent.json";
     
     // Valid input file
-    QStringList result1 = runCliCommand({"-i", validFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", validFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Valid input file rejected: " + result1[2]));
     
     // Non-existent input file
-    QStringList result2 = runCliCommand({"-i", nonExistentFile});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", nonExistentFile});
     QVERIFY2(result2[0].toInt() != 0, "Non-existent input file accepted");
     QVERIFY(result2[2].contains("Error") || result2[2].contains("not found") ||
             result2[2].contains("ERROR"));
@@ -372,12 +353,12 @@ void TestFileOperations::testOutputParameterValidation()
     QString invalidOutput = "/invalid/path/output.json";
     
     // Valid output path
-    QStringList result1 = runCliCommand({"-i", inputFile, "-o", validOutput});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", inputFile, "-o", validOutput});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Valid output path failed: " + result1[2]));
     QVERIFY(QFile::exists(validOutput));
     
     // Invalid output path
-    QStringList result2 = runCliCommand({"-i", inputFile, "-o", invalidOutput});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", inputFile, "-o", invalidOutput});
     QVERIFY2(result2[0].toInt() != 0, "Invalid output path accepted");
 }
 
@@ -386,7 +367,7 @@ void TestFileOperations::testInputOutputCombination()
     QString inputFile = createTestJsonFile();
     QString outputFile = m_tempDir->path() + "/io_combination.json";
     
-    QStringList result = runCliCommand({"-i", inputFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Input/Output combination failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -401,12 +382,12 @@ void TestFileOperations::testRelativeVsAbsolutePaths()
     
     // Absolute path output
     QString absoluteOutput = m_tempDir->path() + "/absolute_output.json";
-    QStringList result1 = runCliCommand({"-i", inputFile, "-o", absoluteOutput});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", inputFile, "-o", absoluteOutput});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Absolute path failed: " + result1[2]));
     
     // Relative path output (if supported)
     QString relativeOutput = "relative_output.json";
-    QStringList result2 = runCliCommand({"-i", inputFile, "-o", relativeOutput});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", inputFile, "-o", relativeOutput});
     QVERIFY2(result2[0].toInt() == 0, qPrintable("Relative path failed: " + result2[2]));
     
     // Clean up relative file if created in current directory
@@ -420,7 +401,7 @@ void TestFileOperations::testDefaultExtensionHandling()
     QString inputFile = createTestJsonFile();
     QString outputWithoutExt = m_tempDir->path() + "/no_extension";
     
-    QStringList result = runCliCommand({"-i", inputFile, "-o", outputWithoutExt});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile, "-o", outputWithoutExt});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Default extension handling failed: " + result[2]));
     
     // Check if default extension was added
@@ -437,13 +418,13 @@ void TestFileOperations::testExplicitExtensionHandling()
     
     // Test with explicit .json extension
     QString jsonOutput = m_tempDir->path() + "/explicit.json";
-    QStringList result1 = runCliCommand({"-i", inputFile, "-o", jsonOutput});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", inputFile, "-o", jsonOutput});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Explicit .json extension failed: " + result1[2]));
     QVERIFY(QFile::exists(jsonOutput));
     
     // Test with explicit .suprafit extension
     QString suprafitOutput = m_tempDir->path() + "/explicit.suprafit";
-    QStringList result2 = runCliCommand({"-i", inputFile, "-o", suprafitOutput});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", inputFile, "-o", suprafitOutput});
     QVERIFY2(result2[0].toInt() == 0, qPrintable("Explicit .suprafit extension failed: " + result2[2]));
     QVERIFY(QFile::exists(suprafitOutput));
 }
@@ -455,12 +436,12 @@ void TestFileOperations::testMixedExtensionConversion()
     
     // JSON input to SupraFit output
     QString jsonToSuprafit = m_tempDir->path() + "/mixed1.suprafit";
-    QStringList result1 = runCliCommand({"-i", jsonInput, "-o", jsonToSuprafit});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", jsonInput, "-o", jsonToSuprafit});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("JSON to SupraFit mixed conversion failed: " + result1[2]));
     
     // SupraFit input to JSON output
     QString suprafitToJson = m_tempDir->path() + "/mixed2.json";
-    QStringList result2 = runCliCommand({"-i", suprafitInput, "-o", suprafitToJson});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", suprafitInput, "-o", suprafitToJson});
     QVERIFY2(result2[0].toInt() == 0, qPrintable("SupraFit to JSON mixed conversion failed: " + result2[2]));
     
     QVERIFY(QFile::exists(jsonToSuprafit) && QFile::exists(suprafitToJson));
@@ -471,7 +452,7 @@ void TestFileOperations::testDataRangeExtraction()
     QString inputFile = createLargeTestFile();
     
     // Test basic file analysis (range extraction might be implicit)
-    QStringList result = runCliCommand({"-l", inputFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", inputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Data range extraction failed: " + result[2]));
     
     // Should show data dimensions or structure
@@ -487,7 +468,7 @@ void TestFileOperations::testPartialFileLoading()
     QString outputFile = m_tempDir->path() + "/partial_load.json";
     
     // Test partial loading (might be implicit in the conversion process)
-    QStringList result = runCliCommand({"-i", largeFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", largeFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Partial file loading failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -505,7 +486,7 @@ void TestFileOperations::testRangeParameterValidation()
     QString inputFile = createTestJsonFile();
     
     // Test basic range handling (implicit through normal operations)
-    QStringList result = runCliCommand({"-i", inputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Range parameter validation failed: " + result[2]));
     
     // Should handle file without explicit range parameters
@@ -518,11 +499,11 @@ void TestFileOperations::testFileExistenceValidation()
     QString nonExistentFile = m_tempDir->path() + "/does_not_exist.json";
     
     // Existing file
-    QStringList result1 = runCliCommand({"-i", existingFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", existingFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Existing file validation failed: " + result1[2]));
     
     // Non-existent file
-    QStringList result2 = runCliCommand({"-i", nonExistentFile});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", nonExistentFile});
     QVERIFY2(result2[0].toInt() != 0, "Non-existent file not detected");
     QVERIFY(result2[2].contains("Error") || result2[2].contains("not found"));
 }
@@ -533,7 +514,7 @@ void TestFileOperations::testFilePermissionHandling()
     
     // Test with read-only input (should work)
     QFile::setPermissions(inputFile, QFile::ReadUser);
-    QStringList result1 = runCliCommand({"-i", inputFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", inputFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Read-only file handling failed: " + result1[2]));
     
     // Restore permissions
@@ -546,11 +527,11 @@ void TestFileOperations::testFileFormatValidation()
     QString invalidJsonFile = createCorruptedJsonFile();
     
     // Valid JSON file
-    QStringList result1 = runCliCommand({"-i", jsonFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", jsonFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Valid JSON file rejected: " + result1[2]));
     
     // Invalid JSON file
-    QStringList result2 = runCliCommand({"-i", invalidJsonFile});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", invalidJsonFile});
     QVERIFY(result2[0].toInt() >= 0); // Should handle gracefully
     
     if (result2[0].toInt() != 0) {
@@ -564,7 +545,7 @@ void TestFileOperations::testCorruptedFileHandling()
     QString corruptedFile = createCorruptedJsonFile();
     QString outputFile = m_tempDir->path() + "/corrupted_output.json";
     
-    QStringList result = runCliCommand({"-i", corruptedFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", corruptedFile, "-o", outputFile});
     
     // Should handle corruption gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -580,7 +561,7 @@ void TestFileOperations::testLargeFileHandling()
     QString largeFile = createLargeTestFile();
     QString outputFile = m_tempDir->path() + "/large_output.json";
     
-    QStringList result = runCliCommand({"-i", largeFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", largeFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large file handling failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -597,7 +578,7 @@ void TestFileOperations::testFilePerformance()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-l", testFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", testFile});
     
     qint64 elapsed = timer.elapsed();
     
@@ -610,7 +591,7 @@ void TestFileOperations::testMemoryUsage()
     QString testFile = createLargeTestFile();
     
     // Run file operation and ensure it completes without memory issues
-    QStringList result = runCliCommand({"-l", testFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", testFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Memory usage test failed: " + result[2]));
     
     // Should complete without memory errors
@@ -621,7 +602,7 @@ void TestFileOperations::testMissingInputFile()
 {
     QString missingFile = m_tempDir->path() + "/missing.json";
     
-    QStringList result = runCliCommand({"-i", missingFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", missingFile});
     
     QVERIFY2(result[0].toInt() != 0, "Missing input file should cause error");
     QVERIFY(result[2].contains("Error") || result[2].contains("not found") ||
@@ -633,7 +614,7 @@ void TestFileOperations::testInvalidOutputPath()
     QString inputFile = createTestJsonFile();
     QString invalidOutput = "/root/protected/output.json"; // Typically not writable
     
-    QStringList result = runCliCommand({"-i", inputFile, "-o", invalidOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile, "-o", invalidOutput});
     
     // Should fail due to permissions or invalid path
     QVERIFY(result[0].toInt() != 0);
@@ -651,7 +632,7 @@ void TestFileOperations::testWriteProtectedOutput()
     QFile::setPermissions(protectedDir, QFile::ReadUser | QFile::ExeUser);
     
     QString protectedOutput = protectedDir + "/output.json";
-    QStringList result = runCliCommand({"-i", inputFile, "-o", protectedOutput});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile, "-o", protectedOutput});
     
     // Should fail due to write protection
     QVERIFY(result[0].toInt() != 0);
@@ -667,7 +648,7 @@ void TestFileOperations::testInsufficientDiskSpace()
     QString inputFile = createTestJsonFile();
     QString outputFile = m_tempDir->path() + "/space_test.json";
     
-    QStringList result = runCliCommand({"-i", inputFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", inputFile, "-o", outputFile});
     
     // Should succeed for normal files
     QVERIFY2(result[0].toInt() == 0, qPrintable("Disk space test failed: " + result[2]));
@@ -690,7 +671,7 @@ void TestFileOperations::testAdvancedCorruptionRecovery()
     
     // Input: JSON with nested structural corruption
     // Expected: Detailed error reporting with specific location information
-    QStringList result = runCliCommand({"-l", corruptedFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", corruptedFile});
     QVERIFY(result[0].toInt() != 0); // Should fail
     QVERIFY(result[2].contains("Error") || result[2].contains("ERROR") || 
             result[2].contains("parse") || result[2].contains("JSON"));
@@ -710,8 +691,8 @@ void TestFileOperations::testConcurrentFileAccess()
     QProcess process1;
     QProcess process2;
     
-    process1.start(m_suprafitCli, {"-i", testFile, "-o", output1});
-    process2.start(m_suprafitCli, {"-i", testFile, "-o", output2});
+    process1.start(TestUtils::findSuprafitCli(), {"-i", testFile, "-o", output1});
+    process2.start(TestUtils::findSuprafitCli(), {"-i", testFile, "-o", output2});
     
     QVERIFY(process1.waitForFinished(30000));
     QVERIFY(process2.waitForFinished(30000));
@@ -737,7 +718,7 @@ void TestFileOperations::testFileSystemStressTest()
         
         QProcess* process = new QProcess(this);
         processes << process;
-        process->start(m_suprafitCli, {"-i", testFile, "-o", outputFile});
+        process->start(TestUtils::findSuprafitCli(), {"-i", testFile, "-o", outputFile});
     }
     
     // Input: Multiple simultaneous file operations
@@ -775,7 +756,7 @@ void TestFileOperations::testLargeFileStreamingHandling()
     QElapsedTimer timer;
     timer.start();
     
-    QStringList result = runCliCommand({"-i", largeFile, "-o", output});
+    QStringList result = TestUtils::executeCliCommand({"-i", largeFile, "-o", output});
     qint64 elapsed = timer.elapsed();
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large file streaming failed: " + result[2]));
@@ -815,7 +796,7 @@ void TestFileOperations::testPartialCorruptionHandling()
     
     // Input: File with partial corruption (some sections valid, others corrupted)
     // Expected: Process valid sections, report specific corruption issues
-    QStringList result = runCliCommand({"-i", partiallyCorrupt});
+    QStringList result = TestUtils::executeCliCommand({"-i", partiallyCorrupt});
     QVERIFY(result[0].toInt() >= 0); // Should not crash
 }
 
@@ -827,7 +808,7 @@ void TestFileOperations::testNetworkFileSystemCompatibility()
     
     // Input: File operations that should work across different file systems
     // Expected: Successful operation regardless of underlying file system type
-    QStringList result = runCliCommand({"-i", testFile, "-o", networkPath});
+    QStringList result = TestUtils::executeCliCommand({"-i", testFile, "-o", networkPath});
     QCOMPARE(result[0].toInt(), 0);
     QVERIFY(QFile::exists(networkPath + ".json"));
     
@@ -844,7 +825,7 @@ void TestFileOperations::testFileRecoveryAfterInterruption()
     
     // Simulate interrupted operation by using timeout
     QProcess process;
-    process.start(m_suprafitCli, {"-i", testFile, "-o", outputFile});
+    process.start(TestUtils::findSuprafitCli(), {"-i", testFile, "-o", outputFile});
     
     // Let it start but terminate early
     QThread::msleep(100);
@@ -854,7 +835,7 @@ void TestFileOperations::testFileRecoveryAfterInterruption()
     // Now try the operation again
     // Input: File operation after previous interruption
     // Expected: Clean recovery without corruption or lock issues
-    QStringList result = runCliCommand({"-i", testFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", testFile, "-o", outputFile});
     QCOMPARE(result[0].toInt(), 0);
     QVERIFY(QFile::exists(outputFile + ".json"));
 }
@@ -866,7 +847,7 @@ void TestFileOperations::testMemoryMappedFileOperations()
     // Test operations on large files that might use memory mapping
     // Input: Large file suitable for memory-mapped operations
     // Expected: Efficient processing using memory mapping where appropriate
-    QStringList result = runCliCommand({"-l", largeFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", largeFile});
     QCOMPARE(result[0].toInt(), 0);
     QVERIFY(result[1].length() > 0);
     
@@ -914,7 +895,7 @@ QString TestFileOperations::createTestSuprafitFile()
     QString suprafitFile = m_tempDir->path() + "/test_file.suprafit";
     
     // Convert to SupraFit format
-    QStringList result = runCliCommand({"-i", jsonFile, "-o", suprafitFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", jsonFile, "-o", suprafitFile});
     
     if (result[0].toInt() == 0 && QFile::exists(suprafitFile)) {
         return suprafitFile;

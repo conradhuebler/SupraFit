@@ -25,6 +25,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
@@ -224,6 +225,7 @@ bool SupraFitCli::LoadFile()
         }
     }
     handler->LoadFile();
+    
     
 #ifdef DEBUG_ON
     fmt::print("🔍 DEBUG LoadFile: Handler type: {}\n", static_cast<int>(handler->Type()));
@@ -618,6 +620,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     QJsonObject export_object;
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
     
+    // Claude Generated - Add missing fields expected by tests
+    export_object["uuid"] = dataObject["uuid"];
+    export_object["DataType"] = dataObject["DataType"];
+    
     project_list << export_object;
     
     qDebug() << "GenerateDataOnly: Exported data with" 
@@ -737,6 +743,10 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
     
     QJsonObject export_object;
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
+    
+    // Claude Generated - Add missing fields expected by tests
+    export_object["uuid"] = dataObject["uuid"];
+    export_object["DataType"] = dataObject["DataType"];
     
     project_list << export_object;
     
@@ -1940,6 +1950,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
         QJsonObject project_object;
         project_object["data"] = data_object;
         
+        // Claude Generated - Add missing fields expected by tests
+        project_object["uuid"] = data_object["uuid"];  // Extract uuid from data_object
+        project_object["DataType"] = data_object["DataType"];  // Extract DataType from data_object
+        
         project_list << project_object;
         fmt::print("Generated dataset {}/{} with DataGenerator\n", i+1, repeat);
     }
@@ -2182,6 +2196,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
         // Wrap everything in "data" object for correct structure
         QJsonObject project;
         project["data"] = innerData;
+
+        // Claude Generated - Add missing fields expected by tests
+        project["uuid"] = innerData["uuid"];
+        project["DataType"] = innerData["DataType"];
 
         project_list << project;
         

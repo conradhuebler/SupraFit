@@ -23,6 +23,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 
+#include "test_utils.h"
+
 class TestDataGeneration : public QObject
 {
     Q_OBJECT
@@ -69,13 +71,11 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createEquationConfig(const QString& equations, int dataPoints = 20, int variables = 2);
     QString createModelBasedConfig(int modelId = 1, int series = 2);
     QString createNoiseConfig(const QString& type, const QJsonArray& std);
     QString createRandomParameterConfig();
-    QStringList runCliCommand(const QStringList& arguments);
     QJsonObject loadGeneratedFile(const QString& filename);
     bool verifyDataStructure(const QJsonObject& data, const QString& expectedType);
     bool verifyDimensions(const QJsonObject& data, int expectedRows, int expectedCols);
@@ -87,16 +87,9 @@ void TestDataGeneration::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestDataGeneration::cleanupTestCase()
@@ -105,19 +98,7 @@ void TestDataGeneration::cleanupTestCase()
     qDebug() << "Data Generation tests completed.";
 }
 
-QStringList TestDataGeneration::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(30000);
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestDataGeneration::loadGeneratedFile(const QString& filename)
 {
@@ -180,7 +161,7 @@ void TestDataGeneration::testEquationBasedIndependentGeneration()
     QString configFile = createEquationConfig("X|X*2", 20, 2);
     QString outputFile = m_tempDir->path() + "/equation_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Equation generation failed: " + result[2]));
     
     // CLI now correctly uses -o option to override JSON OutFile
@@ -199,7 +180,7 @@ void TestDataGeneration::testMultiVariableEquations()
     QString configFile = createEquationConfig("X|Y|X*Y|X+Y", 15, 4);
     QString outputFile = m_tempDir->path() + "/multivar_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multi-variable generation failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";
@@ -216,7 +197,7 @@ void TestDataGeneration::testComplexEquationParsing()
     QString configFile = createEquationConfig(equations, 25, 4);
     QString outputFile = m_tempDir->path() + "/complex_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Complex equation parsing failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";
@@ -229,7 +210,7 @@ void TestDataGeneration::testInvalidEquations()
     QString configFile = createEquationConfig("X)|invalid(", 10, 2);
     QString outputFile = m_tempDir->path() + "/invalid_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     // Should either fail gracefully or handle the error
     QVERIFY(result[0].toInt() >= 0); // No crashes
 }
@@ -239,7 +220,7 @@ void TestDataGeneration::testModelBasedDependentGeneration()
     QString configFile = createModelBasedConfig(1, 2); // nmr_1_1 model
     QString outputFile = m_tempDir->path() + "/model_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model-based generation failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";
@@ -280,7 +261,7 @@ void TestDataGeneration::testCopyBasedDependentGeneration()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/copy_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Copy-based generation failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";
@@ -327,7 +308,7 @@ void TestDataGeneration::testDependentWithAddModels()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/addmodels_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("AddModels generation failed: " + result[2]));
 }
 
@@ -368,7 +349,7 @@ void TestDataGeneration::testGaussianNoise()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Gaussian noise test failed: " + result[2]));
 }
 
@@ -408,7 +389,7 @@ void TestDataGeneration::testUniformNoise()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Uniform noise test failed: " + result[2]));
 }
 
@@ -417,7 +398,7 @@ void TestDataGeneration::testNoNoise()
     QString configFile = createEquationConfig("X|X*2", 15, 2);
     // No noise configuration - should work without noise
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("No noise test failed: " + result[2]));
 }
 
@@ -455,7 +436,7 @@ void TestDataGeneration::testInvalidNoiseConfiguration()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     // Should handle invalid noise gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
 }
@@ -495,7 +476,7 @@ void TestDataGeneration::testRandomParameterGeneration()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Random parameter test failed: " + result[2]));
 }
 
@@ -538,7 +519,7 @@ void TestDataGeneration::testParameterRanges()
             file.write(QJsonDocument(config).toJson());
             file.close();
             
-            QStringList result = runCliCommand({"-i", configFile});
+            QStringList result = TestUtils::executeCliCommand({"-i", configFile});
             QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter range test failed: " + result[2]));
         }
     }
@@ -583,8 +564,8 @@ void TestDataGeneration::testRandomSeedConsistency()
     file.close();
     
     // Run twice with same seed - should produce identical results
-    QStringList result1 = runCliCommand({"-i", configFile, "-o", "seed_test1"});
-    QStringList result2 = runCliCommand({"-i", configFile, "-o", "seed_test2"});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", configFile, "-o", "seed_test1"});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", configFile, "-o", "seed_test2"});
     
     QVERIFY2(result1[0].toInt() == 0 && result2[0].toInt() == 0, "Seed consistency test failed");
     
@@ -596,7 +577,7 @@ void TestDataGeneration::testModularStructureGeneration()
 {
     QString configFile = createEquationConfig("X|Y|X*Y", 25, 3);
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Modular structure generation failed: " + result[2]));
     
     // Verify that output mentions modular structure
@@ -607,7 +588,7 @@ void TestDataGeneration::testIndependentDependentSeparation()
 {
     QString configFile = createModelBasedConfig(1, 2);
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Independent/Dependent separation failed: " + result[2]));
     
     // Should show both Independent and Dependent data generation
@@ -620,7 +601,7 @@ void TestDataGeneration::testOutputFormatValidation()
     QString configFile = createEquationConfig("X|Y", 10, 2);
     QString outputFile = m_tempDir->path() + "/format_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Output format validation failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";
@@ -655,7 +636,7 @@ void TestDataGeneration::testLegacyFormatSupport()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Legacy format support failed: " + result[2]));
 }
 
@@ -684,7 +665,7 @@ void TestDataGeneration::testFormatMigration()
     file.write(QJsonDocument(config).toJson());
     file.close();
     
-    QStringList result = runCliCommand({"-i", configFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Format migration failed: " + result[2]));
 }
 
@@ -693,7 +674,7 @@ void TestDataGeneration::testCompleteDataGenerationWorkflow()
     QString configFile = createModelBasedConfig(1, 2);
     QString outputFile = m_tempDir->path() + "/complete_workflow";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Complete workflow failed: " + result[2]));
     
     // Verify output structure
@@ -735,7 +716,7 @@ void TestDataGeneration::testMultipleDatasetGeneration()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/multiple_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple dataset generation failed: " + result[2]));
     
     // Verify multiple files were created (CLI creates .suprafit files)
@@ -750,7 +731,7 @@ void TestDataGeneration::testLargeDatasetGeneration()
     QString configFile = createEquationConfig("X|Y|X*Y|sin(X)|cos(Y)", 1000, 5);
     QString outputFile = m_tempDir->path() + "/large_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large dataset generation failed: " + result[2]));
     
     QString generatedFile = outputFile + "-0.suprafit";

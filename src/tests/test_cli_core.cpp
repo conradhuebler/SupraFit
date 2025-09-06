@@ -358,7 +358,7 @@ void TestCliCore::testExtractionErrorHandling()
     
     // Test extraction on invalid model index
     QString testModel = createTestModelFile();
-    result = runCliCommand({"--extract-model", "999", testModel});
+    result = runCliCommand({"-x", "--extract-model", "999", testModel});
     QVERIFY(result[0].toInt() != 0); // Should fail with invalid model index
 }
 
@@ -454,6 +454,7 @@ QString TestCliCore::createTestConfigFile()
     config["Main"] = main;
     
     QJsonObject independent;
+    independent["Source"] = "generator";
     QJsonObject generator;
     generator["Type"] = "equations";
     generator["DataPoints"] = 10;
@@ -463,9 +464,13 @@ QString TestCliCore::createTestConfigFile()
     config["Independent"] = independent;
     
     QJsonObject dependent;
+    dependent["Source"] = "generator";
     QJsonObject depGenerator;
-    depGenerator["Type"] = "copy";
+    depGenerator["Type"] = "model";
     depGenerator["Series"] = 2;
+    QJsonObject model;
+    model["ID"] = 1;
+    depGenerator["Model"] = model;
     dependent["Generator"] = depGenerator;
     config["Dependent"] = dependent;
     
@@ -501,33 +506,40 @@ QString TestCliCore::createEmptyConfigFile()
 // New helper method implementations - Claude Generated
 QString TestCliCore::createTestModelFile()
 {
-    QString filePath = m_tempDir->path() + "/test_model.suprafit";
+    // Claude Generated - Fix to create JSON file with correct parameter structure
+    QString filePath = m_tempDir->path() + "/test_model.json";  // Use .json extension for raw JSON
     QFile file(filePath);
     file.open(QIODevice::WriteOnly);
     
-    QJsonObject model;
-    QJsonObject data;
-    QJsonObject independent;
-    QJsonObject dependent;
-    
     // Create minimal model structure for parameter extraction testing
     QJsonObject model0;
-    QJsonObject globalParams;
-    globalParams["K11"] = 1000.0;
-    globalParams["K21"] = 500.0;
-    model0["global_parameter"] = globalParams;
     
-    QJsonObject localParams;
-    QJsonArray series0;
-    series0.append(1.5);
-    series0.append(2.0);
-    localParams["0"] = series0;
-    model0["local_parameter"] = localParams;
+    // Claude Generated - Use 'parameter' field as expected by ExtractModelParameters
+    QJsonObject params;
+    params["K11"] = 1000.0;
+    params["K21"] = 500.0;
+    model0["parameter"] = params;
     
-    model["model_0"] = model0;
-    model["data"] = data;
+    // Add convergence and fit quality information
+    model0["converged"] = true;
+    model0["SSE"] = 0.001234;
+    model0["name"] = "Test Model";
     
-    QJsonDocument doc(model);
+    // Create second model for testing specific model extraction
+    QJsonObject model1;
+    QJsonObject params1;
+    params1["K11"] = 2000.0;
+    params1["K12"] = 750.0;
+    model1["parameter"] = params1;
+    model1["converged"] = false;
+    model1["SSE"] = 0.005678;
+    model1["name"] = "Test Model 2";
+    
+    QJsonObject root;
+    root["model_0"] = model0;
+    root["model_1"] = model1;
+    
+    QJsonDocument doc(root);
     file.write(doc.toJson());
     file.close();
     

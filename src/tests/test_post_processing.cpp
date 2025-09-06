@@ -23,6 +23,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 
+#include "test_utils.h"
+
 class TestPostProcessing : public QObject
 {
     Q_OBJECT
@@ -74,7 +76,6 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createPostProcessingConfig(const QJsonArray& methods);
     QString createModelWithPostProcessing(int modelId, const QJsonArray& methods);
@@ -85,7 +86,6 @@ private:
     QJsonObject createParameterReductionMethod();
     QJsonObject createFastConfidenceMethod();
     QJsonObject createGlobalSearchMethod();
-    QStringList runCliCommand(const QStringList& arguments);
     bool verifyMethodExecution(const QString& output, int methodId);
     bool verifyStatisticalResults(const QString& output);
 };
@@ -96,16 +96,9 @@ void TestPostProcessing::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestPostProcessing::cleanupTestCase()
@@ -114,19 +107,7 @@ void TestPostProcessing::cleanupTestCase()
     qDebug() << "Post-Processing tests completed.";
 }
 
-QStringList TestPostProcessing::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(120000); // 120 second timeout for statistical analysis
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 bool TestPostProcessing::verifyMethodExecution(const QString& output, int methodId)
 {
@@ -166,7 +147,7 @@ void TestPostProcessing::testMonteCarloAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/montecarlo_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Monte Carlo analysis failed: " + result[2]));
     
     // Verify Monte Carlo execution
@@ -182,7 +163,7 @@ void TestPostProcessing::testCrossValidationAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/crossval_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Cross Validation analysis failed: " + result[2]));
     
     // Verify Cross Validation execution
@@ -197,7 +178,7 @@ void TestPostProcessing::testWeakenedGridSearchAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/gridsearch_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Weakened Grid Search analysis failed: " + result[2]));
     
     // Verify Grid Search execution
@@ -212,7 +193,7 @@ void TestPostProcessing::testModelComparisonAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/modelcomp_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Model Comparison analysis failed: " + result[2]));
     
     // Verify Model Comparison execution
@@ -227,7 +208,7 @@ void TestPostProcessing::testParameterReductionAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/reduction_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter Reduction analysis failed: " + result[2]));
     
     // Verify Parameter Reduction execution
@@ -242,7 +223,7 @@ void TestPostProcessing::testFastConfidenceAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/fastconf_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Fast Confidence analysis failed: " + result[2]));
     
     // Verify Fast Confidence execution
@@ -257,7 +238,7 @@ void TestPostProcessing::testGlobalSearchAnalysis()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/globalsearch_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Global Search analysis failed: " + result[2]));
     
     // Verify Global Search execution
@@ -278,7 +259,7 @@ void TestPostProcessing::testMonteCarloParameters()
             QString configFile = createPostProcessingConfig(methods);
             QString outputFile = m_tempDir->path() + QString("/mc_params_%1_%2").arg(steps).arg(varSource);
             
-            QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+            QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
             QVERIFY2(result[0].toInt() == 0, qPrintable(QString("MC parameters test failed for steps=%1, varSource=%2: %3").arg(steps).arg(varSource).arg(result[2])));
         }
     }
@@ -296,7 +277,7 @@ void TestPostProcessing::testCrossValidationTypes()
         QString configFile = createPostProcessingConfig(methods);
         QString outputFile = m_tempDir->path() + QString("/cv_type_%1").arg(cvType);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("CV type test failed for type=%1: %2").arg(cvType).arg(result[2])));
     }
 }
@@ -313,7 +294,7 @@ void TestPostProcessing::testVarianceSourceOptions()
         QString configFile = createPostProcessingConfig(methods);
         QString outputFile = m_tempDir->path() + QString("/varsource_%1").arg(varSource);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("Variance source test failed for source=%1: %2").arg(varSource).arg(result[2])));
     }
 }
@@ -330,7 +311,7 @@ void TestPostProcessing::testMaxStepsConfiguration()
         QString configFile = createPostProcessingConfig(methods);
         QString outputFile = m_tempDir->path() + QString("/maxsteps_%1").arg(steps);
         
-        QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+        QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
         QVERIFY2(result[0].toInt() == 0, qPrintable(QString("MaxSteps test failed for steps=%1: %2").arg(steps).arg(result[2])));
     }
 }
@@ -345,7 +326,7 @@ void TestPostProcessing::testMultipleMethodCombination()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/multiple_methods_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple method combination failed: " + result[2]));
     
     // Verify that all methods were executed
@@ -365,7 +346,7 @@ void TestPostProcessing::testMethodSequencing()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/method_sequence_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Method sequencing test failed: " + result[2]));
     
     // All methods should be executed
@@ -383,7 +364,7 @@ void TestPostProcessing::testMethodInteraction()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/method_interaction_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Method interaction test failed: " + result[2]));
     
     QVERIFY(verifyStatisticalResults(result[1]));
@@ -397,7 +378,7 @@ void TestPostProcessing::testParameterUncertainty()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/uncertainty_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter uncertainty test failed: " + result[2]));
     
     // Should show uncertainty/error information
@@ -414,7 +395,7 @@ void TestPostProcessing::testConfidenceIntervals()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/confidence_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Confidence intervals test failed: " + result[2]));
     
     QVERIFY(result[1].contains("confidence") || result[1].contains("interval") ||
@@ -429,7 +410,7 @@ void TestPostProcessing::testParameterDistributions()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/distributions_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter distributions test failed: " + result[2]));
     
     QVERIFY(result[1].contains("distribution") || result[1].contains("Monte Carlo") ||
@@ -446,7 +427,7 @@ void TestPostProcessing::testStatisticalSummaries()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/summaries_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Statistical summaries test failed: " + result[2]));
     
     QVERIFY(verifyStatisticalResults(result[1]));
@@ -462,13 +443,13 @@ void TestPostProcessing::testShowPostProcessingFlag()
     QString outputFile = m_tempDir->path() + "/postproc_flag_test";
     
     // First run to generate results
-    QStringList result1 = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Initial post-processing run failed: " + result1[2]));
     
     // Test --show-post-processing flag with generated file
     QString generatedFile = outputFile + "-0.json";
     if (QFile::exists(generatedFile)) {
-        QStringList result2 = runCliCommand({"--show-post-processing", generatedFile});
+        QStringList result2 = TestUtils::executeCliCommand({"--show-post-processing", generatedFile});
         QVERIFY2(result2[0].toInt() == 0, qPrintable("--show-post-processing flag test failed: " + result2[2]));
         
         // Should show detailed post-processing information
@@ -486,7 +467,7 @@ void TestPostProcessing::testPostProcessingOutput()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/postproc_output_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Post-processing output test failed: " + result[2]));
     
     // Verify that output contains method information
@@ -503,7 +484,7 @@ void TestPostProcessing::testMethodResultDisplay()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/method_display_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Method result display test failed: " + result[2]));
     
     QVERIFY(verifyStatisticalResults(result[1]));
@@ -517,7 +498,7 @@ void TestPostProcessing::testLargeMonteCarloSamples()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/large_mc_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large Monte Carlo samples test failed: " + result[2]));
     
     QVERIFY(result[1].contains("2000") || result[1].contains("calculation") ||
@@ -532,7 +513,7 @@ void TestPostProcessing::testExtensiveCrossValidation()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/extensive_cv_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Extensive Cross Validation test failed: " + result[2]));
     
     QVERIFY(result[1].contains("Cross Validation") || result[1].contains("calculation") ||
@@ -552,7 +533,7 @@ void TestPostProcessing::testPerformanceScaling()
     QString outputFile = m_tempDir->path() + "/performance_test";
     
     // Measure execution time indirectly by ensuring completion within timeout
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Performance scaling test failed: " + result[2]));
     
     // Should complete all methods
@@ -570,7 +551,7 @@ void TestPostProcessing::testInvalidMethodIds()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/invalid_method_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     // Should handle invalid method ID gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
 }
@@ -587,7 +568,7 @@ void TestPostProcessing::testInvalidParameters()
     QString configFile = createPostProcessingConfig(methods);
     QString outputFile = m_tempDir->path() + "/invalid_params_test";
     
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     // Should handle invalid parameters gracefully
     QVERIFY(result[0].toInt() >= 0);
 }
@@ -642,7 +623,7 @@ void TestPostProcessing::testInsufficientData()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/insufficient_data_test";
-    QStringList result = runCliCommand({"-i", configFile, "-o", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"-i", configFile, "-o", outputFile});
     
     // Should handle insufficient data gracefully
     QVERIFY(result[0].toInt() >= 0);

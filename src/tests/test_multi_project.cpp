@@ -24,6 +24,8 @@
 #include <QtCore/QDir>
 #include <QtCore/QUuid>
 
+#include "test_utils.h"
+
 class TestMultiProject : public QObject
 {
     Q_OBJECT
@@ -76,13 +78,11 @@ private slots:
 
 private:
     QTemporaryDir* m_tempDir;
-    QString m_suprafitCli;
     
     QString createMultiProjectFile(int projectCount = 3);
     QString createSingleProjectFile();
     QString createProjectWithUUID(const QString& uuid, const QString& title = "Test Project");
     QString createCorruptedMultiProjectFile();
-    QStringList runCliCommand(const QStringList& arguments);
     QJsonObject loadProjectFile(const QString& filename);
     bool verifyProjectStructure(const QJsonObject& project, int expectedProjects = -1);
     bool hasProject(const QJsonObject& data, int index);
@@ -97,16 +97,9 @@ void TestMultiProject::initTestCase()
     m_tempDir = new QTemporaryDir();
     QVERIFY(m_tempDir->isValid());
     
-    // Find suprafit_cli executable
-    m_suprafitCli = QCoreApplication::applicationDirPath() + "/bin/linux/suprafit_cli";
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "../bin/linux/suprafit_cli";
-    }
-    if (!QFile::exists(m_suprafitCli)) {
-        m_suprafitCli = "bin/linux/suprafit_cli";
-    }
-    
-    QVERIFY2(QFile::exists(m_suprafitCli), "suprafit_cli executable not found");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
 }
 
 void TestMultiProject::cleanupTestCase()
@@ -115,19 +108,7 @@ void TestMultiProject::cleanupTestCase()
     qDebug() << "Multi-Project tests completed.";
 }
 
-QStringList TestMultiProject::runCliCommand(const QStringList& arguments)
-{
-    QProcess process;
-    process.start(m_suprafitCli, arguments);
-    process.waitForFinished(30000); // 30 second timeout
-    
-    QStringList result;
-    result << QString::number(process.exitCode());
-    result << QString::fromUtf8(process.readAllStandardOutput());
-    result << QString::fromUtf8(process.readAllStandardError());
-    
-    return result;
-}
+// Removed - using TestUtils::executeCliCommand instead
 
 QJsonObject TestMultiProject::loadProjectFile(const QString& filename)
 {
@@ -148,6 +129,21 @@ QJsonObject TestMultiProject::loadProjectFile(const QString& filename)
 
 bool TestMultiProject::verifyProjectStructure(const QJsonObject& project, int expectedProjects)
 {
+    // Single project extract: CLI can return different formats ✅
+    if (expectedProjects == 1 && !project.contains("format_version") && !project.contains("project_0")) {
+        // Format 1: Direct project object {model_id, uuid, title}
+        if (project.contains("model_id") || project.contains("uuid") || project.contains("title")) {
+            return true;
+        }
+        
+        // Format 2: Wrapped project object {data: {model_id, uuid, title}}
+        if (project.contains("data")) {
+            QJsonObject data = project["data"].toObject();
+            return data.contains("model_id") || data.contains("uuid") || data.contains("title");
+        }
+    }
+    
+    // Multi-project file: should have format_version
     if (!project.contains("format_version")) return false;
     
     int projectCount = countProjects(project);
@@ -166,9 +162,41 @@ bool TestMultiProject::hasProject(const QJsonObject& data, int index)
 
 bool TestMultiProject::hasProjectWithUUID(const QJsonObject& data, const QString& uuid)
 {
+    // Single extracted project: CLI can return different formats ✅
+    if (!data.contains("format_version") && !data.contains("project_0")) {
+        // Format 1: Direct project object {uuid}
+        if (data.contains("uuid")) {
+            QString projectUuid = data["uuid"].toString();
+            return projectUuid == uuid || projectUuid.startsWith(uuid);
+        }
+        
+        // Format 2: Wrapped project object {data: {uuid}}
+        if (data.contains("data")) {
+            QJsonObject projectData = data["data"].toObject();
+            if (projectData.contains("uuid")) {
+                QString projectUuid = projectData["uuid"].toString();
+                return projectUuid == uuid || projectUuid.startsWith(uuid);
+            }
+        }
+    }
+    
+    // Multi-project file: check all project_N entries
     for (auto it = data.begin(); it != data.end(); ++it) {
         if (it.key().startsWith("project_")) {
             QJsonObject project = it.value().toObject();
+            
+            // CLI creates structure: project_N.data.uuid ✅
+            if (project.contains("data")) {
+                QJsonObject projectData = project["data"].toObject();
+                if (projectData.contains("uuid")) {
+                    QString projectUuid = projectData["uuid"].toString();
+                    if (projectUuid == uuid || projectUuid.startsWith(uuid)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Also check direct structure: project_N.uuid (for compatibility)
             if (project.contains("uuid")) {
                 QString projectUuid = project["uuid"].toString();
                 if (projectUuid == uuid || projectUuid.startsWith(uuid)) {
@@ -182,9 +210,41 @@ bool TestMultiProject::hasProjectWithUUID(const QJsonObject& data, const QString
 
 bool TestMultiProject::hasProjectWithTitle(const QJsonObject& data, const QString& title)
 {
+    // Single extracted project: CLI can return different formats ✅
+    if (!data.contains("format_version") && !data.contains("project_0")) {
+        // Format 1: Direct project object {title}
+        if (data.contains("title")) {
+            QString projectTitle = data["title"].toString();
+            return projectTitle.contains(title, Qt::CaseInsensitive);
+        }
+        
+        // Format 2: Wrapped project object {data: {title}}
+        if (data.contains("data")) {
+            QJsonObject projectData = data["data"].toObject();
+            if (projectData.contains("title")) {
+                QString projectTitle = projectData["title"].toString();
+                return projectTitle.contains(title, Qt::CaseInsensitive);
+            }
+        }
+    }
+    
+    // Multi-project file: check all project_N entries
     for (auto it = data.begin(); it != data.end(); ++it) {
         if (it.key().startsWith("project_")) {
             QJsonObject project = it.value().toObject();
+            
+            // CLI creates structure: project_N.data.title ✅
+            if (project.contains("data")) {
+                QJsonObject projectData = project["data"].toObject();
+                if (projectData.contains("title")) {
+                    QString projectTitle = projectData["title"].toString();
+                    if (projectTitle.contains(title, Qt::CaseInsensitive)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Also check direct structure: project_N.title (for compatibility)
             if (project.contains("title")) {
                 QString projectTitle = project["title"].toString();
                 if (projectTitle.contains(title, Qt::CaseInsensitive)) {
@@ -213,7 +273,7 @@ void TestMultiProject::testProjectExtractionByIndex()
     QString outputFile = m_tempDir->path() + "/extracted_project.json";
     
     // Extract project 0
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Project extraction by index failed: " + result[2]));
     
     // Verify output file exists
@@ -234,7 +294,7 @@ void TestMultiProject::testMultipleProjectExtraction()
     QString outputFile = m_tempDir->path() + "/multiple_extracted.json";
     
     // Extract project 2
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "2"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "2"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple project extraction failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -252,7 +312,7 @@ void TestMultiProject::testInvalidProjectIndex()
     QString outputFile = m_tempDir->path() + "/invalid_index.json";
     
     // Try to extract project 10 from a 3-project file
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "10"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "10"});
     
     // Should fail gracefully
     QVERIFY(result[0].toInt() != 0);
@@ -266,17 +326,17 @@ void TestMultiProject::testProjectIndexBoundaries()
     
     // Test valid boundary
     QString outputFile1 = m_tempDir->path() + "/boundary_valid.json";
-    QStringList result1 = runCliCommand({"-i", multiProjectFile, "-o", outputFile1, "-p", "1"});
+    QStringList result1 = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile1, "-p", "1"});
     QVERIFY2(result1[0].toInt() == 0, qPrintable("Valid boundary test failed: " + result1[2]));
     
     // Test invalid boundary
     QString outputFile2 = m_tempDir->path() + "/boundary_invalid.json";
-    QStringList result2 = runCliCommand({"-i", multiProjectFile, "-o", outputFile2, "-p", "2"});
+    QStringList result2 = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile2, "-p", "2"});
     QVERIFY(result2[0].toInt() != 0); // Should fail
     
     // Test negative index
     QString outputFile3 = m_tempDir->path() + "/boundary_negative.json";
-    QStringList result3 = runCliCommand({"-i", multiProjectFile, "-o", outputFile3, "-p", "-1"});
+    QStringList result3 = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile3, "-p", "-1"});
     QVERIFY(result3[0].toInt() != 0); // Should fail
 }
 
@@ -290,11 +350,11 @@ void TestMultiProject::testUUIDMatching()
     
     // Join projects first
     QString multiProjectFile = m_tempDir->path() + "/uuid_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         QString outputFile = m_tempDir->path() + "/uuid_matched.json";
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", uuid1});
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", uuid1});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("UUID matching failed: " + result[2]));
         
@@ -313,7 +373,7 @@ void TestMultiProject::testPartialUUIDMatching()
     QString projectFile = createProjectWithUUID(fullUuid, "Partial UUID Test");
     QString outputFile = m_tempDir->path() + "/partial_uuid.json";
     
-    QStringList result = runCliCommand({"-i", projectFile, "-o", outputFile, "-u", partialUuid});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile, "-o", outputFile, "-u", partialUuid});
     
     if (result[0].toInt() == 0) {
         QVERIFY(QFile::exists(outputFile));
@@ -338,13 +398,13 @@ void TestMultiProject::testMultipleUUIDMatching()
     
     // Join all projects
     QString multiProjectFile = m_tempDir->path() + "/multi_uuid_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-i", projectFile3, 
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-i", projectFile3, 
                                            "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         // Try to match multiple UUIDs (might need multiple calls or comma separation)
         QString outputFile = m_tempDir->path() + "/multi_uuid_matched.json";
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", uuid1});
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", uuid1});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple UUID matching failed: " + result[2]));
     }
@@ -356,7 +416,7 @@ void TestMultiProject::testInvalidUUIDMatching()
     QString outputFile = m_tempDir->path() + "/invalid_uuid.json";
     QString fakeUuid = "invalid-uuid-format";
     
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", fakeUuid});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-u", fakeUuid});
     
     // Should handle invalid UUID gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -374,11 +434,11 @@ void TestMultiProject::testTitleMatching()
     
     // Join projects
     QString multiProjectFile = m_tempDir->path() + "/title_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         QString outputFile = m_tempDir->path() + "/title_matched.json";
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-t", "NMR"});
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-t", "NMR"});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("Title matching failed: " + result[2]));
         
@@ -395,7 +455,7 @@ void TestMultiProject::testPartialTitleMatching()
                                                "Comprehensive NMR Binding Analysis");
     QString outputFile = m_tempDir->path() + "/partial_title.json";
     
-    QStringList result = runCliCommand({"-i", projectFile, "-o", outputFile, "-t", "Binding"});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile, "-o", outputFile, "-t", "Binding"});
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Partial title matching failed: " + result[2]));
     
@@ -411,7 +471,7 @@ void TestMultiProject::testCaseSensitiveTitleMatching()
     QString outputFile = m_tempDir->path() + "/case_title.json";
     
     // Test with different case
-    QStringList result = runCliCommand({"-i", projectFile, "-o", outputFile, "-t", "test"});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile, "-o", outputFile, "-t", "test"});
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Case-insensitive title matching failed: " + result[2]));
     
@@ -429,12 +489,12 @@ void TestMultiProject::testMultipleTitleMatching()
     
     // Join projects
     QString multiProjectFile = m_tempDir->path() + "/multi_title_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-i", projectFile3, 
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-i", projectFile3, 
                                            "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         QString outputFile = m_tempDir->path() + "/multi_title_matched.json";
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-t", "Test"});
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-t", "Test"});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple title matching failed: " + result[2]));
         
@@ -463,7 +523,7 @@ void TestMultiProject::testProjectSplitting()
     QString outputDir = m_tempDir->path() + "/split_output";
     QDir().mkpath(outputDir);
     
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputDir + "/split", "-s"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputDir + "/split", "-s"});
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Project splitting failed: " + result[2]));
     
@@ -489,13 +549,13 @@ void TestMultiProject::testSplittingWithUUIDFilter()
     
     // Join first
     QString multiProjectFile = m_tempDir->path() + "/uuid_split_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         QString outputDir = m_tempDir->path() + "/uuid_split_output";
         QDir().mkpath(outputDir);
         
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputDir + "/uuid_split", 
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputDir + "/uuid_split", 
                                            "-u", uuid, "-s"});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("UUID-filtered splitting failed: " + result[2]));
@@ -514,13 +574,13 @@ void TestMultiProject::testSplittingWithTitleFilter()
     
     // Join first
     QString multiProjectFile = m_tempDir->path() + "/title_split_projects.json";
-    QStringList joinResult = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
+    QStringList joinResult = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", multiProjectFile, "-j"});
     
     if (joinResult[0].toInt() == 0) {
         QString outputDir = m_tempDir->path() + "/title_split_output";
         QDir().mkpath(outputDir);
         
-        QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputDir + "/title_split", 
+        QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputDir + "/title_split", 
                                            "-t", "Kinetics", "-s"});
         
         QVERIFY2(result[0].toInt() == 0, qPrintable("Title-filtered splitting failed: " + result[2]));
@@ -537,7 +597,7 @@ void TestMultiProject::testSplittingOutputValidation()
     QString outputDir = m_tempDir->path() + "/validation_split";
     QDir().mkpath(outputDir);
     
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputDir + "/valid_split", "-s"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputDir + "/valid_split", "-s"});
     
     if (result[0].toInt() == 0) {
         QDir outputDirObj(outputDir);
@@ -563,7 +623,7 @@ void TestMultiProject::testFileJoining()
     QString projectFile2 = createSingleProjectFile();
     QString outputFile = m_tempDir->path() + "/joined_projects.json";
     
-    QStringList result = runCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", outputFile, "-j"});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile1, "-i", projectFile2, "-o", outputFile, "-j"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("File joining failed: " + result[2]));
     
     QVERIFY2(QFile::exists(outputFile), "Joined project file not created");
@@ -591,7 +651,7 @@ void TestMultiProject::testJoiningMultipleFiles()
     }
     args << "-o" << outputFile << "-j";
     
-    QStringList result = runCliCommand(args);
+    QStringList result = TestUtils::executeCliCommand(args);
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multiple file joining failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -607,7 +667,7 @@ void TestMultiProject::testJoiningWithDuplicates()
     QString outputFile = m_tempDir->path() + "/duplicate_joined.json";
     
     // Join the same file twice
-    QStringList result = runCliCommand({"-i", projectFile, "-i", projectFile, "-o", outputFile, "-j"});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile, "-i", projectFile, "-o", outputFile, "-j"});
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Joining with duplicates failed: " + result[2]));
     
@@ -626,7 +686,7 @@ void TestMultiProject::testJoiningSingleProject()
     QString outputFile = m_tempDir->path() + "/single_joined.json";
     
     // Join just one file
-    QStringList result = runCliCommand({"-i", projectFile, "-o", outputFile, "-j"});
+    QStringList result = TestUtils::executeCliCommand({"-i", projectFile, "-o", outputFile, "-j"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Single project joining failed: " + result[2]));
     
     QVERIFY(QFile::exists(outputFile));
@@ -640,7 +700,7 @@ void TestMultiProject::testMultiProjectValidation()
     QString multiProjectFile = createMultiProjectFile(3);
     
     // Test file analysis to validate structure
-    QStringList result = runCliCommand({multiProjectFile});
+    QStringList result = TestUtils::executeCliCommand({multiProjectFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Multi-project validation failed: " + result[2]));
     
     // Should show multi-project information
@@ -652,7 +712,7 @@ void TestMultiProject::testProjectKeyDetection()
 {
     QString multiProjectFile = createMultiProjectFile(2);
     
-    QStringList result = runCliCommand({"-l", multiProjectFile});
+    QStringList result = TestUtils::executeCliCommand({"-l", multiProjectFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Project key detection failed: " + result[2]));
     
     // Should list project keys
@@ -668,7 +728,7 @@ void TestMultiProject::testFormatVersionHandling()
     QVERIFY(data.contains("format_version"));
     
     // Test that CLI handles format version correctly
-    QStringList result = runCliCommand({multiProjectFile});
+    QStringList result = TestUtils::executeCliCommand({multiProjectFile});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Format version handling failed: " + result[2]));
 }
 
@@ -678,7 +738,7 @@ void TestMultiProject::testMetadataPreservation()
     QString outputFile = m_tempDir->path() + "/metadata_test.json";
     
     // Extract and verify metadata preservation
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0"});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Metadata preservation test failed: " + result[2]));
     
     if (QFile::exists(outputFile)) {
@@ -699,7 +759,7 @@ void TestMultiProject::testNonExistentMultiProjectFile()
     QString nonexistentFile = m_tempDir->path() + "/nonexistent.json";
     QString outputFile = m_tempDir->path() + "/error_test.json";
     
-    QStringList result = runCliCommand({"-i", nonexistentFile, "-o", outputFile, "-p", "0"});
+    QStringList result = TestUtils::executeCliCommand({"-i", nonexistentFile, "-o", outputFile, "-p", "0"});
     
     // Should fail gracefully
     QVERIFY(result[0].toInt() != 0);
@@ -711,7 +771,7 @@ void TestMultiProject::testCorruptedMultiProjectFile()
     QString corruptedFile = createCorruptedMultiProjectFile();
     QString outputFile = m_tempDir->path() + "/corrupted_test.json";
     
-    QStringList result = runCliCommand({"-i", corruptedFile, "-o", outputFile, "-p", "0"});
+    QStringList result = TestUtils::executeCliCommand({"-i", corruptedFile, "-o", outputFile, "-p", "0"});
     
     // Should handle corruption gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes
@@ -735,7 +795,7 @@ void TestMultiProject::testEmptyProjectExtraction()
     file.close();
     
     QString outputFile = m_tempDir->path() + "/empty_extracted.json";
-    QStringList result = runCliCommand({"-i", emptyFile, "-o", outputFile, "-p", "0"});
+    QStringList result = TestUtils::executeCliCommand({"-i", emptyFile, "-o", outputFile, "-p", "0"});
     
     // Should handle empty projects gracefully
     QVERIFY(result[0].toInt() >= 0);
@@ -748,7 +808,7 @@ void TestMultiProject::testConflictingParameters()
     
     // Use conflicting parameters: both -p and -u
     QString uuid = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    QStringList result = runCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0", "-u", uuid});
+    QStringList result = TestUtils::executeCliCommand({"-i", multiProjectFile, "-o", outputFile, "-p", "0", "-u", uuid});
     
     // Should handle parameter conflicts gracefully
     QVERIFY(result[0].toInt() >= 0); // No crashes

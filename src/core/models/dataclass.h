@@ -121,7 +121,6 @@ public:
     QStringList m_names;
 
     int m_maxsize;
-    int m_ref_counter = 1;
     int m_simulate_dependent = 1;
     int m_begin_data = 0, m_end_data = 0;
     QPointer<DataTable> m_dependent_model, m_independent_model, m_dependent_raw_model, m_independent_raw_model;
@@ -157,7 +156,15 @@ public:
 #pragma message("is it ok to have size and datapoints both beeing dependent data dependent")
     virtual inline int Size() const { return DataPoints(); }
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
-    virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
+    virtual inline int DataPoints() const { 
+        // Claude Generated - Fix to handle cases where only one table is set
+        if (d->m_dependent_model && d->m_dependent_model->rowCount() > 0)
+            return d->m_dependent_model->rowCount();
+        else if (d->m_independent_model && d->m_independent_model->rowCount() > 0)
+            return d->m_independent_model->rowCount();
+        else
+            return 0;
+    }
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_datatype; }
     inline void setType(DataClassPrivate::DataType type) { d->m_datatype = type; }

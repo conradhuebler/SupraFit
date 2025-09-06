@@ -25,6 +25,8 @@
 #include <limits>
 #include <cmath>
 
+#include "test_utils.h"
+
 class ComprehensiveRealDataTest : public QObject {
     Q_OBJECT
 
@@ -80,7 +82,6 @@ private:
     void compareModelRankings(const QVector<QJsonObject>& models);
     
     QString m_testDir;
-    QString m_cliPath;
     QElapsedTimer m_benchmarkTimer;
     QJsonObject m_testResults;
 };
@@ -101,26 +102,9 @@ void ComprehensiveRealDataTest::initTestCase()
     m_testDir = QDir::currentPath() + "/test_comprehensive_results";
     QDir().mkpath(m_testDir);
     
-    // Detect CLI binary location relative to current working directory - Claude Generated: Enhanced search
-    QStringList possiblePaths = {
-        "../bin/linux/suprafit_cli",
-        "./bin/linux/suprafit_cli", 
-        "../release/bin/linux/suprafit_cli",
-        "./release/bin/linux/suprafit_cli",
-        "../debug/bin/linux/suprafit_cli",
-        "./debug/bin/linux/suprafit_cli",
-        "../../release/bin/linux/suprafit_cli",
-        "bin/linux/suprafit_cli"
-    };
-    
-    for (const QString& path : possiblePaths) {
-        if (QFile::exists(path)) {
-            m_cliPath = path;
-            break;
-        }
-    }
-    
-    QVERIFY2(!m_cliPath.isEmpty(), "Could not find suprafit_cli binary");
+    // Verify CLI binary is available through TestUtils
+    QString cliPath = TestUtils::findSuprafitCli();
+    QVERIFY2(!cliPath.isEmpty(), "suprafit_cli executable not found - set SUPRAFIT_CLI_PATH env var if needed");
     
     // Verify input data exists relative to current directory
     QVERIFY2(QFile::exists("input/1_1_1_2_001.dat"), 
@@ -588,7 +572,7 @@ bool ComprehensiveRealDataTest::runCliCommand(const QString& config, const QStri
     arguments << "-i" << configFile;
     arguments << "-o" << m_testDir + "/" + outputFile;
     
-    process.start(m_cliPath, arguments);
+    process.start(TestUtils::findSuprafitCli(), arguments);
     bool finished = process.waitForFinished(300000); // 5 minute timeout
     
     if (!finished) {
