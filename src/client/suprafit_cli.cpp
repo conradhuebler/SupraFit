@@ -209,111 +209,95 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 
 bool SupraFitCli::LoadFile()
 {
+    std::cout << "🔧 DEBUG LoadFile: SupraFitCli::LoadFile() CALLED!" << std::endl;
+    std::cout << "🔍 DEBUG LoadFile: Starting to load file: " << m_infile.toStdString() << std::endl;
+
+    // Check if filename is valid
+    if (m_infile.isEmpty() || m_infile.isNull()) {
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG LoadFile: Starting to load file: {}\n", m_infile.toStdString());
+        fmt::print("❌ DEBUG LoadFile: Input file is empty or null!\n");
 #endif
-    
+        return false;
+    }
+
+    // First, try to load as configuration file using FileHandler (for data generation workflows)
     FileHandler* handler = new FileHandler(m_infile, this);
-    handler->setIndependentRows(m_independent_rows);
-    handler->setStartPoint(m_start_point);
-    handler->setSeriesCount(m_series); // this only important for the subclassed simulator
-    if (m_prepare.size()) {
-        if (m_prepare.contains("Integration")) {
-            QJsonObject integ = m_prepare["Integration"].toObject();
-            integ["SupraFit"] = qint_version; // We have to add SupraFit
-            handler->setThermogramParameter(integ);
-        }
-    }
     handler->LoadFile();
-    
-    
-#ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG LoadFile: Handler type: {}\n", static_cast<int>(handler->Type()));
-#endif
-    
-    if (handler->Type() == FileHandler::SupraFit) {
-#ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Processing SupraFit file\n");
-#endif
-        if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
-            return false;
-    } else if (handler->Type() == FileHandler::dH) {
-#ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Processing dH file\n");
-#endif
-        m_toplevel = handler->getJsonData();
 
-    } else if (handler->Type() == FileHandler::ITC) {
+    QJsonObject fileData = handler->getJsonData();
+
+    // Check if this is a configuration file (Main, Independent, Dependent structure)
+    if (fileData.contains("Main") || (fileData.contains("Independent") && fileData.contains("Dependent"))) {
+
+        std::cout << "🔍 DEBUG LoadFile: Detected configuration file format" << std::endl;
+
+        // This is a configuration file - use FileHandler logic
+        m_toplevel = fileData;
+        m_main = m_toplevel["Main"].toObject();
+        m_models = m_toplevel["models"].toObject();
+        m_analyse = m_toplevel["controller"].toObject();
+
+        // Set additional configuration sections for AddModels workflow
+        if (fileData.contains("AddModels")) {
+            m_models = fileData["AddModels"].toObject();
 #ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Processing ITC file\n");
+            fmt::print("🔍 DEBUG LoadFile: Found AddModels section with {} models\n", m_models.size());
 #endif
-        m_toplevel = handler->getJsonData();
-    } else {
+        }
+
+        if (fileData.contains("PostFitAnalysis")) {
+            m_analyse = fileData["PostFitAnalysis"].toObject();
 #ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Processing other file type\n");
+            fmt::print("🔍 DEBUG LoadFile: Found PostFitAnalysis section\n");
 #endif
-        m_toplevel = handler->getJsonData();
-    }
-    m_data_vector << m_toplevel;
+        }
+
+        std::cout << "✅ DEBUG LoadFile: Configuration file loaded successfully, returning true" << std::endl;
+
+        delete handler;
+        return true;
+
+    } else if (fileData.contains("datatype") || fileData.contains("data")) {
+
+        std::cout << "🔍 DEBUG LoadFile: Detected project file format, using ProjectManager" << std::endl;
+
+        // This is a project file - use ProjectManager
+        delete handler;
+
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        bool success = projectManager.loadProject(m_infile);
+
+        if (success) {
+            // Update legacy data structures for backward compatibility
+            QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
+            if (!currentProject.isNull()) {
+                QSharedPointer<DataClass> project = currentProject.toStrongRef();
+                if (project) {
+                    m_data = project.data(); // Set current data for legacy compatibility
+                    m_toplevel = projectManager.getProjectAsJson(); // Set toplevel for legacy compatibility
+
+                    // Update data vector for legacy compatibility
+                    m_data_vector.clear();
+                    m_data_vector = projectManager.getAllProjectsAsJson();
 
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG LoadFile: m_toplevel keys: {}\n", m_toplevel.keys().join(", ").toStdString());
+                    fmt::print("✅ DEBUG LoadFile: Successfully loaded project using ProjectManager\n");
+                    fmt::print("🔍 DEBUG LoadFile: Project UUID: {}\n", project->UUID().toStdString());
 #endif
-
-    if (m_toplevel.keys().contains("data")) {
-#ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Creating DataClass from m_toplevel[\"data\"]\n");
-#endif
-        QJsonObject dataObj = m_toplevel["data"].toObject();
-#ifdef DEBUG_ON
-        qDebug() << dataObj;
-#endif
-#ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: data object keys: {}\n", dataObj.keys().join(", ").toStdString());
-#endif
-        
-        if (dataObj.contains("dependent")) {
-            QJsonObject depObj = dataObj["dependent"].toObject();
-#ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG LoadFile: dependent object keys: {}\n", depObj.keys().join(", ").toStdString());
-            fmt::print("🔍 DEBUG LoadFile: dependent rows: {}, cols: {}\n", depObj["rows"].toInt(), depObj["cols"].toInt());
-#endif
-            
-            if (depObj.contains("data")) {
-                QJsonObject depDataObj = depObj["data"].toObject();
-#ifdef DEBUG_ON
-                fmt::print("🔍 DEBUG LoadFile: dependent data sample row 0: '{}'\n", depDataObj["0"].toString().toStdString());
-#endif
+                }
             }
         }
 
-        if (dataObj.contains("independent")) {
-            QJsonObject depObj = dataObj["independent"].toObject();
-#ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG LoadFile: independent object keys: {}\n", depObj.keys().join(", ").toStdString());
-            fmt::print("🔍 DEBUG LoadFile: independent rows: {}, cols: {}\n", depObj["rows"].toInt(), depObj["cols"].toInt());
-#endif
-            
-            if (depObj.contains("data")) {
-                QJsonObject depDataObj = depObj["data"].toObject();
-#ifdef DEBUG_ON
-                fmt::print("🔍 DEBUG LoadFile: independent data sample row 0: '{}'\n", depDataObj["0"].toString().toStdString());
-#endif
-            }
-        }
-        
-        m_data = new DataClass(dataObj);
-    } else {
-#ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG LoadFile: Creating DataClass from m_toplevel\n");
-#endif
-        m_data = new DataClass(m_toplevel);
-    }
+        return success;
 
-#ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG LoadFile: DataClass created successfully\n");
-#endif
-    return true;
+    } else {
+
+        std::cout << "❌ DEBUG LoadFile: Unknown file format" << std::endl;
+        std::cout << "🔍 DEBUG LoadFile: File keys: " << fileData.keys().join(", ").toStdString() << std::endl;
+
+        delete handler;
+        return false;
+    }
 }
 
 void SupraFitCli::ParseMain()
@@ -371,8 +355,24 @@ void SupraFitCli::ParseMain()
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 {
+    // Create temporary project from JSON data and save using ProjectManager
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QString tempProjectId = projectManager.createProjectFromJson(data, "Temporary CLI Project");
+
+    if (!tempProjectId.isEmpty()) {
+        bool success = projectManager.saveProject(file, tempProjectId);
+        // Clean up temporary project
+        projectManager.removeProject(tempProjectId);
+
+        if (success) {
+            std::cout << file.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
+        }
+        return success;
+    }
+
+    // Fallback to direct JSON writing if ProjectManager fails
     if (JsonHandler::WriteJsonFile(data, file)) {
-        std::cout << file.toStdString() << " successfully written to disk" << std::endl;
+        std::cout << file.toStdString() << " successfully written to disk (fallback)" << std::endl;
         return true;
     }
     return false;
@@ -380,16 +380,45 @@ bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 
 bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& projects)
 {
+    // Use ProjectManager to save all projects as a batch
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+
+    // Option 1: Save as individual files (preserve existing behavior)
+    bool allSuccess = true;
     for (int i = 0; i < projects.size(); ++i) {
-        SaveFile(m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension, projects[i]);
+        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension;
+        bool success = SaveFile(individualFile, projects[i]);
+        allSuccess = allSuccess && success;
     }
-    return true;
+
+    // Option 2: Also offer batch save capability
+    QString batchFile = m_outfile + "_" + file + "_batch." + m_extension;
+    bool batchSuccess = projectManager.saveAllProjects(batchFile);
+
+    return allSuccess;
 }
 
 bool SupraFitCli::SaveFile()
 {
+    // Use ProjectManager to save current project
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+
+    // First try to save current project via ProjectManager
+    QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
+    if (!currentProject.isNull()) {
+        QSharedPointer<DataClass> project = currentProject.toStrongRef();
+        if (project) {
+            bool success = projectManager.saveProject(m_outfile + m_extension, project->UUID());
+            if (success) {
+                std::cout << m_outfile.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
+                return true;
+            }
+        }
+    }
+
+    // Fallback to legacy m_toplevel save for backward compatibility
     if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile + m_extension)) {
-        std::cout << m_outfile.toStdString() << " successfully written to disk" << std::endl;
+        std::cout << m_outfile.toStdString() << " successfully written to disk (legacy fallback)" << std::endl;
         return true;
     }
     return false;
@@ -397,17 +426,35 @@ bool SupraFitCli::SaveFile()
 
 void SupraFitCli::PrintFileContent(int index)
 {
-    int i = 1;
-    DataClass* data = new DataClass(m_toplevel["data"].toObject());
+    // Use ProjectManager to get current project data
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
 
-    if (data->DataPoints() == 0)
+    if (currentProject.isNull()) {
+        std::cout << "No current project loaded in ProjectManager" << std::endl;
         return;
+    }
 
-    std::cout << data->Data2Text().toStdString() << std::endl;
+    QSharedPointer<DataClass> project = currentProject.toStrongRef();
+    if (!project) {
+        std::cout << "Current project reference is null" << std::endl;
+        return;
+    }
 
-    for (const QString& key : m_toplevel.keys()) {
+    if (project->DataPoints() == 0) {
+        std::cout << "Project contains no data points" << std::endl;
+        return;
+    }
+
+    std::cout << project->Data2Text().toStdString() << std::endl;
+
+    // Get project JSON for model access
+    QJsonObject projectJson = projectManager.getProjectAsJson();
+    int i = 1;
+
+    for (const QString& key : projectJson.keys()) {
         if (key.contains("model")) {
-            QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(m_toplevel[key].toObject(), data);
+            QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(projectJson[key].toObject(), project.data());
             if (index == 0 || i == index) {
                 std::cout << Print::Html2Raw(model->ModelInfo()).toStdString() << std::endl;
                 std::cout << Print::Html2Raw(model->AnalyseStatistic()).toStdString() << std::endl;
@@ -426,13 +473,17 @@ void SupraFitCli::PrintFileStructure()
 
 void SupraFitCli::Work()
 {
-    if (m_data_vector.isEmpty()) {
+    // Use ProjectManager to get all projects for processing
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QVector<QJsonObject> projects = projectManager.getAllProjectsAsJson();
+
+    if (projects.isEmpty()) {
 #ifdef DEBUG_ON
-        qDebug() << "No data to process in Work()";
+        qDebug() << "No data to process in Work() - ProjectManager has no projects";
 #endif
         return;
     }
-    
+
     if (m_models.isEmpty()) {
 #ifdef DEBUG_ON
         qDebug() << "No models configured for Work()";
@@ -446,18 +497,18 @@ void SupraFitCli::Work()
 #endif
         return;
     }
-    
-    qDebug() << "Processing" << m_data_vector.size() << "datasets with" << m_models.keys().size() << "models";
-    
-    for (int i = 0; i < m_data_vector.size(); ++i) {
-        const auto& project = m_data_vector[i];
-        
-        qDebug() << "Processing dataset" << (i + 1) << "/" << m_data_vector.size();
-        
+
+    qDebug() << "Processing" << projects.size() << "datasets with" << m_models.keys().size() << "models using ProjectManager";
+
+    for (int i = 0; i < projects.size(); ++i) {
+        const auto& project = projects[i];
+
+        qDebug() << "Processing dataset" << (i + 1) << "/" << projects.size();
+
         QJsonObject result = PerformeJobs(project, m_models, m_jobs);
         
         if (!result.isEmpty()) {
-            // Save results for this dataset
+            // Save results for this dataset using ProjectManager
             QString outputFile = QString("%1_%2.json").arg(m_outfile).arg(i);
             if (SaveFile(outputFile, result)) {
                 qDebug() << "Saved results to:" << outputFile;
@@ -466,8 +517,8 @@ void SupraFitCli::Work()
             }
         }
     }
-    
-    qDebug() << "Work() completed for all datasets";
+
+    qDebug() << "Work() completed for all datasets using ProjectManager";
 }
 
 QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)

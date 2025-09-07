@@ -6,7 +6,7 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 ## Build System
 - **Build**: Use `/build/debug` or `/build/release` for out-of-source builds
 - **CMake**: `cmake .. && make -j4`
-- **Tests**: `make run_tests`
+- **Tests**: `make test`
 
 ## Development Standards
 
@@ -24,7 +24,7 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - Debug output: `qDebug()` within `#ifdef DEBUG_ON #endif`
 - Console output: Use `fmt`, avoid `std::cout`
 - **Always check instructions blocks** in relevant CLAUDE.md files
-- Update copyright year to current year: `Copyright (C) 2019 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>`
+- Update copyright year to current year: `Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>`
 
 ### Workflow States
 - **ADD**: Features to be added

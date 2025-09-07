@@ -26,8 +26,10 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
+#include <iostream>
 
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
 
 // Forward declaration to avoid multiple includes
 class JobManager;
@@ -58,8 +60,10 @@ public:
 
     inline void setInFile(const QString& file)
     {
+        std::cout << "🔧 DEBUG setInFile: Setting file to: " << file.toStdString() << std::endl;
         m_infile = file;
         m_outfile = file;
+        std::cout << "🔧 DEBUG setInFile: m_infile now: " << m_infile.toStdString() << std::endl;
     }
     inline void setOutFile(const QString& file)
     {
@@ -67,7 +71,7 @@ public:
         m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
-    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_toplevel; }
+    QVector<QJsonObject> Data() const { return SupraFit::ProjectManager::instance().getAllProjectsAsJson(); }
 
     void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
@@ -85,7 +89,19 @@ public:
     inline bool CheckDataOnly() const { return m_data_only; }
     inline bool CheckGenerateInputData() const { return m_generate_input_data; }
 
-    void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
+    void setDataVector(const QVector<QJsonObject>& data_vector)
+    {
+        // Store in legacy m_data_vector for compatibility
+        m_data_vector = data_vector;
+
+        // Also add all projects to ProjectManager
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        projectManager.clearAllProjects(); // Clear existing projects first
+
+        for (const QJsonObject& projectData : data_vector) {
+            projectManager.createProjectFromJson(projectData, "CLI Generated Project");
+        }
+    }
 
     QVector<QJsonObject> GenerateData();
     QVector<QJsonObject> GenerateDataOnly();
@@ -247,11 +263,14 @@ protected:
     /* Stored data structure */
     QJsonObject m_data_json;
 
+    // DEPRECATED: ProjectManager migration - these will be removed after migration completion
+    // QVector<QJsonObject> m_data_vector;  // Replaced by ProjectManager::getAllProjectsAsJson()
+    // QJsonObject m_toplevel;              // Replaced by ProjectManager::getProjectAsJson()
+    // QPointer<DataClass> m_data;          // Replaced by ProjectManager::getCurrentProject()
+
+    // Note: Keeping old members temporarily for compatibility during migration
     QVector<QJsonObject> m_data_vector;
-
-    /* Json to be written to a file */
     QJsonObject m_toplevel;
-
     QPointer<DataClass> m_data;
 
     // JobManager for statistical analysis - Claude Generated

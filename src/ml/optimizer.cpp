@@ -1,6 +1,6 @@
 /*
  * Optimizer Implementation
- * Copyright (C) 2019 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  */
 
 #include "optimizer.h"

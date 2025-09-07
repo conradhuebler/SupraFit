@@ -1,0 +1,627 @@
+/*
+ * SupraFit Project Manager - Centralized Project Management Implementation
+ * Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
+ * Implementation of centralized project management for CLI/GUI integration
+ * Claude Generated - Educational-First Design Implementation
+ */
+
+#include "projectmanager.h"
+
+#include "src/core/filehandler.h"
+#include "src/core/jsonhandler.h"
+#include "src/core/models/dataclass.h"
+#include "src/core/toolset.h"
+
+#include <QtCore/QDebug>
+#include <QtCore/QDir>
+#include <QtCore/QFileInfo>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QLoggingCategory>
+#include <QtCore/QMutexLocker>
+#include <QtCore/QStandardPaths>
+
+#ifdef DEBUG_ON
+#include "fmt/core.h"
+#endif
+
+Q_LOGGING_CATEGORY(projectManager, "suprafit.core.projectmanager")
+
+namespace SupraFit {
+
+// Static member initialization
+QMutex ProjectManager::s_instanceMutex;
+ProjectManager* ProjectManager::s_instance = nullptr;
+
+ProjectManager& ProjectManager::instance()
+{
+    QMutexLocker locker(&s_instanceMutex);
+    if (!s_instance) {
+        s_instance = new ProjectManager();
+        qCDebug(projectManager) << "ProjectManager singleton instance created";
+    }
+    return *s_instance;
+}
+
+ProjectManager::ProjectManager(QObject* parent)
+    : QObject(parent)
+    , m_currentProjectId(QString())
+{
+    qCDebug(projectManager) << "ProjectManager constructor called";
+}
+
+ProjectManager::~ProjectManager()
+{
+    QMutexLocker locker(&m_projectsMutex);
+    m_projects.clear();
+    m_projectHash.clear();
+    qCDebug(projectManager) << "ProjectManager destructor - all projects cleared";
+}
+
+// === Core Project Management ===
+
+bool ProjectManager::loadProject(const QString& filePath)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (filePath.isEmpty()) {
+        emit errorOccurred("loadProject", "Empty file path provided");
+        return false;
+    }
+
+    QFileInfo fileInfo(filePath);
+    if (!fileInfo.exists()) {
+        emit errorOccurred("loadProject", QString("File does not exist: %1").arg(filePath));
+        return false;
+    }
+
+#ifdef DEBUG_ON
+    fmt::print("🔍 DEBUG ProjectManager::loadProject: Loading file: {}\n", filePath.toStdString());
+#endif
+
+    try {
+        // Use existing FileHandler infrastructure
+        FileHandler* handler = new FileHandler(filePath, this);
+        handler->LoadFile();
+
+        QJsonObject projectData;
+        if (handler->Type() == FileHandler::SupraFit) {
+            // Load SupraFit project file
+            if (!JsonHandler::ReadJsonFile(projectData, filePath)) {
+                delete handler;
+                emit errorOccurred("loadProject", QString("Failed to read SupraFit file: %1").arg(filePath));
+                return false;
+            }
+        } else {
+            // Use handler data for other formats
+            projectData = handler->getJsonData();
+        }
+
+        delete handler;
+
+        // Validate and create project
+        if (!validateProjectJson(projectData)) {
+            emit errorOccurred("loadProject", QString("Invalid project structure in file: %1").arg(filePath));
+            return false;
+        }
+
+        QString projectId = loadProjectFromJson(projectData, filePath);
+        if (projectId.isEmpty()) {
+            emit errorOccurred("loadProject", QString("Failed to create project from file: %1").arg(filePath));
+            return false;
+        }
+
+        // Set as current project if none is active
+        if (m_currentProjectId.isEmpty()) {
+            m_currentProjectId = projectId;
+        }
+
+        updateProjectHash();
+
+        emit projectLoaded(projectId, filePath);
+
+#ifdef DEBUG_ON
+        fmt::print("✅ DEBUG ProjectManager::loadProject: Successfully loaded project {} from {}\n",
+            projectId.toStdString(), filePath.toStdString());
+#endif
+
+        return true;
+
+    } catch (const std::exception& e) {
+        emit errorOccurred("loadProject", QString("Exception during project loading: %1").arg(e.what()));
+        return false;
+    }
+}
+
+bool ProjectManager::saveProject(const QString& filePath, const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    QString targetProjectId = projectId.isEmpty() ? m_currentProjectId : projectId;
+
+    if (targetProjectId.isEmpty()) {
+        emit errorOccurred("saveProject", "No project specified and no current project set");
+        return false;
+    }
+
+    auto projectIt = m_projectHash.find(targetProjectId);
+    if (projectIt == m_projectHash.end()) {
+        emit errorOccurred("saveProject", QString("Project not found: %1").arg(targetProjectId));
+        return false;
+    }
+
+    QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
+    if (!project) {
+        emit errorOccurred("saveProject", QString("Project reference is null: %1").arg(targetProjectId));
+        return false;
+    }
+
+#ifdef DEBUG_ON
+    fmt::print("🔍 DEBUG ProjectManager::saveProject: Saving project {} to {}\n",
+        targetProjectId.toStdString(), filePath.toStdString());
+#endif
+
+    try {
+        QJsonObject projectData = saveProjectAsJson(project);
+
+        // Determine output format based on file extension
+        QString extension = QFileInfo(filePath).suffix().toLower();
+        bool success = false;
+
+        if (extension == "json") {
+            // Save as human-readable JSON
+            QJsonDocument doc(projectData);
+            QFile file(filePath);
+            if (file.open(QIODevice::WriteOnly)) {
+                file.write(doc.toJson());
+                file.close();
+                success = true;
+            }
+        } else {
+            // Save as compressed SupraFit format
+            success = JsonHandler::WriteJsonFile(projectData, filePath);
+        }
+
+        if (success) {
+            emit projectSaved(targetProjectId, filePath);
+
+#ifdef DEBUG_ON
+            fmt::print("✅ DEBUG ProjectManager::saveProject: Successfully saved project {} to {}\n",
+                targetProjectId.toStdString(), filePath.toStdString());
+#endif
+            return true;
+        } else {
+            emit errorOccurred("saveProject", QString("Failed to write project file: %1").arg(filePath));
+            return false;
+        }
+
+    } catch (const std::exception& e) {
+        emit errorOccurred("saveProject", QString("Exception during project saving: %1").arg(e.what()));
+        return false;
+    }
+}
+
+bool ProjectManager::saveAllProjects(const QString& filePath)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (m_projects.isEmpty()) {
+        emit errorOccurred("saveAllProjects", "No projects to save");
+        return false;
+    }
+
+#ifdef DEBUG_ON
+    fmt::print("🔍 DEBUG ProjectManager::saveAllProjects: Saving {} projects to {}\n",
+        m_projects.size(), filePath.toStdString());
+#endif
+
+    try {
+        QJsonArray projectsArray;
+
+        for (const auto& project : m_projects) {
+            if (project) {
+                QJsonObject projectData = saveProjectAsJson(project);
+                projectsArray.append(projectData);
+            }
+        }
+
+        QJsonObject topLevel;
+        topLevel["projects"] = projectsArray;
+        topLevel["version"] = "SupraFit-ProjectManager-1.0";
+        topLevel["projectCount"] = projectsArray.size();
+
+        // Save as JSON document
+        QJsonDocument doc(topLevel);
+        QFile file(filePath);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(doc.toJson());
+            file.close();
+
+#ifdef DEBUG_ON
+            fmt::print("✅ DEBUG ProjectManager::saveAllProjects: Successfully saved {} projects\n",
+                projectsArray.size());
+#endif
+            return true;
+        } else {
+            emit errorOccurred("saveAllProjects", QString("Failed to open file for writing: %1").arg(filePath));
+            return false;
+        }
+
+    } catch (const std::exception& e) {
+        emit errorOccurred("saveAllProjects", QString("Exception during batch save: %1").arg(e.what()));
+        return false;
+    }
+}
+
+// === Project State Management ===
+
+QWeakPointer<DataClass> ProjectManager::getCurrentProject() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (m_currentProjectId.isEmpty()) {
+        return QWeakPointer<DataClass>();
+    }
+
+    auto it = m_projectHash.find(m_currentProjectId);
+    if (it != m_projectHash.end()) {
+        return it.value();
+    }
+
+    return QWeakPointer<DataClass>();
+}
+
+bool ProjectManager::setCurrentProject(const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (projectId.isEmpty()) {
+        QString oldProjectId = m_currentProjectId;
+        m_currentProjectId.clear();
+        emit currentProjectChanged(m_currentProjectId);
+        return true;
+    }
+
+    if (m_projectHash.contains(projectId)) {
+        QString oldProjectId = m_currentProjectId;
+        m_currentProjectId = projectId;
+
+        if (oldProjectId != m_currentProjectId) {
+            emit currentProjectChanged(m_currentProjectId);
+        }
+
+        return true;
+    }
+
+    emit errorOccurred("setCurrentProject", QString("Project not found: %1").arg(projectId));
+    return false;
+}
+
+QWeakPointer<DataClass> ProjectManager::getProject(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    auto it = m_projectHash.find(projectId);
+    if (it != m_projectHash.end()) {
+        return it.value();
+    }
+
+    return QWeakPointer<DataClass>();
+}
+
+bool ProjectManager::addModelToProject(QSharedPointer<AbstractModel> model, const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (!model) {
+        emit errorOccurred("addModelToProject", "Model pointer is null");
+        return false;
+    }
+
+    QString targetProjectId = projectId.isEmpty() ? m_currentProjectId : projectId;
+
+    if (targetProjectId.isEmpty()) {
+        emit errorOccurred("addModelToProject", "No project specified and no current project set");
+        return false;
+    }
+
+    auto projectIt = m_projectHash.find(targetProjectId);
+    if (projectIt == m_projectHash.end()) {
+        emit errorOccurred("addModelToProject", QString("Project not found: %1").arg(targetProjectId));
+        return false;
+    }
+
+    QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
+    if (!project) {
+        emit errorOccurred("addModelToProject", QString("Project reference is null: %1").arg(targetProjectId));
+        return false;
+    }
+
+    try {
+        // Models are managed separately from DataClass in SupraFit architecture
+        // DataClass contains data, models reference that data but are stored separately
+        // This is correct design - just emit the signal to notify GUI components
+#ifdef DEBUG_ON
+        qDebug() << "ProjectManager: Model" << model->ModelUUID() << "conceptually added to project" << targetProjectId;
+#endif
+        emit modelAdded(targetProjectId, model->ModelUUID());
+
+#ifdef DEBUG_ON
+        fmt::print("✅ DEBUG ProjectManager::addModelToProject: Added model {} to project {}\n",
+            model->ModelUUID().toStdString(), targetProjectId.toStdString());
+#endif
+
+        return true;
+
+    } catch (const std::exception& e) {
+        emit errorOccurred("addModelToProject", QString("Exception adding model: %1").arg(e.what()));
+        return false;
+    }
+}
+
+bool ProjectManager::removeProject(const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    auto hashIt = m_projectHash.find(projectId);
+    if (hashIt == m_projectHash.end()) {
+        emit errorOccurred("removeProject", QString("Project not found: %1").arg(projectId));
+        return false;
+    }
+
+    // Remove from project vector
+    for (int i = 0; i < m_projects.size(); ++i) {
+        if (m_projects[i] && m_projects[i]->UUID() == projectId) {
+            m_projects.removeAt(i);
+            break;
+        }
+    }
+
+    // Remove from hash
+    m_projectHash.erase(hashIt);
+
+    // Update current project if it was removed
+    if (m_currentProjectId == projectId) {
+        if (!m_projects.isEmpty()) {
+            m_currentProjectId = m_projects.first()->UUID();
+            emit currentProjectChanged(m_currentProjectId);
+        } else {
+            m_currentProjectId.clear();
+            emit currentProjectChanged(QString());
+        }
+    }
+
+    emit projectRemoved(projectId);
+
+#ifdef DEBUG_ON
+    fmt::print("✅ DEBUG ProjectManager::removeProject: Removed project {}\n", projectId.toStdString());
+#endif
+
+    return true;
+}
+
+// === CLI Compatibility Interface ===
+
+QJsonObject ProjectManager::getProjectAsJson(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    QString targetProjectId = projectId.isEmpty() ? m_currentProjectId : projectId;
+
+    if (targetProjectId.isEmpty()) {
+        return QJsonObject();
+    }
+
+    auto it = m_projectHash.find(targetProjectId);
+    if (it != m_projectHash.end()) {
+        QSharedPointer<DataClass> project = it.value().toStrongRef();
+        if (project) {
+            return saveProjectAsJson(project);
+        }
+    }
+
+    return QJsonObject();
+}
+
+QString ProjectManager::createProjectFromJson(const QJsonObject& projectJson, const QString& projectTitle)
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    if (!validateProjectJson(projectJson)) {
+        emit errorOccurred("createProjectFromJson", "Invalid project JSON structure");
+        return QString();
+    }
+
+    QString projectId = loadProjectFromJson(projectJson, projectTitle);
+    if (!projectId.isEmpty()) {
+        updateProjectHash();
+
+        // Set as current project if none is active
+        if (m_currentProjectId.isEmpty()) {
+            m_currentProjectId = projectId;
+        }
+
+        emit projectAdded(projectId, projectTitle.isEmpty() ? "Generated Project" : projectTitle);
+
+#ifdef DEBUG_ON
+        fmt::print("✅ DEBUG ProjectManager::createProjectFromJson: Created project {} with title '{}'\n",
+            projectId.toStdString(), projectTitle.toStdString());
+#endif
+    }
+
+    return projectId;
+}
+
+QVector<QJsonObject> ProjectManager::getAllProjectsAsJson() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    QVector<QJsonObject> result;
+    result.reserve(m_projects.size());
+
+    for (const auto& project : m_projects) {
+        if (project) {
+            result.append(saveProjectAsJson(project));
+        }
+    }
+
+    return result;
+}
+
+// === GUI Compatibility Interface ===
+
+QVector<QWeakPointer<DataClass>> ProjectManager::getAllProjects() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    QVector<QWeakPointer<DataClass>> result;
+    result.reserve(m_projects.size());
+
+    for (const auto& project : m_projects) {
+        if (project) {
+            result.append(project.toWeakRef());
+        }
+    }
+
+    return result;
+}
+
+QHash<QString, QWeakPointer<DataClass>> ProjectManager::getProjectHash() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_projectHash;
+}
+
+int ProjectManager::getProjectCount() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_projects.size();
+}
+
+// === Utility Methods ===
+
+void ProjectManager::clearAllProjects()
+{
+    QMutexLocker locker(&m_projectsMutex);
+
+    m_projects.clear();
+    m_projectHash.clear();
+    m_currentProjectId.clear();
+
+    emit projectsCleared();
+
+#ifdef DEBUG_ON
+    fmt::print("✅ DEBUG ProjectManager::clearAllProjects: All projects cleared\n");
+#endif
+}
+
+bool ProjectManager::hasProject(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_projectHash.contains(projectId);
+}
+
+QString ProjectManager::generateProjectId() const
+{
+    return QUuid::createUuid().toString(QUuid::WithoutBraces);
+}
+
+// === Private Helper Methods ===
+
+QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const QString& sourceFile)
+{
+    try {
+        // Use correct DataClass constructor with JSON parameter
+        QSharedPointer<DataClass> project = QSharedPointer<DataClass>::create(jsonData);
+
+        if (!project) {
+            emit errorOccurred("loadProjectFromJson", "Failed to create DataClass from JSON");
+            return QString();
+        }
+
+        // Generate UUID if not present
+        if (project->UUID().isEmpty()) {
+            project->NewUUID();
+        }
+
+        // Store source file info for debugging
+        if (!sourceFile.isEmpty()) {
+#ifdef DEBUG_ON
+            qDebug() << "ProjectManager: Loaded project from:" << sourceFile << "UUID:" << project->UUID();
+#endif
+        }
+
+        m_projects.append(project);
+
+        return project->UUID();
+
+    } catch (const std::exception& e) {
+        emit errorOccurred("loadProjectFromJson", QString("Exception during JSON import: %1").arg(e.what()));
+        return QString();
+    }
+}
+
+QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project) const
+{
+    if (!project) {
+        return QJsonObject();
+    }
+
+    try {
+        return project->ExportData();
+    } catch (const std::exception& e) {
+        // Log error without emit in const method
+        qCritical() << "ProjectManager::saveProjectAsJson - Exception during JSON export:" << e.what();
+        return QJsonObject();
+    }
+}
+
+void ProjectManager::updateProjectHash()
+{
+    m_projectHash.clear();
+
+    for (const auto& project : m_projects) {
+        if (project && !project->UUID().isEmpty()) {
+            m_projectHash.insert(project->UUID(), project.toWeakRef());
+        }
+    }
+
+#ifdef DEBUG_ON
+    fmt::print("🔍 DEBUG ProjectManager::updateProjectHash: Updated hash with {} projects\n", m_projectHash.size());
+#endif
+}
+
+bool ProjectManager::validateProjectJson(const QJsonObject& projectJson) const
+{
+    // Basic validation - check for essential structure
+    if (projectJson.isEmpty()) {
+        return false;
+    }
+
+    // Check for wrapped project structure (legacy format)
+    if (projectJson.contains("data")) {
+        QJsonObject data = projectJson["data"].toObject();
+        if (data.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    // Check for direct DataClass structure (raw format)
+    // Must have datatype for DataClass validation
+    if (projectJson.contains("datatype")) {
+        // Optional checks for dependent/independent data
+        return true;
+    }
+
+    // Check for CLI configuration format (Main, Independent, Dependent structure)
+    if (projectJson.contains("Main") || (projectJson.contains("Independent") && projectJson.contains("Dependent"))) {
+        // This is a CLI configuration format for data generation
+        return true;
+    }
+
+    // If none of the formats is recognized, fail validation
+    return false;
+}
+
+} // namespace SupraFit
