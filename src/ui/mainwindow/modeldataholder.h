@@ -27,6 +27,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/datawidget.h"
@@ -158,6 +159,21 @@ public:
     QString Compare() const;
 
     inline QPointer<ModelWidget> RecentModel() { return m_last_modelwidget; }
+
+    // Claude Generated - ProjectManager Integration Methods
+    /**
+     * @brief Set data from ProjectManager using project ID
+     * @param projectId UUID of project in ProjectManager
+     * @param wrapper Chart wrapper for visualization
+     * @return Success status of operation
+     */
+    bool setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
+    
+    /**
+     * @brief Get current project ID if managed by ProjectManager
+     * @return Project ID string, empty if not managed by ProjectManager
+     */
+    QString getCurrentProjectId() const;
 public slots:
     /*
      * Add a new model to the workspace
@@ -207,6 +223,9 @@ private:
     double m_ReductionCutoff = 0;
 
     QPointer<ModelWidget> m_last_modelwidget;
+    
+    // Claude Generated - ProjectManager Integration Members
+    QString m_currentProjectId;
 private slots:
     void NewModel();
     void AddModel();

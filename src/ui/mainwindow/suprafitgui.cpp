@@ -168,6 +168,13 @@ SupraFitGui::SupraFitGui()
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
     connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
     connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
+    
+    // Claude Generated - ProjectManager Integration Signal Connections
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    connect(&projectManager, &SupraFit::ProjectManager::projectLoaded, this, &SupraFitGui::onProjectLoaded);
+    connect(&projectManager, &SupraFit::ProjectManager::projectSaved, this, &SupraFitGui::onProjectSaved);
+    connect(&projectManager, &SupraFit::ProjectManager::modelAdded, this, &SupraFitGui::onModelAdded);
+    connect(&projectManager, &SupraFit::ProjectManager::errorOccurred, this, &SupraFitGui::onProjectManagerError);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -791,6 +798,26 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
 
     m_hashed_data[data.toStrongRef().data()->UUID()] = data;
+    
+    // Claude Generated - ProjectManager Integration for backward compatibility
+    // Register the loaded DataClass with ProjectManager for unified management
+    if (data) {
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QSharedPointer<DataClass> sharedData = data.toStrongRef();
+        if (sharedData) {
+            QString projectId = sharedData->UUID();
+            qDebug() << "SetData: Registering project with ProjectManager - ID:" << projectId << "Title:" << sharedData->ProjectTitle();
+            
+            // Register the DataClass with ProjectManager for unified access
+            bool registered = projectManager.registerExistingProject(sharedData, file);
+            if (registered) {
+                qDebug() << "SetData: Successfully registered project with ProjectManager";
+            } else {
+                qDebug() << "SetData: Failed to register project with ProjectManager";
+            }
+        }
+    }
+    
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
 
@@ -957,6 +984,7 @@ void SupraFitGui::ImportTable(const QString& file)
     }
 }
 
+// Claude Generated - ProjectManager Integration Wrapper for LoadProject
 bool SupraFitGui::LoadProject(const QString& filename)
 {
     qDebug() << "LoadProject: Starting to load project from:" << filename;
@@ -987,11 +1015,24 @@ bool SupraFitGui::LoadProject(const QString& filename)
         QStringList keys = toplevel.keys();
         qDebug() << "LoadProject: JSON keys found:" << keys;
 
+        // Claude Generated - Check if this is a SupraFit project file (data key)
         if (keys.contains("data", Qt::CaseInsensitive)) {
-            qDebug() << "LoadProject: Found 'data' key, calling SetData";
-            bool result = SetData(toplevel, info.baseName(), info.absolutePath());
-            qDebug() << "LoadProject: SetData returned:" << result;
-            return result;
+            qDebug() << "LoadProject: Found 'data' key, using ProjectManager to load project";
+            
+            SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+            bool success = projectManager.loadProject(filename);
+            
+            if (success) {
+                qDebug() << "LoadProject: ProjectManager successfully loaded project";
+                // The ProjectManager signals will handle updating the GUI via slots
+                return true;
+            } else {
+                qDebug() << "LoadProject: ProjectManager failed to load project, falling back to legacy method";
+                // Fallback to legacy method for backward compatibility
+                bool result = SetData(toplevel, info.baseName(), info.absolutePath());
+                qDebug() << "LoadProject: Legacy SetData returned:" << result;
+                return result;
+            }
         } else if ((keys.contains("datapoints", Qt::CaseInsensitive) && keys.contains("equations", Qt::CaseInsensitive)) || keys.contains("Main", Qt::CaseInsensitive)) {
             qDebug() << "LoadProject: Found datapoints/equations or Main key, opening ImportData dialog";
 #pragma message("move the simulation import to the filehandler soon!")
@@ -1001,7 +1042,25 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 qDebug() << "LoadProject: Project file from dialog:" << dialog.ProjectFile();
                 qDebug() << "LoadProject: Directory:" << getDir();
                 
-                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+                // Try ProjectManager first for generated project files
+                SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+                QJsonObject generatedProject = dialog.getProject();
+                
+                if (generatedProject.contains("data")) {
+                    qDebug() << "LoadProject: Generated project contains data key, trying ProjectManager";
+                    QString tempFile = dialog.ProjectFile();
+                    bool pmSuccess = !tempFile.isEmpty() && projectManager.loadProject(tempFile);
+                    
+                    if (pmSuccess) {
+                        qDebug() << "LoadProject: ProjectManager successfully loaded generated project";
+                        m_mainsplitter->show();
+                        return true;
+                    }
+                }
+                
+                // Fallback to legacy method
+                qDebug() << "LoadProject: Using legacy SetData for generated project";
+                SetData(generatedProject, dialog.ProjectFile(), getDir());
                 m_mainsplitter->show();
                 qDebug() << "LoadProject: Successfully loaded via ImportData dialog";
                 return true;
@@ -1013,6 +1072,9 @@ bool SupraFitGui::LoadProject(const QString& filename)
             bool exit = true;
             int index = 1;
             int processed_count = 0;
+            
+            // Try to load multiple projects through ProjectManager first
+            SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
             
             for (int i = 0; i < keys.size(); ++i) {
                 QApplication::processEvents();
@@ -1026,9 +1088,23 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 
                 qDebug() << "LoadProject: Processing project" << index << "with key:" << str;
                 QJsonObject object = toplevel[str].toObject();
-                bool result = SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
-                qDebug() << "LoadProject: SetData for project" << index << "returned:" << result;
                 
+                // Try ProjectManager for individual projects if they have data key
+                bool result = false;
+                if (object.contains("data")) {
+                    qDebug() << "LoadProject: Project" << index << "has data key, trying ProjectManager";
+                    // For multi-project files, we need to create temporary single project data
+                    QJsonObject singleProject = object;
+                    // Claude Generated - Fixed: loadProjectFromJson returns QString (UUID), not nullable object
+                    result = !projectManager.loadProjectFromJson(singleProject, info.baseName() + "-" + QString::number(index)).isEmpty();
+                }
+                
+                if (!result) {
+                    qDebug() << "LoadProject: Using legacy SetData for project" << index;
+                    result = SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
+                }
+                
+                qDebug() << "LoadProject: Project" << index << "load result:" << result;
                 exit = exit && result;
                 index++;
                 processed_count++;
@@ -1051,6 +1127,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
     return false;
 }
 
+// Claude Generated - ProjectManager Integration for SaveProjectAction
 void SupraFitGui::SaveProjectAction()
 {
     if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
@@ -1062,16 +1139,75 @@ void SupraFitGui::SaveProjectAction()
     }
 
     Waiter wait;
+    
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QStringList managedProjectIds = projectManager.getLoadedProjectIds();
+    
+    // Check if we have projects managed by ProjectManager
+    if (!managedProjectIds.isEmpty()) {
+        qDebug() << "SaveProjectAction: Found" << managedProjectIds.size() << "projects managed by ProjectManager";
+        
+        if (managedProjectIds.size() == 1) {
+            // Single project - save directly through ProjectManager
+            QString projectId = managedProjectIds.first();
+            qDebug() << "SaveProjectAction: Saving single project" << projectId << "to" << m_supr_file;
+            
+            bool success = projectManager.saveProject(projectId, m_supr_file);
+            if (success) {
+                qDebug() << "SaveProjectAction: ProjectManager successfully saved project";
+                setLastDir(m_supr_file);
+                return;
+            } else {
+                qDebug() << "SaveProjectAction: ProjectManager failed to save project, falling back to legacy method";
+            }
+        } else {
+            // Multiple projects - save as multi-project file
+            qDebug() << "SaveProjectAction: Saving multiple projects through ProjectManager";
+            QJsonObject json;
+            bool allSaved = true;
+            
+            for (int i = 0; i < managedProjectIds.size(); ++i) {
+                const QString& projectId = managedProjectIds[i];
+                QJsonObject projectData = projectManager.getProjectJson(projectId);
+                
+                if (!projectData.isEmpty()) {
+                    json["project_" + QString::number(i)] = projectData;
+                    qDebug() << "SaveProjectAction: Added project" << projectId << "to multi-project file";
+                } else {
+                    qDebug() << "SaveProjectAction: Failed to get JSON for project" << projectId;
+                    allSaved = false;
+                }
+            }
+            
+            if (allSaved && !json.isEmpty()) {
+                JsonHandler::WriteJsonFile(json, m_supr_file);
+                qDebug() << "SaveProjectAction: Successfully saved multi-project file";
+                setLastDir(m_supr_file);
+                return;
+            } else {
+                qDebug() << "SaveProjectAction: Failed to save all projects through ProjectManager, falling back to legacy method";
+            }
+        }
+    }
+    
+    // Fallback to legacy method for backward compatibility
+    qDebug() << "SaveProjectAction: Using legacy save method";
     QMultiMap<QString, QJsonObject> projects;
     for (int i = 0; i < m_project_list.size(); i++) {
         QPointer<MainWindow> project_widget = m_project_list[i];
-        projects.insert(project_widget->Name(), project_widget->SaveProject());
+        if (project_widget) {
+            projects.insert(project_widget->Name(), project_widget->SaveProject());
+        }
     }
-    if (projects.isEmpty())
+    
+    if (projects.isEmpty()) {
+        qDebug() << "SaveProjectAction: No projects to save";
         return;
-    else if (projects.size() == 1) {
+    } else if (projects.size() == 1) {
+        qDebug() << "SaveProjectAction: Saving single project using legacy method";
         JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
     } else {
+        qDebug() << "SaveProjectAction: Saving multiple projects using legacy method";
         QJsonObject json;
 
         int i = 0;
@@ -1084,6 +1220,7 @@ void SupraFitGui::SaveProjectAction()
     setLastDir(m_supr_file);
 }
 
+// Claude Generated - ProjectManager Integration for SaveAsProjectAction
 void SupraFitGui::SaveAsProjectAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
@@ -1092,16 +1229,75 @@ void SupraFitGui::SaveAsProjectAction()
         m_filename_line->setText(m_supr_file);
 
         Waiter wait;
+        
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QStringList managedProjectIds = projectManager.getLoadedProjectIds();
+        
+        // Check if we have projects managed by ProjectManager
+        if (!managedProjectIds.isEmpty()) {
+            qDebug() << "SaveAsProjectAction: Found" << managedProjectIds.size() << "projects managed by ProjectManager";
+            
+            if (managedProjectIds.size() == 1) {
+                // Single project - save directly through ProjectManager
+                QString projectId = managedProjectIds.first();
+                qDebug() << "SaveAsProjectAction: Saving single project" << projectId << "to" << m_supr_file;
+                
+                bool success = projectManager.saveProject(projectId, m_supr_file);
+                if (success) {
+                    qDebug() << "SaveAsProjectAction: ProjectManager successfully saved project";
+                    setLastDir(str);
+                    return;
+                } else {
+                    qDebug() << "SaveAsProjectAction: ProjectManager failed to save project, falling back to legacy method";
+                }
+            } else {
+                // Multiple projects - save as multi-project file
+                qDebug() << "SaveAsProjectAction: Saving multiple projects through ProjectManager";
+                QJsonObject json;
+                bool allSaved = true;
+                
+                for (int i = 0; i < managedProjectIds.size(); ++i) {
+                    const QString& projectId = managedProjectIds[i];
+                    QJsonObject projectData = projectManager.getProjectJson(projectId);
+                    
+                    if (!projectData.isEmpty()) {
+                        json["project_" + QString::number(i)] = projectData;
+                        qDebug() << "SaveAsProjectAction: Added project" << projectId << "to multi-project file";
+                    } else {
+                        qDebug() << "SaveAsProjectAction: Failed to get JSON for project" << projectId;
+                        allSaved = false;
+                    }
+                }
+                
+                if (allSaved && !json.isEmpty()) {
+                    JsonHandler::WriteJsonFile(json, m_supr_file);
+                    qDebug() << "SaveAsProjectAction: Successfully saved multi-project file";
+                    setLastDir(str);
+                    return;
+                } else {
+                    qDebug() << "SaveAsProjectAction: Failed to save all projects through ProjectManager, falling back to legacy method";
+                }
+            }
+        }
+        
+        // Fallback to legacy method for backward compatibility
+        qDebug() << "SaveAsProjectAction: Using legacy save method";
         QMultiMap<QString, QJsonObject> projects;
         for (int i = 0; i < m_project_list.size(); i++) {
             QPointer<MainWindow> project_widget = m_project_list[i];
-            projects.insert(project_widget->Name(), project_widget->SaveProject());
+            if (project_widget) {
+                projects.insert(project_widget->Name(), project_widget->SaveProject());
+            }
         }
-        if (projects.isEmpty())
+        
+        if (projects.isEmpty()) {
+            qDebug() << "SaveAsProjectAction: No projects to save";
             return;
-        else if (projects.size() == 1) {
+        } else if (projects.size() == 1) {
+            qDebug() << "SaveAsProjectAction: Saving single project using legacy method";
             JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
         } else {
+            qDebug() << "SaveAsProjectAction: Saving multiple projects using legacy method";
             QJsonObject json;
 
             int i = 0;
@@ -1808,6 +2004,52 @@ void SupraFitGui::LicenseInfo()
     dialog.setLayout(layout);
     dialog.resize(800, 600);
     dialog.exec();
+}
+
+// Claude Generated - ProjectManager Integration Slot Implementations
+void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& filePath)
+{
+    Info(tr("Project loaded: %1 (ID: %2)").arg(filePath, projectId));
+    updateDataListFromProjectManager();
+    m_project_tree->UpdateStructure();
+    setWindowTitle();
+}
+
+void SupraFitGui::onProjectSaved(const QString& projectId, const QString& filePath)
+{
+    Info(tr("Project saved: %1 (ID: %2)").arg(filePath, projectId));
+    setWindowTitle();
+}
+
+void SupraFitGui::onModelAdded(const QString& projectId, const QString& modelId)
+{
+    Info(tr("Model added to project %1: %2").arg(projectId, modelId));
+    m_project_tree->UpdateStructure();
+}
+
+void SupraFitGui::onProjectManagerError(const QString& operation, const QString& errorMessage)
+{
+    Warning(tr("ProjectManager error in %1: %2").arg(operation, errorMessage));
+}
+
+void SupraFitGui::updateDataListFromProjectManager()
+{
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    
+    // Clear existing data list
+    m_data_list.clear();
+    m_hashed_data.clear();
+    
+    // Get all projects from ProjectManager and synchronize with m_data_list
+    QStringList projectIds = projectManager.getLoadedProjectIds();
+    for (const QString& projectId : projectIds) {
+        QSharedPointer<DataClass> dataClass = projectManager.getProjectData(projectId);
+        if (dataClass) {
+            QWeakPointer<DataClass> weakPtr = dataClass.toWeakRef();
+            m_data_list.append(weakPtr);
+            m_hashed_data[projectId] = weakPtr;
+        }
+    }
 }
 
 void SupraFitGui::resizeEvent(QResizeEvent* event)

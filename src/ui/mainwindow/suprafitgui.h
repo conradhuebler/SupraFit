@@ -22,6 +22,7 @@
 #include "src/ui/guitools/mime.h"
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
+#include "src/core/projectmanager.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
@@ -282,6 +283,16 @@ private slots:
     void ExportAllPlain();
     void ExportAllSupraFit();
     void AddScatter();
+    
+    // Claude Generated - ProjectManager Integration Slots
+    void onProjectLoaded(const QString& projectId, const QString& filePath);
+    void onProjectSaved(const QString& projectId, const QString& filePath);
+    void onModelAdded(const QString& projectId, const QString& modelId);
+    void onProjectManagerError(const QString& operation, const QString& errorMessage);
+
+private:
+    // Claude Generated - ProjectManager Integration Helper
+    void updateDataListFromProjectManager();
 
 protected:
     virtual bool eventFilter(QObject* obj, QEvent* ev) override;

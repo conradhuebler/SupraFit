@@ -271,6 +271,39 @@ QWeakPointer<DataClass> ProjectManager::getCurrentProject() const
     return QWeakPointer<DataClass>();
 }
 
+QSharedPointer<DataClass> ProjectManager::getProjectData(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    
+    if (m_projectHash.contains(projectId)) {
+        auto weakPtr = m_projectHash.value(projectId);
+        return weakPtr.toStrongRef();
+    }
+    
+    return QSharedPointer<DataClass>();
+}
+
+QStringList ProjectManager::getLoadedProjectIds() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_projectHash.keys();
+}
+
+QJsonObject ProjectManager::getProjectJson(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    
+    if (m_projectHash.contains(projectId)) {
+        auto weakPtr = m_projectHash.value(projectId);
+        QSharedPointer<DataClass> project = weakPtr.toStrongRef();
+        if (project) {
+            return project->ExportData();
+        }
+    }
+    
+    return QJsonObject();
+}
+
 bool ProjectManager::setCurrentProject(const QString& projectId)
 {
     QMutexLocker locker(&m_projectsMutex);
@@ -622,6 +655,62 @@ bool ProjectManager::validateProjectJson(const QJsonObject& projectJson) const
 
     // If none of the formats is recognized, fail validation
     return false;
+}
+
+// Claude Generated - Backward compatibility method implementation
+bool ProjectManager::registerExistingProject(QSharedPointer<DataClass> dataClass, const QString& filePath)
+{
+    if (!dataClass) {
+        qWarning() << "ProjectManager::registerExistingProject: Null DataClass provided";
+        return false;
+    }
+
+    QMutexLocker locker(&m_projectsMutex);
+    
+    QString projectId = dataClass->UUID();
+    if (projectId.isEmpty()) {
+        qWarning() << "ProjectManager::registerExistingProject: DataClass has empty UUID";
+        return false;
+    }
+
+    // Check if project already exists
+    if (m_projectHash.contains(projectId)) {
+        qDebug() << "ProjectManager::registerExistingProject: Project already registered:" << projectId;
+        return true;
+    }
+
+    try {
+        // Register the DataClass
+        m_projects.append(dataClass);
+        m_projectHash[projectId] = dataClass.toWeakRef();
+        
+        // Store file path if provided (for future metadata tracking)
+        // Note: m_projectFilePaths not implemented in header yet
+        
+        // Update current project if this is the first one
+        if (m_currentProjectId.isEmpty()) {
+            m_currentProjectId = projectId;
+        }
+
+        qDebug() << "ProjectManager::registerExistingProject: Successfully registered project"
+                 << projectId << "with title:" << dataClass->ProjectTitle();
+
+        // Emit signals for GUI updates
+        QString projectTitle = dataClass->ProjectTitle();
+        if (projectTitle.isEmpty()) {
+            projectTitle = filePath.isEmpty() ? projectId : QFileInfo(filePath).baseName();
+        }
+        
+        emit projectAdded(projectId, projectTitle);
+
+        return true;
+    } catch (const std::exception& e) {
+        qWarning() << "ProjectManager::registerExistingProject: Exception during registration:" << e.what();
+        return false;
+    } catch (...) {
+        qWarning() << "ProjectManager::registerExistingProject: Unknown exception during registration";
+        return false;
+    }
 }
 
 } // namespace SupraFit

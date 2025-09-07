@@ -469,12 +469,29 @@ ModelDataHolder::~ModelDataHolder()
     m_data.clear();
 }
 
+// Claude Generated - ProjectManager Integration for setData
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
 {
     m_data = data;
     //connect(m_data.data(), &DataClass::Warning, this, &ModelDataHolder::Message);
     m_TitleBarWidget->setEnabled(true);
     m_wrapper = wrapper;
+    
+    // Claude Generated - Check if this DataClass is managed by ProjectManager
+    if (data) {
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QString dataUuid = data->UUID();
+        
+        // Check if this data is managed by ProjectManager
+        if (projectManager.hasProject(dataUuid)) {
+            m_currentProjectId = dataUuid;
+            qDebug() << "ModelDataHolder::setData: Data is managed by ProjectManager, project ID:" << m_currentProjectId;
+        } else {
+            // Clear project ID if not managed by ProjectManager (legacy data)
+            m_currentProjectId.clear();
+            qDebug() << "ModelDataHolder::setData: Data not managed by ProjectManager, using legacy mode";
+        }
+    }
     if (!qobject_cast<MetaModel*>(data)) {
         m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
@@ -644,6 +661,18 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
             m_metamodelwidget->UpdateColor(t, color);
         });
     }
+    
+    // Claude Generated - ProjectManager Integration for model tracking
+    if (!m_currentProjectId.isEmpty() && t) {
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        bool success = projectManager.addModelToProject(t, m_currentProjectId);
+        if (success) {
+            qDebug() << "ModelDataHolder::ActiveModel: Successfully registered model with ProjectManager for project" << m_currentProjectId;
+        } else {
+            qDebug() << "ModelDataHolder::ActiveModel: Failed to register model with ProjectManager for project" << m_currentProjectId;
+        }
+    }
+    
     emit ModelAdded();
 }
 
@@ -1065,6 +1094,39 @@ void ModelDataHolder::SplitData()
         d["data"] = project;
         emit AddProject(d);
     }
+}
+
+// Claude Generated - ProjectManager Integration Methods Implementation
+bool ModelDataHolder::setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper)
+{
+    if (projectId.isEmpty()) {
+        qWarning() << "ModelDataHolder::setDataFromProjectManager: Empty project ID provided";
+        return false;
+    }
+
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QSharedPointer<DataClass> dataClass = projectManager.getProjectData(projectId);
+    
+    if (!dataClass) {
+        qWarning() << "ModelDataHolder::setDataFromProjectManager: Project not found in ProjectManager:" << projectId;
+        return false;
+    }
+
+    qDebug() << "ModelDataHolder::setDataFromProjectManager: Setting data from ProjectManager for project" << projectId;
+    
+    // Use the existing setData method to set up the UI
+    setData(dataClass, wrapper);
+    
+    // Store the project ID for future reference
+    m_currentProjectId = projectId;
+    
+    qDebug() << "ModelDataHolder::setDataFromProjectManager: Successfully set data for project" << projectId;
+    return true;
+}
+
+QString ModelDataHolder::getCurrentProjectId() const
+{
+    return m_currentProjectId;
 }
 
 #include "modeldataholder.moc"

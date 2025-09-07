@@ -119,6 +119,19 @@ public:
      * @return Weak pointer to project, null if not found
      */
     QWeakPointer<DataClass> getProject(const QString& projectId) const;
+    
+    /**
+     * @brief Get project data by UUID as shared pointer
+     * @param projectId UUID of requested project
+     * @return Shared pointer to project, null if not found
+     */
+    QSharedPointer<DataClass> getProjectData(const QString& projectId) const;
+    
+    /**
+     * @brief Get list of all loaded project IDs
+     * @return List of project UUID strings
+     */
+    QStringList getLoadedProjectIds() const;
 
     /**
      * @brief Add model to specified project
@@ -143,6 +156,13 @@ public:
      * @return JSON representation of project data
      */
     QJsonObject getProjectAsJson(const QString& projectId = QString()) const;
+    
+    /**
+     * @brief Get project JSON data by UUID
+     * @param projectId UUID of requested project
+     * @return JSON representation of project data
+     */
+    QJsonObject getProjectJson(const QString& projectId) const;
 
     /**
      * @brief Create project from JSON object (CLI data generation)
@@ -198,6 +218,23 @@ public:
      * @return New UUID string for project identification
      */
     QString generateProjectId() const;
+
+    // Claude Generated - Backward compatibility method
+    /**
+     * @brief Register existing DataClass with ProjectManager for unified access
+     * @param dataClass Shared pointer to existing DataClass
+     * @param filePath Optional file path for project tracking
+     * @return Success status of registration
+     */
+    bool registerExistingProject(QSharedPointer<DataClass> dataClass, const QString& filePath = QString());
+
+    /**
+     * @brief Load project from JSON data
+     * @param jsonData JSON object containing project data
+     * @param sourceFile Original file path for metadata
+     * @return UUID of created project, empty string on failure
+     */
+    QString loadProjectFromJson(const QJsonObject& jsonData, const QString& sourceFile);
 
 signals:
     /**
@@ -257,14 +294,6 @@ private:
      * @brief Private constructor for singleton pattern
      */
     explicit ProjectManager(QObject* parent = nullptr);
-
-    /**
-     * @brief Load project from JSON data
-     * @param jsonData JSON object containing project data
-     * @param sourceFile Original file path for metadata
-     * @return UUID of created project, empty string on failure
-     */
-    QString loadProjectFromJson(const QJsonObject& jsonData, const QString& sourceFile);
 
     /**
      * @brief Save project as JSON data

@@ -26,6 +26,36 @@
 
 #include "projecttree.h"
 
+// Claude Generated - ProjectManager Integration Helper Implementation
+QVector<QWeakPointer<DataClass>> ProjectTree::getUnifiedProjectList() const
+{
+    // Try to get projects from ProjectManager first
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QStringList managedProjectIds = projectManager.getLoadedProjectIds();
+    
+    if (!managedProjectIds.isEmpty()) {
+        qDebug() << "ProjectTree::getUnifiedProjectList: Using ProjectManager data with" << managedProjectIds.size() << "projects";
+        
+        QVector<QWeakPointer<DataClass>> projects;
+        for (const QString& projectId : managedProjectIds) {
+            QSharedPointer<DataClass> dataClass = projectManager.getProjectData(projectId);
+            if (dataClass) {
+                projects.append(dataClass.toWeakRef());
+            }
+        }
+        return projects;
+    }
+    
+    // Fallback to m_data_list for backward compatibility
+    if (m_data_list && !m_data_list->isEmpty()) {
+        qDebug() << "ProjectTree::getUnifiedProjectList: Using legacy m_data_list with" << m_data_list->size() << "projects";
+        return *m_data_list;
+    }
+    
+    qDebug() << "ProjectTree::getUnifiedProjectList: No projects available from either source";
+    return QVector<QWeakPointer<DataClass>>();
+}
+
 QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     if (index.parent().isValid())
@@ -34,19 +64,27 @@ QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QMode
         return QSize(100, 25);
 }
 
+// Claude Generated - ProjectManager Integration for UpdateStructure
 void ProjectTree::UpdateStructure()
 {
-    for (int i = 0; i < m_data_list->size(); ++i) {
-        QString uuid = (*m_data_list)[i].toStrongRef().data()->UUID();
-        // qDebug() << (*m_data_list)[i].toStrongRef().data()->UUID() << (*m_data_list)[i].toStrongRef().data()->SFModel() << (*m_data_list)[i].toStrongRef().data()->ProjectTitle();
+    QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+    
+    for (int i = 0; i < projectList.size(); ++i) {
+        QSharedPointer<DataClass> project = projectList[i].toStrongRef();
+        if (!project) {
+            continue;
+        }
+        
+        QString uuid = project->UUID();
+        // qDebug() << project->UUID() << project->SFModel() << project->ProjectTitle();
 
         if (!m_uuids.contains(uuid)) {
             m_uuids << uuid;
             m_ptr_uuids << &m_uuids.last();
         }
 
-        for (int j = 0; j < (*m_data_list)[i].toStrongRef().data()->ChildrenSize(); ++j) {
-            QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[i].toStrongRef().data()->Children(j))->ModelUUID();
+        for (int j = 0; j < project->ChildrenSize(); ++j) {
+            QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>(project->Children(j))->ModelUUID();
 
             if (!m_uuids.contains(sub_uuid)) {
                 m_uuids << sub_uuid;
@@ -74,45 +112,74 @@ int ProjectTree::columnCount(const QModelIndex& parent) const
         return 2;
 }
 
+// Claude Generated - ProjectManager Integration for rowCount
 int ProjectTree::rowCount(const QModelIndex& p) const
 {
-    int count = m_data_list->size();
+    QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+    int count = projectList.size();
+    
     if (p.isValid()) {
-
         QString uuid = UUID(p);
         if (uuid.size() == 77) // Model Element
         {
             count = 0;
-
         } else if (uuid.size() == 38) // DataClass Element
         {
-            count = (*m_data_list)[p.row()].toStrongRef().data()->ChildrenSize();
-        } else
+            if (p.row() < projectList.size()) {
+                QSharedPointer<DataClass> project = projectList[p.row()].toStrongRef();
+                if (project) {
+                    count = project->ChildrenSize();
+                } else {
+                    count = 0;
+                }
+            } else {
+                count = 0;
+            }
+        } else {
             count = 0;
+        }
     }
     return count;
 }
 
+// Claude Generated - ProjectManager Integration for data display
 QVariant ProjectTree::data(const QModelIndex& index, int role) const
 {
     QVariant data;
     if (!index.isValid())
         return data;
 
+    QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+    
     if (role == Qt::DisplayRole) {
         if (index.column() == 0) {
             if (parent(index).isValid()) // Model Element
             {
-                data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].toStrongRef().data()->Children(index.row()))->Name();
-
+                QModelIndex parentIndex = parent(index);
+                if (parentIndex.row() < projectList.size()) {
+                    QSharedPointer<DataClass> project = projectList[parentIndex.row()].toStrongRef();
+                    if (project && index.row() < project->ChildrenSize()) {
+                        data = qobject_cast<AbstractModel*>(project->Children(index.row()))->Name();
+                    }
+                }
             } else // DataClass Element
             {
-                data = (*m_data_list)[index.row()].toStrongRef().data()->ProjectTitle();
+                if (index.row() < projectList.size()) {
+                    QSharedPointer<DataClass> project = projectList[index.row()].toStrongRef();
+                    if (project) {
+                        data = project->ProjectTitle();
+                    }
+                }
             }
         } else if (index.column() == 1 && !parent(index).isValid()) {
-            data = (*m_data_list)[index.row()].toStrongRef().data()->ChildrenSize();
+            if (index.row() < projectList.size()) {
+                QSharedPointer<DataClass> project = projectList[index.row()].toStrongRef();
+                if (project) {
+                    data = project->ChildrenSize();
+                }
+            }
         } else if (index.column() == 1 && parent(index).isValid()) {
-            // qDebug() << index.row() << (*m_data_list)[index.row()].data()->ProjectTitle();
+            // qDebug() << index.row() << projectList[index.row()].data()->ProjectTitle();
         }
     } else if (role == Qt::FontRole) {
         QFont font("SanSerif", 12);
@@ -130,28 +197,35 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
     return data;
 }
 
+// Claude Generated - ProjectManager Integration for index creation
 QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
 {
     QModelIndex index;
     if (!hasIndex(row, column, parent))
         index = QModelIndex();
 
+    QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+
     if (!parent.isValid()) {
         if (row == -1) {
             return index;
         }
 
-        if (row < m_data_list->size()) {
-            QString uuid = (*m_data_list)[row].toStrongRef().data()->UUID();
-            if (m_uuids.indexOf(uuid) == -1)
-                return index;
-            index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
+        if (row < projectList.size()) {
+            QSharedPointer<DataClass> project = projectList[row].toStrongRef();
+            if (project) {
+                QString uuid = project->UUID();
+                if (m_uuids.indexOf(uuid) == -1)
+                    return index;
+                index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
+            }
         }
     } else {
-        if (parent.row() < m_data_list->size()) {
-            if (row < (*m_data_list)[parent.row()].toStrongRef().data()->ChildrenSize()) {
-                QString uuid = (*m_data_list)[parent.row()].toStrongRef().data()->UUID();
-                QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[parent.row()].toStrongRef().data()->Children(row))->ModelUUID();
+        if (parent.row() < projectList.size()) {
+            QSharedPointer<DataClass> parentProject = projectList[parent.row()].toStrongRef();
+            if (parentProject && row < parentProject->ChildrenSize()) {
+                QString uuid = parentProject->UUID();
+                QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>(parentProject->Children(row))->ModelUUID();
                 index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(sub_uuid)]);
             }
         }
@@ -160,6 +234,7 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
     return index;
 }
 
+// Claude Generated - ProjectManager Integration for parent finding
 QModelIndex ProjectTree::parent(const QModelIndex& child) const
 {
     QModelIndex index;
@@ -174,17 +249,23 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
 
     QStringList uuids = uuid.split("|");
     if (uuids.size() == 2) {
-        for (int i = 0; i < m_data_list->size(); ++i) {
-            if ((*m_data_list)[i].toStrongRef().data()->UUID() == uuids[0]) {
-                for (int j = 0; j < (*m_data_list)[i].toStrongRef().data()->ChildrenSize(); ++j) {
-                    if (qobject_cast<AbstractModel*>((*m_data_list)[i].toStrongRef().data()->Children(j))->ModelUUID() == uuids[1]) {
+        QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+        
+        for (int i = 0; i < projectList.size(); ++i) {
+            QSharedPointer<DataClass> project = projectList[i].toStrongRef();
+            if (project && project->UUID() == uuids[0]) {
+                for (int j = 0; j < project->ChildrenSize(); ++j) {
+                    if (qobject_cast<AbstractModel*>(project->Children(j))->ModelUUID() == uuids[1]) {
                         index = createIndex(i, 0, m_ptr_uuids[m_uuids.indexOf(uuids[0])]);
+                        break;
                     }
                 }
+                break;
             }
         }
-    } else
+    } else {
         return index;
+    }
 
     return index;
 }
