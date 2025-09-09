@@ -168,6 +168,8 @@ private:
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
+    // Claude Generated - ProjectManager integration: UUID to MainWindow mapping
+    QHash<QString, QPointer<MainWindow>> m_project_windows;
     bool m_hasData;
     QAction *m_new_window, *m_new_table, *m_spectra, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
@@ -289,10 +291,12 @@ private slots:
     void onProjectSaved(const QString& projectId, const QString& filePath);
     void onModelAdded(const QString& projectId, const QString& modelId);
     void onProjectManagerError(const QString& operation, const QString& errorMessage);
+    void onProjectAdded(const QString& projectId, const QString& projectTitle);
+    void onCurrentProjectChanged(const QString& projectId);
+    void onProjectDataUpdated(const QString& projectId);
 
 private:
-    // Claude Generated - ProjectManager Integration Helper
-    void updateDataListFromProjectManager();
+    // Claude Generated - Removed updateDataListFromProjectManager() function declaration - no longer needed
 
 protected:
     virtual bool eventFilter(QObject* obj, QEvent* ev) override;

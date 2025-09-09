@@ -62,6 +62,9 @@ SupraFitCli::SupraFitCli()
 {
     // Initialize JobManager for statistical analysis - Claude Generated
     m_jobmanager = new JobManager(this);
+    
+    // Initialize AnalysisManager for centralized analysis - Claude Generated
+    m_analysisManager = new AnalysisManager(this);
 }
 
 SupraFitCli::SupraFitCli(SupraFitCli* core)
@@ -82,6 +85,9 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
 
     // Initialize JobManager for statistical analysis - Claude Generated
     m_jobmanager = new JobManager(this);
+    
+    // Initialize AnalysisManager for centralized analysis - Claude Generated
+    m_analysisManager = new AnalysisManager(this);
 
     ParseMain();
 }
@@ -355,7 +361,7 @@ void SupraFitCli::ParseMain()
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 {
-    // Create temporary project from JSON data and save using ProjectManager
+    // Use ProjectManager exclusively for JSON structure compliance - Claude Generated
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
     QString tempProjectId = projectManager.createProjectFromJson(data, "Temporary CLI Project");
 
@@ -366,15 +372,13 @@ bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 
         if (success) {
             std::cout << file.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
+        } else {
+            std::cout << "Error: Failed to save " << file.toStdString() << " using ProjectManager" << std::endl;
         }
         return success;
     }
 
-    // Fallback to direct JSON writing if ProjectManager fails
-    if (JsonHandler::WriteJsonFile(data, file)) {
-        std::cout << file.toStdString() << " successfully written to disk (fallback)" << std::endl;
-        return true;
-    }
+    std::cout << "Error: Failed to create temporary project for " << file.toStdString() << std::endl;
     return false;
 }
 
@@ -403,7 +407,7 @@ bool SupraFitCli::SaveFile()
     // Use ProjectManager to save current project
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
 
-    // First try to save current project via ProjectManager
+    // Use ProjectManager exclusively for JSON structure compliance - Claude Generated
     QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
     if (!currentProject.isNull()) {
         QSharedPointer<DataClass> project = currentProject.toStrongRef();
@@ -412,15 +416,15 @@ bool SupraFitCli::SaveFile()
             if (success) {
                 std::cout << m_outfile.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
                 return true;
+            } else {
+                std::cout << "Error: Failed to save " << m_outfile.toStdString() << " using ProjectManager" << std::endl;
+                return false;
             }
         }
     }
 
-    // Fallback to legacy m_toplevel save for backward compatibility
-    if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile + m_extension)) {
-        std::cout << m_outfile.toStdString() << " successfully written to disk (legacy fallback)" << std::endl;
-        return true;
-    }
+    // No fallback - ProjectManager must handle all saves for structure compliance
+    std::cout << "Error: No current project available for saving" << std::endl;
     return false;
 }
 
@@ -816,24 +820,35 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
 void SupraFitCli::AnalyzeFile()
 {
     fmt::print("\n" + std::string(80, '=') + "\n");
-    fmt::print("📊 SUPRAFIT FILE ANALYSIS\n");
+    fmt::print("📊 SUPRAFIT FILE ANALYSIS (using AnalysisManager)\n");
     fmt::print(std::string(80, '=') + "\n\n");
-
-    // Basic file information
-    fmt::print("📁 FILE INFORMATION:\n");
-    fmt::print("   Input file: {}\n", m_infile.toStdString());
     
-    QFileInfo fileInfo(m_infile);
-    fmt::print("   File size: {} bytes\n", fileInfo.size());
-    fmt::print("   File extension: {}\n", fileInfo.suffix().toStdString());
-    fmt::print("   Absolute path: {}\n", fileInfo.absoluteFilePath().toStdString());
-    fmt::print("   File exists: {}\n", fileInfo.exists() ? "Yes" : "No");
-    fmt::print("   Last modified: {}\n", fileInfo.lastModified().toString(Qt::ISODate).toStdString());
-
-    if (!m_data) {
-        fmt::print("   ❌ No data loaded!\n\n");
+    // Use centralized AnalysisManager for file analysis - Claude Generated
+    QJsonObject analysisResults = m_analysisManager->analyzeFile(m_infile);
+    
+    if (!analysisResults["success"].toBool()) {
+        fmt::print("❌ Analysis failed: {}\n", analysisResults["error"].toString().toStdString());
         return;
     }
+    
+    // Display results in CLI format
+    displayAnalysisResults(analysisResults);
+    
+    fmt::print("\n" + std::string(80, '=') + "\n");
+    fmt::print("✅ FILE ANALYSIS COMPLETE (centralized approach)\n");
+    fmt::print(std::string(80, '=') + "\n\n");
+}
+
+void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
+{
+    // Display file information
+    QJsonObject fileInfo = results["fileInfo"].toObject();
+    fmt::print("📁 FILE INFORMATION:\n");
+    fmt::print("   Input file: {}\n", fileInfo["inputFile"].toString().toStdString());
+    fmt::print("   File size: {} bytes\n", fileInfo["fileSize"].toInt());
+    fmt::print("   File extension: {}\n", fileInfo["fileExtension"].toString().toStdString());
+    fmt::print("   File exists: {}\n", fileInfo["exists"].toBool() ? "Yes" : "No");
+    fmt::print("   Last modified: {}\n", fileInfo["lastModified"].toString().toStdString());
     
     // Data structure analysis
     fmt::print("\n📋 DATA STRUCTURE:\n");
@@ -1997,13 +2012,9 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
         data_object["generator_config"] = config;
         data_object["random_limits"] = randomLimits;
         
-        // Wrap in correct SupraFit project structure
+        // Wrap in correct SupraFit project structure - no fields outside "data" object
         QJsonObject project_object;
         project_object["data"] = data_object;
-        
-        // Claude Generated - Add missing fields expected by tests
-        project_object["uuid"] = data_object["uuid"];  // Extract uuid from data_object
-        project_object["DataType"] = data_object["DataType"];  // Extract DataType from data_object
         
         project_list << project_object;
         fmt::print("Generated dataset {}/{} with DataGenerator\n", i+1, repeat);
@@ -2664,15 +2675,28 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
             fmt::print("🔍 Using default models: {} models\n", modelsConfig.size());
         }
 
-        // Step 3: Fit models and evaluate with post-fit analysis
-        QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig, globalAnalysisConfig);
+        // Step 3: Fit models and evaluate with post-fit analysis (using AnalysisManager)
+        fmt::print("🚨 CRITICAL DEBUG: About to call AnalysisManager->fitModelsToData()\n");
+        fmt::print("🔍 DEBUG: data pointer = {}\n", data.data() != nullptr ? "VALID" : "NULL");
+        if (data) {
+            fmt::print("🔍 DEBUG: data has {} independent rows, {} dependent rows\n", 
+                       data->IndependentModel()->rowCount(), data->DependentModel()->rowCount());
+        }
+        fmt::print("🔍 DEBUG: modelsConfig size = {}\n", modelsConfig.size());
+        fmt::print("🔍 DEBUG: globalAnalysisConfig size = {}\n", globalAnalysisConfig.size());
+        fmt::print("🔍 DEBUG: globalAnalysisConfig keys: {}\n", globalAnalysisConfig.keys().join(", ").toStdString());
+        
+        fmt::print("🚨 CALLING AnalysisManager->fitModelsToData() NOW...\n");
+        QVector<QJsonObject> fittedModels = m_analysisManager->fitModelsToData(data, modelsConfig, globalAnalysisConfig);
+        fmt::print("🚨 RETURNED from AnalysisManager->fitModelsToData() with {} results\n", fittedModels.size());
 
-        // Step 3.5: Create Multi-Project architecture instead of Type C ml_pipeline - Claude Generated
-        // Convert fitted models to individual projects using project_X format
+        // Step 3.5: Create Multi-Project architecture according to JSON_DOKUMENTATION.md - Claude Generated
+        // Convert fitted models to individual projects using official project_X format
         QJsonObject multiProjectData;
         multiProjectData["format_version"] = "2.0";
         multiProjectData["generation_timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-        multiProjectData["base_data"] = data->ExportData();
+        
+        // Remove base_data - not part of official JSON_DOKUMENTATION.md structure
         
         // Extract ground truth model information from content for ML labeling - Claude Generated
         QString content = data->getContent();
@@ -2690,29 +2714,44 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
             multiProjectData["ground_truth"] = groundTruth;
         }
         
-        // Create individual project entries for each fitted model
+        // Create individual project entries following JSON_DOKUMENTATION.md structure - Claude Generated
         for (int modelIndex = 0; modelIndex < fittedModels.size(); ++modelIndex) {
             const QJsonObject& modelResult = fittedModels[modelIndex];
             QString projectKey = QString("project_%1").arg(modelIndex);
             
+            // Create the proper project structure with "data" wrapper (per JSON_DOKUMENTATION.md)
             QJsonObject projectData;
-            projectData["model_name"] = modelResult["model_name"];
-            projectData["model_id"] = modelResult["model_id"];
-            projectData["convergence"] = modelResult["converged"];
-            projectData["sse"] = modelResult["SSE"];
-            projectData["fitted_parameters"] = modelResult["fitted_parameters"];
-            projectData["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+            QJsonObject dataWrapper;
             
-            // Include post-fit analysis if available
-            if (modelResult.contains("post_fit_analysis")) {
-                projectData["post_fit_analysis"] = modelResult["post_fit_analysis"];
+            // Basic project metadata (required by JSON_DOKUMENTATION.md)
+            dataWrapper["DataType"] = 1;
+            dataWrapper["SupraFit"] = 2004;
+            dataWrapper["title"] = QString("Model Analysis %1").arg(modelIndex + 1);
+            dataWrapper["uuid"] = QUuid::createUuid().toString();
+            
+            // Include original data structure
+            dataWrapper["independent"] = data->IndependentModel()->ExportTable(true);
+            dataWrapper["dependent"] = data->DependentModel()->ExportTable(true);
+            
+            // Export the fitted model with complete statistics (including Monte Carlo)
+            if (modelResult.contains("model_export") && modelResult["model_export"].isObject()) {
+                QJsonObject fullModelExport = modelResult["model_export"].toObject();
+                
+                // Extract and include the model in the standard format
+                if (fullModelExport.contains("data")) {
+                    QJsonObject modelData = fullModelExport["data"].toObject();
+                    QString modelKey = QString("model_0");
+                    
+                    QJsonObject modelEntry;
+                    modelEntry["model"] = modelResult.contains("model_id") ? modelResult["model_id"].toInt() : 1;
+                    modelEntry["name"] = fullModelExport.contains("name") ? fullModelExport["name"].toString() : "Unknown Model";
+                    modelEntry["data"] = modelData;  // This contains the "methods" with statistical results
+                    
+                    dataWrapper[modelKey] = modelEntry;
+                }
             }
             
-            // Include ML features if available
-            if (modelResult.contains("ml_features")) {
-                projectData["ml_features"] = modelResult["ml_features"];
-            }
-            
+            projectData["data"] = dataWrapper;
             multiProjectData[projectKey] = projectData;
         }
         
@@ -3468,6 +3507,7 @@ bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
     
     return true;
 }
+
 
 /*
 SupraFitCli * SupraFitCli::Generate() const

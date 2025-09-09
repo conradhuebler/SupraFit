@@ -198,6 +198,15 @@ public:
      */
     int getProjectCount() const;
 
+    // === Current Project Management - Claude Generated ===
+
+    /**
+     * @brief Get display information for GUI project titles/metadata
+     * @param projectId UUID of project (optional, defaults to current)
+     * @return JSON object with title, UUID, data points, etc.
+     */
+    QJsonObject getProjectDisplayInfo(const QString& projectId = QString()) const;
+
     // === Utility Methods ===
 
     /**
@@ -276,6 +285,12 @@ signals:
      * @param projectId UUID of new current project
      */
     void currentProjectChanged(const QString& projectId);
+
+    /**
+     * @brief Emitted when project data is updated - Claude Generated
+     * @param projectId UUID of updated project
+     */
+    void projectDataUpdated(const QString& projectId);
 
     /**
      * @brief Emitted when all projects are cleared

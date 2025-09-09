@@ -11,6 +11,7 @@
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"  // Claude Generated - Required for CreateModel factory function
 #include "src/core/toolset.h"
 
 #include <QtCore/QDebug>
@@ -105,6 +106,16 @@ bool ProjectManager::loadProject(const QString& filePath)
             return false;
         }
 
+        // Claude Generated - Debug JSON data structure passed to loadProjectFromJson
+        fmt::print("🔍 DEBUG loadProject: Passing JSON with keys {} to loadProjectFromJson\n", 
+            [&projectData]() {
+                QStringList keys;
+                for (auto it = projectData.begin(); it != projectData.end(); ++it) {
+                    keys << it.key();
+                }
+                return keys.join(", ").toStdString();
+            }());
+        
         QString projectId = loadProjectFromJson(projectData, filePath);
         if (projectId.isEmpty()) {
             emit errorOccurred("loadProject", QString("Failed to create project from file: %1").arg(filePath));
@@ -564,8 +575,9 @@ QString ProjectManager::generateProjectId() const
 QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const QString& sourceFile)
 {
     try {
-        // Use correct DataClass constructor with JSON parameter
-        QSharedPointer<DataClass> project = QSharedPointer<DataClass>::create(jsonData);
+        // Phase 2: Complete JSON handling - Extract data part for DataClass creation
+        QJsonObject dataObject = jsonData.contains("data") ? jsonData["data"].toObject() : jsonData;
+        QSharedPointer<DataClass> project = QSharedPointer<DataClass>::create(dataObject);
 
         if (!project) {
             emit errorOccurred("loadProjectFromJson", "Failed to create DataClass from JSON");
@@ -577,16 +589,106 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
             project->NewUUID();
         }
 
+        QString projectId = project->UUID();
+        
+        // Phase 2: Load all model_X keys and create associated models
+        int modelCount = 0;
+        fmt::print("🔍 DEBUG ProjectManager: Scanning for models in JSON keys: {}\n", 
+            jsonData.keys().join(", ").toStdString());
+        
+        for (const QString& key : jsonData.keys()) {
+            if (key.startsWith("model_")) {
+                fmt::print("🔍 DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
+                QJsonObject modelObject = jsonData[key].toObject();
+                
+                if (!modelObject.contains("model")) {
+                    emit errorOccurred("loadProjectFromJson", 
+                        QString("Model object %1 missing 'model' field").arg(key));
+                    continue;
+                }
+                
+                try {
+                    // Create model using the factory function
+                    int modelId = modelObject["model"].toInt();
+                    fmt::print("🔍 DEBUG ProjectManager: Creating model ID {} for project {}\n", 
+                        modelId, project->UUID().toStdString());
+                    
+                    QSharedPointer<AbstractModel> model = CreateModel(modelId, project.data());
+                    fmt::print("🔍 DEBUG ProjectManager: CreateModel returned model: {}\n", 
+                        model ? "SUCCESS" : "FAILED");
+                    
+                    if (model) {
+                        // Import model state from JSON
+                        bool importSuccess = model->ImportModel(modelObject);
+                        if (importSuccess) {
+                            // Claude Generated - Fix duplicate model detection: Only compare with other models, not project
+                            bool modelExists = false;
+                            for (int i = 0; i < project->ChildrenSize(); ++i) {
+                                QPointer<DataClass> child = project->Children(i);
+                                if (child && child->UUID() == model->UUID()) {
+                                    // Additional check: ensure we're comparing with another model, not the project itself
+                                    AbstractModel* childModel = dynamic_cast<AbstractModel*>(child.data());
+                                    if (childModel) {
+                                        fmt::print("🚫 DEBUG ProjectManager: Model {} already exists, skipping duplicate\n",
+                                            model->UUID().toStdString());
+                                        modelExists = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (!modelExists) {
+                                // Claude Generated - Priority 2A: Add model to DataClass children list
+                                // This makes the model visible in ProjectTree via project->Children(i)
+                                project->addModel(model);
+                                
+                                modelCount++;
+                                // Emit signal for each successfully loaded model
+                                emit modelAdded(projectId, model->UUID());
+                                
+                                fmt::print("🔍 DEBUG ProjectManager: Model {} registered as child. Project now has {} children\n",
+                                    model->UUID().toStdString(), project->ChildrenSize());
+                            }
+                        } else {
+                            emit errorOccurred("loadProjectFromJson", 
+                                QString("Failed to import model data for %1").arg(key));
+                        }
+                    } else {
+                        emit errorOccurred("loadProjectFromJson", 
+                            QString("Failed to create model %1 (ID: %2)").arg(key).arg(modelId));
+                    }
+                    
+                } catch (const std::exception& e) {
+                    emit errorOccurred("loadProjectFromJson", 
+                        QString("Exception loading model %1: %2").arg(key, e.what()));
+                }
+            }
+        }
+
         // Store source file info for debugging
         if (!sourceFile.isEmpty()) {
 #ifdef DEBUG_ON
-            qDebug() << "ProjectManager: Loaded project from:" << sourceFile << "UUID:" << project->UUID();
+            qDebug() << "ProjectManager: Loaded complete project from:" << sourceFile 
+                     << "UUID:" << projectId << "Models:" << modelCount;
 #endif
         }
 
         m_projects.append(project);
+        updateProjectHash(); // Essential for GUI integration - Claude Generated
 
-        return project->UUID();
+        // Emit signals for GUI integration - Claude Generated
+        emit projectAdded(projectId, project->ProjectTitle());
+        
+        // CRITICAL FIX: Emit projectLoaded signal for GUI synchronization - Claude Generated
+        emit projectLoaded(projectId, sourceFile);
+        
+        // Set as current project if none exists - Claude Generated
+        if (m_currentProjectId.isEmpty()) {
+            m_currentProjectId = projectId;
+            emit currentProjectChanged(projectId);
+        }
+
+        return projectId;
 
     } catch (const std::exception& e) {
         emit errorOccurred("loadProjectFromJson", QString("Exception during JSON import: %1").arg(e.what()));
@@ -601,12 +703,48 @@ QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project)
     }
 
     try {
-        return project->ExportData();
+        // Wrap project data in correct JSON structure for GUI compatibility - Claude Generated
+        QJsonObject wrappedProject;
+        wrappedProject["data"] = project->ExportData();
+        return wrappedProject;
     } catch (const std::exception& e) {
         // Log error without emit in const method
         qCritical() << "ProjectManager::saveProjectAsJson - Exception during JSON export:" << e.what();
         return QJsonObject();
     }
+}
+
+// === Current Project Management Implementation - Claude Generated ===
+
+QJsonObject ProjectManager::getProjectDisplayInfo(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    
+    QString targetProjectId = projectId.isEmpty() ? m_currentProjectId : projectId;
+    
+    if (targetProjectId.isEmpty()) {
+        return QJsonObject();
+    }
+    
+    auto projectIt = m_projectHash.find(targetProjectId);
+    if (projectIt == m_projectHash.end()) {
+        return QJsonObject();
+    }
+    
+    QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
+    if (!project) {
+        return QJsonObject();
+    }
+    
+    QJsonObject displayInfo;
+    displayInfo["uuid"] = project->UUID();
+    displayInfo["title"] = project->ProjectTitle();
+    displayInfo["dataPoints"] = project->DataPoints();
+    displayInfo["seriesCount"] = project->SeriesCount();
+    displayInfo["independentCols"] = project->IndependentModel() ? project->IndependentModel()->columnCount() : 0;
+    displayInfo["dependentCols"] = project->DependentModel() ? project->DependentModel()->columnCount() : 0;
+    
+    return displayInfo;
 }
 
 void ProjectManager::updateProjectHash()

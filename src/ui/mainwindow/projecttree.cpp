@@ -64,35 +64,80 @@ QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QMode
         return QSize(100, 25);
 }
 
-// Claude Generated - ProjectManager Integration for UpdateStructure
+// Claude Generated - ProjectManager Integration for UpdateStructure (CRASH FIX)
 void ProjectTree::UpdateStructure()
 {
+    qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Starting update";
+    
+    // Clear existing UUID mappings
+    m_uuids.clear();
+    m_ptr_uuids.clear();
+    
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+    qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Processing" << projectList.size() << "projects";
     
     for (int i = 0; i < projectList.size(); ++i) {
         QSharedPointer<DataClass> project = projectList[i].toStrongRef();
         if (!project) {
+            qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Project" << i << "is null, skipping";
             continue;
         }
         
         QString uuid = project->UUID();
-        // qDebug() << project->UUID() << project->SFModel() << project->ProjectTitle();
+        qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Processing project" << i << "UUID:" << uuid << "Title:" << project->ProjectTitle();
 
+        // Add project UUID
         if (!m_uuids.contains(uuid)) {
             m_uuids << uuid;
             m_ptr_uuids << &m_uuids.last();
+            qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Added project UUID to lists";
         }
 
-        for (int j = 0; j < project->ChildrenSize(); ++j) {
-            QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>(project->Children(j))->ModelUUID();
+        // CRITICAL FIX: Safe model processing
+        int childrenCount = project->ChildrenSize();
+        qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Project has" << childrenCount << "children";
+        
+        for (int j = 0; j < childrenCount; ++j) {
+            qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Processing child" << j;
+            
+            QPointer<DataClass> child = project->Children(j);
+            if (!child) {
+                qDebug() << "❌ DEBUG ProjectTree::UpdateStructure: Child" << j << "is null pointer, skipping";
+                continue;
+            }
+            
+            AbstractModel* model = qobject_cast<AbstractModel*>(child.data());
+            if (!model) {
+                qDebug() << "❌ DEBUG ProjectTree::UpdateStructure: Child" << j << "is not an AbstractModel, skipping";
+                continue;
+            }
+            
+            QString modelUuid = model->ModelUUID();
+            QString sub_uuid = uuid + "|" + modelUuid;
+            qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Child" << j << "Model UUID:" << modelUuid << "Sub-UUID:" << sub_uuid;
 
             if (!m_uuids.contains(sub_uuid)) {
                 m_uuids << sub_uuid;
                 m_ptr_uuids << &m_uuids.last();
+                qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Added child UUID to lists";
+            } else {
+                qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Sub-UUID already exists";
             }
         }
     }
-    layoutChanged();
+    
+    qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Final UUID count:" << m_uuids.size() << "Calling layoutChanged()";
+    
+    // Claude Generated - Safe layoutChanged() call with proper model notifications
+    try {
+        beginResetModel();
+        endResetModel();
+        qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Layout reset completed safely";
+    } catch (...) {
+        qDebug() << "❌ DEBUG ProjectTree::UpdateStructure: Layout reset failed, continuing";
+    }
+    
+    qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Update complete";
 }
 
 QString ProjectTree::UUID(const QModelIndex& index) const
@@ -115,30 +160,59 @@ int ProjectTree::columnCount(const QModelIndex& parent) const
 // Claude Generated - ProjectManager Integration for rowCount
 int ProjectTree::rowCount(const QModelIndex& p) const
 {
+    qDebug() << "🔍 DEBUG ProjectTree::rowCount: Called with valid index:" << p.isValid();
+    
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
     int count = projectList.size();
     
+    qDebug() << "🔍 DEBUG ProjectTree::rowCount: Base projectList size:" << count;
+    
     if (p.isValid()) {
-        QString uuid = UUID(p);
+        qDebug() << "🔍 DEBUG ProjectTree::rowCount: Processing valid index, row:" << p.row() << "column:" << p.column();
+        
+        // Safe UUID access with null checks
+        QString uuid;
+        try {
+            uuid = UUID(p);
+            qDebug() << "🔍 DEBUG ProjectTree::rowCount: UUID:" << uuid << "length:" << uuid.size();
+        } catch (...) {
+            qDebug() << "❌ DEBUG ProjectTree::rowCount: UUID() threw exception";
+            return 0;
+        }
+        
         if (uuid.size() == 77) // Model Element
         {
+            qDebug() << "🔍 DEBUG ProjectTree::rowCount: Model element (no children)";
             count = 0;
         } else if (uuid.size() == 38) // DataClass Element
         {
+            qDebug() << "🔍 DEBUG ProjectTree::rowCount: DataClass element, checking children";
             if (p.row() < projectList.size()) {
                 QSharedPointer<DataClass> project = projectList[p.row()].toStrongRef();
                 if (project) {
-                    count = project->ChildrenSize();
+                    qDebug() << "🔍 DEBUG ProjectTree::rowCount: Project valid, getting ChildrenSize()";
+                    try {
+                        count = project->ChildrenSize();
+                        qDebug() << "🔍 DEBUG ProjectTree::rowCount: ChildrenSize() returned:" << count;
+                    } catch (...) {
+                        qDebug() << "❌ DEBUG ProjectTree::rowCount: ChildrenSize() threw exception";
+                        count = 0;
+                    }
                 } else {
+                    qDebug() << "🔍 DEBUG ProjectTree::rowCount: Project invalid (null pointer)";
                     count = 0;
                 }
             } else {
+                qDebug() << "🔍 DEBUG ProjectTree::rowCount: Index out of range:" << p.row() << "/" << projectList.size();
                 count = 0;
             }
         } else {
+            qDebug() << "🔍 DEBUG ProjectTree::rowCount: Unknown UUID format, returning 0";
             count = 0;
         }
     }
+    
+    qDebug() << "🔍 DEBUG ProjectTree::rowCount: Returning count:" << count;
     return count;
 }
 
@@ -158,9 +232,24 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
                 QModelIndex parentIndex = parent(index);
                 if (parentIndex.row() < projectList.size()) {
                     QSharedPointer<DataClass> project = projectList[parentIndex.row()].toStrongRef();
+                    qDebug() << "🔍 DEBUG ProjectTree::data: Project" << parentIndex.row() << "valid:" << (bool)project;
                     if (project && index.row() < project->ChildrenSize()) {
-                        data = qobject_cast<AbstractModel*>(project->Children(index.row()))->Name();
+                        qDebug() << "🔍 DEBUG ProjectTree::data: Accessing child" << index.row() << "/" << project->ChildrenSize();
+                        QPointer<DataClass> child = project->Children(index.row());
+                        qDebug() << "🔍 DEBUG ProjectTree::data: Child valid:" << (bool)child.data();
+                        AbstractModel* model = qobject_cast<AbstractModel*>(child.data());
+                        if (model) {
+                            qDebug() << "🔍 DEBUG ProjectTree::data: Model cast successful:" << model->Name();
+                            data = model->Name();
+                        } else {
+                            qDebug() << "🔍 DEBUG ProjectTree::data: Model cast failed, using fallback";
+                            data = QString("Model #%1").arg(index.row());
+                        }
+                    } else {
+                        qDebug() << "🔍 DEBUG ProjectTree::data: Invalid project or index out of bounds";
                     }
+                } else {
+                    qDebug() << "🔍 DEBUG ProjectTree::data: Parent index out of range:" << parentIndex.row() << "/" << projectList.size();
                 }
             } else // DataClass Element
             {
@@ -197,17 +286,26 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
     return data;
 }
 
-// Claude Generated - ProjectManager Integration for index creation
+// Claude Generated - ProjectManager Integration for index creation (CRASH FIX)
 QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
 {
+    qDebug() << "🔍 DEBUG ProjectTree::index: Called with row:" << row << "column:" << column << "parent valid:" << parent.isValid();
+    
     QModelIndex index;
-    if (!hasIndex(row, column, parent))
-        index = QModelIndex();
+    if (!hasIndex(row, column, parent)) {
+        qDebug() << "🔍 DEBUG ProjectTree::index: hasIndex() returned false, returning invalid index";
+        return QModelIndex();
+    }
 
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+    qDebug() << "🔍 DEBUG ProjectTree::index: ProjectList size:" << projectList.size();
 
     if (!parent.isValid()) {
+        // Top-level project
+        qDebug() << "🔍 DEBUG ProjectTree::index: Creating top-level index";
+        
         if (row == -1) {
+            qDebug() << "🔍 DEBUG ProjectTree::index: Invalid row -1";
             return index;
         }
 
@@ -215,22 +313,81 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
             QSharedPointer<DataClass> project = projectList[row].toStrongRef();
             if (project) {
                 QString uuid = project->UUID();
-                if (m_uuids.indexOf(uuid) == -1)
+                qDebug() << "🔍 DEBUG ProjectTree::index: Project UUID:" << uuid;
+                
+                int uuidIndex = m_uuids.indexOf(uuid);
+                if (uuidIndex == -1) {
+                    qDebug() << "🔍 DEBUG ProjectTree::index: UUID not found in m_uuids, returning invalid index";
                     return index;
-                index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
+                }
+                
+                if (uuidIndex >= m_ptr_uuids.size()) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: UUID index out of bounds in m_ptr_uuids:" << uuidIndex << "/" << m_ptr_uuids.size();
+                    return index;
+                }
+                
+                index = createIndex(row, column, m_ptr_uuids[uuidIndex]);
+                qDebug() << "🔍 DEBUG ProjectTree::index: Created top-level index successfully";
+            } else {
+                qDebug() << "🔍 DEBUG ProjectTree::index: Project is null pointer";
             }
+        } else {
+            qDebug() << "🔍 DEBUG ProjectTree::index: Row out of bounds:" << row << "/" << projectList.size();
         }
     } else {
+        // Child model
+        qDebug() << "🔍 DEBUG ProjectTree::index: Creating child index for parent row:" << parent.row();
+        
         if (parent.row() < projectList.size()) {
             QSharedPointer<DataClass> parentProject = projectList[parent.row()].toStrongRef();
             if (parentProject && row < parentProject->ChildrenSize()) {
+                qDebug() << "🔍 DEBUG ProjectTree::index: Parent project valid, accessing child" << row;
+                
+                // CRITICAL FIX: Safe model access
+                QPointer<DataClass> child = parentProject->Children(row);
+                if (!child) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Child is null pointer";
+                    return index;
+                }
+                
+                AbstractModel* model = qobject_cast<AbstractModel*>(child.data());
+                if (!model) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Child is not an AbstractModel";
+                    return index;
+                }
+                
                 QString uuid = parentProject->UUID();
-                QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>(parentProject->Children(row))->ModelUUID();
-                index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(sub_uuid)]);
+                QString modelUuid = model->ModelUUID();
+                QString sub_uuid = uuid + "|" + modelUuid;
+                
+                qDebug() << "🔍 DEBUG ProjectTree::index: Child UUID:" << sub_uuid;
+                
+                int subUuidIndex = m_uuids.indexOf(sub_uuid);
+                if (subUuidIndex == -1) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Sub-UUID not found in m_uuids:" << sub_uuid;
+                    return index;
+                }
+                
+                if (subUuidIndex >= m_ptr_uuids.size()) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Sub-UUID index out of bounds:" << subUuidIndex << "/" << m_ptr_uuids.size();
+                    return index;
+                }
+                
+                index = createIndex(row, column, m_ptr_uuids[subUuidIndex]);
+                qDebug() << "🔍 DEBUG ProjectTree::index: Created child index successfully";
+            } else {
+                if (!parentProject) {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Parent project is null";
+                } else {
+                    qDebug() << "❌ DEBUG ProjectTree::index: Child index out of bounds:" << row << "/" << parentProject->ChildrenSize();
+                }
             }
+        } else {
+            qDebug() << "❌ DEBUG ProjectTree::index: Parent row out of bounds:" << parent.row() << "/" << projectList.size();
         }
     }
 
+    qDebug() << "🔍 DEBUG ProjectTree::index: Returning index valid:" << index.isValid();
     return index;
 }
 

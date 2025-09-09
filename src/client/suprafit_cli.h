@@ -30,6 +30,7 @@
 
 #include "src/core/models/models.h"
 #include "src/core/projectmanager.h"
+#include "src/core/analysis_manager.h"
 
 // Forward declaration to avoid multiple includes
 class JobManager;
@@ -108,6 +109,9 @@ public:
     QVector<QJsonObject> GenerateInputData();
     
     void AnalyzeFile();
+    
+    // AnalysisManager integration - Claude Generated
+    void displayAnalysisResults(const QJsonObject& results);
 
     // Enhanced analysis methods for read-only mode - Claude Generated
     void analyzeGenerateDataConfig(const QJsonObject& generateDataConfig);
@@ -275,6 +279,9 @@ protected:
 
     // JobManager for statistical analysis - Claude Generated
     JobManager* m_jobmanager;
+    
+    // AnalysisManager for centralized analysis - Claude Generated
+    AnalysisManager* m_analysisManager;
 
     QString m_modelContent; // Store enhanced content from model generation - Claude Generated
     QJsonObject m_mlRawData; // Store ML RawData from model generation - Claude Generated

@@ -21,6 +21,7 @@
 #include "src/global_config.h"
 
 #include "src/core/models/datatable.h"
+#include "src/core/models/AbstractModel.h"
 #include "src/core/toolset.h"
 
 #include <Eigen/Dense>
@@ -712,4 +713,18 @@ void DataClass::ReReadCheckedState(int row, bool state)
     d->m_begin_data = first;
     d->m_end_data = last;
     emit DataRangedChanged();
+}
+
+void DataClass::addModel(QSharedPointer<AbstractModel> model)
+{
+    // Claude Generated for ProjectManager integration
+    qDebug() << "🔍 DEBUG DataClass::addModel: Called with model:" << (model ? model->Name() : "NULL");
+    if (!model) {
+        qDebug() << "❌ DEBUG DataClass::addModel: Model is null, aborting";
+        return;
+    }
+    
+    qDebug() << "🔍 DEBUG DataClass::addModel: Adding model" << model->Name() << "UUID:" << model->UUID();
+    AddChildren(static_cast<DataClass*>(model.data()));
+    qDebug() << "🔍 DEBUG DataClass::addModel: After AddChildren, ChildrenSize:" << ChildrenSize();
 }

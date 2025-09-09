@@ -39,6 +39,7 @@
 typedef Eigen::VectorXd Vector;
 
 class DataClass;
+class AbstractModel;
 
 class SystemParameter {
 public:
@@ -379,6 +380,10 @@ public:
     inline virtual int ChildrenSize() const { return d->m_children.size(); }
 
     virtual inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
+
+    /*! \brief Add a model as child to this DataClass - Claude Generated for ProjectManager integration
+     */
+    void addModel(QSharedPointer<AbstractModel> model);
 
     /*! \brief Define the x axis label for charts
      */
