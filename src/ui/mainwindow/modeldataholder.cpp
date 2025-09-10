@@ -28,6 +28,7 @@
 
 #include "src/core/analyse.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/projectmanager.h"
 #include "src/core/models/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
@@ -493,13 +494,31 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         }
     }
     if (!qobject_cast<MetaModel*>(data)) {
+#ifdef DEBUG_ON
+        qDebug() << "ModelDataHolder::setData: Creating DataWidget for non-MetaModel data";
+#endif
         m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
         m_modelsWidget->setDataTab(m_datawidget);
-        m_TitleBarWidget->addToMenu(m_data.toStrongRef()->IndependentModel()->columnCount());
+        
+        // Claude Generated - Safety check for IndependentModel to prevent crash
+        auto dataRef = m_data.toStrongRef();
+        if (dataRef && dataRef->IndependentModel()) {
+            m_TitleBarWidget->addToMenu(dataRef->IndependentModel()->columnCount());
+            qDebug() << "✅ DEBUG setData: Successfully added menu with" << dataRef->IndependentModel()->columnCount() << "columns";
+        } else {
+            qWarning() << "❌ DEBUG setData: IndependentModel is null, skipping menu setup";
+        }
+        
         connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
         connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
+#ifdef DEBUG_ON
+        qDebug() << "ModelDataHolder::setData: DataWidget created and configured successfully";
+#endif
     } else {
+#ifdef DEBUG_ON
+        qDebug() << "ModelDataHolder::setData: Creating MetaModelWidget for MetaModel data";
+#endif
         m_metamodelwidget = new MetaModelWidget();
         m_metamodelwidget->setMetaModel(qobject_cast<MetaModel*>(data));
         m_modelsWidget->setMetaTab(m_metamodelwidget);
@@ -614,10 +633,47 @@ void ModelDataHolder::Json2Model(const QJsonObject& object)
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object, bool readonly)
 {
+    // Claude Generated - Add comprehensive safety checks
+    if (!t) {
+        qWarning() << "ModelDataHolder::ActiveModel: Invalid model provided";
+        return;
+    }
+    
+    if (!m_charts) {
+        qWarning() << "ModelDataHolder::ActiveModel: Charts wrapper is null";
+        return;
+    }
+    
+    qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Starting widget creation for model" << t->Name();
+    
     t->setFast(false);
 
+    qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Adding model to charts";
     Charts charts = m_charts->addModel(t);
-    QPointer<ModelWidget> modelwidget = new ModelWidget(t, charts, readonly);
+    
+    // Validate charts object before widget creation - Claude Generated
+    if (!charts.error_wrapper || !charts.signal_wrapper || !charts.data_wrapper) {
+        qWarning() << "ModelDataHolder::ActiveModel: Charts wrappers are invalid for model" << t->Name();
+        return;
+    }
+    
+    qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Creating ModelWidget for model" << t->Name();
+    QPointer<ModelWidget> modelwidget = nullptr;
+    
+    try {
+        modelwidget = new ModelWidget(t, charts, readonly);
+        if (!modelwidget) {
+            qWarning() << "ModelDataHolder::ActiveModel: Failed to create ModelWidget for model" << t->Name();
+            return;
+        }
+        qDebug() << "✅ DEBUG ModelDataHolder::ActiveModel: Successfully created ModelWidget for model" << t->Name();
+    } catch (const std::exception& e) {
+        qWarning() << "ModelDataHolder::ActiveModel: Exception creating ModelWidget:" << e.what();
+        return;
+    } catch (...) {
+        qWarning() << "ModelDataHolder::ActiveModel: Unknown exception creating ModelWidget for model" << t->Name();
+        return;
+    }
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     connect(modelwidget, &ModelWidget::AddModel, this, [this](const QJsonObject& object) { this->Json2Model(object); });
@@ -674,6 +730,65 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     }
     
     emit ModelAdded();
+}
+
+void ModelDataHolder::createModelWidgetFromModel(QSharedPointer<AbstractModel> model)
+{
+    // Claude Generated - Create ModelWidget from ProjectManager-loaded model with safety checks
+    if (!model) {
+        qWarning() << "ModelDataHolder::createModelWidgetFromModel: Invalid model provided";
+        return;
+    }
+    
+    // Safety checks before widget creation - Claude Generated
+    if (!m_charts) {
+        qWarning() << "ModelDataHolder::createModelWidgetFromModel: Charts wrapper is null";
+        return;
+    }
+    
+    if (!m_data || !m_data.toStrongRef()) {
+        qWarning() << "ModelDataHolder::createModelWidgetFromModel: Data reference is invalid";
+        return;
+    }
+    
+    qDebug() << "🔍 DEBUG ModelDataHolder::createModelWidgetFromModel: Creating widget for model" << model->Name() << "UUID:" << model->UUID();
+    
+    try {
+        // Use existing ActiveModel logic with empty JSON object (no color/key info from ProjectManager)
+        QJsonObject emptyObject;
+        ActiveModel(model, emptyObject);
+        qDebug() << "✅ DEBUG ModelDataHolder::createModelWidgetFromModel: Successfully created widget for model" << model->Name();
+    } catch (const std::exception& e) {
+        qWarning() << "ModelDataHolder::createModelWidgetFromModel: Exception during widget creation:" << e.what();
+    } catch (...) {
+        qWarning() << "ModelDataHolder::createModelWidgetFromModel: Unknown exception during widget creation for model" << model->Name();
+    }
+}
+
+void ModelDataHolder::syncModelsWithProjectManager()
+{
+    // Claude Generated - Synchronize ModelDataHolder with ProjectManager models
+    if (m_currentProjectId.isEmpty()) {
+        qDebug() << "ModelDataHolder::syncModelsWithProjectManager: No current project ID set";
+        return;
+    }
+    
+    qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Syncing models for project" << m_currentProjectId;
+    
+    // Get all models from ProjectManager for current project
+    auto models = SupraFit::ProjectManager::instance().getProjectModels(m_currentProjectId);
+    
+    qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Found" << models.size() << "models to sync";
+    
+    // Create ModelWidgets for all models
+    for (auto& model : models) {
+        if (model) {
+            qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Creating widget for model" << model->Name();
+            createModelWidgetFromModel(model);
+        }
+    }
+    
+    qDebug() << "✅ DEBUG ModelDataHolder::syncModelsWithProjectManager: Synchronization complete";
 }
 
 void ModelDataHolder::addMetaModel(QSharedPointer<AbstractModel> t)
@@ -1120,6 +1235,19 @@ bool ModelDataHolder::setDataFromProjectManager(const QString& projectId, QShare
     // Store the project ID for future reference
     m_currentProjectId = projectId;
     
+    // Claude Generated - Initialize ChartWidget with data before syncing models
+    // CRITICAL FIX: ChartWidget needs m_data_mapper initialized before addModel can be called
+    if (m_charts && dataClass) {
+        qDebug() << "ModelDataHolder::setDataFromProjectManager: Initializing ChartWidget with project data";
+        m_charts->setRawData(dataClass);
+        qDebug() << "✅ ModelDataHolder::setDataFromProjectManager: ChartWidget initialized successfully";
+    } else {
+        qDebug() << "❌ ModelDataHolder::setDataFromProjectManager: Cannot initialize ChartWidget - m_charts or dataClass is null";
+    }
+    
+    // Synchronize models after successful data loading
+    syncModelsWithProjectManager();
+    
     qDebug() << "ModelDataHolder::setDataFromProjectManager: Successfully set data for project" << projectId;
     return true;
 }
@@ -1128,5 +1256,7 @@ QString ModelDataHolder::getCurrentProjectId() const
 {
     return m_currentProjectId;
 }
+
+
 
 #include "modeldataholder.moc"

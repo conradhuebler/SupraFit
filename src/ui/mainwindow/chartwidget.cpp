@@ -231,26 +231,76 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
+    // Claude Generated - Add comprehensive debug output to identify crash location
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Starting addModel for" << (model ? model->Name() : "NULL");
+    
+    if (!model) {
+        qWarning() << "❌ ChartWidget::addModel: Model is null";
+        return Charts{};
+    }
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Checking m_data_mapper" << (m_data_mapper ? "OK" : "NULL");
+    if (!m_data_mapper) {
+        qWarning() << "❌ ChartWidget::addModel: m_data_mapper is null";
+        return Charts{};
+    }
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Calling TransformModel";
     m_data_mapper->TransformModel(model);
+    qDebug() << "✅ DEBUG ChartWidget::addModel: TransformModel completed";
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting lineWidth";
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
+    qDebug() << "✅ DEBUG ChartWidget::addModel: lineWidth =" << lineWidth;
 
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up connections and wrappers";
     m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Creating signal_wrapper";
     QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    qDebug() << "✅ DEBUG ChartWidget::addModel: signal_wrapper created";
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up signal_wrapper connections";
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
-    signal_wrapper->setDataTable(model->ModelTable());
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting ModelTable";
+    DataTable* modelTable = model->ModelTable();
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: ModelTable is" << (modelTable ? "valid" : "NULL");
+    signal_wrapper->setDataTable(modelTable);
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting data on signal_wrapper";
     signal_wrapper->setData(model);
+    qDebug() << "✅ DEBUG ChartWidget::addModel: signal_wrapper setup complete";
 
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Creating error_wrapper";
     QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    qDebug() << "✅ DEBUG ChartWidget::addModel: error_wrapper created";
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up error_wrapper connections";
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
-    error_wrapper->setDataTable(model->ErrorTable());
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting ErrorTable";
+    DataTable* errorTable = model->ErrorTable();
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: ErrorTable is" << (errorTable ? "valid" : "NULL");
+    error_wrapper->setDataTable(errorTable);
+    
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting data on error_wrapper";
     error_wrapper->setData(model);
+    qDebug() << "✅ DEBUG ChartWidget::addModel: error_wrapper setup complete";
 
 
+    qDebug() << "🔍 DEBUG ChartWidget::addModel: Starting series loop, SeriesCount:" << model->SeriesCount();
     for (int i = 0; i < model->SeriesCount(); ++i) {
+        qDebug() << "🔍 DEBUG ChartWidget::addModel: Processing series" << i;
+        
+        qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting series from signal_wrapper";
         LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
+        qDebug() << "🔍 DEBUG ChartWidget::addModel: model_series is" << (model_series ? "valid" : "NULL");
+        
+        qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting series on signal_wrapper";
         signal_wrapper->setSeries(model_series, i);
         connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
         connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));

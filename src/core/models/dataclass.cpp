@@ -601,7 +601,22 @@ void DataClass::AddChildren(QPointer<DataClass> data)
 {
     d->m_children << data;
     connect(data, &DataClass::Deleted, this, [this, data]() {
-        d->m_children.removeAll(data);
+        // Claude Generated - Check if model is explicitly stored before removing
+        // Only remove from children if it's not in our stored models collection
+        bool isStoredModel = false;
+        if (data) {
+            AbstractModel* model = dynamic_cast<AbstractModel*>(data.data());
+            if (model && d->m_stored_models.contains(model->UUID())) {
+                qDebug() << "🔍 DEBUG AddChildren: Model" << model->Name() << "is stored explicitly, not removing from children";
+                isStoredModel = true;
+            }
+        }
+        
+        if (!isStoredModel) {
+            qDebug() << "🔍 DEBUG AddChildren: Removing child from m_children due to Deleted signal";
+            d->m_children.removeAll(data);
+        }
+        
 #ifdef _DEBUG
         qDebug() << d->m_children.size();
 #endif
@@ -725,6 +740,14 @@ void DataClass::addModel(QSharedPointer<AbstractModel> model)
     }
     
     qDebug() << "🔍 DEBUG DataClass::addModel: Adding model" << model->Name() << "UUID:" << model->UUID();
+    
+    // CRITICAL FIX: Store the QSharedPointer to maintain object lifetime - Claude Generated
+    // Add to internal model storage to prevent destruction
+    if (!d->m_stored_models.contains(model->UUID())) {
+        d->m_stored_models[model->UUID()] = model;
+        qDebug() << "🔍 DEBUG DataClass::addModel: Stored model in internal storage";
+    }
+    
     AddChildren(static_cast<DataClass*>(model.data()));
     qDebug() << "🔍 DEBUG DataClass::addModel: After AddChildren, ChildrenSize:" << ChildrenSize();
 }

@@ -133,6 +133,9 @@ public:
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
     QVector<QPointer<DataClass>> m_children;
+    
+    // Claude Generated - Store QSharedPointer<AbstractModel> to prevent destruction
+    QMap<QString, QSharedPointer<AbstractModel>> m_stored_models;
 
     QString m_title, m_uuid, m_content, m_root_dir;
     void check();

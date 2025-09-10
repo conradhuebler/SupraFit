@@ -198,6 +198,37 @@ public:
      */
     int getProjectCount() const;
 
+    // === Model Access API - Claude Generated ===
+
+    /**
+     * @brief Get specific model from project by UUID
+     * @param projectId UUID of project containing the model
+     * @param modelId UUID of the model to retrieve
+     * @return Shared pointer to model, null if not found
+     */
+    QSharedPointer<AbstractModel> getModel(const QString& projectId, const QString& modelId) const;
+
+    /**
+     * @brief Get all models from a specific project
+     * @param projectId UUID of project to get models from
+     * @return Vector of shared pointers to all models in project
+     */
+    QVector<QSharedPointer<AbstractModel>> getProjectModels(const QString& projectId) const;
+
+    /**
+     * @brief Get list of model UUIDs for a project
+     * @param projectId UUID of project to get model IDs from
+     * @return List of model UUID strings
+     */
+    QStringList getModelIds(const QString& projectId) const;
+
+    /**
+     * @brief Get number of models in a project
+     * @param projectId UUID of project to count models for
+     * @return Number of models in the project, -1 if project not found
+     */
+    int getModelCount(const QString& projectId) const;
+
     // === Current Project Management - Claude Generated ===
 
     /**

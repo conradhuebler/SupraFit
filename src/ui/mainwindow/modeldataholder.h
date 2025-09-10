@@ -174,6 +174,16 @@ public:
      * @return Project ID string, empty if not managed by ProjectManager
      */
     QString getCurrentProjectId() const;
+    
+    // Claude Generated - ProjectManager integration for creating ModelWidgets from loaded models
+    void createModelWidgetFromModel(QSharedPointer<AbstractModel> model);
+    
+    /**
+     * @brief Synchronize ModelDataHolder with ProjectManager models
+     * Creates ModelWidgets for all models in the current project
+     */
+    void syncModelsWithProjectManager();
+    
 public slots:
     /*
      * Add a new model to the workspace
@@ -218,6 +228,7 @@ private:
 
     void Json2Model(const QJsonObject& object);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
+    
     void SplitData();
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;

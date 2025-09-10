@@ -26,6 +26,7 @@
 
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/instance.h"
 
@@ -171,15 +172,15 @@ SupraFitGui::SupraFitGui()
     
     // Claude Generated - ProjectManager Integration Signal Connections
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
-    connect(&projectManager, &SupraFit::ProjectManager::projectLoaded, this, &SupraFitGui::onProjectLoaded);
-    connect(&projectManager, &SupraFit::ProjectManager::projectSaved, this, &SupraFitGui::onProjectSaved);
-    connect(&projectManager, &SupraFit::ProjectManager::modelAdded, this, &SupraFitGui::onModelAdded);
-    connect(&projectManager, &SupraFit::ProjectManager::errorOccurred, this, &SupraFitGui::onProjectManagerError);
+    connect(&projectManager, &SupraFit::ProjectManager::projectLoaded, this, &SupraFitGui::onProjectLoaded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::projectSaved, this, &SupraFitGui::onProjectSaved, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::modelAdded, this, &SupraFitGui::onModelAdded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::errorOccurred, this, &SupraFitGui::onProjectManagerError, Qt::QueuedConnection);
     
     // Claude Generated - Missing critical signal connections for project visibility
-    connect(&projectManager, &SupraFit::ProjectManager::projectAdded, this, &SupraFitGui::onProjectAdded);
-    connect(&projectManager, &SupraFit::ProjectManager::currentProjectChanged, this, &SupraFitGui::onCurrentProjectChanged);
-    connect(&projectManager, &SupraFit::ProjectManager::projectDataUpdated, this, &SupraFitGui::onProjectDataUpdated);
+    connect(&projectManager, &SupraFit::ProjectManager::projectAdded, this, &SupraFitGui::onProjectAdded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::currentProjectChanged, this, &SupraFitGui::onCurrentProjectChanged, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::projectDataUpdated, this, &SupraFitGui::onProjectDataUpdated, Qt::QueuedConnection);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -542,111 +543,11 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 
 void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
 {
-    qDebug() << "LoadFile: Starting to load file:" << file << "with overwrite_type:" << overwrite_type;
-    
-    QFileInfo info(file);
-    qDebug() << "LoadFile: File info - exists:" << info.exists() << "size:" << info.size() << "suffix:" << info.suffix();
-
-    if (overwrite_type == 2) // This is reservered for thermograms, that can not automatically be deduced by file name (like *.itc)
-    {
-        qDebug() << "LoadFile: Processing thermogram with overwrite_type 2";
-        ImportData dialog(this);
-        dialog.ImportThermogram(file);
-        qDebug() << "LoadFile: ImportThermogram called, showing dialog";
-        
-        if (dialog.exec() == QDialog::Accepted) {
-            qDebug() << "LoadFile: Thermogram dialog accepted, calling SetData";
-            qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
-            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-            m_mainsplitter->show();
-            qDebug() << "LoadFile: Thermogram processing completed successfully";
-        } else {
-            qDebug() << "LoadFile: Thermogram dialog was cancelled or rejected";
-        }
-        return;
+    qDebug() << "LoadFile: Delegating to ProjectManager for file:" << file;
+    if (!SupraFit::ProjectManager::instance().loadProject(file)) {
+        qWarning() << "LoadFile: ProjectManager failed to load" << file;
+        QMessageBox::warning(this, tr("Loading Error"), tr("SupraFit could not load the specified file: %1").arg(file));
     }
-
-    if (file.contains("|||")) {
-        qDebug() << "LoadFile: Processing spectra file (contains '|||')";
-        SpectraImport* spectra = new SpectraImport(file);
-
-        if (spectra->exec()) {
-            qDebug() << "LoadFile: SpectraImport dialog accepted, processing data";
-            ImportData dialog(this);
-            DataTable* tmp = new DataTable;
-            tmp->ImportTable(spectra->InputTable());
-            qDebug() << "LoadFile: DataTable imported, loading into dialog";
-            
-            dialog.LoadTable(tmp, 2);
-            dialog.setSpectraData(spectra->ProjectData());
-            qDebug() << "LoadFile: Spectra data set, showing ImportData dialog";
-            
-            if (dialog.exec() == QDialog::Accepted) {
-                qDebug() << "LoadFile: Spectra ImportData dialog accepted";
-                qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
-                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-                m_mainsplitter->show();
-                qDebug() << "LoadFile: Spectra processing completed successfully";
-            } else {
-                qDebug() << "LoadFile: Spectra ImportData dialog was cancelled or rejected";
-            }
-        } else {
-            qDebug() << "LoadFile: SpectraImport dialog was cancelled or rejected";
-        }
-        delete spectra;
-        qDebug() << "LoadFile: SpectraImport object deleted";
-        return;
-    }
-    
-    bool is_json_type = file.contains("json") || file.contains("suprafit");
-    qDebug() << "LoadFile: File type check - is_json_type:" << is_json_type;
-    
-    if (is_json_type) {
-        qDebug() << "LoadFile: Showing splash screen for JSON/SupraFit file";
-        QTimer::singleShot(0, m_splash, &QSplashScreen::show);
-        m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
-    }
-    
-    bool invalid_json = false;
-    bool is_project_file = file.contains("json") || file.contains("jdat") || file.contains("suprafit");
-    qDebug() << "LoadFile: Project file check - is_project_file:" << is_project_file;
-    
-    if (is_project_file) {
-        qDebug() << "LoadFile: Calling LoadProject for file:" << file;
-        invalid_json = !LoadProject(file);
-        qDebug() << "LoadFile: LoadProject returned, invalid_json:" << invalid_json;
-        
-        if (!invalid_json) {
-            qDebug() << "LoadFile: Project loaded successfully, cleaning up UI";
-            m_mainsplitter->setGraphicsEffect(NULL);
-            QTimer::singleShot(1, m_splash, &QSplashScreen::close);
-            qDebug() << "LoadFile: Updating recent list with file:" << file;
-            UpdateRecentListProperty(file);
-            UpdateRecentList();
-            qDebug() << "LoadFile: Project loading completed successfully";
-            return;
-        } else {
-            qDebug() << "LoadFile: Project loading failed, will show error message";
-        }
-    } else {
-        qDebug() << "LoadFile: Not a project file, calling ImportTable";
-        ImportTable(file);
-        qDebug() << "LoadFile: ImportTable completed";
-    }
-    
-    qDebug() << "LoadFile: Cleaning up UI effects";
-    m_mainsplitter->setGraphicsEffect(NULL);
-    QTimer::singleShot(1, m_splash, &QSplashScreen::close);
-
-    if (invalid_json) {
-        qDebug() << "LoadFile: Showing error message for invalid JSON";
-        QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
-    } else {
-        qDebug() << "LoadFile: Updating recent list (non-project file)";
-        UpdateRecentList();
-    }
-    
-    qDebug() << "LoadFile: Function completed";
 }
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
@@ -737,6 +638,7 @@ void SupraFitGui::LoadJson(const QJsonObject& str)
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 }
 
+[[deprecated("Use ProjectManager to load and create projects")]]
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const QString& path)
 {
     if (object.isEmpty())
@@ -767,7 +669,19 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
     connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
 
-    QWeakPointer<DataClass> data = window->SetData(object);
+    // Claude Generated - Replace legacy SetData with ProjectManager
+    QString projectId = SupraFit::ProjectManager::instance().loadProjectFromJson(object, file);
+    
+    if (projectId.isEmpty()) {
+        qWarning() << "Failed to load project through ProjectManager";
+        disconnect(window);
+        delete window;
+        return false;
+    }
+    
+    QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+    window->setDataFromProjectManager(projectId, wrapper);
+    QWeakPointer<DataClass> data = SupraFit::ProjectManager::instance().getProjectData(projectId);
     if (!data) {
         disconnect(window);
         delete window;
@@ -799,10 +713,12 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         m_project_tree->UpdateStructure();
     });
 
-    m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);
+    // Claude Generated - DEPRECATED FUNCTION: Add to new m_project_windows architecture instead of m_project_list
+    m_project_windows[projectId] = window;
+    
+    // Keep legacy m_data_list for backward compatibility with existing code
     m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
-
-    m_hashed_data[data.toStrongRef().data()->UUID()] = data;
+    m_hashed_data[projectId] = data;
     
     // Claude Generated - ProjectManager Integration for backward compatibility
     // Register the loaded DataClass with ProjectManager for unified management
@@ -862,19 +778,26 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
             m_project_tree->UpdateStructure();
         });
-        m_project_list.append(window);
+        // Claude Generated - Fix meta model creation: Use m_project_windows instead of m_project_list
+        QString projectId = model.toStrongRef().data()->UUID();
+        m_project_windows[projectId] = window;
 
         m_data_list.append(model);
-        m_hashed_data.insert(model.toStrongRef().data()->UUID(), model);
+        m_hashed_data.insert(projectId, model);
         m_project_tree->UpdateStructure();
         setActionEnabled(true);
         model.toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
         m_meta_models.append(model);
     } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size()) {
-        QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
-        wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids.first()]);
-
-        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
+        // Claude Generated - Fix legacy m_project_list usage: Find MainWindow via m_project_windows
+        QString projectId = uuids.first();
+        if (m_project_windows.contains(projectId) && m_project_windows[projectId]) {
+            QWeakPointer<ChartWrapper> wrapper = m_project_windows[projectId]->getChartWrapper();
+            wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids.first()]);
+            m_meta_models[position - (m_data_list.size() - m_meta_models.size())].toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
+        } else {
+            qWarning() << "AddMetaModel: Project not found in m_project_windows for UUID" << projectId;
+        }
     }
 }
 
@@ -919,7 +842,9 @@ void SupraFitGui::LoadMetaModels()
             m_project_tree->UpdateStructure();
         });
 
-        m_project_list << window;
+        // Claude Generated - Fix model creation: Use m_project_windows instead of m_project_list
+        QString projectId = model.toStrongRef().data()->UUID(); 
+        m_project_windows[projectId] = window;
 
         m_data_list << model;
         m_project_tree->UpdateStructure();
@@ -950,8 +875,11 @@ void SupraFitGui::NewTable()
 {
     ImportData dialog;
     if (dialog.exec() == QDialog::Accepted) {
-        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-        m_mainsplitter->show();
+        // Use ProjectManager to create a new project from the JSON data
+        QString projectId = SupraFit::ProjectManager::instance().createProjectFromJson(dialog.getProject(), dialog.ProjectFile());
+        if (projectId.isEmpty()) {
+            QMessageBox::warning(this, tr("Error"), tr("Failed to create new project."));
+        }
     }
 }
 
@@ -1109,8 +1037,9 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 }
                 
                 if (!result) {
-                    qDebug() << "LoadProject: Using legacy SetData for project" << index;
-                    result = SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
+                    qWarning() << "LoadProject: Both ProjectManager and legacy fallback failed for project" << index;
+                    // Claude Generated - Removed legacy SetData fallback as ProjectManager should handle all cases
+                    result = false;
                 }
                 
                 qDebug() << "LoadProject: Project" << index << "load result:" << result;
@@ -1826,15 +1755,23 @@ void SupraFitGui::CloseProjects()
     }
 
     Waiter wait;
-    for(int i = m_data_list.size() -1; i >= 0; --i)
-    {
-        MainWindow* mainwindow = m_project_list.takeAt(i);
-        m_stack_widget->removeWidget(mainwindow);
-        m_data_list.remove(i);
-        m_hashed_data.remove(mainwindow->Data()->UUID());
-        delete mainwindow;
-        m_project_tree->UpdateStructure();
+    
+    // Claude Generated - Fix CloseProjects: Use m_project_windows instead of m_project_list
+    // Close all MainWindow instances from m_project_windows
+    QStringList projectIds = m_project_windows.keys();
+    for (const QString& projectId : projectIds) {
+        MainWindow* mainwindow = m_project_windows[projectId];
+        if (mainwindow) {
+            m_stack_widget->removeWidget(mainwindow);
+            m_hashed_data.remove(projectId);
+            delete mainwindow;
+        }
+        m_project_windows.remove(projectId);
     }
+    
+    // Clear legacy data structures
+    m_data_list.clear();
+    m_project_tree->UpdateStructure();
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         m_meta_models.remove(i);
 
@@ -2095,18 +2032,7 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
     }
     m_data_list[position].toStrongRef().data()->OverrideSystemParameter(data->SysPar());
 }
-/*
-void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
-{
-    QByteArray sprmodel = d->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-    QJsonObject object = doc.object();
-
-    if (data < m_project_list.size()) {
-        m_project_list[data]->Model(model)->ImportModel(object);
-    } else
-        qDebug() << "not found" << data << model;
-}*/
+// Claude Generated - Removed legacy commented-out CopyModel function that used m_project_list
 
 void SupraFitGui::CopyModel(const QJsonObject& object, int data, int model)
 {
@@ -2140,21 +2066,10 @@ void SupraFitGui::CopyModel(const QJsonObject& object, int data, int model)
         }
     }
     
-    // If the above fails, try to fall back to m_project_list for compatibility
-    if (data < m_project_list.size() && m_project_list[data]) {
-        if (model < m_project_list[data]->ModelCount()) {
-            auto targetModel = m_project_list[data]->Model(model);
-            if (targetModel) {
-                targetModel->ImportModel(object);
-                qDebug() << "CopyModel: Used legacy fallback for project" << data << "model" << model;
-                return;
-            }
-        }
-    }
-    
+    // Claude Generated - Removed legacy m_project_list fallback - should not be needed with ProjectManager
     qWarning() << "CopyModel: Failed to find target - data:" << data << "model:" << model 
                << "m_data_list.size():" << m_data_list.size() 
-               << "m_project_list.size():" << m_project_list.size();
+               << "Available projects in m_project_windows:" << m_project_windows.keys();
 }
 
 void SupraFitGui::ExportAllPlain()
@@ -2361,11 +2276,14 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
         qDebug() << "onProjectLoaded: Creating MainWindow for project" << projectId;
         
         // Create new MainWindow instance
+        // TODO Claude -> Make Maindow get DataClass instead of Jsons
         QPointer<MainWindow> window = new MainWindow(this);
         
-        // Set the project data in the MainWindow by converting to JSON
-        QJsonObject projectJson = projectData->ExportData();
-        window->SetData(projectJson);
+        // Claude Generated - CRITICAL FIX: Use ProjectManager instead of legacy SetData
+        // This was causing data duplication and legacy JSON conversion
+        QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+        window->setDataFromProjectManager(projectId, wrapper);
+        // Fixed: MainWindow now gets DataClass directly from ProjectManager
         
         // Add to our UUID mapping
         m_project_windows[projectId] = window;
@@ -2390,10 +2308,86 @@ void SupraFitGui::onProjectSaved(const QString& projectId, const QString& filePa
     setWindowTitle();
 }
 
+
+void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projectTitle)
+{
+    Info(tr("Project added: %1 (%2)").arg(projectTitle, projectId));
+    qDebug() << "SupraFitGui::onProjectAdded: Creating MainWindow for project" << projectId << "title:" << projectTitle;
+    
+    // Check if MainWindow already exists
+    if (m_project_windows.contains(projectId)) {
+        qDebug() << "SupraFitGui::onProjectAdded: MainWindow already exists for project" << projectId;
+        return;
+    }
+    
+    // Get project data from ProjectManager
+    QSharedPointer<DataClass> projectData = SupraFit::ProjectManager::instance().getProjectData(projectId);
+    if (!projectData) {
+        qWarning() << "SupraFitGui::onProjectAdded: Could not retrieve project data for" << projectId;
+        return;
+    }
+    
+    // Create new MainWindow for this project
+    MainWindow* window = new MainWindow;
+    window->setObjectName(QString("mainwindow_%1").arg(projectId));
+    
+    // Create chart wrapper for visualization
+    QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+    
+    // Set up MainWindow with project data using new ProjectManager integration
+    window->setDataFromProjectManager(projectId, wrapper);
+    
+    // Store MainWindow in our project windows map
+    m_project_windows[projectId] = window;
+    
+    // Add MainWindow to the stack widget (correct widget structure)
+    QString windowTitle = projectTitle.isEmpty() ? QString("Project %1").arg(projectId) : projectTitle;
+    int index = m_stack_widget->addWidget(window);
+    
+    // Switch to the newly added project window
+    m_stack_widget->setCurrentIndex(index);
+    
+    qDebug() << "SupraFitGui::onProjectAdded: Successfully created MainWindow for project" << projectId;
+    
+    // Claude Generated - CRITICAL FIX: Synchronize any models that were created before MainWindow existed
+    // This handles the case where modelAdded signals were emitted before projectAdded
+    window->getModelDataHolder()->syncModelsWithProjectManager();
+    
+    // Update project tree
+    m_project_tree->UpdateStructure();
+}
+
 void SupraFitGui::onModelAdded(const QString& projectId, const QString& modelId)
 {
     Info(tr("Model added to project %1: %2").arg(projectId, modelId));
     m_project_tree->UpdateStructure();
+    
+    // Claude Generated - Create ModelWidget immediately using new ProjectManager API
+    qDebug() << "SupraFitGui::onModelAdded: Creating ModelWidget for model" << modelId << "in project" << projectId;
+    
+    // Claude Generated - CRITICAL FIX: Create MainWindow first if it doesn't exist
+    if (!m_project_windows.contains(projectId)) {
+        qDebug() << "SupraFitGui::onModelAdded: No MainWindow found for project" << projectId << ", deferring model creation";
+        // Instead of creating MainWindow immediately, defer until projectAdded signal
+        // This handles the case where modelAdded is emitted before project is fully loaded
+        return;
+    }
+    
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        
+        // Get the specific model using new ProjectManager API
+        auto model = SupraFit::ProjectManager::instance().getModel(projectId, modelId);
+        if (model) {
+            qDebug() << "SupraFitGui::onModelAdded: Found model" << model->Name() << ", creating widget";
+            // Use ModelDataHolder to create ModelWidget immediately
+            window->getModelDataHolder()->createModelWidgetFromModel(model);
+        } else {
+            qWarning() << "SupraFitGui::onModelAdded: Could not retrieve model" << modelId << "from ProjectManager";
+        }
+    } else {
+        qWarning() << "SupraFitGui::onModelAdded: Still no MainWindow found for project" << projectId << "after creation attempt";
+    }
 }
 
 void SupraFitGui::onProjectManagerError(const QString& operation, const QString& errorMessage)
@@ -2401,27 +2395,34 @@ void SupraFitGui::onProjectManagerError(const QString& operation, const QString&
     Warning(tr("ProjectManager error in %1: %2").arg(operation, errorMessage));
 }
 
-// Claude Generated - Missing critical slot implementations for project visibility
-void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projectTitle)
-{
-    Info(tr("Project added: %1 (ID: %2)").arg(projectTitle, projectId));
-    // Claude Generated - Removed updateDataListFromProjectManager() call - no longer needed
-    m_project_tree->UpdateStructure();
-    setWindowTitle();
-}
-
+// Claude Generated - Missing ProjectManager slot implementations
 void SupraFitGui::onCurrentProjectChanged(const QString& projectId)
 {
-    Info(tr("Current project changed: %1").arg(projectId));
-    // Claude Generated - Removed updateDataListFromProjectManager() call - no longer needed
-    m_project_tree->UpdateStructure();
-    setWindowTitle();
+    qDebug() << "SupraFitGui::onCurrentProjectChanged: Current project changed to" << projectId;
+    
+    // Switch to the widget for this project if MainWindow exists
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        int widgetIndex = m_stack_widget->indexOf(window);
+        if (widgetIndex != -1) {
+            m_stack_widget->setCurrentIndex(widgetIndex);
+        }
+    }
 }
 
 void SupraFitGui::onProjectDataUpdated(const QString& projectId)
 {
-    // Claude Generated - Removed updateDataListFromProjectManager() call - no longer needed
+    qDebug() << "SupraFitGui::onProjectDataUpdated: Project data updated for" << projectId;
+    
+    // Update project tree to reflect data changes
     m_project_tree->UpdateStructure();
+    
+    // If MainWindow exists, trigger data refresh
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        // Trigger ModelDataHolder synchronization to update ModelWidgets
+        window->getModelDataHolder()->syncModelsWithProjectManager();
+    }
 }
 
 // Claude Generated - Deleted updateDataListFromProjectManager() function - no longer needed after migration

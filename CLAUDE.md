@@ -44,10 +44,10 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 ## Key Components
 
 ### Core Libraries
-- **libcore.a**: Core functionality (capabilities/, core/)
+- **libcore.a**: Core functionality (capabilities/, core/) with ProjectManager integration
 - **libmodels.a**: Data models and analysis models
-- **suprafit_cli**: Command-line interface
-- **suprafit**: GUI application
+- **suprafit_cli**: Command-line interface with unified ProjectManager
+- **suprafit**: GUI application with completed ProjectManager integration
 
 ### Data Structure
 - **DataClass**: Project container with metadata

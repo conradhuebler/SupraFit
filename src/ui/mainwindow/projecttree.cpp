@@ -30,9 +30,17 @@
 QVector<QWeakPointer<DataClass>> ProjectTree::getUnifiedProjectList() const
 {
     // Try to get projects from ProjectManager first
+    #ifdef DEBUG_ON
+    qDebug() << "ProjectTree::getUnifiedProjectList: Checking ProjectManager for projects";
+    #endif
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    #ifdef DEBUG_ON
+    qDebug() << "ProjectTree::getUnifiedProjectList: ProjectManager has" << projectManager.getProjectCount() << "projects loaded";
+    #endif
     QStringList managedProjectIds = projectManager.getLoadedProjectIds();
-    
+    #ifdef DEBUG_ON
+    qDebug() << "ProjectTree::getUnifiedProjectList: Managed Project IDs:" << managedProjectIds;
+    #endif
     if (!managedProjectIds.isEmpty()) {
         qDebug() << "ProjectTree::getUnifiedProjectList: Using ProjectManager data with" << managedProjectIds.size() << "projects";
         
@@ -72,7 +80,8 @@ void ProjectTree::UpdateStructure()
     // Clear existing UUID mappings
     m_uuids.clear();
     m_ptr_uuids.clear();
-    
+    qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Starting update";
+
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Processing" << projectList.size() << "projects";
     

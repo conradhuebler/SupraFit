@@ -133,6 +133,7 @@ public:
     explicit SupraFitGui();
     virtual ~SupraFitGui() override;
 
+    [[deprecated("Use ProjectManager to load and create projects")]]
     bool SetData(const QJsonObject& object, const QString& file, const QString& path);
     virtual QSize sizeHint() const override { return QSize(400, 300); }
 
@@ -237,7 +238,7 @@ private:
     QWidget *m_project_holder, *m_recentWidget;
     QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
-    QVector<QPointer<MainWindow>> m_project_list;
+    // Claude Generated - REMOVED: QVector<QPointer<MainWindow>> m_project_list; - replaced by m_project_windows UUID-based mapping
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
     QStackedWidget* m_stack_widget;
