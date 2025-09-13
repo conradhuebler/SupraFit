@@ -543,10 +543,43 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 
 void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
 {
-    qDebug() << "LoadFile: Delegating to ProjectManager for file:" << file;
-    if (!SupraFit::ProjectManager::instance().loadProject(file)) {
-        qWarning() << "LoadFile: ProjectManager failed to load" << file;
-        QMessageBox::warning(this, tr("Loading Error"), tr("SupraFit could not load the specified file: %1").arg(file));
+    qDebug() << "LoadFile: Processing file:" << file;
+    
+    QFileInfo fileInfo(file);
+    QString suffix = fileInfo.suffix().toLower();
+    
+    // Check if file needs ImportData dialog for configuration
+    if (suffix == "dat" || suffix == "txt" || suffix == "csv") {
+        qDebug() << "LoadFile: Opening ImportData dialog for" << suffix << "file";
+        
+        ImportData dialog(file, this);
+        if (dialog.exec() == QDialog::Accepted) {
+            QJsonObject projectJson = dialog.getProject();
+            if (!projectJson.isEmpty()) {
+                QString projectId = SupraFit::ProjectManager::instance()
+                                   .createProjectFromJson(projectJson, fileInfo.baseName());
+                if (projectId.isEmpty()) {
+                    qWarning() << "LoadFile: Failed to create project from ImportData dialog";
+                    QMessageBox::warning(this, tr("Loading Error"), 
+                        tr("Failed to create project from configured data for file: %1").arg(file));
+                } else {
+                    qDebug() << "LoadFile: Successfully created project" << projectId << "from ImportData dialog";
+                }
+            } else {
+                qWarning() << "LoadFile: ImportData dialog returned empty project data";
+                QMessageBox::warning(this, tr("Loading Error"), 
+                    tr("No valid project data could be created from file: %1").arg(file));
+            }
+        } else {
+            qDebug() << "LoadFile: ImportData dialog was cancelled by user";
+        }
+    } else {
+        // Direct ProjectManager delegation for .json/.suprafit/.itc files
+        qDebug() << "LoadFile: Delegating to ProjectManager for" << suffix << "file";
+        if (!SupraFit::ProjectManager::instance().loadProject(file)) {
+            qWarning() << "LoadFile: ProjectManager failed to load" << file;
+            QMessageBox::warning(this, tr("Loading Error"), tr("SupraFit could not load the specified file: %1").arg(file));
+        }
     }
 }
 
