@@ -617,6 +617,7 @@ QVector<QSharedPointer<AbstractModel>> ProjectManager::getProjectModels(const QS
             AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data());
             if (modelPtr) {
                 qDebug() << "✅ DEBUG ProjectManager::getProjectModels: Successfully cast child" << i << "to AbstractModel";
+                qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Model" << i << "Name:" << modelPtr->Name() << "ModelUUID:" << modelPtr->ModelUUID();
                 models.append(QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*){}));
             } else {
                 qDebug() << "❌ DEBUG ProjectManager::getProjectModels: Failed to cast child" << i << "to AbstractModel";
@@ -766,8 +767,10 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                         model ? "SUCCESS" : "FAILED");
                     
                     if (model) {
+                        qDebug() << "🔍 DEBUG ProjectManager: Model created with UUID:" << model->ModelUUID() << "for model name:" << model->Name();
                         // Import model state from JSON
                         bool importSuccess = model->ImportModel(modelObject);
+                        qDebug() << "🔍 DEBUG ProjectManager: After ImportModel, UUID:" << model->ModelUUID() << "ImportSuccess:" << importSuccess;
                         if (importSuccess) {
                             // Claude Generated - Remove incorrect duplicate detection
                             // Models loaded from JSON are unique by definition (model_1, model_2, etc.)
@@ -778,11 +781,10 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                             project->addModel(model);
                             
                             modelCount++;
-                            // Emit signal for each successfully loaded model
-                            emit modelAdded(projectId, model->UUID());
+                            // Emit signal for each successfully loaded model - CRITICAL FIX: Use ModelUUID() not UUID()
+                            emit modelAdded(projectId, model->ModelUUID());
                             
-                            fmt::print("✅ DEBUG ProjectManager: Model {} registered as child. Project now has {} children\n",
-                                model->UUID().toStdString(), project->ChildrenSize());
+                            qDebug() << "✅ DEBUG ProjectManager: Model" << model->Name() << "registered with ModelUUID:" << model->ModelUUID() << "Project now has" << project->ChildrenSize() << "children";
                         } else {
                             emit errorOccurred("loadProjectFromJson", 
                                 QString("Failed to import model data for %1").arg(key));

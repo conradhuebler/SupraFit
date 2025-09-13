@@ -649,13 +649,24 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     t->setFast(false);
 
     qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Adding model to charts";
-    Charts charts = m_charts->addModel(t);
     
-    // Validate charts object before widget creation - Claude Generated
-    if (!charts.error_wrapper || !charts.signal_wrapper || !charts.data_wrapper) {
-        qWarning() << "ModelDataHolder::ActiveModel: Charts wrappers are invalid for model" << t->Name();
+    // Claude Generated - Additional safety check before addModel to prevent crashes
+    if (!m_charts) {
+        qWarning() << "❌ ModelDataHolder::ActiveModel: m_charts is null during addModel call";
         return;
     }
+    
+    Charts charts = m_charts->addModel(t);
+    
+    // Claude Generated - Verify charts creation was successful 
+    if (!charts.signal_wrapper || !charts.error_wrapper || !charts.data_wrapper) {
+        qWarning() << "❌ ModelDataHolder::ActiveModel: Chart creation failed - one or more wrappers are null";
+        if (!charts.signal_wrapper) qWarning() << "   - signal_wrapper is null";
+        if (!charts.error_wrapper) qWarning() << "   - error_wrapper is null"; 
+        if (!charts.data_wrapper) qWarning() << "   - data_wrapper is null";
+        return;
+    }
+    qDebug() << "✅ DEBUG ModelDataHolder::ActiveModel: Charts created successfully";
     
     qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Creating ModelWidget for model" << t->Name();
     QPointer<ModelWidget> modelwidget = nullptr;
@@ -751,7 +762,7 @@ void ModelDataHolder::createModelWidgetFromModel(QSharedPointer<AbstractModel> m
         return;
     }
     
-    qDebug() << "🔍 DEBUG ModelDataHolder::createModelWidgetFromModel: Creating widget for model" << model->Name() << "UUID:" << model->UUID();
+    qDebug() << "🔍 DEBUG ModelDataHolder::createModelWidgetFromModel: Creating widget for model" << model->Name() << "ModelUUID:" << model->ModelUUID();
     
     try {
         // Use existing ActiveModel logic with empty JSON object (no color/key info from ProjectManager)
@@ -773,6 +784,20 @@ void ModelDataHolder::syncModelsWithProjectManager()
         return;
     }
     
+    // Claude Generated - CRITICAL FIX for race condition: Ensure ChartWidget is initialized before model sync
+    if (m_charts && m_data) {
+        auto dataRef = m_data.toStrongRef();
+        if (dataRef) {
+            qDebug() << "🔍 DEBUG syncModelsWithProjectManager: Initializing ChartWidget before model sync";
+            m_charts->setRawData(dataRef);
+            qDebug() << "✅ DEBUG syncModelsWithProjectManager: ChartWidget initialized successfully";
+        }
+    } else {
+        qWarning() << "❌ DEBUG syncModelsWithProjectManager: Cannot initialize ChartWidget - m_charts or m_data is null";
+        if (!m_charts) qWarning() << "   - m_charts is null";
+        if (!m_data) qWarning() << "   - m_data is null";
+    }
+    
     qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Syncing models for project" << m_currentProjectId;
     
     // Get all models from ProjectManager for current project
@@ -780,10 +805,11 @@ void ModelDataHolder::syncModelsWithProjectManager()
     
     qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Found" << models.size() << "models to sync";
     
-    // Create ModelWidgets for all models
+    // Create ModelWidgets for all models - allow multiple instances
     for (auto& model : models) {
         if (model) {
-            qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Creating widget for model" << model->Name();
+            void* modelPtr = model.data();
+            qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Creating widget for model" << model->Name() << "Pointer:" << modelPtr;
             createModelWidgetFromModel(model);
         }
     }
@@ -1255,6 +1281,97 @@ bool ModelDataHolder::setDataFromProjectManager(const QString& projectId, QShare
 QString ModelDataHolder::getCurrentProjectId() const
 {
     return m_currentProjectId;
+}
+
+int ModelDataHolder::findModelTabByUUID(const QString& modelUUID) const
+{
+    // Claude Generated - Find tab index for model with given UUID with comprehensive debug logging
+    qDebug() << "🔍 DEBUG findModelTabByUUID: Looking for model UUID:" << modelUUID;
+    qDebug() << "🔍 DEBUG findModelTabByUUID: Total tabs in modelsWidget:" << m_modelsWidget->count();
+    
+    // Tab 0 is always the data overview tab, models start at index 1
+    for (int i = 1; i < m_modelsWidget->count(); ++i) {
+        ModelWidget* modelWidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+        qDebug() << "🔍 DEBUG findModelTabByUUID: Tab" << i << "ModelWidget:" << (modelWidget ? "exists" : "null");
+        
+        if (modelWidget && modelWidget->Model()) {
+            QString tabModelUUID = modelWidget->Model()->ModelUUID();
+            qDebug() << "🔍 DEBUG findModelTabByUUID: Tab" << i << "Model UUID:" << tabModelUUID;
+            qDebug() << "🔍 DEBUG findModelTabByUUID: Tab" << i << "UUID match:" << (tabModelUUID == modelUUID);
+            
+            if (tabModelUUID == modelUUID) {
+                qDebug() << "✅ DEBUG findModelTabByUUID: Found model at tab index" << i;
+                return i;
+            }
+        } else {
+            qDebug() << "❌ DEBUG findModelTabByUUID: Tab" << i << "has no model or widget";
+        }
+    }
+    qDebug() << "❌ DEBUG findModelTabByUUID: Model not found, returning -1";
+    return -1; // Model not found
+}
+
+int ModelDataHolder::findModelTabByPointer(void* modelPointer) const
+{
+    // Claude Generated - Find tab index for model with given model pointer
+    qDebug() << "🔍 DEBUG findModelTabByPointer: Looking for model pointer:" << modelPointer;
+    qDebug() << "🔍 DEBUG findModelTabByPointer: Total tabs in modelsWidget:" << m_modelsWidget->count();
+    
+    // Tab 0 is always the data overview tab, models start at index 1
+    for (int i = 1; i < m_modelsWidget->count(); ++i) {
+        ModelWidget* modelWidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+        qDebug() << "🔍 DEBUG findModelTabByPointer: Tab" << i << "ModelWidget:" << (modelWidget ? "exists" : "null");
+        
+        if (modelWidget && modelWidget->Model()) {
+            void* tabModelPointer = modelWidget->Model().data();
+            qDebug() << "🔍 DEBUG findModelTabByPointer: Tab" << i << "Model pointer:" << tabModelPointer;
+            qDebug() << "🔍 DEBUG findModelTabByPointer: Tab" << i << "Pointer match:" << (tabModelPointer == modelPointer);
+            
+            if (tabModelPointer == modelPointer) {
+                qDebug() << "✅ DEBUG findModelTabByPointer: Found model at tab index" << i;
+                return i;
+            }
+        } else {
+            qDebug() << "❌ DEBUG findModelTabByPointer: Tab" << i << "has no model or widget";
+        }
+    }
+    qDebug() << "❌ DEBUG findModelTabByPointer: Model not found, returning -1";
+    return -1; // Model not found
+}
+
+// Claude Generated - Find tab by model pointer and child index to differentiate duplicate model instances
+int ModelDataHolder::findModelTabByChildIndex(void* modelPointer, int childIndex) const
+{
+    qDebug() << "🔍 DEBUG findModelTabByChildIndex: Looking for model pointer:" << modelPointer << "childIndex:" << childIndex;
+    qDebug() << "🔍 DEBUG findModelTabByChildIndex: Total tabs in modelsWidget:" << m_modelsWidget->count();
+    
+    int matchingPointerCount = 0;
+    
+    // Tab 0 is always the data overview tab, models start at index 1
+    for (int i = 1; i < m_modelsWidget->count(); ++i) {
+        ModelWidget* modelWidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+        qDebug() << "🔍 DEBUG findModelTabByChildIndex: Tab" << i << "ModelWidget:" << (modelWidget ? "exists" : "null");
+        
+        if (modelWidget && modelWidget->Model()) {
+            void* tabModelPointer = modelWidget->Model().data();
+            qDebug() << "🔍 DEBUG findModelTabByChildIndex: Tab" << i << "Model pointer:" << tabModelPointer;
+            
+            if (tabModelPointer == modelPointer) {
+                qDebug() << "🔍 DEBUG findModelTabByChildIndex: Tab" << i << "Pointer matches, checking child index";
+                qDebug() << "🔍 DEBUG findModelTabByChildIndex: Tab" << i << "Current match count:" << matchingPointerCount << "Target index:" << childIndex;
+                
+                if (matchingPointerCount == childIndex) {
+                    qDebug() << "✅ DEBUG findModelTabByChildIndex: Found model at tab index" << i << "for child index" << childIndex;
+                    return i;
+                }
+                matchingPointerCount++;
+            }
+        } else {
+            qDebug() << "❌ DEBUG findModelTabByChildIndex: Tab" << i << "has no model or widget";
+        }
+    }
+    qDebug() << "❌ DEBUG findModelTabByChildIndex: Model not found, returning -1";
+    return -1; // Model not found
 }
 
 

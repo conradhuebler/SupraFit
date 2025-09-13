@@ -234,7 +234,7 @@ void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
     connect(m_stored_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     m_working = m_stored_model;
     m_transformed = true;
-    // MakeSeries();
+    MakeSeries(); // Claude Generated - Fixed cutecharts restructuring bug: series data wasn't being populated
     emit ModelTransformed();
 }
 

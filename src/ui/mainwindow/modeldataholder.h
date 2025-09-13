@@ -184,6 +184,28 @@ public:
      */
     void syncModelsWithProjectManager();
     
+    /**
+     * @brief Find tab index for model with given UUID
+     * @param modelUUID UUID of the model to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByUUID(const QString& modelUUID) const;
+
+    /**
+     * @brief Find tab index for model with given model pointer (Claude Generated)
+     * @param modelPointer Pointer to the model instance to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByPointer(void* modelPointer) const;
+    
+    /**
+     * @brief Find tab index for model with given child index (Claude Generated)
+     * @param modelPointer Pointer to the model instance
+     * @param childIndex Child index in the project  
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByChildIndex(void* modelPointer, int childIndex) const;
+    
 public slots:
     /*
      * Add a new model to the workspace

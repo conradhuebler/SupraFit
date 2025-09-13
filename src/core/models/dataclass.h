@@ -136,6 +136,9 @@ public:
     
     // Claude Generated - Store QSharedPointer<AbstractModel> to prevent destruction
     QMap<QString, QSharedPointer<AbstractModel>> m_stored_models;
+    
+    // Claude Generated - Pointer-based storage for models with same ModelUUID
+    QMap<void*, QSharedPointer<AbstractModel>> m_stored_models_by_pointer;
 
     QString m_title, m_uuid, m_content, m_root_dir;
     void check();

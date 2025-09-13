@@ -599,22 +599,45 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
 
 void DataClass::AddChildren(QPointer<DataClass> data)
 {
+    // Claude Generated - Debug what's being added to children  
+    if (data) {
+        void* rawPtr = data.data();
+        AbstractModel* model = dynamic_cast<AbstractModel*>(static_cast<DataClass*>(rawPtr));
+        if (model) {
+            qDebug() << "🔍 DEBUG AddChildren: Adding model" << model->Name() << "Pointer:" << rawPtr << "CurrentSize:" << d->m_children.size();
+        } else {
+            qDebug() << "🔍 DEBUG AddChildren: Adding DataClass pointer:" << rawPtr << "CurrentSize:" << d->m_children.size();
+        }
+    } else {
+        qDebug() << "🔍 DEBUG AddChildren: Adding NULL pointer, CurrentSize:" << d->m_children.size();
+    }
+    
     d->m_children << data;
-    connect(data, &DataClass::Deleted, this, [this, data]() {
+    qDebug() << "🔍 DEBUG AddChildren: After adding, NewSize:" << d->m_children.size();
+    // Claude Generated - Safe child removal using raw pointer comparison
+    DataClass* rawPtrForSignal = data.data();
+    connect(data, &DataClass::Deleted, this, [this, rawPtrForSignal]() {
         // Claude Generated - Check if model is explicitly stored before removing
         // Only remove from children if it's not in our stored models collection
         bool isStoredModel = false;
-        if (data) {
-            AbstractModel* model = dynamic_cast<AbstractModel*>(data.data());
-            if (model && d->m_stored_models.contains(model->UUID())) {
-                qDebug() << "🔍 DEBUG AddChildren: Model" << model->Name() << "is stored explicitly, not removing from children";
-                isStoredModel = true;
-            }
+        AbstractModel* model = dynamic_cast<AbstractModel*>(rawPtrForSignal);
+        if (model && d->m_stored_models_by_pointer.contains(static_cast<void*>(model))) {
+            qDebug() << "🔍 DEBUG AddChildren: Model" << model->Name() << "is stored explicitly (pointer-based), not removing from children";
+            isStoredModel = true;
         }
         
         if (!isStoredModel) {
-            qDebug() << "🔍 DEBUG AddChildren: Removing child from m_children due to Deleted signal";
-            d->m_children.removeAll(data);
+            // qDebug() << "🔍 DEBUG AddChildren: Removing child from m_children due to Deleted signal";
+            // Safe removal using iterator to avoid QPointer issues during destruction
+            auto it = d->m_children.begin();
+            while (it != d->m_children.end()) {
+                if (it->data() == rawPtrForSignal) {
+                    it = d->m_children.erase(it);
+                    break;
+                } else {
+                    ++it;
+                }
+            }
         }
         
 #ifdef _DEBUG
@@ -739,13 +762,14 @@ void DataClass::addModel(QSharedPointer<AbstractModel> model)
         return;
     }
     
-    qDebug() << "🔍 DEBUG DataClass::addModel: Adding model" << model->Name() << "UUID:" << model->UUID();
+    qDebug() << "🔍 DEBUG DataClass::addModel: Adding model" << model->Name() << "ModelUUID:" << model->ModelUUID();
     
     // CRITICAL FIX: Store the QSharedPointer to maintain object lifetime - Claude Generated
-    // Add to internal model storage to prevent destruction
-    if (!d->m_stored_models.contains(model->UUID())) {
-        d->m_stored_models[model->UUID()] = model;
-        qDebug() << "🔍 DEBUG DataClass::addModel: Stored model in internal storage";
+    // Changed to pointer-based storage to handle multiple models with same ModelUUID
+    void* modelPtr = model.data();
+    if (!d->m_stored_models_by_pointer.contains(modelPtr)) {
+        d->m_stored_models_by_pointer[modelPtr] = model;
+        qDebug() << "🔍 DEBUG DataClass::addModel: Stored model by pointer in internal storage";
     }
     
     AddChildren(static_cast<DataClass*>(model.data()));

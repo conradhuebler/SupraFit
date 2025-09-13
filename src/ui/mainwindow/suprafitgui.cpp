@@ -1501,8 +1501,8 @@ QPair<int, int> SupraFitGui::UUID2Widget(const QModelIndex& index)
                 }
             }
         }
-    } else if (uuids.size() == 2) {
-        // Model selection (project|model) - find MainWindow and model tab
+    } else if (uuids.size() >= 3) {
+        // Model selection (project|modeltype|pointer) - find MainWindow and model tab
         if (m_project_windows.contains(projectId)) {
             QPointer<MainWindow> window = m_project_windows[projectId];
             if (window) {
@@ -1514,16 +1514,20 @@ QPair<int, int> SupraFitGui::UUID2Widget(const QModelIndex& index)
                     }
                 }
                 
-                // Find the model tab
-                QString modelId = uuids[1];
-                int modelCount = window->ModelCount();
-                for (int j = 0; j < modelCount; ++j) {
-                    auto model = window->Model(j);
-                    if (model && model->ModelUUID() == modelId) {
-                        tab = j;
-                        break;
-                    }
+                // Claude Generated - Find the model tab using child index + pointer-based lookup
+                int childIndex = uuids[1].toInt();
+                QString modelPointerStr = uuids[2];
+                // Handle "|forced" suffix in UUID if present (for duplicate pointer resolution)
+                if (uuids.size() > 3 && uuids[3] == "forced") {
+                    // Forced UUID due to duplicate pointer - still use same pointer but different child index
+                    qDebug() << "UUID2Widget: Handling forced UUID for child index" << childIndex;
                 }
+                void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+                
+                // Use child index differentiation for duplicate model instances
+                tab = window->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+                
+                qDebug() << "UUID2Widget: Looking for child index" << childIndex << "pointer" << modelPointerStr << "found tab" << tab;
             }
         }
     }
@@ -1548,48 +1552,77 @@ QPair<int, int> SupraFitGui::UUID2Widget(const QModelIndex& index)
 
 void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
 {
-    // Claude Generated - ProjectManager integration: Tree double-click with m_project_windows
-    // Note: UUID2Widget was used in legacy implementation but not needed in new UUID-based approach
-    // QPair<int, int> pair = UUID2Widget(index); TODO -> But the logic to set current widget via tree is important
-    // int widget = pair.first;
-    // int tab = pair.second;
+    // Claude Generated - Context-aware project/model navigation for double clicks with comprehensive debug logging
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Called with index valid:" << index.isValid();
     
-    // Get project UUID from index
-    QString uuidString = m_project_tree->UUID(index);
-    QStringList uuids = uuidString.split("|");
-    if (uuids.isEmpty()) {
+    if (!index.isValid()) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Invalid index, returning early";
         return;
     }
-    QString projectId = uuids[0];
     
-    qDebug() << "TreeDoubleClicked: projectId from getUuidString:" << projectId;
-    qDebug() << "TreeDoubleClicked: m_project_windows.keys():" << m_project_windows.keys();
+    QString uuidString = m_project_tree->UUID(index);
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: UUID string:" << uuidString;
+    
+    QStringList uuids = uuidString.split("|");
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: UUID parts:" << uuids.size() << uuids;
+    
+    if (uuids.isEmpty()) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Empty UUID list, returning";
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Project ID:" << projectId;
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Available project windows:" << m_project_windows.keys();
     
     // Validate project exists in our mapping
     if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Project not found in windows mapping";
         Warning(tr("Cannot open project - invalid selection"));
-        qDebug() << "TreeDoubleClicked: Project not found in m_project_windows";
         return;
     }
     
     MainWindow* mainWindow = m_project_windows[projectId];
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Found MainWindow for project" << projectId;
     
     // Add to stack widget if not already present
-    if (m_stack_widget->indexOf(mainWindow) == -1) {
+    int currentIndex = m_stack_widget->indexOf(mainWindow);
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: MainWindow stack index:" << currentIndex;
+    
+    if (currentIndex == -1) {
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Adding MainWindow to stack widget";
         m_stack_widget->addWidget(mainWindow);
+        currentIndex = m_stack_widget->indexOf(mainWindow);
+        qDebug() << "✅ DEBUG TreeDoubleClicked: Added MainWindow at index" << currentIndex;
     }
     
-    // Set as current widget
+    // Set as current widget (switch to this project)
     m_stack_widget->setCurrentWidget(mainWindow);
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Set current widget to project" << projectId;
     
-    // Set current tab if valid
-    // TODO CLaude: restore tab functionality 
-    /*if (tab >= 0) {
-        mainWindow->setCurrentTab(tab + 1);
-    }*/
+    // Check if this is a model double-click (has 3+ UUIDs: project_uuid|child_index|pointer_hex)
+    if (uuids.size() >= 3) {
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Model double-click detected, child index:" << childIndex << "pointer:" << modelPointer;
+        
+        // Claude Generated - Double click model focus using pointer + child index lookup for duplicate models
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Extracted child index:" << childIndex << "from UUID parts:" << uuids;
+        int tabIndex = mainWindow->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Found tab index:" << tabIndex;
+        
+        if (tabIndex != -1) {
+            mainWindow->getModelDataHolder()->setCurrentTab(tabIndex);
+            qDebug() << "✅ DEBUG TreeDoubleClicked: Focused model" << modelPointer << "at tab" << tabIndex << "in project" << projectId;
+        } else {
+            qDebug() << "❌ DEBUG TreeDoubleClicked: Could not find tab for model" << modelPointer;
+        }
+    } else {
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Project double-click detected";
+    }
     
     // Update project tree active index
-    // Find widget index for the active project in stack
     int widgetIndex = -1;
     for (int i = 0; i < m_stack_widget->count(); ++i) {
         if (m_stack_widget->widget(i) == mainWindow) {
@@ -1597,43 +1630,90 @@ void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
             break;
         }
     }
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Widget index in stack:" << widgetIndex;
     
     if (widgetIndex >= 0) {
         m_project_tree->setActiveIndex(widgetIndex);
+        qDebug() << "✅ DEBUG TreeDoubleClicked: Updated project tree active index to" << widgetIndex;
     }
     
-#ifdef DEBUG_ON
-    qDebug() << "TreeDoubleClicked: Opened project" << projectId << "widget index" << widgetIndex;
-#endif
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Completed processing for project" << projectId;
 }
 
 void SupraFitGui::TreeClicked(const QModelIndex& index)
 {
-    // Claude Generated - ProjectManager integration: Tree click with m_project_windows
-    // Note: UUID2Widget was used in legacy implementation but not needed in new UUID-based approach
-    // QPair<int, int> pair = UUID2Widget(index);
-    // int widget = pair.first;
-    // int tab = pair.second;
+    // Claude Generated - Context-aware project/model navigation for single clicks with comprehensive debug logging
+    qDebug() << "🔍 DEBUG TreeClicked: Called with index valid:" << index.isValid();
     
-    // Get project UUID from index
-    QString uuidString = m_project_tree->UUID(index);
-    QStringList uuids = uuidString.split("|");
-    if (uuids.isEmpty()) {
+    if (!index.isValid()) {
+        qDebug() << "❌ DEBUG TreeClicked: Invalid index, returning early";
         return;
     }
+    
+    QString uuidString = m_project_tree->UUID(index);
+    qDebug() << "🔍 DEBUG TreeClicked: UUID string:" << uuidString;
+    
+    QStringList uuids = uuidString.split("|");
+    qDebug() << "🔍 DEBUG TreeClicked: UUID parts:" << uuids.size() << uuids;
+    
+    if (uuids.isEmpty()) {
+        qDebug() << "❌ DEBUG TreeClicked: Empty UUID list, returning";
+        return;
+    }
+    
     QString projectId = uuids[0];
+    qDebug() << "🔍 DEBUG TreeClicked: Project ID:" << projectId;
+    qDebug() << "🔍 DEBUG TreeClicked: Available project windows:" << m_project_windows.keys();
     
     // Validate project exists in our mapping
     if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        qDebug() << "❌ DEBUG TreeClicked: Project not found in windows mapping, ignoring click";
         return; // Silently ignore invalid clicks (user might be exploring tree)
     }
     
     MainWindow* mainWindow = m_project_windows[projectId];
+    qDebug() << "✅ DEBUG TreeClicked: Found MainWindow for project" << projectId;
     
-    // Set this project as current in stack widget
-    m_stack_widget->setCurrentWidget(mainWindow);
+    // Check if this is a model click (has 3+ UUIDs: project_uuid|child_index|pointer_hex)
+    if (uuids.size() >= 3) {
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        qDebug() << "🔍 DEBUG TreeClicked: Model click detected, child index:" << childIndex << "pointer:" << modelPointer;
+        
+        // Claude Generated - Single click model focus: Only if it's the CURRENTLY ACTIVE project
+        MainWindow* currentActiveWindow = qobject_cast<MainWindow*>(m_stack_widget->currentWidget());
+        qDebug() << "🔍 DEBUG TreeClicked: Current active window:" << (currentActiveWindow ? "exists" : "null");
+        qDebug() << "🔍 DEBUG TreeClicked: Target window:" << (mainWindow ? "exists" : "null");
+        qDebug() << "🔍 DEBUG TreeClicked: Windows match:" << (currentActiveWindow == mainWindow);
+        
+        if (currentActiveWindow == mainWindow) {
+            qDebug() << "✅ DEBUG TreeClicked: Model belongs to active project, attempting to focus";
+            // This model belongs to the currently active project - focus it using child index
+            qDebug() << "🔍 DEBUG TreeClicked: Extracted child index:" << childIndex << "from UUID parts:" << uuids;
+            int tabIndex = mainWindow->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+            qDebug() << "🔍 DEBUG TreeClicked: Found tab index:" << tabIndex;
+            if (tabIndex != -1) {
+                mainWindow->getModelDataHolder()->setCurrentTab(tabIndex);
+                qDebug() << "✅ DEBUG TreeClicked: Focused model" << modelPointer << "at tab" << tabIndex << "in active project" << projectId;
+            } else {
+                qDebug() << "❌ DEBUG TreeClicked: Could not find tab for model" << modelPointer;
+            }
+        } else {
+            qDebug() << "🔍 DEBUG TreeClicked: Model belongs to inactive project, switching to project only";
+            // This model belongs to an inactive project - only switch to project, don't focus model
+            m_stack_widget->setCurrentWidget(mainWindow);
+            qDebug() << "✅ DEBUG TreeClicked: Switched to project" << projectId << "but model" << modelPointer << "requires double-click for focus";
+        }
+    } else {
+        qDebug() << "🔍 DEBUG TreeClicked: Project click detected";
+        // Project click - switch to this project and focus data tab (tab 0)
+        m_stack_widget->setCurrentWidget(mainWindow);
+        mainWindow->getModelDataHolder()->setCurrentTab(0); // Claude Generated - Focus data widget on project click
+        qDebug() << "✅ DEBUG TreeClicked: Switched to project" << projectId << "and focused data tab (tab 0)";
+    }
     
-    // Find widget index for the active project in stack
+    // Update project tree active index
     int widgetIndex = -1;
     for (int i = 0; i < m_stack_widget->count(); ++i) {
         if (m_stack_widget->widget(i) == mainWindow) {
@@ -1641,14 +1721,14 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
             break;
         }
     }
+    qDebug() << "🔍 DEBUG TreeClicked: Widget index in stack:" << widgetIndex;
     
     if (widgetIndex >= 0) {
         m_project_tree->setActiveIndex(widgetIndex);
+        qDebug() << "✅ DEBUG TreeClicked: Updated project tree active index to" << widgetIndex;
     }
     
-#ifdef DEBUG_ON
-    qDebug() << "TreeClicked: Selected project" << projectId << "widget index" << widgetIndex;
-#endif
+    qDebug() << "✅ DEBUG TreeClicked: Completed processing for project" << projectId;
 }
 
 void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
@@ -1682,15 +1762,18 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
     
     MainWindow* mainWindow = m_project_windows[projectId];
     
-    if (uuids.size() == 2) {
-        // Model/Tab removal - find and remove the specific model
-        QString modelId = uuids[1];
+    if (uuids.size() >= 3) {
+        // Model/Tab removal - find and remove the specific model using pointer (project_uuid|child_index|pointer_hex)
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
         int modelCount = mainWindow->ModelCount();
         int tabIndex = -1;
         
         for (int j = 0; j < modelCount; ++j) {
             auto model = mainWindow->Model(j);
-            if (model && model->ModelUUID() == modelId) {
+            if (model && reinterpret_cast<void*>(model.data()) == modelPointer) {
+                // Claude Generated - Match model by exact pointer address
                 tabIndex = j;
                 break;
             }
@@ -1698,9 +1781,9 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         
         if (tabIndex != -1) {
             mainWindow->RemoveTab(tabIndex + 1);  // +1 because RemoveTab expects 1-based index
-            qDebug() << "TreeRemoveRequest: Removed model" << modelId << "from project" << projectId;
+            qDebug() << "TreeRemoveRequest: Removed model" << modelPointer << "from project" << projectId;
         } else {
-            Warning(tr("Model not found for removal - UUID: %1").arg(modelId));
+            Warning(tr("Model not found for removal - Pointer: %1").arg(QString::number(reinterpret_cast<quintptr>(modelPointer), 16)));
         }
     } else {
         // Project removal - remove entire project
@@ -1818,15 +1901,18 @@ void SupraFitGui::SaveData(const QModelIndex& index)
     MainWindow* mainWindow = m_project_windows[projectId];
     QJsonObject object;
     
-    if (uuids.size() == 2) {
-        // Model/Tab save - find and save the specific model
-        QString modelId = uuids[1];
+    if (uuids.size() >= 3) {
+        // Model/Tab save - find and save the specific model using pointer
+        QString modelType = uuids[1];
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
         int modelCount = mainWindow->ModelCount();
         int tabIndex = -1;
         
         for (int j = 0; j < modelCount; ++j) {
             auto model = mainWindow->Model(j);
-            if (model && model->ModelUUID() == modelId) {
+            if (model && reinterpret_cast<void*>(model.data()) == modelPointer) {
+                // Claude Generated - Match model by exact pointer address
                 tabIndex = j;
                 break;
             }
@@ -1834,9 +1920,9 @@ void SupraFitGui::SaveData(const QModelIndex& index)
         
         if (tabIndex != -1) {
             object = mainWindow->SaveModel(tabIndex + 1);  // +1 because SaveModel expects 1-based index
-            qDebug() << "SaveData: Saved model" << modelId << "from project" << projectId;
+            qDebug() << "SaveData: Saved model" << modelPointer << "from project" << projectId;
         } else {
-            Warning(tr("Model not found for save - UUID: %1").arg(modelId));
+            Warning(tr("Model not found for save - Pointer: %1").arg(QString::number(reinterpret_cast<quintptr>(modelPointer), 16)));
             return;
         }
     } else {
