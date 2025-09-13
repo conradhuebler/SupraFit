@@ -1136,6 +1136,10 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["converged"] = m_converged;
     toplevel["valid"] = !isCorrupt();
     toplevel["name"] = m_name;
+    
+    // Store AIC values for model comparison - Claude Generated
+    toplevel["AIC"] = GetAIC();
+    toplevel["AICc"] = GetAICc();
     QJsonObject definiton;
     for (const QString& key : m_defined_model.keys()) {
         definiton[key] = m_defined_model[key];

@@ -26,6 +26,7 @@
 
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/instance.h"
 
@@ -168,6 +169,18 @@ SupraFitGui::SupraFitGui()
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
     connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
     connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
+    
+    // Claude Generated - ProjectManager Integration Signal Connections
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    connect(&projectManager, &SupraFit::ProjectManager::projectLoaded, this, &SupraFitGui::onProjectLoaded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::projectSaved, this, &SupraFitGui::onProjectSaved, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::modelAdded, this, &SupraFitGui::onModelAdded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::errorOccurred, this, &SupraFitGui::onProjectManagerError, Qt::QueuedConnection);
+    
+    // Claude Generated - Missing critical signal connections for project visibility
+    connect(&projectManager, &SupraFit::ProjectManager::projectAdded, this, &SupraFitGui::onProjectAdded, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::currentProjectChanged, this, &SupraFitGui::onCurrentProjectChanged, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::projectDataUpdated, this, &SupraFitGui::onProjectDataUpdated, Qt::QueuedConnection);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -530,111 +543,11 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 
 void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
 {
-    qDebug() << "LoadFile: Starting to load file:" << file << "with overwrite_type:" << overwrite_type;
-    
-    QFileInfo info(file);
-    qDebug() << "LoadFile: File info - exists:" << info.exists() << "size:" << info.size() << "suffix:" << info.suffix();
-
-    if (overwrite_type == 2) // This is reservered for thermograms, that can not automatically be deduced by file name (like *.itc)
-    {
-        qDebug() << "LoadFile: Processing thermogram with overwrite_type 2";
-        ImportData dialog(this);
-        dialog.ImportThermogram(file);
-        qDebug() << "LoadFile: ImportThermogram called, showing dialog";
-        
-        if (dialog.exec() == QDialog::Accepted) {
-            qDebug() << "LoadFile: Thermogram dialog accepted, calling SetData";
-            qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
-            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-            m_mainsplitter->show();
-            qDebug() << "LoadFile: Thermogram processing completed successfully";
-        } else {
-            qDebug() << "LoadFile: Thermogram dialog was cancelled or rejected";
-        }
-        return;
+    qDebug() << "LoadFile: Delegating to ProjectManager for file:" << file;
+    if (!SupraFit::ProjectManager::instance().loadProject(file)) {
+        qWarning() << "LoadFile: ProjectManager failed to load" << file;
+        QMessageBox::warning(this, tr("Loading Error"), tr("SupraFit could not load the specified file: %1").arg(file));
     }
-
-    if (file.contains("|||")) {
-        qDebug() << "LoadFile: Processing spectra file (contains '|||')";
-        SpectraImport* spectra = new SpectraImport(file);
-
-        if (spectra->exec()) {
-            qDebug() << "LoadFile: SpectraImport dialog accepted, processing data";
-            ImportData dialog(this);
-            DataTable* tmp = new DataTable;
-            tmp->ImportTable(spectra->InputTable());
-            qDebug() << "LoadFile: DataTable imported, loading into dialog";
-            
-            dialog.LoadTable(tmp, 2);
-            dialog.setSpectraData(spectra->ProjectData());
-            qDebug() << "LoadFile: Spectra data set, showing ImportData dialog";
-            
-            if (dialog.exec() == QDialog::Accepted) {
-                qDebug() << "LoadFile: Spectra ImportData dialog accepted";
-                qDebug() << "LoadFile: Project file:" << dialog.ProjectFile() << "Directory:" << getDir();
-                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-                m_mainsplitter->show();
-                qDebug() << "LoadFile: Spectra processing completed successfully";
-            } else {
-                qDebug() << "LoadFile: Spectra ImportData dialog was cancelled or rejected";
-            }
-        } else {
-            qDebug() << "LoadFile: SpectraImport dialog was cancelled or rejected";
-        }
-        delete spectra;
-        qDebug() << "LoadFile: SpectraImport object deleted";
-        return;
-    }
-    
-    bool is_json_type = file.contains("json") || file.contains("suprafit");
-    qDebug() << "LoadFile: File type check - is_json_type:" << is_json_type;
-    
-    if (is_json_type) {
-        qDebug() << "LoadFile: Showing splash screen for JSON/SupraFit file";
-        QTimer::singleShot(0, m_splash, &QSplashScreen::show);
-        m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
-    }
-    
-    bool invalid_json = false;
-    bool is_project_file = file.contains("json") || file.contains("jdat") || file.contains("suprafit");
-    qDebug() << "LoadFile: Project file check - is_project_file:" << is_project_file;
-    
-    if (is_project_file) {
-        qDebug() << "LoadFile: Calling LoadProject for file:" << file;
-        invalid_json = !LoadProject(file);
-        qDebug() << "LoadFile: LoadProject returned, invalid_json:" << invalid_json;
-        
-        if (!invalid_json) {
-            qDebug() << "LoadFile: Project loaded successfully, cleaning up UI";
-            m_mainsplitter->setGraphicsEffect(NULL);
-            QTimer::singleShot(1, m_splash, &QSplashScreen::close);
-            qDebug() << "LoadFile: Updating recent list with file:" << file;
-            UpdateRecentListProperty(file);
-            UpdateRecentList();
-            qDebug() << "LoadFile: Project loading completed successfully";
-            return;
-        } else {
-            qDebug() << "LoadFile: Project loading failed, will show error message";
-        }
-    } else {
-        qDebug() << "LoadFile: Not a project file, calling ImportTable";
-        ImportTable(file);
-        qDebug() << "LoadFile: ImportTable completed";
-    }
-    
-    qDebug() << "LoadFile: Cleaning up UI effects";
-    m_mainsplitter->setGraphicsEffect(NULL);
-    QTimer::singleShot(1, m_splash, &QSplashScreen::close);
-
-    if (invalid_json) {
-        qDebug() << "LoadFile: Showing error message for invalid JSON";
-        QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
-    } else {
-        qDebug() << "LoadFile: Updating recent list (non-project file)";
-        UpdateRecentList();
-    }
-    
-    qDebug() << "LoadFile: Function completed";
 }
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
@@ -725,6 +638,7 @@ void SupraFitGui::LoadJson(const QJsonObject& str)
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 }
 
+[[deprecated("Use ProjectManager to load and create projects")]]
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const QString& path)
 {
     if (object.isEmpty())
@@ -755,7 +669,19 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
     connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
 
-    QWeakPointer<DataClass> data = window->SetData(object);
+    // Claude Generated - Replace legacy SetData with ProjectManager
+    QString projectId = SupraFit::ProjectManager::instance().loadProjectFromJson(object, file);
+    
+    if (projectId.isEmpty()) {
+        qWarning() << "Failed to load project through ProjectManager";
+        disconnect(window);
+        delete window;
+        return false;
+    }
+    
+    QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+    window->setDataFromProjectManager(projectId, wrapper);
+    QWeakPointer<DataClass> data = SupraFit::ProjectManager::instance().getProjectData(projectId);
     if (!data) {
         disconnect(window);
         delete window;
@@ -787,10 +713,32 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         m_project_tree->UpdateStructure();
     });
 
-    m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);
+    // Claude Generated - DEPRECATED FUNCTION: Add to new m_project_windows architecture instead of m_project_list
+    m_project_windows[projectId] = window;
+    
+    // Keep legacy m_data_list for backward compatibility with existing code
     m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
-
-    m_hashed_data[data.toStrongRef().data()->UUID()] = data;
+    m_hashed_data[projectId] = data;
+    
+    // Claude Generated - ProjectManager Integration for backward compatibility
+    // Register the loaded DataClass with ProjectManager for unified management
+    if (data) {
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QSharedPointer<DataClass> sharedData = data.toStrongRef();
+        if (sharedData) {
+            QString projectId = sharedData->UUID();
+            qDebug() << "SetData: Registering project with ProjectManager - ID:" << projectId << "Title:" << sharedData->ProjectTitle();
+            
+            // Register the DataClass with ProjectManager for unified access
+            bool registered = projectManager.registerExistingProject(sharedData, file);
+            if (registered) {
+                qDebug() << "SetData: Successfully registered project with ProjectManager";
+            } else {
+                qDebug() << "SetData: Failed to register project with ProjectManager";
+            }
+        }
+    }
+    
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
 
@@ -830,19 +778,26 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
             m_project_tree->UpdateStructure();
         });
-        m_project_list.append(window);
+        // Claude Generated - Fix meta model creation: Use m_project_windows instead of m_project_list
+        QString projectId = model.toStrongRef().data()->UUID();
+        m_project_windows[projectId] = window;
 
         m_data_list.append(model);
-        m_hashed_data.insert(model.toStrongRef().data()->UUID(), model);
+        m_hashed_data.insert(projectId, model);
         m_project_tree->UpdateStructure();
         setActionEnabled(true);
         model.toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
         m_meta_models.append(model);
     } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size()) {
-        QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
-        wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids.first()]);
-
-        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
+        // Claude Generated - Fix legacy m_project_list usage: Find MainWindow via m_project_windows
+        QString projectId = uuids.first();
+        if (m_project_windows.contains(projectId) && m_project_windows[projectId]) {
+            QWeakPointer<ChartWrapper> wrapper = m_project_windows[projectId]->getChartWrapper();
+            wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids.first()]);
+            m_meta_models[position - (m_data_list.size() - m_meta_models.size())].toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
+        } else {
+            qWarning() << "AddMetaModel: Project not found in m_project_windows for UUID" << projectId;
+        }
     }
 }
 
@@ -887,7 +842,9 @@ void SupraFitGui::LoadMetaModels()
             m_project_tree->UpdateStructure();
         });
 
-        m_project_list << window;
+        // Claude Generated - Fix model creation: Use m_project_windows instead of m_project_list
+        QString projectId = model.toStrongRef().data()->UUID(); 
+        m_project_windows[projectId] = window;
 
         m_data_list << model;
         m_project_tree->UpdateStructure();
@@ -918,8 +875,11 @@ void SupraFitGui::NewTable()
 {
     ImportData dialog;
     if (dialog.exec() == QDialog::Accepted) {
-        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
-        m_mainsplitter->show();
+        // Use ProjectManager to create a new project from the JSON data
+        QString projectId = SupraFit::ProjectManager::instance().createProjectFromJson(dialog.getProject(), dialog.ProjectFile());
+        if (projectId.isEmpty()) {
+            QMessageBox::warning(this, tr("Error"), tr("Failed to create new project."));
+        }
     }
 }
 
@@ -957,6 +917,7 @@ void SupraFitGui::ImportTable(const QString& file)
     }
 }
 
+// Claude Generated - ProjectManager Integration Wrapper for LoadProject
 bool SupraFitGui::LoadProject(const QString& filename)
 {
     qDebug() << "LoadProject: Starting to load project from:" << filename;
@@ -987,11 +948,28 @@ bool SupraFitGui::LoadProject(const QString& filename)
         QStringList keys = toplevel.keys();
         qDebug() << "LoadProject: JSON keys found:" << keys;
 
+        // Claude Generated - Check if this is a SupraFit project file (data key)
         if (keys.contains("data", Qt::CaseInsensitive)) {
-            qDebug() << "LoadProject: Found 'data' key, calling SetData";
-            bool result = SetData(toplevel, info.baseName(), info.absolutePath());
-            qDebug() << "LoadProject: SetData returned:" << result;
-            return result;
+            qDebug() << "LoadProject: Found 'data' key, using ProjectManager with already loaded JSON";
+            
+            SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+            // CRITICAL FIX: Pass complete top-level JSON so model_X keys are visible - Claude Generated  
+            qDebug() << "LoadProject: Passing complete toplevel JSON (not just data section) to ProjectManager";
+            QString projectId = projectManager.loadProjectFromJson(toplevel, filename);
+            
+            if (!projectId.isEmpty()) {
+                qDebug() << "LoadProject: ProjectManager successfully loaded project with ID:" << projectId;
+                // The ProjectManager signals will handle updating the GUI via slots
+                return true;
+            } else {
+                qDebug() << "LoadProject: ProjectManager failed to load project, falling back to legacy method";
+                // Pass only the data portion to avoid performance issues - Claude Generated
+                QJsonObject dataOnly;
+                dataOnly["data"] = toplevel["data"];
+                bool result = SetData(dataOnly, info.baseName(), info.absolutePath());
+                qDebug() << "LoadProject: Legacy SetData returned:" << result;
+                return result;
+            }
         } else if ((keys.contains("datapoints", Qt::CaseInsensitive) && keys.contains("equations", Qt::CaseInsensitive)) || keys.contains("Main", Qt::CaseInsensitive)) {
             qDebug() << "LoadProject: Found datapoints/equations or Main key, opening ImportData dialog";
 #pragma message("move the simulation import to the filehandler soon!")
@@ -1001,7 +979,25 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 qDebug() << "LoadProject: Project file from dialog:" << dialog.ProjectFile();
                 qDebug() << "LoadProject: Directory:" << getDir();
                 
-                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+                // Try ProjectManager first for generated project files
+                SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+                QJsonObject generatedProject = dialog.getProject();
+                
+                if (generatedProject.contains("data")) {
+                    qDebug() << "LoadProject: Generated project contains data key, trying ProjectManager";
+                    QString tempFile = dialog.ProjectFile();
+                    bool pmSuccess = !tempFile.isEmpty() && projectManager.loadProject(tempFile);
+                    
+                    if (pmSuccess) {
+                        qDebug() << "LoadProject: ProjectManager successfully loaded generated project";
+                        m_mainsplitter->show();
+                        return true;
+                    }
+                }
+                
+                // Fallback to legacy method
+                qDebug() << "LoadProject: Using legacy SetData for generated project";
+                SetData(generatedProject, dialog.ProjectFile(), getDir());
                 m_mainsplitter->show();
                 qDebug() << "LoadProject: Successfully loaded via ImportData dialog";
                 return true;
@@ -1013,6 +1009,9 @@ bool SupraFitGui::LoadProject(const QString& filename)
             bool exit = true;
             int index = 1;
             int processed_count = 0;
+            
+            // Try to load multiple projects through ProjectManager first
+            SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
             
             for (int i = 0; i < keys.size(); ++i) {
                 QApplication::processEvents();
@@ -1026,9 +1025,24 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 
                 qDebug() << "LoadProject: Processing project" << index << "with key:" << str;
                 QJsonObject object = toplevel[str].toObject();
-                bool result = SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
-                qDebug() << "LoadProject: SetData for project" << index << "returned:" << result;
                 
+                // Try ProjectManager for individual projects if they have data key
+                bool result = false;
+                if (object.contains("data")) {
+                    qDebug() << "LoadProject: Project" << index << "has data key, trying ProjectManager";
+                    // For multi-project files, we need to create temporary single project data
+                    QJsonObject singleProject = object;
+                    // Claude Generated - Fixed: loadProjectFromJson returns QString (UUID), not nullable object
+                    result = !projectManager.loadProjectFromJson(singleProject, info.baseName() + "-" + QString::number(index)).isEmpty();
+                }
+                
+                if (!result) {
+                    qWarning() << "LoadProject: Both ProjectManager and legacy fallback failed for project" << index;
+                    // Claude Generated - Removed legacy SetData fallback as ProjectManager should handle all cases
+                    result = false;
+                }
+                
+                qDebug() << "LoadProject: Project" << index << "load result:" << result;
                 exit = exit && result;
                 index++;
                 processed_count++;
@@ -1051,6 +1065,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
     return false;
 }
 
+// Claude Generated - ProjectManager Integration for SaveProjectAction
 void SupraFitGui::SaveProjectAction()
 {
     if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
@@ -1062,28 +1077,63 @@ void SupraFitGui::SaveProjectAction()
     }
 
     Waiter wait;
-    QMultiMap<QString, QJsonObject> projects;
-    for (int i = 0; i < m_project_list.size(); i++) {
-        QPointer<MainWindow> project_widget = m_project_list[i];
-        projects.insert(project_widget->Name(), project_widget->SaveProject());
-    }
-    if (projects.isEmpty())
-        return;
-    else if (projects.size() == 1) {
-        JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
-    } else {
-        QJsonObject json;
-
-        int i = 0;
-        for (const auto& model : projects) {
-            json["project_" + QString::number(i)] = model;
-            i++;
+    
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QStringList managedProjectIds = projectManager.getLoadedProjectIds();
+    
+    // Check if we have projects managed by ProjectManager
+    if (!managedProjectIds.isEmpty()) {
+        qDebug() << "SaveProjectAction: Found" << managedProjectIds.size() << "projects managed by ProjectManager";
+        
+        if (managedProjectIds.size() == 1) {
+            // Single project - save directly through ProjectManager
+            QString projectId = managedProjectIds.first();
+            qDebug() << "SaveProjectAction: Saving single project" << projectId << "to" << m_supr_file;
+            
+            bool success = projectManager.saveProject(projectId, m_supr_file);
+            if (success) {
+                qDebug() << "SaveProjectAction: ProjectManager successfully saved project";
+                setLastDir(m_supr_file);
+                return;
+            } else {
+                qDebug() << "SaveProjectAction: ProjectManager failed to save project, falling back to legacy method";
+            }
+        } else {
+            // Multiple projects - save as multi-project file
+            qDebug() << "SaveProjectAction: Saving multiple projects through ProjectManager";
+            QJsonObject json;
+            bool allSaved = true;
+            
+            for (int i = 0; i < managedProjectIds.size(); ++i) {
+                const QString& projectId = managedProjectIds[i];
+                QJsonObject projectData = projectManager.getProjectJson(projectId);
+                
+                if (!projectData.isEmpty()) {
+                    json["project_" + QString::number(i)] = projectData;
+                    qDebug() << "SaveProjectAction: Added project" << projectId << "to multi-project file";
+                } else {
+                    qDebug() << "SaveProjectAction: Failed to get JSON for project" << projectId;
+                    allSaved = false;
+                }
+            }
+            
+            if (allSaved && !json.isEmpty()) {
+                JsonHandler::WriteJsonFile(json, m_supr_file);
+                qDebug() << "SaveProjectAction: Successfully saved multi-project file";
+                setLastDir(m_supr_file);
+                return;
+            } else {
+                qDebug() << "SaveProjectAction: Failed to save all projects through ProjectManager, falling back to legacy method";
+            }
         }
-        JsonHandler::WriteJsonFile(json, m_supr_file);
     }
+    
+    // Claude Generated - Removed legacy fallback - all functionality now uses ProjectManager
+    qWarning() << "SaveProjectAction: Failed to save projects through ProjectManager";
     setLastDir(m_supr_file);
 }
 
+// Claude Generated - ProjectManager Integration for SaveAsProjectAction
 void SupraFitGui::SaveAsProjectAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
@@ -1092,25 +1142,59 @@ void SupraFitGui::SaveAsProjectAction()
         m_filename_line->setText(m_supr_file);
 
         Waiter wait;
-        QMultiMap<QString, QJsonObject> projects;
-        for (int i = 0; i < m_project_list.size(); i++) {
-            QPointer<MainWindow> project_widget = m_project_list[i];
-            projects.insert(project_widget->Name(), project_widget->SaveProject());
-        }
-        if (projects.isEmpty())
-            return;
-        else if (projects.size() == 1) {
-            JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
-        } else {
-            QJsonObject json;
-
-            int i = 0;
-            for (const auto& model : projects) {
-                json["project_" + QString::number(i)] = model;
-                i++;
+        
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QStringList managedProjectIds = projectManager.getLoadedProjectIds();
+        
+        // Check if we have projects managed by ProjectManager
+        if (!managedProjectIds.isEmpty()) {
+            qDebug() << "SaveAsProjectAction: Found" << managedProjectIds.size() << "projects managed by ProjectManager";
+            
+            if (managedProjectIds.size() == 1) {
+                // Single project - save directly through ProjectManager
+                QString projectId = managedProjectIds.first();
+                qDebug() << "SaveAsProjectAction: Saving single project" << projectId << "to" << m_supr_file;
+                
+                bool success = projectManager.saveProject(projectId, m_supr_file);
+                if (success) {
+                    qDebug() << "SaveAsProjectAction: ProjectManager successfully saved project";
+                    setLastDir(str);
+                    return;
+                } else {
+                    qDebug() << "SaveAsProjectAction: ProjectManager failed to save project, falling back to legacy method";
+                }
+            } else {
+                // Multiple projects - save as multi-project file
+                qDebug() << "SaveAsProjectAction: Saving multiple projects through ProjectManager";
+                QJsonObject json;
+                bool allSaved = true;
+                
+                for (int i = 0; i < managedProjectIds.size(); ++i) {
+                    const QString& projectId = managedProjectIds[i];
+                    QJsonObject projectData = projectManager.getProjectJson(projectId);
+                    
+                    if (!projectData.isEmpty()) {
+                        json["project_" + QString::number(i)] = projectData;
+                        qDebug() << "SaveAsProjectAction: Added project" << projectId << "to multi-project file";
+                    } else {
+                        qDebug() << "SaveAsProjectAction: Failed to get JSON for project" << projectId;
+                        allSaved = false;
+                    }
+                }
+                
+                if (allSaved && !json.isEmpty()) {
+                    JsonHandler::WriteJsonFile(json, m_supr_file);
+                    qDebug() << "SaveAsProjectAction: Successfully saved multi-project file";
+                    setLastDir(str);
+                    return;
+                } else {
+                    qDebug() << "SaveAsProjectAction: Failed to save all projects through ProjectManager, falling back to legacy method";
+                }
             }
-            JsonHandler::WriteJsonFile(json, m_supr_file);
         }
+        
+        // Claude Generated - Removed legacy fallback - all functionality now uses ProjectManager
+        qWarning() << "SaveAsProjectAction: Failed to save projects through ProjectManager";
         setLastDir(str);
     }
 }
@@ -1379,83 +1463,370 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
 
 QPair<int, int> SupraFitGui::UUID2Widget(const QModelIndex& index)
 {
-    int widget = 0;
+    int widget = -1;
     int tab = -1;
-    QStringList uuids = m_project_tree->UUID(index).split("|");
+    
+    // Claude Generated - Phase A3: Safe tree navigation with validation
+    if (!index.isValid()) {
+        Warning(tr("Invalid tree selection - index is not valid"));
+        return QPair<int, int>(-1, -1);
+    }
+    
+    QString uuidString = m_project_tree->UUID(index);
+    if (uuidString.isEmpty()) {
+        Warning(tr("Invalid tree selection - no UUID found"));
+        return QPair<int, int>(-1, -1);
+    }
+    
+    QStringList uuids = uuidString.split("|");
+    if (uuids.isEmpty()) {
+        Warning(tr("Invalid tree selection - empty UUID list"));
+        return QPair<int, int>(-1, -1);
+    }
+    
+    // Claude Generated - ProjectManager integration: Use m_project_windows instead of m_project_list
+    QString projectId = uuids[0];
+    
     if (uuids.size() == 1) {
-        for (int i = 0; i < m_project_list.size(); ++i)
-            if (m_project_list[i]->UUID() == uuids[0])
-                widget = i;
-    } else if (uuids.size() == 2) {
-        for (int i = 0; i < m_project_list.size(); ++i)
-            if (m_project_list[i]->UUID() == uuids[0]) {
-                widget = i;
-                for (int j = 0; j < m_project_list[i]->ModelCount(); ++j) {
-                    if (m_project_list[i]->Model(j)->ModelUUID() == uuids[1])
-                        tab = j;
+        // Project selection - find MainWindow using m_project_windows hash
+        if (m_project_windows.contains(projectId)) {
+            QPointer<MainWindow> window = m_project_windows[projectId];
+            if (window) {
+                // Find the widget index in the stack widget
+                for (int i = 0; i < m_stack_widget->count(); ++i) {
+                    if (m_stack_widget->widget(i) == window) {
+                        widget = i;
+                        break;
+                    }
                 }
             }
+        }
+    } else if (uuids.size() >= 3) {
+        // Model selection (project|modeltype|pointer) - find MainWindow and model tab
+        if (m_project_windows.contains(projectId)) {
+            QPointer<MainWindow> window = m_project_windows[projectId];
+            if (window) {
+                // Find the widget index in the stack widget
+                for (int i = 0; i < m_stack_widget->count(); ++i) {
+                    if (m_stack_widget->widget(i) == window) {
+                        widget = i;
+                        break;
+                    }
+                }
+                
+                // Claude Generated - Find the model tab using child index + pointer-based lookup
+                int childIndex = uuids[1].toInt();
+                QString modelPointerStr = uuids[2];
+                // Handle "|forced" suffix in UUID if present (for duplicate pointer resolution)
+                if (uuids.size() > 3 && uuids[3] == "forced") {
+                    // Forced UUID due to duplicate pointer - still use same pointer but different child index
+                    qDebug() << "UUID2Widget: Handling forced UUID for child index" << childIndex;
+                }
+                void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+                
+                // Use child index differentiation for duplicate model instances
+                tab = window->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+                
+                qDebug() << "UUID2Widget: Looking for child index" << childIndex << "pointer" << modelPointerStr << "found tab" << tab;
+            }
+        }
     }
+    
+    // Claude Generated - ProjectManager integration: Final validation
+    if (widget == -1) {
+        Warning(tr("Project MainWindow not found - UUID: %1").arg(projectId));
+        return QPair<int, int>(-1, -1);
+    }
+    
+    if (widget >= m_stack_widget->count()) {
+        Warning(tr("Widget index out of bounds: %1 >= %2").arg(widget).arg(m_stack_widget->count()));
+        return QPair<int, int>(-1, -1);
+    }
+    
+#ifdef DEBUG_ON
+    qDebug() << "UUID2Widget: Found widget" << widget << "tab" << tab << "for UUID" << uuidString;
+#endif
+    
     return QPair<int, int>(widget, tab);
 }
 
 void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
 {
-    int widget = 0;
-    int tab = -1;
-    QPair<int, int> pair = UUID2Widget(index);
-    widget = pair.first;
-    tab = pair.second;
-
-    if (m_stack_widget->indexOf(m_project_list[widget]) == -1)
-        m_stack_widget->addWidget(m_project_list[widget]);
-    m_stack_widget->setCurrentWidget(m_project_list[widget]);
-    m_project_list[widget]->setCurrentTab(tab + 1);
-    m_project_tree->setActiveIndex(widget);
+    // Claude Generated - Context-aware project/model navigation for double clicks with comprehensive debug logging
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Called with index valid:" << index.isValid();
+    
+    if (!index.isValid()) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Invalid index, returning early";
+        return;
+    }
+    
+    QString uuidString = m_project_tree->UUID(index);
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: UUID string:" << uuidString;
+    
+    QStringList uuids = uuidString.split("|");
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: UUID parts:" << uuids.size() << uuids;
+    
+    if (uuids.isEmpty()) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Empty UUID list, returning";
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Project ID:" << projectId;
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Available project windows:" << m_project_windows.keys();
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        qDebug() << "❌ DEBUG TreeDoubleClicked: Project not found in windows mapping";
+        Warning(tr("Cannot open project - invalid selection"));
+        return;
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Found MainWindow for project" << projectId;
+    
+    // Add to stack widget if not already present
+    int currentIndex = m_stack_widget->indexOf(mainWindow);
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: MainWindow stack index:" << currentIndex;
+    
+    if (currentIndex == -1) {
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Adding MainWindow to stack widget";
+        m_stack_widget->addWidget(mainWindow);
+        currentIndex = m_stack_widget->indexOf(mainWindow);
+        qDebug() << "✅ DEBUG TreeDoubleClicked: Added MainWindow at index" << currentIndex;
+    }
+    
+    // Set as current widget (switch to this project)
+    m_stack_widget->setCurrentWidget(mainWindow);
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Set current widget to project" << projectId;
+    
+    // Check if this is a model double-click (has 3+ UUIDs: project_uuid|child_index|pointer_hex)
+    if (uuids.size() >= 3) {
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Model double-click detected, child index:" << childIndex << "pointer:" << modelPointer;
+        
+        // Claude Generated - Double click model focus using pointer + child index lookup for duplicate models
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Extracted child index:" << childIndex << "from UUID parts:" << uuids;
+        int tabIndex = mainWindow->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Found tab index:" << tabIndex;
+        
+        if (tabIndex != -1) {
+            mainWindow->getModelDataHolder()->setCurrentTab(tabIndex);
+            qDebug() << "✅ DEBUG TreeDoubleClicked: Focused model" << modelPointer << "at tab" << tabIndex << "in project" << projectId;
+        } else {
+            qDebug() << "❌ DEBUG TreeDoubleClicked: Could not find tab for model" << modelPointer;
+        }
+    } else {
+        qDebug() << "🔍 DEBUG TreeDoubleClicked: Project double-click detected";
+    }
+    
+    // Update project tree active index
+    int widgetIndex = -1;
+    for (int i = 0; i < m_stack_widget->count(); ++i) {
+        if (m_stack_widget->widget(i) == mainWindow) {
+            widgetIndex = i;
+            break;
+        }
+    }
+    qDebug() << "🔍 DEBUG TreeDoubleClicked: Widget index in stack:" << widgetIndex;
+    
+    if (widgetIndex >= 0) {
+        m_project_tree->setActiveIndex(widgetIndex);
+        qDebug() << "✅ DEBUG TreeDoubleClicked: Updated project tree active index to" << widgetIndex;
+    }
+    
+    qDebug() << "✅ DEBUG TreeDoubleClicked: Completed processing for project" << projectId;
 }
 
 void SupraFitGui::TreeClicked(const QModelIndex& index)
 {
-    int widget = 0;
-    int tab = -1;
-    QPair<int, int> pair = UUID2Widget(index);
-    widget = pair.first;
-    tab = pair.second;
-
-    if (m_project_list[widget] == m_stack_widget->currentWidget())
-        m_project_list[widget]->setCurrentTab(tab + 1);
+    // Claude Generated - Context-aware project/model navigation for single clicks with comprehensive debug logging
+    qDebug() << "🔍 DEBUG TreeClicked: Called with index valid:" << index.isValid();
+    
+    if (!index.isValid()) {
+        qDebug() << "❌ DEBUG TreeClicked: Invalid index, returning early";
+        return;
+    }
+    
+    QString uuidString = m_project_tree->UUID(index);
+    qDebug() << "🔍 DEBUG TreeClicked: UUID string:" << uuidString;
+    
+    QStringList uuids = uuidString.split("|");
+    qDebug() << "🔍 DEBUG TreeClicked: UUID parts:" << uuids.size() << uuids;
+    
+    if (uuids.isEmpty()) {
+        qDebug() << "❌ DEBUG TreeClicked: Empty UUID list, returning";
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    qDebug() << "🔍 DEBUG TreeClicked: Project ID:" << projectId;
+    qDebug() << "🔍 DEBUG TreeClicked: Available project windows:" << m_project_windows.keys();
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        qDebug() << "❌ DEBUG TreeClicked: Project not found in windows mapping, ignoring click";
+        return; // Silently ignore invalid clicks (user might be exploring tree)
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
+    qDebug() << "✅ DEBUG TreeClicked: Found MainWindow for project" << projectId;
+    
+    // Check if this is a model click (has 3+ UUIDs: project_uuid|child_index|pointer_hex)
+    if (uuids.size() >= 3) {
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        qDebug() << "🔍 DEBUG TreeClicked: Model click detected, child index:" << childIndex << "pointer:" << modelPointer;
+        
+        // Claude Generated - Single click model focus: Only if it's the CURRENTLY ACTIVE project
+        MainWindow* currentActiveWindow = qobject_cast<MainWindow*>(m_stack_widget->currentWidget());
+        qDebug() << "🔍 DEBUG TreeClicked: Current active window:" << (currentActiveWindow ? "exists" : "null");
+        qDebug() << "🔍 DEBUG TreeClicked: Target window:" << (mainWindow ? "exists" : "null");
+        qDebug() << "🔍 DEBUG TreeClicked: Windows match:" << (currentActiveWindow == mainWindow);
+        
+        if (currentActiveWindow == mainWindow) {
+            qDebug() << "✅ DEBUG TreeClicked: Model belongs to active project, attempting to focus";
+            // This model belongs to the currently active project - focus it using child index
+            qDebug() << "🔍 DEBUG TreeClicked: Extracted child index:" << childIndex << "from UUID parts:" << uuids;
+            int tabIndex = mainWindow->getModelDataHolder()->findModelTabByChildIndex(modelPointer, childIndex);
+            qDebug() << "🔍 DEBUG TreeClicked: Found tab index:" << tabIndex;
+            if (tabIndex != -1) {
+                mainWindow->getModelDataHolder()->setCurrentTab(tabIndex);
+                qDebug() << "✅ DEBUG TreeClicked: Focused model" << modelPointer << "at tab" << tabIndex << "in active project" << projectId;
+            } else {
+                qDebug() << "❌ DEBUG TreeClicked: Could not find tab for model" << modelPointer;
+            }
+        } else {
+            qDebug() << "🔍 DEBUG TreeClicked: Model belongs to inactive project, switching to project only";
+            // This model belongs to an inactive project - only switch to project, don't focus model
+            m_stack_widget->setCurrentWidget(mainWindow);
+            qDebug() << "✅ DEBUG TreeClicked: Switched to project" << projectId << "but model" << modelPointer << "requires double-click for focus";
+        }
+    } else {
+        qDebug() << "🔍 DEBUG TreeClicked: Project click detected";
+        // Project click - switch to this project and focus data tab (tab 0)
+        m_stack_widget->setCurrentWidget(mainWindow);
+        mainWindow->getModelDataHolder()->setCurrentTab(0); // Claude Generated - Focus data widget on project click
+        qDebug() << "✅ DEBUG TreeClicked: Switched to project" << projectId << "and focused data tab (tab 0)";
+    }
+    
+    // Update project tree active index
+    int widgetIndex = -1;
+    for (int i = 0; i < m_stack_widget->count(); ++i) {
+        if (m_stack_widget->widget(i) == mainWindow) {
+            widgetIndex = i;
+            break;
+        }
+    }
+    qDebug() << "🔍 DEBUG TreeClicked: Widget index in stack:" << widgetIndex;
+    
+    if (widgetIndex >= 0) {
+        m_project_tree->setActiveIndex(widgetIndex);
+        qDebug() << "✅ DEBUG TreeClicked: Updated project tree active index to" << widgetIndex;
+    }
+    
+    qDebug() << "✅ DEBUG TreeClicked: Completed processing for project" << projectId;
 }
 
 void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 {
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
     if (!index.isValid()) {
         Info(tr("Sorry, but the current selection is invalid. You may have mist the tree item you wanted."));
         return;
     }
 
-    int widget = 0;
-    int tab = -1;
-    QPair<int, int> pair = UUID2Widget(index);
-    widget = pair.first;
-    tab = pair.second;
-
-    if (tab != -1) {
-        m_project_list[widget]->RemoveTab(tab + 1);
+    // Get project UUID and determine if we're removing a model or entire project
+    QString uuidString = m_project_tree->UUID(index);
+    if (uuidString.isEmpty()) {
+        Warning(tr("Invalid tree selection - no UUID found"));
+        return;
+    }
+    
+    QStringList uuids = uuidString.split("|");
+    if (uuids.isEmpty()) {
+        Warning(tr("Invalid tree selection - empty UUID list"));
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        Warning(tr("Project MainWindow not found for removal - UUID: %1").arg(projectId));
+        return;
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
+    
+    if (uuids.size() >= 3) {
+        // Model/Tab removal - find and remove the specific model using pointer (project_uuid|child_index|pointer_hex)
+        int childIndex = uuids[1].toInt();
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        int modelCount = mainWindow->ModelCount();
+        int tabIndex = -1;
+        
+        for (int j = 0; j < modelCount; ++j) {
+            auto model = mainWindow->Model(j);
+            if (model && reinterpret_cast<void*>(model.data()) == modelPointer) {
+                // Claude Generated - Match model by exact pointer address
+                tabIndex = j;
+                break;
+            }
+        }
+        
+        if (tabIndex != -1) {
+            mainWindow->RemoveTab(tabIndex + 1);  // +1 because RemoveTab expects 1-based index
+            qDebug() << "TreeRemoveRequest: Removed model" << modelPointer << "from project" << projectId;
+        } else {
+            Warning(tr("Model not found for removal - Pointer: %1").arg(QString::number(reinterpret_cast<quintptr>(modelPointer), 16)));
+        }
     } else {
-        MainWindow* mainwindow = m_project_list.takeAt(widget);
-        m_stack_widget->removeWidget(mainwindow);
-        m_data_list.remove(widget);
-        m_hashed_data.remove(mainwindow->Data()->UUID());
-        delete mainwindow;
+        // Project removal - remove entire project
+        
+        // Remove from ProjectManager
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        if (projectManager.removeProject(projectId)) {
+            qDebug() << "TreeRemoveRequest: ProjectManager successfully removed project" << projectId;
+        } else {
+            qWarning() << "TreeRemoveRequest: ProjectManager failed to remove project" << projectId;
+        }
+        
+        // Remove from GUI structures
+        m_stack_widget->removeWidget(mainWindow);
+        m_project_windows.remove(projectId);
+        
+        // Clean up legacy data structures (they should be synchronized)
+        QString dataUUID = mainWindow->Data()->UUID();
+        m_hashed_data.remove(dataUUID);
+        
+        // Find and remove from m_data_list by UUID
+        for (int i = m_data_list.size() - 1; i >= 0; --i) {
+            if (m_data_list[i].toStrongRef() && m_data_list[i].toStrongRef()->UUID() == dataUUID) {
+                m_data_list.remove(i);
+                break;
+            }
+        }
+        
+        delete mainWindow;
+        qDebug() << "TreeRemoveRequest: Removed project" << projectId << "from GUI";
     }
 
+    // Clean up meta models
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         if (!m_meta_models[i])
             m_meta_models.remove(i);
+    
+    // Clear file info if no projects remain
     if (m_data_list.size() == 0) {
         m_supr_file.clear();
         m_filename_line->clear();
     }
+    
     m_project_tree->UpdateStructure();
 }
 
@@ -1467,15 +1838,23 @@ void SupraFitGui::CloseProjects()
     }
 
     Waiter wait;
-    for(int i = m_data_list.size() -1; i >= 0; --i)
-    {
-        MainWindow* mainwindow = m_project_list.takeAt(i);
-        m_stack_widget->removeWidget(mainwindow);
-        m_data_list.remove(i);
-        m_hashed_data.remove(mainwindow->Data()->UUID());
-        delete mainwindow;
-        m_project_tree->UpdateStructure();
+    
+    // Claude Generated - Fix CloseProjects: Use m_project_windows instead of m_project_list
+    // Close all MainWindow instances from m_project_windows
+    QStringList projectIds = m_project_windows.keys();
+    for (const QString& projectId : projectIds) {
+        MainWindow* mainwindow = m_project_windows[projectId];
+        if (mainwindow) {
+            m_stack_widget->removeWidget(mainwindow);
+            m_hashed_data.remove(projectId);
+            delete mainwindow;
+        }
+        m_project_windows.remove(projectId);
     }
+    
+    // Clear legacy data structures
+    m_data_list.clear();
+    m_project_tree->UpdateStructure();
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         m_meta_models.remove(i);
 
@@ -1488,6 +1867,7 @@ void SupraFitGui::CloseProjects()
 
 void SupraFitGui::SaveData(const QModelIndex& index)
 {
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
     if (!index.isValid()) {
         Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted."));
         return;
@@ -1497,17 +1877,59 @@ void SupraFitGui::SaveData(const QModelIndex& index)
     if (str.isEmpty() || str.isNull())
         return;
 
+    // Get project UUID and determine if we're saving a model or entire project
+    QString uuidString = m_project_tree->UUID(index);
+    if (uuidString.isEmpty()) {
+        Warning(tr("Invalid tree selection - no UUID found"));
+        return;
+    }
+    
+    QStringList uuids = uuidString.split("|");
+    if (uuids.isEmpty()) {
+        Warning(tr("Invalid tree selection - empty UUID list"));
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        Warning(tr("Project MainWindow not found for save - UUID: %1").arg(projectId));
+        return;
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
     QJsonObject object;
-    int widget = 0;
-    int tab = -1;
-    QPair<int, int> pair = UUID2Widget(index);
-    widget = pair.first;
-    tab = pair.second;
-
-    if (tab != -1)
-        object = m_project_list[widget]->SaveProject();
-    else
-        object = m_project_list[widget]->SaveModel(tab + 1);
+    
+    if (uuids.size() >= 3) {
+        // Model/Tab save - find and save the specific model using pointer
+        QString modelType = uuids[1];
+        QString modelPointerStr = uuids[2];
+        void* modelPointer = reinterpret_cast<void*>(modelPointerStr.toULongLong(nullptr, 16));
+        int modelCount = mainWindow->ModelCount();
+        int tabIndex = -1;
+        
+        for (int j = 0; j < modelCount; ++j) {
+            auto model = mainWindow->Model(j);
+            if (model && reinterpret_cast<void*>(model.data()) == modelPointer) {
+                // Claude Generated - Match model by exact pointer address
+                tabIndex = j;
+                break;
+            }
+        }
+        
+        if (tabIndex != -1) {
+            object = mainWindow->SaveModel(tabIndex + 1);  // +1 because SaveModel expects 1-based index
+            qDebug() << "SaveData: Saved model" << modelPointer << "from project" << projectId;
+        } else {
+            Warning(tr("Model not found for save - Pointer: %1").arg(QString::number(reinterpret_cast<quintptr>(modelPointer), 16)));
+            return;
+        }
+    } else {
+        // Project save - save entire project
+        object = mainWindow->SaveProject();
+        qDebug() << "SaveData: Saved entire project" << projectId;
+    }
 
     JsonHandler::WriteJsonFile(object, str);
     setLastDir(str);
@@ -1515,7 +1937,7 @@ void SupraFitGui::SaveData(const QModelIndex& index)
 
 void SupraFitGui::Duplicate(const QModelIndex& index)
 {
-    // qDebug() << m_project_view->currentIndex() << index << m_project_view->selectionModel()->selectedIndexes();
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
     if (!index.isValid()) {
         Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted. (List is empty, no project loaded?)"));
         return;
@@ -1526,29 +1948,63 @@ void SupraFitGui::Duplicate(const QModelIndex& index)
         return;
     }
 
-    if (index.row() >= m_project_list.size()) {
-        Info(tr("This is something, that should be impossbile."));
+    // Get project UUID - must be a project-level selection (not model)
+    QString uuidString = m_project_tree->UUID(index);
+    if (uuidString.isEmpty()) {
+        Warning(tr("Invalid tree selection - no UUID found"));
         return;
     }
-
-    if (m_project_list[index.row()]->isMetaModel()) {
+    
+    QStringList uuids = uuidString.split("|");
+    if (uuids.isEmpty()) {
+        Warning(tr("Invalid tree selection - empty UUID list"));
+        return;
+    }
+    
+    if (uuids.size() != 1) {
+        Info(tr("Sorry, but the current selection is invalid. You can only duplicate projects, not models in projects."));
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        Warning(tr("Project MainWindow not found for duplication - UUID: %1").arg(projectId));
+        return;
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
+    
+    if (mainWindow->isMetaModel()) {
         Info(tr("Tables of MetaModels can not be manipulated. Sorry for that."));
         return;
     }
 
+    // Get project data from ProjectManager
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QJsonObject projectData = projectManager.getProjectJson(projectId);
+    
+    if (projectData.isEmpty()) {
+        Warning(tr("Failed to get project data for duplication - UUID: %1").arg(projectId));
+        return;
+    }
+    
     QJsonObject d;
-    QJsonObject project = m_data_list[index.row()].toStrongRef().data()->ExportData();
+    QJsonObject project = projectData;
     project["title"] = QString(project["title"].toString() + " - Copy");
     QUuid uuid;
     project["uuid"] = uuid.createUuid().toString();
 
     d["data"] = project;
     LoadJson(d);
+    
+    qDebug() << "Duplicate: Successfully duplicated project" << projectId;
 }
 
 void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)
 {
-    // qDebug() << m_project_view->currentIndex() << index << m_project_view->selectionModel()->selectedIndexes();
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
     if (!index.isValid()) {
         Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted. (List is empty, no project loaded?)"));
         return;
@@ -1559,15 +2015,52 @@ void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)
         return;
     }
 
-    if (index.row() >= m_project_list.size()) {
-        Info(tr("This is something, that should be impossbile."));
+    // Get project UUID - must be a project-level selection (not model)
+    QString uuidString = m_project_tree->UUID(index);
+    if (uuidString.isEmpty()) {
+        Warning(tr("Invalid tree selection - no UUID found"));
         return;
     }
-
-    if (m_project_list[index.row()]->isMetaModel()) {
+    
+    QStringList uuids = uuidString.split("|");
+    if (uuids.isEmpty()) {
+        Warning(tr("Invalid tree selection - empty UUID list"));
+        return;
+    }
+    
+    if (uuids.size() != 1) {
+        Info(tr("Sorry, but the current selection is invalid. You can only add up or substract data to projects, not to models in projects."));
+        return;
+    }
+    
+    QString projectId = uuids[0];
+    
+    // Validate project exists in our mapping
+    if (!m_project_windows.contains(projectId) || !m_project_windows[projectId]) {
+        Warning(tr("Project MainWindow not found for data operation - UUID: %1").arg(projectId));
+        return;
+    }
+    
+    MainWindow* mainWindow = m_project_windows[projectId];
+    
+    if (mainWindow->isMetaModel()) {
         Info(tr("Tables of MetaModels can not be manipulated. Sorry for that."));
         return;
     }
+    
+    // Get the project data using UUID from hashed data
+    if (!m_hashed_data.contains(projectId)) {
+        Warning(tr("Project data not found in hash - UUID: %1").arg(projectId));
+        return;
+    }
+    
+    auto projectDataRef = m_hashed_data[projectId].toStrongRef();
+    QPointer<DataClass> projectData = projectDataRef.data();
+    if (!projectData) {
+        Warning(tr("Project data reference is invalid - UUID: %1").arg(projectId));
+        return;
+    }
+    
     QString filetypes = m_supported_files;
     filetypes.remove("*.ITC").remove("*.itc");
     QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), filetypes);
@@ -1592,13 +2085,16 @@ void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)
     }
     delete handler;
 
-    if (table->rowCount() == m_data_list[index.row()].toStrongRef().data()->DependentModel()->rowCount() && table->columnCount() == m_data_list[index.row()].toStrongRef().data()->DependentModel()->columnCount()) {
-        if (sign)
-            m_data_list[index.row()].toStrongRef().data()->DependentModel()->Table() += table->Table();
-        else
-            m_data_list[index.row()].toStrongRef().data()->DependentModel()->Table() -= table->Table();
+    if (table->rowCount() == projectData->DependentModel()->rowCount() && table->columnCount() == projectData->DependentModel()->columnCount()) {
+        if (sign) {
+            projectData->DependentModel()->Table() += table->Table();
+            qDebug() << "AddUpData: Added data to project" << projectId;
+        } else {
+            projectData->DependentModel()->Table() -= table->Table();
+            qDebug() << "AddUpData: Subtracted data from project" << projectId;
+        }
 
-        m_data_list[index.row()].toStrongRef().data()->Updated();
+        projectData->Updated();
     } else
         Info(tr("Sorry, the table you just loaded and the target table do not fit."));
 
@@ -1622,38 +2118,73 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
     }
     m_data_list[position].toStrongRef().data()->OverrideSystemParameter(data->SysPar());
 }
-/*
-void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
-{
-    QByteArray sprmodel = d->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-    QJsonObject object = doc.object();
-
-    if (data < m_project_list.size()) {
-        m_project_list[data]->Model(model)->ImportModel(object);
-    } else
-        qDebug() << "not found" << data << model;
-}*/
+// Claude Generated - Removed legacy commented-out CopyModel function that used m_project_list
 
 void SupraFitGui::CopyModel(const QJsonObject& object, int data, int model)
 {
-    if (data < m_project_list.size()) {
-        m_project_list[data]->Model(model)->ImportModel(object);
-        //    m_project_list[data]->Model(model)->Calculate();
-    } else
-        qDebug() << "not found" << data << model;
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
+    // Note: This function receives row indices from ProjectTree, which may not align with 
+    // the m_project_list order in the new architecture. This is a best-effort migration.
+    
+    qDebug() << "CopyModel: Attempting to copy model to project index" << data << "model index" << model;
+    
+    // Try to find the project by index in the legacy way first (temporary compatibility)
+    if (data < m_data_list.size() && m_data_list[data].toStrongRef()) {
+        QString projectId = m_data_list[data].toStrongRef()->UUID();
+        
+        if (m_project_windows.contains(projectId) && m_project_windows[projectId]) {
+            MainWindow* mainWindow = m_project_windows[projectId];
+            
+            if (model < mainWindow->ModelCount()) {
+                auto targetModel = mainWindow->Model(model);
+                if (targetModel) {
+                    targetModel->ImportModel(object);
+                    qDebug() << "CopyModel: Successfully imported model to project" << projectId << "model" << model;
+                    //    targetModel->Calculate();  // Uncomment if needed
+                    return;
+                }
+            }
+            
+            qWarning() << "CopyModel: Model index" << model << "out of bounds for project" << projectId;
+            return;
+        } else {
+            qWarning() << "CopyModel: Project not found in m_project_windows for UUID" << projectId;
+        }
+    }
+    
+    // Claude Generated - Removed legacy m_project_list fallback - should not be needed with ProjectManager
+    qWarning() << "CopyModel: Failed to find target - data:" << data << "model:" << model 
+               << "m_data_list.size():" << m_data_list.size() 
+               << "Available projects in m_project_windows:" << m_project_windows.keys();
 }
 
 void SupraFitGui::ExportAllPlain()
 {
+    // Claude Generated - ProjectManager integration: Migrate to m_project_windows architecture
     QString dir = QFileDialog::getExistingDirectory(this, tr("Choose directory"), getDir());
     if (dir.isEmpty() || dir.isNull())
         return;
 
-    for (int i = 0; i < m_data_list.size(); ++i) {
-        QString input, name = m_data_list[i].toStrongRef().data()->ProjectTitle();
-        QPointer<DataTable> indep_model = m_data_list[i].toStrongRef().data()->IndependentModel();
-        QPointer<DataTable> dep_model = m_data_list[i].toStrongRef().data()->DependentModel();
+    // Iterate over all projects using m_project_windows instead of m_data_list
+    for (auto it = m_project_windows.constBegin(); it != m_project_windows.constEnd(); ++it) {
+        QString projectId = it.key();
+        MainWindow* mainWindow = it.value();
+        
+        if (!mainWindow || !mainWindow->Data()) {
+            qWarning() << "ExportAllPlain: Invalid MainWindow or Data for project" << projectId;
+            continue;
+        }
+        
+        QPointer<DataClass> projectData = mainWindow->Data();
+        QString input, name = projectData->ProjectTitle();
+        
+        QPointer<DataTable> indep_model = projectData->IndependentModel();
+        QPointer<DataTable> dep_model = projectData->DependentModel();
+
+        if (!indep_model || !dep_model) {
+            qWarning() << "ExportAllPlain: Invalid data models for project" << projectId;
+            continue;
+        }
 
         QStringList x = indep_model->ExportAsStringList();
         QStringList y = dep_model->ExportAsStringList();
@@ -1661,6 +2192,10 @@ void SupraFitGui::ExportAllPlain()
         if (x.size() == y.size()) {
             for (int i = 0; i < x.size(); ++i)
                 input += x[i].replace(",", ".") + "\t" + y[i].replace(",", ".") + "\n";
+        } else {
+            qWarning() << "ExportAllPlain: Data size mismatch for project" << projectId 
+                       << "- x:" << x.size() << "y:" << y.size();
+            continue;
         }
 
         delete indep_model;
@@ -1669,20 +2204,24 @@ void SupraFitGui::ExportAllPlain()
         QString filename = dir + "/" + name;
         QFileInfo info(filename + ".dat");
         if (info.exists()) {
-            int i = 1;
-            QFileInfo info(filename + "_" + QString::number(i) + ".dat");
-            while (info.exists()) {
-                ++i;
-                info = QFileInfo(filename + QString::number(i) + ".dat");
+            int counter = 1;
+            QFileInfo nextInfo(filename + "_" + QString::number(counter) + ".dat");
+            while (nextInfo.exists()) {
+                ++counter;
+                nextInfo = QFileInfo(filename + "_" + QString::number(counter) + ".dat");
             }
-            filename = filename + "_" + QString::number(i) + ".dat";
-        } else
+            filename = filename + "_" + QString::number(counter) + ".dat";
+        } else {
             filename = filename + ".dat";
+        }
 
         QFile file(filename);
         if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
             QTextStream stream(&file);
             stream << input;
+            qDebug() << "ExportAllPlain: Exported project" << projectId << "to" << filename;
+        } else {
+            qWarning() << "ExportAllPlain: Failed to open file for writing:" << filename;
         }
     }
     setLastDir(dir);
@@ -1809,6 +2348,170 @@ void SupraFitGui::LicenseInfo()
     dialog.resize(800, 600);
     dialog.exec();
 }
+
+// Claude Generated - ProjectManager Integration Slot Implementations
+void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& filePath)
+{
+    Info(tr("Project loaded: %1 (ID: %2)").arg(filePath, projectId));
+    
+    // Claude Generated - Create MainWindow for loaded project
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QSharedPointer<DataClass> projectData = projectManager.getProject(projectId);
+    
+    if (projectData) {
+        qDebug() << "onProjectLoaded: Creating MainWindow for project" << projectId;
+        
+        // Create new MainWindow instance
+        // TODO Claude -> Make Maindow get DataClass instead of Jsons
+        QPointer<MainWindow> window = new MainWindow(this);
+        
+        // Claude Generated - CRITICAL FIX: Use ProjectManager instead of legacy SetData
+        // This was causing data duplication and legacy JSON conversion
+        QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+        window->setDataFromProjectManager(projectId, wrapper);
+        // Fixed: MainWindow now gets DataClass directly from ProjectManager
+        
+        // Add to our UUID mapping
+        m_project_windows[projectId] = window;
+        
+        // Add to stack widget and show
+        m_stack_widget->addWidget(window);
+        m_stack_widget->setCurrentWidget(window);
+        
+        qDebug() << "onProjectLoaded: MainWindow created and activated for project" << projectId;
+    } else {
+        qWarning() << "onProjectLoaded: Failed to get project data for ID" << projectId;
+    }
+    
+    // Claude Generated - Removed updateDataListFromProjectManager() call - no longer needed
+    m_project_tree->UpdateStructure();
+    setWindowTitle();
+}
+
+void SupraFitGui::onProjectSaved(const QString& projectId, const QString& filePath)
+{
+    Info(tr("Project saved: %1 (ID: %2)").arg(filePath, projectId));
+    setWindowTitle();
+}
+
+
+void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projectTitle)
+{
+    Info(tr("Project added: %1 (%2)").arg(projectTitle, projectId));
+    qDebug() << "SupraFitGui::onProjectAdded: Creating MainWindow for project" << projectId << "title:" << projectTitle;
+    
+    // Check if MainWindow already exists
+    if (m_project_windows.contains(projectId)) {
+        qDebug() << "SupraFitGui::onProjectAdded: MainWindow already exists for project" << projectId;
+        return;
+    }
+    
+    // Get project data from ProjectManager
+    QSharedPointer<DataClass> projectData = SupraFit::ProjectManager::instance().getProjectData(projectId);
+    if (!projectData) {
+        qWarning() << "SupraFitGui::onProjectAdded: Could not retrieve project data for" << projectId;
+        return;
+    }
+    
+    // Create new MainWindow for this project
+    MainWindow* window = new MainWindow;
+    window->setObjectName(QString("mainwindow_%1").arg(projectId));
+    
+    // Create chart wrapper for visualization
+    QSharedPointer<ChartWrapper> wrapper = QSharedPointer<ChartWrapper>::create();
+    
+    // Set up MainWindow with project data using new ProjectManager integration
+    window->setDataFromProjectManager(projectId, wrapper);
+    
+    // Store MainWindow in our project windows map
+    m_project_windows[projectId] = window;
+    
+    // Add MainWindow to the stack widget (correct widget structure)
+    QString windowTitle = projectTitle.isEmpty() ? QString("Project %1").arg(projectId) : projectTitle;
+    int index = m_stack_widget->addWidget(window);
+    
+    // Switch to the newly added project window
+    m_stack_widget->setCurrentIndex(index);
+    
+    qDebug() << "SupraFitGui::onProjectAdded: Successfully created MainWindow for project" << projectId;
+    
+    // Claude Generated - CRITICAL FIX: Synchronize any models that were created before MainWindow existed
+    // This handles the case where modelAdded signals were emitted before projectAdded
+    window->getModelDataHolder()->syncModelsWithProjectManager();
+    
+    // Update project tree
+    m_project_tree->UpdateStructure();
+}
+
+void SupraFitGui::onModelAdded(const QString& projectId, const QString& modelId)
+{
+    Info(tr("Model added to project %1: %2").arg(projectId, modelId));
+    m_project_tree->UpdateStructure();
+    
+    // Claude Generated - Create ModelWidget immediately using new ProjectManager API
+    qDebug() << "SupraFitGui::onModelAdded: Creating ModelWidget for model" << modelId << "in project" << projectId;
+    
+    // Claude Generated - CRITICAL FIX: Create MainWindow first if it doesn't exist
+    if (!m_project_windows.contains(projectId)) {
+        qDebug() << "SupraFitGui::onModelAdded: No MainWindow found for project" << projectId << ", deferring model creation";
+        // Instead of creating MainWindow immediately, defer until projectAdded signal
+        // This handles the case where modelAdded is emitted before project is fully loaded
+        return;
+    }
+    
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        
+        // Get the specific model using new ProjectManager API
+        auto model = SupraFit::ProjectManager::instance().getModel(projectId, modelId);
+        if (model) {
+            qDebug() << "SupraFitGui::onModelAdded: Found model" << model->Name() << ", creating widget";
+            // Use ModelDataHolder to create ModelWidget immediately
+            window->getModelDataHolder()->createModelWidgetFromModel(model);
+        } else {
+            qWarning() << "SupraFitGui::onModelAdded: Could not retrieve model" << modelId << "from ProjectManager";
+        }
+    } else {
+        qWarning() << "SupraFitGui::onModelAdded: Still no MainWindow found for project" << projectId << "after creation attempt";
+    }
+}
+
+void SupraFitGui::onProjectManagerError(const QString& operation, const QString& errorMessage)
+{
+    Warning(tr("ProjectManager error in %1: %2").arg(operation, errorMessage));
+}
+
+// Claude Generated - Missing ProjectManager slot implementations
+void SupraFitGui::onCurrentProjectChanged(const QString& projectId)
+{
+    qDebug() << "SupraFitGui::onCurrentProjectChanged: Current project changed to" << projectId;
+    
+    // Switch to the widget for this project if MainWindow exists
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        int widgetIndex = m_stack_widget->indexOf(window);
+        if (widgetIndex != -1) {
+            m_stack_widget->setCurrentIndex(widgetIndex);
+        }
+    }
+}
+
+void SupraFitGui::onProjectDataUpdated(const QString& projectId)
+{
+    qDebug() << "SupraFitGui::onProjectDataUpdated: Project data updated for" << projectId;
+    
+    // Update project tree to reflect data changes
+    m_project_tree->UpdateStructure();
+    
+    // If MainWindow exists, trigger data refresh
+    if (m_project_windows.contains(projectId)) {
+        MainWindow* window = m_project_windows[projectId];
+        // Trigger ModelDataHolder synchronization to update ModelWidgets
+        window->getModelDataHolder()->syncModelsWithProjectManager();
+    }
+}
+
+// Claude Generated - Deleted updateDataListFromProjectManager() function - no longer needed after migration
 
 void SupraFitGui::resizeEvent(QResizeEvent* event)
 {

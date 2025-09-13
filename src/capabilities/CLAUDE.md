@@ -119,6 +119,93 @@ QString FormatStatisticsString(const QJsonObject& statisticsJson, const QString&
 }
 ```
 
+### MLFeatureExtractor for Neural Network Training (Claude Generated)
+Compact ML training data export functionality for neural network model selection training:
+
+```cpp
+// Core MLFeatureExtractor methods for neural network training data
+class MLFeatureExtractor : public QObject {
+    Q_OBJECT
+public:
+    // Parse ML pipeline data from JSON files
+    QJsonObject parseMLPipelineData(const QString& filename);
+    
+    // Extract compact training samples from ML RawData
+    QJsonObject extractCompactTrainingSample(const QJsonObject& mlRawData);
+    
+    // Batch processing for multiple ML pipeline files
+    QVector<QJsonObject> extractBatchTrainingData(const QVector<QString>& filenames);
+    
+    // Export neural network training format
+    QJsonObject exportNeuralNetFormat(const QVector<QJsonObject>& trainingSamples);
+    
+    // Configuration options for feature extraction
+    void setExtractionOptions(bool includeAdvancedStats, bool includeFitParameters, bool includeInputNoise);
+};
+```
+
+#### ML Training Data Structure
+```json
+{
+    "ml_training_metadata": {
+        "version": "neural_net_v1.0",
+        "generated": "2025-08-31T17:08:58",
+        "sample_count": 1,
+        "features": ["fit_quality_metrics", "statistical_analysis", "input_noise"]
+    },
+    "training_samples": [{
+        "sample_id": "unique-uuid",
+        "ground_truth": {
+            "model_id": 1,
+            "model_name": "¹H 1:1-Model",
+            "global_params": [3.630319833497203],
+            "local_params": [[6.567278878317671, 2.395340556298949], [6.304789403308667, 2.314757914760046]],
+            "datapoints": 8,
+            "series_count": 2,
+            "input_noise": {}
+        },
+        "candidate_models": [{
+            "model_id": 1,
+            "model_name": "nmr_1_1",
+            "fit_quality": {
+                "aic": -37.25, "aicc": 46.75, "r_squared": 0.9998,
+                "sse": 0.0170, "rmse": 0.0492, "chi_squared": 0.0412,
+                "parameter_count": 3, "data_points": 8,
+                "global_params": 1, "local_params": 2
+            },
+            "statistical_features": {
+                // JSON blocks from analyse.cpp statistical methods
+                "monte_carlo": {}, "cross_validation": {}, "reduction_analysis": {}
+            }
+        }],
+        "label": {
+            "correct_model_id": 1,
+            "correct_model_name": "nmr_1_1"
+        }
+    }]
+}
+```
+
+#### Key Features:
+- **Ground-Truth Based Labels**: Model ID matching (not AIC-based) for correct model identification
+- **Comprehensive Feature Set**: AIC, AICC, R², SSE, RMSE, parameter counts, statistical analysis results
+- **Input Noise Parameters**: Capture synthesis noise configuration for reproducibility
+- **Statistical Analysis Integration**: Full JSON blocks from analyse.cpp (MC, CV, Reduction)
+- **Extensible Architecture**: Easy addition of new features for future ML experiments
+- **Compact Format**: Raw data removed, only ML-relevant features retained
+
+#### CLI Integration:
+```bash
+# Manual ML export from pipeline files
+./suprafit_cli --export-ml-training -i pipeline_results.json --ml-output training.json
+
+# Automatic export during ML pipeline execution
+./suprafit_cli --ml-pipeline -i config.json --auto-export-ml --ml-output training.json
+
+# Batch export from directory
+./suprafit_cli --export-ml-training --export-ml-batch results_dir/ --ml-output batch_training.json
+```
+
 ### DataGenerator Enhancements (Claude Generated)
 Modern equation-based and model-based data generation with ML pipeline optimization:
 
@@ -291,7 +378,10 @@ QString content = generator->createEnhancedContent(config, iteration);
 
 ## Variable Section (Short-term information, regularly updated)
 
-### Recent Changes
+### Recent Changes  
+- ✅ 2025-08-31: **MLFeatureExtractor Implementation** - Complete neural network training data export system
+- ✅ 2025-08-31: **Ground-Truth Based Labels** - Model ID matching for correct model identification (not AIC-based)
+- ✅ 2025-08-31: **CLI Integration** - Full command-line support with manual, automatic, and batch export modes
 - ✅ 2025-01-29: **Architecture Refactoring** - Removed statistical analysis methods from DataGenerator (now handled by JobManager in CLI)
 - ✅ 2025-01-29: **Clean Architecture** - DataGenerator focuses only on data generation, analysis moved to core/analyse.cpp
 - ✅ 2025-01-29: **Method Cleanup** - EvaluateWithModelAndAnalyze* methods simplified to data generation only
@@ -307,15 +397,21 @@ QString content = generator->createEnhancedContent(config, iteration);
 - ✅ 2025-01-27: Qt6 random generation replacing deprecated qrand()
 
 ### Current Status
+- **MLFeatureExtractor**: ✅ Complete implementation with neural network training data export
+- **CLI Integration**: ✅ Full command-line support (manual, automatic, batch export modes)
+- **Ground-Truth Labels**: ✅ Model ID-based correct labeling system implemented
 - **DataGenerator Architecture**: Clean separation - only handles data generation, no statistical analysis
 - **Statistical Analysis**: Moved to core/analyse.cpp with JSON API, executed via JobManager in CLI/GUI
 - **DataGenerator**: All tests passing (9/9), ML pipeline optimizations active
 - **Model Integration**: NMR 1:1 model integration fully functional, architecture-compliant
 - **Content Generation**: Enhanced with model details, parameter information, and configuration storage
 - **Random Generation**: Working for both modern JSON and legacy matrix-string formats
-- **Build Status**: ✅ Compilation successful after architecture refactoring
+- **Build Status**: ✅ Compilation successful after MLFeatureExtractor integration
 
 ### ML Pipeline Readiness
+- ✅ **Neural Network Training Export**: Complete MLFeatureExtractor system for training data generation
+- ✅ **Ground-Truth Labeling**: Model ID-based correct model identification for supervised learning
+- ✅ **Compact Training Format**: Optimized JSON structure with statistical features, no raw data
 - ✅ **Data Generation**: High-performance batch generation with `EvaluateWithModelBatch()`
 - ✅ **Statistical Analysis**: JSON API provides standardized ML features via `ExtractModelMLFeatures()`
 - ✅ **Parameter Uncertainty**: Percentile-based confidence intervals for robust uncertainty quantification

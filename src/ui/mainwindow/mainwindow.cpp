@@ -126,6 +126,7 @@ MainWindow::~MainWindow()
 
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
+    // CLaude TODO: we have to replace this with loading from ProjectManager by getting the DataCalss directly,or even in the constructor
     QString colors = object["data"].toObject()["colors"].toString();
     m_data = QSharedPointer<DataClass>(new DataClass());
 
@@ -140,10 +141,25 @@ QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
         wrapper->setColorList(colors);
     m_model_dataholder->setData(m_data, wrapper);
 
-    QJsonObject toplevel;
-    m_model_dataholder->AddToWorkspace(object);
+    // Claude Generated - Legacy AddToWorkspace logic removed - ProjectManager handles model loading
+    // Legacy function - use setDataFromProjectManager() instead
 
     return m_data;
+}
+
+void MainWindow::setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper)
+{
+    // Claude Generated - Function is now properly called from SupraFitGui::onProjectAdded()
+    m_data = SupraFit::ProjectManager::instance().getProjectData(projectId);
+    if (!m_data) {
+        qWarning() << "Failed to get project data from ProjectManager for project ID:" << projectId;
+        return;
+    }
+
+    connect(m_data.data(), &DataClass::Message, this, &MainWindow::Message);
+    connect(m_data.data(), &DataClass::Warning, this, &MainWindow::Warning);
+
+    m_model_dataholder->setDataFromProjectManager(projectId, wrapper);
 }
 
 QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper)

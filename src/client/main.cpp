@@ -21,8 +21,6 @@
 
 #include "src/core/models/models.h"
 
-#include "src/client/analyser.h"
-#include "src/client/simulator.h"
 #include "src/client/ml_pipeline_manager.h"
 
 #include "src/core/equil.h"
@@ -30,6 +28,7 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QIODevice>
+#include <QtCore/QDir>
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -218,6 +217,40 @@ void analyzeMultiProjectFile(const QJsonObject& config)
 
         std::cout << std::endl;
     }
+}
+
+// Output path validation function - Claude Generated
+bool validateOutputPath(const QString& outputPath)
+{
+    if (outputPath.isEmpty()) {
+        return true; // No output path specified is valid
+    }
+    
+    QFileInfo fileInfo(outputPath);
+    QDir parentDir = fileInfo.dir();
+    
+    // Check if parent directory exists
+    if (!parentDir.exists()) {
+        std::cerr << "ERROR: Output directory does not exist: " << parentDir.absolutePath().toStdString() << std::endl;
+        return false;
+    }
+    
+    // Check if parent directory is writable
+    QFileInfo dirInfo(parentDir.absolutePath());
+    if (!dirInfo.isWritable()) {
+        std::cerr << "ERROR: Cannot write to output directory (insufficient permissions): " 
+                  << parentDir.absolutePath().toStdString() << std::endl;
+        return false;
+    }
+    
+    // If file already exists, check if it's writable
+    if (fileInfo.exists() && !fileInfo.isWritable()) {
+        std::cerr << "ERROR: Cannot overwrite existing file (insufficient permissions): " 
+                  << outputPath.toStdString() << std::endl;
+        return false;
+    }
+    
+    return true;
 }
 
 // Join multiple files into a single multi-project file - Claude Generated
@@ -481,7 +514,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
 }
 
 // Execute task configuration - Claude Generated
-bool executeTaskConfiguration(const QString& inputFile, const QString& outputOverride = "")
+bool executeTaskConfiguration(const QString& inputFile, const QString& outputOverride = "", bool autoExportML = false, const QString& mlOutputFile = "")
 {
     std::cout << "Executing task configuration: " << inputFile.toStdString() << std::endl;
 
@@ -505,6 +538,14 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             if (!outputOverride.isEmpty()) {
                 QFileInfo outputInfo(outputOverride);
                 QString baseName = outputInfo.completeBaseName();
+                QString outputDir = outputInfo.absolutePath();
+                
+                // Change to output directory if specified
+                QString originalDir = QDir::currentPath();
+                if (outputDir != "." && outputDir != originalDir) {
+                    QDir::setCurrent(outputDir);
+                }
+                
                 core->setOutFile(baseName);
             }
 
@@ -518,6 +559,30 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             QVector<QJsonObject> results = core->ProcessMLPipeline();
             
             std::cout << "ProcessMLPipeline completed successfully!" << std::endl;
+            
+            // Auto-export ML training data if requested - Claude Generated
+            if (autoExportML) {
+                std::cout << "Auto-exporting ML training data..." << std::endl;
+                
+                // Determine output file name
+                QString outputFileName = mlOutputFile;
+                if (outputFileName.isEmpty()) {
+                    QFileInfo inputInfo(inputFile);
+                    outputFileName = inputInfo.completeBaseName() + "_ml_training.json";
+                }
+                
+                // Export with JSON file containing ML RawData (with iteration number)
+                QVector<QString> processedFiles;
+                processedFiles.append(core->OutFile() + "-0.json");
+                
+                bool exportSuccess = core->exportMLTrainingData(processedFiles, outputFileName);
+                if (exportSuccess) {
+                    std::cout << "ML training data exported to: " << outputFileName.toStdString() << std::endl;
+                } else {
+                    std::cout << "WARNING: ML training data export failed." << std::endl;
+                }
+            }
+            
             delete core;
             return true;
         } else {
@@ -539,6 +604,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
     // Handle Task Configuration
     if (type == TaskConfig) {
         SupraFitCli* core = new SupraFitCli;
+        core->setInFile(inputFile); // Claude Generated - Fix missing setInFile call
         core->setControlJson(config);
 
         // Override output file if specified
@@ -546,6 +612,14 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             // Extract base name without extension
             QFileInfo outputInfo(outputOverride);
             QString baseName = outputInfo.completeBaseName();
+            QString outputDir = outputInfo.absolutePath();
+            
+            // Change to output directory if specified
+            QString originalDir = QDir::currentPath();
+            if (outputDir != "." && outputDir != originalDir) {
+                QDir::setCurrent(outputDir);
+            }
+            
             core->setOutFile(baseName);
         }
 
@@ -659,6 +733,7 @@ void showComprehensiveHelp()
     std::cout << "  -n, --nproc <N>        Number of parallel threads (default: 4)\n";
     std::cout << "  --ml-pipeline          Enable ML pipeline mode\n";
     std::cout << "  --batch-config <file>  Run ML pipeline batch processing\n";
+    std::cout << "  -x, --extract-parameters [N]  Extract fitted parameters from models file (optional: specify model index)\n";
     std::cout << "  -h, --help             Show this help message\n";
     std::cout << "  -v, --version          Show version information\n"
               << std::endl;
@@ -679,6 +754,12 @@ void showComprehensiveHelp()
 
     std::cout << "  # Debug file structure\n";
     std::cout << "  suprafit_cli -l complex_project.suprafit\n\n";
+
+    std::cout << "  # Extract fitted parameters from all models\n";
+    std::cout << "  suprafit_cli -x project-models-0.suprafit\n\n";
+
+    std::cout << "  # Extract parameters from specific model\n";
+    std::cout << "  suprafit_cli -x 2 project-models-0.suprafit\n\n";
 
     std::cout << "FILE TYPES:\n";
     std::cout << "  • Simple Projects: SupraFit project files with data and models\n";
@@ -751,6 +832,36 @@ int main(int argc, char** argv)
     QCommandLineOption batchConfig(QStringList() << "batch-config",
         "Run ML pipeline batch processing", "file");
     parser.addOption(batchConfig);
+    
+    QCommandLineOption showPostProcessing(QStringList() << "show-post-processing",
+        "Show detailed post-processing statistics for all methods");
+    parser.addOption(showPostProcessing);
+
+    // ML Training Data Export Options - Claude Generated
+    QCommandLineOption exportMLTraining(QStringList() << "export-ml-training",
+        "Export compact ML training data from ML pipeline files", "files");
+    parser.addOption(exportMLTraining);
+    
+    QCommandLineOption mlOutput(QStringList() << "ml-output",
+        "Output filename for ML training data export", "output.json");
+    parser.addOption(mlOutput);
+    
+    QCommandLineOption autoExportML(QStringList() << "auto-export-ml",
+        "Automatically export ML training data after ML pipeline execution");
+    parser.addOption(autoExportML);
+    
+    QCommandLineOption exportMLBatch(QStringList() << "export-ml-batch",
+        "Batch export ML training data from directory", "directory");
+    parser.addOption(exportMLBatch);
+
+    // Claude Generated: Add parameter extraction option
+    QCommandLineOption extractParameters(QStringList() << "x" << "extract-parameters",
+        "Extract fitted model parameters from results file");
+    parser.addOption(extractParameters);
+    
+    QCommandLineOption extractModel("extract-model",
+        "Specific model index to extract (use with --extract-parameters)", "model_index");
+    parser.addOption(extractModel);
 
     parser.process(app);
 
@@ -775,6 +886,32 @@ int main(int argc, char** argv)
     const bool showList = parser.isSet("list");
     const bool mlPipelineMode = parser.isSet("ml-pipeline");
     const QString batchConfigFile = parser.value("batch-config");
+    
+    // ML Training Data Export Parameters - Claude Generated
+    const bool exportMLTrainingMode = parser.isSet("export-ml-training");
+    const QString mlOutputFile = parser.value("ml-output");
+    const bool autoExportMLMode = parser.isSet("auto-export-ml");
+    const QString exportMLBatchDirectory = parser.value("export-ml-batch");
+    
+    // Claude Generated - Thread count parsing and validation
+    const QString threadCountStr = parser.value("nproc");
+    int threadCount = 4;  // Default value
+    
+    if (!threadCountStr.isEmpty()) {
+        bool ok;
+        threadCount = threadCountStr.toInt(&ok);
+        
+        // Validate thread count
+        if (!ok || threadCount <= 0 || threadCount > 256) {
+            std::cout << "ERROR: Invalid thread count '" << threadCountStr.toStdString() 
+                      << "'. Must be a positive integer between 1 and 256." << std::endl;
+            return 1;
+        }
+    }
+    
+    // Claude Generated: Parameter extraction parameters
+    const bool extractParametersMode = parser.isSet("extract-parameters");
+    const QString modelIndex = parser.value("extract-model");
 
     // Set thread count
     qApp->instance()->setProperty("threads", parser.value("nproc").toInt());
@@ -822,9 +959,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // 3. Handle list mode
+    // 3. Handle list mode - Claude Generated with improved error handling
     if (showList) {
         std::cout << "Listing file structure: " << actualInputFile.toStdString() << std::endl;
+        
+        // Check if file exists before attempting to load
+        if (!QFile::exists(actualInputFile)) {
+            std::cout << "ERROR: Could not load file for listing." << std::endl;
+            return 1;
+        }
 
         SupraFitCli* cli = new SupraFitCli;
         cli->setInFile(actualInputFile);
@@ -839,12 +982,68 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    // 4. Handle ML Pipeline mode
-    if (mlPipelineMode) {
-        return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+    // 4. Handle Parameter Extraction mode - Claude Generated
+    if (extractParametersMode) {
+        std::cout << "Extracting model parameters from: " << actualInputFile.toStdString() << std::endl;
+        
+        SupraFitCli* cli = new SupraFitCli;
+        cli->setInFile(actualInputFile);
+        
+        if (!cli->LoadFile()) {
+            std::cout << "ERROR: Could not load file for parameter extraction." << std::endl;
+            delete cli;
+            return 1;
+        }
+        
+        // Extract and display model parameters
+        bool success = cli->ExtractModelParameters(modelIndex);
+        
+        delete cli;
+        return success ? 0 : 1;
     }
 
-    // 5. Main processing logic
+    // 5. Handle ML Training Data Export mode - Claude Generated
+    if (exportMLTrainingMode) {
+        std::cout << "Exporting ML training data from: " << actualInputFile.toStdString() << std::endl;
+        
+        SupraFitCli* cli = new SupraFitCli;
+        bool success = false;
+        
+        if (!exportMLBatchDirectory.isEmpty()) {
+            // Batch export mode
+            std::cout << "Batch export mode - processing directory: " << exportMLBatchDirectory.toStdString() << std::endl;
+            success = cli->exportMLTrainingDataBatch(exportMLBatchDirectory, 
+                                                   mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+        } else {
+            // Single file export mode
+            QVector<QString> inputFiles;
+            inputFiles.append(actualInputFile);
+            success = cli->exportMLTrainingData(inputFiles, 
+                                              mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+        }
+        
+        if (success) {
+            std::cout << "ML training data export completed successfully!" << std::endl;
+        } else {
+            std::cout << "ERROR: ML training data export failed." << std::endl;
+            delete cli;
+            return 1;
+        }
+        
+        delete cli;
+        return 0;
+    }
+
+    // 5. Handle ML Pipeline mode
+    if (mlPipelineMode) {
+        // Claude Generated - Validate output path before ML pipeline execution
+        if (!validateOutputPath(outputFile)) {
+            return 1;
+        }
+        return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
+    }
+
+    // 6. Main processing logic
 
     // Load and analyze input file
     QJsonObject config = JsonHandler::LoadFile(actualInputFile);
@@ -896,6 +1095,7 @@ int main(int argc, char** argv)
             // Perform standard detailed analysis
             SupraFitCli* cli = new SupraFitCli;
             cli->setInFile(actualInputFile);
+            cli->setShowPostProcessingDetails(parser.isSet(showPostProcessing));
             if (cli->LoadFile()) {
                 cli->AnalyzeFile();
             } else {
@@ -918,14 +1118,22 @@ int main(int argc, char** argv)
         // Check if this is conversion or execution
         if (!outputFile.isEmpty() && configType == SimpleProject) {
             // Simple project conversion
+            // Claude Generated - Validate output path before conversion
+            if (!validateOutputPath(outputFile)) {
+                return 1;
+            }
             return performGenericConversion(actualInputFile, outputFile, projectIndex, uuidFilter, titleFilter, splitOutput) ? 0 : 1;
         } else {
             // Task execution
-            return executeTaskConfiguration(actualInputFile, outputFile) ? 0 : 1;
+            // Claude Generated - Validate output path before task execution
+            if (!validateOutputPath(outputFile)) {
+                return 1;
+            }
+            return executeTaskConfiguration(actualInputFile, outputFile, autoExportMLMode, mlOutputFile) ? 0 : 1;
         }
     }
 
     std::cout << "ERROR: Invalid command line arguments." << std::endl;
     showComprehensiveHelp();
-    return 0;
+    return 1;  // Claude Generated - Fix: Invalid arguments should return failure code
 }

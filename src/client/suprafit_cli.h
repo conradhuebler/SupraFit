@@ -26,8 +26,11 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
+#include <iostream>
 
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
+#include "src/core/analysis_manager.h"
 
 // Forward declaration to avoid multiple includes
 class JobManager;
@@ -41,6 +44,7 @@ public:
 
     void setControlJson(const QJsonObject& control);
     QJsonObject getControlJson() const { return m_main; }
+    void setShowPostProcessingDetails(bool show) { m_show_post_processing_details = show; }
 
     void ParseMain();
     void ParsePrepare();
@@ -57,8 +61,10 @@ public:
 
     inline void setInFile(const QString& file)
     {
+        std::cout << "🔧 DEBUG setInFile: Setting file to: " << file.toStdString() << std::endl;
         m_infile = file;
         m_outfile = file;
+        std::cout << "🔧 DEBUG setInFile: m_infile now: " << m_infile.toStdString() << std::endl;
     }
     inline void setOutFile(const QString& file)
     {
@@ -66,7 +72,7 @@ public:
         m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
-    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_toplevel; }
+    QVector<QJsonObject> Data() const { return SupraFit::ProjectManager::instance().getAllProjectsAsJson(); }
 
     void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
@@ -84,17 +90,72 @@ public:
     inline bool CheckDataOnly() const { return m_data_only; }
     inline bool CheckGenerateInputData() const { return m_generate_input_data; }
 
-    void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
+    void setDataVector(const QVector<QJsonObject>& data_vector)
+    {
+        // Store in legacy m_data_vector for compatibility
+        m_data_vector = data_vector;
+
+        // Also add all projects to ProjectManager
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        projectManager.clearAllProjects(); // Clear existing projects first
+
+        for (const QJsonObject& projectData : data_vector) {
+            projectManager.createProjectFromJson(projectData, "CLI Generated Project");
+        }
+    }
 
     QVector<QJsonObject> GenerateData();
     QVector<QJsonObject> GenerateDataOnly();
     QVector<QJsonObject> GenerateInputData();
     
     void AnalyzeFile();
+    
+    // AnalysisManager integration - Claude Generated
+    void displayAnalysisResults(const QJsonObject& results);
 
     // Enhanced analysis methods for read-only mode - Claude Generated
     void analyzeGenerateDataConfig(const QJsonObject& generateDataConfig);
     void validateGenerateDataConfig(const QJsonObject& config);
+    
+    // Model statistics table formatting - Claude Generated
+    struct ModelStatistics {
+        QString key;
+        QString name;
+        QString status;
+        double sse;
+        double sae;
+        double aic;
+        double aicc;
+        int globalParams;
+        int localParams;
+        bool hasValidStats;
+        
+        // Post-processing method counts - Claude Generated
+        int mcBlocks;           // Monte Carlo blocks
+        int wgsBlocks;          // Weakened Grid Search blocks
+        int modelCompBlocks;    // Model Comparison blocks  
+        int cvBlocks;           // Cross Validation blocks
+        int reductionBlocks;    // Reduction Analysis blocks
+        int fastConfBlocks;     // Fast Confidence blocks
+        int globalBlocks;       // Global Search blocks
+        int totalPPBlocks;      // Total post-processing blocks
+        
+        // JSON data for detailed display - Claude Generated
+        QJsonObject postProcessingData;
+        
+        ModelStatistics() : sse(-1), sae(-1), aic(-999), aicc(-999), 
+                           globalParams(-1), localParams(-1), hasValidStats(false),
+                           mcBlocks(0), wgsBlocks(0), modelCompBlocks(0), cvBlocks(0),
+                           reductionBlocks(0), fastConfBlocks(0), globalBlocks(0), totalPPBlocks(0) {}
+    };
+    void displayModelStatisticsTable(const QVector<ModelStatistics>& models);
+    void displayPostProcessingDetails(const QVector<ModelStatistics>& models);
+    void displayPostProcessingMethod(const QString& methodName, const QString& emoji, 
+                                    int blockCount, const QJsonObject& methodData, int methodType);
+    ModelStatistics extractModelStatistics(const QString& key, const QJsonObject& modelObj);
+    
+    // Claude Generated: Extract and display fitted model parameters
+    bool ExtractModelParameters(const QString& modelIndexStr = QString());
 
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
@@ -150,6 +211,31 @@ public:
      */
     QJsonObject runPostFitAnalysis(QSharedPointer<AbstractModel> model, const QJsonObject& analysisConfig);
 
+    // ML Training Data Export - Claude Generated
+    /**
+     * @brief Export compact ML training data from ML pipeline files
+     * @param inputFiles Vector of ML pipeline JSON files to process
+     * @param outputFile Output filename for neural network training data
+     * @return true if export successful, false otherwise
+     */
+    bool exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile);
+    
+    /**
+     * @brief Export ML training data from single file
+     * @param inputFile ML pipeline JSON file to process
+     * @param outputFile Output filename for training data
+     * @return true if export successful, false otherwise
+     */
+    bool exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile);
+    
+    /**
+     * @brief Batch export ML training data from directory
+     * @param inputDirectory Directory containing ML pipeline results
+     * @param outputFile Output filename for batch training data
+     * @return true if export successful, false otherwise
+     */
+    bool exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile);
+
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
 signals:
@@ -176,21 +262,35 @@ protected:
     /* Modular structure support - Claude Generated */
     QJsonObject m_independent, m_dependent;
     bool m_use_modular_structure = false;
+    bool m_show_post_processing_details = false;
 
     /* Stored data structure */
     QJsonObject m_data_json;
 
+    // DEPRECATED: ProjectManager migration - these will be removed after migration completion
+    // QVector<QJsonObject> m_data_vector;  // Replaced by ProjectManager::getAllProjectsAsJson()
+    // QJsonObject m_toplevel;              // Replaced by ProjectManager::getProjectAsJson()
+    // QPointer<DataClass> m_data;          // Replaced by ProjectManager::getCurrentProject()
+
+    // Note: Keeping old members temporarily for compatibility during migration
     QVector<QJsonObject> m_data_vector;
-
-    /* Json to be written to a file */
     QJsonObject m_toplevel;
-
     QPointer<DataClass> m_data;
 
     // JobManager for statistical analysis - Claude Generated
     JobManager* m_jobmanager;
+    
+    // AnalysisManager for centralized analysis - Claude Generated
+    AnalysisManager* m_analysisManager;
 
     QString m_modelContent; // Store enhanced content from model generation - Claude Generated
+    QJsonObject m_mlRawData; // Store ML RawData from model generation - Claude Generated
+    
+    // ML Training Data Export Configuration - Claude Generated
+    bool m_exportMLTraining = false;
+    bool m_autoExportML = false;
+    QString m_mlOutputFile = "";
+    QString m_mlBatchDirectory = "";
 
     int m_independent_rows = 2, m_start_point = 0, m_series = 0;
     bool m_guess = false, m_fit = false;

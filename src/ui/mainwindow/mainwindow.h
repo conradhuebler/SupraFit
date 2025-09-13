@@ -50,7 +50,9 @@ public:
     MainWindow(QWidget* parent = 0);
     ~MainWindow();
 
+    [[deprecated("Use setDataFromProjectManager instead")]]
     QSharedPointer<DataClass> SetData(const QJsonObject& object);
+    void setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
     QSharedPointer<AbstractModel> CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper = QWeakPointer<ChartWrapper>());
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
@@ -73,6 +75,9 @@ public:
     inline QString UUID() const { return m_data.data()->UUID(); }
 
     inline QString Name() const { return m_data.data()->ProjectTitle(); }
+
+    // Claude Generated - Access to ModelDataHolder for ProjectManager integration
+    inline ModelDataHolder* getModelDataHolder() const { return m_model_dataholder; }
 
 public slots:
     // void LoadFile(const QString& file);

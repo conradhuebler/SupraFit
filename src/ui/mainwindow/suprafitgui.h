@@ -22,6 +22,7 @@
 #include "src/ui/guitools/mime.h"
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
+#include "src/core/projectmanager.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
@@ -132,6 +133,7 @@ public:
     explicit SupraFitGui();
     virtual ~SupraFitGui() override;
 
+    [[deprecated("Use ProjectManager to load and create projects")]]
     bool SetData(const QJsonObject& object, const QString& file, const QString& path);
     virtual QSize sizeHint() const override { return QSize(400, 300); }
 
@@ -167,6 +169,8 @@ private:
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
+    // Claude Generated - ProjectManager integration: UUID to MainWindow mapping
+    QHash<QString, QPointer<MainWindow>> m_project_windows;
     bool m_hasData;
     QAction *m_new_window, *m_new_table, *m_spectra, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
@@ -234,7 +238,7 @@ private:
     QWidget *m_project_holder, *m_recentWidget;
     QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
-    QVector<QPointer<MainWindow>> m_project_list;
+    // Claude Generated - REMOVED: QVector<QPointer<MainWindow>> m_project_list; - replaced by m_project_windows UUID-based mapping
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
     QStackedWidget* m_stack_widget;
@@ -282,6 +286,18 @@ private slots:
     void ExportAllPlain();
     void ExportAllSupraFit();
     void AddScatter();
+    
+    // Claude Generated - ProjectManager Integration Slots
+    void onProjectLoaded(const QString& projectId, const QString& filePath);
+    void onProjectSaved(const QString& projectId, const QString& filePath);
+    void onModelAdded(const QString& projectId, const QString& modelId);
+    void onProjectManagerError(const QString& operation, const QString& errorMessage);
+    void onProjectAdded(const QString& projectId, const QString& projectTitle);
+    void onCurrentProjectChanged(const QString& projectId);
+    void onProjectDataUpdated(const QString& projectId);
+
+private:
+    // Claude Generated - Removed updateDataListFromProjectManager() function declaration - no longer needed
 
 protected:
     virtual bool eventFilter(QObject* obj, QEvent* ev) override;

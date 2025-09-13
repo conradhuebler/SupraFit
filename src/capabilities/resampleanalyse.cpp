@@ -118,7 +118,7 @@ void ResampleAnalyse::CrossValidation()
             // for (int i = 0; i < m_model->DataEnd(); ++i) {
             if (!m_model->DependentModel()->isRowChecked(i))
                 continue;
-            for (int j = i + 1; i < m_model->DataEnd(); ++i) {
+            for (int j = i + 1; j < m_model->DataEnd(); ++j) {
                 // for (int j = i + 1; j < m_model->DataEnd(); ++j) {
                 if (!m_model->DependentModel()->isRowChecked(j))
                     continue;
@@ -222,10 +222,10 @@ void ResampleAnalyse::CrossValidation()
                 QPointer<DataTable> dep_table = new DataTable(table);
                 QVector<int> indicies;
                 int checked = 0;
-                for (int i = 0; i < vector.size(); ++i) {
-                    checked += bool(m_model->DependentModel()->isRowChecked(vector[i]));
-                    dep_table->DisableRow(vector[i]);
-                    indicies << vector[i];
+                for (int j = 0; j < vector.size(); ++j) {
+                    checked += bool(m_model->DependentModel()->isRowChecked(vector[j]));
+                    dep_table->DisableRow(vector[j]);
+                    indicies << vector[j];
                 }
 
                 if (checked != vector.size()) {
@@ -248,45 +248,29 @@ void ResampleAnalyse::CrossValidation()
             qDebug() << "Full-Precomputing";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
             //#endif
-            auto IncreaseVector = [this](QVector<int>& vector, int points) {
-                for (int i = vector.size() - 1; i >= 0; --i) {
-                    if (vector[i] < points - 1) {
-                        int value = vector[i];
-                        while (vector.contains(value) && value < points - 1)
-                            value++;
-                        vector[i] = value;
-                        break;
-                    } else if (vector[i] == points - 1) {
-                        if (i) {
-                            int back = 1;
-                            while (vector[i - back] == points - 1)
-                                back++;
-                            int value = vector[i - back];
-                            while (vector.contains(value))
-                                value++;
-                            if (value + 1 < points)
-                                vector[i] = value + 1;
-                        } else
-                            vector[i] = 0;
-                    }
+            auto IncreaseVector = [this](QVector<int>& vector, int points) -> bool {
+                // Standard combination generation algorithm - Claude Generated
+                int i = vector.size() - 1;
+                while (i >= 0 && vector[i] == points - (vector.size() - i)) {
+                    i--;
                 }
+                if (i < 0) {
+                    return false; // No more combinations
+                }
+                vector[i]++;
+                for (int j = i + 1; j < vector.size(); j++) {
+                    vector[j] = vector[j - 1] + 1;
+                }
+                return true;
             };
 
-            bool loop = true;
-            while (loop) {
+            do {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
                 if (QSet<int>(vector.begin(), vector.end()).size() == vector.size()) {
                     vector_block << vector;
                 }
-
-                IncreaseVector(vector, points);
-
-                int sum = 0;
-                for (int i = 0; i < vector.size(); ++i)
-                    sum += vector[i];
-                loop = sum < end;
-            }
+            } while (IncreaseVector(vector, points) && vector_block.size() < steps);
             //#ifdef _DEBUG
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
@@ -301,10 +285,10 @@ void ResampleAnalyse::CrossValidation()
                     QPointer<DataTable> dep_table = new DataTable(table);
                     QVector<int> indicies;
                     int checked = 0;
-                    for (int i = 0; i < vector.size(); ++i) {
-                        checked += bool(m_model->DependentModel()->isRowChecked(vector[i]));
-                        dep_table->DisableRow(vector[i]);
-                        indicies << vector[i];
+                    for (int j = 0; j < vector.size(); ++j) {
+                        checked += bool(m_model->DependentModel()->isRowChecked(vector[j]));
+                        dep_table->DisableRow(vector[j]);
+                        indicies << vector[j];
                     }
 
                     if (checked != vector.size()) {
@@ -338,10 +322,10 @@ void ResampleAnalyse::CrossValidation()
                     QPointer<DataTable> dep_table = new DataTable(table);
                     QVector<int> indicies;
                     int checked = 0;
-                    for (int i = 0; i < vector.size(); ++i) {
-                        checked += bool(m_model->DependentModel()->isRowChecked(vector[i]));
-                        dep_table->DisableRow(vector[i]);
-                        indicies << vector[i];
+                    for (int j = 0; j < vector.size(); ++j) {
+                        checked += bool(m_model->DependentModel()->isRowChecked(vector[j]));
+                        dep_table->DisableRow(vector[j]);
+                        indicies << vector[j];
                     }
 
                     if (checked != vector.size()) {

@@ -234,7 +234,7 @@ void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
     connect(m_stored_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     m_working = m_stored_model;
     m_transformed = true;
-    // MakeSeries();
+    MakeSeries(); // Claude Generated - Fixed cutecharts restructuring bug: series data wasn't being populated
     emit ModelTransformed();
 }
 
@@ -271,15 +271,18 @@ void ChartWrapper::SetBlocked(int blocked)
 
 void ChartWrapper::showSeries(int i)
 {
+    // Claude Generated: Fixed LineSeries visibility logic to match ScatterSeries behavior
     for (int j = 0; j < m_stored_series.size(); ++j) {
         if (i == -1 && !m_blocked) {
+            // Show all series when i == -1
             m_stored_series[j]->setVisible(true);
             continue;
         }
-        if (qobject_cast<ScatterSeries*>(m_stored_series[j]))
+
+        // Treat both LineSeries and ScatterSeries equally - only show selected series
+        if (i != -1) {
             m_stored_series[j]->setVisible(i == j);
-        else if (i != -1 && m_stored_series[j]->isVisible())
-            m_stored_series[j]->setVisible(i == j);
+        }
     }
     emit ShowSeries(i);
 }

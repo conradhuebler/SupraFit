@@ -24,6 +24,8 @@
 #include <iostream>
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
@@ -37,6 +39,8 @@
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/resampleanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
+#include "src/capabilities/mlfeatureextractor.h"
+#include "src/core/analyse.h"
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
@@ -44,6 +48,7 @@
 #include "src/core/analyse.h"
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/jsonutils.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 #include "src/version.h"
@@ -57,6 +62,9 @@ SupraFitCli::SupraFitCli()
 {
     // Initialize JobManager for statistical analysis - Claude Generated
     m_jobmanager = new JobManager(this);
+    
+    // Initialize AnalysisManager for centralized analysis - Claude Generated
+    m_analysisManager = new AnalysisManager(this);
 }
 
 SupraFitCli::SupraFitCli(SupraFitCli* core)
@@ -77,6 +85,9 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
 
     // Initialize JobManager for statistical analysis - Claude Generated
     m_jobmanager = new JobManager(this);
+    
+    // Initialize AnalysisManager for centralized analysis - Claude Generated
+    m_analysisManager = new AnalysisManager(this);
 
     ParseMain();
 }
@@ -91,12 +102,16 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
     m_original_config = control;
     
     QStringList keys = control.keys();
+#ifdef DEBUG_ON
     fmt::print("🔍 DEBUG setControlJson: Input JSON keys: {}\n", keys.join(", ").toStdString());
+#endif
     
     for (const QString& key : keys) {
         if (key.compare("main", Qt::CaseInsensitive) == 0) {
             m_main = control[key].toObject();
+#ifdef DEBUG_ON
             fmt::print("🔍 DEBUG setControlJson: Found Main section with keys: {}\n", m_main.keys().join(", ").toStdString());
+#endif
         }
 
         if (key.compare("models", Qt::CaseInsensitive) == 0)
@@ -117,8 +132,10 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             m_use_modular_structure = true;
             m_generate_dependent = true;  // Enable dependent data generation
             m_simulate_job = true;        // Enable simulation mode
+#ifdef DEBUG_ON
             fmt::print("🔍 DEBUG setControlJson: Found Independent section with source: {}\n", 
                       m_independent["Source"].toString().toStdString());
+#endif
         }
         
         if (key.compare("dependent", Qt::CaseInsensitive) == 0) {
@@ -126,8 +143,10 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             m_use_modular_structure = true;
             m_generate_dependent = true;  // Enable dependent data generation
             m_simulate_job = true;        // Enable simulation mode
+#ifdef DEBUG_ON
             fmt::print("🔍 DEBUG setControlJson: Found Dependent section with source: {}\n", 
                       m_dependent["Source"].toString().toStdString());
+#endif
         }
     }
     if (!m_main.isEmpty()) {
@@ -153,12 +172,16 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             
             // Handle GenerateData configuration
             if (str.compare("GenerateData", Qt::CaseInsensitive) == 0) {
+#ifdef DEBUG_ON
                 fmt::print("🔍 DEBUG: Found GenerateData configuration!\n");
+#endif
                 m_generate_dependent = true;
                 m_generate_noisy_dependent = true;
                 m_simulate_job = true;
                 m_simulation = m_main[str].toObject();
+#ifdef DEBUG_ON
                 fmt::print("🔍 DEBUG: Set m_generate_dependent = true\n");
+#endif
             }
             
             // Handle DataOnly task (simple load and save)
@@ -166,17 +189,23 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
                 QString task = m_main[str].toString();
                 if (task.compare("DataOnly", Qt::CaseInsensitive) == 0) {
                     m_data_only = true;
+#ifdef DEBUG_ON
                     qDebug() << "DataOnly task detected";
+#endif
                 }
                 else if (task.compare("GenerateInputData", Qt::CaseInsensitive) == 0) {
                     m_generate_input_data = true;
+#ifdef DEBUG_ON
                     qDebug() << "GenerateInputData task detected";
+#endif
                 }
                 else if (task.compare("GenerateData", Qt::CaseInsensitive) == 0) {
                     m_generate_dependent = true;
                     m_generate_noisy_dependent = true;
                     m_simulate_job = true;
+#ifdef DEBUG_ON
                     qDebug() << "GenerateData task detected";
+#endif
                 }
             }
         }
@@ -186,78 +215,95 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 
 bool SupraFitCli::LoadFile()
 {
-    fmt::print("🔍 DEBUG LoadFile: Starting to load file: {}\n", m_infile.toStdString());
-    
+    std::cout << "🔧 DEBUG LoadFile: SupraFitCli::LoadFile() CALLED!" << std::endl;
+    std::cout << "🔍 DEBUG LoadFile: Starting to load file: " << m_infile.toStdString() << std::endl;
+
+    // Check if filename is valid
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+#ifdef DEBUG_ON
+        fmt::print("❌ DEBUG LoadFile: Input file is empty or null!\n");
+#endif
+        return false;
+    }
+
+    // First, try to load as configuration file using FileHandler (for data generation workflows)
     FileHandler* handler = new FileHandler(m_infile, this);
-    handler->setIndependentRows(m_independent_rows);
-    handler->setStartPoint(m_start_point);
-    handler->setSeriesCount(m_series); // this only important for the subclassed simulator
-    if (m_prepare.size()) {
-        if (m_prepare.contains("Integration")) {
-            QJsonObject integ = m_prepare["Integration"].toObject();
-            integ["SupraFit"] = qint_version; // We have to add SupraFit
-            handler->setThermogramParameter(integ);
-        }
-    }
     handler->LoadFile();
-    
-    fmt::print("🔍 DEBUG LoadFile: Handler type: {}\n", static_cast<int>(handler->Type()));
-    
-    if (handler->Type() == FileHandler::SupraFit) {
-        fmt::print("🔍 DEBUG LoadFile: Processing SupraFit file\n");
-        if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
-            return false;
-    } else if (handler->Type() == FileHandler::dH) {
-        fmt::print("🔍 DEBUG LoadFile: Processing dH file\n");
-        m_toplevel = handler->getJsonData();
 
-    } else if (handler->Type() == FileHandler::ITC) {
-        fmt::print("🔍 DEBUG LoadFile: Processing ITC file\n");
-        m_toplevel = handler->getJsonData();
-    } else {
-        fmt::print("🔍 DEBUG LoadFile: Processing other file type\n");
-        m_toplevel = handler->getJsonData();
-    }
-    m_data_vector << m_toplevel;
+    QJsonObject fileData = handler->getJsonData();
 
-    fmt::print("🔍 DEBUG LoadFile: m_toplevel keys: {}\n", m_toplevel.keys().join(", ").toStdString());
+    // Check if this is a configuration file (Main, Independent, Dependent structure)
+    if (fileData.contains("Main") || (fileData.contains("Independent") && fileData.contains("Dependent"))) {
 
-    if (m_toplevel.keys().contains("data")) {
-        fmt::print("🔍 DEBUG LoadFile: Creating DataClass from m_toplevel[\"data\"]\n");
-        QJsonObject dataObj = m_toplevel["data"].toObject();
-        qDebug() << dataObj;
-        fmt::print("🔍 DEBUG LoadFile: data object keys: {}\n", dataObj.keys().join(", ").toStdString());
-        
-        if (dataObj.contains("dependent")) {
-            QJsonObject depObj = dataObj["dependent"].toObject();
-            fmt::print("🔍 DEBUG LoadFile: dependent object keys: {}\n", depObj.keys().join(", ").toStdString());
-            fmt::print("🔍 DEBUG LoadFile: dependent rows: {}, cols: {}\n", depObj["rows"].toInt(), depObj["cols"].toInt());
-            
-            if (depObj.contains("data")) {
-                QJsonObject depDataObj = depObj["data"].toObject();
-                fmt::print("🔍 DEBUG LoadFile: dependent data sample row 0: '{}'\n", depDataObj["0"].toString().toStdString());
+        std::cout << "🔍 DEBUG LoadFile: Detected configuration file format" << std::endl;
+
+        // This is a configuration file - use FileHandler logic
+        m_toplevel = fileData;
+        m_main = m_toplevel["Main"].toObject();
+        m_models = m_toplevel["models"].toObject();
+        m_analyse = m_toplevel["controller"].toObject();
+
+        // Set additional configuration sections for AddModels workflow
+        if (fileData.contains("AddModels")) {
+            m_models = fileData["AddModels"].toObject();
+#ifdef DEBUG_ON
+            fmt::print("🔍 DEBUG LoadFile: Found AddModels section with {} models\n", m_models.size());
+#endif
+        }
+
+        if (fileData.contains("PostFitAnalysis")) {
+            m_analyse = fileData["PostFitAnalysis"].toObject();
+#ifdef DEBUG_ON
+            fmt::print("🔍 DEBUG LoadFile: Found PostFitAnalysis section\n");
+#endif
+        }
+
+        std::cout << "✅ DEBUG LoadFile: Configuration file loaded successfully, returning true" << std::endl;
+
+        delete handler;
+        return true;
+
+    } else if (fileData.contains("datatype") || fileData.contains("data")) {
+
+        std::cout << "🔍 DEBUG LoadFile: Detected project file format, using ProjectManager" << std::endl;
+
+        // This is a project file - use ProjectManager
+        delete handler;
+
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        bool success = projectManager.loadProject(m_infile);
+
+        if (success) {
+            // Update legacy data structures for backward compatibility
+            QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
+            if (!currentProject.isNull()) {
+                QSharedPointer<DataClass> project = currentProject.toStrongRef();
+                if (project) {
+                    m_data = project.data(); // Set current data for legacy compatibility
+                    m_toplevel = projectManager.getProjectAsJson(); // Set toplevel for legacy compatibility
+
+                    // Update data vector for legacy compatibility
+                    m_data_vector.clear();
+                    m_data_vector = projectManager.getAllProjectsAsJson();
+
+#ifdef DEBUG_ON
+                    fmt::print("✅ DEBUG LoadFile: Successfully loaded project using ProjectManager\n");
+                    fmt::print("🔍 DEBUG LoadFile: Project UUID: {}\n", project->UUID().toStdString());
+#endif
+                }
             }
         }
 
-        if (dataObj.contains("independent")) {
-            QJsonObject depObj = dataObj["independent"].toObject();
-            fmt::print("🔍 DEBUG LoadFile: independent object keys: {}\n", depObj.keys().join(", ").toStdString());
-            fmt::print("🔍 DEBUG LoadFile: independent rows: {}, cols: {}\n", depObj["rows"].toInt(), depObj["cols"].toInt());
-            
-            if (depObj.contains("data")) {
-                QJsonObject depDataObj = depObj["data"].toObject();
-                fmt::print("🔍 DEBUG LoadFile: independent data sample row 0: '{}'\n", depDataObj["0"].toString().toStdString());
-            }
-        }
-        
-        m_data = new DataClass(dataObj);
-    } else {
-        fmt::print("🔍 DEBUG LoadFile: Creating DataClass from m_toplevel\n");
-        m_data = new DataClass(m_toplevel);
-    }
+        return success;
 
-    fmt::print("🔍 DEBUG LoadFile: DataClass created successfully\n");
-    return true;
+    } else {
+
+        std::cout << "❌ DEBUG LoadFile: Unknown file format" << std::endl;
+        std::cout << "🔍 DEBUG LoadFile: File keys: " << fileData.keys().join(", ").toStdString() << std::endl;
+
+        delete handler;
+        return false;
+    }
 }
 
 void SupraFitCli::ParseMain()
@@ -280,8 +326,12 @@ void SupraFitCli::ParseMain()
     m_guess = m_main["Guess"].toBool(false);
     m_fit = m_main["Fit"].toBool(false);
     m_extension = m_main["extension"].toString("suprafit");
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
 
     /*
@@ -311,43 +361,104 @@ void SupraFitCli::ParseMain()
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 {
-    if (JsonHandler::WriteJsonFile(data, file)) {
-        std::cout << file.toStdString() << " successfully written to disk" << std::endl;
-        return true;
+    // Use ProjectManager exclusively for JSON structure compliance - Claude Generated
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QString tempProjectId = projectManager.createProjectFromJson(data, "Temporary CLI Project");
+
+    if (!tempProjectId.isEmpty()) {
+        bool success = projectManager.saveProject(file, tempProjectId);
+        // Clean up temporary project
+        projectManager.removeProject(tempProjectId);
+
+        if (success) {
+            std::cout << file.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
+        } else {
+            std::cout << "Error: Failed to save " << file.toStdString() << " using ProjectManager" << std::endl;
+        }
+        return success;
     }
+
+    std::cout << "Error: Failed to create temporary project for " << file.toStdString() << std::endl;
     return false;
 }
 
 bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& projects)
 {
+    // Use ProjectManager to save all projects as a batch
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+
+    // Option 1: Save as individual files (preserve existing behavior)
+    bool allSuccess = true;
     for (int i = 0; i < projects.size(); ++i) {
-        SaveFile(m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension, projects[i]);
+        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension;
+        bool success = SaveFile(individualFile, projects[i]);
+        allSuccess = allSuccess && success;
     }
-    return true;
+
+    // Option 2: Also offer batch save capability
+    QString batchFile = m_outfile + "_" + file + "_batch." + m_extension;
+    bool batchSuccess = projectManager.saveAllProjects(batchFile);
+
+    return allSuccess;
 }
 
 bool SupraFitCli::SaveFile()
 {
-    if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile + m_extension)) {
-        std::cout << m_outfile.toStdString() << " successfully written to disk" << std::endl;
-        return true;
+    // Use ProjectManager to save current project
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+
+    // Use ProjectManager exclusively for JSON structure compliance - Claude Generated
+    QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
+    if (!currentProject.isNull()) {
+        QSharedPointer<DataClass> project = currentProject.toStrongRef();
+        if (project) {
+            bool success = projectManager.saveProject(m_outfile + m_extension, project->UUID());
+            if (success) {
+                std::cout << m_outfile.toStdString() << " successfully written to disk using ProjectManager" << std::endl;
+                return true;
+            } else {
+                std::cout << "Error: Failed to save " << m_outfile.toStdString() << " using ProjectManager" << std::endl;
+                return false;
+            }
+        }
     }
+
+    // No fallback - ProjectManager must handle all saves for structure compliance
+    std::cout << "Error: No current project available for saving" << std::endl;
     return false;
 }
 
 void SupraFitCli::PrintFileContent(int index)
 {
-    int i = 1;
-    DataClass* data = new DataClass(m_toplevel["data"].toObject());
+    // Use ProjectManager to get current project data
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QWeakPointer<DataClass> currentProject = projectManager.getCurrentProject();
 
-    if (data->DataPoints() == 0)
+    if (currentProject.isNull()) {
+        std::cout << "No current project loaded in ProjectManager" << std::endl;
         return;
+    }
 
-    std::cout << data->Data2Text().toStdString() << std::endl;
+    QSharedPointer<DataClass> project = currentProject.toStrongRef();
+    if (!project) {
+        std::cout << "Current project reference is null" << std::endl;
+        return;
+    }
 
-    for (const QString& key : m_toplevel.keys()) {
+    if (project->DataPoints() == 0) {
+        std::cout << "Project contains no data points" << std::endl;
+        return;
+    }
+
+    std::cout << project->Data2Text().toStdString() << std::endl;
+
+    // Get project JSON for model access
+    QJsonObject projectJson = projectManager.getProjectAsJson();
+    int i = 1;
+
+    for (const QString& key : projectJson.keys()) {
         if (key.contains("model")) {
-            QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(m_toplevel[key].toObject(), data);
+            QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(projectJson[key].toObject(), project.data());
             if (index == 0 || i == index) {
                 std::cout << Print::Html2Raw(model->ModelInfo()).toStdString() << std::endl;
                 std::cout << Print::Html2Raw(model->AnalyseStatistic()).toStdString() << std::endl;
@@ -366,32 +477,42 @@ void SupraFitCli::PrintFileStructure()
 
 void SupraFitCli::Work()
 {
-    if (m_data_vector.isEmpty()) {
-        qDebug() << "No data to process in Work()";
+    // Use ProjectManager to get all projects for processing
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    QVector<QJsonObject> projects = projectManager.getAllProjectsAsJson();
+
+    if (projects.isEmpty()) {
+#ifdef DEBUG_ON
+        qDebug() << "No data to process in Work() - ProjectManager has no projects";
+#endif
         return;
     }
-    
+
     if (m_models.isEmpty()) {
+#ifdef DEBUG_ON
         qDebug() << "No models configured for Work()";
+#endif
         return;
     }
     
     if (m_jobs.isEmpty()) {
+#ifdef DEBUG_ON
         qDebug() << "No jobs configured for Work()";
+#endif
         return;
     }
-    
-    qDebug() << "Processing" << m_data_vector.size() << "datasets with" << m_models.keys().size() << "models";
-    
-    for (int i = 0; i < m_data_vector.size(); ++i) {
-        const auto& project = m_data_vector[i];
-        
-        qDebug() << "Processing dataset" << (i + 1) << "/" << m_data_vector.size();
-        
+
+    qDebug() << "Processing" << projects.size() << "datasets with" << m_models.keys().size() << "models using ProjectManager";
+
+    for (int i = 0; i < projects.size(); ++i) {
+        const auto& project = projects[i];
+
+        qDebug() << "Processing dataset" << (i + 1) << "/" << projects.size();
+
         QJsonObject result = PerformeJobs(project, m_models, m_jobs);
         
         if (!result.isEmpty()) {
-            // Save results for this dataset
+            // Save results for this dataset using ProjectManager
             QString outputFile = QString("%1_%2.json").arg(m_outfile).arg(i);
             if (SaveFile(outputFile, result)) {
                 qDebug() << "Saved results to:" << outputFile;
@@ -400,8 +521,8 @@ void SupraFitCli::Work()
             }
         }
     }
-    
-    qDebug() << "Work() completed for all datasets";
+
+    qDebug() << "Work() completed for all datasets using ProjectManager";
 }
 
 QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
@@ -463,7 +584,10 @@ bool SupraFitCli::Prepare()
     }
 
     if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_mainjson["OutFile"].toString();
+        }
     }
 
     LoadFile();
@@ -526,8 +650,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     if (!LoadFile())
         return project_list;
     
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     qDebug() << "GenerateDataOnly: Loading data from" << m_infile;
@@ -546,6 +674,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     
     QJsonObject export_object;
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
+    
+    // Claude Generated - Add missing fields expected by tests
+    export_object["uuid"] = dataObject["uuid"];
+    export_object["DataType"] = dataObject["DataType"];
     
     project_list << export_object;
     
@@ -646,8 +778,12 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
     }
     
     // Set output file name
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     // Export the generated data and wrap in proper SupraFit project structure
@@ -662,6 +798,10 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
     
     QJsonObject export_object;
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
+    
+    // Claude Generated - Add missing fields expected by tests
+    export_object["uuid"] = dataObject["uuid"];
+    export_object["DataType"] = dataObject["DataType"];
     
     project_list << export_object;
     
@@ -680,24 +820,35 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
 void SupraFitCli::AnalyzeFile()
 {
     fmt::print("\n" + std::string(80, '=') + "\n");
-    fmt::print("📊 SUPRAFIT FILE ANALYSIS\n");
+    fmt::print("📊 SUPRAFIT FILE ANALYSIS (using AnalysisManager)\n");
     fmt::print(std::string(80, '=') + "\n\n");
-
-    // Basic file information
-    fmt::print("📁 FILE INFORMATION:\n");
-    fmt::print("   Input file: {}\n", m_infile.toStdString());
     
-    QFileInfo fileInfo(m_infile);
-    fmt::print("   File size: {} bytes\n", fileInfo.size());
-    fmt::print("   File extension: {}\n", fileInfo.suffix().toStdString());
-    fmt::print("   Absolute path: {}\n", fileInfo.absoluteFilePath().toStdString());
-    fmt::print("   File exists: {}\n", fileInfo.exists() ? "Yes" : "No");
-    fmt::print("   Last modified: {}\n", fileInfo.lastModified().toString(Qt::ISODate).toStdString());
-
-    if (!m_data) {
-        fmt::print("   ❌ No data loaded!\n\n");
+    // Use centralized AnalysisManager for file analysis - Claude Generated
+    QJsonObject analysisResults = m_analysisManager->analyzeFile(m_infile);
+    
+    if (!analysisResults["success"].toBool()) {
+        fmt::print("❌ Analysis failed: {}\n", analysisResults["error"].toString().toStdString());
         return;
     }
+    
+    // Display results in CLI format
+    displayAnalysisResults(analysisResults);
+    
+    fmt::print("\n" + std::string(80, '=') + "\n");
+    fmt::print("✅ FILE ANALYSIS COMPLETE (centralized approach)\n");
+    fmt::print(std::string(80, '=') + "\n\n");
+}
+
+void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
+{
+    // Display file information
+    QJsonObject fileInfo = results["fileInfo"].toObject();
+    fmt::print("📁 FILE INFORMATION:\n");
+    fmt::print("   Input file: {}\n", fileInfo["inputFile"].toString().toStdString());
+    fmt::print("   File size: {} bytes\n", fileInfo["fileSize"].toInt());
+    fmt::print("   File extension: {}\n", fileInfo["fileExtension"].toString().toStdString());
+    fmt::print("   File exists: {}\n", fileInfo["exists"].toBool() ? "Yes" : "No");
+    fmt::print("   Last modified: {}\n", fileInfo["lastModified"].toString().toStdString());
     
     // Data structure analysis
     fmt::print("\n📋 DATA STRUCTURE:\n");
@@ -885,6 +1036,68 @@ void SupraFitCli::AnalyzeFile()
         }
     } else {
         fmt::print("   No system parameters found\n");
+    }
+
+    // Enhanced Model Analysis - Claude Generated  
+    fmt::print("\n🔬 MODEL STATISTICS TABLE:\n");
+    
+    QVector<ModelStatistics> modelStatistics;
+    
+    // Search for model objects in toplevel JSON (model_0, model_1, etc.)
+    for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
+        QString key = it.key();
+        if (key.startsWith("model_") && it.value().isObject()) {
+            QJsonObject modelObj = it.value().toObject();
+            ModelStatistics stats = extractModelStatistics(key, modelObj);
+            modelStatistics.append(stats);
+        }
+    }
+    
+    // Display the table
+    displayModelStatisticsTable(modelStatistics);
+    
+    // Show post-processing details if requested - Claude Generated
+    if (m_show_post_processing_details) {
+        displayPostProcessingDetails(modelStatistics);
+    }
+    
+    // Show additional parameter details for models with statistics
+    if (!modelStatistics.isEmpty()) {
+        fmt::print("\n📋 PARAMETER DETAILS:\n");
+        for (const auto& stats : modelStatistics) {
+            if (stats.hasValidStats) {
+                // Find the original model object to get parameter details
+                QJsonObject modelObj = m_toplevel[stats.key].toObject();
+                QJsonObject data = modelObj["data"].toObject();
+                
+                if (!data.isEmpty()) {
+                    QJsonObject globalParamObj = data["globalParameter"].toObject();
+                    if (!globalParamObj.isEmpty() && globalParamObj.contains("data")) {
+                        fmt::print("   {} ({}) - Global parameters:\n", 
+                                 stats.key.toStdString(), stats.name.toStdString());
+                        QJsonObject paramData = globalParamObj["data"].toObject();
+                        QString header = globalParamObj["header"].toString();
+                        for (auto paramIt = paramData.begin(); paramIt != paramData.end(); ++paramIt) {
+                            fmt::print("     {}: {}\n", 
+                                     header.isEmpty() ? QString("P%1").arg(paramIt.key()).toStdString() : header.toStdString(),
+                                     paramIt.value().toString().toStdString());
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Show debug info for models without statistics
+        for (const auto& stats : modelStatistics) {
+            if (!stats.hasValidStats) {
+                QJsonObject modelObj = m_toplevel[stats.key].toObject();
+                fmt::print("   {} - Available fields: ", stats.key.toStdString());
+                for (auto statIt = modelObj.begin(); statIt != modelObj.end(); ++statIt) {
+                    fmt::print("{} ", statIt.key().toStdString());
+                }
+                fmt::print("\n");
+            }
+        }
     }
 
     // Enhanced data type analysis - Claude Generated
@@ -1134,6 +1347,413 @@ void SupraFitCli::validateGenerateDataConfig(const QJsonObject& config)
     }
 }
 
+// Model statistics table formatting helper functions - Claude Generated
+SupraFitCli::ModelStatistics SupraFitCli::extractModelStatistics(const QString& key, const QJsonObject& modelObj)
+{
+    ModelStatistics stats;
+    stats.key = key;
+    stats.hasValidStats = false;
+    
+    // Extract model name - try different possible field names
+    stats.name = modelObj["name"].toString();
+    if (stats.name.isEmpty()) {
+        stats.name = modelObj["model"].toString();  // Alternative field name
+    }
+    if (stats.name.isEmpty()) {
+        stats.name = key;  // Use key as fallback
+    }
+    
+    // Check convergence status
+    bool converged = modelObj["converged"].toBool(false);
+    stats.status = converged ? "✅ Conv" : "❌ Failed";
+    
+    // Extract fit statistics - SupraFit specific structure
+    stats.sse = modelObj["SSE"].toDouble(-1);
+    stats.sae = modelObj["SAE"].toDouble(-1);  // Sum of Absolute Errors
+    stats.aic = modelObj["AIC"].toDouble(-999);  // Akaike Information Criterion
+    stats.aicc = modelObj["AICc"].toDouble(-999); // Corrected AIC
+    
+    // Try to get parameter counts from data structure
+    QJsonObject data = modelObj["data"].toObject();
+    stats.globalParams = -1;
+    stats.localParams = -1;
+    
+    if (!data.isEmpty()) {
+        QJsonObject globalParamObj = data["globalParameter"].toObject();
+        if (!globalParamObj.isEmpty()) {
+            stats.globalParams = globalParamObj["rows"].toInt(-1);
+        }
+        
+        QJsonObject localParamObj = data["localParameter"].toObject();
+        if (!localParamObj.isEmpty()) {
+            stats.localParams = localParamObj["rows"].toInt(-1);
+        }
+    }
+    
+    // Analyze post-processing methods - Claude Generated
+    if (!data.isEmpty() && data.contains("methods")) {
+        QJsonObject methods = data["methods"].toObject();
+        QVector<QJsonObject> modelVector = {modelObj};
+        
+        for (auto it = methods.begin(); it != methods.end(); ++it) {
+            QJsonObject method = it.value().toObject();
+            
+            // Skip empty method blocks
+            if (method.isEmpty())
+                continue;
+            
+            // Look for controller - it might be directly in method or nested under numeric keys
+            QJsonObject controller;
+            bool foundController = false;
+            
+            if (method.contains("controller")) {
+                controller = method["controller"].toObject();
+                foundController = true;
+            } else {
+                // Check for nested controller under numeric keys (like "0", "1", etc.)
+                for (auto subIt = method.begin(); subIt != method.end(); ++subIt) {
+                    if (subIt.value().isObject()) {
+                        QJsonObject subMethod = subIt.value().toObject();
+                        if (subMethod.contains("controller")) {
+                            controller = subMethod["controller"].toObject();
+                            foundController = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (!foundController || !controller.contains("Method"))
+                continue;
+                
+            int methodType = controller["Method"].toInt();
+            
+            switch (methodType) {
+                case 1: // MonteCarlo
+                    stats.mcBlocks++;
+                    if (!stats.postProcessingData.contains("MonteCarlo") || stats.postProcessingData["MonteCarlo"].isNull()) {
+                        stats.postProcessingData["MonteCarlo"] = StatisticTool::CalculateMCMetrics(modelVector, 1);
+                    }
+                    break;
+                case 2: // WeakenedGridSearch
+                    stats.wgsBlocks++;
+                    if (!stats.postProcessingData.contains("WeakenedGridSearch") || stats.postProcessingData["WeakenedGridSearch"].isNull()) {
+                        stats.postProcessingData["WeakenedGridSearch"] = StatisticTool::CalculateWGSMetrics(modelVector);
+                    }
+                    break;
+                case 3: // ModelComparison
+                    stats.modelCompBlocks++;
+                    if (!stats.postProcessingData.contains("ModelComparison") || stats.postProcessingData["ModelComparison"].isNull()) {
+                        stats.postProcessingData["ModelComparison"] = StatisticTool::CalculateModelComparisonMetrics(modelVector);
+                    }
+                    break;
+                case 4: // CrossValidation
+                    stats.cvBlocks++;
+                    if (!stats.postProcessingData.contains("CrossValidation") || stats.postProcessingData["CrossValidation"].isNull()) {
+                        stats.postProcessingData["CrossValidation"] = StatisticTool::CalculateCVMetrics(modelVector, 1, 3);
+                    }
+                    break;
+                case 5: // Reduction
+                    stats.reductionBlocks++;
+                    if (!stats.postProcessingData.contains("Reduction") || stats.postProcessingData["Reduction"].isNull()) {
+                        stats.postProcessingData["Reduction"] = StatisticTool::CalculateReductionMetrics(modelVector, 0.1);
+                    }
+                    break;
+                case 6: // FastConfidence
+                    stats.fastConfBlocks++;
+                    if (!stats.postProcessingData.contains("FastConfidence") || stats.postProcessingData["FastConfidence"].isNull()) {
+                        stats.postProcessingData["FastConfidence"] = StatisticTool::CalculateFastConfidenceMetrics(modelVector);
+                    }
+                    break;
+                case 7: // GlobalSearch
+                    stats.globalBlocks++;
+                    if (!stats.postProcessingData.contains("GlobalSearch") || stats.postProcessingData["GlobalSearch"].isNull()) {
+                        stats.postProcessingData["GlobalSearch"] = StatisticTool::CalculateGlobalSearchMetrics(modelVector);
+                    }
+                    break;
+            }
+        }
+        
+        stats.totalPPBlocks = stats.mcBlocks + stats.wgsBlocks + stats.modelCompBlocks + 
+                             stats.cvBlocks + stats.reductionBlocks + stats.fastConfBlocks + stats.globalBlocks;
+    }
+    
+    // Check if we have any valid statistics
+    stats.hasValidStats = (stats.sse >= 0 || stats.sae >= 0 || stats.aic > -999 || 
+                          stats.aicc > -999 || stats.globalParams > 0 || stats.localParams > 0);
+    
+    return stats;
+}
+
+void SupraFitCli::displayModelStatisticsTable(const QVector<ModelStatistics>& models)
+{
+    if (models.isEmpty()) {
+        fmt::print("   No fitted models found in this file\n");
+        return;
+    }
+    
+    // Calculate column widths based on content
+    int keyWidth = 8;  // "Model" header minimum
+    int nameWidth = 10; // "Name" header minimum
+    int statusWidth = 8; // "Status" header minimum
+    int sseWidth = 10;  // "SSE" header + scientific notation
+    int saeWidth = 8;   // "SAE" header minimum
+    int aicWidth = 8;   // "AIC" header minimum
+    int aiccWidth = 8;  // "AICc" header minimum
+    int globalWidth = 8; // "Global" header minimum
+    int localWidth = 7;  // "Local" header minimum
+    int ppWidth = 12;   // "Post-Proc" header minimum
+    
+    // Calculate actual widths needed
+    for (const auto& model : models) {
+        keyWidth = qMax(keyWidth, model.key.length());
+        nameWidth = qMax(nameWidth, model.name.length());
+        statusWidth = qMax(statusWidth, model.status.length());
+        if (model.sse >= 0) sseWidth = qMax(sseWidth, 10); // Scientific notation: 1.23e-05
+        if (model.sae >= 0) saeWidth = qMax(saeWidth, 8);
+        if (model.aic > -999) aicWidth = qMax(aicWidth, 8);
+        if (model.aicc > -999) aiccWidth = qMax(aiccWidth, 8);
+        if (model.globalParams > 0) globalWidth = qMax(globalWidth, QString::number(model.globalParams).length());
+        if (model.localParams > 0) localWidth = qMax(localWidth, QString::number(model.localParams).length());
+        
+        // Calculate post-processing summary width
+        QString ppSummary;
+        if (model.totalPPBlocks > 0) {
+            QStringList ppMethods;
+            if (model.mcBlocks > 0) ppMethods << QString("%1 MC").arg(model.mcBlocks);
+            if (model.cvBlocks > 0) ppMethods << QString("%1 CV").arg(model.cvBlocks);
+            if (model.wgsBlocks > 0) ppMethods << QString("%1 WGS").arg(model.wgsBlocks);
+            if (model.modelCompBlocks > 0) ppMethods << QString("%1 MCo").arg(model.modelCompBlocks);
+            if (model.reductionBlocks > 0) ppMethods << QString("%1 Red").arg(model.reductionBlocks);
+            if (model.fastConfBlocks > 0) ppMethods << QString("%1 FCo").arg(model.fastConfBlocks);
+            if (model.globalBlocks > 0) ppMethods << QString("%1 Glo").arg(model.globalBlocks);
+            ppSummary = ppMethods.join(", ");
+        } else {
+            ppSummary = "-";
+        }
+        ppWidth = qMax(ppWidth, ppSummary.length());
+    }
+    
+    // Print table header
+    std::string separator = "+";
+    separator += std::string(keyWidth + 2, '-') + "+";
+    separator += std::string(nameWidth + 2, '-') + "+";
+    separator += std::string(statusWidth + 2, '-') + "+";
+    separator += std::string(sseWidth + 2, '-') + "+";
+    separator += std::string(saeWidth + 2, '-') + "+";
+    separator += std::string(aicWidth + 2, '-') + "+";
+    separator += std::string(aiccWidth + 2, '-') + "+";
+    separator += std::string(globalWidth + 2, '-') + "+";
+    separator += std::string(localWidth + 2, '-') + "+";
+    separator += std::string(ppWidth + 2, '-') + "+";
+    
+    fmt::print("{}\n", separator);
+    fmt::print("| {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} |\n",
+               "Model", keyWidth,
+               "Name", nameWidth,
+               "Status", statusWidth,
+               "SSE", sseWidth,
+               "SAE", saeWidth,
+               "AIC", aicWidth,
+               "AICc", aiccWidth,
+               "Global", globalWidth,
+               "Local", localWidth,
+               "Post-Proc", ppWidth);
+    fmt::print("{}\n", separator);
+    
+    // Print data rows
+    for (const auto& model : models) {
+        std::string sseStr = model.sse >= 0 ? fmt::format("{:.2e}", model.sse) : "N/A";
+        std::string saeStr = model.sae >= 0 ? fmt::format("{:.4f}", model.sae) : "N/A";
+        std::string aicStr = model.aic > -999 ? fmt::format("{:.2f}", model.aic) : "N/A";
+        std::string aiccStr = model.aicc > -999 ? fmt::format("{:.2f}", model.aicc) : "N/A";
+        std::string globalStr = model.globalParams > 0 ? std::to_string(model.globalParams) : "N/A";
+        std::string localStr = model.localParams > 0 ? std::to_string(model.localParams) : "N/A";
+        
+        // Format post-processing summary
+        QString ppSummary;
+        if (model.totalPPBlocks > 0) {
+            QStringList ppMethods;
+            if (model.mcBlocks > 0) ppMethods << QString("%1 MC").arg(model.mcBlocks);
+            if (model.cvBlocks > 0) ppMethods << QString("%1 CV").arg(model.cvBlocks);
+            if (model.wgsBlocks > 0) ppMethods << QString("%1 WGS").arg(model.wgsBlocks);
+            if (model.modelCompBlocks > 0) ppMethods << QString("%1 MCo").arg(model.modelCompBlocks);
+            if (model.reductionBlocks > 0) ppMethods << QString("%1 Red").arg(model.reductionBlocks);
+            if (model.fastConfBlocks > 0) ppMethods << QString("%1 FCo").arg(model.fastConfBlocks);
+            if (model.globalBlocks > 0) ppMethods << QString("%1 Glo").arg(model.globalBlocks);
+            ppSummary = ppMethods.join(", ");
+        } else {
+            ppSummary = "-";
+        }
+        
+        fmt::print("| {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} | {:^{}} |\n",
+                   model.key.toStdString(), keyWidth,
+                   model.name.toStdString(), nameWidth,
+                   model.status.toStdString(), statusWidth,
+                   sseStr, sseWidth,
+                   saeStr, saeWidth,
+                   aicStr, aicWidth,
+                   aiccStr, aiccWidth,
+                   globalStr, globalWidth,
+                   localStr, localWidth,
+                   ppSummary.toStdString(), ppWidth);
+    }
+    fmt::print("{}\n", separator);
+}
+
+// Helper function to display post-processing results using Print::TextFromConfidence - Claude Generated
+void SupraFitCli::displayPostProcessingMethod(const QString& methodName, const QString& emoji, 
+                                              int blockCount, const QJsonObject& methodData, 
+                                              int methodType) {
+    fmt::print("  {} {} ({} block{}):\n", emoji.toStdString(), methodName.toStdString(), 
+              blockCount, blockCount == 1 ? "" : "s");
+    
+    // Create controller JSON for Print::TextFromConfidence
+    QJsonObject controller;
+    controller["Method"] = methodType;
+    controller["EntropyBins"] = 30;
+    
+    // Method-specific controller settings
+    if (methodData.contains("variance")) {
+        controller["Variance"] = methodData["variance"].toDouble();
+        controller["VarianceSource"] = 1; // Standard variance source
+    }
+    if (methodData.contains("cv_type")) {
+        controller["CVType"] = methodData["cv_type"].toInt();
+    }
+    if (methodData.contains("cv_x")) {
+        controller["X"] = methodData["cv_x"].toInt();
+    }
+    
+    // Process parameters for all methods that have model/parameter structure
+    if (methodData.contains("models") && methodData["models"].isArray()) {
+        QJsonArray models_array = methodData["models"].toArray();
+        for (const auto& modelValue : models_array) {
+            QJsonObject modelData = modelValue.toObject();
+            if (modelData.contains("parameters") && modelData["parameters"].isArray()) {
+                QJsonArray params = modelData["parameters"].toArray();
+                for (const auto& paramValue : params) {
+                    QJsonObject param = paramValue.toObject();
+                    
+                    // Convert our JSON structure to the format expected by Print::TextFromConfidence
+                    QJsonObject result;
+                    result["name"] = param["name"];
+                    result["type"] = param["type"];
+                    result["value"] = param.contains("mean") ? param["mean"] : param["value"];
+                    
+                    // Create confidence object
+                    QJsonObject confidence;
+                    confidence["upper"] = param.contains("confidence_upper") ? 
+                                        param["confidence_upper"] : param["upper"];
+                    confidence["lower"] = param.contains("confidence_lower") ? 
+                                        param["confidence_lower"] : param["lower"];
+                    confidence["error"] = param.contains("confidence_error") ? 
+                                        param["confidence_error"].toDouble() : 95.0;
+                    result["confidence"] = confidence;
+                    
+                    // Create data object with raw data
+                    QJsonObject data;
+                    if (param.contains("raw_data")) {
+                        data["raw"] = param["raw_data"];
+                    } else {
+                        data["raw"] = "";
+                    }
+                    result["data"] = data;
+                    
+                    // Add index for local parameters
+                    if (param.contains("index")) {
+                        result["index"] = param["index"];
+                    }
+                    
+                    // Use Print::TextFromConfidence and convert HTML to raw text
+                    QString htmlOutput = Print::TextFromConfidence(result, controller);
+                    QString consoleOutput = Print::Html2Raw(htmlOutput);
+                    fmt::print("{}\n", consoleOutput.toStdString());
+                }
+            }
+        }
+    }
+    
+    // Method-specific summary information
+    if (methodData.contains("parameter_averages") && methodData["parameter_averages"].isArray()) {
+        QJsonArray avgParams = methodData["parameter_averages"].toArray();
+        fmt::print("    📊 Parameter Summary:\n");
+        for (const auto& avgValue : avgParams) {
+            QJsonObject avg = avgValue.toObject();
+            fmt::print("       {}: Avg σ={:.4f}, Avg H={:.2f} ({} model{})\n",
+                     avg["parameter"].toString().toStdString(),
+                     avg["avg_stddev"].toDouble(),
+                     avg["avg_entropy"].toDouble(),
+                     avg["model_count"].toInt(),
+                     avg["model_count"].toInt() == 1 ? "" : "s");
+        }
+        fmt::print("\n");
+    }
+}
+
+// Post-processing details display function - Claude Generated  
+void SupraFitCli::displayPostProcessingDetails(const QVector<ModelStatistics>& models)
+{
+    if (models.isEmpty()) {
+        fmt::print("   No models found for post-processing details\n");
+        return;
+    }
+    
+    fmt::print("\n📊 POST-PROCESSING DETAILS:\n");
+    
+    for (const auto& model : models) {
+        if (model.totalPPBlocks == 0) {
+            fmt::print("\n{} ({}):\n", model.key.toStdString(), model.name.toStdString());
+            fmt::print("  No post-processing methods found\n");
+            continue;
+        }
+        
+        fmt::print("\n{} ({}):\n", model.key.toStdString(), model.name.toStdString());
+        
+        // Display Monte Carlo results
+        if (model.mcBlocks > 0 && !model.postProcessingData["MonteCarlo"].isUndefined()) {
+            displayPostProcessingMethod("Monte Carlo Analysis", "🎲", model.mcBlocks, 
+                                      model.postProcessingData["MonteCarlo"].toObject(), 1);
+        }
+        
+        // Display Cross-Validation results
+        if (model.cvBlocks > 0 && !model.postProcessingData["CrossValidation"].isUndefined()) {
+            displayPostProcessingMethod("Cross-Validation", "🔄", model.cvBlocks, 
+                                      model.postProcessingData["CrossValidation"].toObject(), 4);
+        }
+        
+        // Display Parameter Reduction results
+        if (model.reductionBlocks > 0 && !model.postProcessingData["Reduction"].isUndefined()) {
+            displayPostProcessingMethod("Parameter Reduction", "🔬", model.reductionBlocks, 
+                                      model.postProcessingData["Reduction"].toObject(), 5);
+        }
+        
+        // Display Weakened Grid Search results  
+        if (model.wgsBlocks > 0 && !model.postProcessingData["WeakenedGridSearch"].isUndefined()) {
+            displayPostProcessingMethod("Weakened Grid Search", "🔍", model.wgsBlocks, 
+                                      model.postProcessingData["WeakenedGridSearch"].toObject(), 2);
+        }
+        
+        // Display Model Comparison results
+        if (model.modelCompBlocks > 0 && !model.postProcessingData["ModelComparison"].isUndefined()) {
+            displayPostProcessingMethod("Model Comparison", "⚖️", model.modelCompBlocks, 
+                                      model.postProcessingData["ModelComparison"].toObject(), 3);
+        }
+        
+        // Display Fast Confidence results
+        if (model.fastConfBlocks > 0 && !model.postProcessingData["FastConfidence"].isUndefined()) {
+            displayPostProcessingMethod("Fast Confidence", "⚡", model.fastConfBlocks, 
+                                      model.postProcessingData["FastConfidence"].toObject(), 6);
+        }
+        
+        // Display Global Search results
+        if (model.globalBlocks > 0 && !model.postProcessingData["GlobalSearch"].isUndefined()) {
+            displayPostProcessingMethod("Global Search", "🌐", model.globalBlocks, 
+                                      model.postProcessingData["GlobalSearch"].toObject(), 7);
+        }
+    }
+}
+
 QVector<QJsonObject> SupraFitCli::GenerateData()
 {
     QVector<QJsonObject> project_list;
@@ -1159,10 +1779,14 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
     
     if (m_main.isEmpty() || m_simulation.isEmpty()) {
         fmt::print("Error: Missing configuration data for DataGenerator\n");
+#ifdef DEBUG_ON
         fmt::print("🔍 DEBUG: m_main.isEmpty() = {}, m_simulation.isEmpty() = {}\n", 
                   m_main.isEmpty(), m_simulation.isEmpty());
+#endif
+#ifdef DEBUG_ON
         fmt::print("🔍 DEBUG: m_main keys: {}\n", m_main.keys().join(", ").toStdString());
         fmt::print("🔍 DEBUG: m_simulation keys: {}\n", m_simulation.keys().join(", ").toStdString());
+#endif
         return project_list;
     }
     
@@ -1186,8 +1810,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
     }
     
     // Set output file name from configuration - Claude Generated
-    if (m_main.contains("OutFile")) {
-        m_outfile = m_main["OutFile"].toString();
+    // Only use OutFile from JSON if not already set via -o option
+    if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            m_outfile = m_main["OutFile"].toString();
+        }
     }
     
     int repeat = m_simulation["Repeat"].toInt(1);
@@ -1384,7 +2012,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
         data_object["generator_config"] = config;
         data_object["random_limits"] = randomLimits;
         
-        // Wrap in correct SupraFit project structure
+        // Wrap in correct SupraFit project structure - no fields outside "data" object
         QJsonObject project_object;
         project_object["data"] = data_object;
         
@@ -1547,11 +2175,15 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
     int repeat = 1;
     if (!m_main.isEmpty()) {
         repeat = m_main["Repeat"].toInt(1);
-        if (!m_main.contains("OutFile")) {
-            fmt::print("❌ ERROR: OutFile is required in Main section\n");
-            return project_list;
+        
+        // Only use OutFile from JSON if not already set via -o option
+        if (m_outfile.isEmpty()) {
+            if (!m_main.contains("OutFile")) {
+                fmt::print("❌ ERROR: OutFile is required in Main section when -o option is not used\n");
+                return project_list;
+            }
+            setOutFile(m_main["OutFile"].toString());
         }
-        setOutFile(m_main["OutFile"].toString());
         qDebug() << m_outfile << m_extension;
     }
     
@@ -1590,6 +2222,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
 
         fullData->setDataType(DataClassPrivate::Table);
 
+        // Transfer ML RawData from model generation if available - Claude Generated
+        if (!m_mlRawData.isEmpty()) {
+            fullData->setRawData(m_mlRawData);
+            fmt::print("🔍 DEBUG: Transferred ML RawData with {} keys to final DataClass\n", m_mlRawData.keys().size());
+        }
+
         // Step 3: Apply noise if specified
         fullData = applyNoise(fullData, m_independent["Noise"].toObject(), true);  // Independent noise
         fullData = applyNoise(fullData, m_dependent["Noise"].toObject(), false);   // Dependent noise
@@ -1620,6 +2258,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
         // Wrap everything in "data" object for correct structure
         QJsonObject project;
         project["data"] = innerData;
+
+        // Claude Generated - Add missing fields expected by tests
+        project["uuid"] = innerData["uuid"];
+        project["DataType"] = innerData["DataType"];
 
         project_list << project;
         
@@ -1841,6 +2483,10 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
                     m_modelContent = data->getContent();
                     fmt::print("🔍 DEBUG: Extracted model content ({} chars) for later use\n", m_modelContent.length());
 
+                    // Extract ML RawData and store globally for later transfer - Claude Generated
+                    m_mlRawData = data->RawData();
+                    fmt::print("🔍 DEBUG: Extracted ML RawData with {} keys for later transfer\n", m_mlRawData.keys().size());
+
                     fmt::print("✅ Generated model-based dependent data: {} rows x {} cols\n",
                         modelTable->rowCount(), modelTable->columnCount());
 
@@ -2029,12 +2675,103 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
             fmt::print("🔍 Using default models: {} models\n", modelsConfig.size());
         }
 
-        // Step 3: Fit models and evaluate with post-fit analysis
-        QVector<QJsonObject> fittedModels = FitModelsToData(data, modelsConfig, globalAnalysisConfig);
+        // Step 3: Fit models and evaluate with post-fit analysis (using AnalysisManager)
+        fmt::print("🚨 CRITICAL DEBUG: About to call AnalysisManager->fitModelsToData()\n");
+        fmt::print("🔍 DEBUG: data pointer = {}\n", data.data() != nullptr ? "VALID" : "NULL");
+        if (data) {
+            fmt::print("🔍 DEBUG: data has {} independent rows, {} dependent rows\n", 
+                       data->IndependentModel()->rowCount(), data->DependentModel()->rowCount());
+        }
+        fmt::print("🔍 DEBUG: modelsConfig size = {}\n", modelsConfig.size());
+        fmt::print("🔍 DEBUG: globalAnalysisConfig size = {}\n", globalAnalysisConfig.size());
+        fmt::print("🔍 DEBUG: globalAnalysisConfig keys: {}\n", globalAnalysisConfig.keys().join(", ").toStdString());
+        
+        fmt::print("🚨 CALLING AnalysisManager->fitModelsToData() NOW...\n");
+        QVector<QJsonObject> fittedModels = m_analysisManager->fitModelsToData(data, modelsConfig, globalAnalysisConfig);
+        fmt::print("🚨 RETURNED from AnalysisManager->fitModelsToData() with {} results\n", fittedModels.size());
+
+        // Step 3.5: Create Multi-Project architecture according to JSON_DOKUMENTATION.md - Claude Generated
+        // Convert fitted models to individual projects using official project_X format
+        QJsonObject multiProjectData;
+        multiProjectData["format_version"] = "2.0";
+        multiProjectData["generation_timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+        
+        // Remove base_data - not part of official JSON_DOKUMENTATION.md structure
+        
+        // Extract ground truth model information from content for ML labeling - Claude Generated
+        QString content = data->getContent();
+        if (content.contains("Model: ¹H 1:1-Model")) {
+            QJsonObject groundTruth;
+            groundTruth["model_id"] = 1;
+            groundTruth["model_name"] = "¹H 1:1-Model";
+            groundTruth["source"] = "data_generation_content";
+            multiProjectData["ground_truth"] = groundTruth;
+        } else if (content.contains("Model: ¹H 1:2-Model")) {
+            QJsonObject groundTruth;
+            groundTruth["model_id"] = 2; 
+            groundTruth["model_name"] = "¹H 1:2-Model";
+            groundTruth["source"] = "data_generation_content";
+            multiProjectData["ground_truth"] = groundTruth;
+        }
+        
+        // Create individual project entries following JSON_DOKUMENTATION.md structure - Claude Generated
+        for (int modelIndex = 0; modelIndex < fittedModels.size(); ++modelIndex) {
+            const QJsonObject& modelResult = fittedModels[modelIndex];
+            QString projectKey = QString("project_%1").arg(modelIndex);
+            
+            // Create the proper project structure with "data" wrapper (per JSON_DOKUMENTATION.md)
+            QJsonObject projectData;
+            QJsonObject dataWrapper;
+            
+            // Basic project metadata (required by JSON_DOKUMENTATION.md)
+            dataWrapper["DataType"] = 1;
+            dataWrapper["SupraFit"] = 2004;
+            dataWrapper["title"] = QString("Model Analysis %1").arg(modelIndex + 1);
+            dataWrapper["uuid"] = QUuid::createUuid().toString();
+            
+            // Include original data structure
+            dataWrapper["independent"] = data->IndependentModel()->ExportTable(true);
+            dataWrapper["dependent"] = data->DependentModel()->ExportTable(true);
+            
+            // Export the fitted model with complete statistics (including Monte Carlo)
+            if (modelResult.contains("model_export") && modelResult["model_export"].isObject()) {
+                QJsonObject fullModelExport = modelResult["model_export"].toObject();
+                
+                // Extract and include the model in the standard format
+                if (fullModelExport.contains("data")) {
+                    QJsonObject modelData = fullModelExport["data"].toObject();
+                    QString modelKey = QString("model_0");
+                    
+                    QJsonObject modelEntry;
+                    modelEntry["model"] = modelResult.contains("model_id") ? modelResult["model_id"].toInt() : 1;
+                    modelEntry["name"] = fullModelExport.contains("name") ? fullModelExport["name"].toString() : "Unknown Model";
+                    modelEntry["data"] = modelData;  // This contains the "methods" with statistical results
+                    
+                    dataWrapper[modelKey] = modelEntry;
+                }
+            }
+            
+            projectData["data"] = dataWrapper;
+            multiProjectData[projectKey] = projectData;
+        }
+        
+        fmt::print("🔍 DEBUG: Created Multi-Project structure with {} projects\n", fittedModels.size());
+        
+        // Save the Multi-Project dataset - Claude Generated
+        QString datasetFilename = m_outfile + "-" + QString::number(i);
+        if (m_outfile.endsWith(".json")) {
+            datasetFilename += ".json";
+        } else {
+            datasetFilename += ".json";  // Always save dataset as JSON
+        }
+        
+        SaveFile(datasetFilename, multiProjectData);
+        fmt::print("🔍 DEBUG: Saved Multi-Project dataset '{}' with {} projects\n", 
+                  datasetFilename.toStdString(), fittedModels.size());
 
         // Step 4: Create SupraFit project with fitted models (like GUI SaveWorkspace)
         QJsonObject projectFile;
-        projectFile["data"] = dataset["data"];  // Use the generated data
+        projectFile["data"] = data->ExportData();  // Use updated data with fitted models in ML RawData
         
         // Add fitted models in SupraFit format (model_0, model_1, model_2...)
         int modelIndex = 0;
@@ -2486,12 +3223,35 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
             m_jobmanager->RunJobs();
 
             // Get results from model after job completion
-            // The JobManager stores results in the model itself
+            // The JobManager stores results in the model itself - Claude Generated
             QJsonObject methodResult;
             methodResult["method"] = methodType;
             methodResult["method_name"] = methodName;
             methodResult["configuration"] = job;
             methodResult["completed"] = true;
+            
+            // Extract actual analysis results from model after JobManager execution - Claude Generated
+            // JobManager stores the real statistical results in the model - use JsonUtils to extract them
+            // CRITICAL: Must use ExportModel(true, false) to include statistics in export!
+            QJsonObject modelExport = model->ExportModel(true, false);
+            QJsonObject actualResults = SupraFit::JsonUtils::getStatisticalMethod(modelExport, static_cast<SupraFit::Method>(methodType));
+            
+            if (!actualResults.isEmpty()) {
+                methodResult["results"] = actualResults;
+                fmt::print("✅ Extracted {} results from model: {} entries\n", 
+                          methodName.toStdString(), actualResults.keys().size());
+            } else {
+                fmt::print("⚠️  Warning: No results found for {} in model export\n", methodName.toStdString());
+                
+                // Fallback: Create empty structure with debug info
+                QJsonObject fallbackResults;
+                fallbackResults["max_steps"] = -1;
+                fallbackResults["models"] = QJsonArray();
+                fallbackResults["parameter_averages"] = QJsonArray(); 
+                fallbackResults["variance"] = 0;
+                fallbackResults["debug_info"] = "JobManager execution completed but no results found in model";
+                methodResult["results"] = fallbackResults;
+            }
 
             methodResults[QString::number(methodType)] = methodResult;
 
@@ -2514,6 +3274,240 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
 
     return results;
 }
+
+// ML Training Data Export Implementation - Claude Generated
+bool SupraFitCli::exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile)
+{
+    if (inputFiles.isEmpty()) {
+        fmt::print("❌ ERROR: No input files provided for ML training data export\n");
+        return false;
+    }
+
+    MLFeatureExtractor* extractor = new MLFeatureExtractor(this);
+    
+    // Configure extraction options
+    extractor->setExtractionOptions(
+        true,   // includeAdvancedStats
+        false,  // includeFitParameters (keep compact for NN)
+        true    // includeInputNoise
+    );
+    
+    fmt::print("🔧 Extracting ML training data from {} files...\n", inputFiles.size());
+    
+    // Extract training samples from all input files
+    QVector<QJsonObject> trainingSamples = extractor->extractBatchTrainingData(inputFiles);
+    
+    if (trainingSamples.isEmpty()) {
+        fmt::print("❌ ERROR: No training samples could be extracted from input files\n");
+        delete extractor;
+        return false;
+    }
+    
+    // Export in neural network format
+    QJsonObject neuralNetData = extractor->exportNeuralNetFormat(trainingSamples);
+    
+    // Save to file
+    bool success = SaveFile(outputFile, neuralNetData);
+    
+    if (success) {
+        fmt::print("✅ ML training data exported: {} samples → {}\n", trainingSamples.size(), outputFile.toStdString());
+    } else {
+        fmt::print("❌ ERROR: Failed to save ML training data to {}\n", outputFile.toStdString());
+    }
+    
+    delete extractor;
+    return success;
+}
+
+bool SupraFitCli::exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile)
+{
+    return exportMLTrainingData(QVector<QString>() << inputFile, outputFile);
+}
+
+bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile)
+{
+    QDir dir(inputDirectory);
+    if (!dir.exists()) {
+        fmt::print("❌ ERROR: Input directory does not exist: {}\n", inputDirectory.toStdString());
+        return false;
+    }
+    
+    // Find all JSON files in directory
+    QStringList nameFilters;
+    nameFilters << "*.json";
+    QStringList jsonFiles = dir.entryList(nameFilters, QDir::Files);
+    
+    if (jsonFiles.isEmpty()) {
+        fmt::print("❌ ERROR: No JSON files found in directory: {}\n", inputDirectory.toStdString());
+        return false;
+    }
+    
+    // Convert to full paths
+    QVector<QString> inputFiles;
+    for (const QString& fileName : jsonFiles) {
+        inputFiles.append(dir.absoluteFilePath(fileName));
+    }
+    
+    fmt::print("🔍 Found {} JSON files in directory {}\n", inputFiles.size(), inputDirectory.toStdString());
+    
+    return exportMLTrainingData(inputFiles, outputFile);
+}
+
+// Claude Generated: Extract and display fitted model parameters
+bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
+{
+    if (m_toplevel.isEmpty()) {
+        fmt::print("❌ ERROR: No data loaded. File structure is empty.\n");
+        return false;
+    }
+
+    // Check if this is a models file
+    QStringList keys = m_toplevel.keys();
+    QStringList modelKeys;
+    for (const QString& key : keys) {
+        if (key.startsWith("model_")) {
+            modelKeys << key;
+        }
+    }
+
+    if (modelKeys.isEmpty()) {
+        fmt::print("❌ ERROR: No models found in file. Expected model_0, model_1, etc.\n");
+        fmt::print("Available keys: {}\n", keys.join(", ").toStdString());
+        return false;
+    }
+
+    fmt::print("📊 Found {} models in file\n", modelKeys.size());
+
+    // Filter models if specific index requested
+    QStringList targetsToProcess;
+    if (!modelIndexStr.isEmpty()) {
+        QString targetKey = QString("model_%1").arg(modelIndexStr);
+        if (modelKeys.contains(targetKey)) {
+            targetsToProcess << targetKey;
+        } else {
+            fmt::print("❌ ERROR: Model {} not found. Available models: {}\n", 
+                      targetKey.toStdString(), modelKeys.join(", ").toStdString());
+            return false;
+        }
+    } else {
+        targetsToProcess = modelKeys;
+    }
+
+    // Extract and display parameters for each model
+    fmt::print("\n=== Model Parameter Extraction ===\n\n");
+    
+    for (const QString& modelKey : targetsToProcess) {
+        QJsonObject model = m_toplevel[modelKey].toObject();
+        
+        fmt::print("🔬 Model: {}\n", modelKey.toStdString());
+        
+        // Basic model information
+        if (model.contains("name")) {
+            fmt::print("   Name: {}\n", model["name"].toString().toStdString());
+        }
+        
+        if (model.contains("converged")) {
+            bool converged = model["converged"].toBool();
+            fmt::print("   Status: {}\n", converged ? "✅ Converged" : "❌ Not Converged");
+        }
+        
+        // Fit quality metrics
+        if (model.contains("SSE")) {
+            double sse = model["SSE"].toDouble();
+            fmt::print("   SSE: {:.6e}\n", sse);
+        }
+        
+        if (model.contains("AIC")) {
+            double aic = model["AIC"].toDouble();
+            if (aic != std::numeric_limits<double>::infinity() && aic > -999) {
+                fmt::print("   AIC: {:.6e}\n", aic);
+            }
+        }
+        
+        if (model.contains("AICc")) {
+            double aicc = model["AICc"].toDouble();
+            if (aicc != std::numeric_limits<double>::infinity() && aicc > -999) {
+                fmt::print("   AICc: {:.6e}\n", aicc);
+            }
+        }
+        
+        // Extract fitted parameters
+        if (model.contains("parameter")) {
+            QJsonObject params = model["parameter"].toObject();
+            fmt::print("   📈 Fitted Parameters:\n");
+            
+            for (auto it = params.begin(); it != params.end(); ++it) {
+                QString paramName = it.key();
+                QJsonValue paramValue = it.value();
+                
+                if (paramValue.isDouble()) {
+                    double value = paramValue.toDouble();
+                    if (value != std::numeric_limits<double>::infinity() && 
+                        value != -std::numeric_limits<double>::infinity() &&
+                        !std::isnan(value)) {
+                        fmt::print("      {}: {:.6e}\n", paramName.toStdString(), value);
+                    } else {
+                        fmt::print("      {}: [Invalid/Infinite]\n", paramName.toStdString());
+                    }
+                } else if (paramValue.isArray()) {
+                    QJsonArray paramArray = paramValue.toArray();
+                    fmt::print("      {}:", paramName.toStdString());
+                    for (int i = 0; i < paramArray.size(); ++i) {
+                        double value = paramArray[i].toDouble();
+                        if (value != std::numeric_limits<double>::infinity() && 
+                            value != -std::numeric_limits<double>::infinity() &&
+                            !std::isnan(value)) {
+                            fmt::print(" {:.6e}", value);
+                        } else {
+                            fmt::print(" [Invalid]");
+                        }
+                    }
+                    fmt::print("\n");
+                } else {
+                    fmt::print("      {}: {}\n", paramName.toStdString(), 
+                              paramValue.toString().toStdString());
+                }
+            }
+        }
+        
+        // Extract confidence intervals if available
+        if (model.contains("confidence_intervals")) {
+            QJsonObject ci = model["confidence_intervals"].toObject();
+            fmt::print("   📊 Confidence Intervals:\n");
+            
+            for (auto it = ci.begin(); it != ci.end(); ++it) {
+                QString paramName = it.key();
+                QJsonObject interval = it.value().toObject();
+                
+                if (interval.contains("lower") && interval.contains("upper")) {
+                    double lower = interval["lower"].toDouble();
+                    double upper = interval["upper"].toDouble();
+                    fmt::print("      {}: [{:.6e}, {:.6e}]\n", 
+                              paramName.toStdString(), lower, upper);
+                }
+            }
+        }
+        
+        // Extract standard errors if available
+        if (model.contains("standard_errors")) {
+            QJsonObject se = model["standard_errors"].toObject();
+            fmt::print("   📏 Standard Errors:\n");
+            
+            for (auto it = se.begin(); it != se.end(); ++it) {
+                QString paramName = it.key();
+                double error = it.value().toDouble();
+                if (!std::isnan(error) && error != std::numeric_limits<double>::infinity()) {
+                    fmt::print("      {}: {:.6e}\n", paramName.toStdString(), error);
+                }
+            }
+        }
+        
+        fmt::print("\n");
+    }
+    
+    return true;
+}
+
 
 /*
 SupraFitCli * SupraFitCli::Generate() const

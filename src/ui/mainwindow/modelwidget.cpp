@@ -153,6 +153,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
+    // Claude Generated - Debug Messages for successful model loading
+    if (model) {
+        qDebug() << "✅ ModelWidget: Model successfully loaded -" 
+                 << "Name:" << model->Name()
+                 << "ID:" << model->SFModel()
+                 << "UUID:" << model->UUID()
+                 << "Parameters:" << model->GlobalParameterSize() << "global," << model->LocalParameterSize() << "local";
+    } else {
+        qDebug() << "❌ ModelWidget: Null model passed to constructor";
+    }
     m_splitter = new QSplitter(this);
     m_splitter->setObjectName("modelSplitter");
     m_splitter->setOrientation(Qt::Vertical);

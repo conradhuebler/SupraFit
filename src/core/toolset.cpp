@@ -181,7 +181,12 @@ Vector QVector2DoubleEigVec(const QVector<qreal>& in_vector)
     for (double value : in_vector)
         v.push_back(value);
 
-    vector = Vector::Map(&v[0], v.size());
+    // Claude Generated - Fix crash when input vector is empty
+    if (v.empty()) {
+        vector = Vector(0);  // Create empty Vector instead of crashing
+    } else {
+        vector = Vector::Map(&v[0], v.size());
+    }
     return vector;
 }
 
