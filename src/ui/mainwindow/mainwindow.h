@@ -64,7 +64,11 @@ public:
 
     inline QWeakPointer<ChartWrapper> getChartWrapper() const { return m_model_dataholder->getChartWrapper(); }
 
-    inline QPointer<DataClass> Data() const { return m_data.data(); }
+    inline QPointer<DataClass> Data() const { 
+        // Claude Generated: Safe WeakPointer access
+        auto strongData = m_data.toStrongRef(); 
+        return strongData ? strongData.data() : nullptr; 
+    }
 
     void setCurrentTab(int index);
 
@@ -72,9 +76,15 @@ public:
 
     inline bool isMetaModel() const { return m_meta_model; }
 
-    inline QString UUID() const { return m_data.data()->UUID(); }
+    inline QString UUID() const { 
+        auto strongData = m_data.toStrongRef(); 
+        return strongData ? strongData->UUID() : QString(); 
+    }
 
-    inline QString Name() const { return m_data.data()->ProjectTitle(); }
+    inline QString Name() const { 
+        auto strongData = m_data.toStrongRef(); 
+        return strongData ? strongData->ProjectTitle() : QString(); 
+    }
 
     // Claude Generated - Access to ModelDataHolder for ProjectManager integration
     inline ModelDataHolder* getModelDataHolder() const { return m_model_dataholder; }
@@ -92,7 +102,7 @@ private:
     QPointer<ChartWidget> m_charts;
     QPointer<ModelDataHolder> m_model_dataholder;
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
-    QSharedPointer<DataClass> m_data;
+    QWeakPointer<DataClass> m_data; // Claude Generated: WeakPointer to prevent exit crash
     bool m_hasData, m_meta_model = false;
     QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     QJsonObject m_opt_config;

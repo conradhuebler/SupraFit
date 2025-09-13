@@ -80,3 +80,11 @@ src/
 - **Preserved Section**: Permanent documentation (don't edit)
 - **Variable Section**: Short-term information (update regularly)
 - **Instructions Block**: Operator-defined future tasks and visions
+
+### Documentation Update Rules
+- **Replace debugging details with architecture decisions** when issues are resolved
+- **Remove unnecessary pointer addresses and crash investigation specifics**
+- **Focus on architectural clarity** rather than technical debugging information
+- **Document the "why" behind design decisions** for future reference
+- **Eliminate redundant information** that doesn't add architectural value
+- **Prioritize clean, maintainable documentation** over verbose troubleshooting history

@@ -126,6 +126,13 @@ public:
      * @return Shared pointer to project, null if not found
      */
     QSharedPointer<DataClass> getProjectData(const QString& projectId) const;
+
+    /**
+     * @brief Get weak project data by UUID for GUI components (Claude Generated)
+     * @param projectId UUID of requested project
+     * @return Weak pointer to project for safe GUI access
+     */
+    QWeakPointer<DataClass> getWeakProjectData(const QString& projectId) const;
     
     /**
      * @brief Get list of all loaded project IDs

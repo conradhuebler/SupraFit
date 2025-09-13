@@ -219,6 +219,9 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
+    // Claude Generated - Properly clean up model storage containers to prevent exit crash
+    d->m_stored_models.clear();
+    d->m_stored_models_by_pointer.clear();
 }
 
 void DataClass::NewUUID()

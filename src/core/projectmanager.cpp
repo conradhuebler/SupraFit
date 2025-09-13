@@ -300,6 +300,17 @@ QSharedPointer<DataClass> ProjectManager::getProjectData(const QString& projectI
     return QSharedPointer<DataClass>();
 }
 
+QWeakPointer<DataClass> ProjectManager::getWeakProjectData(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    
+    if (m_projectHash.contains(projectId)) {
+        return m_projectHash.value(projectId);
+    }
+    
+    return QWeakPointer<DataClass>();
+}
+
 QStringList ProjectManager::getLoadedProjectIds() const
 {
     QMutexLocker locker(&m_projectsMutex);

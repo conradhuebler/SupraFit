@@ -549,6 +549,20 @@ void ModelDataHolder::SetProjectTabName()
     emit nameChanged();
 }
 
+void ModelDataHolder::setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPointer<ChartWrapper> wrapper)
+{
+    // Claude Generated: WeakPointer implementation to prevent exit crash
+    auto strongData = weakData.toStrongRef();
+    if (!strongData) {
+        qWarning() << "ModelDataHolder::setDataWeakRef: DataClass already destroyed";
+        return;
+    }
+    
+    // Use the existing setData method with the strong reference
+    // This ensures all the existing logic is preserved
+    setData(strongData, wrapper);
+}
+
 void ModelDataHolder::NewModel()
 {
     QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
@@ -845,21 +859,26 @@ void ModelDataHolder::RemoveTab(int i)
 {
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
-        QPointer<AbstractModel> m = model->Model().data();
+        
+        // Claude Generated: Get strong reference to AbstractModel before deleting ModelWidget to prevent use-after-free
+        QSharedPointer<AbstractModel> modelPtr = model->Model();
+        AbstractModel* rawModel = modelPtr.data();
+        
         for (int j = 0; j < m_model_widgets.size(); ++j) {
             if (m_model_widgets[j] == model)
                 m_model_widgets.remove(j);
         }
         m_modelsWidget->removeTab(i);
-        m_models.remove(m_models.indexOf(model->Model()));
+        m_models.remove(m_models.indexOf(modelPtr));
+        
+        // Delete ModelWidget first, then handle AbstractModel cleanup
         delete model;
-#pragma message("if some strange crashes occur, check this here")
 
         if (qobject_cast<MetaModel*>(m_data))
-            qobject_cast<MetaModel*>(m_data)->RemoveModel(m);
+            qobject_cast<MetaModel*>(m_data)->RemoveModel(rawModel);
         else {
-            if (m)
-                delete m;
+            // Let QSharedPointer handle deletion automatically when modelPtr goes out of scope
+            // No manual delete needed - prevents double deletion
         }
         emit ModelRemoved();
     }
@@ -985,7 +1004,8 @@ void ModelDataHolder::CloseAll()
 
 void ModelDataHolder::CloseAllForced()
 {
-    for (int i = m_modelsWidget->count(); i > 0; --i)
+    // Claude Generated: Fix off-by-one error - valid indices are 0 to count()-1
+    for (int i = m_modelsWidget->count() - 1; i >= 0; --i)
         RemoveTab(i);
 }
 

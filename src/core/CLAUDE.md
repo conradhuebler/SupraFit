@@ -172,7 +172,14 @@ model->Calculate();
 - No memory leaks or crashes identified
 
 ### Known Issues
-- None currently identified
+
+#### **ProjectManager Architecture Decision (January 2025)**
+- **UUID System**: DataClass containers have project UUIDs, AbstractModel instances inherit this context but don't have independent UUIDs
+- **Model Multiplicity**: Multiple models of the same type (e.g., "¹H 1:1-Model") within a project is **correct behavior** for comparative analysis
+- **Data Inheritance**: All models within a DataClass share the same project UUID, enabling proper project-model relationships
+- **Memory Management**: WeakPointer pattern implemented between ProjectManager and GUI to prevent reference cycles during application shutdown
+- **Model Deletion**: Fixed CloseAllForced() index bounds and RemoveTab() use-after-free issues for stable model lifecycle management
+- **Status**: **ARCHITECTURE STABLE** - ProjectManager fully integrated with both CLI and GUI frontends
 
 ### Performance Notes
 - Eigen operations provide excellent numerical performance

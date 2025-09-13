@@ -132,6 +132,7 @@ public:
     ~ModelDataHolder();
 
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper);
+    void setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPointer<ChartWrapper> wrapper); // Claude Generated: WeakPointer method
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
 
     void setSettings(const QJsonObject& config);
