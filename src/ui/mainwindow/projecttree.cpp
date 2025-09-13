@@ -63,14 +63,17 @@ QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QMode
 // Claude Generated - ProjectManager Integration for UpdateStructure (CRASH FIX)
 void ProjectTree::UpdateStructure()
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Starting update";
     
     // Clear existing UUID mappings
     m_uuids.clear();
     m_ptr_uuids.clear();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Starting update";
 
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Processing" << projectList.size() << "projects";
     
     for (int i = 0; i < projectList.size(); ++i) {
@@ -138,6 +141,7 @@ void ProjectTree::UpdateStructure()
         }
     }
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Final UUID count:" << m_uuids.size() << "Calling layoutChanged()";
     
     // Claude Generated - Safe layoutChanged() call with proper model notifications
@@ -149,6 +153,7 @@ void ProjectTree::UpdateStructure()
         qDebug() << "❌ DEBUG ProjectTree::UpdateStructure: Layout reset failed, continuing";
     }
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::UpdateStructure: Update complete";
 }
 
@@ -183,6 +188,7 @@ QString ProjectTree::UUID(const QModelIndex& index) const
 
 int ProjectTree::columnCount(const QModelIndex& parent) const
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::columnCount: Called with parent valid:" << parent.isValid();
     
     if (parent.isValid()) {
@@ -208,11 +214,13 @@ int ProjectTree::columnCount(const QModelIndex& parent) const
 // Claude Generated - ProjectManager Integration for rowCount
 int ProjectTree::rowCount(const QModelIndex& p) const
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::rowCount: Called with valid index:" << p.isValid();
     
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
     int count = projectList.size();
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::rowCount: Base projectList size:" << count;
     
     if (p.isValid()) {
@@ -286,6 +294,7 @@ int ProjectTree::rowCount(const QModelIndex& p) const
         }
     }
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::rowCount: Returning count:" << count;
     return count;
 }
@@ -293,6 +302,7 @@ int ProjectTree::rowCount(const QModelIndex& p) const
 // Claude Generated - ProjectManager Integration for data display
 QVariant ProjectTree::data(const QModelIndex& index, int role) const
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::data: Called with row:" << index.row() << "column:" << index.column() << "role:" << role << "valid:" << index.isValid();
     
     QVariant data;
@@ -301,12 +311,15 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
         return data;
     }
 
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::data: Getting unified project list";
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::data: Project list size:" << projectList.size();
     
     // Claude Generated - CRITICAL FIX: Declare internalPtr once at the top for entire method
     void* internalPtr = index.internalPointer();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::data: InternalPtr:" << internalPtr;
     
     if (role == Qt::DisplayRole) {
@@ -405,10 +418,12 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
 // Claude Generated - ProjectManager Integration for index creation (CRASH FIX)
 QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::index: Called with row:" << row << "column:" << column << "parent valid:" << parent.isValid();
     
     QModelIndex index;
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::index: Checking hasIndex for row:" << row << "column:" << column << "parent valid:" << parent.isValid();
     
     if (!hasIndex(row, column, parent)) {
@@ -417,9 +432,11 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
         return QModelIndex();
     }
     
+#ifdef DEBUG_ON
     qDebug() << "✅ DEBUG ProjectTree::index: hasIndex() returned true, proceeding with index creation";
 
     QVector<QWeakPointer<DataClass>> projectList = getUnifiedProjectList();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::index: ProjectList size:" << projectList.size();
 
     if (!parent.isValid()) {
@@ -551,6 +568,7 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
         }
     }
 
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::index: Returning index valid:" << index.isValid();
     return index;
 }
@@ -558,6 +576,7 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
 // Claude Generated - ProjectManager Integration for parent finding
 QModelIndex ProjectTree::parent(const QModelIndex& child) const
 {
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::parent: Called with child valid:" << child.isValid();
     
     QModelIndex index;
@@ -569,6 +588,7 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
 
     // Claude Generated - CRITICAL FIX: Use internalPointer directly, avoid UUID() method
     void* internalPtr = child.internalPointer();
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::parent: Child internalPtr:" << internalPtr;
     
     if (internalPtr == nullptr) {
@@ -581,6 +601,7 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
     // For now, we need to find which project this child belongs to
     // We'll use a simpler approach: get UUID index and find the parent project
     int uuidIndex = reinterpret_cast<quintptr>(internalPtr) - 1;
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::parent: Child UUID index:" << uuidIndex;
     
     if (uuidIndex >= 0 && uuidIndex < m_uuids.size()) {
@@ -606,6 +627,7 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
         }
     }
     
+#ifdef DEBUG_ON
     qDebug() << "🔍 DEBUG ProjectTree::parent: Returning parent index valid:" << index.isValid();
 
     return index;

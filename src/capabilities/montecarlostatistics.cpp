@@ -244,6 +244,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     } else {
         seed = QDateTime::currentMSecsSinceEpoch();
     }
+    qDebug() << m_controller << seed;
     rng.seed(seed);
     m_model->setFast(false);
     m_model->Calculate();
@@ -280,7 +281,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         qDebug() << "Warning: Invalid sigma value" << sigma << "- using default 0.01";
         sigma = 0.01;  // Use small positive default
     }
-    
+    qDebug() << "Using sigma:" << sigma;
     Phi = std::normal_distribution<double>(0, sigma);
 
     m_controller["Variance"] = sigma;
@@ -292,7 +293,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         blocksize = 1;
 
     m_threadpool->setMaxThreadCount(maxthreads);
-
+    qDebug() << "Using" << maxthreads << "threads with blocksize" << blocksize;
     m_table = new DataTable(m_model->ModelTable());
     m_ptr_table << m_table;
     QVector<QPointer<MonteCarloBatch>> threads;
@@ -306,13 +307,17 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     } else {
         Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
     }
-
+    qDebug() << "Using uniform distribution from 0 to" << vector.size() - 1;
     bool original = m_controller["OriginalData"].toBool();
 
     QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());
 
     QVector<std::normal_distribution<double>> indep_phi;
     for (int i = 0; i < indep_variance.size(); ++i) {
+        if (indep_variance[i] <= 0.0) {
+            continue;
+        }
+        qDebug() << "Independent variance for column" << i << ":" << indep_variance[i];
         std::normal_distribution<double> phi = std::normal_distribution<double>(0, indep_variance[i]);
         indep_phi << phi;
     }
