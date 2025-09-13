@@ -89,6 +89,9 @@ public:
     inline ChartDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
     inline QColor RecentColor() const { return m_recent_color; }
 
+    // Claude Generated: Accessor for data mapper to fix LineSeries visibility issue
+    inline QSharedPointer<ChartWrapper> getDataWrapper() const { return m_data_mapper; }
+
 private:
     qreal max_shift, min_shift;
 

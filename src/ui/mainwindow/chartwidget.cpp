@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,125 +231,51 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
-    // Claude Generated - Add comprehensive debug output to identify crash location
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Starting addModel for" << (model ? model->Name() : "NULL");
-#endif
-    
     if (!model) {
-        qWarning() << "❌ ChartWidget::addModel: Model is null";
+        qWarning() << "ChartWidget::addModel: Model is null";
         return Charts{};
     }
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Checking m_data_mapper" << (m_data_mapper ? "OK" : "NULL");
-#endif
-    if (!m_data_mapper) {
-        qWarning() << "❌ ChartWidget::addModel: m_data_mapper is null";
-        return Charts{};
-    }
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Calling TransformModel";
-#endif
-    m_data_mapper->TransformModel(model);
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: TransformModel completed";
-#endif
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting lineWidth";
-#endif
-    double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: lineWidth =" << lineWidth;
-#endif
 
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up connections and wrappers";
-#endif
+    if (!m_data_mapper) {
+        qWarning() << "ChartWidget::addModel: m_data_mapper is null";
+        return Charts{};
+    }
+
+    m_data_mapper->TransformModel(model);
+
+    double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Creating signal_wrapper";
-#endif
+
     QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: signal_wrapper created";
-#endif
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up signal_wrapper connections";
-#endif
+
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting ModelTable";
-#endif
-    DataTable* modelTable = model->ModelTable();
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: ModelTable is" << (modelTable ? "valid" : "NULL");
-#endif
-    signal_wrapper->setDataTable(modelTable);
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting data on signal_wrapper";
-#endif
-    signal_wrapper->setData(model);
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: signal_wrapper setup complete";
-#endif
 
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Creating error_wrapper";
-#endif
+    DataTable* modelTable = model->ModelTable();
+    if (!modelTable) {
+        qWarning() << "ChartWidget::addModel: ModelTable is null for model" << model->Name();
+    }
+    signal_wrapper->setDataTable(modelTable);
+    signal_wrapper->setData(model);
+
     QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: error_wrapper created";
-#endif
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting up error_wrapper connections";
-#endif
+
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting ErrorTable";
-#endif
+
     DataTable* errorTable = model->ErrorTable();
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: ErrorTable is" << (errorTable ? "valid" : "NULL");
-#endif
+    if (!errorTable) {
+        qWarning() << "ChartWidget::addModel: ErrorTable is null for model" << model->Name();
+    }
     error_wrapper->setDataTable(errorTable);
-    
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Setting data on error_wrapper";
-#endif
     error_wrapper->setData(model);
-#ifdef DEBUG_ON
-    qDebug() << "✅ DEBUG ChartWidget::addModel: error_wrapper setup complete";
-#endif
 
-
-#ifdef DEBUG_ON
-    qDebug() << "🔍 DEBUG ChartWidget::addModel: Starting series loop, SeriesCount:" << model->SeriesCount();
-#endif
     for (int i = 0; i < model->SeriesCount(); ++i) {
-#ifdef DEBUG_ON
-        qDebug() << "🔍 DEBUG ChartWidget::addModel: Processing series" << i;
-        
-        qDebug() << "🔍 DEBUG ChartWidget::addModel: Getting series from signal_wrapper";
-#endif
         QXYSeries* base_series = signal_wrapper->Series(i);
 
         // Claude Generated: Dynamic series type detection and handling
         if (LineSeries* line_series = qobject_cast<LineSeries*>(base_series)) {
-#ifdef DEBUG_ON
-            qDebug() << "🔍 DEBUG ChartWidget::addModel: Detected LineSeries" << i;
-#endif
             signal_wrapper->setSeries(line_series, i);
 
             // LineSeries doesn't have name/visibility change signals, use direct slot calls
@@ -361,9 +287,6 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             m_signalview->addSeries(line_series);
 
         } else if (ScatterSeries* scatter_series = qobject_cast<ScatterSeries*>(base_series)) {
-#ifdef DEBUG_ON
-            qDebug() << "🔍 DEBUG ChartWidget::addModel: Detected ScatterSeries" << i;
-#endif
             signal_wrapper->setSeries(scatter_series, i);
 
             // ScatterSeries has the correct signals: nameChanged and visibilityChanged
@@ -376,10 +299,12 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 
         } else {
 #ifdef DEBUG_ON
-            qDebug() << "⚠️  WARNING ChartWidget::addModel: Unknown series type for series" << i;
+            qDebug() << "ChartWidget::addModel: Unknown series type for series" << i;
             if (base_series) {
-                qDebug() << "🔍 DEBUG ChartWidget::addModel: Series type:" << base_series->metaObject()->className();
+                qDebug() << "ChartWidget::addModel: Series type:" << base_series->metaObject()->className();
+            }
 #endif
+            if (base_series) {
                 signal_wrapper->setSeries(base_series, i);
                 m_signalview->addSeries(base_series);
             }
@@ -390,9 +315,6 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             QXYSeries* base_error_series = error_wrapper->Series(i);
 
             if (LineSeries* error_line_series = qobject_cast<LineSeries*>(base_error_series)) {
-#ifdef DEBUG_ON
-                qDebug() << "🔍 DEBUG ChartWidget::addModel: Detected LineSeries for error" << i;
-#endif
                 error_wrapper->setSeries(error_line_series, i);
                 error_line_series->setName(m_data_mapper.data()->Series(i)->name());
                 error_line_series->setColor(m_data_mapper.data()->Series(i)->color());
@@ -402,9 +324,6 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
                 m_errorview->addSeries(error_line_series);
 
             } else if (ScatterSeries* error_scatter_series = qobject_cast<ScatterSeries*>(base_error_series)) {
-#ifdef DEBUG_ON
-                qDebug() << "🔍 DEBUG ChartWidget::addModel: Detected ScatterSeries for error" << i;
-#endif
                 error_wrapper->setSeries(error_scatter_series, i);
                 connect(m_data_mapper->Series(i), SIGNAL(visibilityChanged(int)), error_scatter_series, SLOT(showLine(int)));
                 error_scatter_series->setName(m_data_mapper.data()->Series(i)->name());
@@ -414,10 +333,12 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 
             } else {
 #ifdef DEBUG_ON
-                qDebug() << "⚠️  WARNING ChartWidget::addModel: Unknown error series type for series" << i;
+                qDebug() << "ChartWidget::addModel: Unknown error series type for series" << i;
                 if (base_error_series) {
-                    qDebug() << "🔍 DEBUG ChartWidget::addModel: Error series type:" << base_error_series->metaObject()->className();
+                    qDebug() << "ChartWidget::addModel: Error series type:" << base_error_series->metaObject()->className();
+                }
 #endif
+                if (base_error_series) {
                     error_wrapper->setSeries(base_error_series, i);
                     m_errorview->addSeries(base_error_series);
                 }
@@ -445,6 +366,11 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
 
     Repaint();
+
+    // Claude Generated: Fix for LineSeries visibility issue
+    // Ensure all series are visible after model initialization
+    // This fixes the problem where series are invisible until toggle button is clicked
+    m_data_mapper->showSeries(-1);
 
     return charts;
 }

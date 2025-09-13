@@ -109,7 +109,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
-    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+
+    // Claude Generated: Fix for LineSeries visibility issue
+    // Always default to visible (checked=true) to ensure LineSeries are shown
+    // This prevents the chicken-and-egg problem where invisible ActiveSignals
+    // create invisible checkboxes which then perpetuate invisible series
+    m_include->setChecked(true);
     connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
     tools->addWidget(m_include);
 

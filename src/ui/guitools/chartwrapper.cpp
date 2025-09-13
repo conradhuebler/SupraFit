@@ -51,7 +51,7 @@ ChartWrapper::~ChartWrapper()
     m_stored_data.clear();
     m_stored_model.clear();
     m_working.clear();
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Deleting chartwrapper";
 #endif
 }
@@ -91,7 +91,9 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 
         connect(wrapper.toStrongRef().data(), &ChartWrapper::ModelChanged, wrapper.toStrongRef().data()->Series(i), [series, wrapper, i]() {
             if (!wrapper.toStrongRef().data() || !series) {
+#ifdef DEBUG_ON
                 qDebug() << "series already left the building";
+#endif
                 return;
             }
 

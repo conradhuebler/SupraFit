@@ -1270,6 +1270,21 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
 
     active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
+
+    // Claude Generated: Fix for LineSeries visibility issue
+    // Ensure all series are visible by default unless explicitly disabled
+    if (active_signals.isEmpty() || active_signals.size() != SeriesCount()) {
+        // No active signals defined or size mismatch - set all visible
+        active_signals = QVector<int>(SeriesCount(), 1).toList();
+    } else {
+        // Check for any series that are set to 0 (invisible) and make them visible by default
+        for (int i = 0; i < active_signals.size(); ++i) {
+            if (active_signals[i] == 0) {
+                active_signals[i] = 1; // Default to visible
+            }
+        }
+    }
+
     LocalTable()->ImportTable(json["localParameter"].toObject());
 
     if (isSimulation()) {
@@ -1503,6 +1518,21 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
 
     } else {
         active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
+
+        // Claude Generated: Fix for LineSeries visibility issue (second location)
+        // Ensure all series are visible by default unless explicitly disabled
+        if (active_signals.isEmpty() || active_signals.size() != SeriesCount()) {
+            // No active signals defined or size mismatch - set all visible
+            active_signals = QVector<int>(SeriesCount(), 1).toList();
+        } else {
+            // Check for any series that are set to 0 (invisible) and make them visible by default
+            for (int i = 0; i < active_signals.size(); ++i) {
+                if (active_signals[i] == 0) {
+                    active_signals[i] = 1; // Default to visible
+                }
+            }
+        }
+
         LocalTable()->ImportTable(json["localParameter"].toObject());
     }
     setActiveSignals(active_signals);

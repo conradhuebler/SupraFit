@@ -813,7 +813,21 @@ void ModelDataHolder::syncModelsWithProjectManager()
             createModelWidgetFromModel(model);
         }
     }
-    
+
+    // Claude Generated: Fix for LineSeries visibility issue in project loading
+    // After all models are loaded, ensure all series are visible
+    // This fixes the problem where direct project loading shows invisible series
+    if (m_charts && !models.empty()) {
+        qDebug() << "🔧 DEBUG syncModelsWithProjectManager: Applying showSeries(-1) fix for" << models.size() << "models";
+        // Use a small delay to ensure all ModelElements are fully initialized
+        QTimer::singleShot(10, this, [this]() {
+            if (m_charts && m_charts->getDataWrapper()) {
+                m_charts->getDataWrapper()->showSeries(-1);
+                qDebug() << "✅ DEBUG syncModelsWithProjectManager: Applied showSeries(-1) fix for project loading";
+            }
+        });
+    }
+
     qDebug() << "✅ DEBUG ModelDataHolder::syncModelsWithProjectManager: Synchronization complete";
 }
 

@@ -553,21 +553,21 @@ int ProjectManager::getProjectCount() const
 QSharedPointer<AbstractModel> ProjectManager::getModel(const QString& projectId, const QString& modelId) const
 {
     QMutexLocker locker(&m_projectsMutex);
-    
-    qDebug() << "🔍 DEBUG ProjectManager::getModel: Looking for model" << modelId << "in project" << projectId;
-    
+
+#ifdef DEBUG_ON
+    qDebug() << "ProjectManager::getModel: Looking for model" << modelId << "in project" << projectId;
+#endif
+
     auto projectIt = m_projectHash.find(projectId);
     if (projectIt == m_projectHash.end()) {
-        qDebug() << "❌ DEBUG ProjectManager::getModel: Project" << projectId << "not found";
         return QSharedPointer<AbstractModel>();
     }
-    
+
     QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
     if (!project) {
-        qDebug() << "❌ DEBUG ProjectManager::getModel: Project pointer is null";
         return QSharedPointer<AbstractModel>();
     }
-    
+
     // Iterate through project children (models are stored as children)
     for (int i = 0; i < project->ChildrenSize(); ++i) {
         QPointer<DataClass> child = project->Children(i);
@@ -575,14 +575,15 @@ QSharedPointer<AbstractModel> ProjectManager::getModel(const QString& projectId,
             // Cast DataClass back to AbstractModel (models inherit from DataClass)
             AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data());
             if (modelPtr) {
-                qDebug() << "✅ DEBUG ProjectManager::getModel: Found model" << modelId;
+#ifdef DEBUG_ON
+                qDebug() << "ProjectManager::getModel: Found model" << modelId;
+#endif
                 // Return QSharedPointer without taking ownership (model is managed by DataClass parent)
                 return QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*) { /* no-op deleter */ });
             }
         }
     }
-    
-    qDebug() << "❌ DEBUG ProjectManager::getModel: Model" << modelId << "not found in project";
+
     return QSharedPointer<AbstractModel>();
 }
 
@@ -590,44 +591,42 @@ QVector<QSharedPointer<AbstractModel>> ProjectManager::getProjectModels(const QS
 {
     QMutexLocker locker(&m_projectsMutex);
     QVector<QSharedPointer<AbstractModel>> models;
-    
-    qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Getting all models for project" << projectId;
-    
+
+#ifdef DEBUG_ON
+    qDebug() << "DEBUG ProjectManager::getProjectModels: Getting all models for project" << projectId;
+#endif
+
     auto projectIt = m_projectHash.find(projectId);
     if (projectIt == m_projectHash.end()) {
-        qDebug() << "❌ DEBUG ProjectManager::getProjectModels: Project" << projectId << "not found";
         return models;
     }
-    
+
     QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
     if (!project) {
-        qDebug() << "❌ DEBUG ProjectManager::getProjectModels: Project pointer is null";
         return models;
     }
-    
-    qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Retrieved project" << project->UUID() << "from hash";
-    qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Project title:" << project->ProjectTitle();
-    qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Project has" << project->ChildrenSize() << "children";
-    
+
+#ifdef DEBUG_ON
+    qDebug() << "DEBUG ProjectManager::getProjectModels: Project has" << project->ChildrenSize() << "children";
+#endif
+
     // Collect all models from project children
     for (int i = 0; i < project->ChildrenSize(); ++i) {
         QPointer<DataClass> child = project->Children(i);
         if (child) {
-            qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Child" << i << "exists, attempting cast";
             AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data());
             if (modelPtr) {
-                qDebug() << "✅ DEBUG ProjectManager::getProjectModels: Successfully cast child" << i << "to AbstractModel";
-                qDebug() << "🔍 DEBUG ProjectManager::getProjectModels: Model" << i << "Name:" << modelPtr->Name() << "ModelUUID:" << modelPtr->ModelUUID();
-                models.append(QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*){}));
-            } else {
-                qDebug() << "❌ DEBUG ProjectManager::getProjectModels: Failed to cast child" << i << "to AbstractModel";
+#ifdef DEBUG_ON
+                qDebug() << "DEBUG ProjectManager::getProjectModels: Model" << i << "Name:" << modelPtr->Name() << "ModelUUID:" << modelPtr->ModelUUID();
+#endif
+                models.append(QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*) {}));
             }
-        } else {
-            qDebug() << "❌ DEBUG ProjectManager::getProjectModels: Child" << i << "is null";
         }
     }
-    
-    qDebug() << "✅ DEBUG ProjectManager::getProjectModels: Found" << models.size() << "models in project" << projectId;
+
+#ifdef DEBUG_ON
+    qDebug() << "DEBUG ProjectManager::getProjectModels: Found" << models.size() << "models in project" << projectId;
+#endif
     return models;
 }
 
@@ -638,10 +637,9 @@ QStringList ProjectManager::getModelIds(const QString& projectId) const
     
     auto projectIt = m_projectHash.find(projectId);
     if (projectIt == m_projectHash.end()) {
-        qDebug() << "❌ DEBUG ProjectManager::getModelIds: Project" << projectId << "not found";
         return modelIds;
     }
-    
+
     QSharedPointer<DataClass> project = projectIt.value().toStrongRef();
     if (!project) {
         return modelIds;
@@ -657,8 +655,10 @@ QStringList ProjectManager::getModelIds(const QString& projectId) const
             }
         }
     }
-    
-    qDebug() << "🔍 DEBUG ProjectManager::getModelIds: Found" << modelIds.size() << "model IDs:" << modelIds;
+
+#ifdef DEBUG_ON
+    qDebug() << "DEBUG ProjectManager::getModelIds: Found" << modelIds.size() << "model IDs:" << modelIds;
+#endif
     return modelIds;
 }
 
@@ -686,8 +686,10 @@ int ProjectManager::getModelCount(const QString& projectId) const
             }
         }
     }
-    
-    qDebug() << "🔍 DEBUG ProjectManager::getModelCount: Project" << projectId << "has" << modelCount << "models";
+
+#ifdef DEBUG_ON
+    qDebug() << "DEBUG ProjectManager::getModelCount: Project" << projectId << "has" << modelCount << "models";
+#endif
     return modelCount;
 }
 
@@ -742,12 +744,16 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
         
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
-        fmt::print("🔍 DEBUG ProjectManager: Scanning for models in JSON keys: {}\n", 
+#ifdef DEBUG_ON
+        fmt::print("DEBUG ProjectManager: Scanning for models in JSON keys: {}\n",
             jsonData.keys().join(", ").toStdString());
-        
+#endif
+
         for (const QString& key : jsonData.keys()) {
             if (key.startsWith("model_")) {
-                fmt::print("🔍 DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
+#ifdef DEBUG_ON
+                fmt::print("DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
+#endif
                 QJsonObject modelObject = jsonData[key].toObject();
                 
                 if (!modelObject.contains("model")) {
@@ -759,18 +765,26 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                 try {
                     // Create model using the factory function
                     int modelId = modelObject["model"].toInt();
-                    fmt::print("🔍 DEBUG ProjectManager: Creating model ID {} for project {}\n", 
+#ifdef DEBUG_ON
+                    fmt::print("DEBUG ProjectManager: Creating model ID {} for project {}\n",
                         modelId, project->UUID().toStdString());
-                    
+#endif
+
                     QSharedPointer<AbstractModel> model = CreateModel(modelId, project.data());
-                    fmt::print("🔍 DEBUG ProjectManager: CreateModel returned model: {}\n", 
+#ifdef DEBUG_ON
+                    fmt::print("DEBUG ProjectManager: CreateModel returned model: {}\n",
                         model ? "SUCCESS" : "FAILED");
-                    
+#endif
+
                     if (model) {
-                        qDebug() << "🔍 DEBUG ProjectManager: Model created with UUID:" << model->ModelUUID() << "for model name:" << model->Name();
+#ifdef DEBUG_ON
+                        qDebug() << "DEBUG ProjectManager: Model created with UUID:" << model->ModelUUID() << "for model name:" << model->Name();
+#endif
                         // Import model state from JSON
                         bool importSuccess = model->ImportModel(modelObject);
-                        qDebug() << "🔍 DEBUG ProjectManager: After ImportModel, UUID:" << model->ModelUUID() << "ImportSuccess:" << importSuccess;
+#ifdef DEBUG_ON
+                        qDebug() << "DEBUG ProjectManager: After ImportModel, UUID:" << model->ModelUUID() << "ImportSuccess:" << importSuccess;
+#endif
                         if (importSuccess) {
                             // Claude Generated - Remove incorrect duplicate detection
                             // Models loaded from JSON are unique by definition (model_1, model_2, etc.)
@@ -783,8 +797,10 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                             modelCount++;
                             // Emit signal for each successfully loaded model - CRITICAL FIX: Use ModelUUID() not UUID()
                             emit modelAdded(projectId, model->ModelUUID());
-                            
-                            qDebug() << "✅ DEBUG ProjectManager: Model" << model->Name() << "registered with ModelUUID:" << model->ModelUUID() << "Project now has" << project->ChildrenSize() << "children";
+
+#ifdef DEBUG_ON
+                            qDebug() << "DEBUG ProjectManager: Model" << model->Name() << "registered with ModelUUID:" << model->ModelUUID() << "Project now has" << project->ChildrenSize() << "children";
+#endif
                         } else {
                             emit errorOccurred("loadProjectFromJson", 
                                 QString("Failed to import model data for %1").arg(key));
@@ -813,14 +829,18 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
         if (m_projectHash.contains(projectId)) {
             QSharedPointer<DataClass> existingProject = m_projectHash[projectId].toStrongRef();
             if (existingProject) {
-                qDebug() << "🔄 DEBUG ProjectManager: Project" << projectId << "already exists";
-                qDebug() << "🔍 DEBUG ProjectManager: OLD project has" << existingProject->ChildrenSize() << "children";
-                qDebug() << "🔍 DEBUG ProjectManager: NEW project has" << project->ChildrenSize() << "children";
-                
+#ifdef DEBUG_ON
+                qDebug() << "DEBUG ProjectManager: Project" << projectId << "already exists";
+                qDebug() << "DEBUG ProjectManager: OLD project has" << existingProject->ChildrenSize() << "children";
+                qDebug() << "DEBUG ProjectManager: NEW project has" << project->ChildrenSize() << "children";
+#endif
+
                 // If the new project has more models, replace the old one - Claude Generated
                 if (project->ChildrenSize() > existingProject->ChildrenSize()) {
-                    qDebug() << "🔄 DEBUG ProjectManager: Replacing old project with new one that has more models";
-                    
+#ifdef DEBUG_ON
+                    qDebug() << "DEBUG ProjectManager: Replacing old project with new one that has more models";
+#endif
+
                     // Find and replace the old project in m_projects list
                     for (int i = 0; i < m_projects.size(); ++i) {
                         if (m_projects[i] && m_projects[i]->UUID() == projectId) {
@@ -851,7 +871,9 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
             return projectId;  // Return existing project ID
         }
 
-        qDebug() << "✅ DEBUG ProjectManager: Adding NEW project with" << project->ChildrenSize() << "children to list";
+#ifdef DEBUG_ON
+        qDebug() << "DEBUG ProjectManager: Adding NEW project with" << project->ChildrenSize() << "children to list";
+#endif
         m_projects.append(project);
         updateProjectHash(); // Essential for GUI integration - Claude Generated
 
@@ -932,13 +954,15 @@ void ProjectManager::updateProjectHash()
 
     for (const auto& project : m_projects) {
         if (project && !project->UUID().isEmpty()) {
-            qDebug() << "🔍 DEBUG ProjectManager::updateProjectHash: Adding project" << project->UUID() << "with" << project->ChildrenSize() << "children to hash";
+#ifdef DEBUG_ON
+            qDebug() << "DEBUG ProjectManager::updateProjectHash: Adding project" << project->UUID() << "with" << project->ChildrenSize() << "children to hash";
+#endif
             m_projectHash.insert(project->UUID(), project.toWeakRef());
         }
     }
 
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG ProjectManager::updateProjectHash: Updated hash with {} projects\n", m_projectHash.size());
+    fmt::print("DEBUG ProjectManager::updateProjectHash: Updated hash with {} projects\n", m_projectHash.size());
 #endif
 }
 
