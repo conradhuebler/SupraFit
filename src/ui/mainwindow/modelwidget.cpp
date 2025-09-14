@@ -889,6 +889,18 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     m_model->ImportModel(json, false);
     m_model->OptimizeParameters();
     Repaint();
+    
+    // Claude Generated: Fix for LineSeries visibility issue after model fitting
+    // Apply showSeries fix after Repaint() to ensure LineSeries remain visible
+    if (m_charts.data_wrapper) {
+        QTimer::singleShot(10, this, [this]() {
+            if (m_charts.data_wrapper) {
+                m_charts.data_wrapper->showSeries(-1);
+                qDebug() << "✅ DEBUG MinimizeModel: Applied showSeries(-1) fix after fitting";
+            }
+        });
+    }
+    
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
     else

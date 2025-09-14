@@ -755,6 +755,18 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     }
     
     emit ModelAdded();
+    
+    // Claude Generated: Fix for LineSeries visibility issue in individual model addition
+    // Apply the same fix that works for project loading to individual model addition
+    if (m_charts && m_charts->getDataWrapper()) {
+        // Use timer delay to ensure all ModelElements are fully initialized
+        QTimer::singleShot(10, this, [this]() {
+            if (m_charts && m_charts->getDataWrapper()) {
+                m_charts->getDataWrapper()->showSeries(-1);
+                qDebug() << "✅ DEBUG ActiveModel: Applied showSeries(-1) fix for individual model addition";
+            }
+        });
+    }
 }
 
 void ModelDataHolder::createModelWidgetFromModel(QSharedPointer<AbstractModel> model)
