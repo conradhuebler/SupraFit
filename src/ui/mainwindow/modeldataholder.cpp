@@ -697,6 +697,21 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
             qWarning() << "ModelDataHolder::ActiveModel: Failed to create ModelWidget for model" << t->Name();
             return;
         }
+        
+        // Claude Generated: Reparent ChartWrappers to ModelWidget for proper cleanup
+        if (charts.signal_wrapper) {
+            charts.signal_wrapper->setParent(modelwidget);
+#ifdef DEBUG_ON
+            qDebug() << "🔧 Reparented signal_wrapper to ModelWidget for proper cleanup";
+#endif
+        }
+        if (charts.error_wrapper) {
+            charts.error_wrapper->setParent(modelwidget);
+#ifdef DEBUG_ON
+            qDebug() << "🔧 Reparented error_wrapper to ModelWidget for proper cleanup";
+#endif
+        }
+        
         qDebug() << "✅ DEBUG ModelDataHolder::ActiveModel: Successfully created ModelWidget for model" << t->Name();
     } catch (const std::exception& e) {
         qWarning() << "ModelDataHolder::ActiveModel: Exception creating ModelWidget:" << e.what();

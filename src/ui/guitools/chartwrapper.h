@@ -119,13 +119,15 @@ public:
     inline QString XLabel()
     {
         CheckWorking();
-        return m_working.toStrongRef()->XLabel();
+        auto workingData = m_working.toStrongRef();
+        return workingData ? workingData->XLabel() : QString();
     }
 
     inline QString YLabel()
     {
         CheckWorking();
-        return m_working.toStrongRef()->YLabel();
+        auto workingData = m_working.toStrongRef();
+        return workingData ? workingData->YLabel() : QString();
     }
 
     QList<QWeakPointer<ChartWrapper>> m_stored_wrapper;
@@ -138,11 +140,12 @@ public slots:
 
 private:
     // === CORE DATA STORAGE - Claude Generated ===
+    // All model references are WEAK to prevent circular dependencies and enable proper cleanup
     QPointer<const DataTable> m_table;
     QList<QPointer<QXYSeries>> m_stored_series;
-    QWeakPointer<DataClass> m_stored_data;
-    QWeakPointer<DataClass> m_stored_model;
-    QWeakPointer<DataClass> m_working;
+    QWeakPointer<DataClass> m_stored_data;   // WEAK: Allow model to be destroyed
+    QWeakPointer<DataClass> m_stored_model;  // WEAK: Allow model to be destroyed  
+    QWeakPointer<DataClass> m_working;       // WEAK: Allow model to be destroyed
 
     // === POINT HIDING STORAGE - Claude Generated ===
     struct SeriesPointData {

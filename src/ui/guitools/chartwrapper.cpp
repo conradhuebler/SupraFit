@@ -48,24 +48,78 @@ ChartWrapper::ChartWrapper(QObject* parent)
 ChartWrapper::~ChartWrapper()
 {
 #ifdef DEBUG_ON
-    qDebug() << "🗑️ NEW ChartWrapper: Destroyed";
+    qDebug() << "🗑️ NEW ChartWrapper: Cleaning up" << m_stored_series.size() << "series";
+#endif
+
+    // Claude Generated: Disconnect ALL signals first to prevent crashes during cleanup
+    disconnect();
+
+    // Claude Generated: Safe series cleanup with double-deletion protection
+    for (int i = 0; i < m_stored_series.size(); ++i) {
+        if (m_stored_series[i]) {
+            QPointer<QXYSeries> series = m_stored_series[i];
+            
+            // Clear series data first (safe even if series is being destroyed)
+            if (series) {
+                series->clear();
+            }
+            
+            // Check if series still exists before manual deletion
+            if (series) {
+                // Only delete if we still have a valid pointer
+                // Qt Charts might have already cleaned it up
+                series->deleteLater();  // Safer than immediate delete during shutdown
+            }
+        }
+    }
+    
+    // Clear the list to prevent double cleanup
+    m_stored_series.clear();
+
+    // Claude Generated: Clear all weak references
+    m_stored_data.clear();
+    m_stored_model.clear();
+    m_working.clear();
+
+#ifdef DEBUG_ON
+    qDebug() << "🗑️ NEW ChartWrapper: Cleanup complete - series removed and references cleared";
 #endif
 }
 
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
-    m_stored_data = model;
-    m_working = model;
+    // Claude Generated: Store as weak reference to allow model destruction
+    m_stored_data = model.toWeakRef();
+    m_working = model.toWeakRef();
 
 #ifdef DEBUG_ON
-    qDebug() << "🔧 NEW ChartWrapper::setData: Data set, calling InitaliseSeries() and UpdateModel()";
+    qDebug() << "🔧 NEW ChartWrapper::setData: Data set as WEAK reference, calling InitaliseSeries() and UpdateModel()";
 #endif
 
-    // Claude Generated: Connect signals like legacy code
-    if (qobject_cast<AbstractModel*>(m_stored_data))
-        connect(qobject_cast<AbstractModel*>(m_stored_data.toStrongRef().data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
-
-    connect(m_stored_data.toStrongRef().data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+    // Claude Generated: Safe signal connections with null checking
+    if (auto strongData = m_stored_data.toStrongRef()) {
+        if (qobject_cast<AbstractModel*>(strongData.data())) {
+            connect(qobject_cast<AbstractModel*>(strongData.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
+        }
+        connect(strongData.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+        
+        // Claude Generated: Connect to model destruction for cleanup
+        connect(strongData.data(), &QObject::destroyed, this, [this]() {
+#ifdef DEBUG_ON
+            qDebug() << "🗑️ NEW ChartWrapper: Model destroyed, clearing series";
+#endif
+            // Clear series when model is destroyed (safe during shutdown)
+            for (auto& series : m_stored_series) {
+                if (series) {
+                    try {
+                        series->clear();
+                    } catch (...) {
+                        // Ignore errors during shutdown
+                    }
+                }
+            }
+        }, Qt::DirectConnection);  // Use DirectConnection for immediate cleanup
+    }
 
     InitaliseSeries();
     UpdateModel();
@@ -78,6 +132,11 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 
 void ChartWrapper::UpdateModel()
 {
+    // Claude Generated: Safety check during shutdown
+    if (QCoreApplication::closingDown()) {
+        return;  // Don't update during application shutdown
+    }
+    
     CheckWorking();
     MakeSeries();
     emit ModelChanged();
@@ -85,12 +144,26 @@ void ChartWrapper::UpdateModel()
 
 void ChartWrapper::MakeSeries()
 {
+    // Claude Generated: Safety check during shutdown
+    if (QCoreApplication::closingDown()) {
+        return;  // Don't create series during application shutdown
+    }
+    
     if (!m_table)
         return;
 
+    // Claude Generated: Null check for weak reference
+    auto workingData = m_working.toStrongRef();
+    if (!workingData) {
+#ifdef DEBUG_ON
+        qDebug() << "❌ NEW ChartWrapper::MakeSeries: NO WORKING DATA - model destroyed or null";
+#endif
+        return;
+    }
+
     QVector<QList<QPointF>> series(m_stored_series.size());
-    int rows = m_working.toStrongRef().data()->DataPoints();
-    int cols = m_working.toStrongRef().data()->SeriesCount();
+    int rows = workingData->DataPoints();
+    int cols = workingData->SeriesCount();
     int maxdata = qApp->instance()->property("MaxSeriesPoints").toInt();
 
     if (maxdata == 0)
@@ -101,11 +174,11 @@ void ChartWrapper::MakeSeries()
 
     for (int i = start; i < rows; i += step) {
         // Claude Generated: Use PrintOutIndependent for x-coordinate like legacy code
-        double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
-        if (!m_working.toStrongRef().data()->IndependentModel()->isChecked(i))
+        double x = workingData->PrintOutIndependent(i);
+        if (!workingData->IndependentModel()->isChecked(i))
             continue;
         for (int j = 0; j < cols; ++j) {
-            if (m_working.toStrongRef().data()->DependentModel()->isChecked(i, j)) {
+            if (workingData->DependentModel()->isChecked(i, j)) {
                 if (j >= m_stored_series.size())
                     continue;
                 // Claude Generated: Use table data for y-coordinate like legacy code
@@ -152,18 +225,21 @@ void ChartWrapper::InitaliseSeries()
     }
 
     CheckWorking();
-    if (!m_working) {
+    
+    // Claude Generated: Null check for weak reference
+    auto workingData = m_working.toStrongRef();
+    if (!workingData) {
 #ifdef DEBUG_ON
-        qDebug() << "❌ NEW ChartWrapper::InitaliseSeries: NO WORKING DATA after CheckWorking()";
+        qDebug() << "❌ NEW ChartWrapper::InitaliseSeries: NO WORKING DATA - model destroyed or null";
 #endif
         return;
     }
 
-    int serie = m_working.toStrongRef().data()->SeriesCount();
+    int serie = workingData->SeriesCount();
 
 #ifdef DEBUG_ON
     qDebug() << "🆕 NEW ChartWrapper::InitaliseSeries: m_working->SeriesCount()=" << serie
-             << "data type:" << m_working.toStrongRef().data()->metaObject()->className();
+             << "data type:" << workingData->metaObject()->className();
 #endif
 
     for (int j = 0; j < serie; ++j) {
@@ -173,7 +249,7 @@ void ChartWrapper::InitaliseSeries()
         QPointer<QXYSeries> series;
 
         // Claude Generated: Create appropriate series type like RegressionDialog
-        if (qobject_cast<AbstractModel*>(m_working.toStrongRef().data())) {
+        if (qobject_cast<AbstractModel*>(workingData.data())) {
 #ifdef DEBUG_ON
             qDebug() << "📈 NEW ChartWrapper: Creating LineSeries for AbstractModel";
 #endif
@@ -215,8 +291,9 @@ void ChartWrapper::InitaliseSeries()
 
 void ChartWrapper::CheckWorking()
 {
-    if (!m_working) {
-        m_working = m_stored_data;
+    // Claude Generated: Null check for weak references
+    if (m_working.isNull()) {
+        m_working = m_stored_data;  // Copy weak reference
         m_transformed = false;
     }
 }
@@ -491,8 +568,9 @@ bool ChartWrapper::setColorList(const QString& str)
 
 void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
 {
-    m_stored_model = model;
-    m_working = model;
+    // Claude Generated: Store as weak reference to allow model destruction
+    m_stored_model = model.toWeakRef();
+    m_working = model.toWeakRef();
     m_transformed = true;
     UpdateModel();
 }

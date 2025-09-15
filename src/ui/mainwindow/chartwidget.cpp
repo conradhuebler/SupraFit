@@ -308,7 +308,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
     return m_data_mapper;
 }
 
-Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
+Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapperParent)
 {
     if (!model) {
         qWarning() << "ChartWidget::addModel: Model is null";
@@ -326,7 +326,13 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
 
-    QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    // Claude Generated: Use provided parent (ModelWidget) instead of ChartWidget for proper cleanup
+    QObject* parent = wrapperParent ? wrapperParent : this;
+    QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(parent), &QObject::deleteLater);
+
+#ifdef DEBUG_ON
+    qDebug() << "🔧 ChartWidget::addModel: Created ChartWrapper with parent:" << parent->metaObject()->className();
+#endif
 
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
@@ -338,7 +344,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     signal_wrapper->setDataTable(modelTable);
     signal_wrapper->setData(model);
 
-    QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(parent), &QObject::deleteLater);
 
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
