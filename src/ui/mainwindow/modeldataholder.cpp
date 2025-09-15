@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -496,6 +496,12 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     if (!qobject_cast<MetaModel*>(data)) {
 #ifdef DEBUG_ON
         qDebug() << "ModelDataHolder::setData: Creating DataWidget for non-MetaModel data";
+        // Claude Generated - ChartWrapper validation before creating DataWidget
+        if (wrapper) {
+            qDebug() << "📊 ModelDataHolder::setData: ChartWrapper provided, series count:" << wrapper->SeriesSize();
+        } else {
+            qDebug() << "⚠️ ModelDataHolder::setData: ChartWrapper is null - DataWidget will receive empty wrapper";
+        }
 #endif
         m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
@@ -680,8 +686,8 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
         if (!charts.data_wrapper) qWarning() << "   - data_wrapper is null";
         return;
     }
-    qDebug() << "✅ DEBUG ModelDataHolder::ActiveModel: Charts created successfully";
-    
+    qDebug() << "DEBUG ModelDataHolder::ActiveModel: Charts created successfully";
+
     qDebug() << "🔍 DEBUG ModelDataHolder::ActiveModel: Creating ModelWidget for model" << t->Name();
     QPointer<ModelWidget> modelwidget = nullptr;
     
@@ -755,18 +761,28 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     }
     
     emit ModelAdded();
-    
+
     // Claude Generated: Fix for LineSeries visibility issue in individual model addition
-    // Apply the same fix that works for project loading to individual model addition
+    // Claude Generated: Clean replacement for timer hack - immediate state application
     if (m_charts && m_charts->getDataWrapper()) {
-        // Use timer delay to ensure all ModelElements are fully initialized
-        QTimer::singleShot(10, this, [this]() {
-            if (m_charts && m_charts->getDataWrapper()) {
-                m_charts->getDataWrapper()->showSeries(-1);
-                qDebug() << "✅ DEBUG ActiveModel: Applied showSeries(-1) fix for individual model addition";
-            }
-        });
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG ActiveModel: m_charts valid, getDataWrapper() returns:" << m_charts->getDataWrapper().data()
+                 << "about to call setAllSeriesVisible(true)";
+#endif
+        // Ensure all series are visible by default - NO TIMER NEEDED
+        m_charts->getDataWrapper()->setAllSeriesVisible(true);
+        qDebug() << "✅ DEBUG ActiveModel: Applied immediate setAllSeriesVisible(true) for individual model addition";
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG ActiveModel: setAllSeriesVisible(true) call completed";
+#endif
     }
+#ifdef DEBUG_ON
+    else {
+        qDebug() << "⚠️  WARNING ActiveModel: m_charts or getDataWrapper() is null - m_charts:"
+                 << (m_charts ? "valid" : "null")
+                 << "getDataWrapper():" << (m_charts && m_charts->getDataWrapper() ? "valid" : "null");
+    }
+#endif
 }
 
 void ModelDataHolder::createModelWidgetFromModel(QSharedPointer<AbstractModel> model)
@@ -841,17 +857,15 @@ void ModelDataHolder::syncModelsWithProjectManager()
     }
 
     // Claude Generated: Fix for LineSeries visibility issue in project loading
+    // Claude Generated: Clean replacement for timer hack - immediate state application
     // After all models are loaded, ensure all series are visible
-    // This fixes the problem where direct project loading shows invisible series
     if (m_charts && !models.empty()) {
-        qDebug() << "🔧 DEBUG syncModelsWithProjectManager: Applying showSeries(-1) fix for" << models.size() << "models";
-        // Use a small delay to ensure all ModelElements are fully initialized
-        QTimer::singleShot(10, this, [this]() {
-            if (m_charts && m_charts->getDataWrapper()) {
-                m_charts->getDataWrapper()->showSeries(-1);
-                qDebug() << "✅ DEBUG syncModelsWithProjectManager: Applied showSeries(-1) fix for project loading";
-            }
-        });
+        qDebug() << "🔧 DEBUG syncModelsWithProjectManager: Applying immediate setAllSeriesVisible(true) for" << models.size() << "models";
+        // Apply state immediately - NO TIMER NEEDED
+        if (m_charts && m_charts->getDataWrapper()) {
+            m_charts->getDataWrapper()->setAllSeriesVisible(true);
+            qDebug() << "✅ DEBUG syncModelsWithProjectManager: Applied immediate setAllSeriesVisible(true) for project loading";
+        }
     }
 
     qDebug() << "✅ DEBUG ModelDataHolder::syncModelsWithProjectManager: Synchronization complete";
@@ -1300,23 +1314,34 @@ bool ModelDataHolder::setDataFromProjectManager(const QString& projectId, QShare
     }
 
     qDebug() << "ModelDataHolder::setDataFromProjectManager: Setting data from ProjectManager for project" << projectId;
-    
-    // Use the existing setData method to set up the UI
-    setData(dataClass, wrapper);
-    
-    // Store the project ID for future reference
-    m_currentProjectId = projectId;
-    
-    // Claude Generated - Initialize ChartWidget with data before syncing models
-    // CRITICAL FIX: ChartWidget needs m_data_mapper initialized before addModel can be called
+
+    // Claude Generated - CRITICAL FIX: Get the populated ChartWrapper from ChartWidget
+    // ChartWidget::setRawData() creates and returns a populated ChartWrapper
+    qDebug() << "🔧 DEBUG setDataFromProjectManager: m_charts=" << (m_charts ? "valid" : "null")
+             << "dataClass=" << (dataClass ? "valid" : "null");
+
+    QSharedPointer<ChartWrapper> populatedWrapper;
     if (m_charts && dataClass) {
-        qDebug() << "ModelDataHolder::setDataFromProjectManager: Initializing ChartWidget with project data";
-        m_charts->setRawData(dataClass);
-        qDebug() << "✅ ModelDataHolder::setDataFromProjectManager: ChartWidget initialized successfully";
+        qDebug() << "🔧 ModelDataHolder::setDataFromProjectManager: Initializing ChartWidget to get populated wrapper";
+        populatedWrapper = m_charts->setRawData(dataClass);
+
+        if (populatedWrapper && populatedWrapper->SeriesSize() > 0) {
+            qDebug() << "✅ ModelDataHolder::setDataFromProjectManager: Got populated wrapper with" << populatedWrapper->SeriesSize() << "series";
+        } else {
+            qDebug() << "❌ ModelDataHolder::setDataFromProjectManager: ChartWidget returned empty wrapper";
+            return false;
+        }
     } else {
         qDebug() << "❌ ModelDataHolder::setDataFromProjectManager: Cannot initialize ChartWidget - m_charts or dataClass is null";
+        return false; // Claude Generated - Fail early if ChartWidget can't be initialized
     }
-    
+
+    // Now use the populated wrapper from ChartWidget instead of the original empty one
+    setData(dataClass, populatedWrapper);
+
+    // Store the project ID for future reference
+    m_currentProjectId = projectId;
+
     // Synchronize models after successful data loading
     syncModelsWithProjectManager();
     

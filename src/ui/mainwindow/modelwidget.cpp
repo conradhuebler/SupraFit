@@ -889,18 +889,26 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     m_model->ImportModel(json, false);
     m_model->OptimizeParameters();
     Repaint();
-    
-    // Claude Generated: Fix for LineSeries visibility issue after model fitting
-    // Apply showSeries fix after Repaint() to ensure LineSeries remain visible
+
+    // Claude Generated: Clean replacement for timer hack - immediate state application
+    // Apply current state immediately after Repaint() to ensure LineSeries remain visible
     if (m_charts.data_wrapper) {
-        QTimer::singleShot(10, this, [this]() {
-            if (m_charts.data_wrapper) {
-                m_charts.data_wrapper->showSeries(-1);
-                qDebug() << "✅ DEBUG MinimizeModel: Applied showSeries(-1) fix after fitting";
-            }
-        });
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: m_charts.data_wrapper valid:" << m_charts.data_wrapper.data()
+                 << "about to call applyStateToSeries()";
+#endif
+        m_charts.data_wrapper->applyStateToSeries();
+        qDebug() << "✅ DEBUG MinimizeModel: Applied immediate applyStateToSeries() after fitting";
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: applyStateToSeries() call completed";
+#endif
     }
-    
+#ifdef DEBUG_ON
+    else {
+        qDebug() << "⚠️  WARNING MinimizeModel: m_charts.data_wrapper is null";
+    }
+#endif
+
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
     else

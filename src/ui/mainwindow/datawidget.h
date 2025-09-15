@@ -79,6 +79,9 @@ private:
 
     int m_index_x = -1, m_index_y = -1;
 
+    // Claude Generated: Helper method for lazy dialog initialization
+    RegressionAnalysisDialog* getRegressionDialog();
+
 private slots:
     void ShowContextMenu(const QPoint& pos);
     void SetProjectName();

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -177,23 +177,75 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
 {
     m_rawdata = rawdata;
 
-    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
+    // Claude Generated: Reuse existing ChartWrapper instead of always creating new one
+    // This prevents state loss and QWeakPointer invalidation that causes crashes
+    QJsonObject savedState;
+    bool hasExistingWrapper = m_data_mapper && m_data_mapper.data();
 
-    m_data_mapper->setData(m_rawdata);
-    connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
-    connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
-    for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
-        ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
-        signal_series->setName(m_rawdata.toStrongRef().data()->DependentModel()->header()[i]);
-        m_data_mapper->setSeries(signal_series, i);
-        m_signalview->addSeries(signal_series);
+    if (hasExistingWrapper) {
+        // Save current visibility state before updating
+        savedState = m_data_mapper->getVisualState();
+        qDebug() << "🔄 ChartWidget::setRawData: Reusing existing ChartWrapper, saving state";
+
+        // Update existing wrapper with new data instead of recreating
+        m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
+        m_data_mapper->setData(m_rawdata);
+    } else {
+        // Create new wrapper only when none exists
+        qDebug() << "🆕 ChartWidget::setRawData: Creating new ChartWrapper";
+        m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+        m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
+        m_data_mapper->setData(m_rawdata);
+
+        // Connect signals only for new wrapper
+        connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
+        connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     }
+
+    // Update series configuration
+    for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
+        // Claude Generated: Fix type casting to handle both LineSeries and ScatterSeries
+        QXYSeries* xy_series = qobject_cast<QXYSeries*>(m_data_mapper->Series(i));
+        if (xy_series) {
+            xy_series->setName(m_rawdata.toStrongRef().data()->DependentModel()->header()[i]);
+            m_data_mapper->setSeries(xy_series, i);
+            if (!hasExistingWrapper) {
+                m_signalview->addSeries(xy_series);
+                // Claude Generated: Force LineSeries to be visible after adding to chart
+                xy_series->setVisible(true);
+#ifdef DEBUG_ON
+                qDebug() << "🔧 ChartWidget::setRawData: Added series" << i
+                         << "type:" << xy_series->metaObject()->className()
+                         << "to chart view, forced visible=true";
+#endif
+            }
+        } else {
+            qWarning() << "⚠️ ChartWidget::setRawData: Failed to cast series" << i << "as QXYSeries";
+        }
+    }
+
     if (m_data_mapper->SeriesSize())
         m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
 
-    m_signalview->formatAxis();
+    // Claude Generated: Initialize visibility for raw data series if this is a new wrapper
+    qDebug() << "🔧 DEBUG ChartWidget::setRawData: hasExistingWrapper=" << hasExistingWrapper << "SeriesSize=" << m_data_mapper->SeriesSize();
+    if (!hasExistingWrapper && m_data_mapper->SeriesSize() > 0) {
+        qDebug() << "🎯 ChartWidget::setRawData: Initializing visibility for" << m_data_mapper->SeriesSize() << "raw data series";
+        m_data_mapper->setAllSeriesVisible(true);
+        // Claude Generated: Apply visibility state to actual Qt series objects
+        m_data_mapper->showSeries(-1);
+        qDebug() << "🔧 ChartWidget::setRawData: Applied series visibility to Qt chart objects";
+    } else if (m_data_mapper->SeriesSize() == 0) {
+        qWarning() << "❌ ChartWidget::setRawData: ChartWrapper has no series to display!";
+    }
 
+    // Restore saved state if we reused an existing wrapper
+    if (hasExistingWrapper && !savedState.isEmpty()) {
+        m_data_mapper->setVisualState(savedState);
+        qDebug() << "🔄 ChartWidget::setRawData: Restored visibility state";
+    }
+
+    m_signalview->formatAxis();
     m_signalview->setTitle("Model");
     m_errorview->setTitle("Errors");
 
@@ -202,27 +254,54 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
 
 QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 {
-    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    // Claude Generated: Reuse existing ChartWrapper instead of always creating new one
+    // This prevents state loss and QWeakPointer invalidation that causes crashes
+    QJsonObject savedState;
+    bool hasExistingWrapper = m_data_mapper && m_data_mapper.data();
 
-    if (wrapper)
-        m_data_mapper->addWrapper(wrapper);
+    if (hasExistingWrapper) {
+        // Save current visibility state before updating
+        savedState = m_data_mapper->getVisualState();
+        qDebug() << "🔄 ChartWidget::setRawWrapper: Reusing existing ChartWrapper, saving state";
 
+        // Update existing wrapper instead of recreating
+        if (wrapper)
+            m_data_mapper->addWrapper(wrapper);
+    } else {
+        // Create new wrapper only when none exists
+        qDebug() << "🆕 ChartWidget::setRawWrapper: Creating new ChartWrapper";
+        m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+
+        if (wrapper)
+            m_data_mapper->addWrapper(wrapper);
+
+        // Connect signals only for new wrapper
+        connect(m_data_mapper.data(), &ChartWrapper::SeriesAdded, m_data_mapper.data(), [this](int series) {
+            m_signalview->addSeries(qobject_cast<ScatterSeries*>(m_data_mapper.data()->Series(series)));
+        });
+    }
+
+    // Update series configuration
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
         m_data_mapper->setSeries(signal_series, i);
-        m_signalview->addSeries(signal_series);
+        if (!hasExistingWrapper) {
+            m_signalview->addSeries(signal_series);
+        }
     }
 
-    connect(m_data_mapper.data(), &ChartWrapper::SeriesAdded, m_data_mapper.data(), [this](int series) {
-        m_signalview->addSeries(qobject_cast<ScatterSeries*>(m_data_mapper.data()->Series(series)));
-    });
     if (m_data_mapper->SeriesSize())
         m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
     else
         m_recent_color = QColor();
 
-    m_signalview->formatAxis();
+    // Restore saved state if we reused an existing wrapper
+    if (hasExistingWrapper && !savedState.isEmpty()) {
+        m_data_mapper->setVisualState(savedState);
+        qDebug() << "🔄 ChartWidget::setRawWrapper: Restored visibility state";
+    }
 
+    m_signalview->formatAxis();
     m_signalview->setTitle("Model");
     m_errorview->setTitle("Errors");
 
@@ -283,9 +362,10 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             line_series->setColor(m_data_mapper.data()->Series(i)->color());
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), line_series, SLOT(setColor(QColor)));
             line_series->setLineWidth(lineWidth);
-            line_series->setVisible(true); // Claude Generated: Ensure LineSeries is initially visible
+            // Claude Generated: Removed direct setVisible(true) - now handled by ChartWrapper state management
+            // Initial visibility will be managed by ChartWrapper reactive system
             m_signalview->addSeries(line_series);
-
+            line_series->setVisible(true);
         } else if (ScatterSeries* scatter_series = qobject_cast<ScatterSeries*>(base_series)) {
             signal_wrapper->setSeries(scatter_series, i);
 
@@ -320,7 +400,9 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
                 error_line_series->setColor(m_data_mapper.data()->Series(i)->color());
                 connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_line_series, SLOT(setColor(QColor)));
                 error_line_series->setLineWidth(lineWidth);
-                error_line_series->setVisible(true); // Claude Generated: Ensure error LineSeries is initially visible
+                error_line_series->setVisible(true);
+                // Claude Generated: Removed direct setVisible(true) - now handled by ChartWrapper state management
+                // Initial visibility will be managed by ChartWrapper reactive system
                 m_errorview->addSeries(error_line_series);
 
             } else if (ScatterSeries* error_scatter_series = qobject_cast<ScatterSeries*>(base_error_series)) {
