@@ -532,6 +532,22 @@ void ImportData::accept()
     QJsonObject object, data;
     data = m_storeddata->ExportData();
     data["system"] = m_systemparameter;
+
+    // Claude Generated: Fix LineSeries visibility issue for ImportData workflow
+    // Generate active_series field with all series visible by default
+    // Use actual dependent data size rather than dialog setting
+    int actual_dependent_columns = m_storeddata->DependentModel()->columnCount();
+    QStringList active_series;
+    for (int i = 0; i < actual_dependent_columns; ++i) {
+        active_series << "1"; // Set all series to visible
+    }
+    QString active_series_string = active_series.join(" ");
+    data["active_series"] = active_series_string;
+
+    // Debug output can be enabled if needed for troubleshooting
+    // qDebug() << "🔍 DEBUG ImportData: Generated active_series for" << actual_dependent_columns
+    //          << "dependent columns (dialog setting:" << m_dependent_rows->value() << "), string:" << active_series_string;
+
     object["data"] = data;
     m_project = object;
     delete model;

@@ -153,6 +153,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
+    // Claude Generated - Debug Messages for successful model loading
+    if (model) {
+        qDebug() << "✅ ModelWidget: Model successfully loaded -" 
+                 << "Name:" << model->Name()
+                 << "ID:" << model->SFModel()
+                 << "UUID:" << model->UUID()
+                 << "Parameters:" << model->GlobalParameterSize() << "global," << model->LocalParameterSize() << "local";
+    } else {
+        qDebug() << "❌ ModelWidget: Null model passed to constructor";
+    }
     m_splitter = new QSplitter(this);
     m_splitter->setObjectName("modelSplitter");
     m_splitter->setOrientation(Qt::Vertical);
@@ -879,6 +889,26 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     m_model->ImportModel(json, false);
     m_model->OptimizeParameters();
     Repaint();
+
+    // Claude Generated: Clean replacement for timer hack - immediate state application
+    // Apply current state immediately after Repaint() to ensure LineSeries remain visible
+    if (m_charts.data_wrapper) {
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: m_charts.data_wrapper valid:" << m_charts.data_wrapper.data()
+                 << "about to call applyStateToSeries()";
+#endif
+        m_charts.data_wrapper->applyStateToSeries();
+        qDebug() << "✅ DEBUG MinimizeModel: Applied immediate applyStateToSeries() after fitting";
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: applyStateToSeries() call completed";
+#endif
+    }
+#ifdef DEBUG_ON
+    else {
+        qDebug() << "⚠️  WARNING MinimizeModel: m_charts.data_wrapper is null";
+    }
+#endif
+
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
     else

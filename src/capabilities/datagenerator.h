@@ -88,6 +88,7 @@ private:
     
     // Content enhancement - Claude Generated
     QString createEnhancedContent(QPointer<DataClass> dataClass, const QString& originalContent, const QJsonObject& config, QSharedPointer<class AbstractModel> model = nullptr);
+    
 
 private:
     double m_generator_version = 1.0;

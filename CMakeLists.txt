@@ -164,7 +164,18 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt6 6.5 COMPONENTS Core Widgets Charts Qml)
+# Find Qt6 Core and Qml (required for CLI and GUI - DataGenerator needs QJSEngine)
+find_package(Qt6 6.5 COMPONENTS Core Qml REQUIRED)
+
+# Find GUI components (optional - only for suprafit GUI)
+find_package(Qt6 6.5 COMPONENTS Widgets Charts QUIET)
+if(Qt6Widgets_FOUND AND Qt6Charts_FOUND)
+    set(BUILD_GUI ON)
+    message(STATUS "Qt6 GUI components (Widgets, Charts) found - building GUI application")
+else()
+    set(BUILD_GUI OFF)
+    message(STATUS "Qt6 GUI components not found - building CLI only (DataGenerator needs Qml for QJSEngine)")
+endif()
 
 if(_Python)
     find_package(PythonLibs)
@@ -210,7 +221,11 @@ set(core_SRC
     src/capabilities/globalsearch.cpp
     src/capabilities/weakenedgridsearch.cpp
     src/capabilities/jobmanager.cpp
+    src/capabilities/mlfeatureextractor.cpp
     src/core/analyse.cpp
+    src/core/analysis_manager.cpp
+    src/core/jsonutils.cpp
+    src/core/projectmanager.cpp
     src/core/jsonhandler.cpp
     src/core/filehandler.cpp
     src/core/toolset.cpp
@@ -238,6 +253,34 @@ target_link_libraries(core Qt::Core Qt::Qml)
 # Pre-compiled Headers for core library (Claude Generated)
 if(USE_PCH)
     target_precompile_headers(core PRIVATE src/pch.h)
+endif()
+
+# Neural Network ML Library (Claude Generated - 2025)
+option(ML_NEURAL_NETWORKS "Enable Neural Network ML Library" ON)
+
+if(ML_NEURAL_NETWORKS)
+    set(ml_SRC
+        src/ml/activation_functions.cpp
+        src/ml/neural_layer.cpp
+        src/ml/neural_network.cpp
+        src/ml/loss_functions.cpp
+        src/ml/optimizer.cpp
+        src/ml/tutorial/tutorial_manager.cpp
+        src/ml/tutorial/examples/xor_tutorial.cpp
+        src/ml/tutorial/examples/nmr_model_selection_tutorial.cpp
+        src/ml/tutorial/examples/training_tutorial.cpp
+    )
+    
+    add_library(ml ${ml_SRC})
+    target_link_libraries(ml Qt::Core fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML library (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml PRIVATE src/pch.h)
+    endif()
+    
+    # Add ML library to core dependencies
+    target_link_libraries(core ml)
 endif()
 
 #add_subdirectory(src/core/models/misc)
@@ -325,87 +368,105 @@ IF(Use_Duktape)
     target_link_libraries(models duke)
 ENDIF()
 
-add_subdirectory(src/ui)
+# Only build UI if GUI components are available
+if(BUILD_GUI)
+    add_subdirectory(src/ui)
+else()
+    message(STATUS "Skipping GUI module - Qt6 Widgets/Charts not available")
+endif()
 
-set(suprafit_SRC
-    src/ui/instance.h
-    src/ui/main.cpp
-)
-qt_add_resources(suprafit_SRC files.qrc)
+# GUI executable - only if GUI components available
+if(BUILD_GUI)
+    set(suprafit_SRC
+        src/ui/instance.h
+        src/ui/main.cpp
+    )
+    qt_add_resources(suprafit_SRC files.qrc)
 
-if(noto_font)
-    qt_add_resources(suprafit_SRC fonts.qrc)
-endif(noto_font)
+    if(noto_font)
+        qt_add_resources(suprafit_SRC fonts.qrc)
+    endif(noto_font)
+endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
 
+# Enable CTest integration for unified 'make test' command (Claude Generated - 2025-09-04)
+enable_testing()
 
-# generate proper GUI program on specified platform
-if(WIN32) # Check if we are on Windows
-    add_executable(suprafit ${suprafit_SRC} suprafit.rc)
-    
-    # Pre-compiled Headers for GUI Windows (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
+# Include test configuration from tests subdirectory
+include(CTest)
 
-        if(MSVC) # Check if we are using the Visual Studio compiler
-            set_target_properties(suprafit PROPERTIES
-                        WIN32_EXECUTABLE YES
-                        LINK_FLAGS "/ENTRY:mainCRTStartup"
-                )
-            #set_property(TARGET suprafit PROPERTY
-            #MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-        elseif(CMAKE_COMPILER_IS_GNUCXX)
-                         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
-        else()
-                message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
-        endif(MSVC)
-        set(target_dir "bin/win")
+# Generate proper GUI program on specified platform - only if BUILD_GUI is ON
+if(BUILD_GUI)
+    if(WIN32) # Check if we are on Windows
+        add_executable(suprafit ${suprafit_SRC} suprafit.rc)
+        
+        # Pre-compiled Headers for GUI Windows (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+
+            if(MSVC) # Check if we are using the Visual Studio compiler
+                set_target_properties(suprafit PROPERTIES
+                            WIN32_EXECUTABLE YES
+                            LINK_FLAGS "/ENTRY:mainCRTStartup"
+                    )
+                #set_property(TARGET suprafit PROPERTY
+                #MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+            elseif(CMAKE_COMPILER_IS_GNUCXX)
+                             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
+            else()
+                    message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
+            endif(MSVC)
+            set(target_dir "bin/win")
+            set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
+    elseif(APPLE)
+
+        set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
+        set_source_files_properties(${SupraFit_icon} PROPERTIES
+              MACOSX_PACKAGE_LOCATION "Resources")
+        set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
+
+        set(target_dir "bin/macOS")
+        add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
+        
+        # Pre-compiled Headers for GUI macOS (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+        set(target_dir "bin/linux")
+
+        add_executable(suprafit ${suprafit_SRC})
+        
+        # Pre-compiled Headers for GUI (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+        
         set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-elseif(APPLE)
+    else()
+            message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
+    endif(WIN32)
 
-    set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
-    set_source_files_properties(${SupraFit_icon} PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-    set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
-
-    set(target_dir "bin/macOS")
-    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
-    
-    # Pre-compiled Headers for GUI macOS (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
-
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-    set(target_dir "bin/linux")
-
-    add_executable(suprafit ${suprafit_SRC})
-    
-    # Pre-compiled Headers for GUI (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
-    
     set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 else()
-        message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
-endif(WIN32)
-
-set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+    message(STATUS "Skipping GUI executable - GUI components not available")
+endif(BUILD_GUI)
 
 
 
 set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
-                src/client/analyser.cpp
-                src/client/simulator.cpp
                 src/client/ml_pipeline_manager.cpp
+                src/client/cli_command_parser.cpp
+                src/client/cli_command_dispatcher.cpp
                 src/client/main.cpp
           )
 
@@ -437,16 +498,36 @@ IF(_Python)
 ENDIF()
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 17)
-set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+if(BUILD_GUI)
+    set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+endif()
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 17)
 
 
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+# Link GUI executable only if built
+if(BUILD_GUI)
+    target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
+endif()
+
+# CLI executable - always built (needs Core + Qml for DataGenerator)
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
+
+# ML CLI executable with Neural Network tutorials (Claude Generated - 2025)
+if(ML_NEURAL_NETWORKS)
+    add_executable(ml_cli_main
+        src/client/ml_cli_main.cpp
+    )
+    
+    target_link_libraries(ml_cli_main Qt::Core models core ml fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML CLI (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml_cli_main PRIVATE src/pch.h)
+    endif()
+endif()
 
 if(testing)
     enable_testing()
@@ -463,14 +544,18 @@ endif(testing)
 
 
 if(UNIX)
-    target_link_libraries(suprafit pthread dl)
+    if(BUILD_GUI)
+        target_link_libraries(suprafit pthread dl)
+    endif()
     target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
 # Do platform specific post target stuff
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-    install(TARGETS suprafit RUNTIME DESTINATION bin)
+    if(BUILD_GUI)
+        install(TARGETS suprafit RUNTIME DESTINATION bin)
+    endif()
     install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     install(TARGETS models LIBRARY DESTINATION lib)
     install(TARGETS core LIBRARY DESTINATION lib)

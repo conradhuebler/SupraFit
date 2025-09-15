@@ -1,71 +1,125 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * <ChartWrapper - Simplified drop-in replacement for legacy complex visibility system>
+ * Copyright (C) 2017 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include <charts.h>
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
-
 #include "src/core/toolset.h"
 
 #include <QtCharts/QAbstractSeries>
 #include <QtCharts/QBoxPlotSeries>
 
+#include <QtCore/QJsonObject>
+#include <QtCore/QStringList>
 #include <QtGui/QStandardItemModel>
 
 #include "chartwrapper.h"
 
+// Claude Generated: Simplified ChartWrapper following RegressionDialog's successful pattern
+// Key insight: RegressionDialog works perfectly because it trusts CuteChart directly
 
 ChartWrapper::ChartWrapper(QObject* parent)
     : QObject(parent)
     , m_blocked(false)
     , m_transformed(false)
 {
+#ifdef DEBUG_ON
+    qDebug() << "🆕 NEW ChartWrapper: Simplified drop-in replacement created";
+#endif
 }
 
 ChartWrapper::~ChartWrapper()
 {
+#ifdef DEBUG_ON
+    qDebug() << "🗑️ NEW ChartWrapper: Cleaning up" << m_stored_series.size() << "series";
+#endif
+
+    // Claude Generated: Disconnect ALL signals first to prevent crashes during cleanup
+    disconnect();
+
+    // Claude Generated: Safe series cleanup with double-deletion protection
     for (int i = 0; i < m_stored_series.size(); ++i) {
         if (m_stored_series[i]) {
-            m_stored_series[i]->clear();
-            delete m_stored_series[i];
+            QPointer<QXYSeries> series = m_stored_series[i];
+            
+            // Clear series data first (safe even if series is being destroyed)
+            if (series) {
+                series->clear();
+            }
+            
+            // Check if series still exists before manual deletion
+            if (series) {
+                // Only delete if we still have a valid pointer
+                // Qt Charts might have already cleaned it up
+                series->deleteLater();  // Safer than immediate delete during shutdown
+            }
         }
     }
+    
+    // Clear the list to prevent double cleanup
+    m_stored_series.clear();
 
+    // Claude Generated: Clear all weak references
     m_stored_data.clear();
     m_stored_model.clear();
     m_working.clear();
-#ifdef _DEBUG
-    qDebug() << "Deleting chartwrapper";
+
+#ifdef DEBUG_ON
+    qDebug() << "🗑️ NEW ChartWrapper: Cleanup complete - series removed and references cleared";
 #endif
 }
 
-
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
-    m_stored_data = model;
-    m_working = m_stored_data;
-    // can we make this more compact ?
-    if (qobject_cast<AbstractModel*>(m_stored_data))
-        connect(qobject_cast<AbstractModel*>(m_stored_data.toStrongRef().data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
-    // else if (qobject_cast<DataClass*>(m_stored_data))
-    connect(m_stored_data.toStrongRef().data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+    // Claude Generated: Store as weak reference to allow model destruction
+    m_stored_data = model.toWeakRef();
+    m_working = model.toWeakRef();
+
+#ifdef DEBUG_ON
+    qDebug() << "🔧 NEW ChartWrapper::setData: Data set as WEAK reference, calling InitaliseSeries() and UpdateModel()";
+#endif
+
+    // Claude Generated: Safe signal connections with null checking
+    if (auto strongData = m_stored_data.toStrongRef()) {
+        if (qobject_cast<AbstractModel*>(strongData.data())) {
+            connect(qobject_cast<AbstractModel*>(strongData.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
+        }
+        connect(strongData.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+        
+        // Claude Generated: Connect to model destruction for cleanup
+        connect(strongData.data(), &QObject::destroyed, this, [this]() {
+#ifdef DEBUG_ON
+            qDebug() << "🗑️ NEW ChartWrapper: Model destroyed, clearing series";
+#endif
+            // Clear series when model is destroyed (safe during shutdown)
+            for (auto& series : m_stored_series) {
+                if (series) {
+                    try {
+                        series->clear();
+                    } catch (...) {
+                        // Ignore errors during shutdown
+                    }
+                }
+            }
+        }, Qt::DirectConnection);  // Use DirectConnection for immediate cleanup
+    }
 
     InitaliseSeries();
     UpdateModel();
@@ -73,67 +127,16 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
 
 void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 {
-    if (m_stored_wrapper.contains(wrapper))
-        return;
-
     m_stored_wrapper << wrapper;
-
-    for (int i = 0; i < wrapper.toStrongRef().data()->SeriesSize(); ++i) {
-        QPointer<ScatterSeries> series = new ScatterSeries;
-        for (const QPointF& point : wrapper.toStrongRef().data()->Series(i)->points())
-            series->append(point);
-
-        series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.toStrongRef().data()->Series(i))->markerSize() * 0.75);
-        series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.toStrongRef().data()->Series(i))->markerShape());
-        //series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
-        //series->setBorderColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->borderColor());
-        //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
-
-        connect(wrapper.toStrongRef().data(), &ChartWrapper::ModelChanged, wrapper.toStrongRef().data()->Series(i), [series, wrapper, i]() {
-            if (!wrapper.toStrongRef().data() || !series) {
-                qDebug() << "series already left the building";
-                return;
-            }
-
-            series->clear();
-            for (const QPointF& point : wrapper.toStrongRef().data()->Series(i)->points())
-                series->append(point);
-
-            // series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize()*0.75);
-            // series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
-            //series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
-            //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
-        });
-
-        m_stored_series << series.data();
-        emit SeriesAdded(m_stored_series.size() - 1);
-    }
-}
-
-void ChartWrapper::InitaliseSeries()
-{
-    if (!m_working) {
-        m_working = m_stored_data;
-        m_transformed = false;
-    }
-
-    if (m_stored_series.isEmpty()) {
-
-        int serie = m_working.toStrongRef().data()->SeriesCount();
-
-        for (int j = 0; j < serie; ++j) {
-            QPointer<QXYSeries> series;
-            if (qobject_cast<AbstractModel*>(m_working.toStrongRef().data()))
-                series = new LineSeries;
-            else
-                series = new ScatterSeries;
-            m_stored_series << series;
-        }
-    }
 }
 
 void ChartWrapper::UpdateModel()
 {
+    // Claude Generated: Safety check during shutdown
+    if (QCoreApplication::closingDown()) {
+        return;  // Don't update during application shutdown
+    }
+    
     CheckWorking();
     MakeSeries();
     emit ModelChanged();
@@ -141,101 +144,461 @@ void ChartWrapper::UpdateModel()
 
 void ChartWrapper::MakeSeries()
 {
+    // Claude Generated: Safety check during shutdown
+    if (QCoreApplication::closingDown()) {
+        return;  // Don't create series during application shutdown
+    }
+    
     if (!m_table)
         return;
 
+    // Claude Generated: Null check for weak reference
+    auto workingData = m_working.toStrongRef();
+    if (!workingData) {
+#ifdef DEBUG_ON
+        qDebug() << "❌ NEW ChartWrapper::MakeSeries: NO WORKING DATA - model destroyed or null";
+#endif
+        return;
+    }
+
     QVector<QList<QPointF>> series(m_stored_series.size());
-    int rows = m_working.toStrongRef().data()->DataPoints();
-    int cols = m_working.toStrongRef().data()->SeriesCount();
+    int rows = workingData->DataPoints();
+    int cols = workingData->SeriesCount();
     int maxdata = qApp->instance()->property("MaxSeriesPoints").toInt();
-    int step = qMax(1, rows / maxdata);
-    for (int i = 0; i < rows; i += step) {
-        double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
-        if (!m_working.toStrongRef().data()->IndependentModel()->isChecked(i))
+
+    if (maxdata == 0)
+        maxdata = 100000;
+
+    int start = 0;
+    int step = qMax(1, int(rows / maxdata));
+
+    for (int i = start; i < rows; i += step) {
+        // Claude Generated: Use PrintOutIndependent for x-coordinate like legacy code
+        double x = workingData->PrintOutIndependent(i);
+        if (!workingData->IndependentModel()->isChecked(i))
             continue;
         for (int j = 0; j < cols; ++j) {
-            if (m_working.toStrongRef().data()->DependentModel()->isChecked(i, j)) {
+            if (workingData->DependentModel()->isChecked(i, j)) {
                 if (j >= m_stored_series.size())
                     continue;
+                // Claude Generated: Use table data for y-coordinate like legacy code
                 series[j].append(QPointF(x, m_table->data(i, j)));
             }
         }
     }
-    for (int j = 0; j < m_stored_series.size(); ++j) {
-        m_stored_series[j]->replace(series[j]);
+
+    // Claude Generated: Update series data following RegressionDialog pattern
+    for (int j = 0; j < qMin(series.size(), m_stored_series.size()); ++j) {
+        if (m_stored_series[j]) {
+            QXYSeries* xySeries = qobject_cast<QXYSeries*>(m_stored_series[j]);
+            if (xySeries) {
+                xySeries->replace(series[j]);
+
+                // Update point data for selective hiding feature
+                if (j >= m_pointData.size()) {
+                    m_pointData.resize(j + 1);
+                }
+                m_pointData[j].originalData = series[j];
+                m_pointData[j].pointVisible.resize(series[j].size());
+                m_pointData[j].pointVisible.fill(true); // All points visible by default
+                m_pointData[j].invalidateCache();
+
+#ifdef DEBUG_ON
+                qDebug() << "🔧 NEW ChartWrapper: Updated series" << j << "with" << series[j].size() << "points, all visible by default";
+#endif
+            }
+        }
     }
 }
 
-QList<QPointer<QScatterSeries>> ChartWrapper::CloneSeries(bool swap) const
+void ChartWrapper::InitaliseSeries()
 {
-    QList<QPointer<QScatterSeries>> series;
-    for (int i = 0; i < m_stored_series.size(); ++i) {
-        if (!m_stored_series[i]->isVisible())
-            continue;
-        QPointer<QScatterSeries> serie = new QScatterSeries();
-        serie->append(m_stored_series[i]->points());
-        serie->setColor(m_stored_series[i]->color());
-        serie->setName(m_stored_series[i]->name());
-        connect(m_stored_series[i].data(), &QAbstractSeries::nameChanged, serie.data(), [serie, i, this]() {
-            if (serie && m_stored_series[i])
-                serie->setName(m_stored_series[i]->name());
-        });
-        if (swap) {
-            QPointer<QScatterSeries> s = new QScatterSeries;
-            for (auto i : serie->points())
-                s->append(QPointF(i.y(), i.x()));
-            series << s;
-        } else
-            series << serie;
+#ifdef DEBUG_ON
+    qDebug() << "🔍 NEW ChartWrapper::InitaliseSeries: ENTRY - stored_series.size()=" << m_stored_series.size();
+#endif
+
+    if (!m_stored_series.isEmpty()) {
+#ifdef DEBUG_ON
+        qDebug() << "↩️ NEW ChartWrapper::InitaliseSeries: EARLY RETURN - series already exist";
+#endif
+        return;
     }
-    return series;
+
+    CheckWorking();
+    
+    // Claude Generated: Null check for weak reference
+    auto workingData = m_working.toStrongRef();
+    if (!workingData) {
+#ifdef DEBUG_ON
+        qDebug() << "❌ NEW ChartWrapper::InitaliseSeries: NO WORKING DATA - model destroyed or null";
+#endif
+        return;
+    }
+
+    int serie = workingData->SeriesCount();
+
+#ifdef DEBUG_ON
+    qDebug() << "🆕 NEW ChartWrapper::InitaliseSeries: m_working->SeriesCount()=" << serie
+             << "data type:" << workingData->metaObject()->className();
+#endif
+
+    for (int j = 0; j < serie; ++j) {
+#ifdef DEBUG_ON
+        qDebug() << "🔧 NEW ChartWrapper: Creating series" << j << "of" << serie;
+#endif
+        QPointer<QXYSeries> series;
+
+        // Claude Generated: Create appropriate series type like RegressionDialog
+        if (qobject_cast<AbstractModel*>(workingData.data())) {
+#ifdef DEBUG_ON
+            qDebug() << "📈 NEW ChartWrapper: Creating LineSeries for AbstractModel";
+#endif
+            series = new LineSeries; // Use LineSeries for models
+        } else {
+#ifdef DEBUG_ON
+            qDebug() << "📊 NEW ChartWrapper: Creating ScatterSeries for raw data";
+#endif
+            series = new ScatterSeries; // Use ScatterSeries for raw data
+        }
+
+        if (series) {
+            // Claude Generated: NO COMPLEX VISIBILITY TRACKING - just trust Qt Charts
+            series->setVisible(true); // RegressionDialog approach: simple and direct
+
+            m_stored_series << series;
+
+#ifdef DEBUG_ON
+            qDebug() << "✅ NEW ChartWrapper: Created series" << j
+                     << "type:" << series->metaObject()->className()
+                     << "visible:" << series->isVisible()
+                     << "stored_series.size() now:" << m_stored_series.size()
+                     << "- NO debug tracking, trust Qt Charts!";
+#endif
+        } else {
+#ifdef DEBUG_ON
+            qDebug() << "❌ NEW ChartWrapper: FAILED to create series" << j;
+#endif
+        }
+    }
+
+    // Initialize point data storage
+    m_pointData.resize(serie);
+
+#ifdef DEBUG_ON
+    qDebug() << "🎯 NEW ChartWrapper: InitaliseSeries complete - following successful RegressionDialog pattern";
+#endif
 }
+
+void ChartWrapper::CheckWorking()
+{
+    // Claude Generated: Null check for weak references
+    if (m_working.isNull()) {
+        m_working = m_stored_data;  // Copy weak reference
+        m_transformed = false;
+    }
+}
+
+// === SIMPLIFIED VISIBILITY API - Claude Generated ===
+// Direct delegation to Qt Charts - RegressionDialog pattern
+
+void ChartWrapper::setSeriesVisible(int index, bool visible)
+{
+    if (index < 0 || index >= m_stored_series.size())
+        return;
+
+    if (m_stored_series[index]) {
+        m_stored_series[index]->setVisible(visible);
+        emit seriesVisibilityChanged(index, visible);
+
+#ifdef DEBUG_ON
+        qDebug() << "🎯 NEW ChartWrapper: Direct setVisible(" << visible
+                 << ") on series" << index << "- following RegressionDialog pattern";
+#endif
+    }
+}
+
+bool ChartWrapper::isSeriesVisible(int index) const
+{
+    if (index < 0 || index >= m_stored_series.size() || !m_stored_series[index]) {
+        return false;
+    }
+
+    return m_stored_series[index]->isVisible();
+}
+
+void ChartWrapper::setAllSeriesVisible(bool visible)
+{
+#ifdef DEBUG_ON
+    qDebug() << "🎯 NEW ChartWrapper::setAllSeriesVisible(" << visible
+             << ") - applying to" << m_stored_series.size() << "series";
+#endif
+
+    for (int i = 0; i < m_stored_series.size(); ++i) {
+        setSeriesVisible(i, visible);
+    }
+}
+
+int ChartWrapper::seriesCount() const
+{
+#ifdef DEBUG_ON
+    qDebug() << "📊 NEW ChartWrapper::seriesCount() returning" << m_stored_series.size();
+#endif
+    return m_stored_series.size();
+}
+
+void ChartWrapper::showSeries(int i)
+{
+    // Claude Generated: Simplified showSeries - direct visibility control
+    if (i == -1) {
+        // Apply visibility to all series
+        for (int j = 0; j < m_stored_series.size(); ++j) {
+            if (m_stored_series[j] && !m_stored_series[j]->isVisible()) {
+                m_stored_series[j]->setVisible(true);
+            }
+        }
+    } else if (i >= 0 && i < m_stored_series.size()) {
+        setSeriesVisible(i, true);
+    }
+
+    emit ShowSeries(i);
+}
+
+// === POINT HIDING API - Claude Generated ===
+
+QVector<QPointF> ChartWrapper::SeriesPointData::getVisiblePoints() const
+{
+    if (!cacheValid) {
+        visibleCache.clear();
+        for (int i = 0; i < originalData.size(); ++i) {
+            if (i < pointVisible.size() && pointVisible[i]) {
+                visibleCache.append(originalData[i]);
+            }
+        }
+        const_cast<SeriesPointData*>(this)->cacheValid = true;
+    }
+    return visibleCache;
+}
+
+void ChartWrapper::hidePoint(int seriesIndex, int pointIndex)
+{
+    if (seriesIndex < 0 || seriesIndex >= m_pointData.size())
+        return;
+    if (pointIndex < 0 || pointIndex >= m_pointData[seriesIndex].pointVisible.size())
+        return;
+
+    m_pointData[seriesIndex].pointVisible[pointIndex] = false;
+    m_pointData[seriesIndex].invalidateCache();
+
+    updateSeriesDisplay(seriesIndex);
+    emit pointVisibilityChanged(seriesIndex, pointIndex, false);
+
+#ifdef DEBUG_ON
+    qDebug() << "🔍 NEW ChartWrapper: Hidden point" << pointIndex << "in series" << seriesIndex;
+#endif
+}
+
+void ChartWrapper::showPoint(int seriesIndex, int pointIndex)
+{
+    if (seriesIndex < 0 || seriesIndex >= m_pointData.size())
+        return;
+    if (pointIndex < 0 || pointIndex >= m_pointData[seriesIndex].pointVisible.size())
+        return;
+
+    m_pointData[seriesIndex].pointVisible[pointIndex] = true;
+    m_pointData[seriesIndex].invalidateCache();
+
+    updateSeriesDisplay(seriesIndex);
+    emit pointVisibilityChanged(seriesIndex, pointIndex, true);
+
+#ifdef DEBUG_ON
+    qDebug() << "🔍 NEW ChartWrapper: Shown point" << pointIndex << "in series" << seriesIndex;
+#endif
+}
+
+void ChartWrapper::togglePoint(int seriesIndex, int pointIndex)
+{
+    if (isPointVisible(seriesIndex, pointIndex)) {
+        hidePoint(seriesIndex, pointIndex);
+    } else {
+        showPoint(seriesIndex, pointIndex);
+    }
+}
+
+bool ChartWrapper::isPointVisible(int seriesIndex, int pointIndex) const
+{
+    if (seriesIndex < 0 || seriesIndex >= m_pointData.size())
+        return false;
+    if (pointIndex < 0 || pointIndex >= m_pointData[seriesIndex].pointVisible.size())
+        return false;
+
+    return m_pointData[seriesIndex].pointVisible[pointIndex];
+}
+
+QVector<int> ChartWrapper::getHiddenPoints(int seriesIndex) const
+{
+    QVector<int> hidden;
+    if (seriesIndex < 0 || seriesIndex >= m_pointData.size())
+        return hidden;
+
+    const auto& visible = m_pointData[seriesIndex].pointVisible;
+    for (int i = 0; i < visible.size(); ++i) {
+        if (!visible[i]) {
+            hidden.append(i);
+        }
+    }
+    return hidden;
+}
+
+void ChartWrapper::updateSeriesDisplay(int seriesIndex)
+{
+    if (seriesIndex < 0 || seriesIndex >= m_stored_series.size())
+        return;
+    if (seriesIndex >= m_pointData.size())
+        return;
+
+    QXYSeries* series = qobject_cast<QXYSeries*>(m_stored_series[seriesIndex]);
+    if (!series)
+        return;
+
+    // Rebuild series with visible points only
+    QVector<QPointF> visiblePoints = m_pointData[seriesIndex].getVisiblePoints();
+    series->replace(visiblePoints);
+
+#ifdef DEBUG_ON
+    qDebug() << "🔧 NEW ChartWrapper: Updated series" << seriesIndex
+             << "display with" << visiblePoints.size() << "visible points"
+             << "out of" << m_pointData[seriesIndex].originalData.size() << "total";
+#endif
+}
+
+// === LEGACY COMPATIBILITY API - Claude Generated ===
+
+QJsonObject ChartWrapper::getVisualState() const
+{
+    QJsonObject state;
+
+    // Simple active_series string for backward compatibility
+    QStringList visibility;
+    for (int i = 0; i < m_stored_series.size(); ++i) {
+        visibility << (isSeriesVisible(i) ? "1" : "0");
+    }
+    state["active_series"] = visibility.join(" ");
+
+    // Store hidden points for new feature
+    for (int i = 0; i < m_pointData.size(); ++i) {
+        QVector<int> hidden = getHiddenPoints(i);
+        if (!hidden.isEmpty()) {
+            QJsonArray hiddenArray;
+            for (int pointIndex : hidden) {
+                hiddenArray.append(pointIndex);
+            }
+            state[QString("series_%1_hidden").arg(i)] = hiddenArray;
+        }
+    }
+
+    return state;
+}
+
+void ChartWrapper::setVisualState(const QJsonObject& state)
+{
+    // Restore series visibility
+    if (state.contains("active_series")) {
+        QString activeStr = state["active_series"].toString();
+        QStringList parts = activeStr.split(" ");
+
+        for (int i = 0; i < qMin(parts.size(), m_stored_series.size()); ++i) {
+            bool visible = (parts[i] == "1");
+            setSeriesVisible(i, visible);
+        }
+    }
+
+    // Restore hidden points
+    for (int i = 0; i < m_pointData.size(); ++i) {
+        QString key = QString("series_%1_hidden").arg(i);
+        if (state.contains(key)) {
+            QJsonArray hiddenArray = state[key].toArray();
+
+            for (const auto& value : hiddenArray) {
+                hidePoint(i, value.toInt());
+            }
+        }
+    }
+
+    emit visualStateChanged(state);
+}
+
+// === COLOR AND UTILITY METHODS - Claude Generated ===
+// Simplified versions of legacy methods
 
 QColor ChartWrapper::color(int i) const
 {
-    if (m_stored_series.size() <= i)
-        return ColorCode(i);
-    else {
-        QPointer<QXYSeries> series = m_stored_series[i];
-        if (!series)
-            return ColorCode(i);
+    if (i >= 0 && i < m_stored_series.size() && m_stored_series[i]) {
         return m_stored_series[i]->color();
     }
+    return ColorCode(i);
 }
 
 QString ChartWrapper::ColorList() const
 {
-    QString list;
-    for (int i = 0; i < m_stored_series.size(); ++i)
-        list += color(i).name() + "|";
-    list.chop(1);
-    return list;
+    QStringList colors;
+    for (int i = 0; i < m_stored_series.size(); ++i) {
+        colors << color(i).name();
+    }
+    return colors.join("|");
 }
 
 bool ChartWrapper::setColorList(const QString& str)
 {
     QStringList colors = str.split("|");
-    if (colors.size() != m_stored_series.size())
-        return false;
-    for (int i = 0; i < m_stored_series.size(); ++i)
-        m_stored_series[i]->setColor(QColor(colors[i]));
+    bool success = true;
 
-    return true;
+    for (int i = 0; i < qMin(colors.size(), m_stored_series.size()); ++i) {
+        if (m_stored_series[i]) {
+            QColor color(colors[i]);
+            if (color.isValid()) {
+                m_stored_series[i]->setColor(color);
+            } else {
+                success = false;
+            }
+        }
+    }
+
+    return success;
 }
 
 void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
 {
-    m_stored_model = model;
-    /*
-    if (!m_transformed)
-        m_stored_model = model;
-    else
-        return;*/
-    connect(m_stored_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
-    m_working = m_stored_model;
+    // Claude Generated: Store as weak reference to allow model destruction
+    m_stored_model = model.toWeakRef();
+    m_working = model.toWeakRef();
     m_transformed = true;
-    // MakeSeries();
-    emit ModelTransformed();
+    UpdateModel();
+}
+
+QList<QPointer<QScatterSeries>> ChartWrapper::CloneSeries(bool swap) const
+{
+    QList<QPointer<QScatterSeries>> cloned;
+
+    for (const auto& series : m_stored_series) {
+        if (series) {
+            QPointer<QScatterSeries> clone = new ScatterSeries;
+            QXYSeries* xySeries = qobject_cast<QXYSeries*>(series);
+            if (xySeries) {
+                QList<QPointF> points = xySeries->points();
+                if (swap) {
+                    // Swap x and y coordinates
+                    for (auto& point : points) {
+                        point = QPointF(point.y(), point.x());
+                    }
+                }
+                clone->replace(points);
+                clone->setColor(series->color());
+            }
+            cloned << clone;
+        }
+    }
+
+    return cloned;
 }
 
 QColor ChartWrapper::ColorCode(int i)
@@ -267,29 +630,6 @@ QColor ChartWrapper::ColorCode(int i)
 void ChartWrapper::SetBlocked(int blocked)
 {
     m_blocked = !blocked;
-}
-
-void ChartWrapper::showSeries(int i)
-{
-    for (int j = 0; j < m_stored_series.size(); ++j) {
-        if (i == -1 && !m_blocked) {
-            m_stored_series[j]->setVisible(true);
-            continue;
-        }
-        if (qobject_cast<ScatterSeries*>(m_stored_series[j]))
-            m_stored_series[j]->setVisible(i == j);
-        else if (i != -1 && m_stored_series[j]->isVisible())
-            m_stored_series[j]->setVisible(i == j);
-    }
-    emit ShowSeries(i);
-}
-
-void ChartWrapper::CheckWorking()
-{
-    if (!m_working) {
-        m_working = m_stored_data;
-        m_transformed = false;
-    }
 }
 
 #include "chartwrapper.moc"

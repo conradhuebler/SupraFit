@@ -117,7 +117,10 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
-    disconnect(m_data.data());
+    // Claude Generated: Safe WeakPointer cleanup
+    if (auto strongData = m_data.toStrongRef()) {
+        disconnect(strongData.data());
+    }
     disconnect(m_model_dataholder);
     m_model_dataholder->CloseAllForced();
     m_data.clear();
@@ -126,35 +129,56 @@ MainWindow::~MainWindow()
 
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
+    // CLaude TODO: we have to replace this with loading from ProjectManager by getting the DataCalss directly,or even in the constructor
     QString colors = object["data"].toObject()["colors"].toString();
-    m_data = QSharedPointer<DataClass>(new DataClass());
+    auto strongData = QSharedPointer<DataClass>(new DataClass());
+    m_data = strongData; // Store as WeakPointer
 
-    connect(m_data.data(), &DataClass::Message, this, &MainWindow::Message);
-    connect(m_data.data(), &DataClass::Warning, this, &MainWindow::Warning);
+    connect(strongData.data(), &DataClass::Message, this, &MainWindow::Message);
+    connect(strongData.data(), &DataClass::Warning, this, &MainWindow::Warning);
 
-    if (!m_data->LegacyImportData(object["data"].toObject()))
-        return m_data;
+    if (!strongData->LegacyImportData(object["data"].toObject()))
+        return strongData;
 
-    QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_data);
+    QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(strongData);
     if (!colors.isEmpty() && !colors.isNull())
         wrapper->setColorList(colors);
-    m_model_dataholder->setData(m_data, wrapper);
+    m_model_dataholder->setData(strongData, wrapper);
 
-    QJsonObject toplevel;
-    m_model_dataholder->AddToWorkspace(object);
+    // Claude Generated - Legacy AddToWorkspace logic removed - ProjectManager handles model loading
+    // Legacy function - use setDataFromProjectManager() instead
 
-    return m_data;
+    return strongData;
+}
+
+void MainWindow::setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper)
+{
+    // Claude Generated: WeakPointer implementation to prevent exit crash
+    m_data = SupraFit::ProjectManager::instance().getWeakProjectData(projectId);
+    
+    // Get strong reference for setup, but don't store it
+    auto strongData = m_data.toStrongRef();
+    if (!strongData) {
+        qWarning() << "Failed to get project data from ProjectManager for project ID:" << projectId;
+        return;
+    }
+
+    connect(strongData.data(), &DataClass::Message, this, &MainWindow::Message);
+    connect(strongData.data(), &DataClass::Warning, this, &MainWindow::Warning);
+
+    m_model_dataholder->setDataFromProjectManager(projectId, wrapper);
 }
 
 QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper)
 {
-    m_data = QSharedPointer<DataClass>(new DataClass(this));
+    auto strongData = QSharedPointer<DataClass>(new DataClass(this));
+    m_data = strongData; // Store as WeakPointer
 
-    m_data->setProjectTitle("MetaModel");
-    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::MetaModel, m_data);
+    strongData->setProjectTitle("MetaModel");
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::MetaModel, strongData);
     QSharedPointer<ChartWrapper> w = m_charts->setRawWrapper(wrapper);
 
-    m_model_dataholder->setData(model, w);
+    m_model_dataholder->setData(strongData, w);
 
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
 

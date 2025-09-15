@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/datawidget.h"
@@ -131,6 +132,7 @@ public:
     ~ModelDataHolder();
 
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper);
+    void setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPointer<ChartWrapper> wrapper); // Claude Generated: WeakPointer method
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
 
     void setSettings(const QJsonObject& config);
@@ -158,6 +160,53 @@ public:
     QString Compare() const;
 
     inline QPointer<ModelWidget> RecentModel() { return m_last_modelwidget; }
+
+    // Claude Generated - ProjectManager Integration Methods
+    /**
+     * @brief Set data from ProjectManager using project ID
+     * @param projectId UUID of project in ProjectManager
+     * @param wrapper Chart wrapper for visualization
+     * @return Success status of operation
+     */
+    bool setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
+    
+    /**
+     * @brief Get current project ID if managed by ProjectManager
+     * @return Project ID string, empty if not managed by ProjectManager
+     */
+    QString getCurrentProjectId() const;
+    
+    // Claude Generated - ProjectManager integration for creating ModelWidgets from loaded models
+    void createModelWidgetFromModel(QSharedPointer<AbstractModel> model);
+    
+    /**
+     * @brief Synchronize ModelDataHolder with ProjectManager models
+     * Creates ModelWidgets for all models in the current project
+     */
+    void syncModelsWithProjectManager();
+    
+    /**
+     * @brief Find tab index for model with given UUID
+     * @param modelUUID UUID of the model to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByUUID(const QString& modelUUID) const;
+
+    /**
+     * @brief Find tab index for model with given model pointer (Claude Generated)
+     * @param modelPointer Pointer to the model instance to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByPointer(void* modelPointer) const;
+    
+    /**
+     * @brief Find tab index for model with given child index (Claude Generated)
+     * @param modelPointer Pointer to the model instance
+     * @param childIndex Child index in the project  
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByChildIndex(void* modelPointer, int childIndex) const;
+    
 public slots:
     /*
      * Add a new model to the workspace
@@ -202,11 +251,15 @@ private:
 
     void Json2Model(const QJsonObject& object);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
+    
     void SplitData();
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
 
     QPointer<ModelWidget> m_last_modelwidget;
+    
+    // Claude Generated - ProjectManager Integration Members
+    QString m_currentProjectId;
 private slots:
     void NewModel();
     void AddModel();

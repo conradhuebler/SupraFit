@@ -23,12 +23,14 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
 
 ### Analysis Tools
-- **analyse.cpp/h**: **Statistical analysis and data processing with JSON API (Claude Generated)**
-  - **JSON-based statistical methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
+- **analyse.cpp/h**: **Complete JSON-based statistical analysis API (Claude Generated)**
+  - **Core JSON methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
+  - **Extended JSON methods**: `CalculateWGSMetrics()`, `CalculateModelComparisonMetrics()`, `CalculateFastConfidenceMetrics()`, `CalculateGlobalSearchMetrics()`
   - **ML feature extraction**: `ExtractModelMLFeatures()` for standardized training data
   - **Percentile-based confidence intervals**: Monte Carlo analysis with 2.5%/97.5% quantiles
+  - **Method coverage**: All 7 post-processing methods (MonteCarlo, WeakenedGridSearch, ModelComparison, CrossValidation, Reduction, FastConfidence, GlobalSearch)
   - **Legacy string-based functions**: `CompareAIC()`, `CompareMC()`, `CompareCV()`, `AnalyseReductionAnalysis()` for backward compatibility
-  - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to HTML tables
+  - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to console/HTML format
 - **pythonbridge.cpp/h**: Python integration for extended functionality
 - **toolset.cpp/h**: General utility functions and statistical calculations
 
@@ -170,7 +172,14 @@ model->Calculate();
 - No memory leaks or crashes identified
 
 ### Known Issues
-- None currently identified
+
+#### **ProjectManager Architecture Decision (January 2025)**
+- **UUID System**: DataClass containers have project UUIDs, AbstractModel instances inherit this context but don't have independent UUIDs
+- **Model Multiplicity**: Multiple models of the same type (e.g., "¹H 1:1-Model") within a project is **correct behavior** for comparative analysis
+- **Data Inheritance**: All models within a DataClass share the same project UUID, enabling proper project-model relationships
+- **Memory Management**: WeakPointer pattern implemented between ProjectManager and GUI to prevent reference cycles during application shutdown
+- **Model Deletion**: Fixed CloseAllForced() index bounds and RemoveTab() use-after-free issues for stable model lifecycle management
+- **Status**: **ARCHITECTURE STABLE** - ProjectManager fully integrated with both CLI and GUI frontends
 
 ### Performance Notes
 - Eigen operations provide excellent numerical performance
@@ -187,6 +196,18 @@ model->Calculate();
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
 ### Future Tasks (Restructured 2025-01-28)
+
+#### **✅ COMPLETED TASKS**:
+0. **ProjectManager Implementation** (Task #0) - ✅ **COMPLETED January 2025**
+   - Thread-safe singleton ProjectManager for centralized project management
+   - Eliminates CLI-GUI code duplication in project handling
+   - UUID-based project identification and caching system
+   - Signal-based notifications for GUI Model-View integration
+   - **Location**: `src/core/projectmanager.h/cpp`
+   - **✅ FULL INTEGRATION COMPLETE**: CLI-GUI consolidation fully implemented
+   - **✅ GUI Integration**: Projects loaded via ProjectManager now visible and functional in GUI
+   - **✅ Legacy Code Eliminated**: `m_project_list` dependencies completely removed
+   - **✅ Architecture Unified**: Single UUID-based system throughout application
 
 #### **🔥 HIGH PRIORITY** - Implement immediately:
 1. **Statistical Analysis JSON API** (Task #1)

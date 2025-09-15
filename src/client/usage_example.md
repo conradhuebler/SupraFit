@@ -113,6 +113,22 @@ suprafit_cli -i input_file.dat -o output_file.json
 suprafit_cli -i test_data.suprafit
 ```
 
+### ML Pipeline Execution
+
+To run the ML pipeline, you need to add the `ProcessMLPipeline` key to the `Main` section of your input JSON file and set it to `true`.
+
+```json
+{
+  "Main": {
+    "ProcessMLPipeline": true,
+    ...
+  },
+  ...
+}
+```
+
+This will trigger the ML pipeline workflow in `suprafit_cli`.
+
 ### Generate Training Data
 
 ```bash

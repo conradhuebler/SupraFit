@@ -54,10 +54,10 @@ const QString Latex_Head = "\documentclass{standalone}"
 */
 
 // Legacy string-based analysis functions (for backward compatibility)
-QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local = true, double cutoff = 0);
+QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, double cutoff);
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
-QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, bool local = true, int cv_x = 3);
-QString CompareMC(const QVector<QJsonObject> models, bool local = true, int index = 1);
+QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int cv_x);
+QString CompareMC(const QVector<QJsonObject> models, bool local, int index);
 
 // JSON-based statistical calculation functions (Claude Generated)
 // These replace string-based functions for ML pipeline integration
@@ -75,14 +75,14 @@ QJsonObject CalculateAICMetrics(const QVector<QWeakPointer<AbstractModel>>& mode
  * @param cvtype Cross-validation type (1=leave-one-out, etc.)
  * @return QJsonObject with CV metrics, prediction errors, and validation scores
  */
-QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype = 1, int cv_x = 3);
+QJsonObject CalculateCVMetrics(const QVector<QJsonObject>& models, int cvtype, int cv_x);
 
 /**
  * @brief Calculate Monte Carlo parameter uncertainty without string formatting
  * @param models Vector of model results with MC data
  * @return QJsonObject with parameter uncertainties, confidence intervals, correlation matrix
  */
-QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index = 1);
+QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index);
 
 /**
  * @brief Calculate parameter reduction analysis without string formatting
@@ -90,7 +90,7 @@ QJsonObject CalculateMCMetrics(const QVector<QJsonObject>& models, int index = 1
  * @param cutoff Significance threshold for parameter inclusion
  * @return QJsonObject with parameter rankings, significance scores, reduced model suggestions
  */
-QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double cutoff = 0.1);
+QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double cutoff);
 
 /**
  * @brief Extract ML features from statistical analysis results
@@ -98,6 +98,34 @@ QJsonObject CalculateReductionMetrics(const QVector<QJsonObject>& models, double
  * @return QJsonObject with standardized ML features for training
  */
 QJsonObject ExtractModelMLFeatures(QSharedPointer<AbstractModel> model);
+
+/**
+ * @brief Calculate Weakened Grid Search statistics without string formatting
+ * @param models Vector of model results with grid search data
+ * @return QJsonObject with grid exploration results and parameter sweeps
+ */
+QJsonObject CalculateWGSMetrics(const QVector<QJsonObject>& models);
+
+/**
+ * @brief Calculate Model Comparison statistics without string formatting
+ * @param models Vector of model results with comparison data
+ * @return QJsonObject with F-test results and model comparison metrics
+ */
+QJsonObject CalculateModelComparisonMetrics(const QVector<QJsonObject>& models);
+
+/**
+ * @brief Calculate Fast Confidence statistics without string formatting
+ * @param models Vector of model results with confidence data
+ * @return QJsonObject with simplified confidence intervals and estimates
+ */
+QJsonObject CalculateFastConfidenceMetrics(const QVector<QJsonObject>& models);
+
+/**
+ * @brief Calculate Global Search statistics without string formatting
+ * @param models Vector of model results with global search data
+ * @return QJsonObject with multi-start optimization results and convergence analysis
+ */
+QJsonObject CalculateGlobalSearchMetrics(const QVector<QJsonObject>& models);
 
 /**
  * @brief Format statistical JSON data as human-readable string

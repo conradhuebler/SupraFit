@@ -295,10 +295,13 @@ void DataTable::CheckRow(int row, bool check)
 
 int DataTable::isRowChecked(int row) const
 {
-    int check = 0;
-    for (int i = 0; i < columnCount(); ++i)
-        check += m_checked_table(row, i);
-    return check;
+    // Claude Generated - Fix to return 1/0 instead of sum of all columns
+    // Check if any column in the row is checked (typically they should all be the same)
+    for (int i = 0; i < columnCount(); ++i) {
+        if (m_checked_table(row, i))
+            return 1;  // Return 1 if any column is checked
+    }
+    return 0;  // Return 0 if no columns are checked
 }
 
 int DataTable::EnabledRows() const
