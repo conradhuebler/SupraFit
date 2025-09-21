@@ -853,6 +853,10 @@ int main(int argc, char** argv)
         "Batch export ML training data from directory", "directory");
     parser.addOption(exportMLBatch);
 
+    QCommandLineOption excludeRawData(QStringList() << "exclude-raw-data",
+        "Exclude raw statistical data from ML training export (smaller file size)");
+    parser.addOption(excludeRawData);
+
     // Claude Generated: Add parameter extraction option
     QCommandLineOption extractParameters(QStringList() << "x" << "extract-parameters",
         "Extract fitted model parameters from results file");
@@ -891,6 +895,7 @@ int main(int argc, char** argv)
     const QString mlOutputFile = parser.value("ml-output");
     const bool autoExportMLMode = parser.isSet("auto-export-ml");
     const QString exportMLBatchDirectory = parser.value("export-ml-batch");
+    const bool excludeRawDataMode = parser.isSet("exclude-raw-data");
     
     // Claude Generated - Thread count parsing and validation
     const QString threadCountStr = parser.value("nproc");
@@ -1011,14 +1016,16 @@ int main(int argc, char** argv)
         if (!exportMLBatchDirectory.isEmpty()) {
             // Batch export mode
             std::cout << "Batch export mode - processing directory: " << exportMLBatchDirectory.toStdString() << std::endl;
-            success = cli->exportMLTrainingDataBatch(exportMLBatchDirectory, 
-                                                   mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+            success = cli->exportMLTrainingDataBatch(exportMLBatchDirectory,
+                                                   mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile,
+                                                   excludeRawDataMode);
         } else {
             // Single file export mode
             QVector<QString> inputFiles;
             inputFiles.append(actualInputFile);
-            success = cli->exportMLTrainingData(inputFiles, 
-                                              mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile);
+            success = cli->exportMLTrainingData(inputFiles,
+                                              mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile,
+                                              excludeRawDataMode);
         }
         
         if (success) {

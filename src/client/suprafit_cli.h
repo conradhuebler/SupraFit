@@ -196,25 +196,28 @@ public:
      * @brief Export compact ML training data from ML pipeline files
      * @param inputFiles Vector of ML pipeline JSON files to process
      * @param outputFile Output filename for neural network training data
+     * @param excludeRawData If true, exclude raw statistical data to reduce file size
      * @return true if export successful, false otherwise
      */
-    bool exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile);
+    bool exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile, bool excludeRawData = false);
     
     /**
      * @brief Export ML training data from single file
      * @param inputFile ML pipeline JSON file to process
      * @param outputFile Output filename for training data
+     * @param excludeRawData If true, exclude raw statistical data to reduce file size
      * @return true if export successful, false otherwise
      */
-    bool exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile);
+    bool exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile, bool excludeRawData = false);
     
     /**
      * @brief Batch export ML training data from directory
      * @param inputDirectory Directory containing ML pipeline results
      * @param outputFile Output filename for batch training data
+     * @param excludeRawData If true, exclude raw statistical data to reduce file size
      * @return true if export successful, false otherwise
      */
-    bool exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile);
+    bool exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile, bool excludeRawData = false);
 
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
