@@ -40,6 +40,7 @@ MLFeatureExtractor::MLFeatureExtractor(QObject* parent)
     , m_includeAdvancedStats(true)
     , m_includeFitParameters(false)
     , m_includeInputNoise(true)
+    , m_includeRawData(false)
     , m_version("neural_net_v1.0")
 {
 }
@@ -48,11 +49,12 @@ MLFeatureExtractor::~MLFeatureExtractor()
 {
 }
 
-void MLFeatureExtractor::setExtractionOptions(bool includeAdvancedStats, bool includeFitParameters, bool includeInputNoise)
+void MLFeatureExtractor::setExtractionOptions(bool includeAdvancedStats, bool includeFitParameters, bool includeInputNoise, bool includeRawData)
 {
     m_includeAdvancedStats = includeAdvancedStats;
     m_includeFitParameters = includeFitParameters;
     m_includeInputNoise = includeInputNoise;
+    m_includeRawData = includeRawData;
 }
 
 QJsonObject MLFeatureExtractor::parseMLPipelineData(const QString& filename)
@@ -556,8 +558,15 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
         
         switch (method) {
             case SupraFit::Method::MonteCarlo: {
-                // Monte Carlo: Extract and analyze parameter features from raw MC samples - Claude Generated
-                methodFeatures = SupraFit::JsonUtils::extractCompactMLFeatures(methodData);
+                // Monte Carlo: Extract parameter features (with optional raw data) - Claude Generated
+                if (m_includeRawData) {
+                    // Use full StatisticTool analysis with raw data included
+                    QVector<QJsonObject> modelVector = {methodData};
+                    methodFeatures = StatisticTool::CalculateMCMetrics(modelVector, 1);
+                } else {
+                    // Use compact features without raw data
+                    methodFeatures = SupraFit::JsonUtils::extractCompactMLFeatures(methodData);
+                }
                 if (!methodFeatures.isEmpty()) {
                     features["monte_carlo"] = methodFeatures;
                 }

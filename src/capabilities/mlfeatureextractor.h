@@ -86,10 +86,12 @@ public:
      * @param includeAdvancedStats Include advanced statistical analysis (MC, CV, etc.)
      * @param includeFitParameters Include fitted model parameter values
      * @param includeInputNoise Include input noise/variance configuration
+     * @param includeRawData Include raw statistical data (MC samples, CV results, etc.)
      */
-    void setExtractionOptions(bool includeAdvancedStats = true, 
-                            bool includeFitParameters = false, 
-                            bool includeInputNoise = true);
+    void setExtractionOptions(bool includeAdvancedStats = true,
+                            bool includeFitParameters = false,
+                            bool includeInputNoise = true,
+                            bool includeRawData = false);
 
 private:
     /**
@@ -167,6 +169,7 @@ private:
     bool m_includeAdvancedStats;
     bool m_includeFitParameters;
     bool m_includeInputNoise;
+    bool m_includeRawData;
     
     // Metadata
     QString m_version;

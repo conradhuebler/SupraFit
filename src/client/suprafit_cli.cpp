@@ -3276,7 +3276,7 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
 }
 
 // ML Training Data Export Implementation - Claude Generated
-bool SupraFitCli::exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile)
+bool SupraFitCli::exportMLTrainingData(const QVector<QString>& inputFiles, const QString& outputFile, bool excludeRawData)
 {
     if (inputFiles.isEmpty()) {
         fmt::print("❌ ERROR: No input files provided for ML training data export\n");
@@ -3284,12 +3284,13 @@ bool SupraFitCli::exportMLTrainingData(const QVector<QString>& inputFiles, const
     }
 
     MLFeatureExtractor* extractor = new MLFeatureExtractor(this);
-    
-    // Configure extraction options
+
+    // Configure extraction options - Claude Generated
     extractor->setExtractionOptions(
-        true,   // includeAdvancedStats
-        false,  // includeFitParameters (keep compact for NN)
-        true    // includeInputNoise
+        true,               // includeAdvancedStats
+        false,              // includeFitParameters (keep compact for NN)
+        true,               // includeInputNoise
+        !excludeRawData     // includeRawData (invert excludeRawData flag)
     );
     
     fmt::print("🔧 Extracting ML training data from {} files...\n", inputFiles.size());
@@ -3319,38 +3320,38 @@ bool SupraFitCli::exportMLTrainingData(const QVector<QString>& inputFiles, const
     return success;
 }
 
-bool SupraFitCli::exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile)
+bool SupraFitCli::exportMLTrainingDataSingle(const QString& inputFile, const QString& outputFile, bool excludeRawData)
 {
-    return exportMLTrainingData(QVector<QString>() << inputFile, outputFile);
+    return exportMLTrainingData(QVector<QString>() << inputFile, outputFile, excludeRawData);
 }
 
-bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile)
+bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const QString& outputFile, bool excludeRawData)
 {
     QDir dir(inputDirectory);
     if (!dir.exists()) {
         fmt::print("❌ ERROR: Input directory does not exist: {}\n", inputDirectory.toStdString());
         return false;
     }
-    
+
     // Find all JSON files in directory
     QStringList nameFilters;
     nameFilters << "*.json";
     QStringList jsonFiles = dir.entryList(nameFilters, QDir::Files);
-    
+
     if (jsonFiles.isEmpty()) {
         fmt::print("❌ ERROR: No JSON files found in directory: {}\n", inputDirectory.toStdString());
         return false;
     }
-    
+
     // Convert to full paths
     QVector<QString> inputFiles;
     for (const QString& fileName : jsonFiles) {
         inputFiles.append(dir.absoluteFilePath(fileName));
     }
-    
+
     fmt::print("🔍 Found {} JSON files in directory {}\n", inputFiles.size(), inputDirectory.toStdString());
-    
-    return exportMLTrainingData(inputFiles, outputFile);
+
+    return exportMLTrainingData(inputFiles, outputFile, excludeRawData);
 }
 
 // Claude Generated: Extract and display fitted model parameters
