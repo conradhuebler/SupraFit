@@ -24,7 +24,8 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - Debug output: `qDebug()` within `#ifdef DEBUG_ON #endif`
 - Console output: Use `fmt`, avoid `std::cout`
 - **Always check instructions blocks** in relevant CLAUDE.md files
-- Update copyright year to current year: `Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>`
+- Update copyright year to current year: `Copyright (C) xxxx - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>`
+- nullptr-checks are a good things, however if there is a crash, prevent the crash by checks doesn't solve the origin of the nullptr
 
 ### Workflow States
 - **ADD**: Features to be added
@@ -49,14 +50,6 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - **suprafit_cli**: Command-line interface with unified ProjectManager
 - **suprafit**: GUI application with completed ProjectManager integration
 
-### Data Structure
-- **DataClass**: Project container with metadata
-- **DataTable**: Core data structure using Eigen::MatrixXd
-
-### Key Functions
-- **GenerateData()**: Creates training datasets
-- **GenerateInputData()**: Equation-based data generation
-- **AnalyzeFile()**: File analysis without task execution
 
 ## File Structure
 ```
