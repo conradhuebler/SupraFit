@@ -63,34 +63,25 @@ suprafit_cli -i data_file.suprafit
 
 ### 4. Single Pipeline Execution
 
+⚠️ **OBSOLETE - These C++ APIs are no longer available. Use CLI instead.**
+
 ```cpp
-#include "ml_pipeline_manager.h"
-#include "src/core/jsonhandler.h"
-
-// Create pipeline manager
-MLPipelineManager pipeline;
-
-// Load configuration
-QJsonObject config = JsonHandler::LoadFile("input/ml_pipeline_step1_generate.json");
-pipeline.runSinglePipeline("input/ml_pipeline_step1_generate.json");
+// DEPRECATED: MLPipelineManager and related classes have been removed
+// REASON: CLI-based execution via ProcessMLPipeline is more flexible
+// MIGRATION: Use suprafit_cli with JSON configuration files instead
 ```
 
 ### 2. Batch Processing
 
+⚠️ **PLANNED FEATURE - Not yet implemented**
+
+The following batch processing capability is planned for future implementation:
+
 ```cpp
-// Load batch configuration
-QJsonObject batchConfig = JsonHandler::LoadFile("input/ml_pipeline_batch_config.json");
-pipeline.setBatchConfig(batchConfig);
-
-// Set pipeline steps
-QStringList steps = {
-    "input/ml_pipeline_step1_generate.json",
-    "input/ml_pipeline_step2_analyze.json"
-};
-pipeline.setPipelineSteps(steps);
-
-// Run batch pipeline
-pipeline.runBatchPipeline();
+// PLANNED: Batch processing will be supported via:
+// - Multiple Repeat iterations in Main section
+// - Parallel execution with Threads configuration
+// STATUS: Use sequential JSON processing with CLI as workaround
 ```
 
 ## Command Line Usage
@@ -144,7 +135,9 @@ suprafit_cli --batch-config input/ml_pipeline_batch_config.json
 
 ### Output Structure
 
-The pipeline generates structured JSON files suitable for ML training:
+⚠️ **PLANNED FEATURE - Rich ML Features Not Yet Fully Implemented**
+
+The ML pipeline currently generates basic multi-project JSON files with fitted models and statistical analysis results. The following rich feature extraction format is planned for future implementation:
 
 ```json
 {
@@ -191,6 +184,8 @@ The pipeline generates structured JSON files suitable for ML training:
   ]
 }
 ```
+
+**Current Implementation**: The `-0-ml.json` output file contains the basic multi-project structure with fitted models and their statistical analysis results. Full feature extraction and flattening will be enhanced in future releases.
 
 ## Configuration Examples
 

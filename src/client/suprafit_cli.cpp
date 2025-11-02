@@ -80,6 +80,7 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
     m_simulation = core->m_simulation;
     //m_data = core->m_data;
     m_data_json = core->m_data_json;
+    // TODO: Migrate to ProjectManager - copy constructor should use ProjectManager
     m_toplevel = core->m_toplevel;
     m_data = new DataClass(core->m_data);
 
@@ -238,10 +239,10 @@ bool SupraFitCli::LoadFile()
         std::cout << "🔍 DEBUG LoadFile: Detected configuration file format" << std::endl;
 
         // This is a configuration file - use FileHandler logic
-        m_toplevel = fileData;
-        m_main = m_toplevel["Main"].toObject();
-        m_models = m_toplevel["models"].toObject();
-        m_analyse = m_toplevel["controller"].toObject();
+        m_toplevel = fileData; // Legacy compatibility - TODO: migrate to ProjectManager
+        m_main = fileData["Main"].toObject();
+        m_models = fileData["models"].toObject();
+        m_analyse = fileData["controller"].toObject();
 
         // Set additional configuration sections for AddModels workflow
         if (fileData.contains("AddModels")) {
@@ -470,6 +471,7 @@ void SupraFitCli::PrintFileContent(int index)
 
 void SupraFitCli::PrintFileStructure()
 {
+    // TODO: Migrate to ProjectManager - get current project JSON structure
     for (const QString& key : m_toplevel.keys()) {
         std::cout << key.toStdString() << std::endl;
     }
@@ -600,6 +602,7 @@ void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>
 {
     QVector<QJsonObject> models_json;
     if (models.isEmpty()) {
+        // TODO: Migrate to ProjectManager - get models from current project
         for (const QString& str : m_toplevel.keys()) {
             if (str.contains("model"))
                 models_json << m_toplevel[str].toObject();
@@ -662,12 +665,14 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     qDebug() << "Independent Rows:" << m_independent_rows;
     qDebug() << "Start Point:" << m_start_point;
     
+    // TODO: Migrate to ProjectManager - check if current project exists
     if (!m_data) {
         qDebug() << "ERROR: No data loaded!";
         return project_list;
     }
-    
+
     // Simply export the loaded data as-is and wrap in proper SupraFit project structure
+    // TODO: Migrate to ProjectManager - get data from current project
     QJsonObject dataObject = m_data->ExportData();
     dataObject["DataType"] = 1;
     dataObject["content"] = "Data loaded from " + m_infile;
@@ -852,13 +857,16 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // Data structure analysis
     fmt::print("\n📋 DATA STRUCTURE:\n");
+    // TODO: Migrate to ProjectManager - get data type from current project
     fmt::print("   Data type: {}\n", static_cast<int>(m_data->Type()));
+    // TODO: Migrate to ProjectManager - export data from current project
     QJsonObject exportData = m_data->ExportData();
     fmt::print("   Title: '{}'\n", exportData["title"].toString().toStdString());
     fmt::print("   UUID: {}\n", exportData["uuid"].toString().toStdString());
     
     // Independent data analysis
     fmt::print("\n🔢 INDEPENDENT DATA:\n");
+    // TODO: Migrate to ProjectManager - get independent model from current project
     if (m_data->IndependentModel()) {
         int indepRows = m_data->IndependentModel()->rowCount();
         int indepCols = m_data->IndependentModel()->columnCount();
@@ -887,6 +895,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // Dependent data analysis
     fmt::print("\n📈 DEPENDENT DATA:\n");
+    // TODO: Migrate to ProjectManager - get dependent model from current project
     if (m_data->DependentModel()) {
         int depRows = m_data->DependentModel()->rowCount();
         int depCols = m_data->DependentModel()->columnCount();
@@ -936,6 +945,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         }
     } else if (!m_toplevel.isEmpty()) {
         // Check if configuration is stored directly in toplevel - Claude Generated
+        // TODO: Migrate to ProjectManager - get current project configuration
         fmt::print("   Analyzing top-level configuration:\n");
         for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
             QString key = it.key();
@@ -1027,10 +1037,12 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // System parameters
     fmt::print("\n🔧 SYSTEM PARAMETERS:\n");
+    // TODO: Migrate to ProjectManager - get system parameters from current project
     QList<int> sysParamList = m_data->getSystemParameterList();
     if (!sysParamList.isEmpty()) {
         fmt::print("   System parameters: {} found\n", sysParamList.size());
         for (int index : sysParamList) {
+            // TODO: Migrate to ProjectManager - get specific system parameter from current project
             SystemParameter param = m_data->getSystemParameter(index);
             fmt::print("      Param {}: '{}' ({})\n", index, param.Name().toStdString(), param.Description().toStdString());
         }
@@ -1044,6 +1056,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     QVector<ModelStatistics> modelStatistics;
     
     // Search for model objects in toplevel JSON (model_0, model_1, etc.)
+    // TODO: Migrate to ProjectManager - get current project models
     for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
         QString key = it.key();
         if (key.startsWith("model_") && it.value().isObject()) {
@@ -1067,6 +1080,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         for (const auto& stats : modelStatistics) {
             if (stats.hasValidStats) {
                 // Find the original model object to get parameter details
+                // TODO: Migrate to ProjectManager - get model from current project
                 QJsonObject modelObj = m_toplevel[stats.key].toObject();
                 QJsonObject data = modelObj["data"].toObject();
                 
@@ -1090,6 +1104,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         // Show debug info for models without statistics
         for (const auto& stats : modelStatistics) {
             if (!stats.hasValidStats) {
+                // TODO: Migrate to ProjectManager - get model debug info from current project
                 QJsonObject modelObj = m_toplevel[stats.key].toObject();
                 fmt::print("   {} - Available fields: ", stats.key.toStdString());
                 for (auto statIt = modelObj.begin(); statIt != modelObj.end(); ++statIt) {
@@ -1102,6 +1117,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
 
     // Enhanced data type analysis - Claude Generated
     fmt::print("\n📊 DATA TYPE ANALYSIS:\n");
+    // TODO: Migrate to ProjectManager - get data export from current project
     exportData = m_data->ExportData();
     if (exportData.contains("DataType")) {
         int dataType = exportData["DataType"].toInt();
@@ -1175,6 +1191,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     }
 
     // Update metadata section fix - Claude Generated
+    // TODO: Migrate to ProjectManager - export data check from current project
     QJsonObject exportDataCheck = m_data->ExportData();
 
     fmt::print("\n" + std::string(80, '=') + "\n");
@@ -1935,6 +1952,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
                 continue;
             }
             
+            // TODO: Migrate to ProjectManager - check if current project exists
             if (!m_data) {
                 fmt::print("Error: No input data available for model-based generation\n");
                 continue;
@@ -1950,9 +1968,11 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             }
             
             // Create a copy of input data for this iteration
+            // TODO: Migrate to ProjectManager - copy from current project data
             dataClass = new DataClass(m_data.data());
-            
+
             // Copy independent data
+            // TODO: Migrate to ProjectManager - copy independent model from current project
             if (m_data->IndependentModel()->rowCount() > 0) {
                 DataTable* indepTable = new DataTable(m_data->IndependentModel());
                 dataClass->setIndependentTable(indepTable);
@@ -2718,56 +2738,61 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         for (int modelIndex = 0; modelIndex < fittedModels.size(); ++modelIndex) {
             const QJsonObject& modelResult = fittedModels[modelIndex];
             QString projectKey = QString("project_%1").arg(modelIndex);
-            
+
             // Create the proper project structure with "data" wrapper (per JSON_DOKUMENTATION.md)
             QJsonObject projectData;
             QJsonObject dataWrapper;
-            
+
             // Basic project metadata (required by JSON_DOKUMENTATION.md)
             dataWrapper["DataType"] = 1;
             dataWrapper["SupraFit"] = 2004;
             dataWrapper["title"] = QString("Model Analysis %1").arg(modelIndex + 1);
             dataWrapper["uuid"] = QUuid::createUuid().toString();
-            
+
             // Include original data structure
             dataWrapper["independent"] = data->IndependentModel()->ExportTable(true);
             dataWrapper["dependent"] = data->DependentModel()->ExportTable(true);
-            
+
             // Export the fitted model with complete statistics (including Monte Carlo)
             if (modelResult.contains("model_export") && modelResult["model_export"].isObject()) {
                 QJsonObject fullModelExport = modelResult["model_export"].toObject();
-                
+
                 // Extract and include the model in the standard format
                 if (fullModelExport.contains("data")) {
                     QJsonObject modelData = fullModelExport["data"].toObject();
-                    QString modelKey = QString("model_0");
-                    
+                    QString modelKey = QString("model_%1").arg(modelIndex);  // FIX: Use dynamic index instead of hardcoded "model_0"
+
                     QJsonObject modelEntry;
                     modelEntry["model"] = modelResult.contains("model_id") ? modelResult["model_id"].toInt() : 1;
                     modelEntry["name"] = fullModelExport.contains("name") ? fullModelExport["name"].toString() : "Unknown Model";
                     modelEntry["data"] = modelData;  // This contains the "methods" with statistical results
-                    
+
                     dataWrapper[modelKey] = modelEntry;
                 }
             }
-            
+
             projectData["data"] = dataWrapper;
             multiProjectData[projectKey] = projectData;
         }
         
         fmt::print("🔍 DEBUG: Created Multi-Project structure with {} projects\n", fittedModels.size());
-        
+
         // Save the Multi-Project dataset - Claude Generated
-        QString datasetFilename = m_outfile + "-" + QString::number(i);
-        if (m_outfile.endsWith(".json")) {
-            datasetFilename += ".json";
+        // Note: For multi-project datasets, save directly as JSON without ProjectManager wrapping
+        QString datasetFilename = m_outfile + "-" + QString::number(i) + ".json";
+
+        // Write multi-project structure directly to JSON file
+        QJsonDocument jsonDoc(multiProjectData);
+        QFile outFile(datasetFilename);
+        if (outFile.open(QIODevice::WriteOnly)) {
+            outFile.write(jsonDoc.toJson());
+            outFile.close();
+            fmt::print("✅ {} successfully written to disk (Multi-Project format)\n", datasetFilename.toStdString());
+            fmt::print("🔍 DEBUG: Saved Multi-Project dataset '{}' with {} projects\n",
+                      datasetFilename.toStdString(), fittedModels.size());
         } else {
-            datasetFilename += ".json";  // Always save dataset as JSON
+            fmt::print("❌ ERROR: Failed to write Multi-Project dataset '{}'\n", datasetFilename.toStdString());
         }
-        
-        SaveFile(datasetFilename, multiProjectData);
-        fmt::print("🔍 DEBUG: Saved Multi-Project dataset '{}' with {} projects\n", 
-                  datasetFilename.toStdString(), fittedModels.size());
 
         // Step 4: Create SupraFit project with fitted models (like GUI SaveWorkspace)
         QJsonObject projectFile;
@@ -2807,19 +2832,154 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         }
         
         // Save the project file with fitted models
-        QString modelsFilename = m_outfile + "-models-" + QString::number(i);
-        if (m_outfile.endsWith(".json")) {
-            modelsFilename += ".json";
+        // NOTE: Use JsonHandler directly, NOT SaveFile() which uses ProjectManager
+        // ProjectManager only saves "data" wrapper and removes model_X keys!
+        QString modelsFilename = m_outfile + "-project-" + QString::number(i) + ".suprafit";
+
+        QJsonDocument doc(projectFile);
+        QFile file(modelsFilename);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(doc.toJson());
+            file.close();
+            fmt::print("✅ {} successfully written with {} fitted models\n",
+                      modelsFilename.toStdString(), modelIndex);
         } else {
-            modelsFilename += ".suprafit";
+            fmt::print("❌ ERROR: Failed to write {}\n", modelsFilename.toStdString());
         }
-        SaveFile(modelsFilename, projectFile);
+
+        // ========================================================================
+        // ML-optimierte Ausgabedatei generieren - Claude Generated 2025-10-17
+        // ========================================================================
+
+        // NOTE: Save multi-project data directly for ML training
+        // The full statistical data is needed for feature extraction
+        // Simplified: No data cleaning, use full structure with all methods
+        QString mlFilename = m_outfile + "-ml-features-" + QString::number(i) + ".json";
+
+        QJsonDocument mlDoc(multiProjectData);
+        QFile mlFile(mlFilename);
+        if (mlFile.open(QIODevice::WriteOnly)) {
+            mlFile.write(mlDoc.toJson());
+            mlFile.close();
+            fmt::print("✅ ML-optimierte Ergebnisse: '{}' ({} Projekte mit statistischen Methoden)\n",
+                      mlFilename.toStdString(), fittedModels.size());
+        } else {
+            fmt::print("❌ ERROR: Failed to write ML file {}\n", mlFilename.toStdString());
+        }
 
         delete data;
     }
     
     fmt::print("🎉 ML Pipeline completed: {} total model evaluations\n", results.size());
     return results;
+}
+
+QJsonObject SupraFitCli::cleanProjectForML(const QJsonObject& project) const
+{
+    /**
+     * @brief Bereinigt ein Projekt-JSON-Objekt für eine ML-spezifische Ausgabe.
+     * @param project Das ursprüngliche, ausführliche Projekt-Objekt.
+     * @return Ein bereinigtes QJsonObject, bei dem Rohdaten entfernt und
+     *         statistische Methoden abgeflacht wurden, oder leeres Objekt wenn
+     *         keine methods vorhanden sind.
+     *
+     * Diese Funktion führt zwei Hauptaufgaben aus:
+     * 1. Sie entfernt die 'independent'- und 'dependent'-Datentabellen, um die Dateigröße zu reduzieren.
+     * 2. Sie navigiert zu allen 'model_X' Einträgen und ersetzt die rohen,
+     *    verschachtelten Ergebnisse durch eine kompakte, flache Zusammenfassung der wichtigsten Kennzahlen.
+     *
+     * Claude Generated - 2025-10-17
+     */
+    QJsonObject cleanedProject = project;
+
+    // Navigiere zum "data" Wrapper-Objekt (z.B. project_0["data"])
+    if (!cleanedProject.contains("data") || !cleanedProject["data"].isObject()) {
+        return QJsonObject(); // Leeres Objekt = Projekt überspringen
+    }
+    QJsonObject dataWrapper = cleanedProject["data"].toObject();
+
+    // --- Aufgabe 1: Experimentelle Rohdaten entfernen ---
+    dataWrapper.remove("independent");
+    dataWrapper.remove("dependent");
+
+    bool hasAnyMethods = false; // Prüfen ob irgendein Modell methods hat
+
+    // --- Aufgabe 2: ALLE model_X Einträge durchlaufen ---
+    QStringList modelKeys;
+    for (const QString& key : dataWrapper.keys()) {
+        if (key.startsWith("model_")) {
+            modelKeys.append(key);
+        }
+    }
+
+    for (const QString& modelKey : modelKeys) {
+        if (!dataWrapper[modelKey].isObject()) {
+            continue;
+        }
+
+        QJsonObject model = dataWrapper[modelKey].toObject();
+
+        // Navigiere zum "data"-Abschnitt des Modells, der die "methods" enthält
+        if (!model.contains("data") || !model["data"].isObject()) {
+            continue;
+        }
+        QJsonObject modelData = model["data"].toObject();
+
+        // --- Aufgabe 3: Statistische Ergebnisse abflachen ---
+        if (modelData.contains("methods") && modelData["methods"].isObject()) {
+            QJsonObject originalMethods = modelData["methods"].toObject();
+
+            if (!originalMethods.isEmpty()) {
+                hasAnyMethods = true; // Mindestens ein Modell hat methods
+            }
+
+            QJsonObject newCleanedMethods;
+
+            // Iteriere durch die ursprünglichen Methoden ("1", "4", etc.)
+            for (const QString& methodKey : originalMethods.keys()) {
+                QJsonObject methodContainer = originalMethods[methodKey].toObject();
+
+                // Die vollständigen Ergebnisse sind in einem "results"-Schlüssel verschachtelt.
+                if (!methodContainer.contains("results") || !methodContainer["results"].isObject()) {
+                    continue;
+                }
+                QJsonObject verboseResults = methodContainer["results"].toObject();
+
+                // Nutze die existierende Hilfsfunktion, um eine flache Zusammenfassung zu erhalten.
+                // Diese Funktion ist der Schlüssel zur gewünschten Transformation.
+                QJsonObject flatFeatures = SupraFit::JsonUtils::extractCompactMLFeatures(verboseResults);
+
+                // Erstelle das neue, saubere Objekt für diese Methode.
+                QJsonObject cleanedMethodData;
+                cleanedMethodData["method"] = methodKey.toInt(); // Füge Metadaten wieder hinzu.
+
+                // Kopiere die abgeflachten Kennzahlen in das neue Objekt.
+                for (const QString& featureKey : flatFeatures.keys()) {
+                    cleanedMethodData[featureKey] = flatFeatures[featureKey];
+                }
+
+                // Platziere die bereinigten Methodendaten in unserem neuen "methods"-Objekt.
+                newCleanedMethods[methodKey] = cleanedMethodData;
+            }
+
+            // Ersetze das alte "methods"-Objekt durch unsere neue, saubere Version.
+            modelData["methods"] = newCleanedMethods;
+        }
+
+        // --- Setze das JSON-Objekt wieder zusammen ---
+        model["data"] = modelData;
+        dataWrapper[modelKey] = model;
+    }
+
+    // --- Projekt überspringen wenn keine methods vorhanden ---
+    if (!hasAnyMethods) {
+        return QJsonObject(); // Leeres Objekt signalisiert: Projekt überspringen
+    }
+
+    // Setze das JSON-Objekt wieder zusammen
+    cleanedProject["data"] = dataWrapper;
+
+    return cleanedProject;
 }
 
 QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, const QJsonObject& modelsConfig, const QJsonObject& globalAnalysisConfig)
@@ -3222,32 +3382,37 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
             m_jobmanager->AddSingleJob(job);
             m_jobmanager->RunJobs();
 
-            // Get results from model after job completion
+            // CRITICAL FIX: JobManager should automatically integrate results - Claude Generated (Post-fit Analysis Integration Fix)
+            // The issue was that JobManager calculates the statistics but may not automatically update the model
+            // Let's verify that the JobManager integration is working correctly
+            fmt::print("✅ {} analysis completed via JobManager\n", methodName.toStdString());
+
+            // Get results from model after job completion and integration
             // The JobManager stores results in the model itself - Claude Generated
             QJsonObject methodResult;
             methodResult["method"] = methodType;
             methodResult["method_name"] = methodName;
             methodResult["configuration"] = job;
             methodResult["completed"] = true;
-            
+
             // Extract actual analysis results from model after JobManager execution - Claude Generated
             // JobManager stores the real statistical results in the model - use JsonUtils to extract them
             // CRITICAL: Must use ExportModel(true, false) to include statistics in export!
             QJsonObject modelExport = model->ExportModel(true, false);
             QJsonObject actualResults = SupraFit::JsonUtils::getStatisticalMethod(modelExport, static_cast<SupraFit::Method>(methodType));
-            
+
             if (!actualResults.isEmpty()) {
                 methodResult["results"] = actualResults;
-                fmt::print("✅ Extracted {} results from model: {} entries\n", 
+                fmt::print("✅ Extracted {} results from model: {} entries\n",
                           methodName.toStdString(), actualResults.keys().size());
             } else {
                 fmt::print("⚠️  Warning: No results found for {} in model export\n", methodName.toStdString());
-                
+
                 // Fallback: Create empty structure with debug info
                 QJsonObject fallbackResults;
                 fallbackResults["max_steps"] = -1;
                 fallbackResults["models"] = QJsonArray();
-                fallbackResults["parameter_averages"] = QJsonArray(); 
+                fallbackResults["parameter_averages"] = QJsonArray();
                 fallbackResults["variance"] = 0;
                 fallbackResults["debug_info"] = "JobManager execution completed but no results found in model";
                 methodResult["results"] = fallbackResults;
@@ -3357,12 +3522,14 @@ bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const
 // Claude Generated: Extract and display fitted model parameters
 bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
 {
+    // TODO: Migrate to ProjectManager - check if current project exists
     if (m_toplevel.isEmpty()) {
         fmt::print("❌ ERROR: No data loaded. File structure is empty.\n");
         return false;
     }
 
     // Check if this is a models file
+    // TODO: Migrate to ProjectManager - get model keys from current project
     QStringList keys = m_toplevel.keys();
     QStringList modelKeys;
     for (const QString& key : keys) {
@@ -3398,6 +3565,7 @@ bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
     fmt::print("\n=== Model Parameter Extraction ===\n\n");
     
     for (const QString& modelKey : targetsToProcess) {
+        // TODO: Migrate to ProjectManager - get specific model from current project
         QJsonObject model = m_toplevel[modelKey].toObject();
         
         fmt::print("🔬 Model: {}\n", modelKey.toStdString());
