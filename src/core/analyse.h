@@ -128,6 +128,25 @@ QJsonObject CalculateFastConfidenceMetrics(const QVector<QJsonObject>& models);
 QJsonObject CalculateGlobalSearchMetrics(const QVector<QJsonObject>& models);
 
 /**
+ * @brief Extract multi-run statistics from model export with multiple post-fit analysis runs
+ * @param modelExport Exported model data containing methods with multiple runs
+ * @return JSON object with extracted statistics for each run (entropy, stddev, confidence intervals)
+ *
+ * Extracts key statistical metrics from multiple post-processing runs of the same method type.
+ * Useful for comparing results across different parameter settings (e.g., MC with MaxSteps 500, 1000, 2000).
+ *
+ * Output structure:
+ * {
+ *   "method_1_run0": { "max_steps": 500, "entropy": [...], "stddev": [...], "confidence_95": [...] },
+ *   "method_1_run1": { "max_steps": 1000, "entropy": [...], "stddev": [...], "confidence_95": [...] },
+ *   ...
+ * }
+ *
+ * Claude Generated - Multi-Run Metrics Extraction
+ */
+QJsonObject ExtractMultiRunStatistics(const QJsonObject& modelExport);
+
+/**
  * @brief Format statistical JSON data as human-readable string
  * @param statisticsJson JSON object with statistical results
  * @param analysisType Type of analysis ("AIC", "CV", "MC", "Reduction", "MLFeatures")
