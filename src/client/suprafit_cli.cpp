@@ -3344,6 +3344,7 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
 
     QJsonArray methodsArray = analysisConfig["methods"].toArray();
     QJsonObject methodResults;
+    QMap<int, int> methodRunCount;  // Track run index for each method type - Claude Generated Multi-Run Fix
 
     for (const QJsonValue& methodValue : methodsArray) {
         QJsonObject methodConfig = methodValue.toObject();
@@ -3416,7 +3417,12 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
                 methodResult["results"] = fallbackResults;
             }
 
-            methodResults[QString::number(methodType)] = methodResult;
+            // Claude Generated: Multi-Run Fix - Use unique key for each run
+            // Format: "1_run0", "1_run1", "1_run2" instead of overwriting "1"
+            int runIndex = methodRunCount[methodType]++;
+            QString methodKey = QString("%1_run%2").arg(methodType).arg(runIndex);
+            methodResults[methodKey] = methodResult;
+            fmt::print("        Stored results under key: {}\n", methodKey.toStdString());
 
         } catch (const std::exception& e) {
             fmt::print("❌ ERROR: Failed to execute {} analysis: {}\n",
@@ -3428,7 +3434,10 @@ QJsonObject SupraFitCli::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
             errorResult["error"] = QString::fromStdString(e.what());
             errorResult["completed"] = false;
 
-            methodResults[QString::number(methodType)] = errorResult;
+            // Claude Generated: Multi-Run Fix - Consistent key format for errors too
+            int runIndex = methodRunCount[methodType]++;
+            QString methodKey = QString("%1_run%2").arg(methodType).arg(runIndex);
+            methodResults[methodKey] = errorResult;
         }
     }
 
