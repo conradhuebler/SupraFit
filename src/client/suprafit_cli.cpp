@@ -2696,19 +2696,7 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         }
 
         // Step 3: Fit models and evaluate with post-fit analysis (using AnalysisManager)
-        fmt::print("🚨 CRITICAL DEBUG: About to call AnalysisManager->fitModelsToData()\n");
-        fmt::print("🔍 DEBUG: data pointer = {}\n", data.data() != nullptr ? "VALID" : "NULL");
-        if (data) {
-            fmt::print("🔍 DEBUG: data has {} independent rows, {} dependent rows\n", 
-                       data->IndependentModel()->rowCount(), data->DependentModel()->rowCount());
-        }
-        fmt::print("🔍 DEBUG: modelsConfig size = {}\n", modelsConfig.size());
-        fmt::print("🔍 DEBUG: globalAnalysisConfig size = {}\n", globalAnalysisConfig.size());
-        fmt::print("🔍 DEBUG: globalAnalysisConfig keys: {}\n", globalAnalysisConfig.keys().join(", ").toStdString());
-        
-        fmt::print("🚨 CALLING AnalysisManager->fitModelsToData() NOW...\n");
         QVector<QJsonObject> fittedModels = m_analysisManager->fitModelsToData(data, modelsConfig, globalAnalysisConfig);
-        fmt::print("🚨 RETURNED from AnalysisManager->fitModelsToData() with {} results\n", fittedModels.size());
 
         // Step 3.5: Create Multi-Project architecture according to JSON_DOKUMENTATION.md - Claude Generated
         // Convert fitted models to individual projects using official project_X format
@@ -2774,8 +2762,6 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
             projectData["data"] = dataWrapper;
             multiProjectData[projectKey] = projectData;
         }
-        
-        fmt::print("🔍 DEBUG: Created Multi-Project structure with {} projects\n", fittedModels.size());
 
         // Save the Multi-Project dataset - Claude Generated
         // Note: For multi-project datasets, save directly as JSON without ProjectManager wrapping
@@ -2788,8 +2774,6 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
             outFile.write(jsonDoc.toJson());
             outFile.close();
             fmt::print("✅ {} successfully written to disk (Multi-Project format)\n", datasetFilename.toStdString());
-            fmt::print("🔍 DEBUG: Saved Multi-Project dataset '{}' with {} projects\n",
-                      datasetFilename.toStdString(), fittedModels.size());
         } else {
             fmt::print("❌ ERROR: Failed to write Multi-Project dataset '{}'\n", datasetFilename.toStdString());
         }
