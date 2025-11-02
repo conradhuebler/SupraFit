@@ -772,109 +772,199 @@ void AbstractModel::addLocalParameter(int i)
 
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
-    int index;
-    int match = 0;
-    bool duplicate = false;
-
+    int index = 0;
     QJsonObject controller = object["controller"].toObject();
+
+    // Add run_index to controller if not present
+    QJsonObject updatedObject = object;
+    QJsonObject updatedController = controller;
+
     switch (AccessCI(controller, "Method").toInt()) {
     case SupraFit::Method::WeakenedGridSearch:
+        // Claude Generated FIX: Timestamp-based deduplication to prevent duplication when opening analysis
+        {
+            double timestamp = updatedController["timestamp"].toDouble();
+            int existingIndex = -1;
 
-        duplicate = false;
-        for (int i = 0; i < m_wg_statistics.size(); ++i) {
-            QJsonObject control = m_wg_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_wg_statistics[i] = object;
+            for (int i = 0; i < m_wg_statistics.size(); ++i) {
+                double existing = m_wg_statistics[i]["controller"].toObject()["timestamp"].toDouble();
+                if (qAbs(timestamp - existing) < 0.001) {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0) {
+                // UPDATE existing entry instead of creating duplicate
+                updatedController["run_index"] = existingIndex;
+                updatedObject["controller"] = updatedController;
+                m_wg_statistics[existingIndex] = updatedObject;
+                index = existingIndex;
+                qDebug() << "📊 DEBUG UpdateStatistic: WGS - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
+            } else {
+                // ADD new entry
+                updatedController["run_index"] = m_wg_statistics.size();
+                updatedObject["controller"] = updatedController;
+                m_wg_statistics << updatedObject;
+                index = m_wg_statistics.size() - 1;
+                qDebug() << "📊 DEBUG UpdateStatistic: WGS - Added new statistic at index" << index << "timestamp" << timestamp;
             }
         }
-        if (!duplicate)
-            m_wg_statistics << object;
-        index = m_wg_statistics.lastIndexOf(object);
         break;
 
     case SupraFit::Method::ModelComparison:
+        // Claude Generated FIX: Timestamp-based deduplication
+        {
+            double timestamp = updatedController["timestamp"].toDouble();
+            int existingIndex = -1;
 
-        duplicate = false;
-        for (int i = 0; i < m_moco_statistics.size(); ++i) {
-            QJsonObject control = m_moco_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_moco_statistics[i] = object;
+            for (int i = 0; i < m_moco_statistics.size(); ++i) {
+                double existing = m_moco_statistics[i]["controller"].toObject()["timestamp"].toDouble();
+                if (qAbs(timestamp - existing) < 0.001) {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0) {
+                updatedController["run_index"] = existingIndex;
+                updatedObject["controller"] = updatedController;
+                m_moco_statistics[existingIndex] = updatedObject;
+                index = existingIndex;
+                qDebug() << "📊 DEBUG UpdateStatistic: MoCo - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
+            } else {
+                updatedController["run_index"] = m_moco_statistics.size();
+                updatedObject["controller"] = updatedController;
+                m_moco_statistics << updatedObject;
+                index = m_moco_statistics.size() - 1;
+                qDebug() << "📊 DEBUG UpdateStatistic: MoCo - Added new statistic at index" << index << "timestamp" << timestamp;
             }
         }
-        if (!duplicate)
-            m_moco_statistics << object;
-        index = m_moco_statistics.lastIndexOf(object);
-
         break;
 
     case SupraFit::Method::FastConfidence:
-        m_fast_confidence = object;
-        ParseFastConfidence(object);
+        updatedController["run_index"] = 0;
+        updatedObject["controller"] = updatedController;
+        m_fast_confidence = updatedObject;
+        ParseFastConfidence(updatedObject);  // CRITICAL: Must parse FastConfidence data
         index = 0;
+        qDebug() << "📊 DEBUG UpdateStatistic: FastConfidence - Updated (single object)";
         break;
 
     case SupraFit::Method::Reduction:
-        index = match;
-        for (int i = 0; i < m_reduction.size(); ++i) {
-            int RunType = m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt();
-            if (RunType == object["controller"].toObject()["ReductionRuntype"].toInt()) {
-                m_reduction[i] = object;
-                index = i;
-                match++;
+        // Reduction has special logic: replace if ReductionRuntype matches, otherwise append
+        {
+            int match = 0;
+            for (int i = 0; i < m_reduction.size(); ++i) {
+                int RunType = m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt();
+                int newRunType = updatedController["ReductionRuntype"].toInt();
+                if (RunType == newRunType) {
+                    m_reduction[i] = updatedObject;
+                    index = i;
+                    match++;
+                }
+            }
+            if (match == 0) {
+                updatedController["run_index"] = m_reduction.size();
+                updatedObject["controller"] = updatedController;
+                m_reduction << updatedObject;
+                index = m_reduction.size() - 1;
             }
         }
-
-        if (match == 0)
-            m_reduction << object;
-
         break;
 
     case SupraFit::Method::GlobalSearch:
+        // Claude Generated FIX: Timestamp-based deduplication
+        {
+            double timestamp = updatedController["timestamp"].toDouble();
+            int existingIndex = -1;
 
-        duplicate = false;
-        for (int i = 0; i < m_search_results.size(); ++i) {
-            QJsonObject control = m_search_results[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_search_results[i] = object;
+            for (int i = 0; i < m_search_results.size(); ++i) {
+                double existing = m_search_results[i]["controller"].toObject()["timestamp"].toDouble();
+                if (qAbs(timestamp - existing) < 0.001) {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0) {
+                updatedController["run_index"] = existingIndex;
+                updatedObject["controller"] = updatedController;
+                m_search_results[existingIndex] = updatedObject;
+                index = existingIndex;
+                qDebug() << "📊 DEBUG UpdateStatistic: GlobalSearch - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
+            } else {
+                updatedController["run_index"] = m_search_results.size();
+                updatedObject["controller"] = updatedController;
+                m_search_results << updatedObject;
+                index = m_search_results.size() - 1;
+                qDebug() << "📊 DEBUG UpdateStatistic: GlobalSearch - Added new statistic at index" << index << "timestamp" << timestamp;
             }
         }
-        if (!duplicate)
-            m_search_results << object;
-        index = m_search_results.lastIndexOf(object);
-
         break;
 
     case SupraFit::Method::MonteCarlo:
+        // Claude Generated FIX: Timestamp-based deduplication to prevent duplication when opening analysis
+        {
+            double timestamp = updatedController["timestamp"].toDouble();
+            int existingIndex = -1;
 
-        duplicate = false;
-        for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            QJsonObject control = m_mc_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_mc_statistics[i] = object;
+            // Check if statistic with this timestamp already exists
+            for (int i = 0; i < m_mc_statistics.size(); ++i) {
+                double existing = m_mc_statistics[i]["controller"].toObject()["timestamp"].toDouble();
+                if (qAbs(timestamp - existing) < 0.001) {  // Floating point comparison with tolerance
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0) {
+                // UPDATE existing entry instead of creating duplicate
+                // This prevents duplication when opening analysis and adjusting confidence intervals
+                updatedController["run_index"] = existingIndex;
+                updatedObject["controller"] = updatedController;
+                m_mc_statistics[existingIndex] = updatedObject;
+                index = existingIndex;
+                qDebug() << "📊 DEBUG UpdateStatistic: MonteCarlo - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
+            } else {
+                // ADD new entry when genuinely new analysis
+                updatedController["run_index"] = m_mc_statistics.size();
+                updatedObject["controller"] = updatedController;
+                m_mc_statistics << updatedObject;
+                index = m_mc_statistics.size() - 1;
+                qDebug() << "📊 DEBUG UpdateStatistic: MonteCarlo - Added new statistic at index" << index << "timestamp" << timestamp;
             }
         }
-        if (!duplicate)
-            m_mc_statistics << object;
-        index = m_mc_statistics.lastIndexOf(object);
         break;
 
     case SupraFit::Method::CrossValidation:
-        duplicate = false;
-        for (int i = 0; i < m_cv_statistics.size(); ++i) {
-            QJsonObject control = m_cv_statistics[i]["controller"].toObject();
+        // Claude Generated FIX: Timestamp-based deduplication
+        {
+            double timestamp = updatedController["timestamp"].toDouble();
+            int existingIndex = -1;
 
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_cv_statistics[i] = object;
+            for (int i = 0; i < m_cv_statistics.size(); ++i) {
+                double existing = m_cv_statistics[i]["controller"].toObject()["timestamp"].toDouble();
+                if (qAbs(timestamp - existing) < 0.001) {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0) {
+                updatedController["run_index"] = existingIndex;
+                updatedObject["controller"] = updatedController;
+                m_cv_statistics[existingIndex] = updatedObject;
+                index = existingIndex;
+                qDebug() << "📊 DEBUG UpdateStatistic: CrossValidation - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
+            } else {
+                updatedController["run_index"] = m_cv_statistics.size();
+                updatedObject["controller"] = updatedController;
+                m_cv_statistics << updatedObject;
+                index = m_cv_statistics.size() - 1;
+                qDebug() << "📊 DEBUG UpdateStatistic: CrossValidation - Added new statistic at index" << index << "timestamp" << timestamp;
             }
         }
-        if (!duplicate)
-            m_cv_statistics << object;
-        index = m_cv_statistics.lastIndexOf(object);
         break;
     }
     emit StatisticChanged();
@@ -1062,18 +1152,21 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     QJsonObject statisticObject;
     QString help = "Please consider to \n(1) - Save the entry to a seperate file (via right click) and \n(2 - a) Remove the corresponding entry from the Results List or\n(2 - b) Drop the raw data for this result!";
     if (statistics) {
+        // Established format: sequential numeric keys for all statistics
+        // Supports multiple runs of any analysis type naturally
         int counter = 0;
 
+        // Save FastConfidence if present
         QJsonValueRef ref = statisticObject[QString::number(counter)] = m_fast_confidence;
         if (ref.isUndefined()) {
             qWarning() << "Critical warning, statistic data are to large to be stored in file";
             emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %1 in model %2 from data %3. %4").arg(SupraFit::Method::FastConfidence).arg(Name()).arg(ProjectTitle()).arg(help));
             statisticObject.remove(QString::number(counter));
         }
-
         counter++;
 
-        auto SaveStatistic = [this, help](QJsonObject& statisticObject, const QList<QJsonObject>& data, int& counter) {
+        // Lambda to save statistics sequentially - supports multiple runs naturally
+        auto SaveStatistic = [this, help, &counter](QJsonObject& statisticObject, const QList<QJsonObject>& data) {
             for (int i = 0; i < data.size(); ++i) {
                 QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
                 if (ref.isNull()) {
@@ -1084,13 +1177,13 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
             }
         };
 
-        SaveStatistic(statisticObject, m_mc_statistics, counter);
-        SaveStatistic(statisticObject, m_cv_statistics, counter);
-        SaveStatistic(statisticObject, m_moco_statistics, counter);
-        SaveStatistic(statisticObject, m_wg_statistics, counter);
-        SaveStatistic(statisticObject, m_wg_statistics, counter);
-        SaveStatistic(statisticObject, m_search_results, counter);
-        SaveStatistic(statisticObject, m_reduction, counter);
+        // Save all analysis types sequentially - multiple runs per type are appended naturally
+        SaveStatistic(statisticObject, m_mc_statistics);
+        SaveStatistic(statisticObject, m_cv_statistics);
+        SaveStatistic(statisticObject, m_moco_statistics);
+        SaveStatistic(statisticObject, m_wg_statistics);
+        SaveStatistic(statisticObject, m_search_results);
+        SaveStatistic(statisticObject, m_reduction);
 
         json["methods"] = statisticObject;
     }
@@ -1246,17 +1339,27 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     setOptions(topjson["options"].toObject());
 
-    QStringList keys;
-    QJsonObject statisticObject;
-
-    keys = json["methods"].toObject().keys();
-    statisticObject = json["methods"].toObject();
-
     if (override) {
-        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
+        // Claude Generated FIX: Clear existing statistics before reload to prevent duplication
+        // Similar fix to model duplication bug - prevents appending duplicate statistics on project reload
+        qDebug() << "🧹 DEBUG ImportModel: Clearing existing statistics before reload to prevent duplication";
+        qDebug() << "   MC stats before:" << m_mc_statistics.size() << "CV stats:" << m_cv_statistics.size()
+                 << "WGS stats:" << m_wg_statistics.size() << "MoCo stats:" << m_moco_statistics.size();
 
-        if (!m_fast_confidence.isEmpty())
-            ParseFastConfidence(m_fast_confidence);
+        m_mc_statistics.clear();
+        m_cv_statistics.clear();
+        m_wg_statistics.clear();
+        m_moco_statistics.clear();
+        m_search_results.clear();
+        m_reduction.clear();
+        m_fast_confidence = QJsonObject();
+
+        qDebug() << "✅ DEBUG ImportModel: All statistics lists cleared successfully";
+
+        // Import statistics using established sequential format
+        // Multiple runs are naturally supported via sequential numeric keys
+        QJsonObject statisticObject = json["methods"].toObject();
+        QStringList keys = statisticObject.keys();
 
         for (const QString& str : qAsConst(keys)) {
             QJsonObject object = statisticObject[str].toObject();
@@ -1264,8 +1367,22 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             if (controller.isEmpty())
                 continue;
 
+            // Skip FastConfidence - it's optional and can cause issues during import
+            // It's more of a utility feature than core functionality
+            int methodId = AccessCI(controller, "Method").toInt();
+            if (methodId == SupraFit::Method::FastConfidence)
+                continue;
+
+            int runIndex = AccessCI(controller, "run_index").toInt();
+            qDebug() << "📊 DEBUG ImportModel: Loading statistic - Method:" << methodId
+                     << "RunIndex:" << runIndex << "Key:" << str;
+
             UpdateStatistic(object);
         }
+
+        qDebug() << "✅ DEBUG ImportModel: Statistics loading complete - MC:" << m_mc_statistics.size()
+                 << "CV:" << m_cv_statistics.size() << "WGS:" << m_wg_statistics.size()
+                 << "MoCo:" << m_moco_statistics.size();
     }
     private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
 

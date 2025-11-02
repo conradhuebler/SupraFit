@@ -81,3 +81,15 @@ src/
 - **Document the "why" behind design decisions** for future reference
 - **Eliminate redundant information** that doesn't add architectural value
 - **Prioritize clean, maintainable documentation** over verbose troubleshooting history
+
+
+#### Build Directories
+- **`debug/`** - Development build: full debug symbols, no optimizations, slower runtime
+  - Use: Testing features, debugging crashes, development workflow
+  - Build: `cmake --build debug 2>&1 | tail -20` for quick status
+  - Executable: `./debug/qurcuma`
+
+- **`release/`** - Optimized build: stripped symbols, O3 optimizations, fast runtime
+  - Use: Performance testing, final deployment, production runs
+  - Build: `cmake --build release 2>&1 | tail -20`
+  - Executable: `./release/qurcuma`

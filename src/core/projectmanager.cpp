@@ -493,6 +493,44 @@ QString ProjectManager::createProjectFromJson(const QJsonObject& projectJson, co
         return QString();
     }
 
+    // Check for Multi-Project format (Claude Generated - CLI Multi-Project Support)
+    if (projectJson.contains("format_version") && projectJson["format_version"].toString() == "2.0") {
+        // Multi-Project format: create multiple projects and return the first one's ID
+        QString firstProjectId;
+        QStringList createdProjects;
+
+        for (auto it = projectJson.begin(); it != projectJson.end(); ++it) {
+            if (it.key().startsWith("project_")) {
+                QJsonObject singleProjectJson = it.value().toObject();
+                QString projectName = QString("%1 %2").arg(projectTitle.isEmpty() ? "Generated Project" : projectTitle).arg(it.key());
+
+                QString projectId = loadProjectFromJson(singleProjectJson, projectName);
+                if (!projectId.isEmpty()) {
+                    createdProjects.append(projectId);
+                    if (firstProjectId.isEmpty()) {
+                        firstProjectId = projectId;
+                    }
+                    emit projectAdded(projectId, projectName);
+#ifdef DEBUG_ON
+                    fmt::print("✅ DEBUG ProjectManager::createProjectFromJson: Created multi-project {} with title '{}'\n",
+                        projectId.toStdString(), projectName.toStdString());
+#endif
+                }
+            }
+        }
+
+        if (!firstProjectId.isEmpty()) {
+            updateProjectHash();
+            // Set as current project if none is active
+            if (m_currentProjectId.isEmpty()) {
+                m_currentProjectId = firstProjectId;
+            }
+        }
+
+        return firstProjectId;
+    }
+
+    // Standard single-project format
     QString projectId = loadProjectFromJson(projectJson, projectTitle);
     if (!projectId.isEmpty()) {
         updateProjectHash();
@@ -765,10 +803,20 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
 #ifdef DEBUG_ON
                 fmt::print("DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
 #endif
-                QJsonObject modelObject = jsonData[key].toObject();
-                
+                // Claude Generated FIX 2: Type-check before conversion to ensure valid model data
+                QJsonValue modelValue = jsonData[key];
+                if (!modelValue.isObject()) {
+                    emit errorOccurred("loadProjectFromJson",
+                        QString("Model %1 has invalid type (expected object, got %2)")
+                            .arg(key)
+                            .arg(modelValue.type() == QJsonValue::Array ? "array" : "unknown"));
+                    continue;
+                }
+
+                QJsonObject modelObject = modelValue.toObject();
+
                 if (!modelObject.contains("model")) {
-                    emit errorOccurred("loadProjectFromJson", 
+                    emit errorOccurred("loadProjectFromJson",
                         QString("Model object %1 missing 'model' field").arg(key));
                     continue;
                 }
@@ -1004,6 +1052,23 @@ bool ProjectManager::validateProjectJson(const QJsonObject& projectJson) const
     if (projectJson.contains("Main") || (projectJson.contains("Independent") && projectJson.contains("Dependent"))) {
         // This is a CLI configuration format for data generation
         return true;
+    }
+
+    // Check for Multi-Project format (Claude Generated - CLI Multi-Project Support)
+    if (projectJson.contains("format_version") && projectJson["format_version"].toString() == "2.0") {
+        // Multi-Project format: must contain at least one project_N entry
+        bool hasProjectEntry = false;
+        for (auto it = projectJson.begin(); it != projectJson.end(); ++it) {
+            if (it.key().startsWith("project_")) {
+                // Validate that each project entry has the right structure
+                QJsonObject projectData = it.value().toObject();
+                if (!projectData.isEmpty() && (projectData.contains("data") || projectData.contains("datatype"))) {
+                    hasProjectEntry = true;
+                    break;
+                }
+            }
+        }
+        return hasProjectEntry;
     }
 
     // If none of the formats is recognized, fail validation

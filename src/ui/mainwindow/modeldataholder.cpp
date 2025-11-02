@@ -861,12 +861,24 @@ void ModelDataHolder::syncModelsWithProjectManager()
     auto models = SupraFit::ProjectManager::instance().getProjectModels(m_currentProjectId);
     
     qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Found" << models.size() << "models to sync";
-    
-    // Create ModelWidgets for all models - allow multiple instances
+
+    // Claude Generated FIX: Prevent widget duplication on project reload
+    // Create ModelWidgets for all models - check for existing widgets first
     for (auto& model : models) {
         if (model) {
+            QString modelUUID = model->ModelUUID();
+
+            // Check if widget already exists for this model
+            int existingTab = findModelTabByUUID(modelUUID);
+            if (existingTab != -1) {
+                qDebug() << "⏭️  DEBUG syncModelsWithProjectManager: Model" << model->Name()
+                         << "UUID:" << modelUUID << "already has widget at tab" << existingTab
+                         << "- skipping duplicate creation";
+                continue;  // Skip creation, widget already exists
+            }
+
             void* modelPtr = model.data();
-            qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Creating widget for model" << model->Name() << "Pointer:" << modelPtr;
+            qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Creating NEW widget for model" << model->Name() << "Pointer:" << modelPtr << "UUID:" << modelUUID;
             createModelWidgetFromModel(model);
         }
     }
@@ -1354,12 +1366,23 @@ bool ModelDataHolder::setDataFromProjectManager(const QString& projectId, QShare
     // Now use the populated wrapper from ChartWidget instead of the original empty one
     setData(dataClass, populatedWrapper);
 
+    // Claude Generated FIX 3: Project reload handling
+    // Check if we're reloading the same project to inform user
+    bool isReload = (m_currentProjectId == projectId);
+    if (isReload) {
+        qDebug() << "⚠️  DEBUG setDataFromProjectManager: Reloading project" << projectId
+                 << "- existing widgets will be preserved and validated";
+        // Note: With Fix 1 (idempotent sync), duplicate widgets are prevented
+        // by UUID checking in syncModelsWithProjectManager()
+    }
+
     // Store the project ID for future reference
     m_currentProjectId = projectId;
 
     // Synchronize models after successful data loading
+    // Fix 1 ensures that if widgets already exist for models, they won't be duplicated
     syncModelsWithProjectManager();
-    
+
     qDebug() << "ModelDataHolder::setDataFromProjectManager: Successfully set data for project" << projectId;
     return true;
 }
