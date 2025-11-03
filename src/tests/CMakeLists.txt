@@ -531,3 +531,24 @@ if(ML_NEURAL_NETWORKS)
     message(STATUS "  ML Integration:       ./test_ml_integration")
     message(STATUS "  Run ML tests only:    make run_ml_tests")
 endif()
+
+# ML Pipeline Example Tests - Claude Generated 2025-11-04
+add_executable(test_ml_pipeline_examples
+    test_ml_pipeline_examples.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(test_ml_pipeline_examples
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME MLPipelineExamplesTest COMMAND test_ml_pipeline_examples)
+
+set_tests_properties(MLPipelineExamplesTest PROPERTIES
+    TIMEOUT 1200
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+message(STATUS "")
+message(STATUS "ML Pipeline Example Tests (Claude Generated 2025-11-04):")
+message(STATUS "  ML Pipeline Examples: ./test_ml_pipeline_examples")
