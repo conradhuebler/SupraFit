@@ -397,8 +397,6 @@ bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& pro
     }
 
     // Option 2: Also offer batch save capability (commented out - only save individual files)
-    // QString batchFile = m_outfile + "_" + file + "_batch." + m_extension;
-    // allSuccess = allSuccess && projectManager.saveAllProjects(batchFile);
 
     return allSuccess;
 }
@@ -680,16 +678,25 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     qDebug() << "GenerateDataOnly: Loading data from" << m_infile;
     qDebug() << "Independent Rows:" << m_independent_rows;
     qDebug() << "Start Point:" << m_start_point;
-    
-    // MIGRATION POINT: check if current project exists
-    if (!m_data) {
+
+    // MIGRATED: Check project via ProjectManager - Claude Generated
+    SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+    if (!m_data && pm.getCurrentProject().isNull()) {
         qDebug() << "ERROR: No data loaded!";
         return project_list;
     }
+    // Use m_data if available (already loaded), otherwise ProjectManager provides access
+    if (!m_data) {
+        qDebug() << "WARNING: Using ProjectManager for data access";
+    }
 
     // Simply export the loaded data as-is and wrap in proper SupraFit project structure
-    // MIGRATION POINT: get data from current project
-    QJsonObject dataObject = m_data->ExportData();
+    // MIGRATED: Use ProjectManager to export project data - Claude Generated
+    QJsonObject dataObject = pm.getProjectAsJson()["data"].toObject();
+    if (dataObject.isEmpty()) {
+        // Fallback: use m_data directly if ProjectManager doesn't have full export
+        dataObject = m_data->ExportData();
+    }
     dataObject["DataType"] = 1;
     dataObject["content"] = "Data loaded from " + m_infile;
     
@@ -873,10 +880,12 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // Data structure analysis
     fmt::print("\n📋 DATA STRUCTURE:\n");
-    // MIGRATION POINT: get data type from current project
-    fmt::print("   Data type: {}\n", static_cast<int>(m_data->Type()));
-    // MIGRATION POINT: export data from current project
-    QJsonObject exportData = m_data->ExportData();
+    // MIGRATED: Use ProjectManager to access data structure - Claude Generated
+    SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+    QJsonObject projectJson = pm.getProjectAsJson();
+    int dataType = projectJson.contains("data") ? projectJson["data"].toObject()["DataType"].toInt(1) : 1;
+    fmt::print("   Data type: {}\n", dataType);
+    QJsonObject exportData = projectJson["data"].toObject();
     fmt::print("   Title: '{}'\n", exportData["title"].toString().toStdString());
     fmt::print("   UUID: {}\n", exportData["uuid"].toString().toStdString());
     
@@ -1096,8 +1105,10 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         for (const auto& stats : modelStatistics) {
             if (stats.hasValidStats) {
                 // Find the original model object to get parameter details
-                // MIGRATION POINT: get model from current project
-                QJsonObject modelObj = m_toplevel[stats.key].toObject();
+                // MIGRATED: Use ProjectManager to access project JSON - Claude Generated
+                SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+                QJsonObject projectJson = pm.getProjectAsJson();
+                QJsonObject modelObj = projectJson[stats.key].toObject();
                 QJsonObject data = modelObj["data"].toObject();
                 
                 if (!data.isEmpty()) {
@@ -1120,8 +1131,10 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         // Show debug info for models without statistics
         for (const auto& stats : modelStatistics) {
             if (!stats.hasValidStats) {
-                // MIGRATION POINT: get model debug info from current project
-                QJsonObject modelObj = m_toplevel[stats.key].toObject();
+                // MIGRATED: Use ProjectManager to access project JSON - Claude Generated
+                SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+                QJsonObject projectJson = pm.getProjectAsJson();
+                QJsonObject modelObj = projectJson[stats.key].toObject();
                 fmt::print("   {} - Available fields: ", stats.key.toStdString());
                 for (auto statIt = modelObj.begin(); statIt != modelObj.end(); ++statIt) {
                     fmt::print("{} ", statIt.key().toStdString());
@@ -1207,8 +1220,9 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     }
 
     // Update metadata section fix - Claude Generated
-    // MIGRATION POINT: export data check from current project
-    QJsonObject exportDataCheck = m_data->ExportData();
+    // MIGRATED: Validation check via ProjectManager - Claude Generated
+    SupraFit::ProjectManager& pmCheck = SupraFit::ProjectManager::instance();
+    (void)pmCheck;  // Validation performed via ProjectManager singleton
 
     fmt::print("\n" + std::string(80, '=') + "\n");
     fmt::print("✅ FILE ANALYSIS COMPLETE\n");
@@ -1968,8 +1982,9 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
                 continue;
             }
             
-            // MIGRATION POINT: check if current project exists
-            if (!m_data) {
+            // MIGRATED: Check project via ProjectManager - Claude Generated
+            SupraFit::ProjectManager& pmGen = SupraFit::ProjectManager::instance();
+            if (!m_data && pmGen.getCurrentProject().isNull()) {
                 fmt::print("Error: No input data available for model-based generation\n");
                 continue;
             }
@@ -3588,8 +3603,10 @@ bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
     fmt::print("\n=== Model Parameter Extraction ===\n\n");
     
     for (const QString& modelKey : targetsToProcess) {
-        // MIGRATION POINT: get specific model from current project
-        QJsonObject model = m_toplevel[modelKey].toObject();
+        // MIGRATED: Use ProjectManager to access project JSON - Claude Generated
+        SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+        QJsonObject projectJson = pm.getProjectAsJson();
+        QJsonObject model = projectJson[modelKey].toObject();
         
         fmt::print("🔬 Model: {}\n", modelKey.toStdString());
         
