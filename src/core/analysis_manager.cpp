@@ -920,14 +920,27 @@ QJsonObject AnalysisManager::runPostFitAnalysis(QSharedPointer<AbstractModel> mo
         QJsonObject methodConfig = methods[methodIndex].toObject();
         int methodId = methodConfig["Method"].toInt();
 
-        // Create JobManager for this analysis run
+        // Create JobManager for this analysis run with error handling
         JobManager jobManager;
         jobManager.setModel(model);
         jobManager.AddSingleJob(methodConfig);
-        jobManager.RunJobs();
+
+        // Execute JobManager with try-catch for robustness - Claude Generated
+        try {
+            jobManager.RunJobs();
+        } catch (const std::exception& e) {
+            qDebug() << "ERROR: JobManager::RunJobs() exception for method" << methodId << ":" << e.what();
+            emit analysisError(QString("JobManager execution failed for method %1: %2").arg(methodId).arg(e.what()));
+            results["error"] = QString("Analysis execution failed: %1").arg(e.what());
+            continue;  // Skip this method and try next one
+        }
 
         // Extract results from model after JobManager execution
         QJsonObject modelExport = model->ExportModel(true, false);
+        if (modelExport.isEmpty()) {
+            qDebug() << "WARNING: Model export empty after JobManager::RunJobs() for method" << methodId;
+        }
+
         QJsonObject methodResults_object;
         bool success = false;
 

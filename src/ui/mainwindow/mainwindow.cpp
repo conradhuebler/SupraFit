@@ -127,31 +127,9 @@ MainWindow::~MainWindow()
     WriteSettings();
 }
 
-QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
-{
-    // DEPRECATED: This method is legacy - use setDataFromProjectManager() instead
-    // ProjectManager integration already implemented in SupraFitGui::SetData()
-    // TODO: Remove this method after all callers migrated to ProjectManager
-    QString colors = object["data"].toObject()["colors"].toString();
-    auto strongData = QSharedPointer<DataClass>(new DataClass());
-    m_data = strongData; // Store as WeakPointer
-
-    connect(strongData.data(), &DataClass::Message, this, &MainWindow::Message);
-    connect(strongData.data(), &DataClass::Warning, this, &MainWindow::Warning);
-
-    if (!strongData->LegacyImportData(object["data"].toObject()))
-        return strongData;
-
-    QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(strongData);
-    if (!colors.isEmpty() && !colors.isNull())
-        wrapper->setColorList(colors);
-    m_model_dataholder->setData(strongData, wrapper);
-
-    // Claude Generated - Legacy AddToWorkspace logic removed - ProjectManager handles model loading
-    // Legacy function - use setDataFromProjectManager() instead
-
-    return strongData;
-}
+// REMOVED: SetData() method - replaced by setDataFromProjectManager()
+// This legacy method has been removed as part of ProjectManager integration
+// All callers should use setDataFromProjectManager(projectId, wrapper) instead
 
 void MainWindow::setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper)
 {

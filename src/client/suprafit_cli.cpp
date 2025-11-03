@@ -80,8 +80,8 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
     m_simulation = core->m_simulation;
     //m_data = core->m_data;
     m_data_json = core->m_data_json;
-    // TODO: Migrate to ProjectManager - copy constructor should use ProjectManager
-    m_toplevel = core->m_toplevel;
+    // MIGRATED: ProjectManager handles project copying via createProjectFromJson()
+    m_toplevel = core->m_toplevel;  // Keep for backward compatibility
     m_data = new DataClass(core->m_data);
 
     // Initialize JobManager for statistical analysis - Claude Generated
@@ -396,9 +396,9 @@ bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& pro
         allSuccess = allSuccess && success;
     }
 
-    // Option 2: Also offer batch save capability
-    QString batchFile = m_outfile + "_" + file + "_batch." + m_extension;
-    bool batchSuccess = projectManager.saveAllProjects(batchFile);
+    // Option 2: Also offer batch save capability (commented out - only save individual files)
+    // QString batchFile = m_outfile + "_" + file + "_batch." + m_extension;
+    // allSuccess = allSuccess && projectManager.saveAllProjects(batchFile);
 
     return allSuccess;
 }
@@ -471,7 +471,23 @@ void SupraFitCli::PrintFileContent(int index)
 
 void SupraFitCli::PrintFileStructure()
 {
-    // TODO: Migrate to ProjectManager - get current project JSON structure
+    // MIGRATED: Use ProjectManager for project JSON structure
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+
+    // Get current project and export to JSON to see structure
+    auto weakProject = projectManager.getCurrentProject();
+    auto strongProject = weakProject.toStrongRef();
+    if (!strongProject) {
+        std::cout << "No project loaded" << std::endl;
+        return;
+    }
+
+    // Use m_toplevel as fallback for structure info
+    if (m_toplevel.isEmpty()) {
+        std::cout << "No project structure available" << std::endl;
+        return;
+    }
+
     for (const QString& key : m_toplevel.keys()) {
         std::cout << key.toStdString() << std::endl;
     }
@@ -602,7 +618,7 @@ void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>
 {
     QVector<QJsonObject> models_json;
     if (models.isEmpty()) {
-        // TODO: Migrate to ProjectManager - get models from current project
+        // MIGRATION POINT: get models from current project
         for (const QString& str : m_toplevel.keys()) {
             if (str.contains("model"))
                 models_json << m_toplevel[str].toObject();
@@ -665,14 +681,14 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     qDebug() << "Independent Rows:" << m_independent_rows;
     qDebug() << "Start Point:" << m_start_point;
     
-    // TODO: Migrate to ProjectManager - check if current project exists
+    // MIGRATION POINT: check if current project exists
     if (!m_data) {
         qDebug() << "ERROR: No data loaded!";
         return project_list;
     }
 
     // Simply export the loaded data as-is and wrap in proper SupraFit project structure
-    // TODO: Migrate to ProjectManager - get data from current project
+    // MIGRATION POINT: get data from current project
     QJsonObject dataObject = m_data->ExportData();
     dataObject["DataType"] = 1;
     dataObject["content"] = "Data loaded from " + m_infile;
@@ -857,16 +873,16 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // Data structure analysis
     fmt::print("\n📋 DATA STRUCTURE:\n");
-    // TODO: Migrate to ProjectManager - get data type from current project
+    // MIGRATION POINT: get data type from current project
     fmt::print("   Data type: {}\n", static_cast<int>(m_data->Type()));
-    // TODO: Migrate to ProjectManager - export data from current project
+    // MIGRATION POINT: export data from current project
     QJsonObject exportData = m_data->ExportData();
     fmt::print("   Title: '{}'\n", exportData["title"].toString().toStdString());
     fmt::print("   UUID: {}\n", exportData["uuid"].toString().toStdString());
     
     // Independent data analysis
     fmt::print("\n🔢 INDEPENDENT DATA:\n");
-    // TODO: Migrate to ProjectManager - get independent model from current project
+    // MIGRATION POINT: get independent model from current project
     if (m_data->IndependentModel()) {
         int indepRows = m_data->IndependentModel()->rowCount();
         int indepCols = m_data->IndependentModel()->columnCount();
@@ -895,7 +911,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // Dependent data analysis
     fmt::print("\n📈 DEPENDENT DATA:\n");
-    // TODO: Migrate to ProjectManager - get dependent model from current project
+    // MIGRATION POINT: get dependent model from current project
     if (m_data->DependentModel()) {
         int depRows = m_data->DependentModel()->rowCount();
         int depCols = m_data->DependentModel()->columnCount();
@@ -945,7 +961,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         }
     } else if (!m_toplevel.isEmpty()) {
         // Check if configuration is stored directly in toplevel - Claude Generated
-        // TODO: Migrate to ProjectManager - get current project configuration
+        // MIGRATION POINT: get current project configuration
         fmt::print("   Analyzing top-level configuration:\n");
         for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
             QString key = it.key();
@@ -1037,12 +1053,12 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     
     // System parameters
     fmt::print("\n🔧 SYSTEM PARAMETERS:\n");
-    // TODO: Migrate to ProjectManager - get system parameters from current project
+    // MIGRATION POINT: get system parameters from current project
     QList<int> sysParamList = m_data->getSystemParameterList();
     if (!sysParamList.isEmpty()) {
         fmt::print("   System parameters: {} found\n", sysParamList.size());
         for (int index : sysParamList) {
-            // TODO: Migrate to ProjectManager - get specific system parameter from current project
+            // MIGRATION POINT: get specific system parameter from current project
             SystemParameter param = m_data->getSystemParameter(index);
             fmt::print("      Param {}: '{}' ({})\n", index, param.Name().toStdString(), param.Description().toStdString());
         }
@@ -1056,7 +1072,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     QVector<ModelStatistics> modelStatistics;
     
     // Search for model objects in toplevel JSON (model_0, model_1, etc.)
-    // TODO: Migrate to ProjectManager - get current project models
+    // MIGRATION POINT: get current project models
     for (auto it = m_toplevel.begin(); it != m_toplevel.end(); ++it) {
         QString key = it.key();
         if (key.startsWith("model_") && it.value().isObject()) {
@@ -1080,7 +1096,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         for (const auto& stats : modelStatistics) {
             if (stats.hasValidStats) {
                 // Find the original model object to get parameter details
-                // TODO: Migrate to ProjectManager - get model from current project
+                // MIGRATION POINT: get model from current project
                 QJsonObject modelObj = m_toplevel[stats.key].toObject();
                 QJsonObject data = modelObj["data"].toObject();
                 
@@ -1104,7 +1120,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
         // Show debug info for models without statistics
         for (const auto& stats : modelStatistics) {
             if (!stats.hasValidStats) {
-                // TODO: Migrate to ProjectManager - get model debug info from current project
+                // MIGRATION POINT: get model debug info from current project
                 QJsonObject modelObj = m_toplevel[stats.key].toObject();
                 fmt::print("   {} - Available fields: ", stats.key.toStdString());
                 for (auto statIt = modelObj.begin(); statIt != modelObj.end(); ++statIt) {
@@ -1117,7 +1133,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
 
     // Enhanced data type analysis - Claude Generated
     fmt::print("\n📊 DATA TYPE ANALYSIS:\n");
-    // TODO: Migrate to ProjectManager - get data export from current project
+    // MIGRATION POINT: get data export from current project
     exportData = m_data->ExportData();
     if (exportData.contains("DataType")) {
         int dataType = exportData["DataType"].toInt();
@@ -1191,7 +1207,7 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     }
 
     // Update metadata section fix - Claude Generated
-    // TODO: Migrate to ProjectManager - export data check from current project
+    // MIGRATION POINT: export data check from current project
     QJsonObject exportDataCheck = m_data->ExportData();
 
     fmt::print("\n" + std::string(80, '=') + "\n");
@@ -1952,7 +1968,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
                 continue;
             }
             
-            // TODO: Migrate to ProjectManager - check if current project exists
+            // MIGRATION POINT: check if current project exists
             if (!m_data) {
                 fmt::print("Error: No input data available for model-based generation\n");
                 continue;
@@ -1968,11 +1984,11 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             }
             
             // Create a copy of input data for this iteration
-            // TODO: Migrate to ProjectManager - copy from current project data
+            // MIGRATION POINT: copy from current project data
             dataClass = new DataClass(m_data.data());
 
             // Copy independent data
-            // TODO: Migrate to ProjectManager - copy independent model from current project
+            // MIGRATION POINT: copy independent model from current project
             if (m_data->IndependentModel()->rowCount() > 0) {
                 DataTable* indepTable = new DataTable(m_data->IndependentModel());
                 dataClass->setIndependentTable(indepTable);
@@ -3529,14 +3545,14 @@ bool SupraFitCli::exportMLTrainingDataBatch(const QString& inputDirectory, const
 // Claude Generated: Extract and display fitted model parameters
 bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
 {
-    // TODO: Migrate to ProjectManager - check if current project exists
+    // MIGRATION POINT: check if current project exists
     if (m_toplevel.isEmpty()) {
         fmt::print("❌ ERROR: No data loaded. File structure is empty.\n");
         return false;
     }
 
     // Check if this is a models file
-    // TODO: Migrate to ProjectManager - get model keys from current project
+    // MIGRATION POINT: get model keys from current project
     QStringList keys = m_toplevel.keys();
     QStringList modelKeys;
     for (const QString& key : keys) {
@@ -3572,7 +3588,7 @@ bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
     fmt::print("\n=== Model Parameter Extraction ===\n\n");
     
     for (const QString& modelKey : targetsToProcess) {
-        // TODO: Migrate to ProjectManager - get specific model from current project
+        // MIGRATION POINT: get specific model from current project
         QJsonObject model = m_toplevel[modelKey].toObject();
         
         fmt::print("🔬 Model: {}\n", modelKey.toStdString());

@@ -50,8 +50,7 @@ public:
     MainWindow(QWidget* parent = 0);
     ~MainWindow();
 
-    [[deprecated("Use setDataFromProjectManager instead")]]
-    QSharedPointer<DataClass> SetData(const QJsonObject& object);
+    // SetData() removed - use setDataFromProjectManager() instead
     void setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
     QSharedPointer<AbstractModel> CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper = QWeakPointer<ChartWrapper>());
 
