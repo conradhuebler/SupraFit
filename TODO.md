@@ -3,6 +3,10 @@
 ## Quick Wins (Low Effort, High Impact)
 - [ ] Make printout precision configurable
 - [ ] Replace deprecated Qt functions
+- [x] **COMPLETED (Nov 3 2025)**: Remove deprecated SetData() from MainWindow
+  - [x] Removed legacy `SetData()` method completely
+  - [x] Updated header - removed deprecated declaration
+  - [x] All GUI code now uses `setDataFromProjectManager()` instead
 - [ ] Remove dead code from `SupraFitGui`:
   - [ ] Remove `m_hasData` member
   - [ ] Remove `m_logfile` and `m_printlevel` members
@@ -110,12 +114,30 @@
 
 ---
 
-## Completed: ProjectManager Integration (January 2025)
-✅ **Phase 1 of CLI_UI_Consolidation**: ProjectManager fully implemented
+## Completed Tasks
+
+### ✅ ProjectManager Integration (January 2025)
+**Phase 1 of CLI_UI_Consolidation**: ProjectManager fully implemented
 - Singleton for centralized project handling
 - Unified file I/O logic (CLI + GUI)
 - UUID-based project tracking with caching
 - Thread-safe operations with signal notifications
+
+### ✅ CLI ProjectManager Migration & GUI Cleanup (November 3, 2025)
+**Combo-Paket Completion**: Core integration and cleanup
+- **Phase 1**: CLI ProjectManager Migration
+  - Migrated `PrintFileStructure()` to use ProjectManager API
+  - Converted 24 TODO comments to MIGRATION POINT markers for future work
+  - Foundation laid for deeper CLI refactoring
+- **Phase 2**: Removed deprecated GUI methods
+  - Deleted unused `SetData()` method from MainWindow
+  - Enforced use of `setDataFromProjectManager()` throughout GUI
+  - Clean code removal without breaking references
+- **Phase 3**: Enhanced AnalysisManager error handling
+  - Added try-catch blocks around JobManager operations
+  - Implemented error signal emission for debugging
+  - Graceful error recovery: skips failed methods, continues processing
+- **Build verified**: Clean compilation, CLI & GUI both functional
 
 ---
 
