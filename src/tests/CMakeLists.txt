@@ -133,6 +133,22 @@ set_tests_properties(DataGeneratorTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# Test for AnalysisManager - Centralized Analysis Infrastructure - Claude Generated
+add_executable(test_analysismanager
+    test_analysismanager.cpp
+)
+
+target_link_libraries(test_analysismanager
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME AnalysisManagerTest COMMAND test_analysismanager)
+
+set_tests_properties(AnalysisManagerTest PROPERTIES
+    TIMEOUT 120
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Comprehensive CLI Tests - Claude Generated 2025-09-02
 # These tests validate all active SupraFit CLI functionality
 
@@ -346,7 +362,7 @@ set_tests_properties(ComprehensiveRealDataTest PROPERTIES
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
     DEPENDS test_datatable test_dataclass test_pipeline test_simple test_datatable_simple test_datagenerator
-            test_cli_core test_data_generation test_model_fitting test_post_processing
+            test_analysismanager test_cli_core test_data_generation test_model_fitting test_post_processing
             test_ml_extraction test_multi_project test_file_operations test_integration
             test_comprehensive_real_data
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

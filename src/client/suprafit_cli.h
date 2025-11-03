@@ -250,6 +250,18 @@ protected:
     QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
+    /**
+     * @brief Bereinigt ein Projekt-JSON-Objekt für ML-spezifische Ausgabe
+     * @param project Das ursprüngliche Projekt-Objekt
+     * @return Bereinigtes QJsonObject, oder leeres Objekt wenn keine methods vorhanden
+     *
+     * Entfernt Rohdaten (independent/dependent) und komprimiert statistische
+     * Methoden-Ergebnisse mittels extractCompactMLFeatures().
+     *
+     * Claude Generated - 2025-10-17
+     */
+    QJsonObject cleanProjectForML(const QJsonObject& project) const;
+
     QString m_infile = QString();
     QString m_outfile = QString(), m_extension = ".suprafit";
 

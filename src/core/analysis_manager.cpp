@@ -882,84 +882,113 @@ QJsonObject AnalysisManager::evaluateModelFit(QSharedPointer<AbstractModel> mode
     return evaluation;
 }
 
-QJsonObject AnalysisManager::runPostFitAnalysis(QSharedPointer<AbstractModel> model, 
+QJsonObject AnalysisManager::runPostFitAnalysis(QSharedPointer<AbstractModel> model,
                                                const QJsonObject& analysisConfig)
 {
     /**
-     * @brief Execute post-fit analysis using core statistical analysis capabilities
-     * Integrates with JobManager and StatisticTool for comprehensive analysis
-     * Claude Generated - Fixed methods array processing
+     * @brief Execute multiple post-fit analysis runs with same method type support
+     * Directly processes methods array for clean multi-run implementation
+     * Claude Generated - Clean multi-run support without boolean conversion layer
      */
     QJsonObject results;
-    
+
     if (!model) {
         results["error"] = "Invalid model provided";
         return results;
     }
-    
-    // Convert methods array to flag-based config for performCompleteAnalysis
-    QJsonObject convertedConfig = analysisConfig;
-    
-    if (analysisConfig.contains("methods")) {
-        QJsonArray methods = analysisConfig["methods"].toArray();
-        
-        for (const QJsonValue& methodValue : methods) {
-            QJsonObject method = methodValue.toObject();
-            int methodId = method["Method"].toInt();
-            
-            switch (methodId) {
-                case 1: // Monte Carlo
-                    convertedConfig["monteCarlo"] = true;
-                    if (method.contains("MaxSteps")) {
-                        convertedConfig["mcIterations"] = method["MaxSteps"];
-                    }
-                    if (method.contains("VarianceSource")) {
-                        convertedConfig["mcVarianceSource"] = method["VarianceSource"];
-                    }
-                    break;
-                    
-                case 4: // Cross Validation  
-                    convertedConfig["crossValidation"] = true;
-                    if (method.contains("CVType")) {
-                        convertedConfig["cvType"] = method["CVType"];
-                    }
-                    if (method.contains("MaxSteps")) {
-                        convertedConfig["cvX"] = method["MaxSteps"];
-                    }
-                    break;
-                    
-                case 3: // Model Comparison
-                    convertedConfig["modelComparison"] = true;
-                    break;
-                    
-                case 5: // Reduction Analysis
-                    convertedConfig["reductionAnalysis"] = true;
-                    break;
-                    
-                default:
-                    qDebug() << "🔍 DEBUG: Unknown post-fit analysis method:" << methodId;
-                    break;
+
+    // Process methods array directly - support multiple runs per method type
+    if (!analysisConfig.contains("methods")) {
+        results["error"] = "No methods array provided";
+        results["success"] = false;
+        return results;
+    }
+
+    QJsonArray methods = analysisConfig["methods"].toArray();
+    if (methods.isEmpty()) {
+        results["error"] = "Methods array is empty";
+        results["success"] = false;
+        return results;
+    }
+
+    // Track results indexed by method type
+    QJsonObject methodResults;  // Structure: { "1": [run0, run1, ...], "4": [run0, ...] }
+    int successCount = 0;
+
+    // Process each method configuration in sequence
+    for (int methodIndex = 0; methodIndex < methods.size(); ++methodIndex) {
+        QJsonObject methodConfig = methods[methodIndex].toObject();
+        int methodId = methodConfig["Method"].toInt();
+
+        // Create JobManager for this analysis run
+        JobManager jobManager;
+        jobManager.setModel(model);
+        jobManager.AddSingleJob(methodConfig);
+        jobManager.RunJobs();
+
+        // Extract results from model after JobManager execution
+        QJsonObject modelExport = model->ExportModel(true, false);
+        QJsonObject methodResults_object;
+        bool success = false;
+
+        switch (methodId) {
+            case SupraFit::Method::MonteCarlo:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::MonteCarlo);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            case SupraFit::Method::CrossValidation:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::CrossValidation);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            case SupraFit::Method::Reduction:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::Reduction);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            case SupraFit::Method::ModelComparison:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::ModelComparison);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            case SupraFit::Method::GlobalSearch:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::GlobalSearch);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            case SupraFit::Method::WeakenedGridSearch:
+                methodResults_object = SupraFit::JsonUtils::getStatisticalMethod(modelExport, SupraFit::Method::WeakenedGridSearch);
+                success = !methodResults_object.isEmpty();
+                break;
+
+            default:
+                qDebug() << "🔍 DEBUG: Unknown post-fit analysis method:" << methodId;
+                break;
+        }
+
+        // Store results indexed by method ID
+        if (success) {
+            QString methodKey = QString::number(methodId);
+            if (!methodResults.contains(methodKey)) {
+                methodResults[methodKey] = QJsonArray();
             }
+
+            QJsonArray methodArray = methodResults[methodKey].toArray();
+            methodArray.append(methodResults_object);
+            methodResults[methodKey] = methodArray;
+
+            successCount++;
         }
     }
-    
-    // Use the existing performCompleteAnalysis functionality
-    // This integrates with StatisticTool's JSON-based analysis functions
-    QJsonObject analysisResults = performCompleteAnalysis(model, convertedConfig);
-    
-    // Count enabled analysis methods
-    int methodCount = 0;
-    if (analysisResults.contains("monteCarlo")) methodCount++;
-    if (analysisResults.contains("crossValidation")) methodCount++;
-    if (analysisResults.contains("aicComparison")) methodCount++;
-    if (analysisResults.contains("modelComparison")) methodCount++;
-    if (analysisResults.contains("reductionAnalysis")) methodCount++;
-    
-    results["methods"] = analysisResults;
-    results["method_count"] = methodCount;
-    results["enabled"] = methodCount > 0;
-    results["success"] = analysisResults["success"];
-    
+
+    results["methods"] = methodResults;
+    results["method_count"] = successCount;
+    results["enabled"] = successCount > 0;
+    results["success"] = successCount > 0;
+    results["total_runs"] = methods.size();
+    results["successful_runs"] = successCount;
+
     return results;
 }
 

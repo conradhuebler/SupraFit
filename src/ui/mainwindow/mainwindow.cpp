@@ -129,7 +129,9 @@ MainWindow::~MainWindow()
 
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
-    // CLaude TODO: we have to replace this with loading from ProjectManager by getting the DataCalss directly,or even in the constructor
+    // DEPRECATED: This method is legacy - use setDataFromProjectManager() instead
+    // ProjectManager integration already implemented in SupraFitGui::SetData()
+    // TODO: Remove this method after all callers migrated to ProjectManager
     QString colors = object["data"].toObject()["colors"].toString();
     auto strongData = QSharedPointer<DataClass>(new DataClass());
     m_data = strongData; // Store as WeakPointer
