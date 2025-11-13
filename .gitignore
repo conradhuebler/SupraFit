@@ -79,3 +79,17 @@ settings.ini
 # Auto-downloaded external dependencies
 external/exprtk.hpp
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
