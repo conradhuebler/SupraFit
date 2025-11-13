@@ -108,7 +108,7 @@ python3 test_with_testdata.py
 **Verwendete Testdaten:**
 - **`input/1_1_1_2_001.dat`**
   - NMR-Titrationsdaten
-  - 77 Datenpunkte
+  - 20 Datenpunkte
   - 7 Serien (Chemical Shifts)
   - 1:1 + 1:2 Bindungsmodell
 
@@ -117,7 +117,7 @@ python3 test_with_testdata.py
 Test 1: Loading NMR titration data (1_1_1_2_001.dat)
 ----------------------------------------------------------------------
 ✓ Loaded successfully
-  Data points: 77
+  Data points: 20
   Series count: 7
   Independent variables: 2
 
@@ -147,7 +147,7 @@ Test 5: Statistical analysis
 ----------------------------------------------------------------------
 ✓ Statistical summary:
   Model: NMR_1_1_1_2_Model
-  Data points: 77
+  Data points: 20
 
 Test 6: Monte Carlo uncertainty analysis (100 iterations)
 ----------------------------------------------------------------------

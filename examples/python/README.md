@@ -118,7 +118,7 @@ python3 test_with_testdata.py
 **Ausgabebeispiel:**
 ```
 ✓ Loaded successfully
-  Data points: 77
+  Data points: 20
   Series count: 7
   Independent variables: 2
 
@@ -139,7 +139,7 @@ python3 test_with_testdata.py
 Die Tests verwenden echte Daten aus dem `input/` Verzeichnis:
 
 - **`1_1_1_2_001.dat`**: NMR-Titrationsdaten für 1:1 + 1:2 Bindungsmodell
-  - 77 Datenpunkte
+  - 20 Datenpunkte
   - 7 Serien (Chemical Shifts)
   - 2 unabhängige Variablen (Konzentrationen)
 
