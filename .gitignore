@@ -76,3 +76,6 @@ lib/
 settings.ini
 *.log
 
+# Auto-downloaded external dependencies
+external/exprtk.hpp
+
