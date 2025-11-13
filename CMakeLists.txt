@@ -61,7 +61,10 @@ option (_Theme
     "Use Icon Theme from Desktop Environment, It does not work on Windows" OFF)
 
 option (_Python
-    "Enable python interface" OFF)
+    "Enable python interface (legacy)" OFF)
+
+option (Python_Bindings
+    "Enable modern Python bindings using pybind11" ON)
 
 option (_Models
 	"Enable custom models" ON)
@@ -326,6 +329,11 @@ IF(Use_Duktape)
 ENDIF()
 
 add_subdirectory(src/ui)
+
+# Python bindings (modern pybind11-based)
+if(Python_Bindings)
+    add_subdirectory(src/python_bindings)
+endif()
 
 set(suprafit_SRC
     src/ui/instance.h

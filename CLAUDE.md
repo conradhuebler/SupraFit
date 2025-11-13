@@ -26,6 +26,7 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis. It provide
 - **libmodels.a**: Data models and analysis models
 - **suprafit_cli**: Command-line interface for batch processing
 - **suprafit**: GUI application
+- **suprafit.so** (NEW!): Python module for programmatic access
 
 ### Data Processing Pipeline
 - **DataClass**: Project container with metadata and system parameters
@@ -67,23 +68,28 @@ make run_tests
 - **fmt**: Modern C++ formatting
 - **ChaiScript**: Scripting support
 - **CxxThreadPool**: Parallel processing
+- **pybind11**: Python bindings (auto-downloaded by CMake)
 
 ## File Structure
 ```
 src/
-├── capabilities/    # Core capabilities (DataGenerator, JobManager, etc.)
-├── client/         # CLI and ML pipeline management
-├── core/           # Core functionality and file handlers
-├── tests/          # Test suite
-└── ui/             # GUI components
+├── capabilities/       # Core capabilities (DataGenerator, JobManager, etc.)
+├── client/            # CLI and ML pipeline management
+├── core/              # Core functionality and file handlers
+├── python_bindings/   # Python interface (pybind11) - NEW!
+├── tests/             # Test suite
+└── ui/                # GUI components
 
-external/           # Third-party libraries
-input/             # Sample configurations and test data
+docs/                  # Documentation (including PYTHON_INTERFACE.md)
+examples/python/       # Python usage examples
+external/              # Third-party libraries
+input/                 # Sample configurations and test data
 ```
 
 ## Project Status
 
 ### ✅ Recent Achievements
+- **Python Interface (NEW!)**: Complete modern Python bindings using pybind11 for data loading, model fitting, and statistical analysis
 - **Statistical Analysis JSON API**: Complete migration from string-based to JSON-based statistical methods in `src/core/analyse.cpp`
 - **ML Pipeline Integration**: High-performance data generation and statistical analysis for machine learning workflows
 - **Percentile-based Confidence Intervals**: Monte Carlo analysis using percentile method (2.5%/97.5% quantiles) for accurate uncertainty quantification
