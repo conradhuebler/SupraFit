@@ -1,78 +1,67 @@
 # Archived Documentation
 
-This directory contains completed work documentation, historical planning documents, and implementation reports that are no longer actively maintained but preserved for reference and project history.
+This directory contains historical planning documents and implementation reports. They are no longer actively maintained but are preserved for reference.
+
+**Note:** The status descriptions in these documents are often inaccurate or overly optimistic. This README has been updated based on a code audit to reflect the actual implementation status.
 
 ## Contents Overview
 
 ### Refactoring Plans (7 files)
-Completed refactoring initiatives from 2024-2025:
+A series of refactoring initiatives from 2024-2025.
+
 - **REFACTORING_PLAN.md** - Initial refactoring strategy
 - **DETAILED_REFACTORING_PLAN.md** - Detailed implementation plan
 - **COMPREHENSIVE_REFACTORING_PLAN.md** - Comprehensive strategy overview
 - **REFACTORING_ANALYSIS.md** - Analysis of refactoring requirements
-- **REFACTORING_SUMMARY.md** - Summary of completed refactoring work
-- **REFACTORING_PLAN_TYPE_C.md** - Type C model elimination plan
+- **REFACTORING_SUMMARY.md** - Summary of refactoring work
+- **REFACTORING_PLAN_TYPE_C.md** - Type C (`ml_pipeline`) model elimination plan
 - **ACTIONABLE_REFACTORING_PLAN.md** - Actionable task list for refactoring
 
-**Status**: ✅ All refactoring work completed and integrated into codebase
+**Original Status**: ✅ All refactoring work completed and integrated into codebase
+**Corrected Status**: ⚠️ **Partially Implemented.**
+- ✅ The `JsonUtils` class was created and is used in `mlfeatureextractor.cpp` and partially in `analyse.cpp`.
+- ⚠️ The "Type C" (`ml_pipeline`) refactoring is incomplete. The new multi-project architecture exists, but the old `ml_pipeline` functionality was not removed as planned.
+- ❌ The planned merging/splitting of analysis classes (e.g., `MonteCarloStatistics`, `ResampleAnalyse`) was **not** implemented.
+- ❌ The planned UI optimizations (`ModelDataHolder`, `ProjectTree`) were **not** implemented.
 
 ### Implementation Reports (3 files)
-Multi-run post-fit analysis implementation (November 2025):
+Multi-run post-fit analysis implementation (November 2025).
+
 - **IMPLEMENTATION_COMPLETE.md** - Implementation completion report
 - **IMPLEMENTATION_FINAL.md** - Final implementation summary
 - **CLEAN_MULTIRUN_IMPLEMENTATION_SUMMARY.md** - Clean summary with key features
 
-**Status**: ✅ Feature fully integrated into codebase
+**Original Status**: ✅ Feature fully integrated into codebase
+**Corrected Status**: ✅ **Implemented, but with conflicting documentation.** The feature is integrated, but the documents contradict each other regarding the implementation details. The code confirms that the new, nested JSON structure was used, making `IMPLEMENTATION_FINAL.md` an inaccurate description of the final state.
 
 ### ProjectManager Migration (3 files)
-ProjectManager architecture and migration documentation (January 2025):
+ProjectManager architecture and migration documentation (January 2025).
+
 - **PROJECT_MANAGER_ARCHITECTURE.md** - ProjectManager design and architecture
 - **PROJECTMANAGER_MIGRATION_ISSUES.md** - Migration challenges and resolutions
 - **M_PROJECT_LIST_ANALYSIS.md** - Analysis of legacy m_project_list replacement
 
-**Status**: ✅ Migration completed, ProjectManager now primary architecture component
+**Original Status**: ✅ Migration completed, ProjectManager now primary architecture component
+**Corrected Status**: ✅ **Largely Completed.** The GUI migration to the `ProjectManager` appears to be complete and functional, which was the primary goal of this effort.
 
 ### Statistical Standardization (4 files)
-JSON standardization and statistical implementation (2024-2025):
+JSON standardization and statistical implementation (2024-2025).
+
 - **CONRAD_ORIGINAL_JSON_STATISTICAL_STRUCTURE.md** - Original implementation reference
 - **REFERENCE_IMPLEMENTATION_FLOW.md** - Statistical processing flow documentation
 - **CLAUDE_DEVIATIONS_AUDIT.md** - Implementation deviation audit
 - **STANDARDIZATION_PROGRESS_REPORT.md** - Standardization completion report
 
-**Status**: ✅ All 8 statistical functions standardized
-
-## Current Active Documentation
-
-For current information about SupraFit development, see:
-- `../UI_IMPROVEMENT_PLAN.md` - Active UI refactoring plan (4 phases)
-- `../REFACTORING_MAIN_WINDOW.md` - MainWindow refactoring details
-- `../REFACTORING_DIALOGS.md` - Dialog improvement strategy
-- `../CLI_UI_CONSOLIDATION_PLAN.md` - CLI/UI architecture consolidation
-- `../../TODO.md` - Current development tasks and priorities
-
-## Timeline
-
-- **September 2024**: Initial refactoring planning and analysis
-- **October-November 2024**: Implementation of refactoring initiatives
-- **November 2025**: Multi-run post-fit analysis implementation
-- **January 2025**: ProjectManager migration and consolidation
-- **2024-2025**: JSON statistical standardization and integration
+**Original Status**: ✅ All 8 statistical functions standardized
+**Corrected Status**: ✅ **Completed.** The audit of `analyse.cpp` confirms that the `Calculate...Metrics` functions were successfully refactored to produce the standardized JSON structure, resolving the identified deviations.
 
 ## Why Archive?
 
-These documents represent **completed work** and historical context:
-1. **Implementation is complete** - Code changes have been integrated into the codebase
-2. **Planning phase finished** - Plans have been executed and superseded by actual implementation
-3. **Historical reference** - Provides context for why design decisions were made
-4. **Token conservation** - Keeps active documentation focused on current/future work
-
-The actual code implementation and current architecture are the source of truth. These documents are preserved for:
-- Understanding development history
-- Referencing past design decisions
-- Contextualizing why certain architectural patterns were chosen
-- Project continuity if external developers join
+These documents represent **past planning** and **historical context**. The actual code implementation is the source of truth. These documents are preserved for:
+- Understanding development history.
+- Referencing past design decisions.
+- Contextualizing why certain architectural patterns were chosen.
 
 ---
 
-**Last Updated**: November 2025
-**Archival Date**: 2025-11-03
+**Last Updated**: 2025-11-03 (by Gemini Assistant based on code audit)

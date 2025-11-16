@@ -552,3 +552,44 @@ set_tests_properties(MLPipelineExamplesTest PROPERTIES
 message(STATUS "")
 message(STATUS "ML Pipeline Example Tests (Claude Generated 2025-11-04):")
 message(STATUS "  ML Pipeline Examples: ./test_ml_pipeline_examples")
+
+# File Import Reference Test - NMR 1:1-1:2 pipeline validation (Claude Generated 2025-11-04)
+add_executable(test_file_import_reference
+    test_file_import_reference.cpp
+)
+
+target_link_libraries(test_file_import_reference
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME FileImportReferenceTest COMMAND test_file_import_reference)
+
+set_tests_properties(FileImportReferenceTest PROPERTIES
+    TIMEOUT 120
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+message(STATUS "")
+message(STATUS "File Import Reference Tests (Claude Generated 2025-11-04):")
+message(STATUS "  File Import Reference: ./test_file_import_reference")
+
+# File Import CLI Test - NMR file import via suprafit_cli (Claude Generated 2025-11-04)
+add_executable(test_file_import_cli
+    test_file_import_cli.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(test_file_import_cli
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME FileImportCLITest COMMAND test_file_import_cli)
+
+set_tests_properties(FileImportCLITest PROPERTIES
+    TIMEOUT 180
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+message(STATUS "")
+message(STATUS "File Import CLI Tests (Claude Generated 2025-11-04):")
+message(STATUS "  File Import CLI: ./test_file_import_cli")
