@@ -44,7 +44,7 @@ def main():
         return 1
 
     try:
-        data = sf.io.load_data(str(data_file), "txt")
+        data = sf.io.load_data(str(data_file))
         print(f"✓ Loaded successfully")
         print(f"  Data points: {data.DataPoints()}")
         print(f"  Series count: {data.SeriesCount()}")

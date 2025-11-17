@@ -10,114 +10,182 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <QtCore/QJsonObject>
 #include <QtCore/QString>
-#include <QtCore/QVector>
-#include <QtCore/QSharedPointer>
 
 #include "src/core/models/AbstractModel.h"
-#include "src/core/models/models.h"
-#include "src/core/minimizer.h"
+#include "src/core/models/dataclass.h"
 
 namespace py = pybind11;
 
 // Helper functions
 std::string qstring_to_string(const QString& qstr);
 QString string_to_qstring(const std::string& str);
-std::string qjson_to_string(const QJsonObject& obj);
-QJsonObject string_to_qjson(const std::string& str);
 
 void bind_models(py::module_& m) {
 
-    // AbstractModel bindings (base class for all models)
-    py::class_<AbstractModel, DataClass>(m, "AbstractModel")
+    // Minimal AbstractModel bindings - WITHOUT QObject base class
+    py::class_<AbstractModel, std::shared_ptr<AbstractModel>>(m, "AbstractModel",
+        "Base class for all fitting models in SupraFit")
+
         .def("Name", [](const AbstractModel& self) {
             return qstring_to_string(self.Name());
         }, "Get model name")
 
-        // Parameters
-        .def("GlobalParameterSize", &AbstractModel::GlobalParameterSize)
-        .def("LocalParameterSize", &AbstractModel::LocalParameterSize)
-        .def("GlobalParameter", &AbstractModel::GlobalParameter)
-        .def("LocalParameter", &AbstractModel::LocalParameter)
-        .def("setGlobalParameter", &AbstractModel::setGlobalParameter)
-        .def("setLocalParameter", &AbstractModel::setLocalParameter)
+        .def("GlobalParameterSize", [](const AbstractModel& self) {
+            return self.GlobalParameterSize();
+        }, "Get number of global parameters")
 
-        // Fitting
-        .def("Calculate", &AbstractModel::Calculate, "Calculate model with current parameters")
-        .def("SSE", &AbstractModel::SSE, "Sum of squared errors")
-        .def("SEy", &AbstractModel::SEy, "Standard error")
-        .def("isCalculated", &AbstractModel::isCalculated)
+        .def("LocalParameterSize", [](const AbstractModel& self) {
+            return self.LocalParameterSize();
+        }, "Get number of local parameters")
 
-        // Statistics
-        .def("StatisticVector", [](const AbstractModel& self) {
-            auto vec = self.StatisticVector();
-            return std::vector<double>(vec.begin(), vec.end());
-        }, "Get statistics vector")
+        .def("DataPoints", [](const AbstractModel& self) {
+            return self.DataPoints();
+        }, "Get number of data points")
 
-        // Model output
-        .def("ModelTable", &AbstractModel::ModelTable,
-             py::return_value_policy::reference,
-             "Get calculated model values")
+        .def("SeriesCount", [](const AbstractModel& self) {
+            return self.SeriesCount();
+        }, "Get number of series")
 
-        // Export
-        .def("ExportModel", [](const AbstractModel& self, bool statistics) {
-            return qjson_to_string(self.ExportModel(statistics));
-        }, "Export model as JSON string", py::arg("statistics") = true);
+        .def("Calculate", [](AbstractModel& self) {
+            self.Calculate();
+        }, "Perform model calculation with current parameters")
 
-    // Model creation function
-    m.def("create_model", [](const std::string& model_type, DataClass* data) {
-        QString type = string_to_qstring(model_type);
+        // Statistical properties
+        .def("SSE", [](const AbstractModel& self) {
+            return self.SSE();
+        }, "Get sum of squared errors")
 
-        // Map string names to model types
-        QSharedPointer<AbstractModel> model;
+        .def("SEy", [](const AbstractModel& self) {
+            return self.SEy();
+        }, "Get standard error of y")
 
-        if (type == "nmr_1_1") {
-            model = QSharedPointer<AbstractModel>(new NMR_ItoI_Model(data));
-        } else if (type == "nmr_2_1") {
-            model = QSharedPointer<AbstractModel>(new NMR_IItoI_Model(data));
-        } else if (type == "itc_1_1") {
-            model = QSharedPointer<AbstractModel>(new ITC_ItoI_Model(data));
-        } else if (type == "itc_1_2") {
-            model = QSharedPointer<AbstractModel>(new ITC_ItoI_2_Model(data));
-        } else if (type == "itc_2_1") {
-            model = QSharedPointer<AbstractModel>(new ITC_IItoI_Model(data));
-        } else if (type == "fl_1_1") {
-            model = QSharedPointer<AbstractModel>(new FL_ItoI_Model(data));
-        } else if (type == "uv_1_1") {
-            model = QSharedPointer<AbstractModel>(new UVVIS_ItoI_Model(data));
-        } else {
-            throw std::runtime_error("Unknown model type: " + model_type);
-        }
+        .def("ChiSquared", [](const AbstractModel& self) {
+            return self.ChiSquared();
+        }, "Get chi-squared value")
 
-        return model;
-    }, "Create a model by type name",
-       py::arg("model_type"), py::arg("data"),
-       py::return_value_policy::reference);
+        .def("sigma", [](const AbstractModel& self) {
+            return self.sigma();
+        }, "Get sigma (standard deviation)")
 
-    // Fit function
-    m.def("fit_model", [](AbstractModel* model) {
-        // Perform optimization
-        Minimizer minimizer;
-        minimizer.setModel(model);
-        bool success = minimizer.Minimize();
+        // Access to results
+        .def("ModelTable", [](AbstractModel& self) {
+            return self.ModelTable();
+        }, py::return_value_policy::reference,
+           "Get calculated model table (DataTable reference)");
 
-        // Return result
-        py::dict result;
-        result["success"] = success;
-        result["sse"] = model->SSE();
-        result["sey"] = model->SEy();
+    // fit_model function - actual implementation
+    m.def("fit_model",
+        [](AbstractModel& model) -> py::dict {
+            try {
+                // Perform model calculation
+                model.Calculate();
 
-        return result;
-    }, "Fit model to data", py::arg("model"));
+                // Build result dictionary
+                py::dict result;
+                result["success"] = true;
+                result["sse"] = model.SSE();
+                result["sey"] = model.SEy();
+                result["chi_squared"] = model.ChiSquared();
+                result["sigma"] = model.sigma();
+                result["data_points"] = model.DataPoints();
+                result["series_count"] = model.SeriesCount();
 
-    // Available models list
-    m.def("available_models", []() {
-        return std::vector<std::string>{
-            "nmr_1_1", "nmr_2_1", "nmr_1_1_1_2", "nmr_2_1_1_1",
-            "itc_1_1", "itc_1_2", "itc_2_1", "itc_2_2",
-            "fl_1_1", "fl_1_1_1_2",
-            "uv_1_1", "uv_1_1_1_2"
-        };
-    }, "Get list of available model types");
+                return result;
+            } catch (const std::exception& e) {
+                py::dict result;
+                result["success"] = false;
+                result["error"] = std::string("Model calculation failed: ") + e.what();
+                return result;
+            } catch (...) {
+                py::dict result;
+                result["success"] = false;
+                result["error"] = "Unknown error during model calculation";
+                return result;
+            }
+        },
+        "Fit/calculate a model with current parameters\n\n"
+        "Parameters:\n"
+        "  model (AbstractModel): Model to fit\n\n"
+        "Returns:\n"
+        "  dict: Result dictionary with keys:\n"
+        "    - success (bool): Whether calculation succeeded\n"
+        "    - sse (float): Sum of squared errors\n"
+        "    - sey (float): Standard error of y\n"
+        "    - chi_squared (float): Chi-squared value\n"
+        "    - sigma (float): Sigma (standard deviation)\n"
+        "    - data_points (int): Number of data points\n"
+        "    - series_count (int): Number of series\n"
+        "    - error (str): Error message if failed",
+        py::arg("model")
+    );
+
+    // get_available_models function
+    m.def("available_models",
+        []() -> std::vector<std::string> {
+            return {
+                // NMR models
+                "nmr_1_1",
+                "nmr_2_1",
+                "nmr_1_1_1_2",
+                "nmr_2_1_1_1",
+                "nmr_any",
+
+                // ITC models
+                "itc_1_1",
+                "itc_1_2",
+                "itc_2_1",
+                "itc_2_2",
+                "itc_n_1_1",
+                "itc_n_1_2",
+                "itc_any",
+
+                // Fluorescence models
+                "fl_1_1",
+                "fl_1_1_1_2",
+                "fl_2_1_1_1",
+
+                // UV-Vis models
+                "uv_1_1",
+                "uv_2_1_1_1_1_2"
+            };
+        },
+        "Get list of available model type names\n\n"
+        "Returns:\n"
+        "  list: Model type strings (e.g., 'nmr_1_1', 'itc_2_1')"
+    );
+
+    // Utility function: get model info
+    m.def("model_info",
+        [](const std::string& model_type) -> py::dict {
+            py::dict info;
+            info["type"] = model_type;
+
+            // Provide basic info based on model type
+            if (model_type.find("nmr") != std::string::npos) {
+                info["category"] = "NMR Titration";
+                info["method"] = "NMR (Nuclear Magnetic Resonance)";
+            } else if (model_type.find("itc") != std::string::npos) {
+                info["category"] = "ITC";
+                info["method"] = "ITC (Isothermal Titration Calorimetry)";
+            } else if (model_type.find("fl") != std::string::npos) {
+                info["category"] = "Fluorescence";
+                info["method"] = "Fluorescence Spectroscopy";
+            } else if (model_type.find("uv") != std::string::npos) {
+                info["category"] = "UV-Vis";
+                info["method"] = "UV-Vis Spectroscopy";
+            } else {
+                info["category"] = "Unknown";
+                info["method"] = "Unknown";
+            }
+
+            return info;
+        },
+        "Get information about a model type\n\n"
+        "Parameters:\n"
+        "  model_type (str): Model type name\n\n"
+        "Returns:\n"
+        "  dict: Model information",
+        py::arg("model_type")
+    );
 }

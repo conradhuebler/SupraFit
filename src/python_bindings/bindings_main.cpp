@@ -40,7 +40,7 @@ QJsonObject string_to_qjson(const std::string& str) {
 }
 
 // Python module definition
-PYBIND11_MODULE(suprafit, m) {
+PYBIND11_MODULE(_suprafit, m) {
     m.doc() = "SupraFit Python Bindings - Supramolecular Chemistry Analysis Framework";
     m.attr("__version__") = "2.6.0";
 
@@ -55,9 +55,4 @@ PYBIND11_MODULE(suprafit, m) {
     bind_models(models_module);
     bind_statistics(statistics_module);
     bind_io(io);
-
-    // Convenience functions at top level
-    m.def("load_data", [](const std::string& filename) {
-        return io.attr("load_data")(filename, "auto");
-    }, "Load data from file (convenience function)", py::arg("filename"));
 }

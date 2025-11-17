@@ -20,7 +20,20 @@
 #include "src/global_config.h"
 
 #ifdef _Python
+
+// Fix for Qt/Python 3.13 compatibility: Qt defines 'slots' macro, Python 3.13 uses it as struct member
+// Save and undefine Qt's slots macro before including Python.h to prevent compilation errors
+#ifdef slots
+#pragma push_macro("slots")
+#undef slots
+#endif
+
 #include <Python.h>
+
+// Restore Qt's slots macro after Python.h
+#ifdef slots
+#pragma pop_macro("slots")
+#endif
 
 #include <iostream>
 

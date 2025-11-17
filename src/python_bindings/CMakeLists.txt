@@ -28,11 +28,11 @@ set(PYTHON_BINDING_SOURCES
     py_io.cpp
 )
 
-# Create Python module
-pybind11_add_module(suprafit ${PYTHON_BINDING_SOURCES})
+# Create Python module (named _suprafit to avoid conflict with GUI executable)
+pybind11_add_module(_suprafit ${PYTHON_BINDING_SOURCES})
 
 # Link against SupraFit libraries
-target_link_libraries(suprafit PRIVATE
+target_link_libraries(_suprafit PRIVATE
     models
     core
     Qt::Core
@@ -41,28 +41,45 @@ target_link_libraries(suprafit PRIVATE
 )
 
 # Include directories
-target_include_directories(suprafit PRIVATE
+target_include_directories(_suprafit PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/
     ${PROJECT_SOURCE_DIR}/external/fmt/include
 )
 
 # Set C++ standard
-set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+set_property(TARGET _suprafit PROPERTY CXX_STANDARD 17)
 
 # Installation
-install(TARGETS suprafit
+install(TARGETS _suprafit
     LIBRARY DESTINATION ${Python3_SITELIB}
     COMPONENT python
 )
 
 # Optional: Copy to build directory for testing
-add_custom_command(TARGET suprafit POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:suprafit> ${CMAKE_BINARY_DIR}/
+add_custom_command(TARGET _suprafit POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:_suprafit> ${CMAKE_BINARY_DIR}/
     COMMENT "Copying Python module to build directory"
+)
+
+# Create Python package wrapper that imports _suprafit
+# This allows users to do: import suprafit as sf
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/suprafit/__init__.py.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/suprafit/__init__.py"
+    @ONLY
+)
+
+# Install the wrapper package
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/suprafit/__init__.py"
+    DESTINATION ${Python3_SITELIB}/suprafit
+    COMPONENT python
 )
 
 message(STATUS "Python bindings configured:")
 message(STATUS "  Python version: ${Python3_VERSION}")
 message(STATUS "  Python executable: ${Python3_EXECUTABLE}")
 message(STATUS "  Install location: ${Python3_SITELIB}")
+message(STATUS "  Python module: _suprafit (C++ extension)")
+message(STATUS "  Python package: suprafit (wrapper)")
