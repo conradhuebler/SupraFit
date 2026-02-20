@@ -109,7 +109,7 @@ input/             # Sample configurations and test data
 - Use modern Qt6 patterns and avoid deprecated functions
 - Implement comprehensive error handling and logging 
 - Debugging output with qDebug() within #ifdef DEBUG_ON #endif
-  - **TODO CLAUDE** (Task #5): Check if this is written correctly (CMakeLists.txt and include) 
+- Check if this is written correctly (CMakeLists.txt and include) 
 - non-debugging console output is realised with fmt, port away from std::cout if appearing
 - Maintain backward compatibility where possible
 - **Always check and consider instructions blocks** in relevant CLAUDE.md files before implementing 

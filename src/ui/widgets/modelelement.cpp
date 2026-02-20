@@ -109,7 +109,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
-    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals(m_no));
     connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
     tools->addWidget(m_include);
 
@@ -141,12 +141,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         }
     });
 
-    m_error_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
-    m_signal_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    m_error_series->setVisible(m_model.toStrongRef().data()->ActiveSignals(m_no));
+    m_signal_series->setVisible(m_model.toStrongRef().data()->ActiveSignals(m_no));
     m_show = new HoverCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
-    m_show->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    m_show->setChecked(m_model.toStrongRef().data()->ActiveSignals(m_no));
     tools->addWidget(m_show);
 
     m_legend = new QCheckBox;
@@ -213,8 +213,8 @@ void ModelElement::toggleActive()
 void ModelElement::DisableSignal(int state)
 {
     m_show->setChecked(state);
-    m_error_series->showLine(state);
-    m_signal_series->showLine(state);
+    m_error_series->setVisible(state != 0);
+    m_signal_series->setVisible(state != 0);
     for (int i = 0; i < m_constants.size(); ++i) {
         m_constants[i]->setEnabled(m_include->isChecked());
     }
@@ -238,8 +238,8 @@ void ModelElement::Update()
     if (m_model.toStrongRef().data()->isSimulation())
         return;
 
-    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
-    DisableSignal(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals(m_no));
+    DisableSignal(m_model.toStrongRef().data()->ActiveSignals(m_no));
     if (!m_include->isChecked())
         return;
     for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
