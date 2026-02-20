@@ -198,6 +198,7 @@ endif()
 add_subdirectory(external/CuteChart)
 
 set(core_SRC
+    src/core/bc50.cpp
     src/core/equil.cpp
     src/core/libmath.cpp
     src/core/minimizer.cpp

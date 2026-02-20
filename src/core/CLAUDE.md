@@ -21,6 +21,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **minimizer.cpp/h**: Optimization algorithms for parameter fitting
 - **equil.cpp/h**: Equilibrium calculations for supramolecular systems
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
+- **bc50.cpp/h**: BC50 binding constant calculations for various stoichiometries (refactored from inline to separate implementation)
 
 ### Analysis Tools
 - **analyse.cpp/h**: **Statistical analysis and data processing with JSON API (Claude Generated)**
@@ -164,6 +165,10 @@ model->Calculate();
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent Changes
+- **BC50 Refactoring**: Moved inline functions from `bc50.h` to `bc50.cpp` implementation file
+  - Reduces code bloat and compilation time
+  - Internal helper functions marked `static` for proper encapsulation
+  - Preserved `#ifdef conservative` and `#ifdef openMP` conditional compilation
 
 ### Current Status
 - JSON serialization stable and reliable
@@ -211,7 +216,6 @@ model->Calculate();
 5. **Scripted Models**: Improve functionality and integration
 
 #### **📋 LOW PRIORITY** - Long-term:
-- Refactor bc50 code, no more inlining
 - Refactor optimizer logic, contains much old duplicate code
 - Implement BFGS optimization as alternative to concentration solver (DOI: 10.1039/d4sc03354j, Citation: Daniil O. Soloviev and Christopher A. Hunter; Chem. Sci., 2024,15, 15299-15310)
 ### Vision
