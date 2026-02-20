@@ -307,28 +307,28 @@ SupraFitGui::SupraFitGui()
     setCentralWidget(m_mainsplitter);
 
     m_new_window = new QAction(Icon("window-new"), tr("New Window"), this);
-    connect(m_new_window, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
+    connect(m_new_window, &QAction::triggered, this, &SupraFitGui::NewWindow);
 
     m_new_table = new QAction(Icon("document-new"), tr("New Table"), this);
-    connect(m_new_table, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
+    connect(m_new_table, &QAction::triggered, this, &SupraFitGui::NewTable);
     m_new_table->setShortcut(QKeySequence::New);
 
     m_load = new QAction(Icon("document-open"), tr("Open Project"), this);
-    connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
+    connect(m_load, &QAction::triggered, this, &SupraFitGui::OpenFile);
     m_load->setShortcut(QKeySequence::Open);
 
     m_thermogram = new QAction(Icon("thermogram"), tr("Open Thermogram"), this);
-    connect(m_thermogram, SIGNAL(triggered(bool)), this, SLOT(OpenThermogram()));
+    connect(m_thermogram, &QAction::triggered, this, &SupraFitGui::OpenThermogram);
 
     m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
-    connect(m_spectra, SIGNAL(triggered(bool)), this, SLOT(OpenSpectraDir()));
+    connect(m_spectra, &QAction::triggered, this, &SupraFitGui::OpenSpectraDir);
 
     m_save = new QAction(Icon("document-save"), tr("&Save Project"), this);
     m_save->setShortcuts(QKeySequence::Save);
-    connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
+    connect(m_save, &QAction::triggered, this, &SupraFitGui::SaveProjectAction);
 
     m_save_as = new QAction(Icon("document-save-as"), tr("Save Project &As"), this);
-    connect(m_save_as, SIGNAL(triggered(bool)), this, SLOT(SaveAsProjectAction()));
+    connect(m_save_as, &QAction::triggered, this, &SupraFitGui::SaveAsProjectAction);
     m_save_as->setShortcut(QKeySequence::SaveAs);
 
     m_message_dock_action = m_message_dock->toggleViewAction();

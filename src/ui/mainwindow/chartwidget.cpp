@@ -181,8 +181,8 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
 
     m_data_mapper->setData(m_rawdata);
-    connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
-    connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
+    connect(m_data_mapper.data(), &ChartWrapper::stopAnimiation, this, &ChartWidget::stopAnimiation);
+    connect(m_data_mapper.data(), &ChartWrapper::restartAnimation, this, &ChartWidget::restartAnimation);
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
         signal_series->setName(m_rawdata.toStrongRef().data()->DependentModel()->header()[i]);
@@ -235,16 +235,16 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
 
     m_empty = false;
-    connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    connect(model.data(), &AbstractModel::Recalculated, this, &ChartWidget::Repaint);
     QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
-    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
+    connect(m_data_mapper.data(), &ChartWrapper::ModelChanged, signal_wrapper.data(), &ChartWrapper::UpdateModel);
+    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, signal_wrapper.data(), &ChartWrapper::showSeries);
     signal_wrapper->setDataTable(model->ModelTable());
     signal_wrapper->setData(model);
 
     QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
-    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
+    connect(m_data_mapper.data(), &ChartWrapper::ModelChanged, error_wrapper.data(), &ChartWrapper::UpdateModel);
+    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, error_wrapper.data(), &ChartWrapper::showSeries);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
 
@@ -252,8 +252,8 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     for (int i = 0; i < model->SeriesCount(); ++i) {
         LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
         signal_wrapper->setSeries(model_series, i);
-        connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
-        connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
+        connect(m_data_mapper->Series(i), SIGNAL(nameChanged(QString)), model_series, SLOT(setName(QString)));
+        connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(showLine(int)));
         model_series->setName(m_data_mapper.data()->Series(i)->name());
         model_series->setColor(m_data_mapper.data()->Series(i)->color());
         connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
@@ -266,7 +266,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             error_series->setName(m_data_mapper.data()->Series(i)->name());
             error_series->setColor(m_data_mapper.data()->Series(i)->color());
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
-            connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
+            connect(m_data_mapper->Series(i), SIGNAL(visibilityChanged(int)), error_series, SLOT(ShowLine(int)));
             error_series->setLineWidth(lineWidth);
             m_errorview->addSeries(error_series);
         }
@@ -315,8 +315,8 @@ void ChartWidget::Repaint()
 
 void ChartWidget::formatAxis()
 {
-    QTimer::singleShot(1, m_signalview, SLOT(formatAxis()));
-    QTimer::singleShot(1, m_errorview, SLOT(formatAxis()));
+    QTimer::singleShot(1, m_signalview, &ChartView::formatAxis);
+    QTimer::singleShot(1, m_errorview, &ChartView::formatAxis);
 }
 
 void ChartWidget::updateTheme(QChart::ChartTheme theme)

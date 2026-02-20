@@ -2182,11 +2182,11 @@ QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, cons
                 // Import fitted parameters and calculate statistics
                 bool converged = fit_thread->Converged();
                 model->ImportModel(fit_thread->ConvergedParameter());
-                model->setFast(true);
+                model->setFast(false);  // Ensure full calculation including statistics
                 model->CalculateStatistics(true);
-                model->Calculate();
+                model->Calculate();     // This now properly recalculates all statistics
                 model->setConverged(converged);
-                
+                qDebug() << model->ExportModel(true, true);
                 fmt::print("      Model {} fitting {} (converged: {})\n", 
                     modelName.toStdString(), 
                     converged ? "succeeded" : "failed", 
@@ -2231,6 +2231,7 @@ QVector<QJsonObject> SupraFitCli::FitModelsToData(QPointer<DataClass> data, cons
             // TODO for Claude -> Analyse json structure of the model and write it to Claude.md in core
             
             // Export complete model for saving (like GUI SaveWorkspace)
+            qDebug() << model->ExportModel(true, true);
             evaluation["model_export"] = model->ExportModel(true, true);
 
             // Include post-fit analysis results if available

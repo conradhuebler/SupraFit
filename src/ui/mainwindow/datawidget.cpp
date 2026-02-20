@@ -67,13 +67,13 @@ DataWidget::DataWidget()
     m_plot_x->setToolTip(tr("Plot first column as x variable."));
 
     m_name = new QLineEdit();
-    connect(m_name, SIGNAL(textEdited(QString)), this, SLOT(SetProjectName()));
+    connect(m_name, &QLineEdit::textEdited, this, &DataWidget::SetProjectName);
     m_concentrations = new QTableView;
     m_signals = new QTableView;
     m_signals->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
-    connect(m_concentrations->verticalScrollBar(), SIGNAL(valueChanged(int)), m_signals->verticalScrollBar(), SLOT(setValue(int)));
+    connect(m_signals, &QTableView::customContextMenuRequested, this, &DataWidget::ShowContextMenu);
+    connect(m_concentrations->verticalScrollBar(), &QScrollBar::valueChanged, m_signals->verticalScrollBar(), &QScrollBar::setValue);
     m_concentrations->setContextMenuPolicy(Qt::ActionsContextMenu);
 
     QHBoxLayout* hlayout = new QHBoxLayout;

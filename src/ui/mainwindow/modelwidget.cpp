@@ -170,8 +170,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
-    connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
-    connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
+    connect(this, &ModelWidget::ToggleSeries, m_charts.error_wrapper.data(), &ChartWrapper::SetBlocked);
+    connect(this, &ModelWidget::ToggleSeries, m_charts.signal_wrapper.data(), &ChartWrapper::SetBlocked);
 
     m_dialogs = new ModalDialog(this);
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -269,14 +269,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_minimize_all = new QPushButton(tr("Fit"));
     QAction* minimize_normal = new QAction(tr("Tight"), this);
-    connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
+    connect(minimize_normal, &QAction::triggered, this, &ModelWidget::GlobalMinimize);
 
     QAction* minimize_loose = new QAction(tr("Progress"), this);
-    connect(minimize_loose, SIGNAL(triggered()), this, SLOT(History()));
+    connect(minimize_loose, &QAction::triggered, this, &ModelWidget::History);
 
     QAction* fast_conf = new QAction(tr("Simplified MOC"), this);
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
-    connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
+    connect(fast_conf, &QAction::triggered, this, &ModelWidget::FastConfidence);
 
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
@@ -364,10 +364,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         if (m_model->LocalParameterSize()) {
             for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
                 ModelElement* el = new ModelElement(m_model, m_charts, i);
-                connect(el, SIGNAL(ValueChanged()), this, SLOT(recalculate()));
-                connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
-                connect(this, SIGNAL(Update()), el, SLOT(Update()));
-                connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
+                connect(el, &ModelElement::ValueChanged, this, &ModelWidget::recalculate);
+                connect(el, &ModelElement::ActiveSignalChanged, this, &ModelWidget::CollectActiveSignals);
+                connect(this, &ModelWidget::Update, el, &ModelElement::Update);
+                connect(this, &ModelWidget::ToggleSeries, el, &ModelElement::ToggleSeries);
 
                 if (!m_val_readonly)
                     connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
@@ -433,16 +433,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_actions = new ModelActions;
 
-    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
-    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
-    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
-    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
-    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
-    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
-    connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
+    connect(m_actions, &ModelActions::NewGuess, this, &ModelWidget::NewGuess);
+    connect(m_actions, &ModelActions::LocalMinimize, this, &ModelWidget::LocalMinimize);
+    connect(m_actions, &ModelActions::OptimizerSettings, this, &ModelWidget::OptimizerSettings);
+    connect(m_actions, &ModelActions::ImportConstants, this, &ModelWidget::ImportConstants);
+    connect(m_actions, &ModelActions::ExportConstants, this, &ModelWidget::ExportConstants);
+    connect(m_actions, &ModelActions::OpenAdvancedSearch, this, &ModelWidget::OpenAdvancedSearch);
+    connect(m_actions, &ModelActions::TogglePlot, this, &ModelWidget::TogglePlot);
+    connect(m_actions, &ModelActions::ToggleStatisticDialog, this, &ModelWidget::ToggleStatisticDialog);
+    connect(m_actions, &ModelActions::Save2File, this, &ModelWidget::Save2File);
+    connect(m_actions, &ModelActions::ExportSimModel, this, &ModelWidget::ExportSimModel);
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
     connect(m_actions, &ModelActions::Charts, this, [this]() {
@@ -458,7 +458,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     //m_splitter->addWidget(m_statistic_widget);
     m_statistic_widget->setHidden(m_model->isSimulation());
 
-    connect(m_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(SplitterResized()));
+    connect(m_splitter, &QSplitter::splitterMoved, this, &ModelWidget::SplitterResized);
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(m_splitter);
     vlayout->addWidget(m_actions);
@@ -756,7 +756,7 @@ void ModelWidget::Repaint()
     m_pending = false;
     m_minimize_all->setEnabled(true);
 
-    QTimer::singleShot(1, m_statistic_widget, SLOT(Update()));
+    QTimer::singleShot(1, m_statistic_widget, &StatisticWidget::Update);
 
     QString converged;
     if (!m_model->isConverged())
@@ -783,7 +783,7 @@ void ModelWidget::recalculate()
     m_pending = true;
     CollectParameters();
     m_model->Calculate();
-    QTimer::singleShot(1, this, SLOT(Repaint()));
+    QTimer::singleShot(1, this, &ModelWidget::Repaint);
     m_pending = false;
 }
 

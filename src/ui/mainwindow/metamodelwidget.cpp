@@ -124,13 +124,13 @@ void MetaModelWidget::setUi()
         QApplication::restoreOverrideCursor();
     });
 
-    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
-    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
-    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
-    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
-    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
+    connect(m_actions, &ModelActions::NewGuess, this, &MetaModelWidget::NewGuess);
+    connect(m_actions, &ModelActions::OptimizerSettings, this, &MetaModelWidget::OptimizerSettings);
+    connect(m_actions, &ModelActions::ImportConstants, this, &MetaModelWidget::ImportConstants);
+    connect(m_actions, &ModelActions::ExportConstants, this, &MetaModelWidget::ExportConstants);
+    connect(m_actions, &ModelActions::OpenAdvancedSearch, this, &MetaModelWidget::OpenAdvancedSearch);
+    connect(m_actions, &ModelActions::TogglePlot, this, &MetaModelWidget::TogglePlot);
+    connect(m_actions, &ModelActions::ToggleStatisticDialog, this, &MetaModelWidget::ToggleStatisticDialog);
     //  connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
     //connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);

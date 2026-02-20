@@ -121,9 +121,9 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     layout->addWidget(title_label);
     tools->setLayout(layout);
 
-    connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
-    connect(color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
-    connect(modelwidget, SIGNAL(ColorChanged(QColor)), color, SLOT(ChangeColor(QColor)));
+    connect(hide, &QCheckBox::stateChanged, modelwidget, &ModelWidget::ToggleSeries);
+    connect(color, &QPushButton::clicked, modelwidget, &ModelWidget::ChangeColor);
+    connect(modelwidget, &ModelWidget::ColorChanged, color, &ToolButton::ChangeColor);
 
     connect(modelwidget->Model().data(), &AbstractModel::ModelNameChanged, title_label, [title_label](const QString& str) {
         title_label->setText(str);
@@ -420,8 +420,8 @@ ModelDataHolder::ModelDataHolder()
     m_modelsWidget = new TabWidget(this);
     m_modelsWidget->setTabsClosable(true);
     m_modelsWidget->setMovable(true);
-    connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
-    connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
+    connect(m_modelsWidget, &QTabWidget::tabCloseRequested, this, &ModelDataHolder::RemoveTab);
+    connect(m_modelsWidget, &QTabWidget::currentChanged, this, &ModelDataHolder::HideSubWindows);
 
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, this, &ModelDataHolder::RunJobs);
@@ -480,7 +480,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_datawidget->setData(m_data, wrapper);
         m_modelsWidget->setDataTab(m_datawidget);
         m_TitleBarWidget->addToMenu(m_data.toStrongRef()->IndependentModel()->columnCount());
-        connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
+        connect(m_datawidget, &DataWidget::NameChanged, this, &ModelDataHolder::SetProjectTabName);
         connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     } else {
         m_metamodelwidget = new MetaModelWidget();
@@ -614,7 +614,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
-    connect(this, SIGNAL(recalculate()), modelwidget, SLOT(recalculate()));
+    connect(this, &ModelDataHolder::recalculate, modelwidget, &ModelWidget::recalculate);
 
     connect(modelwidget->Jobs(), &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
     connect(modelwidget->Jobs(), &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps, Qt::DirectConnection);
