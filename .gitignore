@@ -76,3 +76,28 @@ lib/
 settings.ini
 *.log
 
+# Tooling / test caches
+.cache/
+Testing/
+test_comprehensive_results/
+
+# CLI run outputs (regenerable)
+*-0.json
+*-0.suprafit
+*-models-0.json
+*-models-0.suprafit
+*-project-0.suprafit
+*-ml-features-0.json
+*.json-0.json
+*.json-0suprafit
+*.jsonsuprafit
+
+# Vendored header fetched at configure time
+/external/exprtk.hpp
+
+# Root-level scratch / debug builds
+/debug_xor
+/debug_*.cpp
+/test_ml_simple.cpp
+/test_training_simple.cpp
+
