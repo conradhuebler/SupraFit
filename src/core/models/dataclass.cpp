@@ -601,6 +601,11 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
 
 void DataClass::AddChildren(QPointer<DataClass> data)
 {
+    // Avoid registering the same child twice: an AbstractModel self-registers in its
+    // constructor through the shared DataClassPrivate, and addModel() adds it again -
+    // this previously produced duplicate model_X entries on load. - Claude Generated
+    if (d->m_children.contains(data))
+        return;
     d->m_children << data;
     // Claude Generated - Safe child removal using raw pointer comparison
     DataClass* rawPtrForSignal = data.data();
