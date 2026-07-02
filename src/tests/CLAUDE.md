@@ -19,7 +19,6 @@ Comprehensive test suite for SupraFit functionality using Qt Test framework. Ens
 - **test_cli_core.cpp**: CLI argument parsing, parameter extraction ❌ **FAILED** (0.93s) - API mismatches (migrated ✅)
 - **test_cli_data_generation.cpp**: Data generation workflow testing ❌ **FAILED** (1.10s) - API mismatches (migrated ✅) 
 - **test_cli_ml_pipeline.cpp**: ML pipeline integration testing ❌ **FAILED** (0.84s) - API mismatches (migrated ✅)
-- **test_cli_command_pattern.cpp**: Command pattern architecture ✅ **PASSED** (0.03s)
 - **test_file_operations.cpp**: File I/O, performance, corruption handling ❌ **FAILED** (1.00s) - API mismatches (migrated ✅)
 
 ## Test Categories
@@ -125,14 +124,13 @@ make run_tests
 
 ## Test Results Summary - Updated 2025-01-09
 
-**CURRENT STATUS: 9/23 tests passing (39% success rate) - SIGNIFICANTLY IMPROVED**
+**CURRENT STATUS: 8/22 tests passing (36% success rate) - SIGNIFICANTLY IMPROVED**
 
 ### ✅ FULLY PASSING - CORE FOUNDATION SOLID
 - **test_simple**: ✅ **PASSED** (0.02s) - Basic functionality validation
 - **test_datatable_simple**: ✅ **PASSED** (0.01s) - Core DataTable operations  
 - **test_datatable**: ✅ **PASSED** (0.07s) - **COMPLETELY FIXED! 25/25 tests** 🎉
 - **test_datagenerator**: ✅ **PASSED** (0.04s) - Complete DataGenerator functionality
-- **test_cli_command_pattern**: ✅ **PASSED** (0.03s) - Command pattern architecture
 
 ### ✅ MACHINE LEARNING PIPELINE - 100% FUNCTIONAL
 - **test_activation_functions**: ✅ **PASSED** (0.01s) - Neural network activation functions
@@ -249,16 +247,15 @@ New infrastructure for consistent CLI binary discovery across all tests:
 Successfully implemented unified test execution system:
 
 **Achievement:** `make test` command now runs **both** SupraFit core tests and CLI tests
-- **Total Tests**: 23 tests integrated under CTest
+- **Total Tests**: 22 tests integrated under CTest
 - **Core Framework Tests**: 6 tests (DataTable, DataClass, Pipeline, etc.)
-- **CLI Tests**: 12 tests (argument parsing, data generation, ML pipeline, etc.)  
+- **CLI Tests**: 11 tests (argument parsing, data generation, ML pipeline, etc.)  
 - **ML Tests**: 5 tests (neural networks, activation functions, etc.)
 
-**Current Status**: 9/23 tests passing (39% pass rate)
+**Current Status**: 8/22 tests passing (36% pass rate)
 - ✅ All basic functionality tests passing
-- ✅ CLI command pattern architecture (19/19 tests!)
 - ✅ All ML neural network tests passing
-- 🔄 CLI tests need TestUtils migration (2/12 completed)
+- 🔄 CLI tests need TestUtils migration (2/11 completed)
 
 **Files Created:**
 - `UNIFIED_TEST_SYSTEM.md` - Complete documentation and usage guide
@@ -266,7 +263,7 @@ Successfully implemented unified test execution system:
 
 **Usage:**
 ```bash
-make test                  # Run all 23 tests 
+make test                  # Run all 22 tests 
 ctest --verbose           # Detailed test output
 export SUPRAFIT_CLI_PATH=/path/to/cli  # Custom CLI binary
 ```

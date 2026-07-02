@@ -2,6 +2,12 @@
 
 This document outlines the necessary changes to refactor and improve the code quality of the `suprafit_cli` and its related classes. The goal is to create a more readable, maintainable, robust, and performant command-line interface for SupraFit.
 
+## Status (updated 2026-07-02)
+
+- **Phase 1 — DONE:** `Analyser` and `Simulator` classes removed.
+- **Phase 2 — ABANDONED:** The `CliCommandParser` / `CliCommandDispatcher` / `main_refactored.cpp` command-pattern layer was implemented but never wired into the built `main.cpp` (which still dispatches directly via `QCommandLineParser`). It was compiled-but-dead and has been removed. Revisit only if `main.cpp` is genuinely re-pointed at a dispatcher.
+- **Phases 3–5 — OPEN:** Still the target. Phase 3 (decomposing the ~3.7k-line `SupraFitCli` god-class) is tracked as D3 in the root `TECHNICAL_DEBT.md`.
+
 ## Phase 1: Code Cleanup and Removal of Dead Code
 
 - **Goal:** Simplify the codebase by removing unused and redundant code.
@@ -16,7 +22,9 @@ This document outlines the necessary changes to refactor and improve the code qu
         - **Breaking Change:** This is a breaking change if any external code is using the `Simulator` class. The `PerformeJobs` method in `Simulator` is very similar to the one in `SupraFitCli`, so any external code that uses the `Simulator` class can be updated to use the `SupraFitCli` class instead.
 - **Justification:** Removing dead code reduces the size of the codebase, making it easier to understand and maintain.
 
-## Phase 2: Refactoring of the `main.cpp`
+## Phase 2: Refactoring of the `main.cpp` — ABANDONED (see Status)
+
+> The command-pattern approach below was built but never wired into `main.cpp` and has been removed. Kept for historical context only.
 
 - **Goal:** Improve the readability, maintainability, and robustness of the `main.cpp` file.
 - **Tasks:**
