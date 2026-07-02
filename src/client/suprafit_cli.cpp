@@ -78,11 +78,8 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
     m_analyse = core->m_analyse;
     m_prepare = core->m_prepare;
     m_simulation = core->m_simulation;
-    //m_data = core->m_data;
     m_data_json = core->m_data_json;
-    // MIGRATED: ProjectManager handles project copying via createProjectFromJson()
-    m_toplevel = core->m_toplevel;  // Keep for backward compatibility
-    m_data = new DataClass(core->m_data);
+    // Project state (data/models) lives in the shared ProjectManager singleton - Claude Generated
 
     // Initialize JobManager for statistical analysis - Claude Generated
     m_jobmanager = new JobManager(this);
@@ -234,7 +231,6 @@ bool SupraFitCli::LoadFile()
     if (fileData.contains("Main") || (fileData.contains("Independent") && fileData.contains("Dependent"))) {
 
         // This is a configuration file - use FileHandler logic
-        m_toplevel = fileData; // Legacy compatibility - TODO: migrate to ProjectManager
         m_main = fileData["Main"].toObject();
         m_models = fileData["models"].toObject();
         m_analyse = fileData["controller"].toObject();
@@ -271,9 +267,6 @@ bool SupraFitCli::LoadFile()
             if (!currentProject.isNull()) {
                 QSharedPointer<DataClass> project = currentProject.toStrongRef();
                 if (project) {
-                    m_data = project.data(); // Set current data for legacy compatibility
-                    m_toplevel = projectManager.getProjectAsJson(); // Set toplevel for legacy compatibility
-
                     // Update data vector for legacy compatibility
                     m_data_vector.clear();
                     m_data_vector = projectManager.getAllProjectsAsJson();
@@ -444,13 +437,13 @@ void SupraFitCli::PrintFileStructure()
         return;
     }
 
-    // Use m_toplevel as fallback for structure info
-    if (m_toplevel.isEmpty()) {
+    const QJsonObject projectJson = projectManager.getProjectAsJson();
+    if (projectJson.isEmpty()) {
         std::cout << "No project structure available" << std::endl;
         return;
     }
 
-    for (const QString& key : m_toplevel.keys()) {
+    for (const QString& key : projectJson.keys()) {
         std::cout << key.toStdString() << std::endl;
     }
 }
@@ -625,21 +618,18 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
 
     // MIGRATED: Check project via ProjectManager - Claude Generated
     SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
-    if (!m_data && pm.getCurrentProject().isNull()) {
+    QSharedPointer<DataClass> project = pm.getCurrentProject().toStrongRef();
+    if (!project) {
         qDebug() << "ERROR: No data loaded!";
         return project_list;
-    }
-    // Use m_data if available (already loaded), otherwise ProjectManager provides access
-    if (!m_data) {
-        qDebug() << "WARNING: Using ProjectManager for data access";
     }
 
     // Simply export the loaded data as-is and wrap in proper SupraFit project structure
     // MIGRATED: Use ProjectManager to export project data - Claude Generated
     QJsonObject dataObject = pm.getProjectAsJson()["data"].toObject();
     if (dataObject.isEmpty()) {
-        // Fallback: use m_data directly if ProjectManager doesn't have full export
-        dataObject = m_data->ExportData();
+        // Fallback: export directly from the current project
+        dataObject = project->ExportData();
     }
     dataObject["DataType"] = 1;
     dataObject["content"] = "Data loaded from " + m_infile;
@@ -653,9 +643,9 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     
     project_list << export_object;
     
-    qDebug() << "GenerateDataOnly: Exported data with" 
-             << m_data->IndependentModel()->rowCount() << "rows,"
-             << m_data->IndependentModel()->columnCount() << "columns";
+    qDebug() << "GenerateDataOnly: Exported data with"
+             << (project->IndependentModel() ? project->IndependentModel()->rowCount() : 0) << "rows,"
+             << (project->IndependentModel() ? project->IndependentModel()->columnCount() : 0) << "columns";
     
     return project_list;
 }
@@ -1929,7 +1919,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             
             // MIGRATED: Check project via ProjectManager - Claude Generated
             SupraFit::ProjectManager& pmGen = SupraFit::ProjectManager::instance();
-            if (!m_data && pmGen.getCurrentProject().isNull()) {
+            if (pmGen.getCurrentProject().isNull()) {
                 fmt::print("Error: No input data available for model-based generation\n");
                 continue;
             }

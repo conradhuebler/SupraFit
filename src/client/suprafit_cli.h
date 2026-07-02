@@ -279,15 +279,9 @@ protected:
     /* Stored data structure */
     QJsonObject m_data_json;
 
-    // DEPRECATED: ProjectManager migration - these will be removed after migration completion
-    // QVector<QJsonObject> m_data_vector;  // Replaced by ProjectManager::getAllProjectsAsJson()
-    // QJsonObject m_toplevel;              // Replaced by ProjectManager::getProjectAsJson()
-    // QPointer<DataClass> m_data;          // Replaced by ProjectManager::getCurrentProject()
-
-    // Note: Keeping old members temporarily for compatibility during migration
+    // m_toplevel/m_data removed - project state is read directly from ProjectManager.
+    // m_data_vector retained for CLI multi-project export. - Claude Generated
     QVector<QJsonObject> m_data_vector;
-    QJsonObject m_toplevel;
-    QPointer<DataClass> m_data;
 
     // JobManager for statistical analysis - Claude Generated
     JobManager* m_jobmanager;
