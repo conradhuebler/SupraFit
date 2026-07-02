@@ -966,6 +966,11 @@ QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project)
         // Wrap project data in correct JSON structure for GUI compatibility - Claude Generated
         QJsonObject wrappedProject;
         wrappedProject["data"] = project->ExportData();
+        // Include serialized models (model_0, model_1, ...) so the JSON view exposes the
+        // full project, matching the structure loadProjectFromJson() reads back - Claude Generated
+        const QJsonObject models = project->ExportChildren();
+        for (auto it = models.begin(); it != models.end(); ++it)
+            wrappedProject[it.key()] = it.value();
         return wrappedProject;
     } catch (const std::exception& e) {
         // Log error without emit in const method
