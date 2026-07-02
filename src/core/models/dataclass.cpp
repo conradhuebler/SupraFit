@@ -220,7 +220,6 @@ DataClass::DataClass(const DataClass* other)
 DataClass::~DataClass()
 {
     // Claude Generated - Properly clean up model storage containers to prevent exit crash
-    d->m_stored_models.clear();
     d->m_stored_models_by_pointer.clear();
 }
 
@@ -602,21 +601,7 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
 
 void DataClass::AddChildren(QPointer<DataClass> data)
 {
-    // Claude Generated - Debug what's being added to children  
-    if (data) {
-        void* rawPtr = data.data();
-        AbstractModel* model = dynamic_cast<AbstractModel*>(static_cast<DataClass*>(rawPtr));
-        if (model) {
-            qDebug() << "🔍 DEBUG AddChildren: Adding model" << model->Name() << "Pointer:" << rawPtr << "CurrentSize:" << d->m_children.size();
-        } else {
-            qDebug() << "🔍 DEBUG AddChildren: Adding DataClass pointer:" << rawPtr << "CurrentSize:" << d->m_children.size();
-        }
-    } else {
-        qDebug() << "🔍 DEBUG AddChildren: Adding NULL pointer, CurrentSize:" << d->m_children.size();
-    }
-    
     d->m_children << data;
-    qDebug() << "🔍 DEBUG AddChildren: After adding, NewSize:" << d->m_children.size();
     // Claude Generated - Safe child removal using raw pointer comparison
     DataClass* rawPtrForSignal = data.data();
     connect(data, &DataClass::Deleted, this, [this, rawPtrForSignal]() {
@@ -625,7 +610,6 @@ void DataClass::AddChildren(QPointer<DataClass> data)
         bool isStoredModel = false;
         AbstractModel* model = dynamic_cast<AbstractModel*>(rawPtrForSignal);
         if (model && d->m_stored_models_by_pointer.contains(static_cast<void*>(model))) {
-            qDebug() << "🔍 DEBUG AddChildren: Model" << model->Name() << "is stored explicitly (pointer-based), not removing from children";
             isStoredModel = true;
         }
         
@@ -759,22 +743,15 @@ void DataClass::ReReadCheckedState(int row, bool state)
 void DataClass::addModel(QSharedPointer<AbstractModel> model)
 {
     // Claude Generated for ProjectManager integration
-    qDebug() << "🔍 DEBUG DataClass::addModel: Called with model:" << (model ? model->Name() : "NULL");
-    if (!model) {
-        qDebug() << "❌ DEBUG DataClass::addModel: Model is null, aborting";
+    if (!model)
         return;
-    }
-    
-    qDebug() << "🔍 DEBUG DataClass::addModel: Adding model" << model->Name() << "ModelUUID:" << model->ModelUUID();
-    
+
     // CRITICAL FIX: Store the QSharedPointer to maintain object lifetime - Claude Generated
     // Changed to pointer-based storage to handle multiple models with same ModelUUID
     void* modelPtr = model.data();
     if (!d->m_stored_models_by_pointer.contains(modelPtr)) {
         d->m_stored_models_by_pointer[modelPtr] = model;
-        qDebug() << "🔍 DEBUG DataClass::addModel: Stored model by pointer in internal storage";
     }
-    
+
     AddChildren(static_cast<DataClass*>(model.data()));
-    qDebug() << "🔍 DEBUG DataClass::addModel: After AddChildren, ChildrenSize:" << ChildrenSize();
 }
