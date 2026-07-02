@@ -46,13 +46,12 @@ Erledigt: **D2** (voll), Teile von **C** und **D3**. Details in §5.
 
 > Hinweis: `src/tests/build/` ist **korrekt gitignored** – kein Debt (frühere Notiz „committet" war falsch).
 
-### B. Submodul-Drift 🔴 (Datenverlust-Risiko)
+### B. Submodul-Status 🟢 (kein Datenverlust-Risiko — eigene Forks)
 | Befund | Beleg | Severity |
 |---|---|---|
-| **Echte lokale Edits** in vendored Submodul – gehen bei `git submodule update` verloren | `external/CuteChart`: `src/series.cpp` (+18), `src/series.h` (+7), 6× „Claude Generated" im Diff | 🔴 |
-| **Echte lokale Edits** in vendored Submodul | `external/libpeakpick`: `libpeakpick/mathhelper.h` (Crash-Guards) + nested `eigen` dirty | 🔴 |
+| Lokale Edits in **eigenen Forks** (`github.com/conradhuebler/*`) — **gewollt/verwaltet**, nicht durch Upstream-Update gefährdet (Klarstellung Conrad, 2026-07-03) | `external/CuteChart` (`src/series.{h,cpp}`), `external/libpeakpick` (`mathhelper.h`) | 🟢 |
 | Gitlink **ohne** `.gitmodules`-Eintrag (9 Einträge, aber 10 Gitlinks) | `external/least-squares-cpp` = `160000`-Gitlink im Index; `submodule foreach` bricht ab | 🟡 |
-| Mode-/Script-Drift (kein Inhaltsverlust-Risiko) | `external/ChaiScript`, `external/duktape`, `external/fmt` (Skripte, +x) | 🟢 |
+| ✅ Mode-/Script-Drift zurückgesetzt (Hygiene-Runde) | `external/ChaiScript`, `external/duktape`, `external/fmt` | ✅ |
 
 ### C. Stehengebliebene ProjectManager-Migration 🔴
 | Befund | Beleg | Severity |
@@ -133,10 +132,10 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   *Frage:* Ist „Model *ist* Datencontainer" die richtige Beziehung? Tiefe Kopplungs-/
   Ownership-Analyse (auch die zwei parallelen Model-Storage-Maps in `DataClass`).
 
-- **D6 – Submodul-Fork-Strategie** 🔴 *(zeitkritisch – Datenverlust)*
-  *Frage:* CuteChart-/libpeakpick-Edits upstreamen, forken oder als Patch pflegen –
-  **bevor** ein `submodule update` sie überschreibt. Zusätzlich `least-squares-cpp` in
-  `.gitmodules` konsistent machen. *Dateien:* `.gitmodules`, betroffene Submodule.
+- **D6 – Submodul-Konsistenz** 🟢 *(kein Datenverlust — eigene Forks)*
+  CuteChart/libpeakpick sind Conrads eigene Forks; die Edits sind gewollt. Übrig bleibt nur
+  die kleine Inkonsistenz: `external/least-squares-cpp` ist ein Gitlink **ohne**
+  `.gitmodules`-Eintrag. *Datei:* `.gitmodules`.
 
 - **D7 – Logging-/DEBUG_ON-Strategie** 🟡
   *Frage:* Zentrales Logging; `DEBUG_ON` korrekt an Compile-Definition binden (sonst
