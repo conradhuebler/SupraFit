@@ -465,8 +465,6 @@ endif(BUILD_GUI)
 set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
                 src/client/ml_pipeline_manager.cpp
-                src/client/cli_command_parser.cpp
-                src/client/cli_command_dispatcher.cpp
                 src/client/main.cpp
           )
 

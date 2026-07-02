@@ -216,9 +216,6 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 
 bool SupraFitCli::LoadFile()
 {
-    std::cout << "🔧 DEBUG LoadFile: SupraFitCli::LoadFile() CALLED!" << std::endl;
-    std::cout << "🔍 DEBUG LoadFile: Starting to load file: " << m_infile.toStdString() << std::endl;
-
     // Check if filename is valid
     if (m_infile.isEmpty() || m_infile.isNull()) {
 #ifdef DEBUG_ON
@@ -235,8 +232,6 @@ bool SupraFitCli::LoadFile()
 
     // Check if this is a configuration file (Main, Independent, Dependent structure)
     if (fileData.contains("Main") || (fileData.contains("Independent") && fileData.contains("Dependent"))) {
-
-        std::cout << "🔍 DEBUG LoadFile: Detected configuration file format" << std::endl;
 
         // This is a configuration file - use FileHandler logic
         m_toplevel = fileData; // Legacy compatibility - TODO: migrate to ProjectManager
@@ -259,14 +254,10 @@ bool SupraFitCli::LoadFile()
 #endif
         }
 
-        std::cout << "✅ DEBUG LoadFile: Configuration file loaded successfully, returning true" << std::endl;
-
         delete handler;
         return true;
 
     } else if (fileData.contains("datatype") || fileData.contains("data")) {
-
-        std::cout << "🔍 DEBUG LoadFile: Detected project file format, using ProjectManager" << std::endl;
 
         // This is a project file - use ProjectManager
         delete handler;
@@ -299,8 +290,8 @@ bool SupraFitCli::LoadFile()
 
     } else {
 
-        std::cout << "❌ DEBUG LoadFile: Unknown file format" << std::endl;
-        std::cout << "🔍 DEBUG LoadFile: File keys: " << fileData.keys().join(", ").toStdString() << std::endl;
+        fmt::print(stderr, "Error: Unknown file format in '{}' (keys: {})\n",
+            m_infile.toStdString(), fileData.keys().join(", ").toStdString());
 
         delete handler;
         return false;
@@ -320,8 +311,8 @@ void SupraFitCli::ParseMain()
             return;
     }
 
-    m_independent_rows = m_main["IndependentRows"].toInt(2);
-    m_independent_rows = m_main["InputSize"].toInt(2);
+    // InputSize is the canonical key; fall back to IndependentRows, then default 2 - Claude Generated
+    m_independent_rows = m_main["InputSize"].toInt(m_main["IndependentRows"].toInt(2));
     m_start_point = m_main["StartPoint"].toInt(0);
     qApp->instance()->setProperty("threads", m_main["Threads"].toInt(QThreadPool::globalInstance()->maxThreadCount()));
     m_guess = m_main["Guess"].toBool(false);
@@ -329,35 +320,8 @@ void SupraFitCli::ParseMain()
     m_extension = m_main["extension"].toString("suprafit");
     // Only use OutFile from JSON if not already set via -o option
     if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
-        // Only use OutFile from JSON if not already set via -o option
-        if (m_outfile.isEmpty()) {
-            m_outfile = m_main["OutFile"].toString();
-        }
+        m_outfile = m_main["OutFile"].toString();
     }
-
-    /*
-    if (m_toplevel.keys().contains("data"))
-        m_data = new DataClass(m_toplevel["data"].toObject());
-    else
-        m_data = new DataClass(m_toplevel);
-
-    if (m_data->DataPoints() == 0) {
-        QPointer<DataClass> data = new DataClass(m_data);
-
-        QVector<QSharedPointer<AbstractModel>> models = AddModels(m_modelsjson, data);
-        QJsonObject exp_level, dataObject;
-        dataObject = data->ExportData();
-        exp_level["data"] = dataObject;
-
-        for (int i = 0; i < models.size(); ++i) {
-            exp_level["model_" + QString::number(i)] = models[i]->ExportModel();
-            models[i].clear();
-        }
-        SaveFile(m_outfile, exp_level);
-        return;
-    }
-    return;
-    */
 }
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
@@ -590,28 +554,7 @@ QSharedPointer<AbstractModel> SupraFitCli::AddModel(int model, QPointer<DataClas
         return t;
     return t;
 }
-/*
-bool SupraFitCli::Prepare()
-{
 
-    if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_mainjson.contains("InFile"))
-            m_infile = m_mainjson["InFile"].toString();
-    }
-
-    if (m_mainjson.contains("OutFile")) {
-        // Only use OutFile from JSON if not already set via -o option
-        if (m_outfile.isEmpty()) {
-            m_outfile = m_mainjson["OutFile"].toString();
-        }
-    }
-
-    LoadFile();
-    m_extension = ".json";
-    SaveFile();
-    return true;
-}
-*/
 void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models)
 {
     QVector<QJsonObject> models_json;
@@ -3713,15 +3656,6 @@ bool SupraFitCli::ExtractModelParameters(const QString& modelIndexStr)
         
         fmt::print("\n");
     }
-    
+
     return true;
 }
-
-
-/*
-SupraFitCli * SupraFitCli::Generate() const
-{
-    SupraFitCli *generated = new SupraFitCli;
-
-    return generated;
-}*/

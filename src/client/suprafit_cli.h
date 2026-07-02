@@ -47,7 +47,6 @@ public:
     void setShowPostProcessingDetails(bool show) { m_show_post_processing_details = show; }
 
     void ParseMain();
-    void ParsePrepare();
 
     bool LoadFile();
     bool SaveFile();
@@ -61,10 +60,8 @@ public:
 
     inline void setInFile(const QString& file)
     {
-        std::cout << "🔧 DEBUG setInFile: Setting file to: " << file.toStdString() << std::endl;
         m_infile = file;
         m_outfile = file;
-        std::cout << "🔧 DEBUG setInFile: m_infile now: " << m_infile.toStdString() << std::endl;
     }
     inline void setOutFile(const QString& file)
     {

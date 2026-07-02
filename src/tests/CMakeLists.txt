@@ -203,25 +203,6 @@ set_tests_properties(CliMLPipelineTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-# CLI Command Pattern Tests - Modular architecture validation - Claude Generated 2025-09-04
-add_executable(test_cli_command_pattern
-    test_cli_command_pattern.cpp
-    ../client/cli_command_parser.cpp
-    ../client/cli_command_dispatcher.cpp
-    ${CLIENT_SOURCES}
-)
-
-target_link_libraries(test_cli_command_pattern
-    ${TEST_COMMON_LIBS}
-)
-
-add_test(NAME CliCommandPatternTest COMMAND test_cli_command_pattern)
-
-set_tests_properties(CliCommandPatternTest PROPERTIES
-    TIMEOUT 60
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
 # Data Generation Tests - Modular structure and equation-based generation
 add_executable(test_data_generation
     test_data_generation.cpp
@@ -370,8 +351,8 @@ add_custom_target(run_tests
 
 # Fast test target - Core functionality only (Claude Generated - 2025-09-04)
 add_custom_target(test_fast
-    COMMAND ${CMAKE_CTEST_COMMAND} --verbose -R "Simple|DataTableSimple|DataGenerator|CliCommandPattern|ActivationFunctions|NeuralLayer|NeuralNetwork|XORTutorial|MLIntegration"
-    DEPENDS test_simple test_datatable_simple test_datagenerator test_cli_command_pattern
+    COMMAND ${CMAKE_CTEST_COMMAND} --verbose -R "Simple|DataTableSimple|DataGenerator|ActivationFunctions|NeuralLayer|NeuralNetwork|XORTutorial|MLIntegration"
+    DEPENDS test_simple test_datatable_simple test_datagenerator
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running fast core functionality tests"
 )
