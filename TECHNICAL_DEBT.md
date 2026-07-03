@@ -31,8 +31,9 @@ Umgesetzt (Commits auf dem Branch, noch **nicht** auf `master` gemerged):
 | `693d7ce4` | **D6** runtergestuft (CuteChart/libpeakpick = eigene Forks, kein Risiko) |
 | `f830f417` | **D3**: `AnalysisReporter` extrahiert (ModelStatistics + 7 Reporting-Funktionen) |
 | `fde7efa0` | **D3**: `MlExport` extrahiert (ML-Trainingsdaten-Export) |
+| `ff816e5f` | **D4** (Struct): `ModelStatistics` in `core/model_statistics.h` konsolidiert (Duplikat weg) |
 
-Erledigt: **D2** (voll), **D6** (entschärft), Teile von **C** und **D3** (2 Klassen raus, −805 LOC). Details in §5.
+Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, Teile von **C** und **D3** (2 Klassen raus, −805 LOC). Details in §5.
 
 ---
 
@@ -63,7 +64,7 @@ Erledigt: **D2** (voll), **D6** (entschärft), Teile von **C** und **D3** (2 Kla
 | ✅ **12 MIGRATION POINTs — erledigt** (`685438d1`): auf `getCurrentProject()`/`getProjectAsJson()` migriert; die vermuteten „fehlenden PM-APIs" waren über die vorhandene API abbildbar | `src/client/suprafit_cli.cpp` | ✅ |
 | Phase 2 (`TaskController`) und Phase 3 (`DataFactory`) **existieren nicht** – CLI/GUI duplizieren Job-Execution + Data-Generation | Roadmap-Ziele, keine Dateien vorhanden | 🔴 |
 | ✅ **`m_data`/`m_toplevel` entfernt** (`29792f97`); nur noch `m_data_vector` (Multi-Project-Export) übrig | `suprafit_cli.{h,cpp}` | 🟢 |
-| **`ModelStatistics` doppelt definiert**, Analyse-Logik parallel → `AnalysisManager`-Migration unvollständig | `suprafit_cli.h:118` + `analysis_manager.h:38` | 🟡 |
+| ✅ **`ModelStatistics`-Duplikat aufgelöst** (`ff816e5f`, `core/model_statistics.h`); Analyse-**Logik** noch parallel → `AnalysisManager`-Migration unvollständig (D4) | `analysis_manager.{h,cpp}`, `analysis_reporter.cpp` | 🟡 |
 | `JsonHandler::` in **20 Dateien** direkt aufgerufen trotz ProjectManager | `rg -l "JsonHandler::" src` = 20 | 🟡 |
 
 ### D. God-Objects / Struktur 🟡
@@ -131,9 +132,14 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   erst **D1** (Test-Netz). Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert
   Trainings-JSON via `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
 
-- **D4 – `AnalysisManager`-Konsolidierung** 🟡
-  *Frage:* Doppelte `ModelStatistics` + parallele Analyse-Logik zwischen CLI und
-  `AnalysisManager` auflösen. *Dateien:* `suprafit_cli.{h,cpp}`, `analysis_manager.{h,cpp}`.
+- **D4 – `AnalysisManager`-Konsolidierung** 🟡 *(Struct erledigt, Logik offen)*
+  ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`) —
+  eine Definition statt zweier identischer. ⬜ **Logik/Integration**: Kein simpler Fix —
+  `AnalysisManager::extractModelStatistics` wird von außen gar nicht aufgerufen, und
+  `displayAnalysisResults` **ignoriert** die `analyzeFile`-Ergebnisse und re-extrahiert via
+  `AnalysisReporter`. Entwirren erfordert die Entscheidung, welcher Pfad autoritativ ist
+  (halb-migrierter AnalysisManager) — braucht **D1** (Tests). *Dateien:* `analysis_manager.{h,cpp}`,
+  `analysis_reporter.cpp`, `suprafit_cli.cpp` (`displayAnalysisResults`).
 
 - **D5 – `AbstractModel : DataClass`-Vererbung** 🟡
   *Frage:* Ist „Model *ist* Datencontainer" die richtige Beziehung? Tiefe Kopplungs-/
