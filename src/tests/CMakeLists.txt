@@ -465,7 +465,7 @@ if(ML_NEURAL_NETWORKS)
         TIMEOUT 60
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-    
+
     # XOR Tutorial Test
     add_executable(test_xor_tutorial
         test_xor_tutorial.cpp
@@ -576,3 +576,9 @@ set_tests_properties(FileImportCLITest PROPERTIES
 message(STATUS "")
 message(STATUS "File Import CLI Tests (Claude Generated 2025-11-04):")
 message(STATUS "  File Import CLI: ./test_file_import_cli")
+
+# NOTE (D1): test_projectmanager.cpp and test_neural_network_training.cpp remain
+# unregistered - both are bit-rotted against old APIs (never compiled). Reviving
+# them is a test-rewrite, not a wiring task. test_projectmanager.cpp now at least
+# compiles+links (needs a core<->models link group); its remaining failures are a
+# stale test-data contract (createTestProjectJson) vs current validateProjectJson.

@@ -9,7 +9,7 @@ Comprehensive test suite for SupraFit functionality using Qt Test framework. Ens
 - **test_simple.cpp**: Basic functionality validation ✅ **PASSED** (0.02s)
 - **test_datatable_simple.cpp**: DataTable basics ✅ **PASSED** (0.01s)
 - **test_datatable.cpp**: Comprehensive DataTable testing ✅ **PASSED** (0.07s) - **COMPLETELY FIXED!**
-- **test_dataclass.cpp**: DataClass functionality ⚠️ **TIMEOUT** (30.04s) - needs investigation
+- **test_dataclass.cpp**: DataClass functionality ✅ **PASSED** (2026-07-03) - the earlier 30s timeout no longer reproduces
 
 ### Advanced Component Tests
 - **test_datagenerator.cpp**: DataGenerator comprehensive testing ✅ **PASSED** (0.04s)
@@ -124,7 +124,17 @@ make run_tests
 
 ## Test Results Summary - Updated 2025-01-09
 
-**CURRENT STATUS: 8/22 tests passing (36% success rate) - SIGNIFICANTLY IMPROVED**
+**CURRENT STATUS (measured 2026-07-03 via `ctest`): 11/26 tests passing (42%)**
+
+- ✅ **`test_dataclass` now PASSES** (the long-standing 30s timeout no longer reproduces).
+- The 15 failing tests are mostly CLI tests that invoke the `suprafit_cli` binary and assert on
+  output; their expectations are stale (pre-existing API/output mismatch), not build breaks.
+- `NeuralNetworkTest` passes standalone (12/0) but is flagged failed by ctest — a working-directory/
+  exit artifact, not a real assertion failure.
+- Two tests remain **unregistered and bit-rotted** (written against old APIs, never compiled):
+  `test_projectmanager.cpp` (now compiles+links after fixes, but its test-data helper no longer
+  matches `validateProjectJson`) and `test_neural_network_training.cpp` (ML API drift). Reviving
+  either is a test-rewrite.
 
 ### ✅ FULLY PASSING - CORE FOUNDATION SOLID
 - **test_simple**: ✅ **PASSED** (0.02s) - Basic functionality validation
@@ -153,7 +163,7 @@ make run_tests
 - **test_integration**: ❌ Failed (1.74s) - API mismatches (CLI path ✅ fixed)
 
 ### ⚠️ REMAINING ISSUES
-- **test_dataclass**: ⚠️ **TIMEOUT** (30.04s) - Needs specific investigation (not CLI-related)
+- **test_dataclass**: ✅ **PASSED** (2026-07-03) - the earlier 30s timeout no longer reproduces
 - **test_pipeline**: ❌ Failed (1.03s) - API mismatches
 - **test_comprehensive_real_data**: ❌ Failed (0.01s) - Missing test data files
 
@@ -252,7 +262,7 @@ Successfully implemented unified test execution system:
 - **CLI Tests**: 11 tests (argument parsing, data generation, ML pipeline, etc.)  
 - **ML Tests**: 5 tests (neural networks, activation functions, etc.)
 
-**Current Status**: 8/22 tests passing (36% pass rate)
+**Current Status**: 11/26 tests passing (42% pass rate, ctest 2026-07-03)
 - ✅ All basic functionality tests passing
 - ✅ All ML neural network tests passing
 - 🔄 CLI tests need TestUtils migration (2/11 completed)

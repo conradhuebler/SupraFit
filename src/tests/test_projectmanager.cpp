@@ -17,7 +17,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QMutex>
-#include <QtCore/QSignalSpy>
+#include <QtTest/QSignalSpy>
 
 #include "src/core/projectmanager.h"
 #include "src/core/models/dataclass.h"
@@ -43,38 +43,27 @@ private slots:
     void testCreateProjectFromJson();
     void testGetProjectAsJson();
     void testGetAllProjectsAsJson();
-    void testInvalidJsonHandling();
 
     // File operations
     void testLoadProjectFromFile();
     void testSaveProjectToFile();
     void testProjectRoundTrip();
-    void testMultiProjectFile();
 
     // UUID and identification
     void testUuidGeneration();
     void testUuidUniqueness();
-    void testProjectIdValidation();
 
     // Thread safety
     void testConcurrentAccess();
-    void testThreadSafeCreation();
-    void testThreadSafeRetrieval();
 
     // Signal emission
     void testProjectAddedSignal();
     void testProjectRemovedSignal();
-    void testProjectUpdatedSignal();
 
     // Error handling
-    void testNonExistentProjectAccess();
-    void testInvalidFileLoading();
-    void testCorruptedJsonHandling();
 
     // Project lifecycle
     void testClearAllProjects();
-    void testProjectMemoryManagement();
-    void testProjectCaching();
 
 private:
     QJsonObject createTestProjectJson(const QString& title = "Test Project");
@@ -111,7 +100,7 @@ void TestProjectManager::cleanup()
     // Clean up projects created in each test
     SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
     for (const QString& projectId : m_createdProjectIds) {
-        if (pm.projectExists(projectId)) {
+        if (pm.hasProject(projectId)) {
             pm.removeProject(projectId);
         }
     }
@@ -128,8 +117,8 @@ void TestProjectManager::testSingletonAccess()
     QCOMPARE(&pm1, &pm2);
 
     // Should be accessible from different contexts
-    QStringList ids1 = pm1.getAllProjectIds();
-    QStringList ids2 = pm2.getAllProjectIds();
+    QStringList ids1 = pm1.getLoadedProjectIds();
+    QStringList ids2 = pm2.getLoadedProjectIds();
     QCOMPARE(ids1, ids2);
 }
 
@@ -143,16 +132,16 @@ void TestProjectManager::testProjectCreation()
 
     // Project should exist
     QVERIFY(!projectId.isEmpty());
-    QVERIFY(pm.projectExists(projectId));
+    QVERIFY(pm.hasProject(projectId));
 
     // Should be in project list
-    QStringList allIds = pm.getAllProjectIds();
+    QStringList allIds = pm.getLoadedProjectIds();
     QVERIFY(allIds.contains(projectId));
 
     // Should be retrievable
     QSharedPointer<DataClass> project = pm.getProject(projectId);
     QVERIFY(!project.isNull());
-    QCOMPARE(project->Title(), "Test Creation Project");
+    QCOMPARE(project->ProjectTitle(), "Test Creation Project");
 }
 
 void TestProjectManager::testProjectExistence()
@@ -160,18 +149,18 @@ void TestProjectManager::testProjectExistence()
     SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
 
     // Non-existent project
-    QVERIFY(!pm.projectExists("non-existent-uuid"));
+    QVERIFY(!pm.hasProject("non-existent-uuid"));
 
     // Create and verify existence
     QJsonObject testData = createTestProjectJson("Existence Test");
     QString projectId = pm.createProjectFromJson(testData, "Existence Test");
     m_createdProjectIds.append(projectId);
 
-    QVERIFY(pm.projectExists(projectId));
+    QVERIFY(pm.hasProject(projectId));
 
     // Remove and verify non-existence
     pm.removeProject(projectId);
-    QVERIFY(!pm.projectExists(projectId));
+    QVERIFY(!pm.hasProject(projectId));
     m_createdProjectIds.removeAll(projectId);
 }
 
@@ -186,7 +175,7 @@ void TestProjectManager::testProjectRetrieval()
     // Test DataClass retrieval
     QSharedPointer<DataClass> project = pm.getProject(projectId);
     QVERIFY(!project.isNull());
-    QCOMPARE(project->Title(), "Retrieval Test");
+    QCOMPARE(project->ProjectTitle(), "Retrieval Test");
     QCOMPARE(project->UUID(), projectId);
 
     // Test JSON retrieval
@@ -212,21 +201,21 @@ void TestProjectManager::testProjectRemoval()
     m_createdProjectIds.append(id1);
     m_createdProjectIds.append(id2);
 
-    QVERIFY(pm.projectExists(id1));
-    QVERIFY(pm.projectExists(id2));
-    QCOMPARE(pm.getAllProjectIds().size(), 2);
+    QVERIFY(pm.hasProject(id1));
+    QVERIFY(pm.hasProject(id2));
+    QCOMPARE(pm.getLoadedProjectIds().size(), 2);
 
     // Remove one project
     pm.removeProject(id1);
-    QVERIFY(!pm.projectExists(id1));
-    QVERIFY(pm.projectExists(id2));
-    QCOMPARE(pm.getAllProjectIds().size(), 1);
+    QVERIFY(!pm.hasProject(id1));
+    QVERIFY(pm.hasProject(id2));
+    QCOMPARE(pm.getLoadedProjectIds().size(), 1);
     m_createdProjectIds.removeAll(id1);
 
     // Remove remaining project
     pm.removeProject(id2);
-    QVERIFY(!pm.projectExists(id2));
-    QCOMPARE(pm.getAllProjectIds().size(), 0);
+    QVERIFY(!pm.hasProject(id2));
+    QCOMPARE(pm.getLoadedProjectIds().size(), 0);
     m_createdProjectIds.removeAll(id2);
 }
 
@@ -310,15 +299,17 @@ void TestProjectManager::testLoadProjectFromFile()
     QJsonObject testData = createTestProjectJson("File Load Test");
     QString filename = createTempProjectFile(testData);
 
-    // Load project from file
-    QString projectId = pm.loadProject(filename);
+    // Load project from file (loadProject returns bool; the loaded project becomes current)
+    bool loadedOk = pm.loadProject(filename);
+    QSharedPointer<DataClass> loadedProj = pm.getCurrentProject().toStrongRef();
+    QString projectId = (loadedOk && loadedProj) ? loadedProj->UUID() : QString();
     if (!projectId.isEmpty()) {
         m_createdProjectIds.append(projectId);
 
         // Verify loaded project
         QSharedPointer<DataClass> project = pm.getProject(projectId);
         QVERIFY(!project.isNull());
-        QCOMPARE(project->Title(), "File Load Test");
+        QCOMPARE(project->ProjectTitle(), "File Load Test");
     }
 }
 
@@ -365,17 +356,19 @@ void TestProjectManager::testProjectRoundTrip()
     // Remove from memory
     pm.removeProject(originalId);
     m_createdProjectIds.removeAll(originalId);
-    QVERIFY(!pm.projectExists(originalId));
+    QVERIFY(!pm.hasProject(originalId));
 
-    // Load back from file
-    QString loadedId = pm.loadProject(filename);
+    // Load back from file (loadProject returns bool; the loaded project becomes current)
+    bool reloadedOk = pm.loadProject(filename);
+    QSharedPointer<DataClass> reloadedProj = pm.getCurrentProject().toStrongRef();
+    QString loadedId = (reloadedOk && reloadedProj) ? reloadedProj->UUID() : QString();
     if (!loadedId.isEmpty()) {
         m_createdProjectIds.append(loadedId);
 
         // Verify data integrity
         QSharedPointer<DataClass> loadedProject = pm.getProject(loadedId);
         QVERIFY(!loadedProject.isNull());
-        QCOMPARE(loadedProject->Title(), "Round Trip Test");
+        QCOMPARE(loadedProject->ProjectTitle(), "Round Trip Test");
 
         // Compare JSON representations
         QJsonObject loadedJson = pm.getProjectAsJson(loadedId);
@@ -429,7 +422,7 @@ void TestProjectManager::testUuidUniqueness()
         }
 
         // All UUIDs in batch should be unique
-        QCOMPARE(batchUuids.toSet().size(), 5);
+        QCOMPARE(QSet<QString>(batchUuids.begin(), batchUuids.end()).size(), 5);
     }
 
     // All UUIDs across batches should be unique
@@ -451,11 +444,11 @@ void TestProjectManager::testConcurrentAccess()
 
     auto readTask = [&pm, &baseProjectId, &resultMutex, &results]() {
         for (int i = 0; i < 5; ++i) {
-            if (pm.projectExists(baseProjectId)) {
+            if (pm.hasProject(baseProjectId)) {
                 QSharedPointer<DataClass> project = pm.getProject(baseProjectId);
                 if (!project.isNull()) {
                     QMutexLocker locker(&resultMutex);
-                    results.append(project->Title());
+                    results.append(project->ProjectTitle());
                 }
             }
             QThread::msleep(1);
@@ -529,16 +522,16 @@ void TestProjectManager::testClearAllProjects()
         m_createdProjectIds.append(projectId);
     }
 
-    QVERIFY(pm.getAllProjectIds().size() >= 3);
+    QVERIFY(pm.getLoadedProjectIds().size() >= 3);
 
     // Clear all projects
     pm.clearAllProjects();
     m_createdProjectIds.clear();
 
-    QCOMPARE(pm.getAllProjectIds().size(), 0);
+    QCOMPARE(pm.getLoadedProjectIds().size(), 0);
 
     // All project existence checks should fail
-    QVERIFY(!pm.projectExists("any-id"));
+    QVERIFY(!pm.hasProject("any-id"));
 }
 
 // Helper methods
