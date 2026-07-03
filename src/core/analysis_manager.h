@@ -33,37 +33,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/AbstractModel.h"
-
-// Model statistics structure for analysis results - Claude Generated
-struct ModelStatistics {
-    QString key;           // Model identifier (e.g., "model_0")
-    QString name;          // Model name
-    QString status;        // Convergence status
-    bool hasValidStats = false;
-    
-    // Core fit statistics
-    double sse = -1;       // Sum of Squared Errors
-    double sae = -1;       // Sum of Absolute Errors  
-    double aic = -999;     // Akaike Information Criterion
-    double aicc = -999;    // Corrected AIC
-    
-    // Parameter counts
-    int globalParams = -1; // Global parameters
-    int localParams = -1;  // Local parameters
-    
-    // Post-processing analysis counts
-    int mcBlocks = 0;           // Monte Carlo blocks
-    int wgsBlocks = 0;          // Weakened Grid Search blocks
-    int modelCompBlocks = 0;    // Model Comparison blocks
-    int cvBlocks = 0;           // Cross Validation blocks
-    int reductionBlocks = 0;    // Reduction blocks
-    int fastConfBlocks = 0;     // Fast Confidence blocks
-    int globalBlocks = 0;       // Global Search blocks
-    int totalPPBlocks = 0;      // Total post-processing blocks
-    
-    // Post-processing data cache
-    QJsonObject postProcessingData;
-};
+#include "src/core/model_statistics.h"
 
 class AnalysisManager : public QObject
 {

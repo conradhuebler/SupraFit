@@ -35,7 +35,7 @@
 #include <fmt/core.h>
 #include <limits>
 
-AnalysisReporter::ModelStatistics AnalysisReporter::extractModelStatistics(const QString& key, const QJsonObject& modelObj)
+ModelStatistics AnalysisReporter::extractModelStatistics(const QString& key, const QJsonObject& modelObj)
 {
     ModelStatistics stats;
     stats.key = key;
