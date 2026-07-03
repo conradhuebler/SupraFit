@@ -22,6 +22,7 @@
 #include "src/core/models/models.h"
 
 #include "src/client/analysis_reporter.h"
+#include "src/client/ml_export.h"
 #include "src/client/ml_pipeline_manager.h"
 
 #include "src/core/equil.h"
@@ -576,7 +577,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
                 QVector<QString> processedFiles;
                 processedFiles.append(core->OutFile() + "-0.json");
                 
-                bool exportSuccess = core->exportMLTrainingData(processedFiles, outputFileName);
+                bool exportSuccess = MlExport::exportMLTrainingData(processedFiles, outputFileName);
                 if (exportSuccess) {
                     std::cout << "ML training data exported to: " << outputFileName.toStdString() << std::endl;
                 } else {
@@ -1018,14 +1019,14 @@ int main(int argc, char** argv)
         if (!exportMLBatchDirectory.isEmpty()) {
             // Batch export mode
             std::cout << "Batch export mode - processing directory: " << exportMLBatchDirectory.toStdString() << std::endl;
-            success = cli->exportMLTrainingDataBatch(exportMLBatchDirectory,
+            success = MlExport::exportMLTrainingDataBatch(exportMLBatchDirectory,
                                                    mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile,
                                                    excludeRawDataMode);
         } else {
             // Single file export mode
             QVector<QString> inputFiles;
             inputFiles.append(actualInputFile);
-            success = cli->exportMLTrainingData(inputFiles,
+            success = MlExport::exportMLTrainingData(inputFiles,
                                               mlOutputFile.isEmpty() ? actualInputFile + "_ml_training.json" : mlOutputFile,
                                               excludeRawDataMode);
         }
