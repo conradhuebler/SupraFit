@@ -21,6 +21,7 @@
 
 #include "src/core/models/models.h"
 
+#include "src/client/analysis_reporter.h"
 #include "src/client/ml_pipeline_manager.h"
 
 #include "src/core/equil.h"
@@ -1000,8 +1001,8 @@ int main(int argc, char** argv)
             return 1;
         }
         
-        // Extract and display model parameters
-        bool success = cli->ExtractModelParameters(modelIndex);
+        // Extract and display model parameters (loaded into ProjectManager above)
+        bool success = AnalysisReporter::ExtractModelParameters(modelIndex);
         
         delete cli;
         return success ? 0 : 1;

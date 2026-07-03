@@ -41,6 +41,7 @@ endif(UNIX)
 # Client sources for test_pipeline (not in libcore/libmodels)
 set(CLIENT_SOURCES
     ../client/suprafit_cli.cpp
+    ../client/analysis_reporter.cpp
     ../client/ml_pipeline_manager.cpp
 )
 

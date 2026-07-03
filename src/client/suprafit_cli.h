@@ -110,49 +110,8 @@ public:
     // AnalysisManager integration - Claude Generated
     void displayAnalysisResults(const QJsonObject& results);
 
-    // Enhanced analysis methods for read-only mode - Claude Generated
-    void analyzeGenerateDataConfig(const QJsonObject& generateDataConfig);
-    void validateGenerateDataConfig(const QJsonObject& config);
-    
-    // Model statistics table formatting - Claude Generated
-    struct ModelStatistics {
-        QString key;
-        QString name;
-        QString status;
-        double sse;
-        double sae;
-        double aic;
-        double aicc;
-        int globalParams;
-        int localParams;
-        bool hasValidStats;
-        
-        // Post-processing method counts - Claude Generated
-        int mcBlocks;           // Monte Carlo blocks
-        int wgsBlocks;          // Weakened Grid Search blocks
-        int modelCompBlocks;    // Model Comparison blocks  
-        int cvBlocks;           // Cross Validation blocks
-        int reductionBlocks;    // Reduction Analysis blocks
-        int fastConfBlocks;     // Fast Confidence blocks
-        int globalBlocks;       // Global Search blocks
-        int totalPPBlocks;      // Total post-processing blocks
-        
-        // JSON data for detailed display - Claude Generated
-        QJsonObject postProcessingData;
-        
-        ModelStatistics() : sse(-1), sae(-1), aic(-999), aicc(-999), 
-                           globalParams(-1), localParams(-1), hasValidStats(false),
-                           mcBlocks(0), wgsBlocks(0), modelCompBlocks(0), cvBlocks(0),
-                           reductionBlocks(0), fastConfBlocks(0), globalBlocks(0), totalPPBlocks(0) {}
-    };
-    void displayModelStatisticsTable(const QVector<ModelStatistics>& models);
-    void displayPostProcessingDetails(const QVector<ModelStatistics>& models);
-    void displayPostProcessingMethod(const QString& methodName, const QString& emoji, 
-                                    int blockCount, const QJsonObject& methodData, int methodType);
-    ModelStatistics extractModelStatistics(const QString& key, const QJsonObject& modelObj);
-    
-    // Claude Generated: Extract and display fitted model parameters
-    bool ExtractModelParameters(const QString& modelIndexStr = QString());
+    // Config analysis, model-statistics reporting and parameter extraction moved to
+    // AnalysisReporter (D3) - Claude Generated
 
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
