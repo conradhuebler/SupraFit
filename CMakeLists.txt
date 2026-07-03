@@ -26,6 +26,13 @@ option (BENCHMARK_LEVEL
 
 option (DEBUG_ON
     "Enable Debugging Output" OFF)
+
+# Bind DEBUG_ON to a compile definition so the many #ifdef DEBUG_ON guards take
+# effect when enabled - the option was previously defined but never wired, which
+# left all debug guards inert regardless of the setting (D7). Claude Generated
+if(DEBUG_ON)
+    add_compile_definitions(DEBUG_ON)
+endif()
     
 option (experimental
     "Include experimental functions" OFF)

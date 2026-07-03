@@ -32,8 +32,11 @@ Umgesetzt (Commits auf dem Branch, noch **nicht** auf `master` gemerged):
 | `f830f417` | **D3**: `AnalysisReporter` extrahiert (ModelStatistics + 7 Reporting-Funktionen) |
 | `fde7efa0` | **D3**: `MlExport` extrahiert (ML-Trainingsdaten-Export) |
 | `ff816e5f` | **D4** (Struct): `ModelStatistics` in `core/model_statistics.h` konsolidiert (Duplikat weg) |
+| `505299d0` | **D1**: Baseline vermessen (11/26), Doku korrigiert; `test_projectmanager` Compile-Fixes |
+| _(dieser)_ | **D7**: `DEBUG_ON` an Compile-Definition gebunden · **D8**: 4 abgelöste Root-MDs entfernt |
 
-Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, Teile von **C** und **D3** (2 Klassen raus, −805 LOC). Details in §5.
+Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, **D7** (DEBUG_ON), **D8** (Root-MDs),
+Teile von **C**, **D1** (Baseline) und **D3** (2 Klassen raus, −805 LOC). Details in §5.
 
 ---
 
@@ -85,7 +88,7 @@ Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, Teile von **C** un
 | Befund | Zahl / Beleg |
 |---|---|
 | `qDebug()` überwiegend **ungeschützt** (Regel: nur in `#ifdef DEBUG_ON`) | 825 gesamt; `suprafitgui.cpp` ≈133 / 1 Guard |
-| **`DEBUG_ON` nicht an Compile-Definition gebunden** → alle Guards evtl. wirkungslos | nur `option(DEBUG_ON … OFF)` `CMakeLists.txt:27`; keine `add_definitions`-Bindung |
+| ✅ **`DEBUG_ON` jetzt an Compile-Definition gebunden** (D7) — Guards greifen bei `-DDEBUG_ON=ON` | `CMakeLists.txt` `if(DEBUG_ON) add_compile_definitions(DEBUG_ON)` |
 | `std::cout` in Produktionscode (Regel: `fmt` statt `std::cout`) | 363 (client 200, core 152, capabilities 7, ui 4; tests 0) |
 | Dead Files auf Disk, nicht im Build | `client/main_refactored.cpp`, `ui/guitools/chartwrapper_legacy.*`, `ui/widgets/modeldataholder.cpp` |
 | Nicht in CMake registrierte Tests | `tests/test_projectmanager.cpp`, `tests/test_neural_network_training.cpp` |
@@ -157,13 +160,14 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   die kleine Inkonsistenz: `external/least-squares-cpp` ist ein Gitlink **ohne**
   `.gitmodules`-Eintrag. *Datei:* `.gitmodules`.
 
-- **D7 – Logging-/DEBUG_ON-Strategie** 🟡
-  *Frage:* Zentrales Logging; `DEBUG_ON` korrekt an Compile-Definition binden (sonst
-  sind 825 qDebug-Aufrufe faktisch ungesteuert); `std::cout` → `fmt` (363 Stellen).
+- **D7 – Logging-/DEBUG_ON-Strategie** 🟡 *(DEBUG_ON gebunden)*
+  ✅ **`DEBUG_ON` an Compile-Definition gebunden** (`if(DEBUG_ON) add_compile_definitions(DEBUG_ON)`):
+  die `#ifdef DEBUG_ON`-Guards greifen jetzt bei `-DDEBUG_ON=ON` (verifiziert), Default OFF
+  unverändert. ⬜ Verbleibend: zentrales Logging und `std::cout` → `fmt` (~360 Stellen).
 
-- **D8 – Doc-Konsolidierung** 🟢
-  *Frage:* Root-Doc-Sprawl + `docs/outdated/`-Graveyard (~18 Dateien) aufräumen; dieses
-  Dokument als Anker etablieren.
+- **D8 – Doc-Konsolidierung** 🟢 *(Root-Sprawl erledigt)*
+  ✅ Die 4 abgelösten Root-MDs entfernt (Inhalt in diesem Dokument konsolidiert). ⬜ Verbleibend:
+  `docs/outdated/`-Graveyard (~18 tracked Dateien) — eigener Aufräum-Commit.
 
 ---
 
@@ -186,14 +190,13 @@ Kein tiefer Blick nötig – kann als eigener Aufräum-Commit laufen:
 
 ## <a id="abgeloeste-dokumente"></a>4. Abgelöste Dokumente
 
-Folgende untracked Root-MDs sind durch dieses Dokument **abgelöst** (Relevantes ist hier
-übernommen; sie sind teils stale – nannten z. B. 21 statt aktuell 12 MIGRATION POINTs und
-das Datum „November 2025"). Entfernen als separater Schritt:
+✅ **Erledigt (D8):** Die folgenden untracked Root-MDs waren durch dieses Dokument abgelöst
+(Relevantes übernommen) und wurden **entfernt**:
 
-- `ARCHITECTURE_CONSOLIDATION_ROADMAP.md`
-- `MIGRATION_POINT_ANALYSIS.md`
-- `MIGRATION_POINT_SUMMARY.md`
-- `PROJECTMANAGER_ANALYSIS_INDEX.md`
+- ~~`ARCHITECTURE_CONSOLIDATION_ROADMAP.md`~~
+- ~~`MIGRATION_POINT_ANALYSIS.md`~~
+- ~~`MIGRATION_POINT_SUMMARY.md`~~
+- ~~`PROJECTMANAGER_ANALYSIS_INDEX.md`~~
 
 ---
 
