@@ -27,8 +27,12 @@ Umgesetzt (Commits auf dem Branch, noch **nicht** auf `master` gemerged):
 | `cab3cd6a` | **Bug-Fix**: `saveProjectAsJson()` serialisiert Modelle → `-x` + Model-Tabelle funktionieren wieder |
 | `c23e25c7` | **Bug-Fix**: doppelte Model-Children beim Laden (COW-geteiltes `d` + Doppel-Add) |
 | `29792f97` | Legacy-Member `m_toplevel`/`m_data` vollständig entfernt |
+| `f3fee6f6` | Hygiene: `.gitignore` erweitert, 72 MB Output-Artefakte + Mode-Drift-Submodule bereinigt |
+| `693d7ce4` | **D6** runtergestuft (CuteChart/libpeakpick = eigene Forks, kein Risiko) |
+| `f830f417` | **D3**: `AnalysisReporter` extrahiert (ModelStatistics + 7 Reporting-Funktionen) |
+| `fde7efa0` | **D3**: `MlExport` extrahiert (ML-Trainingsdaten-Export) |
 
-Erledigt: **D2** (voll), Teile von **C** und **D3**. Details in §5.
+Erledigt: **D2** (voll), **D6** (entschärft), Teile von **C** und **D3** (2 Klassen raus, −805 LOC). Details in §5.
 
 ---
 
@@ -119,10 +123,13 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   vorbestehende Bugs gefixt: `saveProjectAsJson()` verwarf Modelle; Modelle wurden beim Laden
   doppelt als Children eingetragen. Legacy-Member `m_toplevel`/`m_data` anschließend entfernt.
 
-- **D3 – `suprafit_cli.cpp`-Zerlegung** 🟡 *(teilweise begonnen)*
-  Tote Command-Pattern-Schicht entfernt (`7f3d213d`); die God-Klasse selbst (~3,6k LOC, ~8 Rollen)
-  bleibt offen. *Frage:* Schnitt Richtung `DataFactory`/`TaskRunner`/`AnalysisReporter`.
-  *Abhängig von:* D1. Siehe §5.1.
+- **D3 – `suprafit_cli.cpp`-Zerlegung** 🟡 *(in Arbeit — 3654 → 2849 LOC)*
+  Command-Pattern-Ballast entfernt (`7f3d213d`); zwei stateless Helfer ausgelagert:
+  `AnalysisReporter` (`f830f417`) und `MlExport` (`fde7efa0`). Verbleibend: die
+  member-gekoppelten Cluster `DataFactory` (GenerateData*), `TaskRunner` (Work/PerformeJobs)
+  und `MlPipeline` — die brauchen State-Passing-Design (kein verbatim-Lift) und idealerweise
+  erst **D1** (Test-Netz). Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert
+  Trainings-JSON via `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
 
 - **D4 – `AnalysisManager`-Konsolidierung** 🟡
   *Frage:* Doppelte `ModelStatistics` + parallele Analyse-Logik zwischen CLI und
