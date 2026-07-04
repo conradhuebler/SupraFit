@@ -268,14 +268,12 @@ QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(i, !m_HostAssignment);
+    return IndependentModel()->data(i, !m_HostAssignment);
 }
 
 qreal AbstractNMRModel::InitialHostConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(i, m_HostAssignment);
+    return IndependentModel()->data(i, m_HostAssignment);
 }
 
 qreal AbstractNMRModel::GuessK(int index)

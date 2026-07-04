@@ -2,6 +2,8 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-04: R3 — routed the 4 `InitialGuest/HostConcentration` accessors in `AbstractNMRModel`/`AbstractTitrationModel` through the public `IndependentModel()` instead of reaching into `d->m_independent_model`; dropped the stale `#pragma message` markers (behaviour-identical, reference test green).
+
 - 2026-07-04: R1 — collapsed `AbstractModel::UpdateStatistic`'s five byte-identical `switch(Method)` arms into a shared `upsertByTimestamp` helper + `statisticList(method)` dispatch (also reused by getStatistic/RemoveStatistic); AbstractModel.cpp 2067→1901, dead emoji `qDebug` traces dropped, behaviour-preserving (reference test green). Precursor to a `ModelStatisticsStore` collaborator.
 
 - 2026-07-04: Split god-object `core/toolset.cpp` (1407→827): file-I/O loaders → `toolset_io.cpp`, `Print` formatting → `toolset_print.cpp`; facade `toolset.h` + namespaces unchanged, reference test green (science unchanged).
