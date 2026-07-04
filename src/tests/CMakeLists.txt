@@ -341,6 +341,22 @@ set_tests_properties(ComprehensiveRealDataTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# Real, measuring regression test: reconstruct + re-fit trusted .suprafit projects and
+# compare recovered lg K / SSE against the stored reference (Claude Generated 2026).
+add_executable(test_reference_projects
+    test_reference_projects.cpp
+)
+
+target_link_libraries(test_reference_projects
+    ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_reference_projects PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME ReferenceProjectsTest COMMAND test_reference_projects)
+
 # Add custom target to run all tests including new comprehensive CLI tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
