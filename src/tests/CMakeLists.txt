@@ -357,6 +357,10 @@ target_compile_definitions(test_reference_projects PRIVATE
 
 add_test(NAME ReferenceProjectsTest COMMAND test_reference_projects)
 
+set_tests_properties(ReferenceProjectsTest PROPERTIES
+    TIMEOUT 300  # re-runs CV/RA post-processing on the paper datasets (~50 s)
+)
+
 # Add custom target to run all tests including new comprehensive CLI tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose

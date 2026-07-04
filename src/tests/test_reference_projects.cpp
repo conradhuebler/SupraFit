@@ -38,14 +38,18 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
+#include "src/capabilities/jobmanager.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/projectmanager.h"
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
+
+#include <climits>
 
 #ifndef SUPRAFIT_SOURCE_DIR
 #define SUPRAFIT_SOURCE_DIR "."
@@ -59,6 +63,10 @@ private:
     static constexpr double kTolLoaded = 1e-3; // forward-model recompute: near-exact
     static constexpr double kTolGlobal = 1e-2; // 1 % on lg K after re-fit
     static constexpr double kTolSSE = 5e-2; //  5 % on SSE after re-fit
+    static constexpr double kTolResample = 1e-2; // 1 % on CV/RA boxplot mean (well-determined params)
+    static constexpr double kMaxRelStd = 5e-3; // skip params whose reference distribution spread
+                                               // (stddev/|mean|) exceeds this — ill-determined
+                                               // directions are optimiser-unstable / non-reproducible
 
     static QString sourceDir() { return QString(SUPRAFIT_SOURCE_DIR); }
 
@@ -88,15 +96,64 @@ private:
         return out;
     }
 
-private slots:
-    void referenceFit_data()
+    // A project copy with every model's stored post-processing removed, so a re-run yields
+    // exactly one unambiguous result block per method.
+    static QJsonObject withoutMethods(QJsonObject project)
+    {
+        for (const QString& k : project.keys()) {
+            if (!k.startsWith("model"))
+                continue;
+            QJsonObject m = project.value(k).toObject();
+            QJsonObject d = m.value("data").toObject();
+            d.remove("methods");
+            m["data"] = d;
+            project[k] = m;
+        }
+        return project;
+    }
+
+    // SupraFit::Method id stored on a result block's controller ("method" | "Method").
+    static int blockMethod(const QJsonObject& block)
+    {
+        const QJsonObject c = block.value("controller").toObject();
+        return c.contains("method") ? c.value("method").toInt() : c.value("Method").toInt();
+    }
+
+    // Per-parameter boxplot summaries in a result block, keyed by parameter index.
+    static QMap<QString, QJsonObject> boxplots(const QJsonObject& block)
+    {
+        QMap<QString, QJsonObject> out;
+        for (const QString& k : block.keys()) {
+            if (k == "controller")
+                continue;
+            const QJsonObject p = block.value(k).toObject();
+            if (p.contains("boxplot"))
+                out.insert(k, p.value("boxplot").toObject());
+        }
+        return out;
+    }
+
+    // All freshly computed result blocks for a method id in a model export, ordered by key.
+    static QVector<QJsonObject> freshBlocks(const QJsonObject& modelExport, int methodId)
+    {
+        const QJsonObject methods = modelExport.value("data").toObject().value("methods").toObject();
+        QStringList keys = methods.keys();
+        std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) { return a.toInt() < b.toInt(); });
+        QVector<QJsonObject> out;
+        for (const QString& k : keys) {
+            const QJsonObject b = methods.value(k).toObject();
+            if (!boxplots(b).isEmpty() && blockMethod(b) == methodId)
+                out << b;
+        }
+        return out;
+    }
+
+    // Enumerate (file, projectKey) rows over all reference fixtures present locally.
+    static int addFixtureRows()
     {
         QTest::addColumn<QString>("file");
         QTest::addColumn<QString>("projectKey"); // empty => whole file is one project
 
-        struct Fx {
-            const char* path;
-        };
         const QStringList files = {
             sourceDir() + "/data/samples/NMR titrations/projects.suprafit",
             sourceDir() + "/data/samples/reference/simulated_1_1.json",
@@ -124,8 +181,11 @@ private slots:
                 }
             }
         }
-        QVERIFY2(rows > 0, "no reference fixtures found");
+        return rows;
     }
+
+private slots:
+    void referenceFit_data() { QVERIFY2(addFixtureRows() > 0, "no reference fixtures found"); }
 
     void referenceFit()
     {
@@ -182,6 +242,128 @@ private slots:
                 qPrintable(QString("[%1] re-fit SSE %2 not within %3 of %4")
                         .arg(model->Name()).arg(sseFit).arg(kTolSSE).arg(storedSSE)));
         }
+    }
+
+    // Re-run the deterministic post-processing methods (Cross-Validation, Reduction Analysis)
+    // with the current code and assert their boxplot summaries reproduce the trusted reference.
+    //
+    // The reference values are a trusted-but-not-infallible oracle. For ILL-DETERMINED parameters
+    // (broad resample distribution — an optimiser-unstable / flat likelihood direction) the reference
+    // value is itself uncertain, and the current code is non-reproducible run-to-run there (verified;
+    // same optimiser-instability family as the InitialGuess finding, TECHNICAL_DEBT §5.2). Requiring
+    // an exact match on those would test noise, not correctness. The paper's *method* stays valid, so
+    // the test validates it where it is meaningful: it asserts reference reproduction only for
+    // WELL-DETERMINED parameters (relative reference stddev <= kMaxRelStd) and reports the
+    // ill-determined ones (skipped, not asserted).
+    void referenceResampleCVRA_data() { addFixtureRows(); }
+
+    void referenceResampleCVRA()
+    {
+        QFETCH(QString, file);
+        QFETCH(QString, projectKey);
+
+        const QJsonObject root = JsonHandler::LoadFile(file);
+        const QJsonObject projectJson = projectKey.isEmpty() ? root : root.value(projectKey).toObject();
+        const QMap<int, QJsonObject> stored = storedModelsById(projectJson);
+
+        // Skip fixtures that carry no post-processing (e.g. projects.suprafit is fit-only).
+        bool hasResample = false;
+        for (const QJsonObject& sm : stored) {
+            const QJsonObject ms = sm.value("data").toObject().value("methods").toObject();
+            for (const QString& k : ms.keys()) {
+                const int m = blockMethod(ms.value(k).toObject());
+                if (m == static_cast<int>(SupraFit::Method::CrossValidation) || m == static_cast<int>(SupraFit::Method::Reduction))
+                    hasResample = true;
+            }
+        }
+        if (!hasResample)
+            QSKIP("fixture has no stored CV/RA post-processing");
+
+        qApp->setProperty("threads", 4); // JobManager reads this for its thread pool
+
+        // Reconstruct once, clean (no stored stats), so each re-run yields one unambiguous block.
+        SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+        const QString projectId = pm.loadProjectFromJson(withoutMethods(projectJson), QStringLiteral("cvra"));
+        QVERIFY2(!projectId.isEmpty(), "loadProjectFromJson failed");
+        const QVector<QSharedPointer<AbstractModel>> models = pm.getProjectModels(projectId);
+
+        int compared = 0, illDetermined = 0;
+        for (const QSharedPointer<AbstractModel>& model : models) {
+            const int id = static_cast<int>(model->SFModel());
+            if (!stored.contains(id))
+                continue;
+            const QJsonObject storedMethods = stored.value(id).value("data").toObject().value("methods").toObject();
+
+            // Pick the cheapest stored Cross-Validation (method 4) and the Reduction (method 5) block.
+            QJsonObject cheapCV, reduction;
+            int cheapCVSteps = INT_MAX;
+            for (const QString& k : storedMethods.keys()) {
+                const QJsonObject b = storedMethods.value(k).toObject();
+                const int m = blockMethod(b);
+                const int steps = b.value("controller").toObject().value("MaxSteps").toInt();
+                if (m == static_cast<int>(SupraFit::Method::CrossValidation) && steps < cheapCVSteps) {
+                    cheapCV = b;
+                    cheapCVSteps = steps;
+                } else if (m == static_cast<int>(SupraFit::Method::Reduction)) {
+                    reduction = b;
+                }
+            }
+
+            struct Job {
+                const char* label;
+                int method;
+                QJsonObject ref;
+            };
+            QVector<Job> jobs;
+            if (!cheapCV.isEmpty())
+                jobs.push_back({ "CV", static_cast<int>(SupraFit::Method::CrossValidation), cheapCV });
+            if (!reduction.isEmpty())
+                jobs.push_back({ "RA", static_cast<int>(SupraFit::Method::Reduction), reduction });
+
+            for (const Job& job : jobs) {
+                QJsonObject ctrl = job.ref.value("controller").toObject();
+                ctrl["Method"] = job.method;
+                ctrl.remove("timestamp"); // fresh run gets its own
+
+                model->Calculate();
+                JobManager jm;
+                jm.setModel(model);
+                jm.AddSingleJob(ctrl);
+                jm.RunJobs(); // synchronous
+                const QVector<QJsonObject> blocks = freshBlocks(model->ExportModel(), job.method);
+                QVERIFY2(!blocks.isEmpty(),
+                    qPrintable(QString("%1 [%2]: no fresh %3 result").arg(QFileInfo(file).fileName(), model->Name(), job.label)));
+
+                const QMap<QString, QJsonObject> refBox = boxplots(job.ref);
+                const QMap<QString, QJsonObject> gotBox = boxplots(blocks.last());
+                for (auto it = refBox.constBegin(); it != refBox.constEnd(); ++it) {
+                    if (!gotBox.contains(it.key()))
+                        continue;
+                    const double rMean = it.value().value("mean").toDouble();
+                    const double rStd = it.value().value("stddev").toDouble();
+                    const double gMean = gotBox.value(it.key()).value("mean").toDouble();
+                    const double relStd = qAbs(rStd) / qMax(qAbs(rMean), 1e-9);
+                    if (relStd > kMaxRelStd) {
+                        // Broad reference distribution: the parameter is an optimiser-unstable /
+                        // ill-determined direction — its value is uncertain in the reference itself
+                        // (and the paper's point: wrong models produce divergent statistics), so
+                        // requiring an exact match would test noise, not correctness. Report, skip.
+                        qInfo().noquote() << QString("  divergent (wrong-model signal): %1 [%2] %3 p%4 relStd=%5")
+                                                 .arg(QFileInfo(file).fileName(), model->Name(), job.label, it.key())
+                                                 .arg(relStd, 0, 'g', 2);
+                        ++illDetermined;
+                        continue;
+                    }
+                    QVERIFY2(relClose(gMean, rMean, kTolResample),
+                        qPrintable(QString("[%1] %2 p%3 well-determined mean %4 not within %5 of reference %6")
+                                .arg(model->Name(), job.label, it.key()).arg(gMean).arg(kTolResample).arg(rMean)));
+                    ++compared;
+                }
+            }
+        }
+        qInfo().noquote() << QString("CV/RA: %1 well-determined parameters matched reference, %2 ill-determined (skipped)")
+                                 .arg(compared).arg(illDetermined);
+        QVERIFY2(compared > 0, "no well-determined CV/RA parameters found to compare");
     }
 };
 

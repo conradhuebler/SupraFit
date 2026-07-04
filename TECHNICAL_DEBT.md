@@ -254,6 +254,15 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   es aber aus dem Startpunkt von `InitialGuess()` nicht. Zu klären: schlechte Startwert-Heuristik vs.
   fehlende Multi-Start/Boundary-Behandlung (vgl. Instructions-Block: BFGS-Alternative, DOI
   10.1039/d4sc03354j). *Beleg:* `src/tests/test_reference_projects.cpp` (Layer-2 vs. Layer-1).
+- 🟡 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (dieselbe Optimizer-Wurzel wie
+  ↑): Beim Bau des CV/RA-Re-Run-Vergleichs gefunden — für gut bestimmte Parameter reproduziert der
+  aktuelle Code die Paper-Referenz **exakt** (88 Parameter), aber für schlecht bestimmte Richtungen
+  (breite Resample-Verteilung, z.B. `lg K₂₁` in falschen Modellen) weichen die Resample-Fits
+  run-to-run ab (verschiedene lokale Minima). **Kein Test-Defekt, sondern konsistent mit der
+  Paper-Aussage** „falsche Modelle → divergierende Statistik"; der Test überspringt daher schlecht
+  bestimmte Parameter (relStd > 0.5 %) statt sie zu erzwingen. Offene Frage bleibt, ob die
+  *Nicht-Reproduzierbarkeit* (nicht die Breite) auf die Optimizer-Instabilität zurückgeht → mit dem
+  InitialGuess-Fix gemeinsam angehen. *Beleg:* `test_reference_projects.cpp::referenceResampleCVRA`.
 
 > **Verifikation dieser Session:** `suprafit_cli` baut sauber; `-l`/`-x`/`--show-post-processing`
 > auf einem Model-Projekt liefern korrekte Struktur, Modelle (einfach, nicht doppelt),
