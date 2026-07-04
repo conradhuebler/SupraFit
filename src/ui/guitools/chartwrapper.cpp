@@ -267,6 +267,19 @@ void ChartWrapper::InitaliseSeries()
 
             m_stored_series << series;
 
+            // Claude Generated: Unified visibility wiring. LineSeries/ScatterSeries no
+            // longer call setVisible() from showLine(); they emit visibilityChangeRequested
+            // and the wrapper is the single authority that applies the change (keeps the
+            // wrapper's visibility state consistent). Without this, a checkbox bound to
+            // showLine() would be a no-op. Index j matches this series in m_stored_series.
+            if (auto* lineSeries = qobject_cast<LineSeries*>(series.data())) {
+                connect(lineSeries, &LineSeries::visibilityChangeRequested,
+                    this, [this, j](bool visible) { setSeriesVisible(j, visible); });
+            } else if (auto* scatterSeries = qobject_cast<ScatterSeries*>(series.data())) {
+                connect(scatterSeries, &ScatterSeries::visibilityChangeRequested,
+                    this, [this, j](bool visible) { setSeriesVisible(j, visible); });
+            }
+
 #ifdef DEBUG_ON
             qDebug() << "✅ NEW ChartWrapper: Created series" << j
                      << "type:" << series->metaObject()->className()
