@@ -238,6 +238,8 @@ set(core_SRC
     src/core/jsonhandler.cpp
     src/core/filehandler.cpp
     src/core/toolset.cpp
+    src/core/toolset_io.cpp
+    src/core/toolset_print.cpp
     src/core/thermogramhandler.cpp
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp

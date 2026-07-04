@@ -242,8 +242,12 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   Formatierung (`Compare*`/`AnalyseReductionAnalysis`/`FormatStatisticsString`) in getrennte TUs
   (`analyse.cpp` 1124 + `analyse_format.cpp` 838); Fassade `analyse.h` + `namespace StatisticTool`
   unverändert, verbatim-Move (Golden-`-x`-Diff inhaltlich identisch).
-  ⬜ **`toolset.cpp`** (1407): 5-Domänen-Grab-Bag. **`bc50.h`** (879): 45 `inline` + 17 `std::cout` —
-  gleiche fassaden-erhaltende TU-Split-Technik anwenden.
+  ✅ **`toolset.cpp`-Split (2026)**: File-I/O (`Load*File`/`ExportResults`/`FindFile`) → `toolset_io.cpp`,
+  `Print`-Namespace (`Html2Tex`/`TextFrom*`/`printDouble`/`printConcentration`) → `toolset_print.cpp`;
+  `toolset.cpp` 1407→827 (Konvertierung/Math/Statistik/Thermo). Fassade `toolset.h` + Namespaces
+  unverändert (68 Includer unberührt); **Referenz-Test grün** (Wissenschaft unverändert). ⬜ Optional
+  weiter: Statistik-Cluster (`BoxWhiskerPlot`/`Entropy`/`Confidence`) als eigene TU.
+  ✅ **`bc50.h`** de-inlined (`bc50.cpp`, s. §0).
 - ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
   152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.
 - 🔴 **`InitialGuess()` konvergiert nicht (von Grund auf)**: Beim Aufbau von `test_reference_projects`
