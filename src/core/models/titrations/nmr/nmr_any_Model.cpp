@@ -376,10 +376,7 @@ QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<nmr_any_Model>(new nmr_any_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

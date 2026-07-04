@@ -99,10 +99,7 @@ void EvapMonoModel::CalculateVariables()
 QSharedPointer<AbstractModel> EvapMonoModel::Clone(bool statistics)
 {
     QSharedPointer<EvapMonoModel> model = QSharedPointer<EvapMonoModel>(new EvapMonoModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }

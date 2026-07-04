@@ -656,10 +656,7 @@ QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
 {
     QSharedPointer<ScriptModel> model = QSharedPointer<ScriptModel>(new ScriptModel(this), &QObject::deleteLater);
     // model.data()->DefineModel(GenerateModelDefinition());
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

@@ -116,10 +116,7 @@ void TIANModel::CalculateVariables()
 QSharedPointer<AbstractModel> TIANModel::Clone(bool statistics)
 {
     QSharedPointer<TIANModel> model = QSharedPointer<TIANModel>(new TIANModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }

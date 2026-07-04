@@ -194,10 +194,7 @@ void nmr_IItoI_ItoI_Model::OptimizeParameters_Private()
 QSharedPointer<AbstractModel> nmr_IItoI_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<nmr_IItoI_ItoI_Model> model = QSharedPointer<nmr_IItoI_ItoI_Model>(new nmr_IItoI_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

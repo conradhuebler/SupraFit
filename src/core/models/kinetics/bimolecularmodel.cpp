@@ -113,10 +113,7 @@ void BiMolecularModel::CalculateVariables()
 QSharedPointer<AbstractModel> BiMolecularModel::Clone(bool statistics)
 {
     QSharedPointer<BiMolecularModel> model = QSharedPointer<BiMolecularModel>(new BiMolecularModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }

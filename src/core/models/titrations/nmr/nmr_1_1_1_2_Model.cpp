@@ -194,10 +194,7 @@ QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> nmr_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<nmr_ItoI_ItoII_Model> model = QSharedPointer<nmr_ItoI_ItoII_Model>(new nmr_ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

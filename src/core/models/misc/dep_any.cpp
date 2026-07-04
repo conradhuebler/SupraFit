@@ -75,10 +75,7 @@ void Dep_Any::CalculateVariables()
 QSharedPointer<AbstractModel> Dep_Any::Clone(bool statistics)
 {
     QSharedPointer<Dep_Any> model = QSharedPointer<Dep_Any>(new Dep_Any(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

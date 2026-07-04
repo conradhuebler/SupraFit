@@ -855,6 +855,12 @@ private:
     QList<double> m_results_list, m_absolute_errors_list, m_squared_errors_list;
 
 protected:
+    /*! \brief Copy this model's state (data+parameters, active signals, locked parameters,
+     * optimizer config) into a freshly constructed \a clone. The shared tail of every model's
+     * Clone() (Claude Generated 2026, R4); subclasses only construct the concrete instance and
+     * append any model-specific step (e.g. setConcentrations, UpdateParameter). */
+    void finishClone(const QSharedPointer<AbstractModel>& clone, bool statistics);
+
     /*
      * This function handles the optimization flags, which get passed by
      * @param OptimizationType type

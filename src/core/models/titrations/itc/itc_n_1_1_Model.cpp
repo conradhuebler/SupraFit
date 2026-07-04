@@ -125,10 +125,7 @@ void itc_n_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel> itc_n_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_n_ItoI_Model>(new itc_n_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->setConcentrations(ConcentrationTable());
     return std::move(model);
 }

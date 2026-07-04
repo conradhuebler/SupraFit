@@ -89,10 +89,7 @@ void Indep_Quadrat::CalculateVariables()
 QSharedPointer<AbstractModel> Indep_Quadrat::Clone(bool statistics)
 {
     QSharedPointer<Indep_Quadrat> model = QSharedPointer<Indep_Quadrat>(new Indep_Quadrat(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

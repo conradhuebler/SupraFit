@@ -291,10 +291,7 @@ QVector<qreal> fl_IItoI_ItoI_ItoII_Model::DeCompose(int datapoint, int series) c
 QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<fl_IItoI_ItoI_ItoII_Model> model = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

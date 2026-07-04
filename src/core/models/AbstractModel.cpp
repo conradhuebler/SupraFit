@@ -791,6 +791,14 @@ bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
     return m_stats.remove(type, index);
 }
 
+void AbstractModel::finishClone(const QSharedPointer<AbstractModel>& clone, bool statistics)
+{
+    clone->ImportModel(ExportModel(statistics));
+    clone->setActiveSignals(ActiveSignals());
+    clone->setLockedParameter(LockedParameters());
+    clone->setOptimizerConfig(getOptimizerConfig());
+}
+
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)
 {
     const QString str = "Simplified Model Comparison";

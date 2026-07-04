@@ -99,10 +99,7 @@ void FlexMolecularModel::CalculateVariables()
 QSharedPointer<AbstractModel> FlexMolecularModel::Clone(bool statistics)
 {
     QSharedPointer<FlexMolecularModel> model = QSharedPointer<FlexMolecularModel>(new FlexMolecularModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }
