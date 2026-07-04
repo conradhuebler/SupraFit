@@ -30,6 +30,7 @@
 #include <QtCore/QtMath>
 
 #include "dataclass.h"
+#include "model_statistics_store.h"
 
 struct ModelOption {
     QStringList values;
@@ -342,17 +343,17 @@ public:
 
     int UpdateStatistic(const QJsonObject& object);
 
-    int getReductionStatisticResults() const { return m_reduction.size(); }
+    int getReductionStatisticResults() const { return m_stats.size(SupraFit::Method::Reduction); }
 
-    QJsonObject getFastConfidence() const { return m_fast_confidence; }
+    QJsonObject getFastConfidence() const { return m_stats.fastConfidence(); }
 
-    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
+    int getMoCoStatisticResult() const { return m_stats.size(SupraFit::Method::ModelComparison); }
 
-    int getWGStatisticResult() const { return m_wg_statistics.size(); }
+    int getWGStatisticResult() const { return m_stats.size(SupraFit::Method::WeakenedGridSearch); }
 
-    int getMCStatisticResult() const { return m_mc_statistics.size(); }
+    int getMCStatisticResult() const { return m_stats.size(SupraFit::Method::MonteCarlo); }
 
-    int getCVStatisticResult() const { return m_cv_statistics.size(); }
+    int getCVStatisticResult() const { return m_stats.size(SupraFit::Method::CrossValidation); }
 
     inline void setGlobalRandom(const QVector<QPair<qreal, qreal>>& random_global)
     {
@@ -726,11 +727,11 @@ public:
 
     inline void RemoveOption(int key) { private_d->m_model_options.remove(key); }
 
-    inline void addSearchResult(const QJsonObject& search) { m_search_results << search; }
+    inline void addSearchResult(const QJsonObject& search) { m_stats.append(SupraFit::Method::GlobalSearch, search); }
 
-    inline int SearchSize() const { return m_search_results.size(); }
+    inline int SearchSize() const { return m_stats.size(SupraFit::Method::GlobalSearch); }
 
-    inline QJsonObject Search(int i) { return m_search_results[i]; }
+    inline QJsonObject Search(int i) { return m_stats.get(SupraFit::Method::GlobalSearch, i); }
 
     QString RandomInput(double indep, double dep) const;
 
@@ -900,22 +901,7 @@ protected:
     QVector<qreal> m_parameter, m_variance_series, m_mean_series;
     QVector<int> m_used_series;
 
-    QList<QJsonObject> m_mc_statistics;
-    QList<QJsonObject> m_cv_statistics;
-    QList<QJsonObject> m_wg_statistics;
-    QList<QJsonObject> m_moco_statistics;
-    QList<QJsonObject> m_search_results;
-    QList<QJsonObject> m_reduction;
-
-    QJsonObject m_fast_confidence;
-
-    // Statistics-store helpers (Claude Generated 2026): collapse the per-method switch duplication
-    // in UpdateStatistic / getStatistic / RemoveStatistic. statisticList maps a method to its backing
-    // list (FastConfidence has none — it is a single object handled separately); upsertByTimestamp is
-    // the shared timestamp-deduplicated update-or-append used by MC/CV/WGS/MoCo/GlobalSearch.
-    QList<QJsonObject>& statisticList(SupraFit::Method method);
-    const QList<QJsonObject>& statisticList(SupraFit::Method method) const;
-    int upsertByTimestamp(QList<QJsonObject>& list, const QJsonObject& object);
+    ModelStatisticsStore m_stats; // post-processing results store (Claude Generated 2026, R2)
 
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
     int m_used_variables;

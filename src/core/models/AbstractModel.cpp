@@ -770,128 +770,25 @@ void AbstractModel::addLocalParameter(int i)
     private_d->m_enabled_local[i] = 1;
 }
 
-QList<QJsonObject>& AbstractModel::statisticList(SupraFit::Method method)
-{
-    switch (method) {
-    case SupraFit::Method::MonteCarlo:
-        return m_mc_statistics;
-    case SupraFit::Method::CrossValidation:
-        return m_cv_statistics;
-    case SupraFit::Method::WeakenedGridSearch:
-        return m_wg_statistics;
-    case SupraFit::Method::ModelComparison:
-        return m_moco_statistics;
-    case SupraFit::Method::GlobalSearch:
-        return m_search_results;
-    case SupraFit::Method::Reduction:
-        return m_reduction;
-    default:
-        break;
-    }
-    static QList<QJsonObject> none; // FastConfidence / unknown methods have no backing list
-    return none;
-}
-
-const QList<QJsonObject>& AbstractModel::statisticList(SupraFit::Method method) const
-{
-    return const_cast<AbstractModel*>(this)->statisticList(method);
-}
-
-int AbstractModel::upsertByTimestamp(QList<QJsonObject>& list, const QJsonObject& object)
-{
-    // Timestamp-based deduplication: update the entry with a matching timestamp, else append.
-    // Prevents duplication when re-opening an analysis / adjusting confidence intervals.
-    QJsonObject updatedObject = object;
-    QJsonObject updatedController = object["controller"].toObject();
-    const double timestamp = updatedController["timestamp"].toDouble();
-
-    for (int i = 0; i < list.size(); ++i) {
-        const double existing = list[i]["controller"].toObject()["timestamp"].toDouble();
-        if (qAbs(timestamp - existing) < 0.001) {
-            updatedController["run_index"] = i;
-            updatedObject["controller"] = updatedController;
-            list[i] = updatedObject;
-            return i;
-        }
-    }
-    updatedController["run_index"] = list.size();
-    updatedObject["controller"] = updatedController;
-    list << updatedObject;
-    return list.size() - 1;
-}
-
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
-    int index = 0;
-    const QJsonObject controller = object["controller"].toObject();
-    const int method = AccessCI(controller, "Method").toInt();
-
-    switch (method) {
-    case SupraFit::Method::FastConfidence: {
-        QJsonObject updatedObject = object;
-        QJsonObject updatedController = controller;
-        updatedController["run_index"] = 0;
-        updatedObject["controller"] = updatedController;
-        m_fast_confidence = updatedObject;
-        ParseFastConfidence(updatedObject); // CRITICAL: Must parse FastConfidence data
-        index = 0;
-        break;
-    }
-    case SupraFit::Method::Reduction: {
-        // Special: replace the entry whose ReductionRuntype matches, otherwise append.
-        QJsonObject updatedObject = object;
-        QJsonObject updatedController = controller;
-        int match = 0;
-        for (int i = 0; i < m_reduction.size(); ++i) {
-            if (m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt() == updatedController["ReductionRuntype"].toInt()) {
-                m_reduction[i] = updatedObject;
-                index = i;
-                match++;
-            }
-        }
-        if (match == 0) {
-            updatedController["run_index"] = m_reduction.size();
-            updatedObject["controller"] = updatedController;
-            m_reduction << updatedObject;
-            index = m_reduction.size() - 1;
-        }
-        break;
-    }
-    case SupraFit::Method::WeakenedGridSearch:
-    case SupraFit::Method::ModelComparison:
-    case SupraFit::Method::GlobalSearch:
-    case SupraFit::Method::MonteCarlo:
-    case SupraFit::Method::CrossValidation:
-        index = upsertByTimestamp(statisticList(static_cast<SupraFit::Method>(method)), object);
-        break;
-    }
+    const int method = AccessCI(object["controller"].toObject(), "Method").toInt();
+    bool fastConfidenceStored = false;
+    const int index = m_stats.update(static_cast<SupraFit::Method>(method), object, fastConfidenceStored);
+    if (fastConfidenceStored)
+        ParseFastConfidence(m_stats.fastConfidence()); // CRITICAL: Must parse FastConfidence data
     emit StatisticChanged();
     return index;
 }
 
 QJsonObject AbstractModel::getStatistic(SupraFit::Method type, int index) const
 {
-    if (type == SupraFit::Method::FastConfidence)
-        return m_fast_confidence;
-    const QList<QJsonObject>& list = statisticList(type);
-    if (index < list.size())
-        return list[index];
-    return QJsonObject();
+    return m_stats.get(type, index);
 }
 
 bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 {
-    if (type == SupraFit::Method::FastConfidence) {
-        m_fast_confidence = QJsonObject();
-        return true;
-    }
-    QList<QJsonObject>& list = statisticList(type);
-    if (index < list.size()) {
-        list.takeAt(index);
-        return true;
-    }
-    // Reduction historically treats an out-of-range remove as a no-op success; the others fail.
-    return type == SupraFit::Method::Reduction;
+    return m_stats.remove(type, index);
 }
 
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)
@@ -991,7 +888,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         int counter = 0;
 
         // Save FastConfidence if present
-        QJsonValueRef ref = statisticObject[QString::number(counter)] = m_fast_confidence;
+        QJsonValueRef ref = statisticObject[QString::number(counter)] = m_stats.fastConfidence();
         if (ref.isUndefined()) {
             qWarning() << "Critical warning, statistic data are to large to be stored in file";
             emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %1 in model %2 from data %3. %4").arg(SupraFit::Method::FastConfidence).arg(Name()).arg(ProjectTitle()).arg(help));
@@ -1012,12 +909,12 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         };
 
         // Save all analysis types sequentially - multiple runs per type are appended naturally
-        SaveStatistic(statisticObject, m_mc_statistics);
-        SaveStatistic(statisticObject, m_cv_statistics);
-        SaveStatistic(statisticObject, m_moco_statistics);
-        SaveStatistic(statisticObject, m_wg_statistics);
-        SaveStatistic(statisticObject, m_search_results);
-        SaveStatistic(statisticObject, m_reduction);
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::MonteCarlo));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::CrossValidation));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::ModelComparison));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::WeakenedGridSearch));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::GlobalSearch));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::Reduction));
 
         json["methods"] = statisticObject;
     }
@@ -1176,19 +1073,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (override) {
         // Claude Generated FIX: Clear existing statistics before reload to prevent duplication
         // Similar fix to model duplication bug - prevents appending duplicate statistics on project reload
-        qDebug() << "🧹 DEBUG ImportModel: Clearing existing statistics before reload to prevent duplication";
-        qDebug() << "   MC stats before:" << m_mc_statistics.size() << "CV stats:" << m_cv_statistics.size()
-                 << "WGS stats:" << m_wg_statistics.size() << "MoCo stats:" << m_moco_statistics.size();
-
-        m_mc_statistics.clear();
-        m_cv_statistics.clear();
-        m_wg_statistics.clear();
-        m_moco_statistics.clear();
-        m_search_results.clear();
-        m_reduction.clear();
-        m_fast_confidence = QJsonObject();
-
-        qDebug() << "✅ DEBUG ImportModel: All statistics lists cleared successfully";
+        m_stats.clear();
 
         // Import statistics using established sequential format
         // Multiple runs are naturally supported via sequential numeric keys
@@ -1213,10 +1098,6 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
             UpdateStatistic(object);
         }
-
-        qDebug() << "✅ DEBUG ImportModel: Statistics loading complete - MC:" << m_mc_statistics.size()
-                 << "CV:" << m_cv_statistics.size() << "WGS:" << m_wg_statistics.size()
-                 << "MoCo:" << m_moco_statistics.size();
     }
     private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
 
@@ -1398,7 +1279,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             UpdateStatistic(statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject());
             UpdateStatistic(statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject());
             // m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
-            m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
+            m_stats.append(SupraFit::Method::WeakenedGridSearch, statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject());
         }
         if (fileversion < 1608) {
             UpdateStatistic(statisticObject[QString::number(SupraFit::Method::Reduction)].toObject());
@@ -1407,8 +1288,8 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
         UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
         //m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
 
-        if (!m_fast_confidence.isEmpty())
-            ParseFastConfidence(m_fast_confidence);
+        if (!m_stats.fastConfidence().isEmpty())
+            ParseFastConfidence(m_stats.fastConfidence());
 
         if (fileversion >= 1608) {
             for (const QString& str : qAsConst(keys)) {
@@ -1543,14 +1424,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
 
 void AbstractModel::clearStatistic()
 {
-    m_mc_statistics.clear();
-    m_cv_statistics.clear();
-    m_wg_statistics.clear();
-    m_moco_statistics.clear();
-    m_search_results.clear();
-    m_reduction.clear();
-
-    m_fast_confidence = QJsonObject();
+    m_stats.clear();
 }
 
 void AbstractModel::setOption(int index, const QString& value)
@@ -1600,11 +1474,7 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_active_signals = other.m_active_signals;
     private_d = other.private_d;
 
-    m_mc_statistics = other.m_mc_statistics;
-    m_wg_statistics = other.m_wg_statistics;
-    m_moco_statistics = other.m_moco_statistics;
-    m_reduction = other.m_reduction;
-    m_fast_confidence = other.m_fast_confidence;
+    m_stats.copyStatisticsFrom(other.m_stats);
 
     m_sum_absolute = other.m_sum_absolute;
     m_sum_squares = other.m_sum_squares;
@@ -1630,11 +1500,7 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_active_signals = other->m_active_signals;
     private_d = other->private_d;
 
-    m_mc_statistics = other->m_mc_statistics;
-    m_wg_statistics = other->m_wg_statistics;
-    m_moco_statistics = other->m_moco_statistics;
-    m_reduction = other->m_reduction;
-    m_fast_confidence = other->m_fast_confidence;
+    m_stats.copyStatisticsFrom(other->m_stats);
 
     m_sum_absolute = other->m_sum_absolute;
     m_sum_squares = other->m_sum_squares;

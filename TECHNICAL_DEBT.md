@@ -76,7 +76,7 @@ Teile von **C**, **D1** (Baseline) und **D3** (2 Klassen raus, −805 LOC). Deta
 |---|---|---|
 | `src/client/suprafit_cli.cpp` | 3.727 | größte Datei + höchste Marker-Dichte; Migrationsziel |
 | `src/ui/mainwindow/suprafitgui.cpp` | 2.553 | GUI-Controller/God-Object |
-| `src/core/models/AbstractModel.cpp` | 1.901 | Basis aller Modelle (R1: Statistik-Switch entdoppelt, −166 LOC) |
+| `src/core/models/AbstractModel.cpp` | 1.767 | Basis aller Modelle (R1+R2: Statistik-Store extrahiert, 2067→1767) |
 | `src/core/analyse.cpp` | 1.906 | gesamte Statistik-API (Compute + Formatierung gemischt) |
 | `src/core/toolset.cpp` | 1.407 | Grab-Bag-Utilities |
 | `src/core/projectmanager.cpp` | 1.133 | Migrations-Kern |
