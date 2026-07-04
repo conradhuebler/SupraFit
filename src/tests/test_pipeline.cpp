@@ -15,6 +15,7 @@
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QDebug>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QTime>
 
 #include "src/client/suprafit_cli.h"
