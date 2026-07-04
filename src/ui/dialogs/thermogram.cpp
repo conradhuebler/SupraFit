@@ -18,6 +18,7 @@
  */
 
 #include <charts.h>
+#include "src/core/models/titrations/AbstractItcModel.h" // AbstractItcModel enum (was transitive via models.h)
 
 #include <Eigen/Dense>
 

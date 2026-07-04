@@ -24,6 +24,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/models/titrations/AbstractItcModel.h" // AbstractItcModel enum (was transitive via models.h)
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
 

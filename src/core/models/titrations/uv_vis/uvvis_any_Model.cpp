@@ -18,6 +18,7 @@
  */
 
 #include <Eigen/SVD>
+#include "src/core/models/titrations/AbstractTitrationModel.h" // MaxA_Json/MaxB_Json (was transitive via models.h)
 
 #include "EqnConc_2.h"
 

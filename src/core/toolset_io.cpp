@@ -22,6 +22,7 @@
 // LoadXYFile, LoadITCFile); the namespace ToolSet and toolset.h facade are unchanged.
 
 #include <boxwhisker.h>
+#include "src/core/models/titrations/AbstractItcModel.h" // AbstractItcModel enum (was transitive via models.h)
 
 #include "jsonhandler.h"
 #include "libmath.h"

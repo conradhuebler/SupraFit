@@ -260,6 +260,9 @@ else()
 endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
+# core calls CreateModel() (defined in models) and models use core utilities — declare the cyclic
+# static-library dependency so CMake repeats the archives on every link line (Claude Generated, R5).
+target_link_libraries(core models)
 
 # Pre-compiled Headers for core library (Claude Generated)
 if(USE_PCH)
@@ -298,6 +301,7 @@ endif()
 set(models_SRC
     src/core/models/dataclass.cpp
     src/core/models/datatable.cpp
+    src/core/models/models.cpp
     src/core/models/AbstractModel.cpp
     src/core/models/titrations/AbstractItcModel.cpp
     src/core/models/titrations/AbstractTitrationModel.cpp
@@ -369,6 +373,7 @@ else()
 endif()
 
 target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES} Qt::Qml)
+target_link_libraries(models core) # cyclic with core (CreateModel) — see note at core
 
 # Pre-compiled Headers for models library (Claude Generated)
 if(USE_PCH)

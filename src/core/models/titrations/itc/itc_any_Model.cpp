@@ -20,6 +20,7 @@
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/models/titrations/AbstractItcModel.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h" // MaxA_Json/MaxB_Json (was transitive via models.h)
 
 #include "src/core/bc50.h"
 #include "src/core/concentrationalpolynomial.h"
