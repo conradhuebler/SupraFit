@@ -33,7 +33,8 @@ Umgesetzt (Commits auf dem Branch, noch **nicht** auf `master` gemerged):
 | `fde7efa0` | **D3**: `MlExport` extrahiert (ML-Trainingsdaten-Export) |
 | `ff816e5f` | **D4** (Struct): `ModelStatistics` in `core/model_statistics.h` konsolidiert (Duplikat weg) |
 | `505299d0` | **D1**: Baseline vermessen (11/26), Doku korrigiert; `test_projectmanager` Compile-Fixes |
-| _(dieser)_ | **D7**: `DEBUG_ON` an Compile-Definition gebunden · **D8**: 4 abgelöste Root-MDs entfernt |
+| `928fa1d8` | **D7**: `DEBUG_ON` an Compile-Definition gebunden · **D8**: 4 abgelöste Root-MDs entfernt |
+| _(uncommitted)_ | **God-Object-Split**: `core/analyse.cpp` → Compute-TU + `analyse_format.cpp` (Format-TU); Fassade `analyse.h` unverändert, verbatim-Move, Golden-`-x`-Diff identisch |
 
 Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, **D7** (DEBUG_ON), **D8** (Root-MDs),
 Teile von **C**, **D1** (Baseline) und **D3** (2 Klassen raus, −805 LOC). Details in §5.
@@ -234,9 +235,15 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
 - ⬜ **`AnalysisManager` halb-migriert** (nur `analyzeFile` verdrahtet, GUI nutzt ihn nicht,
   doppelte `extractModelStatistics`) → D4.
 - ⬜ **`AbstractModel : DataClass`**: LSP-Bruch; greift an 6 Stellen direkt in `d->`-Interna
-  (`AbstractModel.cpp:1408-1410,1696-1698`); geteilte UUID (keine eigene Model-UUID) → D5.
-- ⬜ **`analyse.cpp`** (1906): duale Legacy-String/JSON-API + HTML-Formatierung vermischt.
-  **`toolset.cpp`** (1407): 5-Domänen-Grab-Bag. **`bc50.h`** (879): 45 `inline` + 17 `std::cout`.
+  (`AbstractModel.cpp:1408-1410,1696-1698`); teilt `d` (COW) mit dem Eltern-DataClass. **Korrektur:**
+  Modelle haben inzwischen eine **eigene** `m_model_uuid` (`AbstractModel.cpp:78/121/159`); nur die
+  Projekt-UUID (`d->m_uuid`) ist geteilt (die „keine eigene Model-UUID"-Notiz war veraltet) → D5.
+- ✅ **`analyse.cpp`-Split (2026)**: Compute (JSON, `Calculate*Metrics`/`Extract*`) und String/HTML-
+  Formatierung (`Compare*`/`AnalyseReductionAnalysis`/`FormatStatisticsString`) in getrennte TUs
+  (`analyse.cpp` 1124 + `analyse_format.cpp` 838); Fassade `analyse.h` + `namespace StatisticTool`
+  unverändert, verbatim-Move (Golden-`-x`-Diff inhaltlich identisch).
+  ⬜ **`toolset.cpp`** (1407): 5-Domänen-Grab-Bag. **`bc50.h`** (879): 45 `inline` + 17 `std::cout` —
+  gleiche fassaden-erhaltende TU-Split-Technik anwenden.
 - ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
   152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.
 

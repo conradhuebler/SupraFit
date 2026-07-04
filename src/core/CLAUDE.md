@@ -23,7 +23,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
 
 ### Analysis Tools
-- **analyse.cpp/h**: **Complete JSON-based statistical analysis API (Claude Generated)**
+- **analyse.cpp / analyse_format.cpp / analyse.h**: **JSON-based statistical analysis API (Claude Generated)** — split (2026): `analyse.cpp` = JSON compute (`Calculate*Metrics`, `Extract*`), `analyse_format.cpp` = string/HTML formatting (`Compare*`, `AnalyseReductionAnalysis`, `FormatStatisticsString`); `analyse.h` is the shared facade declaring both.
   - **Core JSON methods**: `CalculateAICMetrics()`, `CalculateMCMetrics()`, `CalculateCVMetrics()`, `CalculateReductionMetrics()`
   - **Extended JSON methods**: `CalculateWGSMetrics()`, `CalculateModelComparisonMetrics()`, `CalculateFastConfidenceMetrics()`, `CalculateGlobalSearchMetrics()`
   - **ML feature extraction**: `ExtractModelMLFeatures()` for standardized training data
