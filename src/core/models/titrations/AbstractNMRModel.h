@@ -162,7 +162,7 @@ protected:
     qreal InitialHostConcentration(int i) const;
     qreal InitialGuestConcentration(int i) const;
 
-    double m_T;
+    double m_T = 298; // K — default so getT() is never uninitialised (system parameter overrides)
 
     qreal GuessK(int index = 0);
 

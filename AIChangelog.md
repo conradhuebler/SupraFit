@@ -2,6 +2,8 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-04: Fixed uninitialised `getT()` for NMR/Titration models — `Abstract{NMR,Titration}Model::m_T` had no ctor default (only set by the system-parameter update), so the thermodynamic report header printed build-dependent garbage temperatures (e.g. 8e-144 K). Added `double m_T = 298;` default member initializers. Found via the R4 golden diff; reference test green.
+
 - 2026-07-04: R5 — moved the model factory out of the inline `models.h` (which dragged all ~36 model headers into every one of its 53 includers) into a new `models.cpp`, and replaced the 36-arm CreateModel switch with a central factory registry (QHash of constructor lambdas; try/catch(-2) guard kept). models.h shrank 205→36 lines; declared the cyclic core↔models static-lib dependency in CMake; fixed the handful of TUs that had relied on the transitive model-header includes. Behaviour-preserving (reference test green).
 
 - 2026-07-04: R4b — de-boilerplated the 35 per-model AnalyseMonteCarlo/AnalyseGridSearch overrides (compute base analysis, then prepend the BC50 line when forceAll) into one `AbstractModel::prependBC50` helper; each override is now a one-liner. Behaviour-preserving (golden diff of the AnalyseStatistic HTML: BC50 lines byte-identical).
