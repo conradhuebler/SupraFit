@@ -258,6 +258,13 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   es aber aus dem Startpunkt von `InitialGuess()` nicht. Zu klären: schlechte Startwert-Heuristik vs.
   fehlende Multi-Start/Boundary-Behandlung (vgl. Instructions-Block: BFGS-Alternative, DOI
   10.1039/d4sc03354j). *Beleg:* `src/tests/test_reference_projects.cpp` (Layer-2 vs. Layer-1).
+- 🟡 **`getT()` uninitialisiert für NMR/Nicht-Thermo-Modelle**: Beim R4-Golden-Diff gefunden — der
+  Thermo-Output-Header in `Abstract{NMR,Titration,Itc}Model::AnalyseMonteCarlo` druckt „T = %1 K" mit
+  physikalisch unmöglichen Werten (z.B. `4.86e-33`, `8.37e-144` K), die **zwischen Builds** wechseln
+  (uninitialisierter Speicher; T ist für NMR bedeutungslos, wird aber trotzdem ausgegeben). Innerhalb
+  eines Binaries deterministisch. Kein Test-Defekt, aber Ausgabe-Garbage → T initialisieren oder den
+  Thermo-Header nur für Modelle mit echter Temperatur drucken. *Beleg:* R4-Golden-Diff (BC50-Zeilen
+  identisch, nur T/ΔG divergent).
 - 🟡 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (dieselbe Optimizer-Wurzel wie
   ↑): Beim Bau des CV/RA-Re-Run-Vergleichs gefunden — für gut bestimmte Parameter reproduziert der
   aktuelle Code die Paper-Referenz **exakt** (88 Parameter), aber für schlecht bestimmte Richtungen

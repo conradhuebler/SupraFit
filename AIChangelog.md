@@ -2,6 +2,9 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-04: R4b — de-boilerplated the 35 per-model AnalyseMonteCarlo/AnalyseGridSearch overrides (compute base analysis, then prepend the BC50 line when forceAll) into one `AbstractModel::prependBC50` helper; each override is now a one-liner. Behaviour-preserving (golden diff of the AnalyseStatistic HTML: BC50 lines byte-identical).
+- 2026-07-04: R4a — extracted the shared Clone() tail (ImportModel/setActiveSignals/setLockedParameter/setOptimizerConfig) into `AbstractModel::finishClone`; 35 model Clone() bodies simplified, model-specific steps kept.
+
 - 2026-07-04: R2 — extracted a `ModelStatisticsStore` (new `model_statistics_store.h`) owning the six per-method result lists + FastConfidence, with update/get/remove/clear/size/list/append/copy; `AbstractModel` now holds one `m_stats` member and forwards (UpdateStatistic/getStatistic/RemoveStatistic/ExportModel/ImportModel/clearStatistic/operator= all route through it). AbstractModel.cpp 1901→1767; faithful port incl. Reduction quirk + selective copy subset; behaviour-preserving (reference test green).
 
 - 2026-07-04: R3 — routed the 4 `InitialGuest/HostConcentration` accessors in `AbstractNMRModel`/`AbstractTitrationModel` through the public `IndependentModel()` instead of reaching into `d->m_independent_model`; dropped the stale `#pragma message` markers (behaviour-identical, reference test green).

@@ -428,26 +428,12 @@ QString nmr_any_Model::ParameterComment(int parameter) const
 
 QString nmr_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractNMRModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
 }
 
 QString nmr_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractNMRModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "nmr_any_Model.moc"

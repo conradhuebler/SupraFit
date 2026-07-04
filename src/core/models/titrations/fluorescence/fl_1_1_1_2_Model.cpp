@@ -269,26 +269,12 @@ QString fl_ItoI_ItoII_Model::AdditionalOutput() const
 
 QString fl_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 QString fl_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 #include "fl_1_1_1_2_Model.moc"

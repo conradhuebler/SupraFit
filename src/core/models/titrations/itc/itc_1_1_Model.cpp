@@ -210,26 +210,12 @@ QString itc_ItoI_Model::ParameterComment(int parameter) const
 
 QString itc_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractItcModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
 }
 
 QString itc_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractItcModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    return prependBC50(AbstractItcModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "itc_1_1_Model.moc"

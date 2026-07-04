@@ -259,26 +259,12 @@ QString uv_vis_ItoI_ItoII_Model::AdditionalOutput() const
 
 QString uv_vis_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 QString uv_vis_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 #include "uv_vis_1_1_1_2_Model.moc"

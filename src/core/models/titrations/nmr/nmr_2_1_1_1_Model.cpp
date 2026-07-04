@@ -266,25 +266,11 @@ QString nmr_IItoI_ItoI_Model::AdditionalOutput() const
 
 QString nmr_IItoI_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractNMRModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 QString nmr_IItoI_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
-    QString result = AbstractNMRModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
 }
 #include "nmr_2_1_1_1_Model.moc"

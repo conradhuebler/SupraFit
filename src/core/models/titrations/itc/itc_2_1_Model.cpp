@@ -287,13 +287,7 @@ QString itc_IItoI_Model::ParameterComment(int parameter) const
 
 QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-    QString result = AbstractItcModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
 }
 
 QString itc_IItoI_Model::ModelInfo() const

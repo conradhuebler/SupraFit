@@ -861,6 +861,15 @@ protected:
      * append any model-specific step (e.g. setConcentrations, UpdateParameter). */
     void finishClone(const QSharedPointer<AbstractModel>& clone, bool statistics);
 
+    /*! \brief Prepend the model-specific BC50 line to a post-processing report when detailed output
+     * is requested (Claude Generated 2026, R4). Behaviour-preserving factoring of the repeated
+     * per-model AnalyseMonteCarlo/AnalyseGridSearch tail (compute base analysis, then if forceAll
+     * prepend the BC50 string). */
+    QString prependBC50(const QString& analysis, bool forceAll, const QString& bc50) const
+    {
+        return forceAll ? bc50 + analysis : analysis;
+    }
+
     /*
      * This function handles the optimization flags, which get passed by
      * @param OptimizationType type
