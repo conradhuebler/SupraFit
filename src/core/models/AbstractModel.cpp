@@ -770,201 +770,99 @@ void AbstractModel::addLocalParameter(int i)
     private_d->m_enabled_local[i] = 1;
 }
 
+QList<QJsonObject>& AbstractModel::statisticList(SupraFit::Method method)
+{
+    switch (method) {
+    case SupraFit::Method::MonteCarlo:
+        return m_mc_statistics;
+    case SupraFit::Method::CrossValidation:
+        return m_cv_statistics;
+    case SupraFit::Method::WeakenedGridSearch:
+        return m_wg_statistics;
+    case SupraFit::Method::ModelComparison:
+        return m_moco_statistics;
+    case SupraFit::Method::GlobalSearch:
+        return m_search_results;
+    case SupraFit::Method::Reduction:
+        return m_reduction;
+    default:
+        break;
+    }
+    static QList<QJsonObject> none; // FastConfidence / unknown methods have no backing list
+    return none;
+}
+
+const QList<QJsonObject>& AbstractModel::statisticList(SupraFit::Method method) const
+{
+    return const_cast<AbstractModel*>(this)->statisticList(method);
+}
+
+int AbstractModel::upsertByTimestamp(QList<QJsonObject>& list, const QJsonObject& object)
+{
+    // Timestamp-based deduplication: update the entry with a matching timestamp, else append.
+    // Prevents duplication when re-opening an analysis / adjusting confidence intervals.
+    QJsonObject updatedObject = object;
+    QJsonObject updatedController = object["controller"].toObject();
+    const double timestamp = updatedController["timestamp"].toDouble();
+
+    for (int i = 0; i < list.size(); ++i) {
+        const double existing = list[i]["controller"].toObject()["timestamp"].toDouble();
+        if (qAbs(timestamp - existing) < 0.001) {
+            updatedController["run_index"] = i;
+            updatedObject["controller"] = updatedController;
+            list[i] = updatedObject;
+            return i;
+        }
+    }
+    updatedController["run_index"] = list.size();
+    updatedObject["controller"] = updatedController;
+    list << updatedObject;
+    return list.size() - 1;
+}
+
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
     int index = 0;
-    QJsonObject controller = object["controller"].toObject();
+    const QJsonObject controller = object["controller"].toObject();
+    const int method = AccessCI(controller, "Method").toInt();
 
-    // Add run_index to controller if not present
-    QJsonObject updatedObject = object;
-    QJsonObject updatedController = controller;
-
-    switch (AccessCI(controller, "Method").toInt()) {
-    case SupraFit::Method::WeakenedGridSearch:
-        // Claude Generated FIX: Timestamp-based deduplication to prevent duplication when opening analysis
-        {
-            double timestamp = updatedController["timestamp"].toDouble();
-            int existingIndex = -1;
-
-            for (int i = 0; i < m_wg_statistics.size(); ++i) {
-                double existing = m_wg_statistics[i]["controller"].toObject()["timestamp"].toDouble();
-                if (qAbs(timestamp - existing) < 0.001) {
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0) {
-                // UPDATE existing entry instead of creating duplicate
-                updatedController["run_index"] = existingIndex;
-                updatedObject["controller"] = updatedController;
-                m_wg_statistics[existingIndex] = updatedObject;
-                index = existingIndex;
-                qDebug() << "📊 DEBUG UpdateStatistic: WGS - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
-            } else {
-                // ADD new entry
-                updatedController["run_index"] = m_wg_statistics.size();
-                updatedObject["controller"] = updatedController;
-                m_wg_statistics << updatedObject;
-                index = m_wg_statistics.size() - 1;
-                qDebug() << "📊 DEBUG UpdateStatistic: WGS - Added new statistic at index" << index << "timestamp" << timestamp;
-            }
-        }
-        break;
-
-    case SupraFit::Method::ModelComparison:
-        // Claude Generated FIX: Timestamp-based deduplication
-        {
-            double timestamp = updatedController["timestamp"].toDouble();
-            int existingIndex = -1;
-
-            for (int i = 0; i < m_moco_statistics.size(); ++i) {
-                double existing = m_moco_statistics[i]["controller"].toObject()["timestamp"].toDouble();
-                if (qAbs(timestamp - existing) < 0.001) {
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0) {
-                updatedController["run_index"] = existingIndex;
-                updatedObject["controller"] = updatedController;
-                m_moco_statistics[existingIndex] = updatedObject;
-                index = existingIndex;
-                qDebug() << "📊 DEBUG UpdateStatistic: MoCo - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
-            } else {
-                updatedController["run_index"] = m_moco_statistics.size();
-                updatedObject["controller"] = updatedController;
-                m_moco_statistics << updatedObject;
-                index = m_moco_statistics.size() - 1;
-                qDebug() << "📊 DEBUG UpdateStatistic: MoCo - Added new statistic at index" << index << "timestamp" << timestamp;
-            }
-        }
-        break;
-
-    case SupraFit::Method::FastConfidence:
+    switch (method) {
+    case SupraFit::Method::FastConfidence: {
+        QJsonObject updatedObject = object;
+        QJsonObject updatedController = controller;
         updatedController["run_index"] = 0;
         updatedObject["controller"] = updatedController;
         m_fast_confidence = updatedObject;
-        ParseFastConfidence(updatedObject);  // CRITICAL: Must parse FastConfidence data
+        ParseFastConfidence(updatedObject); // CRITICAL: Must parse FastConfidence data
         index = 0;
-        qDebug() << "📊 DEBUG UpdateStatistic: FastConfidence - Updated (single object)";
         break;
-
-    case SupraFit::Method::Reduction:
-        // Reduction has special logic: replace if ReductionRuntype matches, otherwise append
-        {
-            int match = 0;
-            for (int i = 0; i < m_reduction.size(); ++i) {
-                int RunType = m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt();
-                int newRunType = updatedController["ReductionRuntype"].toInt();
-                if (RunType == newRunType) {
-                    m_reduction[i] = updatedObject;
-                    index = i;
-                    match++;
-                }
-            }
-            if (match == 0) {
-                updatedController["run_index"] = m_reduction.size();
-                updatedObject["controller"] = updatedController;
-                m_reduction << updatedObject;
-                index = m_reduction.size() - 1;
+    }
+    case SupraFit::Method::Reduction: {
+        // Special: replace the entry whose ReductionRuntype matches, otherwise append.
+        QJsonObject updatedObject = object;
+        QJsonObject updatedController = controller;
+        int match = 0;
+        for (int i = 0; i < m_reduction.size(); ++i) {
+            if (m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt() == updatedController["ReductionRuntype"].toInt()) {
+                m_reduction[i] = updatedObject;
+                index = i;
+                match++;
             }
         }
+        if (match == 0) {
+            updatedController["run_index"] = m_reduction.size();
+            updatedObject["controller"] = updatedController;
+            m_reduction << updatedObject;
+            index = m_reduction.size() - 1;
+        }
         break;
-
+    }
+    case SupraFit::Method::WeakenedGridSearch:
+    case SupraFit::Method::ModelComparison:
     case SupraFit::Method::GlobalSearch:
-        // Claude Generated FIX: Timestamp-based deduplication
-        {
-            double timestamp = updatedController["timestamp"].toDouble();
-            int existingIndex = -1;
-
-            for (int i = 0; i < m_search_results.size(); ++i) {
-                double existing = m_search_results[i]["controller"].toObject()["timestamp"].toDouble();
-                if (qAbs(timestamp - existing) < 0.001) {
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0) {
-                updatedController["run_index"] = existingIndex;
-                updatedObject["controller"] = updatedController;
-                m_search_results[existingIndex] = updatedObject;
-                index = existingIndex;
-                qDebug() << "📊 DEBUG UpdateStatistic: GlobalSearch - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
-            } else {
-                updatedController["run_index"] = m_search_results.size();
-                updatedObject["controller"] = updatedController;
-                m_search_results << updatedObject;
-                index = m_search_results.size() - 1;
-                qDebug() << "📊 DEBUG UpdateStatistic: GlobalSearch - Added new statistic at index" << index << "timestamp" << timestamp;
-            }
-        }
-        break;
-
     case SupraFit::Method::MonteCarlo:
-        // Claude Generated FIX: Timestamp-based deduplication to prevent duplication when opening analysis
-        {
-            double timestamp = updatedController["timestamp"].toDouble();
-            int existingIndex = -1;
-
-            // Check if statistic with this timestamp already exists
-            for (int i = 0; i < m_mc_statistics.size(); ++i) {
-                double existing = m_mc_statistics[i]["controller"].toObject()["timestamp"].toDouble();
-                if (qAbs(timestamp - existing) < 0.001) {  // Floating point comparison with tolerance
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0) {
-                // UPDATE existing entry instead of creating duplicate
-                // This prevents duplication when opening analysis and adjusting confidence intervals
-                updatedController["run_index"] = existingIndex;
-                updatedObject["controller"] = updatedController;
-                m_mc_statistics[existingIndex] = updatedObject;
-                index = existingIndex;
-                qDebug() << "📊 DEBUG UpdateStatistic: MonteCarlo - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
-            } else {
-                // ADD new entry when genuinely new analysis
-                updatedController["run_index"] = m_mc_statistics.size();
-                updatedObject["controller"] = updatedController;
-                m_mc_statistics << updatedObject;
-                index = m_mc_statistics.size() - 1;
-                qDebug() << "📊 DEBUG UpdateStatistic: MonteCarlo - Added new statistic at index" << index << "timestamp" << timestamp;
-            }
-        }
-        break;
-
     case SupraFit::Method::CrossValidation:
-        // Claude Generated FIX: Timestamp-based deduplication
-        {
-            double timestamp = updatedController["timestamp"].toDouble();
-            int existingIndex = -1;
-
-            for (int i = 0; i < m_cv_statistics.size(); ++i) {
-                double existing = m_cv_statistics[i]["controller"].toObject()["timestamp"].toDouble();
-                if (qAbs(timestamp - existing) < 0.001) {
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0) {
-                updatedController["run_index"] = existingIndex;
-                updatedObject["controller"] = updatedController;
-                m_cv_statistics[existingIndex] = updatedObject;
-                index = existingIndex;
-                qDebug() << "📊 DEBUG UpdateStatistic: CrossValidation - Updated existing statistic at index" << existingIndex << "timestamp" << timestamp;
-            } else {
-                updatedController["run_index"] = m_cv_statistics.size();
-                updatedObject["controller"] = updatedController;
-                m_cv_statistics << updatedObject;
-                index = m_cv_statistics.size() - 1;
-                qDebug() << "📊 DEBUG UpdateStatistic: CrossValidation - Added new statistic at index" << index << "timestamp" << timestamp;
-            }
-        }
+        index = upsertByTimestamp(statisticList(static_cast<SupraFit::Method>(method)), object);
         break;
     }
     emit StatisticChanged();
@@ -973,91 +871,27 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
 
 QJsonObject AbstractModel::getStatistic(SupraFit::Method type, int index) const
 {
-    switch (type) {
-    case SupraFit::Method::WeakenedGridSearch:
-        if (index < m_wg_statistics.size())
-            return m_wg_statistics[index];
-        break;
-
-    case SupraFit::Method::ModelComparison:
-        if (index < m_moco_statistics.size())
-            return m_moco_statistics[index];
-        break;
-
-    case SupraFit::Method::FastConfidence:
+    if (type == SupraFit::Method::FastConfidence)
         return m_fast_confidence;
-        break;
-
-    case SupraFit::Method::Reduction:
-        if (index < m_reduction.size())
-            return m_reduction[index];
-        break;
-
-    case SupraFit::Method::MonteCarlo:
-        if (index < m_mc_statistics.size())
-            return m_mc_statistics[index];
-        break;
-
-    case SupraFit::Method::CrossValidation:
-        if (index < m_cv_statistics.size())
-            return m_cv_statistics[index];
-        break;
-
-    case SupraFit::Method::GlobalSearch:
-        if (index < m_search_results.size())
-            return m_search_results[index];
-        break;
-    }
+    const QList<QJsonObject>& list = statisticList(type);
+    if (index < list.size())
+        return list[index];
     return QJsonObject();
 }
 
 bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 {
-    switch (type) {
-    case SupraFit::Method::WeakenedGridSearch:
-        if (index < m_wg_statistics.size())
-            m_wg_statistics.takeAt(index);
-        else
-            return false;
-        break;
-
-    case SupraFit::Method::ModelComparison:
-        if (index < m_moco_statistics.size())
-            m_moco_statistics.takeAt(index);
-        else
-            return false;
-        break;
-
-    case SupraFit::Method::FastConfidence:
+    if (type == SupraFit::Method::FastConfidence) {
         m_fast_confidence = QJsonObject();
-        break;
-
-    case SupraFit::Method::Reduction:
-        if (index < m_reduction.size())
-            m_reduction.takeAt(index);
-        break;
-
-    case SupraFit::Method::MonteCarlo:
-        if (index < m_mc_statistics.size())
-            m_mc_statistics.takeAt(index);
-        else
-            return false;
-        break;
-    case SupraFit::Method::CrossValidation:
-        if (index < m_cv_statistics.size())
-            m_cv_statistics.takeAt(index);
-        else
-            return false;
-        break;
-
-    case SupraFit::Method::GlobalSearch:
-        if (index < m_search_results.size())
-            m_search_results.takeAt(index);
-        else
-            return false;
-        break;
+        return true;
     }
-    return true;
+    QList<QJsonObject>& list = statisticList(type);
+    if (index < list.size()) {
+        list.takeAt(index);
+        return true;
+    }
+    // Reduction historically treats an out-of-range remove as a no-op success; the others fail.
+    return type == SupraFit::Method::Reduction;
 }
 
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)

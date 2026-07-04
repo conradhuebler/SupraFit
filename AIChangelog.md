@@ -2,6 +2,8 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-04: R1 — collapsed `AbstractModel::UpdateStatistic`'s five byte-identical `switch(Method)` arms into a shared `upsertByTimestamp` helper + `statisticList(method)` dispatch (also reused by getStatistic/RemoveStatistic); AbstractModel.cpp 2067→1901, dead emoji `qDebug` traces dropped, behaviour-preserving (reference test green). Precursor to a `ModelStatisticsStore` collaborator.
+
 - 2026-07-04: Split god-object `core/toolset.cpp` (1407→827): file-I/O loaders → `toolset_io.cpp`, `Print` formatting → `toolset_print.cpp`; facade `toolset.h` + namespaces unchanged, reference test green (science unchanged).
 - 2026-07-04: Added the first real-measuring regression tests (`test_reference_projects`): reconstruct + re-fit trusted PeerJ-paper `.suprafit` projects and assert known lg K / SSE reproduce exactly (20 model/dataset combos), plus CV/RA post-processing reproduction for well-determined parameters (paper-methodology aware: wrong models' divergent statistics are reported, not asserted) — the D1 safety net that guards the Dx refactorings.
 - 2026-07-04: De-inlined `core/bc50.h` into `bc50.cpp` (~37 solver bodies out of a header pulled into 22 TUs); declarations-only header, namespaces/signatures unchanged, verbatim move.

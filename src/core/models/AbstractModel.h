@@ -909,6 +909,14 @@ protected:
 
     QJsonObject m_fast_confidence;
 
+    // Statistics-store helpers (Claude Generated 2026): collapse the per-method switch duplication
+    // in UpdateStatistic / getStatistic / RemoveStatistic. statisticList maps a method to its backing
+    // list (FastConfidence has none — it is a single object handled separately); upsertByTimestamp is
+    // the shared timestamp-deduplicated update-or-append used by MC/CV/WGS/MoCo/GlobalSearch.
+    QList<QJsonObject>& statisticList(SupraFit::Method method);
+    const QList<QJsonObject>& statisticList(SupraFit::Method method) const;
+    int upsertByTimestamp(QList<QJsonObject>& list, const QJsonObject& object);
+
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
     int m_used_variables;
     QList<int> m_active_signals;
