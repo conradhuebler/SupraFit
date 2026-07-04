@@ -246,6 +246,14 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   gleiche fassaden-erhaltende TU-Split-Technik anwenden.
 - ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
   152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.
+- 🔴 **`InitialGuess()` konvergiert nicht (von Grund auf)**: Beim Aufbau von `test_reference_projects`
+  gefunden — ein frisch per `InitialGuess()` gestartetes Fit der 4 kanonischen NMR-Datensätze
+  (`data/samples/NMR titrations/projects.suprafit`) landet **nicht** im Referenz-Minimum, sondern in
+  einem lokalen Minimum (SSE ~1.2 statt ~0.013; `lg K` auf Default ~2.5). Re-Fit **ab** dem
+  gespeicherten Optimum bleibt dagegen exakt dort. D.h. der Solver reproduziert das Minimum, findet
+  es aber aus dem Startpunkt von `InitialGuess()` nicht. Zu klären: schlechte Startwert-Heuristik vs.
+  fehlende Multi-Start/Boundary-Behandlung (vgl. Instructions-Block: BFGS-Alternative, DOI
+  10.1039/d4sc03354j). *Beleg:* `src/tests/test_reference_projects.cpp` (Layer-2 vs. Layer-1).
 
 > **Verifikation dieser Session:** `suprafit_cli` baut sauber; `-l`/`-x`/`--show-post-processing`
 > auf einem Model-Projekt liefern korrekte Struktur, Modelle (einfach, nicht doppelt),
