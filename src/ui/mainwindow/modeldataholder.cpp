@@ -18,6 +18,7 @@
  */
 
 #include "src/global.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/global_config.h"
 
 #include "src/capabilities/jobmanager.h"

@@ -18,6 +18,7 @@
  */
 
 #include "src/global.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/version.h"
 
 #include "src/core/jsonhandler.h"

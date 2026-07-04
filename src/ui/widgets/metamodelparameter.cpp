@@ -18,6 +18,7 @@
  */
 
 #include "src/core/models/models.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 
 #include "src/ui/guitools/chartwrapper.h"
 

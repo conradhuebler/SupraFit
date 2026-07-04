@@ -18,6 +18,7 @@
  */
 
 #include "src/capabilities/jobmanager.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/capabilities/modelcomparison.h"
 
 #include "src/core/jsonhandler.h"

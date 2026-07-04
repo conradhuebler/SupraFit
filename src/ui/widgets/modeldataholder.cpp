@@ -19,6 +19,7 @@
  */
 
 #include "src/global_config.h"
+#include "src/core/models/scriptmodel.h" // ScriptModel class (was transitive via models.h)
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"

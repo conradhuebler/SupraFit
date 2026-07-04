@@ -18,6 +18,7 @@
  */
 
 #include <charts.h>
+#include "src/core/models/scriptmodel.h" // ScriptModel class (was transitive via models.h)
 
 #include "src/global.h"
 #include "src/version.h"

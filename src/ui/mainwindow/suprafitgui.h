@@ -20,6 +20,7 @@
 #pragma once
 
 #include "src/ui/guitools/mime.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
 #include "src/core/projectmanager.h"
