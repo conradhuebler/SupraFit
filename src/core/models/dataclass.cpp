@@ -155,7 +155,7 @@ DataClassPrivate::~DataClassPrivate()
         delete m_dependent_model;
     if (m_info)
         delete m_info;
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     std::cout << "DataClassPrivate destroyed: " << this << std::endl;
 #endif
 }
@@ -632,7 +632,7 @@ void DataClass::AddChildren(QPointer<DataClass> data)
             }
         }
         
-#ifdef _DEBUG
+#ifdef DEBUG_ON
         qDebug() << d->m_children.size();
 #endif
     });

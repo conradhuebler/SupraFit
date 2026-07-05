@@ -125,12 +125,12 @@ double ChaiInterpreter::Evaluate(const char *c, int &errorcode) {
     auto boxed = m_chaiinterpreter.eval(c);
     result = chaiscript::boxed_cast<double>(boxed);
   } catch (const chaiscript::exception::eval_error &error) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
       qDebug() << "mist" << c;
 #endif
       errorcode = 1;
   } catch (const chaiscript::exception::bad_boxed_cast &cast) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
       qDebug() << "another mist";
 #endif
   }

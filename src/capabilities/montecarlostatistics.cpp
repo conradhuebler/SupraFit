@@ -69,7 +69,7 @@ void MonteCarloThread::run()
         return;
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "started!";
 #endif
     /*
@@ -81,7 +81,7 @@ void MonteCarloThread::run()
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);*/
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "started!";
 #endif
     m_fit_thread->setModel(m_model, false);
@@ -99,7 +99,7 @@ void MonteCarloThread::run()
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
 }
@@ -322,7 +322,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         indep_phi << phi;
     }
     int thread_count = 1;
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
     QHash<int, Pair> block;

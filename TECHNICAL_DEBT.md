@@ -177,8 +177,10 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   Source-Edits; `qWarning`/`qInfo` unberührt). (2) Neues `SFDebugPrint(...)`-Makro (`global.h`):
   `fmt::print` unter `DEBUG_ON`, sonst no-op — die 67 `fmt::print("… DEBUG …")`-Traces (projectmanager/
   analysis_manager/suprafit_cli) laufen jetzt darüber. **Verifiziert**: ML-Pipeline-Lauf 137→81 Zeilen,
-  0 `Debug:`-/`DEBUG`-Zeilen. ⬜ Rest (niedrig, spammt *nicht*): 54 live `std::cout` in expliziten
-  Debug-Print-Methoden → `fmt`, und 16 tote `#ifdef _DEBUG`-Blöcke (falsches Makro) aufräumen.
+  0 `Debug:`-/`DEBUG`-Zeilen. ✅ **Falsches Debug-Makro korrigiert**: 25 `#ifdef _DEBUG`-Direktiven
+  (falsches Makro, nie kompiliert) → `#ifdef DEBUG_ON` in 12 Dateien; per **DEBUG_ON-Build verifiziert**
+  (reaktivierte Blöcke kompilieren, kein Bit-Rot; DEBUG_ON-Referenz-Test grün). ⬜ Rest (niedrig,
+  spammt *nicht*): 54 live `std::cout` in expliziten Debug-Print-Methoden → `fmt`.
 
 - **D8 – Doc-Konsolidierung** 🟢 *(Root-Sprawl erledigt)*
   ✅ Die 4 abgelösten Root-MDs entfernt (Inhalt in diesem Dokument konsolidiert). ⬜ Verbleibend:

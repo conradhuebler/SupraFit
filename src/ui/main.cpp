@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 
     const QStringList args = parser.positionalArguments();
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Debug output enabled, good fun!";
 #endif
 

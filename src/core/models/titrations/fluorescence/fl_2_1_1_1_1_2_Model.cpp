@@ -213,13 +213,13 @@ void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         m_time += m_solvers[i]->Time() + m_solvers[i]->LTime();
         if (!m_solvers[i]->Ok()) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
             qDebug() << "Numeric didn't work out well, mark model as corrupt! - Dont panic. Not everything is lost ...";
             qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
 #endif
             m_corrupt = true;
             if (skip) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
                 qDebug() << "Ok, I skip the current result ...";
 #endif
                 continue;

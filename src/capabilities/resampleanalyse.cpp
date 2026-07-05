@@ -187,7 +187,7 @@ void ResampleAnalyse::CrossValidation()
         m_controller["Algorithm"] = algorithm;
 
         if (algorithm == 3) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
             qDebug() << "Random filling method";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif

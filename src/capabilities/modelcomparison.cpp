@@ -208,13 +208,13 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         iter++;
 
         if (iter >= maxiter) {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
             qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error - MaxParameter);
 #endif
             break;
         }
     }
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Final Error " << error << " after " << iter << " steps, value:" << parameter[parameter_id];
 #endif
 
