@@ -303,6 +303,7 @@ set(models_SRC
     src/core/models/datatable.cpp
     src/core/models/models.cpp
     src/core/models/AbstractModel.cpp
+    src/core/models/AbstractModel_serialize.cpp
     src/core/models/titrations/AbstractItcModel.cpp
     src/core/models/titrations/AbstractTitrationModel.cpp
     src/core/models/titrations/AbstractNMRModel.cpp

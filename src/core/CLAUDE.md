@@ -9,6 +9,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **models/dataclass.cpp/h**: Main project container with metadata and system parameters
 - **models/datatable.cpp/h**: Core data structure using Eigen::MatrixXd for numerical operations
 - **models/AbstractModel.cpp/h**: Base class for all analytical models
+  - **models/AbstractModel_serialize.cpp**: split-out JSON (de)serialization TU (`ExportModel`/`ExportStatistic`/`ImportModel`/`LegacyImportModel`, incl. legacy SupraFit 1/2 import); still `AbstractModel::` members, header/facade unchanged
 
 ### File Management  
 - **filehandler.cpp/h**: File I/O operations with range selection capabilities (Claude Generated)
