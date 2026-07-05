@@ -92,7 +92,9 @@ int NonLinearFitThread::NonLinearFit()
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
-    m_converged = (iter < m_model.data()->getOptimizerConfig()["MaxLevMarInter"].toInt());
+    // NonlinearFit() set the model's converged flag from the real stop criteria; mirror it
+    // here instead of recomputing the (misleading) iter < MaxIter proxy.
+    m_converged = m_model->isConverged();
 
     return iter;
 }

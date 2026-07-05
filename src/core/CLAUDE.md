@@ -234,7 +234,7 @@ model->Calculate();
 
 #### **📋 LOW PRIORITY** - Long-term:
 - ✅ Refactor bc50 code, no more inlining (de-inlined into bc50.cpp)
-- Refactor optimizer logic: **A/B/C done** (2026-07-05) — deleted dead LeastSquaresRookfighter, renamed the misnamed `OptimizeParameters()`→`CollectOptimizationParameters()`, cleaned/documented `eigen_levenberg.cpp` + the `NewtonRoot`/`BisectParameter` seed heuristics. ⬜ Remaining: unify the two seed heuristics (needs a fluorescence fixture); revisit `m_converged = iter<MaxIter`; the BFGS alternative (DOI 10.1039/d4sc03354j)
+- Refactor optimizer logic: **A/B/C + seed-unify + converged-fix done** (2026-07-05) — deleted dead LeastSquaresRookfighter; renamed `OptimizeParameters()`→`CollectOptimizationParameters()`; cleaned/documented `eigen_levenberg.cpp`; retired `BisectParameter` so `NewtonRoot` is the single seed heuristic; fixed the `converged` flag to use the real stop criteria instead of `iter<MaxIter`. ⬜ Remaining: the BFGS alternative (DOI 10.1039/d4sc03354j)
 - Implement BFGS optimization as alternative to concentration solver (DOI: 10.1039/d4sc03354j, Citation: Daniil O. Soloviev and Christopher A. Hunter; Chem. Sci., 2024,15, 15299-15310)
 ### Vision
 - **LLM Support for SupraFit**: Based on parsed projects, evaluation should be possible in natural language using local LLMs (if connected). Context information and specialist publication knowledge should be provided or passed on as needed. 

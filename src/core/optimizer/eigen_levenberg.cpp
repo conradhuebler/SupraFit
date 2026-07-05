@@ -156,6 +156,11 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
 
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
-    model.toStrongRef()->setConverged(iter < MaxIter);
+    // Converged := the loop's actual stop criteria are met (SSE change below ErrorConvergence
+    // AND parameter step below DeltaParameter), NOT merely "iter < MaxIter". The old proxy
+    // falsely reported a fit that reached the minimum exactly at the iteration limit as
+    // not-converged (see the diagnostics behind the InitialGuess root-cause).
+    const bool converged = (qAbs(error_0 - error_2) <= ErrorConvergence) && (norm <= DeltaParameter);
+    model.toStrongRef()->setConverged(converged);
     return iter;
 }
