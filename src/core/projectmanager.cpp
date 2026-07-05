@@ -621,15 +621,16 @@ QSharedPointer<AbstractModel> ProjectManager::getModel(const QString& projectId,
     for (int i = 0; i < project->ChildrenSize(); ++i) {
         QPointer<DataClass> child = project->Children(i);
         if (child && child->UUID() == modelId) {
-            // Cast DataClass back to AbstractModel (models inherit from DataClass)
-            AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data());
-            if (modelPtr) {
 #ifdef DEBUG_ON
-                qDebug() << "ProjectManager::getModel: Found model" << modelId;
+            qDebug() << "ProjectManager::getModel: Found model" << modelId;
 #endif
-                // Return QSharedPointer without taking ownership (model is managed by DataClass parent)
+            // Return the real owning shared pointer so the caller participates in refcounting.
+            QSharedPointer<AbstractModel> model = project->SharedModel(i);
+            if (model)
+                return model;
+            // Fallback (should not happen for addModel()-registered models): non-owning handle.
+            if (AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data()))
                 return QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*) { /* no-op deleter */ });
-            }
         }
     }
 
@@ -662,15 +663,21 @@ QVector<QSharedPointer<AbstractModel>> ProjectManager::getProjectModels(const QS
     // Collect all models from project children
     for (int i = 0; i < project->ChildrenSize(); ++i) {
         QPointer<DataClass> child = project->Children(i);
-        if (child) {
+        if (!child)
+            continue;
+        // Prefer the real owning shared pointer (correct refcounted ownership); only fall back
+        // to a non-owning handle for a child that was never registered via addModel().
+        QSharedPointer<AbstractModel> model = project->SharedModel(i);
+        if (!model) {
             AbstractModel* modelPtr = dynamic_cast<AbstractModel*>(child.data());
-            if (modelPtr) {
-#ifdef DEBUG_ON
-                qDebug() << "DEBUG ProjectManager::getProjectModels: Model" << i << "Name:" << modelPtr->Name() << "ModelUUID:" << modelPtr->ModelUUID();
-#endif
-                models.append(QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*) {}));
-            }
+            if (!modelPtr)
+                continue;
+            model = QSharedPointer<AbstractModel>(modelPtr, [](AbstractModel*) {});
         }
+#ifdef DEBUG_ON
+        qDebug() << "DEBUG ProjectManager::getProjectModels: Model" << i << "Name:" << model->Name() << "ModelUUID:" << model->ModelUUID();
+#endif
+        models.append(model);
     }
 
 #ifdef DEBUG_ON

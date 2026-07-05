@@ -237,8 +237,11 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   `dataclass.cpp:208` `d = other->d`); Ctor-`AddChildren(this)` + `addModel()` trugen das Modell
   doppelt ein → Dedup-Guard in `AddChildren` (`c23e25c7`).
 - ✅ **Tote `m_stored_models`-UUID-Map** in `DataClass` entfernt (`0995a221`).
-- ⬜ **ProjectManager-Ownership-Smell**: `getModel`/`getProjectModels` geben `QSharedPointer`
-  mit No-op-Deleter zurück (Aliasing, dangling-Risiko) — `projectmanager.cpp:631/671`.
+- ✅ **ProjectManager-Ownership-Smell behoben**: `getModel`/`getProjectModels` gaben `QSharedPointer`
+  mit No-op-Deleter zurück (Aliasing, dangling-Risiko). Neue `DataClass::SharedModel(int)` liefert den
+  *echten* Owning-Pointer aus `m_stored_models_by_pointer` (refcount-korrekt); ProjectManager gibt den
+  zurück, No-op-Alias nur noch als Fallback für nicht via `addModel()` registrierte Orphan-Children.
+  Referenz-Test grün (lädt alle Modelle über `getProjectModels`).
 - ⬜ **`AnalysisManager` halb-migriert** (nur `analyzeFile` verdrahtet, GUI nutzt ihn nicht,
   doppelte `extractModelStatistics`) → D4.
 - ✅ **D5a – Encapsulation-Leak versiegelt**: die letzten *live* `d->`-Zugriffe in AbstractModel
@@ -254,8 +257,9 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   ✅ **`toolset.cpp`-Split (2026)**: File-I/O (`Load*File`/`ExportResults`/`FindFile`) → `toolset_io.cpp`,
   `Print`-Namespace (`Html2Tex`/`TextFrom*`/`printDouble`/`printConcentration`) → `toolset_print.cpp`;
   `toolset.cpp` 1407→827 (Konvertierung/Math/Statistik/Thermo). Fassade `toolset.h` + Namespaces
-  unverändert (68 Includer unberührt); **Referenz-Test grün** (Wissenschaft unverändert). ⬜ Optional
-  weiter: Statistik-Cluster (`BoxWhiskerPlot`/`Entropy`/`Confidence`) als eigene TU.
+  unverändert (68 Includer unberührt); **Referenz-Test grün** (Wissenschaft unverändert). ✅ Statistik-
+  Cluster (`BoxWhiskerPlot`/`Entropy`/`Confidence`/Modell-Parameter-Statistik) → `toolset_statistics.cpp`
+  (`19ca3920`), `toolset.cpp` 827→386.
   ✅ **`bc50.h`** de-inlined (`bc50.cpp`, s. §0).
 - ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
   152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.

@@ -760,3 +760,15 @@ void DataClass::addModel(QSharedPointer<AbstractModel> model)
 
     AddChildren(static_cast<DataClass*>(model.data()));
 }
+
+QSharedPointer<AbstractModel> DataClass::SharedModel(int i) const
+{
+    if (i < 0 || i >= d->m_children.size())
+        return QSharedPointer<AbstractModel>();
+    AbstractModel* model = dynamic_cast<AbstractModel*>(d->m_children[i].data());
+    if (!model)
+        return QSharedPointer<AbstractModel>();
+    // QMap::value returns a null QSharedPointer if the child was never registered via addModel()
+    // (e.g. a ctor self-registered child) - the caller then falls back to a non-owning handle.
+    return d->m_stored_models_by_pointer.value(static_cast<void*>(model));
+}

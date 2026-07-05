@@ -391,6 +391,13 @@ public:
      */
     void addModel(QSharedPointer<AbstractModel> model);
 
+    /*! \brief (Claude Generated) Owning shared pointer for the child model at index i, or a null
+     * pointer if that child is not a model tracked in the ownership map (m_stored_models_by_pointer).
+     *
+     * Lets callers hand out real shared ownership instead of an aliasing no-op-deleter QSharedPointer
+     * (which does not participate in refcounting and dangles if the project is destroyed first). */
+    QSharedPointer<AbstractModel> SharedModel(int i) const;
+
     /*! \brief Define the x axis label for charts
      */
     virtual QString XLabel() const { return QString("X"); }
