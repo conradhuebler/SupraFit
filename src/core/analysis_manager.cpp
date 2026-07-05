@@ -31,6 +31,7 @@
 
 #include "src/core/jsonhandler.h"
 #include "src/core/filehandler.h"
+#include "src/core/minimizer.h"
 #include "src/core/projectmanager.h"
 #include "src/core/analyse.h"
 #include "src/core/toolset.h"
@@ -538,17 +539,19 @@ QJsonObject AnalysisManager::fitSingleModel(const QJsonObject& modelConfig,
             }
         }
         
-        // Perform model fitting (enhanced from CLI approach)
+        // Seed the parameters, then run the real optimiser.
         model->InitialGuess();
-        
+
         bool shouldFit = globalAnalysisConfig.contains("FitModels") ? globalAnalysisConfig.value("FitModels").toBool() : true;
         if (shouldFit) {
-            // Use proper fitting approach (would need NonLinearFitThread integration)
-            // For now, use Calculate() but mark for future enhancement
+            // Real Levenberg-Marquardt fit via NonLinearFitThread (same path the GUI and
+            // Monte-Carlo use). Minimize() runs the thread and imports the optimum back into
+            // `model`, leaving it Calculate()d at the fitted parameters. D4.
             model->setFast(false);
-            model->Calculate();
+            Minimizer minimizer(false);
+            minimizer.setModel(model);
+            minimizer.Minimize();
             model->CalculateStatistics(true);
-            // TODO: Integrate NonLinearFitThread for proper model fitting
         } else {
             model->setFast(false);
             model->Calculate();

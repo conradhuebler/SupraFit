@@ -151,7 +151,8 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   public und wird von `displayAnalysisResults` aufgerufen; `AnalysisReporter` **rendert nur noch**
   (`displayModelStatisticsTable`/`displayPostProcessingDetails`), sein Duplikat-Extraktor ist gelöscht.
   Golden-Diff der CLI-Ausgabe (`--show-post-processing`) **inhaltlich identisch** (nur Zeitstempel).
-  ⬜ Rest (eigener Punkt): `fitModelsToData` fittet noch nicht (`// TODO: NonLinearFitThread`).
+  ✅ **Fit-Pfad**: `fitModelsToData`/`fitSingleModel` fittet jetzt echt (`Minimizer::Minimize()` statt
+  nur `Calculate()`), per ML-Pipeline-Lauf verifiziert. **D4 komplett.**
 
 - **D5 – `AbstractModel : DataClass`-Vererbung** 🟡
   - ✅ **D5a (erledigt)**: Encapsulation-Leak versiegelt — kein `d->`-Direktzugriff auf Basis-Interna
@@ -280,9 +281,12 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   optimiert nichts, sondern registriert nur die zu optimierenden Parameter (genau das verursachte das
   obige Fehl-Finding). Projektweit umbenannt (69 Dateien, inkl. `_Private`-Helfer), beide Overloads
   doxygen-dokumentiert; voller GUI+CLI+Test-Build grün. Teil des Optimierer-Aufräum-Passes (A/B).
-- ⬜ **`AnalysisManager` fittet gar nicht**: `analysis_manager.cpp:542-551` ruft `InitialGuess()` +
-  `Calculate()` (Vorwärtsmodell) mit explizitem `// TODO: Integrate NonLinearFitThread` — konkrete
-  Folge der halb-migrierten AnalysisManager-Schuld (→ D4).
+- ✅ **`AnalysisManager` fittet jetzt echt** (D4 abgeschlossen): `fitSingleModel` fuhr nur `InitialGuess()`
+  + `Calculate()` (Vorwärtsmodell, `// TODO: NonLinearFitThread`). Ersetzt durch echten LevMar-Fit
+  (`Minimizer::setModel` + `Minimize()`, derselbe Pfad wie GUI/MonteCarlo). Verifiziert per ML-Pipeline-
+  Lauf: gefittetes 1:1-Modell konvergiert (`✅ Conv`, SSE→0, `lg K` recovered den wahren Generierungs-
+  Wert), Post-Processing (MC/CV) läuft auf dem *gefitteten* Modell. Die ML-Pipeline erzeugt damit echte
+  Trainingsdaten statt Initial-Guess-Artefakte.
 - ✅ **`getT()` uninitialisiert für NMR/Titration-Modelle** (behoben): `Abstract{NMR,Titration}Model::m_T`
   hatte keinen Ctor-Default und wurde nur durch das (nicht immer laufende) System-Parameter-Update
   gesetzt → der Thermo-Header druckte physikalisch unmögliche T (`e-33`…`e-144` K, build-abhängiger
