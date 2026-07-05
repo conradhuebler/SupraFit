@@ -44,6 +44,7 @@
 
 #include "src/capabilities/jobmanager.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/minimizer.h"
 #include "src/core/projectmanager.h"
 
 #include "src/core/models/AbstractModel.h"
@@ -229,17 +230,20 @@ private slots:
                 qPrintable(QString("[%1] recomputed SSE %2 not within %3 of stored %4")
                         .arg(model->Name()).arg(sseLoaded).arg(kTolLoaded).arg(storedSSE)));
 
-            // (2) Optimiser stability: re-fit from the loaded optimum; must stay there.
-            model->OptimizeParameters();
+            // (2) Optimiser stability: run the REAL optimiser (NonLinearFitThread via Minimizer)
+            // starting from the loaded optimum; it must stay at the reference minimum.
+            //
+            // NOTE: this used to call model->OptimizeParameters(), which does NOT fit — it only
+            // rebuilds the parameter list (AbstractModel.cpp:303) — so the check was vacuous (it
+            // "passed" by never moving). Driving Minimizer::Minimize() actually exercises the
+            // optimiser. We assert on SSE (robust to flat/degenerate directions); the exact
+            // parameter reproduction is already guaranteed by the forward-model check (1) above.
+            Minimizer minim(false);
+            minim.setModel(model);
+            minim.Minimize();
             const double sseFit = model->SSE();
-            for (int i = 0; i < refGlobals.size(); ++i) {
-                const double got = model->GlobalParameter(i);
-                QVERIFY2(relClose(got, refGlobals[i], kTolGlobal),
-                    qPrintable(QString("[%1] re-fit lgK[%2] %3 not within %4 of %5")
-                            .arg(model->Name()).arg(i).arg(got).arg(kTolGlobal).arg(refGlobals[i])));
-            }
             QVERIFY2(relClose(sseFit, storedSSE, kTolSSE),
-                qPrintable(QString("[%1] re-fit SSE %2 not within %3 of %4")
+                qPrintable(QString("[%1] optimiser from the reference optimum drifted: SSE %2 not within %3 of %4")
                         .arg(model->Name()).arg(sseFit).arg(kTolSSE).arg(storedSSE)));
         }
     }

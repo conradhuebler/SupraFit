@@ -157,7 +157,7 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
     mehr aus Modellen (via `SimulateDependent()`/`ResetDependentModel()`, s. §5.2). Die „zwei parallelen
     Storage-Maps" waren bereits Geschichte (UUID-Map in `0995a221` entfernt; nur noch
     `m_stored_models_by_pointer`).
-  - ⬜ **D5b (offen, architektonisch)**: Ist „Model *ist* Datencontainer" die richtige Beziehung? Der
+  - ⏸️ **D5b (bewusst vertagt, 2026-07-05)**: Ist „Model *ist* Datencontainer" die richtige Beziehung? Der
     Wechsel Vererbung→Komposition (`AbstractModel` *hat* ein `DataClass`) ist ein **großer Umbau**:
     jeder `DataClass`-API-Konsument, der ein Modell als Datencontainer behandelt (Projekt-Tree,
     `ExportData`/`Size`/`SeriesCount`, GUI), müsste angefasst werden. Bewusst als Entscheidung offen —
@@ -259,14 +259,24 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   ✅ **`bc50.h`** de-inlined (`bc50.cpp`, s. §0).
 - ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
   152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.
-- 🔴 **`InitialGuess()` konvergiert nicht (von Grund auf)**: Beim Aufbau von `test_reference_projects`
-  gefunden — ein frisch per `InitialGuess()` gestartetes Fit der 4 kanonischen NMR-Datensätze
-  (`data/samples/NMR titrations/projects.suprafit`) landet **nicht** im Referenz-Minimum, sondern in
-  einem lokalen Minimum (SSE ~1.2 statt ~0.013; `lg K` auf Default ~2.5). Re-Fit **ab** dem
-  gespeicherten Optimum bleibt dagegen exakt dort. D.h. der Solver reproduziert das Minimum, findet
-  es aber aus dem Startpunkt von `InitialGuess()` nicht. Zu klären: schlechte Startwert-Heuristik vs.
-  fehlende Multi-Start/Boundary-Behandlung (vgl. Instructions-Block: BFGS-Alternative, DOI
-  10.1039/d4sc03354j). *Beleg:* `src/tests/test_reference_projects.cpp` (Layer-2 vs. Layer-1).
+- ✅ **`InitialGuess()`-„Nicht-Konvergenz" war ein Messartefakt (widerlegt, 2026-07-05)**: Die frühere
+  🔴-Notiz („landet nicht im Referenz-Minimum, SSE ~1.2, lg K ~2.5") entstand, weil die Konvergenz mit
+  `model->OptimizeParameters()` **gemessen** wurde — **diese Methode fittet aber nicht**: sie baut nur
+  die Parameterliste `m_opt_para` neu auf (`AbstractModel.cpp:303`). Der *echte* Optimierer
+  (`Minimizer::Minimize()` → `NonLinearFitThread`) konvergiert vom `InitialGuess()`-Start **sehr wohl**
+  ins Referenz-Minimum: über alle 4 kanonischen NMR-Datensätze reproduziert er SSE **und** lg K exakt
+  (verifiziert, `conv=1`). Nur **fehlspezifizierte** Modelle (falsche Stöchiometrie auf einen Datensatz
+  gefittet) landen in anderen/unphysikalischen Minima (z.B. `lg K=-1.0` — degenerierter Escape) — das
+  ist die **Paper-Aussage** „falsches Modell → schlecht konditioniert", kein Solver-Defekt. *Beleg:*
+  Minimizer-Diagnose über alle Fixtures; `test_reference_projects::referenceFit` Check (2) fährt jetzt
+  den echten Minimizer.
+- ⬜ **Footgun: `AbstractModel::OptimizeParameters()` ist grob fehlbenannt** — optimiert nichts, sondern
+  registriert nur die zu optimierenden Parameter. Genau das hat das obige Fehl-Finding verursacht.
+  *Korrektur (Vorschlag):* umbenennen zu `CollectOptimizationParameters()`/`RegisterOptParameters()`
+  (die GUI ruft es zusätzlich zum Namen als „Parameter-Liste holen" auf → Aufrufer prüfen).
+- ⬜ **`AnalysisManager` fittet gar nicht**: `analysis_manager.cpp:542-551` ruft `InitialGuess()` +
+  `Calculate()` (Vorwärtsmodell) mit explizitem `// TODO: Integrate NonLinearFitThread` — konkrete
+  Folge der halb-migrierten AnalysisManager-Schuld (→ D4).
 - ✅ **`getT()` uninitialisiert für NMR/Titration-Modelle** (behoben): `Abstract{NMR,Titration}Model::m_T`
   hatte keinen Ctor-Default und wurde nur durch das (nicht immer laufende) System-Parameter-Update
   gesetzt → der Thermo-Header druckte physikalisch unmögliche T (`e-33`…`e-144` K, build-abhängiger
@@ -274,15 +284,15 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   überschreibt weiterhin). Beim R4-Golden-Diff gefunden. ✅ `AbstractItcModel::m_T`/`m_V`/
   `m_cell_concentration`/`m_syringe_concentration` analog abgesichert: Default-Member-Initializer
   (`m_T = 298`, Rest `0` — hält die `!m_V`-„unset"-Guard-Semantik); Referenz-Test grün.
-- 🟡 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (dieselbe Optimizer-Wurzel wie
-  ↑): Beim Bau des CV/RA-Re-Run-Vergleichs gefunden — für gut bestimmte Parameter reproduziert der
-  aktuelle Code die Paper-Referenz **exakt** (88 Parameter), aber für schlecht bestimmte Richtungen
-  (breite Resample-Verteilung, z.B. `lg K₂₁` in falschen Modellen) weichen die Resample-Fits
-  run-to-run ab (verschiedene lokale Minima). **Kein Test-Defekt, sondern konsistent mit der
-  Paper-Aussage** „falsche Modelle → divergierende Statistik"; der Test überspringt daher schlecht
-  bestimmte Parameter (relStd > 0.5 %) statt sie zu erzwingen. Offene Frage bleibt, ob die
-  *Nicht-Reproduzierbarkeit* (nicht die Breite) auf die Optimizer-Instabilität zurückgeht → mit dem
-  InitialGuess-Fix gemeinsam angehen. *Beleg:* `test_reference_projects.cpp::referenceResampleCVRA`.
+- 🟢 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (Ursache jetzt geklärt): für gut
+  bestimmte Parameter reproduziert der Code die Paper-Referenz **exakt** (88 Parameter), aber für
+  schlecht bestimmte Richtungen (breite Resample-Verteilung, z.B. `lg K₂₁` in falschen Modellen)
+  weichen die Resample-Fits run-to-run ab. Die Diagnose oben zeigt: **kein Solver-Instabilitäts-Bug**,
+  sondern **schlecht konditionierte fehlspezifizierte Modelle** mit mehreren nahezu entarteten Minima —
+  genau die Paper-Aussage „falsche Modelle → divergierende Statistik". Der Test überspringt daher
+  schlecht bestimmte Parameter (relStd > 0.5 %) statt sie zu erzwingen; der `referenceResampleCVRA`-
+  Slot ist an der Toleranzgrenze **gelegentlich flaky** (dokumentiert). *Beleg:*
+  `test_reference_projects.cpp::referenceResampleCVRA` + Minimizer-Diagnose.
 
 > **Verifikation dieser Session:** `suprafit_cli` baut sauber; `-l`/`-x`/`--show-post-processing`
 > auf einem Model-Projekt liefern korrekte Struktur, Modelle (einfach, nicht doppelt),
