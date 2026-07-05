@@ -76,7 +76,7 @@ QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& nois
 ### Known debt (see root `TECHNICAL_DEBT.md`, CLI section)
 - `SupraFitCli` is a ~3.7k-line god-class mixing ~8 responsibilities → D3 decomposition
 - 12 remaining `MIGRATION POINT` markers still read legacy `m_toplevel`/`m_data` instead of ProjectManager (blocked on missing ProjectManager APIs → D2)
-- `ModelStatistics` duplicated with `core/analysis_manager.h` → D4
+- ✅ `ModelStatistics` + `extractModelStatistics` de-duplicated (D4): core `AnalysisManager::extractModelStatistics` is the single authoritative extractor; `AnalysisReporter` renders only
 - `PerformeJobs()` runs statistical jobs but discards their results
 
 ---

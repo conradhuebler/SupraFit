@@ -36,8 +36,8 @@
  */
 class AnalysisReporter {
 public:
-    /** Extract statistics for one model from its model_X JSON object. */
-    static ModelStatistics extractModelStatistics(const QString& key, const QJsonObject& modelObj);
+    // Extraction lives in the authoritative core extractor AnalysisManager::extractModelStatistics
+    // (D4); this class only renders the resulting ModelStatistics.
 
     /** Print the compact model-comparison table (SSE/AIC/params/post-processing counts). */
     static void displayModelStatisticsTable(const QVector<ModelStatistics>& models);

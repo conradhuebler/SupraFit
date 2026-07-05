@@ -1015,18 +1015,9 @@ void SupraFitCli::displayAnalysisResults(const QJsonObject& results)
     // Enhanced Model Analysis - Claude Generated  
     fmt::print("\n🔬 MODEL STATISTICS TABLE:\n");
     
-    QVector<ModelStatistics> modelStatistics;
-
-    // Search for model objects in the current project JSON (model_0, model_1, etc.)
-    // Migrated: iterate models from ProjectManager JSON - Claude Generated
-    for (auto it = projectJson.begin(); it != projectJson.end(); ++it) {
-        QString key = it.key();
-        if (key.startsWith("model_") && it.value().isObject()) {
-            QJsonObject modelObj = it.value().toObject();
-            ModelStatistics stats = AnalysisReporter::extractModelStatistics(key, modelObj);
-            modelStatistics.append(stats);
-        }
-    }
+    // D4: extraction is done by the authoritative core extractor (AnalysisManager); the client
+    // only renders. AnalysisReporter no longer duplicates the extraction logic.
+    QVector<ModelStatistics> modelStatistics = m_analysisManager->extractModelStatistics(projectJson);
 
     // Display the table
     AnalysisReporter::displayModelStatisticsTable(modelStatistics);

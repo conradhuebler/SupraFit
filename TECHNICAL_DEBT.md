@@ -143,14 +143,15 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   erst **D1** (Test-Netz). Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert
   Trainings-JSON via `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
 
-- **D4 – `AnalysisManager`-Konsolidierung** 🟡 *(Struct erledigt, Logik offen)*
-  ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`) —
-  eine Definition statt zweier identischer. ⬜ **Logik/Integration**: Kein simpler Fix —
-  `AnalysisManager::extractModelStatistics` wird von außen gar nicht aufgerufen, und
-  `displayAnalysisResults` **ignoriert** die `analyzeFile`-Ergebnisse und re-extrahiert via
-  `AnalysisReporter`. Entwirren erfordert die Entscheidung, welcher Pfad autoritativ ist
-  (halb-migrierter AnalysisManager) — braucht **D1** (Tests). *Dateien:* `analysis_manager.{h,cpp}`,
-  `analysis_reporter.cpp`, `suprafit_cli.cpp` (`displayAnalysisResults`).
+- **D4 – `AnalysisManager`-Konsolidierung** 🟢 *(Struct + Logik erledigt)*
+  ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`).
+  ✅ **Logik (Operator-Entscheidung: AnalysisManager autoritativ)**: Die doppelte
+  `extractModelStatistics` (identisch in `AnalysisManager` **und** `AnalysisReporter`) auf **eine**
+  autoritative Kern-Implementierung reduziert — `AnalysisManager::extractModelStatistics` ist jetzt
+  public und wird von `displayAnalysisResults` aufgerufen; `AnalysisReporter` **rendert nur noch**
+  (`displayModelStatisticsTable`/`displayPostProcessingDetails`), sein Duplikat-Extraktor ist gelöscht.
+  Golden-Diff der CLI-Ausgabe (`--show-post-processing`) **inhaltlich identisch** (nur Zeitstempel).
+  ⬜ Rest (eigener Punkt): `fitModelsToData` fittet noch nicht (`// TODO: NonLinearFitThread`).
 
 - **D5 – `AbstractModel : DataClass`-Vererbung** 🟡
   - ✅ **D5a (erledigt)**: Encapsulation-Leak versiegelt — kein `d->`-Direktzugriff auf Basis-Interna
@@ -225,7 +226,7 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   (`saveProjectAsJson`-Bug) — gefixt (`cab3cd6a`).
 - ⬜ **`SupraFitCli` bleibt God-Klasse** (~3,6k LOC, ~8 Rollen) → D3 (DataFactory / TaskRunner /
   AnalysisReporter / MlPipeline / MlExport).
-- ⬜ **`ModelStatistics` doppelt** mit `analysis_manager.h` → D4.
+- ✅ **`ModelStatistics`-Duplikat** (Struct `ff816e5f` + Extraktions-Logik D4) aufgelöst.
 - ⬜ **`m_data_vector`** noch als Legacy-State übrig (Multi-Project-Export).
 - ⬜ Zweiter Entry-Point `ml_cli_main.cpp` + Stray-Test `client/test_ml_pipeline.cpp`.
 
@@ -242,8 +243,9 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   *echten* Owning-Pointer aus `m_stored_models_by_pointer` (refcount-korrekt); ProjectManager gibt den
   zurück, No-op-Alias nur noch als Fallback für nicht via `addModel()` registrierte Orphan-Children.
   Referenz-Test grün (lädt alle Modelle über `getProjectModels`).
-- ⬜ **`AnalysisManager` halb-migriert** (nur `analyzeFile` verdrahtet, GUI nutzt ihn nicht,
-  doppelte `extractModelStatistics`) → D4.
+- ✅ **`AnalysisManager`-Extraktion konsolidiert** (D4): der doppelte `extractModelStatistics` ist weg,
+  `AnalysisManager::extractModelStatistics` ist die einzige (public) autoritative Extraktion,
+  `AnalysisReporter` rendert nur noch. CLI-Golden-Diff identisch.
 - ✅ **D5a – Encapsulation-Leak versiegelt**: die letzten *live* `d->`-Zugriffe in AbstractModel
   (nach dem Serialize-Split nur noch `d->m_dependent_model`-Zuweisung + `d->m_simulate_dependent`-Read
   im `isSimulation()`-Zweig von `ImportModel`) laufen jetzt über neue DataClass-Accessoren

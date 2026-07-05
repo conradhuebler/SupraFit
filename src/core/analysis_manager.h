@@ -60,6 +60,16 @@ public:
      */
     QJsonObject analyzeDataClass(QPointer<DataClass> data);
 
+    /**
+     * @brief Extract per-model statistics (name, SSE/SAE, AIC/AICc, param counts, post-processing)
+     *        from a project/toplevel JSON. The single authoritative extractor — clients render the
+     *        returned vector (e.g. AnalysisReporter::displayModelStatisticsTable) instead of
+     *        re-implementing the extraction.
+     * @param toplevel JSON object containing model_N sub-objects
+     * @return Vector of model statistics
+     */
+    QVector<ModelStatistics> extractModelStatistics(const QJsonObject& toplevel);
+
     // ===== MODEL COMPARISON API =====
     // Migrated from CLI FitModelsToData() function
     
@@ -195,13 +205,6 @@ private:
     QJsonObject fitSingleModel(const QJsonObject& modelConfig,
                               QPointer<DataClass> data,
                               const QJsonObject& globalAnalysisConfig);
-    
-    /**
-     * @brief Extract model statistics from JSON toplevel object
-     * @param toplevel JSON object containing model data
-     * @return Vector of model statistics
-     */
-    QVector<ModelStatistics> extractModelStatistics(const QJsonObject& toplevel);
     
     /**
      * @brief Extract statistics for a single model
