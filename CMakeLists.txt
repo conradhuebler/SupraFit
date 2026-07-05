@@ -240,6 +240,7 @@ set(core_SRC
     src/core/toolset.cpp
     src/core/toolset_io.cpp
     src/core/toolset_print.cpp
+    src/core/toolset_statistics.cpp
     src/core/thermogramhandler.cpp
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp

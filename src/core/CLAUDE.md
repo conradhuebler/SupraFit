@@ -33,7 +33,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
   - **Legacy string-based functions**: `CompareAIC()`, `CompareMC()`, `CompareCV()`, `AnalyseReductionAnalysis()` for backward compatibility
   - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to console/HTML format
 - **pythonbridge.cpp/h**: Python integration for extended functionality
-- **toolset.cpp/h**: General utility functions and statistical calculations
+- **toolset.cpp/h**: General utility functions (conversion/math/thermo); `namespace ToolSet` split across `toolset.cpp` (core + conversion), `toolset_io.cpp` (file loaders), `toolset_print.cpp` (`Print`), `toolset_statistics.cpp` (histograms/entropy/confidence/boxplots/model-parameter stats) — shared `toolset.h` facade
 
 ## Model System
 
