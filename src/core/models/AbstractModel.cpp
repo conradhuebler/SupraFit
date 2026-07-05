@@ -279,7 +279,7 @@ AbstractModel::~AbstractModel()
     qDeleteAll(m_model_charts);
 
 #ifdef DEBUG_ON
-    std::cout << "Model to be deleted" << std::endl;
+    qDebug() << "Model to be deleted";
 #endif
 }
 

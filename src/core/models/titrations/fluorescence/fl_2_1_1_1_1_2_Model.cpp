@@ -383,14 +383,11 @@ QString fl_IItoI_ItoI_ItoII_Model::AdditionalOutput() const
 
         diff = host_0 - complex;
         // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        std::cout << host << " "
-                  << " " << guest_0 - complex << " " << complex << std::endl;
         //std::cout << integral.transpose() << std::endl;
     }
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
     */
     return result;
 }

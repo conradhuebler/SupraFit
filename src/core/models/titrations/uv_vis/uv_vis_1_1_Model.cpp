@@ -171,7 +171,6 @@ QString uv_vis_ItoI_Model::AdditionalOutput() const
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
 }
 
 QString uv_vis_ItoI_Model::ParameterComment(int parameter) const

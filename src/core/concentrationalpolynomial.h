@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QObject>
+#include <QtCore/QDebug>
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
@@ -62,7 +63,7 @@ public:
 
     void printConcentration(int iter) const
     {
-        std::cout << iter << " " << m_cA << " " << m_cB << std::endl;
+        qDebug() << iter << " " << m_cA << " " << m_cB;
     }
     inline void powA()
     {

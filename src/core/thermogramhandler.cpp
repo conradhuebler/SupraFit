@@ -20,6 +20,7 @@
 #include <Eigen/Dense>
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
@@ -53,7 +54,7 @@ void ThermogramHandler::Initialise()
     }
 
     if (m_spectrum.size() == 0) {
-        std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
+        qWarning() << "No Thermogram found. ThermogramHandler is not initialised!";
         return;
     } else {
         m_thermogram_series.resize(m_spectrum.x().size());
@@ -79,7 +80,7 @@ void ThermogramHandler::Initialise()
         } else if (m_spectrum.size() && m_peak_list.size() && m_peak_rules.size()) {
             UpdatePeaks();
         } else {
-            std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is initalised but not ready. No automatic stuff here!" << std::endl;
+            qWarning() << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is initalised but not ready. No automatic stuff here!";
             emit ThermogramInitialised();
             return;
         }
@@ -90,7 +91,7 @@ void ThermogramHandler::Initialise()
     FitBaseLine();
 
     m_initialised = true;
-    std::cout << "ThermogramHandler initialised!" << std::endl;
+    qWarning() << "ThermogramHandler initialised!";
     emit ThermogramInitialised();
 }
 
@@ -282,7 +283,7 @@ void ThermogramHandler::IntegrateThermogram()
 {
 
     if (!m_initialised) {
-        std::cout << "ThermogramHandler is not initialised, sorry for that." << std::endl;
+        qWarning() << "ThermogramHandler is not initialised, sorry for that.";
         return;
     }
     CalibrateSystem();

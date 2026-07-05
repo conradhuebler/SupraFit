@@ -257,7 +257,6 @@ QString nmr_IItoI_ItoI_Model::AdditionalOutput() const
     integral(2) /= end;
     integral(3) /= end;
 
-    std::cout << integral.transpose() << std::endl;
 
     result += QString("A2B integ  ... %1\n\n").arg(integral(2));
     */

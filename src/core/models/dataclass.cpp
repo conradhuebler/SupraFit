@@ -156,16 +156,16 @@ DataClassPrivate::~DataClassPrivate()
     if (m_info)
         delete m_info;
 #ifdef DEBUG_ON
-    std::cout << "DataClassPrivate destroyed: " << this << std::endl;
+    qDebug() << "DataClassPrivate destroyed: " << this;
 #endif
 }
 
 
 void DataClassPrivate::check()
 {
-    std::cout << "Check of data " << std::endl;
-    std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount() << std::endl;
-    std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount() << std::endl;
+    qDebug() << "Check of data ";
+    qDebug() << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount();
+    qDebug() << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount();
 }
 
 DataClass::DataClass(QObject* parent)
