@@ -76,7 +76,7 @@ void BiMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-void BiMolecularModel::OptimizeParameters_Private()
+void BiMolecularModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

@@ -109,7 +109,7 @@ bool uvvis_any_Model::DefineModel()
     for (int i = 0; i < GlobalParameterSize(); ++i)
         setOption(Host + 1 + i, "yes");
 
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
     m_complete = true;
 
     for (int i = 0; i < DataPoints(); ++i) {
@@ -169,7 +169,7 @@ void uvvis_any_Model::InitialGuess_Private()
     Calculate();
 }
 
-void uvvis_any_Model::OptimizeParameters_Private()
+void uvvis_any_Model::CollectOptimizationParameters_Private()
 {
     for (int a = 1; a <= m_maxA; ++a) {
         for (int b = 1; b <= m_maxB; ++b) {

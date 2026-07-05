@@ -270,10 +270,10 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   ist die **Paper-Aussage** „falsches Modell → schlecht konditioniert", kein Solver-Defekt. *Beleg:*
   Minimizer-Diagnose über alle Fixtures; `test_reference_projects::referenceFit` Check (2) fährt jetzt
   den echten Minimizer.
-- ⬜ **Footgun: `AbstractModel::OptimizeParameters()` ist grob fehlbenannt** — optimiert nichts, sondern
-  registriert nur die zu optimierenden Parameter. Genau das hat das obige Fehl-Finding verursacht.
-  *Korrektur (Vorschlag):* umbenennen zu `CollectOptimizationParameters()`/`RegisterOptParameters()`
-  (die GUI ruft es zusätzlich zum Namen als „Parameter-Liste holen" auf → Aufrufer prüfen).
+- ✅ **Footgun behoben: `OptimizeParameters()` → `CollectOptimizationParameters()`** — die Methode
+  optimiert nichts, sondern registriert nur die zu optimierenden Parameter (genau das verursachte das
+  obige Fehl-Finding). Projektweit umbenannt (69 Dateien, inkl. `_Private`-Helfer), beide Overloads
+  doxygen-dokumentiert; voller GUI+CLI+Test-Build grün. Teil des Optimierer-Aufräum-Passes (A/B).
 - ⬜ **`AnalysisManager` fittet gar nicht**: `analysis_manager.cpp:542-551` ruft `InitialGuess()` +
   `Calculate()` (Vorwärtsmodell) mit explizitem `// TODO: Integrate NonLinearFitThread` — konkrete
   Folge der halb-migrierten AnalysisManager-Schuld (→ D4).

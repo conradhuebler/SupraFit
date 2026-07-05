@@ -184,7 +184,7 @@ void MetaModelWidget::Minimize()
     m_model->Calculate();
     OptimisationHistory history = thread->History();
     int series = 0;
-    for (int i = 0; i < m_model->OptimizeParameters().size(); ++i) {
+    for (int i = 0; i < m_model->CollectOptimizationParameters().size(); ++i) {
         auto pair = m_model->IndexParameters(i);
         if (pair.second == 0) {
             history.names << m_model->GlobalParameterName(pair.first);

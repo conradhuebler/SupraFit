@@ -71,7 +71,7 @@ void MonoMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-void MonoMolecularModel::OptimizeParameters_Private()
+void MonoMolecularModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

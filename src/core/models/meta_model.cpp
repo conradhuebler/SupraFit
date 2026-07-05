@@ -224,7 +224,7 @@ void MetaModel::ResortParameter()
     emit ParameterSorted();
 }
 
-void MetaModel::OptimizeParameters_Private()
+void MetaModel::CollectOptimizationParameters_Private()
 {
     m_local_index.clear();
     m_global_index.clear();
@@ -527,7 +527,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_dep_var += model->DataPoints();
     m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
     m_series_count += model->SeriesCount();
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
     UpdateSlicedTable();
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
@@ -595,7 +595,7 @@ void MetaModel::RemoveModel(const AbstractModel* model)
 #pragma message("in case it is custom, try to restore the structure")
     m_connect_type = ConnectType::None;
 
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
     UpdateSlicedTable();
 
     //DataClass::setProjectTitle("MetaModel");
@@ -672,7 +672,7 @@ QSharedPointer<AbstractModel> MetaModel::Clone(bool statistics)
         model.data()->addModel(m->Clone(statistics).data());
     model.data()->setConnectType(m_connect_type);
     model.data()->m_mmparameter = m_mmparameter;
-    model.data()->OptimizeParameters_Private();
+    model.data()->CollectOptimizationParameters_Private();
 
     return model;
 }
@@ -723,7 +723,7 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     }
     ApplyConnectType();
     CollectParameter();
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
     Calculate();
     // emit ParameterMoved();
     DataClass::setProjectTitle(topjson["name"].toString());

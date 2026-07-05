@@ -283,7 +283,7 @@ QSharedPointer<AbstractModel> nmr_IItoI_ItoI_ItoII_Model::Clone(bool statistics)
     return model;
 }
 
-void nmr_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
+void nmr_IItoI_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop21 = getOption(Cooperativity2_1);
     QString coop12 = getOption(Cooperativity1_2);

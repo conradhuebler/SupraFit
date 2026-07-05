@@ -183,7 +183,7 @@ QVector<qreal> fl_IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 
-void fl_IItoI_ItoI_Model::OptimizeParameters_Private()
+void fl_IItoI_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
     QString host = getOption(Host);

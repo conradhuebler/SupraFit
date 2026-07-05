@@ -52,7 +52,7 @@ public:
     }
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     virtual inline QString LocalParameterName(int i = 0) const override
     {
         return QString("B%1").arg(1 + i);

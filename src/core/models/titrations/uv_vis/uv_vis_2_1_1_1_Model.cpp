@@ -174,7 +174,7 @@ QVector<qreal> uv_vis_IItoI_ItoI_Model::DeCompose(int datapoint, int series) con
     return vector;
 }
 
-void uv_vis_IItoI_ItoI_Model::OptimizeParameters_Private()
+void uv_vis_IItoI_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
     QString host = getOption(Host);

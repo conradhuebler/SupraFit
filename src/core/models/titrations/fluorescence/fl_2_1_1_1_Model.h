@@ -42,7 +42,7 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::fl_IItoI_ItoI; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
 
     virtual void InitialGuess_Private() override;

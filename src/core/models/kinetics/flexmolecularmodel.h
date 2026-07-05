@@ -38,7 +38,7 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::FlexMolecularModel; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
 
     inline int GlobalParameterSize() const override { return 4; }
     virtual void InitialGuess_Private() override;

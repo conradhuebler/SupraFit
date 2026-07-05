@@ -122,7 +122,7 @@ void fl_ItoI_ItoII_Model::InitialGuess_Private()
     Calculate();
 }
 
-void fl_ItoI_ItoII_Model::OptimizeParameters_Private()
+void fl_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     QString host = getOption(Host);

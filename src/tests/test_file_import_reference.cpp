@@ -351,7 +351,7 @@ void TestFileImportReference::testModel1_1Fitting()
     model->InitialGuess();
 
     // Run optimization
-    model->OptimizeParameters();
+    model->CollectOptimizationParameters();
 
     // Check if converged
     bool converged = model->isConverged();
@@ -409,7 +409,7 @@ void TestFileImportReference::testModel2_1_1_1Fitting()
     }
 
     model->InitialGuess();
-    model->OptimizeParameters();
+    model->CollectOptimizationParameters();
 
     double sse = model->SSE();
     double aic = model->getAIC();
@@ -461,7 +461,7 @@ void TestFileImportReference::testModel1_1_1_2Fitting()
     }
 
     model->InitialGuess();
-    model->OptimizeParameters();
+    model->CollectOptimizationParameters();
 
     double sse = model->SSE();
     double aic = model->getAIC();
@@ -513,7 +513,7 @@ void TestFileImportReference::testModel2_1_1_1_1_2Fitting()
     }
 
     model->InitialGuess();
-    model->OptimizeParameters();
+    model->CollectOptimizationParameters();
 
     double sse = model->SSE();
     double aic = model->getAIC();
@@ -571,7 +571,7 @@ void TestFileImportReference::testModelStatistics()
         }
 
         model->InitialGuess();
-        model->OptimizeParameters();
+        model->CollectOptimizationParameters();
 
         double sse = model->SSE();
         double aic = model->getAIC();
@@ -721,7 +721,7 @@ void TestFileImportReference::testStatisticValidation()
         }
 
         model->InitialGuess();
-        model->OptimizeParameters();
+        model->CollectOptimizationParameters();
 
         double fitSSE = model->SSE();
         double fitAIC = model->getAIC();

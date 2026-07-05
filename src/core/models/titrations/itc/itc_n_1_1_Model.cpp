@@ -64,7 +64,7 @@ void itc_n_ItoI_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_n_ItoI_Model::OptimizeParameters_Private()
+void itc_n_ItoI_Model::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
 

@@ -289,7 +289,7 @@ double UpperLogFermi(double x, double x0, double k, double beta)
 
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon, int maxiter)
 {
-    QVector<qreal> param = model.toStrongRef()->OptimizeParameters();
+    QVector<qreal> param = model.toStrongRef()->CollectOptimizationParameters();
 
     qreal mean = end;
     if (param.size() == 0)
@@ -330,7 +330,7 @@ double NewtonRoot(QWeakPointer<AbstractModel> model, int index, qreal min, qreal
 {
     double x = (min + max) / 2.0;
     double dx = 1e-4;
-    QVector<qreal> param = model.toStrongRef()->OptimizeParameters();
+    QVector<qreal> param = model.toStrongRef()->CollectOptimizationParameters();
 
     for (int iter = 0; iter < maxiter; ++iter) {
         param[index] = x;

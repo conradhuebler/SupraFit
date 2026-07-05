@@ -121,7 +121,7 @@ void itc_ItoII_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_ItoII_Model::OptimizeParameters_Private()
+void itc_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     addGlobalParameter(0);

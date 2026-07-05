@@ -63,7 +63,7 @@ void nmr_ItoI_Model::InitialGuess_Private()
     Calculate();
 }
 
-void nmr_ItoI_Model::OptimizeParameters_Private()
+void nmr_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString host = getOption(Host);
 

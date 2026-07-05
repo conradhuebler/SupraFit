@@ -69,7 +69,7 @@ void FlexMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-void FlexMolecularModel::OptimizeParameters_Private()
+void FlexMolecularModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

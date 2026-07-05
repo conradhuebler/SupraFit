@@ -105,7 +105,7 @@ bool itc_any_Model::DefineModel()
     for (int i = 0; i < GlobalParameterSize(); ++i)
         setOption(Dilution + 1 + i, "yes");
 
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
     m_complete = true;
 
     for (int i = 0; i < DataPoints(); ++i) {
@@ -145,7 +145,7 @@ void itc_any_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_any_Model::OptimizeParameters_Private()
+void itc_any_Model::CollectOptimizationParameters_Private()
 {
     /*
     for (int i = 0; i < GlobalParameterSize(); ++i) {

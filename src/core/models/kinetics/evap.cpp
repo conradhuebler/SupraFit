@@ -73,7 +73,7 @@ void EvapMonoModel::InitialGuess_Private()
     Calculate();
 }
 
-void EvapMonoModel::OptimizeParameters_Private()
+void EvapMonoModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

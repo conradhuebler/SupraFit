@@ -118,10 +118,13 @@ public:
      *  Reimplement this function and provide the correspondig enum in global.h */
     virtual SupraFit::Model SFModel() const override = 0;
 
-    /*! \brief set the OptimizationType to type and returns the Parameters
-     * 
-     */
-    QVector<qreal> OptimizeParameters();
+    /*! \brief Build the list of parameters to optimise and return their current values.
+     *
+     * NOTE: this does NOT run a fit — it (re)collects the global + local parameters into the
+     * internal optimisation vector (m_opt_para) and returns their current values. The actual
+     * minimisation is driven by Minimizer::Minimize() / NonLinearFitThread. Formerly named
+     * OptimizeParameters(), which misleadingly suggested it optimises. */
+    QVector<qreal> CollectOptimizationParameters();
 
     /*! \brief Set a json object to define some user definable stuff
      *
@@ -138,10 +141,9 @@ public:
      */
     virtual bool DefineModel() { return true; }
 
-    /*! \brief returns the Parameters used in optimisation
-     *
-     */
-    inline QVector<qreal> OptimizeParameters() const { return m_parameter; }
+    /*! \brief const overload: returns the cached optimisation-parameter values (m_parameter)
+     * without rebuilding the list. */
+    inline QVector<qreal> CollectOptimizationParameters() const { return m_parameter; }
 
     /*! \brief returns a pair of int
      *  first - index of parameter
@@ -877,7 +879,7 @@ protected:
      * @return QVector<qreal>
      * 
      */
-    virtual void OptimizeParameters_Private();
+    virtual void CollectOptimizationParameters_Private();
 
     /* 
      * @param int i, int j and qreal value

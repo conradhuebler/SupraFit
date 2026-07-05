@@ -172,7 +172,7 @@ QVector<qreal> nmr_IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 
-void nmr_IItoI_ItoI_Model::OptimizeParameters_Private()
+void nmr_IItoI_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
     QString host = getOption(Host);

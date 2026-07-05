@@ -70,7 +70,7 @@ void itc_ItoI_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_ItoI_Model::OptimizeParameters_Private()
+void itc_ItoI_Model::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addLocalParameter(0);
@@ -86,7 +86,7 @@ void itc_ItoI_Model::OptimizeParameters_Private()
 
 void itc_ItoI_Model::CalculateVariables()
 {
-    //    qDebug() << "from within" << OptimizeParameters();
+    //    qDebug() << "from within" << CollectOptimizationParameters();
     QString more_info = QString("Inject\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
     QString dil = getOption(Dilution);
 

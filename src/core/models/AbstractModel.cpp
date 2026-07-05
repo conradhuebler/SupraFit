@@ -300,11 +300,11 @@ void AbstractModel::InitialiseRandom()
     emit Recalculated();
 }
 
-QVector<qreal> AbstractModel::OptimizeParameters()
+QVector<qreal> AbstractModel::CollectOptimizationParameters()
 {
     clearOptParameter();
 
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
 
     QVector<qreal> variables;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -326,7 +326,7 @@ QVector<qreal> AbstractModel::OptimizeParameters()
     return variables;
 }
 
-void AbstractModel::OptimizeParameters_Private()
+void AbstractModel::CollectOptimizationParameters_Private()
 {
     for (int i = 0; i < GlobalParameterSize(); ++i)
         addGlobalParameter(i);
@@ -927,7 +927,7 @@ void AbstractModel::setOption(int index, const QString& value)
     if (!private_d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
         return;
     private_d->m_model_options[index].value = value;
-    OptimizeParameters();
+    CollectOptimizationParameters();
     emit OptionChanged(index, value);
 }
 

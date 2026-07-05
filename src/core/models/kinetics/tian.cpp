@@ -87,7 +87,7 @@ void TIANModel::InitialGuess_Private()
     Calculate();
 }
 
-void TIANModel::OptimizeParameters_Private()
+void TIANModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

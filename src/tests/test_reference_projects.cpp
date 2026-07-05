@@ -233,7 +233,7 @@ private slots:
             // (2) Optimiser stability: run the REAL optimiser (NonLinearFitThread via Minimizer)
             // starting from the loaded optimum; it must stay at the reference minimum.
             //
-            // NOTE: this used to call model->OptimizeParameters(), which does NOT fit — it only
+            // NOTE: this used to call model->CollectOptimizationParameters(), which does NOT fit — it only
             // rebuilds the parameter list (AbstractModel.cpp:303) — so the check was vacuous (it
             // "passed" by never moving). Driving Minimizer::Minimize() actually exercises the
             // optimiser. We assert on SSE (robust to flat/degenerate directions); the exact

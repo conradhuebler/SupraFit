@@ -140,16 +140,17 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     QVector<qreal> globalConstants;
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
-        globalConstants = model.toStrongRef()->OptimizeParameters();
+        globalConstants = model.toStrongRef()->CollectOptimizationParameters();
         error_0 = model.toStrongRef()->SSE();
         sse << error_0;
         parameter_history << globalConstants;
-#pragma message("this used to be not here before restructuring")
+        // Re-apply the locked-parameter mask each iteration: CollectOptimizationParameters()
+        // above rebuilds the parameter list and clears it, so it must be restored before the step.
         model.toStrongRef()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
         error_2 = model.toStrongRef()->SSE();
 
-        auto constants = model.toStrongRef()->OptimizeParameters();
+        auto constants = model.toStrongRef()->CollectOptimizationParameters();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
             norm += qAbs(globalConstants[i] - constants[i]);

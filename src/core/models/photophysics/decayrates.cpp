@@ -90,7 +90,7 @@ void DecayRates::EvaluateOptions()
     }
 }
 
-void DecayRates::OptimizeParameters_Private()
+void DecayRates::CollectOptimizationParameters_Private()
 {
     QString str = getOption(1);
 

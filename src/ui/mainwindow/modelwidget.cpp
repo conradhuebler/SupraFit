@@ -870,7 +870,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
 
     OptimisationHistory history = m_minimizer->History();
     int series = 0;
-    for (int i = 0; i < m_model->OptimizeParameters().size(); ++i) {
+    for (int i = 0; i < m_model->CollectOptimizationParameters().size(); ++i) {
         auto pair = m_model->IndexParameters(i);
         if (pair.second == 0) {
             history.names << m_model->GlobalParameterName(pair.first);
@@ -888,7 +888,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json, false);
-    m_model->OptimizeParameters();
+    m_model->CollectOptimizationParameters();
     Repaint();
 
     // Claude Generated: Clean replacement for timer hack - immediate state application

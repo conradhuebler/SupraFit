@@ -87,7 +87,7 @@ void fl_ItoI_Model::InitialGuess_Private()
     Calculate();
 }
 
-void fl_ItoI_Model::OptimizeParameters_Private()
+void fl_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString host = getOption(Host);
     QString guest = getOption(Guest);

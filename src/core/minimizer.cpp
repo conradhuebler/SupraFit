@@ -82,7 +82,7 @@ void NonLinearFitThread::setParameter(const QJsonObject& json)
 int NonLinearFitThread::NonLinearFit()
 {
     QList<int> locked = m_model->LockedParameters();
-    QVector<qreal> parameter = m_model->OptimizeParameters();
+    QVector<qreal> parameter = m_model->CollectOptimizationParameters();
     if (parameter.isEmpty())
         return 0;
     if (locked.size() == parameter.size())

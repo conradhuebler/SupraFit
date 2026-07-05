@@ -77,7 +77,7 @@ void itc_n_ItoII_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_n_ItoII_Model::OptimizeParameters_Private()
+void itc_n_ItoII_Model::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);

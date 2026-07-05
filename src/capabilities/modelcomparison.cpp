@@ -35,7 +35,7 @@
 void MCThread::run()
 {
     QVector<QVector<qreal>> applied_parameters;
-    QVector<qreal> parameters = m_model.data()->OptimizeParameters();
+    QVector<qreal> parameters = m_model.data()->CollectOptimizationParameters();
     applied_parameters << parameters;
 
     m_ParameterIndex = m_controller["ParameterIndex"].toInt(0);
@@ -161,7 +161,7 @@ void MCThread::run()
 
 qreal FCThread::SingleLimit(int parameter_id, int direction)
 {
-    QVector<double> parameter = m_model.data()->OptimizeParameters();
+    QVector<double> parameter = m_model.data()->CollectOptimizationParameters();
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
@@ -225,7 +225,7 @@ void FCThread::run()
 {
     int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
 
-    QVector<double> parameter = m_model.data()->OptimizeParameters();
+    QVector<double> parameter = m_model.data()->CollectOptimizationParameters();
     double param = parameter[m_parameter];
     m_list_points[param] = m_model.data()->StatisticVector()[ParameterIndex];
 
@@ -269,7 +269,7 @@ bool ModelComparison::FastConfidence()
 
     bool series = m_controller["IncludeSeries"].toBool();
 
-    QVector<double> parameter = m_model.data()->OptimizeParameters();
+    QVector<double> parameter = m_model.data()->CollectOptimizationParameters();
     QVector<QPointer<FCThread>> threads;
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
