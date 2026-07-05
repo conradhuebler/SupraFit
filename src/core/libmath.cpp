@@ -315,9 +315,6 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
         model.toStrongRef()->Calculate();
         qreal SSE_1 = model.toStrongRef()->SSE();
 
-#ifdef _DEBUG
-        qDebug() << SSE_0 << SSE_1 << start << end << mean;
-#endif
         if (SSE_0 > SSE_1 && SSE_0 > SSE_2) {
             start = mean;
         } else if (SSE_2 > SSE_0 && SSE_2 > SSE_1) {

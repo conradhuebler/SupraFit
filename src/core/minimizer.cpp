@@ -52,10 +52,8 @@ void NonLinearFitThread::run()
     m_running = true;
     m_steps = 0;
     m_converged = false;
-    //quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     if (!m_model->isSimulation())
         NonLinearFit();
-    //quint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     m_running = false;
 }
@@ -89,7 +87,6 @@ int NonLinearFitThread::NonLinearFit()
         return 0;
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
-    //int iter = LeastSquaresRookfighter(m_model, parameter);
     int iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
@@ -98,15 +95,6 @@ int NonLinearFitThread::NonLinearFit()
     m_converged = (iter < m_model.data()->getOptimizerConfig()["MaxLevMarInter"].toInt());
 
     return iter;
-}
-
-void NonLinearFitThread::Print(const QString& message)
-{
-#ifdef _DEBUG
-//    qDebug() << message;
-#else
-    Q_UNUSED(message)
-#endif
 }
 
 Minimizer::Minimizer(bool exchange_statistics, QObject* parent)
