@@ -25,7 +25,6 @@
 #include <QtCore/QtMath>
 
 #include <cmath>
-#include <iostream>
 
 #include <libpeakpick/mathhelper.h>
 #include <libpeakpick/nxlinregress.h>
@@ -287,6 +286,17 @@ double UpperLogFermi(double x, double x0, double k, double beta)
     return k * log(1 + exp(-beta * (x0 - x)));
 }
 
+/*! \brief 1-D starting-value heuristic for a single optimisation parameter (ternary-bracket).
+ *
+ * Finds the value of param[index] that approximately minimises SSE, with all other parameters
+ * fixed, by shrinking the bracket [start, end]: each iteration evaluates SSE at start, end and
+ * the midpoint and discards the end with the larger SSE; if the midpoint is the worst (no clear
+ * descent direction inside the bracket) it slides the whole bracket right by +1 as a fallback.
+ * Returns the last midpoint. Used to seed a stability constant before the full LevMar fit — the
+ * fit then refines all parameters jointly, so this only needs to land in the right basin.
+ *
+ * NB: a sibling heuristic, NewtonRoot() below, does the same job with a gradient step; different
+ * models call one or the other. Unifying them is a follow-up (needs a fluorescence test fixture). */
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon, int maxiter)
 {
     QVector<qreal> param = model.toStrongRef()->CollectOptimizationParameters();
@@ -326,6 +336,15 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
     }
     return mean;
 }
+/*! \brief 1-D starting-value heuristic for a single optimisation parameter (numeric gradient).
+ *
+ * Despite the name this is NOT a Newton root-finder: it minimises SSE(param[index]) by descending
+ * along the numerically estimated gradient. From the midpoint of [min, max] it estimates
+ * dy = -dSSE/dx via a central difference (step dx) and stops once |dy| < epsilon (a stationary
+ * point). The update x += dy / (SSE * 10^inner) scales the step by the current SSE; the inner loop
+ * shrinks it ten-fold until the new x lands back inside [min, max], giving up (returning the
+ * current x) after ten shrinks. A crude but bounded seed for a stability constant before the full
+ * LevMar fit. See BisectParameter() above for the sibling bracket-based heuristic. */
 double NewtonRoot(QWeakPointer<AbstractModel> model, int index, qreal min, qreal max, double epsilon, int maxiter)
 {
     double x = (min + max) / 2.0;

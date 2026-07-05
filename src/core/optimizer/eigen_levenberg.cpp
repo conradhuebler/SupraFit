@@ -30,8 +30,6 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
 
-#include <iostream>
-
 #include "src/core/libmath.h"
 typedef QList<qreal> Variables;
 
@@ -85,8 +83,6 @@ struct MyFunctor : Functor<double> {
     }
     int no_parameter;
     int no_points;
-    int m_potenz;
-    Variables ModelSignals;
     QSharedPointer<AbstractModel> model;
     int inputs() const { return no_parameter; }
     int values() const { return no_points; }
@@ -121,7 +117,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
 
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
-    functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor>> lm(numDiff);
     int iter = 0;
@@ -133,7 +128,10 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     lm.parameters.gtol = config["LevMar_Gtol"].toDouble(); // tolerance for the norm of the gradient of the error vector
     lm.parameters.epsfcn = config["LevMar_epsfcn"].toDouble(); //error precision
 
-    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+    // The LevMar status return is intentionally not used for the stop decision: this loop
+    // drives the steps manually and stops on its own SSE-change / parameter-norm criteria
+    // (ErrorConvergence / DeltaParameter) below.
+    lm.minimizeInit(parameter);
     qreal error_0 = 0;
     qreal error_2 = 1;
     qreal norm = 1;
@@ -147,7 +145,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
         // Re-apply the locked-parameter mask each iteration: CollectOptimizationParameters()
         // above rebuilds the parameter list and clears it, so it must be restored before the step.
         model.toStrongRef()->setLockedParameter(locked);
-        status = lm.minimizeOneStep(parameter);
+        lm.minimizeOneStep(parameter);
         error_2 = model.toStrongRef()->SSE();
 
         auto constants = model.toStrongRef()->CollectOptimizationParameters();
