@@ -170,10 +170,15 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   die kleine Inkonsistenz: `external/least-squares-cpp` ist ein Gitlink **ohne**
   `.gitmodules`-Eintrag. *Datei:* `.gitmodules`.
 
-- **D7 – Logging-/DEBUG_ON-Strategie** 🟡 *(DEBUG_ON gebunden)*
-  ✅ **`DEBUG_ON` an Compile-Definition gebunden** (`if(DEBUG_ON) add_compile_definitions(DEBUG_ON)`):
-  die `#ifdef DEBUG_ON`-Guards greifen jetzt bei `-DDEBUG_ON=ON` (verifiziert), Default OFF
-  unverändert. ⬜ Verbleibend: zentrales Logging und `std::cout` → `fmt` (~360 Stellen).
+- **D7 – Logging-/DEBUG_ON-Strategie** 🟢 *(Spam-Flut beseitigt)*
+  ✅ **`DEBUG_ON` an Compile-Definition gebunden** (`if(DEBUG_ON) add_compile_definitions(DEBUG_ON)`).
+  ✅ **Debug-Flut abgeschaltet** (2026-07-05): (1) `QT_NO_DEBUG_OUTPUT` wird gesetzt, wenn `DEBUG_ON`
+  aus ist → **alle ~150 `qDebug()`** werden im Normal-Build wegkompiliert (eine CMake-Zeile, null
+  Source-Edits; `qWarning`/`qInfo` unberührt). (2) Neues `SFDebugPrint(...)`-Makro (`global.h`):
+  `fmt::print` unter `DEBUG_ON`, sonst no-op — die 67 `fmt::print("… DEBUG …")`-Traces (projectmanager/
+  analysis_manager/suprafit_cli) laufen jetzt darüber. **Verifiziert**: ML-Pipeline-Lauf 137→81 Zeilen,
+  0 `Debug:`-/`DEBUG`-Zeilen. ⬜ Rest (niedrig, spammt *nicht*): 54 live `std::cout` in expliziten
+  Debug-Print-Methoden → `fmt`, und 16 tote `#ifdef _DEBUG`-Blöcke (falsches Makro) aufräumen.
 
 - **D8 – Doc-Konsolidierung** 🟢 *(Root-Sprawl erledigt)*
   ✅ Die 4 abgelösten Root-MDs entfernt (Inhalt in diesem Dokument konsolidiert). ⬜ Verbleibend:
@@ -264,8 +269,8 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   Cluster (`BoxWhiskerPlot`/`Entropy`/`Confidence`/Modell-Parameter-Statistik) → `toolset_statistics.cpp`
   (`19ca3920`), `toolset.cpp` 827→386.
   ✅ **`bc50.h`** de-inlined (`bc50.cpp`, s. §0).
-- ⬜ **Immer-an Debug im Core**: `dataclass.cpp` teilentschärft; noch ~143 qDebug gesamt,
-  152 `std::cout` (bc50.h 17, Titrationsmodelle) → D7.
+- ✅ **Immer-an Debug im Core beseitigt** (D7): `QT_NO_DEBUG_OUTPUT` (Nicht-DEBUG-Build) schaltet alle
+  `qDebug()` ab, `SFDebugPrint`-Makro gated die `fmt`-DEBUG-Traces; CLI-Ausgabe verifiziert sauber.
 - ✅ **`InitialGuess()`-„Nicht-Konvergenz" war ein Messartefakt (widerlegt, 2026-07-05)**: Die frühere
   🔴-Notiz („landet nicht im Referenz-Minimum, SSE ~1.2, lg K ~2.5") entstand, weil die Konvergenz mit
   `model->OptimizeParameters()` **gemessen** wurde — **diese Methode fittet aber nicht**: sie baut nur

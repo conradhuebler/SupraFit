@@ -32,6 +32,11 @@ option (DEBUG_ON
 # left all debug guards inert regardless of the setting (D7). Claude Generated
 if(DEBUG_ON)
     add_compile_definitions(DEBUG_ON)
+else()
+    # Compile out every qDebug() call in normal (non-debug) builds so the ~150 ad-hoc
+    # qDebug traces stop flooding CLI/GUI output. qWarning()/qInfo() are unaffected. This
+    # applies the "qDebug only under DEBUG_ON" rule globally without editing each call (D7).
+    add_compile_definitions(QT_NO_DEBUG_OUTPUT)
 endif()
     
 option (experimental

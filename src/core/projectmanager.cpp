@@ -83,7 +83,7 @@ bool ProjectManager::loadProject(const QString& filePath)
     }
 
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG ProjectManager::loadProject: Loading file: {}\n", filePath.toStdString());
+    SFDebugPrint("🔍 DEBUG ProjectManager::loadProject: Loading file: {}\n", filePath.toStdString());
 #endif
 
     try {
@@ -113,7 +113,7 @@ bool ProjectManager::loadProject(const QString& filePath)
         }
 
         // Claude Generated - Debug JSON data structure passed to loadProjectFromJson
-        fmt::print("🔍 DEBUG loadProject: Passing JSON with keys {} to loadProjectFromJson\n", 
+        SFDebugPrint("🔍 DEBUG loadProject: Passing JSON with keys {} to loadProjectFromJson\n", 
             [&projectData]() {
                 QStringList keys;
                 for (auto it = projectData.begin(); it != projectData.end(); ++it) {
@@ -138,7 +138,7 @@ bool ProjectManager::loadProject(const QString& filePath)
         emit projectLoaded(projectId, filePath);
 
 #ifdef DEBUG_ON
-        fmt::print("✅ DEBUG ProjectManager::loadProject: Successfully loaded project {} from {}\n",
+        SFDebugPrint("✅ DEBUG ProjectManager::loadProject: Successfully loaded project {} from {}\n",
             projectId.toStdString(), filePath.toStdString());
 #endif
 
@@ -174,7 +174,7 @@ bool ProjectManager::saveProject(const QString& filePath, const QString& project
     }
 
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG ProjectManager::saveProject: Saving project {} to {}\n",
+    SFDebugPrint("🔍 DEBUG ProjectManager::saveProject: Saving project {} to {}\n",
         targetProjectId.toStdString(), filePath.toStdString());
 #endif
 
@@ -203,7 +203,7 @@ bool ProjectManager::saveProject(const QString& filePath, const QString& project
             emit projectSaved(targetProjectId, filePath);
 
 #ifdef DEBUG_ON
-            fmt::print("✅ DEBUG ProjectManager::saveProject: Successfully saved project {} to {}\n",
+            SFDebugPrint("✅ DEBUG ProjectManager::saveProject: Successfully saved project {} to {}\n",
                 targetProjectId.toStdString(), filePath.toStdString());
 #endif
             return true;
@@ -228,7 +228,7 @@ bool ProjectManager::saveAllProjects(const QString& filePath)
     }
 
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG ProjectManager::saveAllProjects: Saving {} projects to {}\n",
+    SFDebugPrint("🔍 DEBUG ProjectManager::saveAllProjects: Saving {} projects to {}\n",
         m_projects.size(), filePath.toStdString());
 #endif
 
@@ -255,7 +255,7 @@ bool ProjectManager::saveAllProjects(const QString& filePath)
             file.close();
 
 #ifdef DEBUG_ON
-            fmt::print("✅ DEBUG ProjectManager::saveAllProjects: Successfully saved {} projects\n",
+            SFDebugPrint("✅ DEBUG ProjectManager::saveAllProjects: Successfully saved {} projects\n",
                 projectsArray.size());
 #endif
             return true;
@@ -408,7 +408,7 @@ bool ProjectManager::addModelToProject(QSharedPointer<AbstractModel> model, cons
         emit modelAdded(targetProjectId, model->ModelUUID());
 
 #ifdef DEBUG_ON
-        fmt::print("✅ DEBUG ProjectManager::addModelToProject: Added model {} to project {}\n",
+        SFDebugPrint("✅ DEBUG ProjectManager::addModelToProject: Added model {} to project {}\n",
             model->ModelUUID().toStdString(), targetProjectId.toStdString());
 #endif
 
@@ -455,7 +455,7 @@ bool ProjectManager::removeProject(const QString& projectId)
     emit projectRemoved(projectId);
 
 #ifdef DEBUG_ON
-    fmt::print("✅ DEBUG ProjectManager::removeProject: Removed project {}\n", projectId.toStdString());
+    SFDebugPrint("✅ DEBUG ProjectManager::removeProject: Removed project {}\n", projectId.toStdString());
 #endif
 
     return true;
@@ -512,7 +512,7 @@ QString ProjectManager::createProjectFromJson(const QJsonObject& projectJson, co
                     }
                     emit projectAdded(projectId, projectName);
 #ifdef DEBUG_ON
-                    fmt::print("✅ DEBUG ProjectManager::createProjectFromJson: Created multi-project {} with title '{}'\n",
+                    SFDebugPrint("✅ DEBUG ProjectManager::createProjectFromJson: Created multi-project {} with title '{}'\n",
                         projectId.toStdString(), projectName.toStdString());
 #endif
                 }
@@ -543,7 +543,7 @@ QString ProjectManager::createProjectFromJson(const QJsonObject& projectJson, co
         emit projectAdded(projectId, projectTitle.isEmpty() ? "Generated Project" : projectTitle);
 
 #ifdef DEBUG_ON
-        fmt::print("✅ DEBUG ProjectManager::createProjectFromJson: Created project {} with title '{}'\n",
+        SFDebugPrint("✅ DEBUG ProjectManager::createProjectFromJson: Created project {} with title '{}'\n",
             projectId.toStdString(), projectTitle.toStdString());
 #endif
     }
@@ -762,7 +762,7 @@ void ProjectManager::clearAllProjects()
     emit projectsCleared();
 
 #ifdef DEBUG_ON
-    fmt::print("✅ DEBUG ProjectManager::clearAllProjects: All projects cleared\n");
+    SFDebugPrint("✅ DEBUG ProjectManager::clearAllProjects: All projects cleared\n");
 #endif
 }
 
@@ -801,14 +801,14 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
 #ifdef DEBUG_ON
-        fmt::print("DEBUG ProjectManager: Scanning for models in JSON keys: {}\n",
+        SFDebugPrint("DEBUG ProjectManager: Scanning for models in JSON keys: {}\n",
             jsonData.keys().join(", ").toStdString());
 #endif
 
         for (const QString& key : jsonData.keys()) {
             if (key.startsWith("model_")) {
 #ifdef DEBUG_ON
-                fmt::print("DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
+                SFDebugPrint("DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
 #endif
                 // Claude Generated FIX 2: Type-check before conversion to ensure valid model data
                 QJsonValue modelValue = jsonData[key];
@@ -832,13 +832,13 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                     // Create model using the factory function
                     int modelId = modelObject["model"].toInt();
 #ifdef DEBUG_ON
-                    fmt::print("DEBUG ProjectManager: Creating model ID {} for project {}\n",
+                    SFDebugPrint("DEBUG ProjectManager: Creating model ID {} for project {}\n",
                         modelId, project->UUID().toStdString());
 #endif
 
                     QSharedPointer<AbstractModel> model = CreateModel(modelId, project.data());
 #ifdef DEBUG_ON
-                    fmt::print("DEBUG ProjectManager: CreateModel returned model: {}\n",
+                    SFDebugPrint("DEBUG ProjectManager: CreateModel returned model: {}\n",
                         model ? "SUCCESS" : "FAILED");
 #endif
 
@@ -1033,7 +1033,7 @@ void ProjectManager::updateProjectHash()
     }
 
 #ifdef DEBUG_ON
-    fmt::print("DEBUG ProjectManager::updateProjectHash: Updated hash with {} projects\n", m_projectHash.size());
+    SFDebugPrint("DEBUG ProjectManager::updateProjectHash: Updated hash with {} projects\n", m_projectHash.size());
 #endif
 }
 

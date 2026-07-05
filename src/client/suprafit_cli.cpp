@@ -103,14 +103,14 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
     
     QStringList keys = control.keys();
 #ifdef DEBUG_ON
-    fmt::print("🔍 DEBUG setControlJson: Input JSON keys: {}\n", keys.join(", ").toStdString());
+    SFDebugPrint("🔍 DEBUG setControlJson: Input JSON keys: {}\n", keys.join(", ").toStdString());
 #endif
     
     for (const QString& key : keys) {
         if (key.compare("main", Qt::CaseInsensitive) == 0) {
             m_main = control[key].toObject();
 #ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG setControlJson: Found Main section with keys: {}\n", m_main.keys().join(", ").toStdString());
+            SFDebugPrint("🔍 DEBUG setControlJson: Found Main section with keys: {}\n", m_main.keys().join(", ").toStdString());
 #endif
         }
 
@@ -133,7 +133,7 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             m_generate_dependent = true;  // Enable dependent data generation
             m_simulate_job = true;        // Enable simulation mode
 #ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG setControlJson: Found Independent section with source: {}\n", 
+            SFDebugPrint("🔍 DEBUG setControlJson: Found Independent section with source: {}\n", 
                       m_independent["Source"].toString().toStdString());
 #endif
         }
@@ -144,7 +144,7 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             m_generate_dependent = true;  // Enable dependent data generation
             m_simulate_job = true;        // Enable simulation mode
 #ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG setControlJson: Found Dependent section with source: {}\n", 
+            SFDebugPrint("🔍 DEBUG setControlJson: Found Dependent section with source: {}\n", 
                       m_dependent["Source"].toString().toStdString());
 #endif
         }
@@ -173,14 +173,14 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             // Handle GenerateData configuration
             if (str.compare("GenerateData", Qt::CaseInsensitive) == 0) {
 #ifdef DEBUG_ON
-                fmt::print("🔍 DEBUG: Found GenerateData configuration!\n");
+                SFDebugPrint("🔍 DEBUG: Found GenerateData configuration!\n");
 #endif
                 m_generate_dependent = true;
                 m_generate_noisy_dependent = true;
                 m_simulate_job = true;
                 m_simulation = m_main[str].toObject();
 #ifdef DEBUG_ON
-                fmt::print("🔍 DEBUG: Set m_generate_dependent = true\n");
+                SFDebugPrint("🔍 DEBUG: Set m_generate_dependent = true\n");
 #endif
             }
             
@@ -218,7 +218,7 @@ bool SupraFitCli::LoadFile()
     // Check if filename is valid
     if (m_infile.isEmpty() || m_infile.isNull()) {
 #ifdef DEBUG_ON
-        fmt::print("❌ DEBUG LoadFile: Input file is empty or null!\n");
+        SFDebugPrint("❌ DEBUG LoadFile: Input file is empty or null!\n");
 #endif
         return false;
     }
@@ -241,14 +241,14 @@ bool SupraFitCli::LoadFile()
         if (fileData.contains("AddModels")) {
             m_models = fileData["AddModels"].toObject();
 #ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG LoadFile: Found AddModels section with {} models\n", m_models.size());
+            SFDebugPrint("🔍 DEBUG LoadFile: Found AddModels section with {} models\n", m_models.size());
 #endif
         }
 
         if (fileData.contains("PostFitAnalysis")) {
             m_analyse = fileData["PostFitAnalysis"].toObject();
 #ifdef DEBUG_ON
-            fmt::print("🔍 DEBUG LoadFile: Found PostFitAnalysis section\n");
+            SFDebugPrint("🔍 DEBUG LoadFile: Found PostFitAnalysis section\n");
 #endif
         }
 
@@ -274,8 +274,8 @@ bool SupraFitCli::LoadFile()
                     m_data_vector = projectManager.getAllProjectsAsJson();
 
 #ifdef DEBUG_ON
-                    fmt::print("✅ DEBUG LoadFile: Successfully loaded project using ProjectManager\n");
-                    fmt::print("🔍 DEBUG LoadFile: Project UUID: {}\n", project->UUID().toStdString());
+                    SFDebugPrint("✅ DEBUG LoadFile: Successfully loaded project using ProjectManager\n");
+                    SFDebugPrint("🔍 DEBUG LoadFile: Project UUID: {}\n", project->UUID().toStdString());
 #endif
                 }
             }
@@ -1183,12 +1183,12 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
     if (m_main.isEmpty() || m_simulation.isEmpty()) {
         fmt::print("Error: Missing configuration data for DataGenerator\n");
 #ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG: m_main.isEmpty() = {}, m_simulation.isEmpty() = {}\n", 
+        SFDebugPrint("🔍 DEBUG: m_main.isEmpty() = {}, m_simulation.isEmpty() = {}\n", 
                   m_main.isEmpty(), m_simulation.isEmpty());
 #endif
 #ifdef DEBUG_ON
-        fmt::print("🔍 DEBUG: m_main keys: {}\n", m_main.keys().join(", ").toStdString());
-        fmt::print("🔍 DEBUG: m_simulation keys: {}\n", m_simulation.keys().join(", ").toStdString());
+        SFDebugPrint("🔍 DEBUG: m_main keys: {}\n", m_main.keys().join(", ").toStdString());
+        SFDebugPrint("🔍 DEBUG: m_simulation keys: {}\n", m_simulation.keys().join(", ").toStdString());
 #endif
         return project_list;
     }
@@ -1262,10 +1262,10 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             }
             
             // Generate independent data
-            fmt::print("🔍 DEBUG: Generating independent data with equations: {}\n", config["equations"].toString().toStdString());
-            fmt::print("🔍 DEBUG: RandomLimits isEmpty: {}\n", randomLimits.isEmpty());
+            SFDebugPrint("🔍 DEBUG: Generating independent data with equations: {}\n", config["equations"].toString().toStdString());
+            SFDebugPrint("🔍 DEBUG: RandomLimits isEmpty: {}\n", randomLimits.isEmpty());
             if (!randomLimits.isEmpty()) {
-                fmt::print("🔍 DEBUG: RandomLimits keys: {}\n", randomLimits.keys().join(", ").toStdString());
+                SFDebugPrint("🔍 DEBUG: RandomLimits keys: {}\n", randomLimits.keys().join(", ").toStdString());
                 success = generator->EvaluateWithRandomParameters(randomLimits);
             } else {
                 success = generator->Evaluate();
@@ -1313,8 +1313,8 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
                     dependentTable = new DataTable(generator->Table());
                 } else {
                     fmt::print("Error: Failed to generate dependent data (iteration {})\n", i+1);
-                    fmt::print("🔍 DEBUG: Dependent equations: {}\n", depConfig["equations"].toString().toStdString());
-                    fmt::print("🔍 DEBUG: DataPoints: {}, Columns: {}\n", 
+                    SFDebugPrint("🔍 DEBUG: Dependent equations: {}\n", depConfig["equations"].toString().toStdString());
+                    SFDebugPrint("🔍 DEBUG: DataPoints: {}, Columns: {}\n", 
                               depConfig["datapoints"].toInt(), depConfig["independent"].toInt());
                     continue;
                 }
@@ -1328,7 +1328,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             dataClass->setDependentRawTable(new DataTable(dependentTable));
             
             fmt::print("Generated independent data with DataGenerator (iteration {})\n", i+1);
-            fmt::print("🔍 DEBUG: Set up dependent data structure with {} rows, {} columns\n", 
+            SFDebugPrint("🔍 DEBUG: Set up dependent data structure with {} rows, {} columns\n", 
                       dependentTable->rowCount(), dependentTable->columnCount());
             
         } else {
@@ -1385,17 +1385,17 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
             if (modelSuccess) {
                 DataTable* modelTable = generator->Table();
                 if (modelTable) {
-                    fmt::print("🔍 DEBUG: Model table has {} rows, {} columns\n", modelTable->rowCount(), modelTable->columnCount());
+                    SFDebugPrint("🔍 DEBUG: Model table has {} rows, {} columns\n", modelTable->rowCount(), modelTable->columnCount());
                     dataClass->setDependentTable(new DataTable(modelTable));
                     dataClass->setDependentRawTable(new DataTable(modelTable));
                     
                     // Verify the dependent data was set correctly
-                    fmt::print("🔍 DEBUG: DataClass dependent table has {} rows, {} columns\n", 
+                    SFDebugPrint("🔍 DEBUG: DataClass dependent table has {} rows, {} columns\n", 
                               dataClass->DependentModel()->rowCount(), dataClass->DependentModel()->columnCount());
                     
                     fmt::print("Generated dependent data using model {} (iteration {})\n", model, i+1);
                 } else {
-                    fmt::print("🔍 DEBUG: Model table is null!\n");
+                    SFDebugPrint("🔍 DEBUG: Model table is null!\n");
                 }
             } else {
                 fmt::print("Warning: Failed to generate model-based dependent data (iteration {})\n", i+1);
@@ -1636,7 +1636,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithModularStructure()
         // Transfer ML RawData from model generation if available - Claude Generated
         if (!m_mlRawData.isEmpty()) {
             fullData->setRawData(m_mlRawData);
-            fmt::print("🔍 DEBUG: Transferred ML RawData with {} keys to final DataClass\n", m_mlRawData.keys().size());
+            SFDebugPrint("🔍 DEBUG: Transferred ML RawData with {} keys to final DataClass\n", m_mlRawData.keys().size());
         }
 
         // Step 3: Apply noise if specified
@@ -1711,7 +1711,7 @@ QJsonObject SupraFitCli::generateIndependentDataTable(const QJsonObject& indepen
             genData["datapoints"] = generatorConfig["DataPoints"].toInt(20);
             genData["equations"] = generatorConfig["Equations"].toString("X");
             
-            fmt::print("🔍 DEBUG: Independent config - DataPoints: {}, Variables: {}, Equations: {}\n", 
+            SFDebugPrint("🔍 DEBUG: Independent config - DataPoints: {}, Variables: {}, Equations: {}\n", 
                       genData["datapoints"].toInt(), genData["independent"].toInt(), genData["equations"].toString().toStdString());
             
             // Create generator with explicit parent to manage memory
@@ -1724,7 +1724,7 @@ QJsonObject SupraFitCli::generateIndependentDataTable(const QJsonObject& indepen
             QJsonObject randomParams = generatorConfig["RandomParameters"].toObject();
             bool success = false;
             
-            fmt::print("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
+            SFDebugPrint("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
             
             if (!randomParams.isEmpty()) {
                 success = generator->EvaluateWithRandomParameters(randomParams);
@@ -1755,7 +1755,7 @@ QJsonObject SupraFitCli::generateIndependentDataTable(const QJsonObject& indepen
             delete generator;
             generator = nullptr;
             
-            fmt::print("🔍 DEBUG: DataGenerator cleaned up successfully\n");
+            SFDebugPrint("🔍 DEBUG: DataGenerator cleaned up successfully\n");
             
             return tableJson;
             
@@ -1801,7 +1801,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             genData["datapoints"] = dataPoints;
             genData["equations"] = generatorConfig["Equations"].toString();
             
-            fmt::print("🔍 DEBUG: Dependent config - DataPoints: {}, Series: {}, Equations: {}\n", 
+            SFDebugPrint("🔍 DEBUG: Dependent config - DataPoints: {}, Series: {}, Equations: {}\n", 
                       dataPoints, genData["independent"].toInt(), genData["equations"].toString().toStdString());
             
             // Create generator with explicit parent to manage memory
@@ -1814,7 +1814,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             QJsonObject randomParams = generatorConfig["RandomParameters"].toObject();
             bool success = false;
             
-            fmt::print("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
+            SFDebugPrint("🔍 DEBUG: Random parameters empty: {}\n", randomParams.isEmpty());
             
             if (!randomParams.isEmpty()) {
                 success = generator->EvaluateWithRandomParameters(randomParams);
@@ -1845,7 +1845,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             delete generator;
             generator = nullptr;
             
-            fmt::print("🔍 DEBUG: DataGenerator cleaned up successfully\n");
+            SFDebugPrint("🔍 DEBUG: DataGenerator cleaned up successfully\n");
             
             return dependentTableJson;
             
@@ -1856,7 +1856,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             QJsonObject modelConfig = generatorConfig["Model"].toObject();
             int modelId = modelConfig["ID"].toInt(1);
 
-            fmt::print("🔍 DEBUG: Model-based generation - Model ID: {}\n", modelId);
+            SFDebugPrint("🔍 DEBUG: Model-based generation - Model ID: {}\n", modelId);
 
             // Create DataClass with independent data and empty dependent structure - Claude Generated
             QPointer<DataClass> data = new DataClass();
@@ -1878,7 +1878,7 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
             data->setDataBegin(0);
             data->setDataEnd(dataPoints);
 
-            fmt::print("🔍 DEBUG: Created DataClass with {} data points, {} series, simulation settings applied\n",
+            SFDebugPrint("🔍 DEBUG: Created DataClass with {} data points, {} series, simulation settings applied\n",
                 dataPoints, series);
 
             // Use DataGenerator's EvaluateWithModel with random parameters - Claude Generated
@@ -1892,11 +1892,11 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
 
                     // Extract enhanced content from DataClass and store globally for later use - Claude Generated
                     m_modelContent = data->getContent();
-                    fmt::print("🔍 DEBUG: Extracted model content ({} chars) for later use\n", m_modelContent.length());
+                    SFDebugPrint("🔍 DEBUG: Extracted model content ({} chars) for later use\n", m_modelContent.length());
 
                     // Extract ML RawData and store globally for later transfer - Claude Generated
                     m_mlRawData = data->RawData();
-                    fmt::print("🔍 DEBUG: Extracted ML RawData with {} keys for later transfer\n", m_mlRawData.keys().size());
+                    SFDebugPrint("🔍 DEBUG: Extracted ML RawData with {} keys for later transfer\n", m_mlRawData.keys().size());
 
                     fmt::print("✅ Generated model-based dependent data: {} rows x {} cols\n",
                         modelTable->rowCount(), modelTable->columnCount());
@@ -2054,9 +2054,9 @@ QVector<QJsonObject> SupraFitCli::ProcessMLPipeline()
         QJsonObject globalAnalysisConfig;
 
         // Debug: Check what configuration sections are available
-        fmt::print("🔍 DEBUG ProcessMLPipeline: Available config sections: {}\n", m_original_config.keys().join(", ").toStdString());
-        fmt::print("🔍 DEBUG ProcessMLPipeline: Contains AddModels? {}\n", m_original_config.contains("AddModels"));
-        fmt::print("🔍 DEBUG ProcessMLPipeline: Contains MLModels? {}\n", m_original_config.contains("MLModels"));
+        SFDebugPrint("🔍 DEBUG ProcessMLPipeline: Available config sections: {}\n", m_original_config.keys().join(", ").toStdString());
+        SFDebugPrint("🔍 DEBUG ProcessMLPipeline: Contains AddModels? {}\n", m_original_config.contains("AddModels"));
+        SFDebugPrint("🔍 DEBUG ProcessMLPipeline: Contains MLModels? {}\n", m_original_config.contains("MLModels"));
 
         // Support new AddModels structure (v2.0) or legacy MLModels (v1.0)
         if (m_original_config.contains("AddModels")) {
@@ -2669,7 +2669,7 @@ QPointer<DataClass> SupraFitCli::applyNoise(QPointer<DataClass> data, const QJso
             }
         }
         
-        fmt::print("🔍 DEBUG: Noise - Type: {}, StdDev: {}, Seed: {}, Columns: {}\n", 
+        SFDebugPrint("🔍 DEBUG: Noise - Type: {}, StdDev: {}, Seed: {}, Columns: {}\n", 
                   type.toStdString(), stddev, seed, columns.isEmpty() ? "all" : QString::number(columns.size()).toStdString());
         
         // Setup random number generator and distribution

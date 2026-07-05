@@ -34,6 +34,16 @@
 #include <cmath>
 #include <iostream>
 
+// D7: debug print that expands to fmt::print under DEBUG_ON and to nothing otherwise, so the
+// many ad-hoc "DEBUG ..." fmt traces stay available when debugging but never pollute normal
+// CLI/GUI output. (qDebug() is silenced the same way globally via QT_NO_DEBUG_OUTPUT in CMake.)
+#ifdef DEBUG_ON
+#include <fmt/core.h>
+#define SFDebugPrint(...) fmt::print(__VA_ARGS__)
+#else
+#define SFDebugPrint(...) ((void)0)
+#endif
+
 const QString Unicode_Phi = QChar(0x03C6);
 const QString Unicode_beta = QChar(0x03B2);
 const QString Unicode_delta = QChar(0x03B4);

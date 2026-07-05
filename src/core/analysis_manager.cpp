@@ -154,8 +154,8 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
                                                      const QJsonObject& modelsConfig,
                                                      const QJsonObject& globalAnalysisConfig)
 {
-    fmt::print("🔍 DEBUG AnalysisManager: fitModelsToData() called with {} models\n", modelsConfig.size());
-    fmt::print("🔍 DEBUG AnalysisManager: data has {} independent rows, {} dependent rows\n", 
+    SFDebugPrint("🔍 DEBUG AnalysisManager: fitModelsToData() called with {} models\n", modelsConfig.size());
+    SFDebugPrint("🔍 DEBUG AnalysisManager: data has {} independent rows, {} dependent rows\n", 
                data ? data->IndependentModel()->rowCount() : -1, 
                data ? data->DependentModel()->rowCount() : -1);
     
@@ -176,10 +176,10 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
     if (modelsConfig.contains("models") && modelsConfig["models"].isArray()) {
         // Format 1: {"models": [...]} array format
         models = modelsConfig["models"].toArray();
-        fmt::print("🔍 DEBUG: Using models array format with {} models\n", models.size());
+        SFDebugPrint("🔍 DEBUG: Using models array format with {} models\n", models.size());
     } else {
         // Format 2: {"nmr_1_1": {"ID": 1}, ...} object format (CLI format)
-        fmt::print("🔍 DEBUG: Converting CLI object format to models array\n");
+        SFDebugPrint("🔍 DEBUG: Converting CLI object format to models array\n");
         for (auto it = modelsConfig.begin(); it != modelsConfig.end(); ++it) {
             if (it.value().isObject()) {
                 QJsonObject modelConfig = it.value().toObject();
@@ -187,7 +187,7 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
                 models.append(modelConfig);
             }
         }
-        fmt::print("🔍 DEBUG: Converted {} CLI models to array format\n", models.size());
+        SFDebugPrint("🔍 DEBUG: Converted {} CLI models to array format\n", models.size());
     }
     
     if (models.isEmpty()) {
@@ -199,7 +199,7 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
         return results;
     }
     
-    fmt::print("🔍 DEBUG: Processing {} models for fitting\n", models.size());
+    SFDebugPrint("🔍 DEBUG: Processing {} models for fitting\n", models.size());
     
     // Fit each model with progress reporting
     for (int i = 0; i < models.size(); ++i) {
@@ -503,10 +503,10 @@ QJsonObject AnalysisManager::fitSingleModel(const QJsonObject& modelConfig,
         int modelId = 0;
         if (modelConfig.contains("ID")) {
             modelId = modelConfig["ID"].toInt();
-            fmt::print("🔍 DEBUG: Using model ID {} from 'ID' key\n", modelId);
+            SFDebugPrint("🔍 DEBUG: Using model ID {} from 'ID' key\n", modelId);
         } else if (modelConfig.contains("id")) {
             modelId = modelConfig["id"].toInt();
-            fmt::print("🔍 DEBUG: Using model ID {} from 'id' key\n", modelId);
+            SFDebugPrint("🔍 DEBUG: Using model ID {} from 'id' key\n", modelId);
         } else {
             result["error"] = "No model ID found in configuration (expected 'ID' or 'id')";
             result["success"] = false;
@@ -514,7 +514,7 @@ QJsonObject AnalysisManager::fitSingleModel(const QJsonObject& modelConfig,
             return result;
         }
         
-        fmt::print("🔧 DEBUG: Creating model with ID {} for analysis\n", modelId);
+        SFDebugPrint("🔧 DEBUG: Creating model with ID {} for analysis\n", modelId);
         QSharedPointer<AbstractModel> model = createModelFromConfig(modelId, data);
         
         if (!model) {
@@ -570,14 +570,14 @@ QJsonObject AnalysisManager::fitSingleModel(const QJsonObject& modelConfig,
         bool runGlobalAnalysis = globalAnalysisConfig.contains("methods") && globalAnalysisConfig["methods"].isArray();
         bool runModelAnalysis = modelSpecificConfig.contains("enabled") && modelSpecificConfig.value("enabled").toBool();
         
-        fmt::print("🔍 DEBUG AnalysisManager: runGlobalAnalysis = {} runModelAnalysis = {}\n", runGlobalAnalysis, runModelAnalysis);
-        fmt::print("🔍 DEBUG AnalysisManager: globalAnalysisConfig keys: [");
+        SFDebugPrint("🔍 DEBUG AnalysisManager: runGlobalAnalysis = {} runModelAnalysis = {}\n", runGlobalAnalysis, runModelAnalysis);
+        SFDebugPrint("🔍 DEBUG AnalysisManager: globalAnalysisConfig keys: [");
         for (auto it = globalAnalysisConfig.begin(); it != globalAnalysisConfig.end(); ++it) {
             fmt::print("{}", it.key().toStdString());
             if (std::next(it) != globalAnalysisConfig.end()) fmt::print(", ");
         }
         fmt::print("]\n");
-        fmt::print("🔍 DEBUG AnalysisManager: modelSpecificConfig keys: [");
+        SFDebugPrint("🔍 DEBUG AnalysisManager: modelSpecificConfig keys: [");
         for (auto it = modelSpecificConfig.begin(); it != modelSpecificConfig.end(); ++it) {
             fmt::print("{}", it.key().toStdString());
             if (std::next(it) != modelSpecificConfig.end()) fmt::print(", ");
