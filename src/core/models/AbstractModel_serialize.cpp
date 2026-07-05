@@ -253,9 +253,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     LocalTable()->ImportTable(json["localParameter"].toObject());
 
     if (isSimulation()) {
-        d->m_dependent_model = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
-        m_model_signal = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
-        m_model_error = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
+        // D5a: go through DataClass accessors instead of reaching into d-> internals.
+        ResetDependentModel(IndependentModel()->rowCount(), SimulateDependent());
+        m_model_signal = new DataTable(IndependentModel()->rowCount(), SimulateDependent(), this);
+        m_model_error = new DataTable(IndependentModel()->rowCount(), SimulateDependent(), this);
     }
     if (json.contains("globalBoundaries")) {
         QJsonObject globalBoundaries = json["globalBoundaries"].toObject();

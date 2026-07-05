@@ -257,6 +257,9 @@ public:
     }
 
     inline void setSimulateDependent(int dependent) { d->m_simulate_dependent = dependent; }
+    //! (Claude Generated) Read accessor for the simulated-dependent column count, so
+    //! subclasses no longer need to reach into d->m_simulate_dependent directly (D5a).
+    inline int SimulateDependent() const { return d->m_simulate_dependent; }
 
     void UpdateCheckedState();
     void ReReadCheckedState(int row, bool state);
@@ -416,6 +419,16 @@ private:
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;
     void AddChildren(QPointer<DataClass> children);
+
+    /*! \brief (Claude Generated) Replace the dependent model with a fresh empty
+     * DataTable of the given size (D5a).
+     *
+     * Deliberately a bare (re)allocation — unlike setDependentTable() it does NOT
+     * call setCheckable()/DependentModelOverride(); it exists so model simulation
+     * import stops assigning d->m_dependent_model directly (sealing the last
+     * AbstractModel-into-DataClass-internals leak). Behaviour-identical to the
+     * former inline `d->m_dependent_model = new DataTable(rows, cols, this)`. */
+    inline void ResetDependentModel(int rows, int cols) { d->m_dependent_model = new DataTable(rows, cols, this); }
 
 signals:
     void RowAdded();

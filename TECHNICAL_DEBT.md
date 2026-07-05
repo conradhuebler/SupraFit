@@ -153,8 +153,15 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   `analysis_reporter.cpp`, `suprafit_cli.cpp` (`displayAnalysisResults`).
 
 - **D5 – `AbstractModel : DataClass`-Vererbung** 🟡
-  *Frage:* Ist „Model *ist* Datencontainer" die richtige Beziehung? Tiefe Kopplungs-/
-  Ownership-Analyse (auch die zwei parallelen Model-Storage-Maps in `DataClass`).
+  - ✅ **D5a (erledigt)**: Encapsulation-Leak versiegelt — kein `d->`-Direktzugriff auf Basis-Interna
+    mehr aus Modellen (via `SimulateDependent()`/`ResetDependentModel()`, s. §5.2). Die „zwei parallelen
+    Storage-Maps" waren bereits Geschichte (UUID-Map in `0995a221` entfernt; nur noch
+    `m_stored_models_by_pointer`).
+  - ⬜ **D5b (offen, architektonisch)**: Ist „Model *ist* Datencontainer" die richtige Beziehung? Der
+    Wechsel Vererbung→Komposition (`AbstractModel` *hat* ein `DataClass`) ist ein **großer Umbau**:
+    jeder `DataClass`-API-Konsument, der ein Modell als Datencontainer behandelt (Projekt-Tree,
+    `ExportData`/`Size`/`SeriesCount`, GUI), müsste angefasst werden. Bewusst als Entscheidung offen —
+    nicht reflexartig umlegen. Nutzen für einen Wissenschafts-Codebase fraglich, Risiko hoch.
 
 - **D6 – Submodul-Konsistenz** 🟢 *(kein Datenverlust — eigene Forks)*
   CuteChart/libpeakpick sind Conrads eigene Forks; die Edits sind gewollt. Übrig bleibt nur
@@ -234,10 +241,12 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   mit No-op-Deleter zurück (Aliasing, dangling-Risiko) — `projectmanager.cpp:631/671`.
 - ⬜ **`AnalysisManager` halb-migriert** (nur `analyzeFile` verdrahtet, GUI nutzt ihn nicht,
   doppelte `extractModelStatistics`) → D4.
-- ⬜ **`AbstractModel : DataClass`**: LSP-Bruch; greift an 6 Stellen direkt in `d->`-Interna
-  (`AbstractModel.cpp:1408-1410,1696-1698`); teilt `d` (COW) mit dem Eltern-DataClass. **Korrektur:**
-  Modelle haben inzwischen eine **eigene** `m_model_uuid` (`AbstractModel.cpp:78/121/159`); nur die
-  Projekt-UUID (`d->m_uuid`) ist geteilt (die „keine eigene Model-UUID"-Notiz war veraltet) → D5.
+- ✅ **D5a – Encapsulation-Leak versiegelt**: die letzten *live* `d->`-Zugriffe in AbstractModel
+  (nach dem Serialize-Split nur noch `d->m_dependent_model`-Zuweisung + `d->m_simulate_dependent`-Read
+  im `isSimulation()`-Zweig von `ImportModel`) laufen jetzt über neue DataClass-Accessoren
+  `SimulateDependent()` + protected `ResetDependentModel(rows, cols)` (bare Realloc, verhaltensgleich).
+  Kein Modell-Subclass greift mehr direkt in `d->`-Interna; einzig ein *auskommentierter* Legacy-Block
+  in `LegacyImportModel` nennt noch `d->m_scaling`. Referenz-Test grün. **Offen bleibt nur D5b.**
 - ✅ **`analyse.cpp`-Split (2026)**: Compute (JSON, `Calculate*Metrics`/`Extract*`) und String/HTML-
   Formatierung (`Compare*`/`AnalyseReductionAnalysis`/`FormatStatisticsString`) in getrennte TUs
   (`analyse.cpp` 1124 + `analyse_format.cpp` 838); Fassade `analyse.h` + `namespace StatisticTool`
