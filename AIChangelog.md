@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-05: Hardened `AbstractItcModel` member init (follow-up to the getT fix): `m_V`, `m_cell_concentration`, `m_syringe_concentration`, `m_T` had no ctor default and were only set by `LoadSystemParameter` — the `!m_V`-style unset guards could read nonzero garbage and `getT()` could return garbage before parameters were declared. Added default member initializers (`m_T = 298`; concentrations/volume `0` to preserve the "0 = unset" guard semantics). Reference test green.
 - 2026-07-04: Fixed uninitialised `getT()` for NMR/Titration models — `Abstract{NMR,Titration}Model::m_T` had no ctor default (only set by the system-parameter update), so the thermodynamic report header printed build-dependent garbage temperatures (e.g. 8e-144 K). Added `double m_T = 298;` default member initializers. Found via the R4 golden diff; reference test green.
 
 - 2026-07-04: R5 — moved the model factory out of the inline `models.h` (which dragged all ~36 model headers into every one of its 53 includers) into a new `models.cpp`, and replaced the 36-arm CreateModel switch with a central factory registry (QHash of constructor lambdas; try/catch(-2) guard kept). models.h shrank 205→36 lines; declared the cyclic core↔models static-lib dependency in CMake; fixed the handful of TUs that had relied on the transitive model-header includes. Behaviour-preserving (reference test green).

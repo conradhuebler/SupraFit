@@ -262,8 +262,9 @@ Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
   hatte keinen Ctor-Default und wurde nur durch das (nicht immer laufende) System-Parameter-Update
   gesetzt → der Thermo-Header druckte physikalisch unmögliche T (`e-33`…`e-144` K, build-abhängiger
   Garbage). Fix: Default-Member-Initializer `double m_T = 298;` in beiden Headern (System-Parameter
-  überschreibt weiterhin). Beim R4-Golden-Diff gefunden. ⬜ `AbstractItcModel::m_T`/`m_V`/… analog
-  absichern (werden aktuell aus System-Parametern gesetzt, aber ohne Ctor-Default).
+  überschreibt weiterhin). Beim R4-Golden-Diff gefunden. ✅ `AbstractItcModel::m_T`/`m_V`/
+  `m_cell_concentration`/`m_syringe_concentration` analog abgesichert: Default-Member-Initializer
+  (`m_T = 298`, Rest `0` — hält die `!m_V`-„unset"-Guard-Semantik); Referenz-Test grün.
 - 🟡 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (dieselbe Optimizer-Wurzel wie
   ↑): Beim Bau des CV/RA-Re-Run-Vergleichs gefunden — für gut bestimmte Parameter reproduziert der
   aktuelle Code die Paper-Referenz **exakt** (88 Parameter), aber für schlecht bestimmte Richtungen
