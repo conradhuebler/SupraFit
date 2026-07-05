@@ -285,7 +285,6 @@ qreal AbstractTitrationModel::GuessK(int index, double min, double max)
 {
     QSharedPointer<AbstractModel> test = Clone();
     qreal K = NewtonRoot(test, index, min, max);
-    // qDebug() << K << BisectParameter(test, index, min, max);
     return K;
 }
 

@@ -82,8 +82,9 @@ void fl_ItoI_Model::InitialGuess_Private()
         auto IF = (DependentModel()->lastRow()(i) / DependentModel()->firstRow()(i) - 1) * DependentModel()->firstRow()(i) * factor;
         LocalTable()->data(i, 3) = IF;
     }
-    QSharedPointer<AbstractModel> test = Clone();
-    (*GlobalTable())[0] = BisectParameter(test, 0, 2, 10, 1e-5, 100);
+    // Seed lg K via the shared GuessK/NewtonRoot heuristic (range kept at [2,10]);
+    // GuessK clones internally, so no explicit test clone is needed here.
+    (*GlobalTable())[0] = GuessK(0, 2, 10);
     Calculate();
 }
 
