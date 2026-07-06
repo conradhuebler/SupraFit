@@ -68,17 +68,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-
-      - name: Install Qt
+      # Install Qt for MinGW plus a matching MinGW toolchain (added to PATH), so we don't
+      # depend on the runner's chocolatey MinGW. tools_mingw1310 = MinGW 13.1.0 (Qt 6.8 default).
+      - name: Install Qt + MinGW
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.8.2"
           arch: win64_mingw
           modules: qtcharts
+          tools: tools_mingw1310
+          add-tools-to-path: true
           cache: true
 
       - name: Build
