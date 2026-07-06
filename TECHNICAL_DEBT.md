@@ -135,13 +135,17 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   vorbestehende Bugs gefixt: `saveProjectAsJson()` verwarf Modelle; Modelle wurden beim Laden
   doppelt als Children eingetragen. Legacy-Member `m_toplevel`/`m_data` anschließend entfernt.
 
-- **D3 – `suprafit_cli.cpp`-Zerlegung** 🟡 *(in Arbeit — 3654 → 2849 LOC)*
-  Command-Pattern-Ballast entfernt (`7f3d213d`); zwei stateless Helfer ausgelagert:
-  `AnalysisReporter` (`f830f417`) und `MlExport` (`fde7efa0`). Verbleibend: die
-  member-gekoppelten Cluster `DataFactory` (GenerateData*), `TaskRunner` (Work/PerformeJobs)
-  und `MlPipeline` — die brauchen State-Passing-Design (kein verbatim-Lift) und idealerweise
-  erst **D1** (Test-Netz). Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert
-  Trainings-JSON via `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
+- **D3 – `suprafit_cli.cpp`-Zerlegung** 🟡 *(in Arbeit — 3654 → 2585 LOC)*
+  Command-Pattern-Ballast entfernt (`7f3d213d`); drei stateless Helfer ausgelagert:
+  `AnalysisReporter` (`f830f417`), `MlExport` (`fde7efa0`) und **`DataFactory`** (2026-07-06):
+  die 4 puren Daten-Tabellen-Builder (`validateDataGeneratorConfig`/`generateIndependentDataTable`/
+  `loadDataTableFromFile`/`applyNoise`, −256 LOC) sind jetzt statische `DataFactory`-Methoden;
+  die `GenerateData*`-Orchestratoren delegieren. Golden-Diff (deterministischer ML-Pipeline-Lauf):
+  generierte+gefittete Daten **byte-identisch**. ⬜ Verbleibend: die member-gekoppelten Reste
+  (`generateDependentDataTable` schreibt `m_modelContent`/`m_mlRawData`; die `GenerateData*`-
+  Orchestratoren; `TaskRunner` = Work/PerformeJobs; `MlPipeline`) — brauchen State-Passing-Design.
+  Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert Trainings-JSON via
+  `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
 
 - **D4 – `AnalysisManager`-Konsolidierung** 🟢 *(Struct + Logik erledigt)*
   ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`).

@@ -488,6 +488,7 @@ endif(BUILD_GUI)
 set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
                 src/client/analysis_reporter.cpp
+                src/client/data_factory.cpp
                 src/client/ml_export.cpp
                 src/client/ml_pipeline_manager.cpp
                 src/client/main.cpp

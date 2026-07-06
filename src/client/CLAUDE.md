@@ -2,6 +2,7 @@
 
 ## Core Components
 - **suprafit_cli.cpp/h**: Main CLI — JSON config parsing, data generation, model fitting, file analysis, parameter extraction (large god-class; decomposition tracked as D3 in root `TECHNICAL_DEBT.md`)
+- **data_factory.cpp/h**: `DataFactory` — stateless static data-table builders extracted from SupraFitCli (D3): validate/generateIndependent/loadFromFile/applyNoise; the `GenerateData*` orchestrators delegate here
 - **ml_pipeline_manager.cpp/h**: ML pipeline coordination and evaluation
 - **main.cpp**: Primary executable entry point; parses args directly via `QCommandLineParser` and dispatches
 - **ml_cli_main.cpp**: Separate `ml_cli_main` target (neural-network tutorials, built with `ML_NEURAL_NETWORKS`)

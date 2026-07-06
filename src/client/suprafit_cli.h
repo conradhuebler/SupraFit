@@ -115,18 +115,14 @@ public:
 
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
-    bool validateDataGeneratorConfig(const QJsonObject& config) const;
     
     // New modular JSON structure support - Claude Generated
     QVector<QJsonObject> GenerateDataWithModularStructure();
     bool parseModularStructure(const QJsonObject& control);
-    QJsonObject generateIndependentDataTable(const QJsonObject& independentConfig);
     QJsonObject generateDependentDataTable(const QJsonObject& dependentConfig, const QJsonObject& independentTableJson);
-    QJsonObject loadDataTableFromFile(const QJsonObject& fileConfig);
     QPointer<DataClass> generateIndependentData(const QJsonObject& independentConfig);
     QPointer<DataClass> generateDependentData(const QJsonObject& dependentConfig, QPointer<DataClass> independentData);
     QPointer<DataClass> loadDataFromFile(const QJsonObject& fileConfig);
-    QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent);
     
     // ML Pipeline integration - Claude Generated
     /**
