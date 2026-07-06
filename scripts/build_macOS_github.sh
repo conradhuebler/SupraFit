@@ -8,6 +8,7 @@ set -ex
 mkdir -p release
 cd release
 cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false  ..
-make -j$(sysctl -n hw.ncpu)
+# Build only the deployed executables (not the test suite); -j2 for stable peak RAM.
+make -j2 suprafit suprafit_cli
 cd bin/macOS
 macdeployqt  suprafit.app -dmg

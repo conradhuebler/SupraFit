@@ -11,4 +11,6 @@ mkdir -p release
 cd release
 #cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Dnoto_font=true -D_Theme=false -DCMAKE_PREFIX_PATH=$HOME/SupraFit/Qt/5.15.1/gcc_64 ..
 cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false  ..
-make -j$(nproc)
+# Build only the deployed executables (not the test suite) — less memory pressure and
+# faster CI. -j2 keeps peak RAM in check for the heavy exprtk.hpp translation unit.
+make -j2 suprafit suprafit_cli
