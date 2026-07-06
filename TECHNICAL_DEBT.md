@@ -147,6 +147,25 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert Trainings-JSON via
   `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
 
+  **In-Code-Marker (2026-07-06):** die verbleibenden Cluster sind in `suprafit_cli.h` mit
+  `// REFACTOR(D3-<Cluster>)` gekennzeichnet — `grep -rn "REFACTOR(D3"` findet die Baustellen.
+  Konvention: *wer eine markierte Signatur anfasst, geht die dort notierte Extraktion gleich mit an.*
+
+  **GUI-Overlap-Map** *(welcher GUI-Refactor-Schritt welche Extraktion mitplant)* — die GUI teilt
+  bereits `JobManager`/`DataGenerator`/`ProjectManager`/`CreateModel`, **dupliziert** aber Job-
+  Orchestrierung und Ergebnis-Anzeige:
+
+  | D3-Cluster (CLI) | GUI-Gegenstück (teilt Logik) | mitplanen beim GUI-Schritt |
+  |---|---|---|
+  | **TaskRunner** (`Work`/`PerformeJobs`) | `metamodelwidget`/`modeldataholder` fahren `JobManager` **direkt** (parallele Orchestrierung) | Refactor der Fit-/Statistik-UI → **gemeinsamer `TaskController`** über `JobManager` (der bestehende Vision-Wunsch); CLI+GUI nutzen ihn |
+  | **MlPipeline** (`FitModelsToData` u.a.) | GUI hat keine ML-Pipeline, teilt aber Fit-/Statistik-Substrat (`Minimizer`, `AnalysisManager`) | wenn Fit-/Ergebnis-Layer angefasst → `FitModelsToData`-Duplikat gegen `AnalysisManager::fitModelsToData` auflösen |
+  | **Analyse-Anzeige** (`AnalysisManager`/`AnalysisReporter`) | GUI-Results-Widgets zeigen Statistik **eigenständig** (nutzen `AnalysisManager` **nicht**) | Refactor der Ergebnis-/Analyse-Anzeige → GUI konsumiert `AnalysisManager::extractModelStatistics` (eine Quelle) |
+  | **DataFactory**-Orchestratoren | `generatedatadialog` wrappt `DataGenerator` selbst | Refactor des Datengenerierungs-Dialogs → über `DataFactory` routen |
+
+  *Kurz:* Der große GUI-Refactor ist der natürliche Hebel, um CLI/GUI-Duplikate (Jobs, Analyse-
+  Anzeige, Datengenerierung) an **eine** geteilte Schicht zu ziehen, statt sie separat zu
+  dekomponieren. Reihenfolge-Empfehlung: `TaskController` zuerst (größter geteilter Nutzen).
+
 - **D4 – `AnalysisManager`-Konsolidierung** 🟢 *(Struct + Logik erledigt)*
   ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`).
   ✅ **Logik (Operator-Entscheidung: AnalysisManager autoritativ)**: Die doppelte

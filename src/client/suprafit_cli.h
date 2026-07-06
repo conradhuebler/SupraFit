@@ -75,6 +75,10 @@ public:
 
     void OpenFile();
 
+    // REFACTOR(D3-TaskRunner): Work / PerformeJobs / CheckStopFile are the CLI's job-execution
+    // orchestration over JobManager. Extract to a shared TaskController when touched — the GUI
+    // (metamodelwidget / modeldataholder) drives JobManager directly with parallel logic, so this
+    // is the natural point to unify CLI+GUI job execution. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     void Work();
 
     QJsonObject PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
@@ -101,6 +105,12 @@ public:
         }
     }
 
+    // REFACTOR(D3-DataFactory): these GenerateData* orchestrators + generateDependentDataTable
+    // (below) are the m_*-coupled remainder of the DataFactory extraction — they need a config
+    // bundle passed to DataFactory (not a verbatim lift). generateDependentDataTable also writes
+    // m_modelContent/m_mlRawData → return a small result struct. When touched, finish moving them
+    // into DataFactory; the GUI generatedatadialog wraps DataGenerator itself and should share
+    // DataFactory here too. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     QVector<QJsonObject> GenerateData();
     QVector<QJsonObject> GenerateDataOnly();
     QVector<QJsonObject> GenerateInputData();
@@ -124,6 +134,11 @@ public:
     QPointer<DataClass> generateDependentData(const QJsonObject& dependentConfig, QPointer<DataClass> independentData);
     QPointer<DataClass> loadDataFromFile(const QJsonObject& fileConfig);
     
+    // REFACTOR(D3-MlPipeline): ProcessMLPipeline / FitModelsToData / EvaluateModelFit /
+    // ExtractMLFeatures / runPostFitAnalysis are the CLI ML-pipeline cluster. FitModelsToData
+    // duplicates AnalysisManager::fitModelsToData (the core, now really-fitting one) — extract to a
+    // MlPipeline class that drives AnalysisManager, and drop the CLI-side duplicate. The GUI has no
+    // ML pipeline but shares the fit/statistics substrate. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     // ML Pipeline integration - Claude Generated
     /**
      * @brief Complete ML pipeline: data generation → model fitting → evaluation

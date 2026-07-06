@@ -194,6 +194,11 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Future Tasks
 - refactor the whole user interface, details will follow
+  - **Plan the CLI/GUI de-duplication into this refactor** — see the *GUI-Overlap-Map* in
+    `TECHNICAL_DEBT.md` §D3: the GUI duplicates job orchestration (vs CLI `PerformeJobs`) and
+    results/statistics display (ignores `AnalysisManager`). The UI refactor is the natural lever to
+    pull these onto one shared layer (start with a `TaskController` over `JobManager`). Affected CLI
+    signatures are tagged `// REFACTOR(D3-…)` (`grep -rn "REFACTOR(D3" src/client`).
 - if loading simulation files using DataGenerator, give comprehensive information and execute datageneration and open generated project file
 - add widget to generate and control simulation input files
 - move all thermogramm analysis to core / or finalise the move
