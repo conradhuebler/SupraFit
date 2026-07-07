@@ -478,7 +478,11 @@ if(BUILD_GUI)
     endif(WIN32)
 
     set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+    # Statically link the GCC/MinGW runtime for portable Linux/Windows binaries.
+    # AppleClang (macOS) does not support these flags and errors out on them.
+    if(NOT APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+    endif()
 else()
     message(STATUS "Skipping GUI executable - GUI components not available")
 endif(BUILD_GUI)
