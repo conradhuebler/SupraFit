@@ -1,0 +1,127 @@
+/*
+ * SupraFit - general BFGS equilibrium speciation solver
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#pragma once
+
+#include <vector>
+
+#include <Eigen/Dense>
+
+/**
+ * @brief General equilibrium speciation solver based on quasi-Newton (BFGS) minimisation.
+ *
+ * Computes the free concentrations of the @em components of an arbitrary
+ * multi-equilibrium system from their total (analytical) concentrations and the
+ * cumulative stability constants of the formed complexes.  Unlike the grid based
+ * ConcentrationalPolynomial / EqnConc_2x solvers (which enumerate A_aB_b complexes
+ * with @f$a,b\ge 1@f$), the stoichiometry here is supplied as an explicit matrix, so
+ * self-aggregation (A2, A3, B2, ...) and mixed complexes of any order are handled
+ * uniformly — a homo-dimer A2 is simply a column @f$(2,0)^T@f$.
+ *
+ * @par Method
+ * The optimisation variables are the logarithms of the free component concentrations
+ * @f$x_i = \ln s_i@f$ (which enforces @f$s_i>0@f$ automatically).  The complex
+ * concentrations are @f$c_j = \beta_j \prod_k s_k^{M_{kj}}@f$.  Mass balance is the
+ * stationary point of the strictly convex potential
+ * @f[ G(x) = \sum_i \exp(x_i) + \sum_j c_j(x) - \sum_i t_i\,x_i , @f]
+ * whose gradient @f$\partial G/\partial x_i = s_i + \sum_j M_{ij} c_j - t_i@f$ is exactly
+ * the mass-balance residual and whose Hessian @f$\sum_j c_j\, m_j m_j^{T}@f$ is positive
+ * semidefinite.  Convexity guarantees a single global minimum for any system.  @f$G@f$ is
+ * minimised with BFGS (inverse-Hessian update) and an Armijo backtracking line search.
+ *
+ * @par Reference
+ * Method after Daniil O. Soloviev and Christopher A. Hunter, "Musketeer: a software tool
+ * for the analysis of titration data", Chem. Sci., 2024, 15, 15299-15310,
+ * DOI: 10.1039/d4sc03354j.  The Musketeer implementation uses bounded L-BFGS-B on the free
+ * concentrations; the log-space reformulation used here removes the bounds and yields an
+ * unconstrained convex problem.
+ *
+ * Claude Generated.
+ */
+class BFGSConcentrationSolver {
+public:
+    BFGSConcentrationSolver() = default;
+
+    /**
+     * @brief Set the stoichiometry matrix of the formed complexes.
+     * @param M integer matrix, rows = components, columns = complexes.  @f$M_{ij}@f$ is the
+     *          stoichiometric coefficient of component @f$i@f$ in complex @f$j@f$.  The free
+     *          components are implicit and must @em not be listed as columns.
+     */
+    void setStoichiometry(const Eigen::MatrixXi& M);
+
+    /**
+     * @brief Set the cumulative (overall) stability constants @f$\beta_j@f$ of the complexes.
+     * @param beta linear (not log10) constants, one per column of @f$M@f$, same order.
+     */
+    void setStabilityConstants(const std::vector<double>& beta);
+
+    /** @brief Set the total (analytical) concentration @f$t_i@f$ of every component. */
+    void setTotalConcentrations(const std::vector<double>& totals);
+
+    /** @brief Convergence threshold on the relative mass-balance residual (default 1e-10). */
+    inline void setConvergeThreshold(double converge) { m_converge = converge; }
+    /** @brief Maximum number of BFGS iterations (default 200). */
+    inline void setMaxIter(int maxiter) { m_maxiter = maxiter; }
+
+    /** @brief Build an initial guess for the free concentrations from the totals. */
+    void Guess();
+
+    /**
+     * @brief Solve for the free component concentrations.
+     * @return vector of length n_components with the free concentrations @f$s_i@f$.
+     *
+     * Warm-starts from the current free concentrations (previous solve or Guess()), which
+     * makes sweeps along a titration cheap.
+     */
+    std::vector<double> solve();
+
+    /** @brief The free component concentrations of the last solve. */
+    inline std::vector<double> currentConcentration() const { return m_free; }
+
+    /**
+     * @brief All species concentrations: the n free components followed by the m complexes
+     *        (in column order of @f$M@f$).
+     */
+    std::vector<double> AllConcentrations() const;
+
+    inline int LastIterations() const { return m_lastIter; }
+    inline double LastConvergency() const { return m_lastConv; }
+    inline bool Converged() const { return m_converged; }
+    /** @brief Wall-clock time of the last solve() in microseconds. */
+    inline long long Timer() const { return m_time; }
+
+private:
+    /** @brief Objective @f$G(x)@f$ and (optionally) its gradient at log-concentrations @p x. */
+    double Objective(const Eigen::VectorXd& x, Eigen::VectorXd* gradient) const;
+
+    Eigen::MatrixXi m_M; ///< stoichiometry (components x complexes)
+    std::vector<double> m_beta; ///< stability constants per complex
+    std::vector<double> m_totals; ///< total component concentrations
+    std::vector<double> m_free; ///< free component concentrations (result / warm start)
+    std::vector<bool> m_active; ///< component present (total > 0)
+
+    double m_converge = 1e-10;
+    double m_lastConv = 0.0;
+    int m_maxiter = 200;
+    int m_lastIter = 0;
+    long long m_time = 0;
+    bool m_converged = false;
+    bool m_has_guess = false;
+};

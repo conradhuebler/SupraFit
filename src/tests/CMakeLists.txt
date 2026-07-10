@@ -91,6 +91,67 @@ target_link_libraries(test_simple
 
 add_test(NAME SimpleTest COMMAND test_simple)
 
+# BFGS Speciation Solver Test - general equilibrium solver, self-aggregation (Claude Generated 2026)
+add_executable(test_bfgs_solver
+    test_bfgs_solver.cpp
+)
+
+# core<->models are mutually dependent static archives; wrap them in a linker group so the
+# cyclic references (e.g. core's DataGenerator -> models' CreateModel) resolve regardless of
+# archive scan order (Claude Generated).
+target_link_libraries(test_bfgs_solver
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bfgs_solver ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bfgs_solver pthread dl)
+endif()
+
+# nmr_any self-aggregation model test (grid + preceding-dimerisation path) - Claude Generated 2026
+add_executable(test_nmr_selfaggregation
+    test_nmr_selfaggregation.cpp
+)
+
+target_link_libraries(test_nmr_selfaggregation
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmr_selfaggregation ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmr_selfaggregation pthread dl)
+endif()
+
+add_test(NAME NmrSelfAggregationTest COMMAND test_nmr_selfaggregation)
+
+set_tests_properties(NmrSelfAggregationTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_test(NAME BFGSSolverTest COMMAND test_bfgs_solver)
+
+set_tests_properties(BFGSSolverTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Set test properties
 set_tests_properties(DataTableTest PROPERTIES
     TIMEOUT 30

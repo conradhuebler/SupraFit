@@ -22,6 +22,8 @@
 #include <QtCore/QPointer>
 #include <QtCore/QVariant>
 
+#include <QtGui/QFont>
+
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
@@ -32,6 +34,7 @@
 #include <QtWidgets/QWidget>
 
 #include "src/ui/guitools/flowlayout.h"
+#include "src/ui/widgets/specieseditorwidget.h"
 
 #include "preparewidget.h"
 
@@ -152,8 +155,22 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
         });
 
     } else if (m_type == 3) {
+        // Styled, validated string input (Claude Generated): clear button, placeholder, tooltip and
+        // a monospace font so the "|"-separated parameter/name lists line up while editing.
         m_lineedit = new QLineEdit;
         m_lineedit->setText(object["value"].toString());
+        m_lineedit->setClearButtonEnabled(true);
+        m_lineedit->setToolTip(object["description"].toString());
+        m_lineedit->setPlaceholderText(object.contains("placeholder")
+                ? object["placeholder"].toString()
+                : tr("name1 | name2 | …"));
+        QFont mono = m_lineedit->font();
+        mono.setStyleHint(QFont::Monospace);
+        mono.setFamily(QStringLiteral("monospace"));
+        m_lineedit->setFont(mono);
+        m_lineedit->setStyleSheet(QStringLiteral(
+            "QLineEdit { padding: 4px 6px; border: 1px solid palette(mid); border-radius: 4px; }"
+            "QLineEdit:focus { border: 1px solid palette(highlight); }"));
         layout->addWidget(m_lineedit);
         m_highlight_match = object["value"].toString().split("|");
         connect(m_lineedit, &QLineEdit::textChanged, this, [this, object]() {
@@ -185,6 +202,18 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
         setMaximumWidth(700);
         setMinimumWidth(700);
         setMinimumHeight(50);
+    } else if (m_type == 5) {
+        // Graphical species editor (Claude Generated): assemble the equilibrium species list
+        // (mixed complexes A_aB_b and self-aggregates like A2) and store it as an "a,b|a,b" string.
+        m_species_editor = new SpeciesEditorWidget(object["value"].toString(), this);
+        layout->addWidget(m_species_editor);
+        setMaximumWidth(500);
+        setMinimumWidth(500);
+        m_json["value"] = m_species_editor->toSpeciesString();
+        connect(m_species_editor, &SpeciesEditorWidget::changed, this, [this](const QString& species) {
+            m_json["value"] = species;
+            emit this->changed();
+        });
     }
     setLayout(layout);
 }

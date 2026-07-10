@@ -27,12 +27,18 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractNMRModel.h"
 
-class ConcentrationalPolynomial;
 class EqnConc_2x;
+class BFGSConcentrationSolver;
 class nmr_any_Model : public AbstractNMRModel {
     Q_OBJECT
 
 public:
+    // Option id for the concentration-solver choice (kept clear of the per-species option ids
+    // Host + 1 + speciesIndex and the system-parameter ids). Claude Generated.
+    enum {
+        SolverChoice = 2000
+    };
+
     nmr_any_Model(DataClass* data);
     nmr_any_Model(AbstractNMRModel* data);
 
@@ -81,7 +87,10 @@ public:
 
     inline double ReductionCutOff() const override { return 1; }
 
-    inline virtual bool DemandInput() const { return true; }
+    inline virtual bool DemandInput() const override { return true; }
+    /*! \brief Position of the mixed complex A_aB_b in the grid part of the species list
+     * (a,b >= 1). Only valid for the classic grid; self-aggregation species are appended
+     * after the grid — use m_species for the general mapping. */
     inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
 
     void UpdateShifts();
@@ -92,10 +101,16 @@ public:
 
 private:
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
+    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
+    bool m_has_selfagg = false;
+    /*! \brief Stoichiometry (a,b) of every equilibrium species; the vector position is the
+     * global-parameter / species index. The classic A_aB_b grid (a,b >= 1) comes first (so
+     * old projects keep their indices), pure host oligomers A_n (b = 0) are appended. */
+    QVector<QPair<int, int>> m_species;
+    Eigen::MatrixXi m_stoich; ///< 2 x n_species stoichiometry matrix handed to the BFGS solver
     QStringList m_global_names, m_species_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
     QVector<EqnConc_2x*> m_ext_solvers;
+    BFGSConcentrationSolver* m_bfgs = nullptr;
     Eigen::MatrixXd m_concentrations, m_molar_ratios;
 
 protected:

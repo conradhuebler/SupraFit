@@ -56,6 +56,29 @@ const QJsonObject MaxB_Json{
     { "once", true }
 };
 
+// Highest pure host self-aggregation A_n (A2, A3, ...). 0/1 disables self-aggregation and keeps
+// the classic A_aB_b grid; >= 2 appends the homo-oligomers A2..A_n (b = 0). Claude Generated.
+const QJsonObject MaxSelfA_Json{
+    { "name", "MaxSelfA" },
+    { "title", "Highest self-aggregation of A" },
+    { "description", "Define n, the highest pure host oligomer A_n (e.g. 2 = dimerisation A2). 0 or 1 disables self-aggregation." },
+    { "value", 0 }, // default value: no self-aggregation (backward compatible)
+    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+    { "once", true }
+};
+
+// Optional explicit species list overriding the MaxA/MaxB/MaxSelfA grid. Format "a,b|a,b|..." with
+// stoichiometric coefficients per species (free monomers 1,0 / 0,1 are implicit), e.g. "2,0|1,1"
+// defines {A2, AB} (host dimerisation preceding 1:1 binding). Empty = use the grid. Claude Generated.
+const QJsonObject Species_Json{
+    { "name", "Species" },
+    { "title", "Explicit species (optional)" },
+    { "description", "Optional explicit species list 'a,b|a,b', e.g. '2,0|1,1' for {A2, AB}. Overrides MaxA/MaxB/MaxSelfA; leave empty to use the grid." },
+    { "value", "" },
+    { "type", 5 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor
+    { "once", true }
+};
+
 class AbstractTitrationModel : public AbstractModel {
     Q_OBJECT
 

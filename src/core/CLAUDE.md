@@ -234,7 +234,7 @@ model->Calculate();
 
 #### **📋 LOW PRIORITY** - Long-term:
 - ✅ Refactor bc50 code, no more inlining (de-inlined into bc50.cpp)
-- Refactor optimizer logic: **A/B/C + seed-unify + converged-fix done** (2026-07-05) — deleted dead LeastSquaresRookfighter; renamed `OptimizeParameters()`→`CollectOptimizationParameters()`; cleaned/documented `eigen_levenberg.cpp`; retired `BisectParameter` so `NewtonRoot` is the single seed heuristic; fixed the `converged` flag to use the real stop criteria instead of `iter<MaxIter`. ⬜ Remaining: the BFGS alternative (DOI 10.1039/d4sc03354j)
-- Implement BFGS optimization as alternative to concentration solver (DOI: 10.1039/d4sc03354j, Citation: Daniil O. Soloviev and Christopher A. Hunter; Chem. Sci., 2024,15, 15299-15310)
+- Refactor optimizer logic: **A/B/C + seed-unify + converged-fix done** (2026-07-05) — deleted dead LeastSquaresRookfighter; renamed `OptimizeParameters()`→`CollectOptimizationParameters()`; cleaned/documented `eigen_levenberg.cpp`; retired `BisectParameter` so `NewtonRoot` is the single seed heuristic; fixed the `converged` flag to use the real stop criteria instead of `iter<MaxIter`.
+- ✅ **BFGS concentration solver** (2026-07-10) — `bfgsconcentrationsolver.{h,cpp}`, general convex log-space speciation (Musketeer, DOI 10.1039/d4sc03354j); handles self-aggregation. Wired into `nmr_any_Model` (new `MaxSelfA` field, selectable vs `EqnConc_2x`). Tests: `test_bfgs_solver`, `test_nmr_selfaggregation`. ⬜ Remaining: propagate to `uvvis_any`/`itc_any`; expose species-list editor in the GUI.
 ### Vision
 - **LLM Support for SupraFit**: Based on parsed projects, evaluation should be possible in natural language using local LLMs (if connected). Context information and specialist publication knowledge should be provided or passed on as needed. 

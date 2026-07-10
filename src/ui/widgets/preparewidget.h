@@ -33,6 +33,7 @@ class QDoubleSpinBox;
 class QLineEdit;
 class QSpinBox;
 class QTextEdit;
+class SpeciesEditorWidget;
 
 const QStringList function_names = QStringList() << "cos"
                                                  << "sin"
@@ -136,6 +137,7 @@ private:
     QSpinBox* m_spinbox;
     QDoubleSpinBox* m_doublespinbox;
     QTextEdit* m_textedit;
+    SpeciesEditorWidget* m_species_editor = nullptr;
     QJsonObject m_json;
     QString m_name;
     int m_type = -1;
