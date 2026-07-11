@@ -156,6 +156,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-11: **Reaction-equation editor** (`widgets/reactioneditorwidget`) — live-parsed reaction text (arrow syntax) with component/species preview, wired as `PrepareBox` type 6; spinbox `SpeciesEditorWidget` (type 5) deprecated.
+- 2026-07-11: **Dynamic model widget** (`widgets/dynamicmodelwidget`) — scalable "Parameter Table" tab (QTableView over Global/Local tables) added in `modelwidget` for models with `UseDynamicParameterWidget()` (the `*_any` models); additive, classic view unchanged.
 - Modern Qt6 migration completed
 - Enhanced chart visualization capabilities
 - Improved responsive layout system

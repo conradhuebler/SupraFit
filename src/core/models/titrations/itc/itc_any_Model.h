@@ -26,9 +26,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractItcModel.h"
-//#include "src/core/concentrationalpolynomial.h"
-
-class ConcentrationalPolynomial;
+#include "src/core/speciationengine.h"
 
 class itc_any_Model : public AbstractItcModel {
     Q_OBJECT
@@ -85,6 +83,10 @@ public:
 
     QString ModelInfo() const override;
 
+    // itc_any always drives speciation through the BFGS engine -> cite Musketeer. Claude Generated.
+    inline QStringList CitationKeys() const override { return QStringList() << QStringLiteral("musketeer"); }
+    inline bool UseDynamicParameterWidget() const override { return true; }
+
     QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
     QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
     inline virtual bool DemandInput() const { return true; }
@@ -96,11 +98,15 @@ public:
 
 private:
     inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
+    /*! \brief Build a 2-component (host + guest) reaction system from the legacy
+     * MaxA/MaxB/MaxSelfA/Species fields. ITC totals come from the cell/syringe protocol, so only two
+     * components are physically defined; the reaction editor still enables arbitrary species. CG. */
+    ReactionSystem buildLegacySystem() const;
 
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
+    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
     QStringList m_global_names, m_species_names, m_local_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
+    SpeciationEngine m_speciation; ///< reaction system + BFGS solver (host + guest totals)
 
 protected:
     virtual void CalculateVariables() override;

@@ -30,6 +30,11 @@ class QLabel;
 /**
  * @brief Compact editor for an equilibrium species list (Claude Generated).
  *
+ * @deprecated Superseded by ReactionEditorWidget (PrepareBox type 6), which parses free-text reaction
+ * equations into an arbitrary N-component system. This spinbox editor is limited to the 2-component
+ * host/guest case and is kept only so existing type-5 model definitions still load; it will be
+ * removed once the reaction editor is validated in the field.
+ *
  * Lets the user assemble the species of a general equilibrium model row by row: each row holds the
  * stoichiometric coefficients (a of host A, b of guest B) of one species, so mixed complexes A_aB_b
  * and self-aggregates such as A2 (a=2, b=0) can be mixed freely. Serialises to the "a,b|a,b" string

@@ -33,9 +33,10 @@ SpeciesEditorWidget::SpeciesEditorWidget(const QString& initial, QWidget* parent
     QVBoxLayout* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
 
-    QLabel* hint = new QLabel(tr("Optional. Leave empty to use the MaxA/MaxB/MaxSelfA grid. Add rows "
-                                 "for an explicit species list — coefficients of host A and guest B "
-                                 "per species, e.g. A2 (2, 0) for host dimerisation, AB (1, 1) for 1:1 binding."));
+    QLabel* hint = new QLabel(tr("Deprecated — prefer the reaction-equation editor. Optional; leave "
+                                 "empty to use the MaxA/MaxB/MaxSelfA grid. Add rows for an explicit "
+                                 "species list — coefficients of host A and guest B per species, e.g. "
+                                 "A2 (2, 0) for host dimerisation, AB (1, 1) for 1:1 binding."));
     hint->setWordWrap(true);
     outer->addWidget(hint);
 

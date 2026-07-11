@@ -700,6 +700,19 @@ public:
      * (or optimisation) - If there are demanding task, they should NOT go here */
     inline virtual QString ModelInfo() const { return QString(); }
 
+    /*! \brief Method-specific literature keys this model used beyond the base SupraFit citation
+     * (see the Citation namespace). Default: none. A model that routes speciation through the BFGS
+     * solver adds "musketeer". Claude Generated. */
+    inline virtual QStringList CitationKeys() const { return QStringList(); }
+
+    /*! \brief HTML "Please cite" block for this model (SupraFit + any method-specific citations from
+     * CitationKeys()); empty when no method-specific method was used. Claude Generated. */
+    QString CitationBlock() const;
+
+    /*! \brief Offer the scalable table-based parameter view (DynamicModelWidget) in the GUI. Default
+     * false (classic per-parameter widgets); the *_any models with many species opt in. CG. */
+    inline virtual bool UseDynamicParameterWidget() const { return false; }
+
     /*! \brief Implement AdditionalOutput() const for more optional calculation done on top of
      * the current model parameter, demaninding task (if any) should go here.
      * The output will be printed out in an extra dialog in the gui */

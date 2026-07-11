@@ -19,6 +19,7 @@
 
 #include "src/global.h"
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
+#include "src/core/models/titrations/AbstractTitrationModel.h" // reaction/data mismatch reporting
 #include "src/global_config.h"
 
 #include "src/capabilities/jobmanager.h"
@@ -633,6 +634,23 @@ void ModelDataHolder::AddModel(int model)
             t->setModelDefinition(elements);
 
             t->DefineModel(model);
+
+            // A reaction system needs one independent concentration column per component; on a
+            // mismatch DefineModel() falls back to the grid. Tell the user instead of silently adding
+            // the wrong model, and abort so they can fix the data or the reactions. Claude Generated.
+            if (AbstractTitrationModel* tm = qobject_cast<AbstractTitrationModel*>(t.data())) {
+                const int requested = tm->ReactionComponentMismatch();
+                if (requested > 0) {
+                    QMessageBox::warning(this, tr("Reaction / data mismatch"),
+                        tr("The reaction equations define %1 components, but this data set provides %2 "
+                           "concentration column(s).\n\nImport data with one concentration column per "
+                           "component (%1 in total), or edit the reactions, then add the model again.")
+                            .arg(requested)
+                            .arg(t->InputParameterSize()));
+                    return;
+                }
+            }
+
             if (!t->Complete())
                 return;
         } else

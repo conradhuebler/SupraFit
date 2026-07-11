@@ -152,6 +152,122 @@ set_tests_properties(BFGSSolverTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# Reaction-equation parser test - arrow syntax -> components/stoichiometry (Claude Generated 2026)
+add_executable(test_reactionparser
+    test_reactionparser.cpp
+)
+
+target_link_libraries(test_reactionparser
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_reactionparser ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_reactionparser pthread dl)
+endif()
+
+add_test(NAME ReactionParserTest COMMAND test_reactionparser)
+
+set_tests_properties(ReactionParserTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# nmr_any N-component reaction-editor path (3-component competitive binding) - Claude Generated 2026
+add_executable(test_nmr_ncomponent
+    test_nmr_ncomponent.cpp
+)
+
+target_link_libraries(test_nmr_ncomponent
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmr_ncomponent ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmr_ncomponent pthread dl)
+endif()
+
+add_test(NAME NmrNComponentTest COMMAND test_nmr_ncomponent)
+
+set_tests_properties(NmrNComponentTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# uvvis_any BFGS speciation + Beer-Lambert observable - Claude Generated 2026
+add_executable(test_uvvis_any
+    test_uvvis_any.cpp
+)
+
+target_link_libraries(test_uvvis_any
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_uvvis_any ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_uvvis_any pthread dl)
+endif()
+
+add_test(NAME UvVisAnyTest COMMAND test_uvvis_any)
+
+set_tests_properties(UvVisAnyTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# itc_any BFGS speciation plumbing (grid + self-aggregation) - Claude Generated 2026
+add_executable(test_itc_any
+    test_itc_any.cpp
+)
+
+target_link_libraries(test_itc_any
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_itc_any ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_itc_any pthread dl)
+endif()
+
+add_test(NAME ItcAnyTest COMMAND test_itc_any)
+
+set_tests_properties(ItcAnyTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Set test properties
 set_tests_properties(DataTableTest PROPERTIES
     TIMEOUT 30

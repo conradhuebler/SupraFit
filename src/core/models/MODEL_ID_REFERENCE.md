@@ -42,3 +42,13 @@ This document provides a reference for the model IDs used in SupraFit. The model
 | 111 | BET Absorption isotherm |
 | 200 | Meta Model |
 | 404 | Unknown |
+
+## Notes
+
+The "flexible" models — **34** (`nmr_any`), **35** (`uvvis_any`) and **17** (`itc_any`) — accept an
+optional free-text *Reactions* field (arrow syntax, e.g. `A + B <=> AB`, `2 A <=> A2`, `A + C <=> AC`)
+parsed by `ReactionParser` into an equilibrium system solved by the general `BFGSConcentrationSolver`.
+`nmr_any`/`uvvis_any` support an **arbitrary number of components** (one independent concentration
+column per component); `itc_any` stays 2-component (host/guest totals come from the cell/syringe
+protocol) but allows arbitrary species. Leaving *Reactions* empty falls back to the legacy
+`MaxA`/`MaxB`/`MaxSelfA`/`Species` grid (backward compatible). Claude Generated.

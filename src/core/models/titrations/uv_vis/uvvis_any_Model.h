@@ -27,8 +27,6 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractTitrationModel.h"
 
-class ConcentrationalPolynomial;
-class EqnConc_2x;
 class uvvis_any_Model : public AbstractTitrationModel {
     Q_OBJECT
 
@@ -42,6 +40,15 @@ public:
 
     virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }
+    // Beer-Lambert: one extinction coefficient per free component plus one per species. Claude Generated.
+    inline int LocalParameterSize(int series = 0) const override
+    {
+        Q_UNUSED(series)
+        return GlobalParameterSize() + m_component_count;
+    }
+    QString LocalParameterName(int i = 0) const override;
+    QString LocalParameterDescription(int i = 0) const override { return LocalParameterName(i); }
+    inline bool UseDynamicParameterWidget() const override { return true; }
 
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
@@ -91,12 +98,16 @@ public:
     }
 
 private:
+    /*! \brief Build a 2-component reaction system from the legacy MaxA/MaxB/MaxSelfA/Species fields
+     * (backward compatible with existing projects). Claude Generated. */
+    ReactionSystem buildLegacySystem() const;
+
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
+    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
     QStringList m_global_names, m_species_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
-    QVector<EqnConc_2x*> m_ext_solvers;
-    Eigen::MatrixXd m_concentrations, m_molar_ratios;
+    /*! \brief Beer-Lambert design matrix (DataPoints x (nComp + nSpecies)): absolute concentrations
+     * of every free component followed by every species; fitted against the extinction coefficients. */
+    Eigen::MatrixXd m_concentrations;
 
 protected:
     virtual void CalculateVariables() override;

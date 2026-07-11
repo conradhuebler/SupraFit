@@ -30,6 +30,7 @@
 #include <QtCore/QtMath>
 
 #include "src/core/models/AbstractModel.h"
+#include "src/core/speciationengine.h"
 
 typedef Eigen::VectorXd Vector;
 
@@ -70,12 +71,27 @@ const QJsonObject MaxSelfA_Json{
 // Optional explicit species list overriding the MaxA/MaxB/MaxSelfA grid. Format "a,b|a,b|..." with
 // stoichiometric coefficients per species (free monomers 1,0 / 0,1 are implicit), e.g. "2,0|1,1"
 // defines {A2, AB} (host dimerisation preceding 1:1 binding). Empty = use the grid. Claude Generated.
+// @deprecated superseded by Reactions_Json (type 6, arbitrary N-component reaction equations); kept
+// only so existing type-5 model definitions still load. Will be removed once type 6 is validated.
 const QJsonObject Species_Json{
     { "name", "Species" },
-    { "title", "Explicit species (optional)" },
-    { "description", "Optional explicit species list 'a,b|a,b', e.g. '2,0|1,1' for {A2, AB}. Overrides MaxA/MaxB/MaxSelfA; leave empty to use the grid." },
+    { "title", "Explicit species (optional, deprecated)" },
+    { "description", "Deprecated — use the reaction editor. Optional explicit species list 'a,b|a,b', e.g. '2,0|1,1' for {A2, AB}. Overrides MaxA/MaxB/MaxSelfA; leave empty to use the grid." },
     { "value", "" },
-    { "type", 5 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor
+    { "type", 5 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor (deprecated)
+    { "once", true }
+};
+
+// Free-text reaction equations defining an arbitrary N-component equilibrium system, one reaction per
+// line in arrow syntax, e.g. "A + B <=> AB\n2 A <=> A2\nA + C <=> AC". Parsed by ReactionParser into
+// the component/species stoichiometry driving the BFGS speciation solver. Empty = fall back to the
+// MaxA/MaxB/MaxSelfA/Species grid (backward compatible). Claude Generated.
+const QJsonObject Reactions_Json{
+    { "name", "Reactions" },
+    { "title", "Reaction equations (optional)" },
+    { "description", "Optional reaction equations, one per line, e.g. 'A + B <=> AB'. Defines an arbitrary equilibrium system; overrides MaxA/MaxB/MaxSelfA. Leave empty to use the grid." },
+    { "value", "" },
+    { "type", 6 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor, 6 = reaction editor
     { "once", true }
 };
 
@@ -148,9 +164,15 @@ public:
 
     inline Vector getConcentration(int row) const { return m_concentrations->Row(row); }
 
-    /*! \brief we have two concentrations for all titration models, host and guest
+    /*! \brief > 0 if the last DefineModel() parsed a valid reaction system whose component count did
+     * not match the number of independent concentration columns (the model then fell back to the
+     * grid). The value is the number of components the reactions requested. Claude Generated. */
+    inline int ReactionComponentMismatch() const { return m_reaction_component_mismatch; }
+
+    /*! \brief number of free components (independent concentration columns). Two by default
+     * (host + guest); an N-component reaction system raises it (see BuildSpeciationFromReactions).
      */
-    virtual inline int InputParameterSize() const override { return 2; }
+    virtual inline int InputParameterSize() const override { return m_component_count; }
     virtual int LocalParameterSize(int series = 0) const override
     {
         Q_UNUSED(series)
@@ -166,6 +188,15 @@ public:
     virtual qreal PrintOutIndependent(int i) const override;
 
     virtual QString ModelInfo() const override;
+
+    // Adds the Musketeer citation once speciation ran through the BFGS engine. Claude Generated.
+    inline QStringList CitationKeys() const override
+    {
+        QStringList keys;
+        if (m_uses_bfgs)
+            keys << QStringLiteral("musketeer");
+        return keys;
+    }
 
     virtual inline bool SupportSeries() const override { return true; }
 
@@ -218,6 +249,26 @@ protected:
 
     qreal InitialHostConcentration(int i) const;
     qreal InitialGuestConcentration(int i) const;
+
+    /*! \brief Total (analytical) concentration of free component @p component at data point @p i.
+     * Generalises InitialHost/GuestConcentration to arbitrary components; component 0/1 are the
+     * classic host/guest. Claude Generated. */
+    qreal InitialConcentration(int i, int component) const;
+
+    /*! \brief Parse the "Reactions" model-definition field into an N-component speciation system.
+     * On success sets m_component_count / m_component_names, configures m_speciation, refreshes the
+     * independent-table headers and returns true. Empty/invalid input leaves the 2-component grid
+     * defaults untouched and returns false. Claude Generated. */
+    bool BuildSpeciationFromReactions();
+
+    /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
+    void UpdateComponentHeaders();
+
+    int m_component_count = 2; ///< number of free components (2 = classic host/guest)
+    QStringList m_component_names; ///< component symbols, e.g. ["A","B","C"] (empty => host/guest)
+    SpeciationEngine m_speciation; ///< reaction system + BFGS solver (used by the *_any models)
+    bool m_uses_bfgs = false; ///< true once speciation ran through the BFGS engine (citation hint)
+    int m_reaction_component_mismatch = 0; ///< components requested by reactions if != data columns
 
     double m_T = 298; // K — default so getT() is never uninitialised (system parameter overrides)
 

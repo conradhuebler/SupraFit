@@ -192,6 +192,7 @@ QString AbstractTitrationModel::ModelInfo() const
         result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
+    result += CitationBlock();
     return result;
 }
 
@@ -279,6 +280,47 @@ qreal AbstractTitrationModel::InitialGuestConcentration(int i) const
 qreal AbstractTitrationModel::InitialHostConcentration(int i) const
 {
     return IndependentModel()->data(i, m_HostAssignment);
+}
+
+qreal AbstractTitrationModel::InitialConcentration(int i, int component) const
+{
+    // Two-component systems keep the classic host/guest column assignment; an N-component reaction
+    // system maps component index straight to the independent column (order = first appearance). CG.
+    if (m_component_count <= 2)
+        return (component == 0) ? InitialHostConcentration(i) : InitialGuestConcentration(i);
+    return IndependentModel()->data(i, component);
+}
+
+bool AbstractTitrationModel::BuildSpeciationFromReactions()
+{
+    m_reaction_component_mismatch = 0;
+    const QString text = m_defined_model.value("Reactions")["value"].toString().trimmed();
+    if (text.isEmpty())
+        return false;
+    if (!m_speciation.setReactions(text))
+        return false; // parse error: caller keeps the legacy MaxA/MaxB grid
+
+    // The data must provide one concentration column per component; a mismatch would make
+    // PrepareParameter throw. Record it and fall back to the legacy grid rather than crashing; the
+    // GUI reports the mismatch to the user (see ModelDataHolder::AddModel). Claude Generated.
+    const int nComp = m_speciation.ComponentCount();
+    if (nComp < 1 || (IndependentModel() && nComp != IndependentModel()->columnCount())) {
+        m_reaction_component_mismatch = nComp;
+        return false;
+    }
+
+    m_component_names = m_speciation.ComponentNames();
+    m_component_count = nComp;
+    m_speciation.setMaxIter(1000);
+    m_speciation.setConvergeThreshold(1e-12);
+    UpdateComponentHeaders();
+    return true;
+}
+
+void AbstractTitrationModel::UpdateComponentHeaders()
+{
+    for (int c = 0; c < m_component_names.size(); ++c)
+        IndependentModel()->setHeaderData(c, Qt::Horizontal, m_component_names[c], Qt::DisplayRole);
 }
 
 qreal AbstractTitrationModel::GuessK(int index, double min, double max)

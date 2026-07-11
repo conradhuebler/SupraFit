@@ -27,18 +27,10 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractNMRModel.h"
 
-class EqnConc_2x;
-class BFGSConcentrationSolver;
 class nmr_any_Model : public AbstractNMRModel {
     Q_OBJECT
 
 public:
-    // Option id for the concentration-solver choice (kept clear of the per-species option ids
-    // Host + 1 + speciesIndex and the system-parameter ids). Claude Generated.
-    enum {
-        SolverChoice = 2000
-    };
-
     nmr_any_Model(DataClass* data);
     nmr_any_Model(AbstractNMRModel* data);
 
@@ -48,6 +40,9 @@ public:
 
     virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }
+    // AbstractNMRModel hard-codes 2; a reaction system raises the component count. Claude Generated.
+    inline int InputParameterSize() const override { return m_component_count; }
+    inline bool UseDynamicParameterWidget() const override { return true; }
 
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
@@ -100,17 +95,15 @@ public:
     }
 
 private:
+    /*! \brief Build a 2-component reaction system from the legacy MaxA/MaxB/MaxSelfA/Species fields:
+     * the classic A_aB_b grid (a,b >= 1) first (old projects keep their indices), pure host oligomers
+     * A_n appended, or the explicit "a,b|a,b" species list. Claude Generated. */
+    ReactionSystem buildLegacySystem() const;
+
     int m_global_parametersize = 0;
     int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
-    bool m_has_selfagg = false;
-    /*! \brief Stoichiometry (a,b) of every equilibrium species; the vector position is the
-     * global-parameter / species index. The classic A_aB_b grid (a,b >= 1) comes first (so
-     * old projects keep their indices), pure host oligomers A_n (b = 0) are appended. */
-    QVector<QPair<int, int>> m_species;
-    Eigen::MatrixXi m_stoich; ///< 2 x n_species stoichiometry matrix handed to the BFGS solver
+    int m_observed = 0; ///< index of the observed component (NMR nucleus), default = component 0 (A)
     QStringList m_global_names, m_species_names;
-    QVector<EqnConc_2x*> m_ext_solvers;
-    BFGSConcentrationSolver* m_bfgs = nullptr;
     Eigen::MatrixXd m_concentrations, m_molar_ratios;
 
 protected:

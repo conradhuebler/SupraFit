@@ -250,6 +250,9 @@ set(core_SRC
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp
     src/core/bfgsconcentrationsolver.cpp
+    src/core/reactionparser.cpp
+    src/core/speciationengine.cpp
+    src/core/citations.cpp
     src/global.cpp
 )
 

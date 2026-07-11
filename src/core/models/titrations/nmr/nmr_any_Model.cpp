@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SupraFit - flexible NMR titration model (arbitrary N-component equilibrium via BFGS speciation)
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * The speciation (free component + species concentrations) is delegated to the shared
+ * SpeciationEngine on AbstractTitrationModel; this model only maps those concentrations to the NMR
+ * signal (fast-exchange population-weighted average of the observed component's chemical shifts).
+ * The classic MaxA/MaxB/MaxSelfA/Species fields remain a backward-compatible 2-component fallback.
+ * Claude Generated.
  */
 
 #include <Eigen/SVD>
-#include "src/core/models/titrations/AbstractTitrationModel.h" // MaxA_Json/MaxB_Json (was transitive via models.h)
 
-#include "EqnConc_2.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h" // Reactions/MaxA/MaxB JSON templates
 
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/bc50.h"
-#include "src/core/bfgsconcentrationsolver.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
+#include "src/core/reactionparser.h"
 #include "src/core/toolset.h"
 
 #include "src/core/models/models.h"
@@ -41,25 +45,10 @@
 
 #include "nmr_any_Model.h"
 
-// Human-readable species label with unicode subscripts, e.g. (2,0) -> "A₂", (1,1) -> "AB",
-// (2,1) -> "A₂B". A zero coefficient drops the component; a coefficient of 1 drops the subscript.
-// Claude Generated.
-static QString SpeciesLabel(int a, int b)
-{
-    auto part = [](const QString& symbol, int n) -> QString {
-        if (n == 0)
-            return QString();
-        if (n == 1)
-            return symbol;
-        return symbol + ToolSet::UnicodeLowerInteger(QString::number(n));
-    };
-    return part("A", a) + part("B", b);
-}
-
 nmr_any_Model::nmr_any_Model(DataClass* data)
     : AbstractNMRModel(data)
 {
-    m_pre_input = { MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
+    m_pre_input = { Reactions_Json, MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
     m_complete = false;
 }
 
@@ -68,51 +57,31 @@ nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
 {
     DefineModel();
 
-    // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
 }
 
 nmr_any_Model::~nmr_any_Model()
 {
-    qDeleteAll(m_ext_solvers);
-    delete m_bfgs;
 }
 
-bool nmr_any_Model::DefineModel()
+ReactionSystem nmr_any_Model::buildLegacySystem() const
 {
-    QJsonObject object = m_defined_model.value("MaxA");
-    m_maxA = object["value"].toInt();
+    ReactionSystem sys;
+    sys.components = QStringList() << "A" << "B";
 
-    object = m_defined_model.value("MaxB");
-    m_maxB = object["value"].toInt();
+    auto add = [&sys](int a, int b) {
+        Eigen::VectorXi v(2);
+        v << a, b;
+        ReactionSpecies species;
+        species.stoich = v;
+        species.label = ReactionParser::SpeciesLabel(sys.components, v);
+        sys.species << species;
+    };
 
-    object = m_defined_model.value("MaxSelfA");
-    m_maxSelfA = object["value"].toInt();
-
-    // sane floors so an empty definition still yields the classic 1:1 grid
-    if (m_maxA < 1)
-        m_maxA = 1;
-    if (m_maxB < 1)
-        m_maxB = 1;
-
-    // Build the species list: the classic A_aB_b grid first (a,b >= 1), so existing projects keep
-    // their global-parameter indices, then the pure host oligomers A_n (b = 0) for self-aggregation.
-    m_species.clear();
-    for (int a = 1; a <= m_maxA; ++a)
-        for (int b = 1; b <= m_maxB; ++b)
-            m_species << qMakePair(a, b);
-    for (int n = 2; n <= m_maxSelfA; ++n)
-        m_species << qMakePair(n, 0);
-    m_has_selfagg = (m_maxSelfA >= 2);
-
-    // Optional explicit species list from the species editor: "a,b|a,b|..." overrides the grid,
-    // allowing an arbitrary selection of complexes and self-aggregates (e.g. "2,0|1,1" = {A2, AB}).
-    // Free monomers (1,0)/(0,1) are implicit and skipped. Claude Generated.
+    // Optional explicit species list "a,b|a,b|..." overrides the grid (order as written).
     const QString speciesDef = m_defined_model.value("Species")["value"].toString().trimmed();
     if (!speciesDef.isEmpty()) {
-        m_species.clear();
-        m_has_selfagg = false;
         const QStringList tokens = speciesDef.split("|", Qt::SkipEmptyParts);
         for (const QString& token : tokens) {
             const QStringList ab = token.split(",");
@@ -123,119 +92,99 @@ bool nmr_any_Model::DefineModel()
             const int b = ab[1].trimmed().toInt(&okB);
             if (!okA || !okB || a < 0 || b < 0 || a + b < 2)
                 continue; // skip invalid tokens and the implicit free monomers
-            m_species << qMakePair(a, b);
-            if (a == 0 || b == 0)
-                m_has_selfagg = true; // pure oligomer -> the grid EqnConc solver cannot represent it
+            add(a, b);
         }
+    } else {
+        // Classic A_aB_b grid first (a,b >= 1) so existing projects keep their indices, then the
+        // pure host oligomers A_n (b = 0) for self-aggregation.
+        const int maxA = m_maxA < 1 ? 1 : m_maxA;
+        const int maxB = m_maxB < 1 ? 1 : m_maxB;
+        for (int a = 1; a <= maxA; ++a)
+            for (int b = 1; b <= maxB; ++b)
+                add(a, b);
+        for (int n = 2; n <= m_maxSelfA; ++n)
+            add(n, 0);
     }
+
+    sys.stoich = Eigen::MatrixXi(2, sys.species.size());
+    for (int j = 0; j < sys.species.size(); ++j)
+        sys.stoich.col(j) = sys.species[j].stoich;
+    sys.valid = !sys.species.isEmpty();
+    return sys;
+}
+
+bool nmr_any_Model::DefineModel()
+{
+    m_maxA = m_defined_model.value("MaxA")["value"].toInt();
+    m_maxB = m_defined_model.value("MaxB")["value"].toInt();
+    m_maxSelfA = m_defined_model.value("MaxSelfA")["value"].toInt();
+    m_observed = 0; // NMR observes the first component (host A) by default
+
+    // Prefer the N-component reaction editor; otherwise fall back to the 2-component legacy grid.
+    if (!BuildSpeciationFromReactions()) {
+        m_component_count = 2;
+        m_component_names = QStringList() << "A" << "B";
+        m_speciation.setSystem(buildLegacySystem());
+        m_speciation.setMaxIter(1000);
+        m_speciation.setConvergeThreshold(1e-12);
+    }
+    m_uses_bfgs = true;
+
+    const ReactionSystem& sys = m_speciation.System();
+    const int nSpecies = sys.species.size();
 
     m_global_names.clear();
     m_species_names.clear();
-    m_stoich = Eigen::MatrixXi(2, m_species.size());
-    for (int k = 0; k < m_species.size(); ++k) {
-        const int a = m_species[k].first;
-        const int b = m_species[k].second;
-        m_stoich(0, k) = a;
-        m_stoich(1, k) = b;
-
-        const QString sname = SpeciesLabel(a, b);
+    for (int k = 0; k < nSpecies; ++k) {
+        const QString sname = sys.species[k].label;
         m_species_names << sname;
-        m_global_names << QString("lg %1%2%3").arg(Unicode_beta)
-                              .arg(ToolSet::UnicodeLowerInteger(QString::number(a)))
-                              .arg(ToolSet::UnicodeLowerInteger(QString::number(b)));
-
+        m_global_names << QString("lg %1(%2)").arg(Unicode_beta).arg(sname);
         addOption(Host + 1 + k, sname, QStringList() << "yes" << "no");
     }
 
-    m_global_parametersize = m_species.size();
+    m_global_parametersize = nSpecies;
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
-    addOption(SolverChoice, "Concentration solver", QStringList() << "BFGS" << "Polynomial");
     for (int k = 0; k < GlobalParameterSize(); ++k)
         setOption(Host + 1 + k, "yes");
 
     CollectOptimizationParameters_Private();
     m_complete = true;
-
-    // General BFGS speciation solver (handles self-aggregation and any stoichiometry).
-    delete m_bfgs;
-    m_bfgs = new BFGSConcentrationSolver;
-    m_bfgs->setStoichiometry(m_stoich);
-    m_bfgs->setMaxIter(1000);
-    m_bfgs->setConvergeThreshold(1e-12);
-
-    // The grid polynomial solver (EqnConc_2x) is only valid for the pure A_aB_b grid; keep it as a
-    // per-datapoint alternative when no self-aggregation is requested.
-    qDeleteAll(m_ext_solvers);
-    m_ext_solvers.clear();
-    if (!m_has_selfagg) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            qreal host_0 = InitialHostConcentration(i);
-            qreal guest_0 = InitialGuestConcentration(i);
-
-            EqnConc_2x* solver_ext = new EqnConc_2x;
-            m_ext_solvers << solver_ext;
-            solver_ext->setStoichiometry({ m_maxA, m_maxB });
-            solver_ext->setInitialConcentrations({ host_0, guest_0 });
-            solver_ext->Guess();
-            solver_ext->setMaxIter(m_maxA * m_maxB * 100);
-            solver_ext->setConvergeThreshold(1e-16);
-        }
-    }
-
     return true;
 }
 
 void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
-    QVector<double> ratios;
-    double factor = double(m_maxA * m_maxB);
-    double last = 1 / double(InitialGuestConcentration(DataPoints() - 1) / InitialHostConcentration(DataPoints() - 1));
-    for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
-        ratios << InitialGuestConcentration(i) / InitialHostConcentration(i) * last * factor;
+    const int nSpecies = m_speciation.SpeciesCount();
+    const double guess_K = 4;
+    for (int k = 0; k < nSpecies; ++k) {
+        const Eigen::VectorXi v = m_speciation.SpeciesStoichiometry(k);
+        const int order = v.sum(); // higher-order complexes start from a larger lg beta guess
+        (*GlobalTable())[k] = guess_K + order;
+        LocalTable()->setColumn(DependentModel()->Row(DataPoints() - 1), 1 + k);
     }
-    // qDebug() << ratios;
-    double guess_K = 4;
-    (*GlobalTable())[0] = guess_K;
-    for (int k = 0; k < m_species.size(); ++k) {
-        const int a = m_species[k].first;
-        const int b = m_species[k].second;
-
-        double ratio = a > 0 ? double(b) / a : 0;
-        int best_index = 0;
-        double diff = ratios.last();
-        for (int index = 0; index < ratios.size(); ++index) {
-            if (abs(ratio - ratios[index]) < diff) {
-                best_index = index;
-                diff = abs(ratio - ratios[index]);
-            }
-        }
-        (*GlobalTable())[k] = guess_K + a + b;
-        LocalTable()->setColumn(DependentModel()->Row(best_index), 1 + k);
-    }
-    // UpdateShifts();
     Calculate();
 }
 
 void nmr_any_Model::CollectOptimizationParameters_Private()
 {
-    for (int k = 0; k < m_species.size(); ++k) {
+    const int nSpecies = m_speciation.SpeciesCount();
+    for (int k = 0; k < nSpecies; ++k) {
         if (getOption(Host + 1 + k) == "yes") {
             addGlobalParameter(k);
             addLocalParameter(1 + k);
         }
     }
-    QString host = getOption(Host);
-
-    if (host == "no")
+    if (getOption(Host) == "no")
         addLocalParameter(0);
 }
 
 void nmr_any_Model::CalculateConcentrations()
 {
-    const int nSpecies = m_species.size();
+    const int nComp = m_component_count;
+    const int nSpecies = m_speciation.SpeciesCount();
+    const ReactionSystem& sys = m_speciation.System();
 
     // Linear stability constants; a deactivated (option "no") or unchecked species contributes 0.
     std::vector<double> constants(nSpecies);
@@ -245,50 +194,40 @@ void nmr_any_Model::CalculateConcentrations()
         else
             constants[k] = 0;
     }
+    m_speciation.setStabilityConstants(constants);
 
-    m_concentrations = Eigen::MatrixXd(DataPoints(), 2 + nSpecies);
+    m_concentrations = Eigen::MatrixXd(DataPoints(), nComp + nSpecies);
     m_molar_ratios = Eigen::MatrixXd(DataPoints(), 1 + nSpecies);
 
-    // The EqnConc grid solver cannot represent self-aggregation, so route through the BFGS solver
-    // whenever self-aggregation is present or the user selected it (the default).
-    const bool use_bfgs = m_has_selfagg || m_ext_solvers.isEmpty()
-        || getOption(SolverChoice) != "Polynomial";
-    if (use_bfgs)
-        m_bfgs->setStabilityConstants(constants);
-
+    std::vector<double> totals(nComp);
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        const qreal host_0 = InitialHostConcentration(i);
-        const qreal guest_0 = InitialGuestConcentration(i);
+        for (int c = 0; c < nComp; ++c)
+            totals[c] = InitialConcentration(i, c);
 
-        std::vector<double> result;
-        if (use_bfgs) {
-            m_bfgs->setTotalConcentrations({ host_0, guest_0 });
-            result = m_bfgs->solve();
-        } else {
-            m_ext_solvers[i]->setStabilityConstants(constants);
-            result = m_ext_solvers[i]->solver();
-        }
+        m_speciation.solve(totals);
+        const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
+        const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
 
-        const double host = result[0];
-        const double guest = result[1];
-        m_concentrations(i, 0) = host;
-        m_concentrations(i, 1) = guest;
-        m_molar_ratios(i, 0) = host / host_0;
+        const double obs_total = totals[m_observed];
 
-        Vector vector(nSpecies + 3);
+        // free component concentrations
+        for (int c = 0; c < nComp; ++c)
+            m_concentrations(i, c) = freeConc[c];
+        m_molar_ratios(i, 0) = freeConc[m_observed] / obs_total;
+
+        // stored concentration vector: [idx, free_0..free_{n-1}, obsBound_0..obsBound_{m-1}]
+        Vector vector(nComp + 1 + nSpecies);
         vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
+        for (int c = 0; c < nComp; ++c)
+            vector(1 + c) = freeConc[c];
 
         for (int k = 0; k < nSpecies; ++k) {
-            const int a = m_species[k].first;
-            const int b = m_species[k].second;
-            const double beta = constants[k];
-            // moles of host A bound in species k = a * [A_a B_b]; free A + sum_k this = A_0
-            const double c = a * beta * pow(host, a) * pow(guest, b);
-            m_concentrations(i, 2 + k) = c;
-            m_molar_ratios(i, 1 + k) = c / host_0;
-            vector(3 + k) = c;
+            // moles of the observed component bound in species k = M(observed,k) * [species_k]
+            const int obsCoeff = sys.species[k].stoich(m_observed);
+            const double bound = obsCoeff * speciesConc[k];
+            m_concentrations(i, nComp + k) = bound;
+            m_molar_ratios(i, 1 + k) = bound / obs_total;
+            vector(1 + nComp + k) = bound;
         }
         if (!m_fast)
             SetConcentration(i, vector);
@@ -308,33 +247,13 @@ void nmr_any_Model::UpdateShifts()
 void nmr_any_Model::CalculateVariables()
 {
     CalculateConcentrations();
-    // Model signal = species mole fractions weighted by the per-species chemical shifts.
+    // Model signal = observed-component mole fractions weighted by the per-species chemical shifts.
     Eigen::MatrixXd m = m_molar_ratios * LocalParameter()->Table().transpose();
     for (int i = 0; i < DataPoints(); ++i)
         for (int j = 0; j < SeriesCount(); ++j)
             SetValue(i, j, m(i, j));
 }
-/*
-QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const
-{
-    QString method = getOption(Method);
 
-    QVector<qreal> vector;
-    qreal host_0 = InitialHostConcentration(datapoint);
-
-    Vector concentration = getConcentration(datapoint);
-
-    qreal host = concentration(1);
-
-    qreal complex = concentration(3);
-    ;
-
-    vector << host / host_0 * LocalTable()->data(series, 0);
-    vector << complex / host_0 * LocalTable()->data(series, 1);
-
-    return vector;
-}
-*/
 QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<nmr_any_Model>(new nmr_any_Model(this), &QObject::deleteLater);
@@ -354,41 +273,24 @@ QString nmr_any_Model::AdditionalOutput() const
 {
     QString result;
     return result;
-
-    double delta = 1e-3;
-    qreal host_0 = 1.0;
-    qreal host = 0;
-    qreal diff = host_0 - host;
-    Vector integral(3);
-    qreal end = delta;
-    for (end = delta; diff > 1e-5; end += delta) {
-        qreal guest_0 = end;
-        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = host_0 - host;
-
-        integral(0) += host * delta;
-        integral(1) += (guest_0 - complex) * delta;
-        integral(2) += complex * delta;
-
-        diff = host_0 - complex;
-        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        // std::cout << host << " "
-        //          << " " << guest_0 - complex << " " << complex << std::endl;
-        // std::cout << integral.transpose() << std::endl;
-    }
-    integral(0) /= end;
-    integral(1) /= end;
-    integral(2) /= end;
 }
 
 QString nmr_any_Model::ParameterComment(int parameter) const
 {
-    if (parameter >= 0 && parameter < m_species.size()) {
-        const int a = m_species[parameter].first;
-        const int b = m_species[parameter].second;
-        if (b == 0)
-            return QString("Self-aggregation: %1 A &#8652; %2").arg(a).arg(m_species_names.value(parameter));
-        return QString("Reaction: %1 A + %2 B &#8652; %3").arg(a).arg(b).arg(m_species_names.value(parameter));
+    const ReactionSystem& sys = m_speciation.System();
+    if (parameter >= 0 && parameter < sys.species.size()) {
+        const Eigen::VectorXi& v = sys.species[parameter].stoich;
+        QStringList lhs;
+        for (int c = 0; c < sys.components.size() && c < v.size(); ++c) {
+            if (v(c) <= 0)
+                continue;
+            lhs << (v(c) == 1 ? sys.components[c] : QString("%1 %2").arg(v(c)).arg(sys.components[c]));
+        }
+        const bool selfAgg = lhs.size() == 1; // a single component on the left -> self-aggregation
+        return QString("%1: %2 &#8652; %3")
+            .arg(selfAgg ? "Self-aggregation" : "Reaction")
+            .arg(lhs.join(" + "))
+            .arg(sys.species[parameter].label);
     }
     return QString("Reaction: A + B &#8652; AB");
 }

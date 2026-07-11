@@ -51,6 +51,7 @@
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelchart.h"
+#include "src/ui/widgets/dynamicmodelwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
@@ -436,6 +437,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
+    // Scalable table view for models with many species (additive: the classic view is unchanged).
+    if (m_model->UseDynamicParameterWidget())
+        model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
 
     m_splitter->addWidget(model_tab);
 
