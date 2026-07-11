@@ -41,9 +41,14 @@
  * stationary point of the strictly convex potential
  * @f[ G(x) = \sum_i \exp(x_i) + \sum_j c_j(x) - \sum_i t_i\,x_i , @f]
  * whose gradient @f$\partial G/\partial x_i = s_i + \sum_j M_{ij} c_j - t_i@f$ is exactly
- * the mass-balance residual and whose Hessian @f$\sum_j c_j\, m_j m_j^{T}@f$ is positive
- * semidefinite.  Convexity guarantees a single global minimum for any system.  @f$G@f$ is
- * minimised with BFGS (inverse-Hessian update) and an Armijo backtracking line search.
+ * the mass-balance residual and whose Hessian @f$\mathrm{diag}(s_i) + \sum_j c_j\, m_j m_j^{T}@f$ is
+ * symmetric positive definite.  Convexity guarantees a single global minimum for any system.
+ *
+ * @f$G@f$ is minimised with a @b damped @b Newton method: the analytic Hessian above is cheap for the
+ * small component counts of titration systems, so each step solves @f$H\,d = -g@f$ (Cholesky) and
+ * takes an Armijo-backtracked step. Newton converges quadratically, reaching machine-precision
+ * mass balance in a handful of iterations (the earlier BFGS inverse-Hessian update needed dozens and
+ * could stall on host-excess points). The class name is kept for compatibility. Claude Generated.
  *
  * @par Reference
  * Method after Daniil O. Soloviev and Christopher A. Hunter, "Musketeer: a software tool
@@ -108,14 +113,19 @@ public:
     inline long long Timer() const { return m_time; }
 
 private:
-    /** @brief Objective @f$G(x)@f$ and (optionally) its gradient at log-concentrations @p x. */
-    double Objective(const Eigen::VectorXd& x, Eigen::VectorXd* gradient) const;
+    /** @brief Objective @f$G(x)@f$ and, optionally, its gradient and (analytic) Hessian at the
+     * log-concentrations @p x. The Hessian @f$\mathrm{diag}(s_i) + \sum_j c_j m_j m_j^T@f$ is used for
+     * the damped-Newton step. Claude Generated. */
+    double Objective(const Eigen::VectorXd& x, Eigen::VectorXd* gradient, Eigen::MatrixXd* hessian = nullptr) const;
 
     Eigen::MatrixXi m_M; ///< stoichiometry (components x complexes)
     std::vector<double> m_beta; ///< stability constants per complex
+    std::vector<double> m_logbeta; ///< log(beta_j), precomputed (only valid where beta_j > 0)
     std::vector<double> m_totals; ///< total component concentrations
     std::vector<double> m_free; ///< free component concentrations (result / warm start)
     std::vector<bool> m_active; ///< component present (total > 0)
+    std::vector<int> m_comp_of_var; ///< active-variable index -> component row (per solve)
+    std::vector<int> m_var_of_comp; ///< component row -> active-variable index, -1 if inactive
 
     double m_converge = 1e-10;
     double m_lastConv = 0.0;

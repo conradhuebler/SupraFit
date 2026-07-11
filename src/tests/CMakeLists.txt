@@ -779,3 +779,15 @@ message(STATUS "  File Import CLI: ./test_file_import_cli")
 # them is a test-rewrite, not a wiring task. test_projectmanager.cpp now at least
 # compiles+links (needs a core<->models link group); its remaining failures are a
 # stale test-data contract (createTestProjectJson) vs current validateProjectJson.
+# Speciation microbenchmark (Claude Generated 2026) - manual perf tool, not a ctest
+add_executable(benchmark_speciation benchmark_speciation.cpp)
+target_link_libraries(benchmark_speciation
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_speciation ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_speciation pthread dl)
+endif()
