@@ -162,10 +162,8 @@ void uvvis_any_Model::InitialGuess_Private()
         LocalTable()->setColumn(DependentModel()->firstRow(), c);
 
     const int nSpecies = m_speciation.SpeciesCount();
-    const double guess_K = 4;
     for (int k = 0; k < nSpecies; ++k) {
-        const Eigen::VectorXi v = m_speciation.SpeciesStoichiometry(k);
-        (*GlobalTable())[k] = guess_K + v.sum();
+        (*GlobalTable())[k] = GuessLgBeta(k); // data-derived guess (see AbstractTitrationModel)
         LocalTable()->setColumn(DependentModel()->Row(DataPoints() - 1), m_component_count + k);
     }
     UpdateShifts();

@@ -215,17 +215,17 @@ private slots:
         delete data;
     }
 
-    /** Full fit of the nmr_any 1:1/1:2 grid {AB, AB2} on self-consistent data: the model signal and
-     * the fit must stay finite (regression for a reported release-mode divergence). */
+    /** Full fit of the nmr_any 1:1/1:2 grid {AB, AB2} in a realistic titration regime (host ~1e-3,
+     * guest to ~4e-3). Fitting from the model's own InitialGuess must RECOVER the true constants,
+     * not run away in a flat direction (regression: with the old fixed guess lg K(AB2) diverged to
+     * ~110 while SSE stayed finite; the data-derived GuessLgBeta fixes it). */
     void testFit_1_1_1_2()
     {
-        // Guest-excess titration (host << guest) drives strong 1:2 formation, the classic
-        // ill-conditioned regime for the AB/AB2 shift fit.
         Eigen::MatrixXd indep(N, 2);
         Eigen::MatrixXd dep0(N, 1);
         for (int i = 0; i < N; ++i) {
-            indep(i, 0) = 1e-4; // host held low
-            indep(i, 1) = 5e-3 * (i + 1) / N; // guest up to ~50x host
+            indep(i, 0) = 1e-3; // host held constant
+            indep(i, 1) = 4e-3 * i / (N - 1); // guest 0 .. 4x host
             dep0(i, 0) = 0.0;
         }
         DataClass* data = new DataClass();
@@ -240,33 +240,35 @@ private slots:
         def["MaxA"] = intOption(1);
         def["MaxB"] = intOption(2);
         def["MaxSelfA"] = intOption(0);
+        const double trueAB = 3.8, trueAB2 = 5.9; // cumulative lg beta
 
         // truth model -> synthesise the observed signal
         QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
         truth->DefineModel(def);
         QCOMPARE(truth->GlobalParameterSize(), 2); // AB, AB2
         truth->InitialGuess();
-        truth->setGlobalParameter(4.0, 0); // lg beta(AB)
-        truth->setGlobalParameter(7.0, 1); // lg beta(AB2)
-        for (int p = 0; p < truth->LocalParameterSize(); ++p)
-            truth->setLocalParameter(0.5 * (p + 1), p, 0);
+        truth->setGlobalParameter(trueAB, 0);
+        truth->setGlobalParameter(trueAB2, 1);
+        truth->setLocalParameter(8.0, 0, 0); // free-host shift
+        truth->setLocalParameter(6.0, 1, 0); // AB shift
+        truth->setLocalParameter(4.0, 2, 0); // AB2 shift
         truth->Calculate();
-        for (int i = 0; i < N; ++i)
-            QVERIFY2(std::isfinite(truth->ModelTable()->data(i, 0)),
-                qPrintable(QString("truth signal not finite at point %1").arg(i)));
         data->setDependentTable(new DataTable(truth->ModelTable()->Table()));
 
-        // fresh model, perturbed start -> fit
+        // fit from the model's own (data-derived) InitialGuess -> must recover the truth
         QSharedPointer<AbstractModel> fit = CreateModel(SupraFit::nmr_any, data);
         fit->DefineModel(def);
         fit->InitialGuess();
-        fit->setGlobalParameter(3.0, 0);
-        fit->setGlobalParameter(6.0, 1);
         Minimizer minim(false);
         minim.setModel(fit);
         minim.Minimize();
+
         const double sse = fit->SSE();
         QVERIFY2(std::isfinite(sse), qPrintable(QString("fit SSE diverged: %1").arg(sse)));
+        QVERIFY2(std::abs(fit->GlobalParameter(0) - trueAB) < 0.2,
+            qPrintable(QString("lg beta(AB) %1 not near %2 (runaway?)").arg(fit->GlobalParameter(0)).arg(trueAB)));
+        QVERIFY2(std::abs(fit->GlobalParameter(1) - trueAB2) < 0.3,
+            qPrintable(QString("lg beta(AB2) %1 not near %2 (runaway?)").arg(fit->GlobalParameter(1)).arg(trueAB2)));
         delete data;
     }
 };

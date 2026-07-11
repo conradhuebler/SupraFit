@@ -323,6 +323,27 @@ void AbstractTitrationModel::UpdateComponentHeaders()
         IndependentModel()->setHeaderData(c, Qt::Horizontal, m_component_names[c], Qt::DisplayRole);
 }
 
+double AbstractTitrationModel::GuessLgBeta(int speciesIndex) const
+{
+    const Eigen::VectorXi stoich = m_speciation.SpeciesStoichiometry(speciesIndex);
+    const int order = stoich.size() ? stoich.sum() : 2;
+
+    // c_ref = geometric mean of the per-component maximum total concentration in the data.
+    double logsum = 0.0;
+    int nc = 0;
+    for (int c = 0; c < m_component_count; ++c) {
+        double maxTotal = 0.0;
+        for (int i = DataBegin(); i < DataEnd(); ++i)
+            maxTotal = std::max(maxTotal, InitialConcentration(i, c));
+        if (maxTotal > 0.0) {
+            logsum += std::log10(maxTotal);
+            ++nc;
+        }
+    }
+    const double logcref = nc ? logsum / nc : -3.0; // fallback ~1e-3
+    return std::max(1.0, (order - 1) * (-logcref));
+}
+
 qreal AbstractTitrationModel::GuessK(int index, double min, double max)
 {
     QSharedPointer<AbstractModel> test = Clone();

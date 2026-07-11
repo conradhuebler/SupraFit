@@ -264,6 +264,14 @@ protected:
     /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
     void UpdateComponentHeaders();
 
+    /*! \brief Data-derived initial guess for the cumulative stability constant lg(beta) of species
+     * @p speciesIndex. Scales the constant to the concentration range of the actual data via
+     * lg(beta) ~ (order - 1) * (-lg c_ref), where the reaction order is the sum of the species'
+     * stoichiometric coefficients and c_ref is the geometric-mean per-component maximum total. This
+     * keeps higher-order complexes (e.g. AB2) from starting far too high, which otherwise sends the
+     * optimiser into a flat runaway direction. Claude Generated. */
+    double GuessLgBeta(int speciesIndex) const;
+
     int m_component_count = 2; ///< number of free components (2 = classic host/guest)
     QStringList m_component_names; ///< component symbols, e.g. ["A","B","C"] (empty => host/guest)
     SpeciationEngine m_speciation; ///< reaction system + BFGS solver (used by the *_any models)

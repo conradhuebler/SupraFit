@@ -157,11 +157,11 @@ void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
     const int nSpecies = m_speciation.SpeciesCount();
-    const double guess_K = 4;
     for (int k = 0; k < nSpecies; ++k) {
-        const Eigen::VectorXi v = m_speciation.SpeciesStoichiometry(k);
-        const int order = v.sum(); // higher-order complexes start from a larger lg beta guess
-        (*GlobalTable())[k] = guess_K + order;
+        // data-derived guess (scaled to the concentration range) instead of a fixed constant, so
+        // higher-order complexes (AB2, ...) do not start far too high and send the optimiser into a
+        // flat runaway direction. Claude Generated.
+        (*GlobalTable())[k] = GuessLgBeta(k);
         LocalTable()->setColumn(DependentModel()->Row(DataPoints() - 1), 1 + k);
     }
     Calculate();
