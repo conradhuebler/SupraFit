@@ -59,6 +59,9 @@ public:
     void setStabilityConstants(const std::vector<double>& beta);
     void setMaxIter(int maxiter);
     void setConvergeThreshold(double converge);
+    /** @brief Select the minimisation method of the underlying solver (default LevenbergMarquardt). */
+    void setMethod(BFGSConcentrationSolver::Method method) { m_solver.setMethod(method); }
+    BFGSConcentrationSolver::Method method() const { return m_solver.method(); }
 
     /**
      * @brief Solve one data point given the total concentration of every component.

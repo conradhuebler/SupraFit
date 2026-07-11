@@ -57,9 +57,10 @@ std::vector<std::vector<double>> sweep(int components, int points)
 double g_threshold = 1e-12;
 
 // Return {ns per solve, avg iterations per solve, max mass-balance residual}.
-void benchScenario(const Scenario& s, int points, int reps)
+void benchScenario(const Scenario& s, int points, int reps, BFGSConcentrationSolver::Method method)
 {
     BFGSConcentrationSolver solver;
+    solver.setMethod(method);
     solver.setStoichiometry(s.stoich);
     solver.setStabilityConstants(s.beta);
     solver.setMaxIter(1000);
@@ -128,14 +129,26 @@ int main(int argc, char** argv)
     scenarios.push_back({ "1:1 (AB)", M({ { 1 }, { 1 } }), { 1e4 }, 2 });
     // 2:1/1:1 grid  AB, A2B
     scenarios.push_back({ "2:1/1:1 (AB,A2B)", M({ { 1, 2 }, { 1, 1 } }), { 1e4, 1e7 }, 2 });
+    // 1:1/1:2 grid  AB, AB2
+    scenarios.push_back({ "1:1/1:2 (AB,AB2)", M({ { 1, 1 }, { 1, 2 } }), { 1e4, 1e7 }, 2 });
     // self-aggregation  AB, A2
     scenarios.push_back({ "self-agg (AB,A2)", M({ { 1, 2 }, { 1, 0 } }), { 1e4, 1e5 }, 2 });
     // 3-component competitive  AB, AC
     scenarios.push_back({ "3-comp (AB,AC)", M({ { 1, 1 }, { 1, 0 }, { 0, 1 } }), { 1e4, 3e3 }, 3 });
 
-    for (const Scenario& s : scenarios) {
-        std::printf("  running %-20s ...\r", s.name.c_str());
-        benchScenario(s, points, reps);
+    // Compare both minimisation methods head to head (argv[3] = "bfgs" or "levmar" limits to one).
+    std::vector<BFGSConcentrationSolver::Method> methods = {
+        BFGSConcentrationSolver::Method::LevenbergMarquardt, BFGSConcentrationSolver::Method::BFGS
+    };
+    if (argc > 3)
+        methods = { BFGSConcentrationSolver::MethodFromString(QString::fromLatin1(argv[3])) };
+
+    for (BFGSConcentrationSolver::Method method : methods) {
+        std::printf("--- method: %s ---\n", BFGSConcentrationSolver::MethodToString(method).toLatin1().constData());
+        for (const Scenario& s : scenarios) {
+            std::printf("  running %-20s ...\r", s.name.c_str());
+            benchScenario(s, points, reps, method);
+        }
     }
 
     // Reference: closed-form analytic 1:1 root (the hard-coded model path).

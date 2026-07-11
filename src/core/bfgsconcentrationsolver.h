@@ -23,6 +23,8 @@
 
 #include <Eigen/Dense>
 
+#include <QtCore/QString>
+
 /**
  * @brief General equilibrium speciation solver based on quasi-Newton (BFGS) minimisation.
  *
@@ -82,8 +84,20 @@ public:
 
     /** @brief Convergence threshold on the relative mass-balance residual (default 1e-10). */
     inline void setConvergeThreshold(double converge) { m_converge = converge; }
-    /** @brief Maximum number of BFGS iterations (default 200). */
+    /** @brief Maximum number of iterations (default 200). */
     inline void setMaxIter(int maxiter) { m_maxiter = maxiter; }
+
+    /** @brief Minimisation method used by solve(). Claude Generated. */
+    enum class Method {
+        LevenbergMarquardt, ///< damped Newton with the analytic Hessian (default: fast + robust)
+        BFGS ///< legacy quasi-Newton inverse-Hessian update (slower; may stall when ill-conditioned)
+    };
+    /** @brief Select the minimisation method (default LevenbergMarquardt). */
+    inline void setMethod(Method method) { m_method = method; }
+    inline Method method() const { return m_method; }
+    /** @brief Parse a method name ("levmar"/"newton"/"lm" or "bfgs"); defaults to LevenbergMarquardt. */
+    static Method MethodFromString(const QString& name);
+    static QString MethodToString(Method method);
 
     /** @brief Build an initial guess for the free concentrations from the totals. */
     void Guess();
@@ -127,6 +141,7 @@ private:
     std::vector<int> m_comp_of_var; ///< active-variable index -> component row (per solve)
     std::vector<int> m_var_of_comp; ///< component row -> active-variable index, -1 if inactive
 
+    Method m_method = Method::LevenbergMarquardt;
     double m_converge = 1e-10;
     double m_lastConv = 0.0;
     int m_maxiter = 200;

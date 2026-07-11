@@ -28,6 +28,7 @@
 
 #include <Eigen/Dense>
 
+#include "src/core/minimizer.h"
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/models/datatable.h"
@@ -84,6 +85,13 @@ private:
     }
 
     static QJsonObject strOption(const QString& value)
+    {
+        QJsonObject o;
+        o["value"] = value;
+        return o;
+    }
+
+    static QJsonObject intOption(int value)
     {
         QJsonObject o;
         o["value"] = value;
@@ -204,6 +212,61 @@ private slots:
         QVERIFY(tm);
         QCOMPARE(tm->ReactionComponentMismatch(), 3); // reactions asked for 3 components
         QCOMPARE(model->InputParameterSize(), 2); // fell back to the 2-component grid, no crash
+        delete data;
+    }
+
+    /** Full fit of the nmr_any 1:1/1:2 grid {AB, AB2} on self-consistent data: the model signal and
+     * the fit must stay finite (regression for a reported release-mode divergence). */
+    void testFit_1_1_1_2()
+    {
+        // Guest-excess titration (host << guest) drives strong 1:2 formation, the classic
+        // ill-conditioned regime for the AB/AB2 shift fit.
+        Eigen::MatrixXd indep(N, 2);
+        Eigen::MatrixXd dep0(N, 1);
+        for (int i = 0; i < N; ++i) {
+            indep(i, 0) = 1e-4; // host held low
+            indep(i, 1) = 5e-3 * (i + 1) / N; // guest up to ~50x host
+            dep0(i, 0) = 0.0;
+        }
+        DataClass* data = new DataClass();
+        data->setIndependentTable(new DataTable(indep));
+        data->setDataType(DataClassPrivate::Table);
+        data->setSimulateDependent(1);
+        data->setDependentTable(new DataTable(dep0));
+        data->setDataBegin(0);
+        data->setDataEnd(N);
+
+        QJsonObject def;
+        def["MaxA"] = intOption(1);
+        def["MaxB"] = intOption(2);
+        def["MaxSelfA"] = intOption(0);
+
+        // truth model -> synthesise the observed signal
+        QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
+        truth->DefineModel(def);
+        QCOMPARE(truth->GlobalParameterSize(), 2); // AB, AB2
+        truth->InitialGuess();
+        truth->setGlobalParameter(4.0, 0); // lg beta(AB)
+        truth->setGlobalParameter(7.0, 1); // lg beta(AB2)
+        for (int p = 0; p < truth->LocalParameterSize(); ++p)
+            truth->setLocalParameter(0.5 * (p + 1), p, 0);
+        truth->Calculate();
+        for (int i = 0; i < N; ++i)
+            QVERIFY2(std::isfinite(truth->ModelTable()->data(i, 0)),
+                qPrintable(QString("truth signal not finite at point %1").arg(i)));
+        data->setDependentTable(new DataTable(truth->ModelTable()->Table()));
+
+        // fresh model, perturbed start -> fit
+        QSharedPointer<AbstractModel> fit = CreateModel(SupraFit::nmr_any, data);
+        fit->DefineModel(def);
+        fit->InitialGuess();
+        fit->setGlobalParameter(3.0, 0);
+        fit->setGlobalParameter(6.0, 1);
+        Minimizer minim(false);
+        minim.setModel(fit);
+        minim.Minimize();
+        const double sse = fit->SSE();
+        QVERIFY2(std::isfinite(sse), qPrintable(QString("fit SSE diverged: %1").arg(sse)));
         delete data;
     }
 };
