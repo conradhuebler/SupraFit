@@ -94,8 +94,14 @@ DataClassPrivate::DataClassPrivate(int type)
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     : QSharedData(other)
-    , m_info(other.m_info)
+    , m_info(new DataClassPrivateObject) // own signal hub; must NOT share other's (~DataClassPrivate deletes it)
 {
+    // m_info is owned per-instance (the destructor deletes it), so a copy must create its own object.
+    // Sharing other.m_info made every copy alias the source's DataClassPrivateObject; when the copy was
+    // destroyed it deleted the source's m_info (a QPointer, so it silently went null), and a later
+    // `emit Info()->...` on the source then dereferenced null. This bit the Monte Carlo path, where
+    // Override*Table()->d.detach() deep-copies the project's DataClassPrivate per worker clone and the
+    // clones are destroyed after the run — nulling the live project's m_info. Claude Generated.
     m_systemObject = other.m_systemObject;
     m_uuid = other.m_uuid;
 
@@ -121,7 +127,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
-    : m_info(other->m_info)
+    : m_info(new DataClassPrivateObject) // own signal hub; see the reference copy ctor above. Claude Generated.
 {
     m_systemObject = other->m_systemObject;
     m_uuid = other->m_uuid;

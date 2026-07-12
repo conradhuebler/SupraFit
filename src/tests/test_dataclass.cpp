@@ -44,6 +44,9 @@ private slots:
     void testSystemParameterTypes();
     void testSystemParameterPersistence();
 
+    // Shared-private ownership (regression: MC-clone detach must not delete the project's info object)
+    void testInfoOwnershipAcrossDetach();
+
     // JSON Export/Import
     void testProjectExport();
     void testProjectImport();
@@ -217,8 +220,43 @@ void TestDataClass::testTableOverrides()
     dc->OverrideDependentTable(newDepTable);
     QCOMPARE(dc->DependentModel()->rowCount(), 8);
     QCOMPARE(dc->DependentModel()->columnCount(), 3);
-    
+
     delete dc;
+}
+
+void TestDataClass::testInfoOwnershipAcrossDetach()
+{
+    // Regression (Claude Generated): DataClassPrivate's copy constructor used to share the m_info
+    // (DataClassPrivateObject) pointer with the source while ~DataClassPrivate deletes it. Any deep
+    // copy of the private — produced by QExplicitlySharedDataPointer::detach(), which every
+    // Override*Table() triggers — therefore deleted the *source project's* m_info on destruction,
+    // nulling its Info() QPointer. In the GUI this bit Monte Carlo (a worker clone detaches + is
+    // destroyed per step): afterwards the live project's Info() was null and the next model's
+    // LoadSystemParameter() crashed at `emit Info()->SystemParameterLoaded()`.
+    DataClass* project = createTestDataClass();
+    QJsonObject sys;
+    sys["0"] = QStringLiteral("298.15");
+    project->setSystemObject(sys);
+
+    DataClassPrivateObject* infoBefore = project->Info();
+    QVERIFY(infoBefore != nullptr);
+
+    {
+        DataClass clone(project); // shares the project's private (refcount 2)
+        DataTable* checkedSrc = createTestTable(10, 3);
+        fillTestData(checkedSrc);
+        clone.OverrideCheckedTable(checkedSrc); // d.detach() deep-copies the private (no table replaced)
+        delete checkedSrc; // only its CheckedTable() is read; we still own it
+    } // clone destroyed here -> ~DataClassPrivate runs on its detached copy immediately
+
+    QVERIFY2(project->Info() == infoBefore,
+        "a detached clone deleted the project's DataClassPrivateObject (copy-ctor m_info ownership bug)");
+    QVERIFY2(project->Info() != nullptr, "project Info() was nulled by a detached clone's destruction");
+
+    // The crash surface itself: LoadSystemParameter() does `emit Info()->SystemParameterLoaded()`.
+    project->LoadSystemParameter(); // must not dereference a null Info()
+
+    delete project;
 }
 
 void TestDataClass::testSystemParameterAddition()
