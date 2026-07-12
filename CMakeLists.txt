@@ -270,6 +270,11 @@ else()
 endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
+# core TUs (analysis_manager.cpp, projectmanager.cpp) call fmt::print; link the header-only fmt so
+# FMT_HEADER_ONLY is defined when compiling them. Without this, those objects emit an external
+# reference to the non-inline fmt::vprint that nothing links, and a clean build only succeeds by
+# accident (stale objects / a weak symbol pulled from the executable's own TUs). Claude Generated.
+target_link_libraries(core fmt::fmt-header-only)
 # core calls CreateModel() (defined in models) and models use core utilities — declare the cyclic
 # static-library dependency so CMake repeats the archives on every link line (Claude Generated, R5).
 target_link_libraries(core models)
