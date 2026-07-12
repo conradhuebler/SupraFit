@@ -156,6 +156,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-12: ✅ **Model series visible on load** — `ModelElement::DisableSignal` passed 0/1 to `LineSeries::showLine(int)`, which only shows on `== Qt::Checked (2)`, so fit + error line-series stayed hidden until a manual toggle (a real `stateChanged` delivers 2). Fixed by passing a `bool` (`state != 0`) → the `showLine(bool)` overload. `modelelement.cpp:251`.
+- 2026-07-12: ✅ **`nmr_any` MC → add-model crash fixed** in core (`DataClassPrivate` `m_info` ownership); see AIChangelog / `SESSION_HANDOFF.md`.
 - 2026-07-11: **Reaction-equation editor** (`widgets/reactioneditorwidget`) — live-parsed reaction text (arrow syntax) with component/species preview, wired as `PrepareBox` type 6; spinbox `SpeciesEditorWidget` (type 5) deprecated.
 - 2026-07-11: **Dynamic model widget** (`widgets/dynamicmodelwidget`) — scalable "Parameter Table" tab (QTableView over Global/Local tables) added in `modelwidget` for models with `UseDynamicParameterWidget()` (the `*_any` models); additive, classic view unchanged.
 - Modern Qt6 migration completed
@@ -170,7 +172,15 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **Compatibility**: ✅ Cross-platform deployment working
 
 ### Known UI Issues
-- None currently identified
+- **Two windows show the same projects** (regression of the Jan-2025 ProjectManager consolidation).
+  `SupraFit::ProjectManager` is a process-wide **singleton**; `ProjectTree::getUnifiedProjectList()`
+  (`projecttree.cpp:31`) reads `instance().getLoadedProjectIds()`, and every `SupraFitGui` connects to
+  the same singleton's signals (`suprafitgui.cpp:175`), so a second window (`NewWindow()` → `new
+  SupraFitGui`) sees all projects and reacts to the other window's loads. Recommended fix: make
+  `ProjectManager` instantiable and give each `SupraFitGui` its own instance (keep `instance()` for
+  CLI/tests), threading a `ProjectManager*` through `ProjectTree`/`MainWindow`/`ModelDataHolder` (they
+  hard-code `instance()` at `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`). Keep app-level
+  `qApp` properties (threads, settings) shared. See `TECHNICAL_DEBT.md` D9.
 
 ### User Experience Priorities
 1. Streamlined data import workflows
