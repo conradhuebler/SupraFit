@@ -159,6 +159,13 @@ DataClassPrivate::~DataClassPrivate()
         delete m_independent_model;
     if (m_dependent_model)
         delete m_dependent_model;
+    // The raw tables are owned by the private just like the models above (every ctor/copy-ctor allocates
+    // them with `new`), but were never freed -> a leak on every DataClass, and one per detach() copy in
+    // the Monte Carlo path. QPointer guards a table already deleted elsewhere. Claude Generated.
+    if (m_independent_raw_model)
+        delete m_independent_raw_model;
+    if (m_dependent_raw_model)
+        delete m_dependent_raw_model;
     if (m_info)
         delete m_info;
 #ifdef DEBUG_ON

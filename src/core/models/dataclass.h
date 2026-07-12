@@ -201,6 +201,8 @@ public:
     inline void setIndependentRawTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_independent_raw_model && d->m_independent_raw_model != table)
+            delete d->m_independent_raw_model; // free the table this replaces (owned by the private)
         d->m_independent_raw_model = table;
         d->m_independent_raw_model->setCheckable(false);
         d->m_independent_model->ImportTable(table->ExportTable(false));
@@ -212,6 +214,8 @@ public:
     inline void setIndependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_independent_model && d->m_independent_model != table)
+            delete d->m_independent_model; // free the table this replaces (owned by the private)
         d->m_independent_model = table;
         d->m_independent_model->setCheckable(false);
     }
@@ -223,6 +227,8 @@ public:
     inline void setDependentRawTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_dependent_raw_model && d->m_dependent_raw_model != table)
+            delete d->m_dependent_raw_model; // free the table this replaces (owned by the private)
         d->m_dependent_raw_model = table;
         d->m_dependent_raw_model->setCheckable(true);
 
@@ -239,6 +245,8 @@ public:
     inline void setDependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_dependent_model && d->m_dependent_model != table)
+            delete d->m_dependent_model; // free the table this replaces (owned by the private)
         d->m_dependent_model = table;
         d->m_dependent_model->setCheckable(true);
 
