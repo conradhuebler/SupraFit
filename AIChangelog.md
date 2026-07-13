@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-07-13: **`roadmap/joint_solver.md`** — design/evaluation of a unified concentration+fit-parameter solver; found the speciation warm-start is discarded in the fit path (`setTotalConcentrations` clears `m_has_guess`), so the "7-8 iter/solve" figure is cold-start; recommends warm-started nested first, then analytic outer Jacobian via the implicit-function theorem, deferring a full-space KKT/SQP.
 - 2026-07-13: **GUI switch for the speciation solver** (LevMar/Newton vs. legacy BFGS) — new `SpeciationSolver` optimizer-config key (`global.h`); `AbstractModel::setOptimizerConfig` made virtual + `UsesSpeciationEngine()` hook; `AbstractTitrationModel` (nmr_any/uvvis_any/fl_any) and `itc_any` push the method into their embedded `SpeciationEngine` on config change and at `DefineModel`; a "Speciation solver" submenu in `ModelWidget`'s Fit menu (greyed off-engine, re-fits on select), and `OptimizerWidget::Config()` round-trips the key so Apply no longer drops it. MC/CV/RA inherit it via `Clone()`.
 - 2026-07-13: **fixed the red `uv_vis 2:1/1:1` VarPro equivalence test** — `{2.4,4.2}` (copied from the NMR row) is a bad-basin instance for the Beer-Lambert objective (weakly-populated A2B ⇒ flat K21 valley both solvers miss; VarPro collapses to K11≈0). The projection is correct (seeded at those constants VarPro reaches SSE~0); switched the row to the well-conditioned `{3.0,4.5}` so both solvers converge and the strong equivalence gate holds. `test_varpro` 13/0.
 
