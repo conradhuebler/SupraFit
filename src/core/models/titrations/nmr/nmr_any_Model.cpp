@@ -150,7 +150,7 @@ void nmr_any_Model::CalculateConcentrations()
         for (int c = 0; c < nComp; ++c)
             totals[c] = InitialConcentration(i, c);
 
-        m_speciation.solve(totals);
+        m_speciation.solve(totals, i);
         const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
         const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
 

@@ -70,6 +70,14 @@ void BFGSConcentrationSolver::setTotalConcentrations(const std::vector<double>& 
     // is the point-to-point warm start the class was designed for (was discarded here). Claude Generated.
 }
 
+void BFGSConcentrationSolver::setWarmStart(const std::vector<double>& free)
+{
+    if (free.size() != m_totals.size())
+        return; // stale/mismatched cache entry -> keep whatever setTotalConcentrations() left
+    m_free = free;
+    m_has_guess = true;
+}
+
 double BFGSConcentrationSolver::GuessStart() const
 {
     // Smallest positive total, scaled down by the largest complex order, gives a robust

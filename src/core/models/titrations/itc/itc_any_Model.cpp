@@ -184,7 +184,7 @@ void itc_any_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i) * fx;
         qreal guest_0 = InitialGuestConcentration(i);
 
-        m_speciation.solve({ host_0, guest_0 });
+        m_speciation.solve({ host_0, guest_0 }, i);
         const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
         const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
         const double host = freeConc.empty() ? 0.0 : freeConc[0];

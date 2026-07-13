@@ -36,6 +36,7 @@ void SpeciationEngine::setSystem(const ReactionSystem& system)
     m_system = system;
     // rows = components, cols = species; the solver treats the free components implicitly
     m_solver.setStoichiometry(m_system.stoich);
+    m_point_cache.clear(); // component count may have changed -> old per-point warm starts are invalid
 }
 
 QString SpeciationEngine::SpeciesLabel(int j) const
@@ -67,8 +68,31 @@ void SpeciationEngine::setConvergeThreshold(double converge)
 
 std::vector<double> SpeciationEngine::solve(const std::vector<double>& totals)
 {
+    return solve(totals, -1);
+}
+
+std::vector<double> SpeciationEngine::solve(const std::vector<double>& totals, int pointIndex)
+{
+    // The per-point cache only helps the convergent Newton (LevenbergMarquardt) method, whose solution
+    // is independent of the start (strictly convex): each point then seeds from its own previous
+    // converged solution - a nearer start than the neighbouring swept point. The legacy BFGS method does
+    // NOT fully converge, so caching a stalled point and reusing it just moves (and can slow) the stall;
+    // it keeps the mild point-to-point warm start instead. Claude Generated.
+    const bool cache = pointIndex >= 0
+        && m_solver.method() == BFGSConcentrationSolver::Method::LevenbergMarquardt;
+
     m_solver.setTotalConcentrations(totals);
+    if (cache && pointIndex < static_cast<int>(m_point_cache.size())
+        && m_point_cache[pointIndex].size() == totals.size())
+        m_solver.setWarmStart(m_point_cache[pointIndex]);
+
     m_free = m_solver.solve();
+
+    if (cache) {
+        if (static_cast<int>(m_point_cache.size()) <= pointIndex)
+            m_point_cache.resize(pointIndex + 1);
+        m_point_cache[pointIndex] = m_free;
+    }
 
     // AllConcentrations() returns the free components followed by the species (column order of M).
     const std::vector<double> all = m_solver.AllConcentrations();

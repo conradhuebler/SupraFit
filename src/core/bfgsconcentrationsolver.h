@@ -118,6 +118,11 @@ public:
     /** @brief The free component concentrations of the last solve. */
     inline std::vector<double> currentConcentration() const { return m_free; }
 
+    /** @brief Inject a warm start (e.g. this data point's solution from the previous outer iteration).
+     * Ignored if the size does not match the current totals (a stale/structural mismatch). Must be called
+     * after setTotalConcentrations(). Claude Generated. */
+    void setWarmStart(const std::vector<double>& free);
+
     /**
      * @brief All species concentrations: the n free components followed by the m complexes
      *        (in column order of @f$M@f$).
