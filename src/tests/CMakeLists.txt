@@ -861,3 +861,16 @@ endif()
 if(UNIX)
     target_link_libraries(benchmark_speciation pthread dl)
 endif()
+
+# VarPro vs classic LevMar fit-time benchmark (Claude Generated 2026) - manual perf tool, not a ctest
+add_executable(benchmark_varpro benchmark_varpro.cpp)
+target_link_libraries(benchmark_varpro
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_varpro ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_varpro pthread dl)
+endif()
