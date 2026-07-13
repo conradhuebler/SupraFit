@@ -1,0 +1,10 @@
+# Python build/test artifacts
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+*.egg-link
+build/
+dist/
+.pytest_cache/
+.coverage
