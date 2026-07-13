@@ -138,37 +138,47 @@ void nmr_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
         addLocalParameter(2);
 }
 
-void nmr_ItoI_ItoII_Model::CalculateVariables()
+void nmr_ItoI_ItoII_Model::FillDesign()
 {
-    qreal K11 = qPow(10, GlobalParameter(0));
-    qreal K12 = qPow(10, GlobalParameter(1));
-
-    // for (int i = 0; i < DataPoints(); ++i) {
+    if (m_design.rows() != DataPoints() || m_design.cols() != 3)
+        m_design.resize(DataPoints(), 3);
+    const qreal K11 = qPow(10, GlobalParameter(0));
+    const qreal K12 = qPow(10, GlobalParameter(1));
     for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-
         qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
-
-        Vector vector(5);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
-        vector(3) = complex_11;
-        vector(4) = complex_12;
-
-        if (!m_fast)
+        m_design(i, 0) = host / host_0; // free-host shift coefficient
+        m_design(i, 1) = complex_11 / host_0; // AB shift coefficient
+        m_design(i, 2) = complex_12 / host_0; // AB2 shift coefficient
+        if (!m_fast) {
+            Vector vector(5);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest;
+            vector(3) = complex_11;
+            vector(4) = complex_12;
             SetConcentration(i, vector);
-
-        qreal value = 0;
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host / host_0 * LocalTable()->data(j, 0) + complex_11 / host_0 * LocalTable()->data(j, 1) + complex_12 / host_0 * LocalTable()->data(j, 2);
-            SetValue(i, j, value);
         }
     }
+}
+
+void nmr_ItoI_ItoII_Model::CalculateVariables()
+{
+    FillDesign();
+    for (int i = DataBegin(); i < DataEnd(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2));
+}
+
+void nmr_ItoI_ItoII_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const

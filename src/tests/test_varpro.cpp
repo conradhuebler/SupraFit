@@ -107,6 +107,10 @@ private slots:
         // Fixed 1:1 model (ignores the Reactions field) - exercises the design-matrix refactor of the
         // classic model, not just the generalised *_any path.
         QTest::newRow("nmr_ItoI fixed 1:1") << static_cast<int>(SupraFit::nmr_ItoI) << QString() << QList<double>{ 4.0 } << 3 << 9.0;
+        // GP order is stepwise (K21, K11); K21=2.4,K11=4.2 == cumulative beta(AB)=4.2, beta(A2B)=6.6,
+        // the same well-conditioned system as the "nmr 2:1/1:1" any-model row.
+        QTest::newRow("nmr_IItoI_ItoI fixed 2:1/1:1") << static_cast<int>(SupraFit::nmr_IItoI_ItoI) << QString() << QList<double>{ 2.4, 4.2 } << 2 << 9.0;
+        QTest::newRow("nmr_ItoI_ItoII fixed 1:1/1:2") << static_cast<int>(SupraFit::nmr_ItoI_ItoII) << QString() << QList<double>{ 4.0, 2.0 } << 2 << 9.0;
         QTest::newRow("nmr 1:1") << nmr << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 9.0;
         QTest::newRow("nmr 1:1/1:2") << nmr << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 9.0;
         QTest::newRow("nmr 2:1/1:1") << nmr << QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") << QList<double>{ 4.2, 6.6 } << 2 << 9.0;
