@@ -80,31 +80,49 @@ void uv_vis_ItoI_Model::CollectOptimizationParameters_Private()
     addLocalParameter(2);
 }
 
-void uv_vis_ItoI_Model::CalculateVariables()
+void uv_vis_ItoI_Model::FillDesign()
 {
-    auto hostguest = getHostGuestPair();
-    qreal value = 0;
+    if (m_design.rows() != DataPoints() || m_design.cols() != 3)
+        m_design.resize(DataPoints(), 3);
+    const auto hostguest = getHostGuestPair();
+    const double hf = hostguest.first ? 1.0 : 0.0; // free host absorbs?
+    const double gf = hostguest.second ? 1.0 : 0.0; // free guest absorbs?
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;
         qreal guest = guest_0 - complex;
-
-        Vector vector(4);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
-
-        if (!m_fast)
+        m_design(i, 0) = host * hf; // free-host extinction column (eps_A)
+        m_design(i, 1) = guest * gf; // free-guest extinction column (eps_B)
+        m_design(i, 2) = complex; // complex extinction column (eps_AB)
+        if (!m_fast) {
+            Vector vector(4);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest_0 - complex;
+            vector(3) = complex;
             SetConcentration(i, vector);
-
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(j, 0) * hostguest.first + guest * LocalTable()->data(j, 1) * hostguest.second + complex * LocalTable()->data(j, 2);
-            SetValue(i, j, value);
         }
     }
+}
+
+void uv_vis_ItoI_Model::CalculateVariables()
+{
+    FillDesign();
+    // Beer-Lambert absorbance = sum of concentration*extinction over the absorbing species. Same math
+    // as before, expressed through the shared design matrix (the host/guest columns already carry the
+    // "silent component" 0/1 multipliers).
+    for (int i = 0; i < DataPoints(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2));
+}
+
+void uv_vis_ItoI_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> uv_vis_ItoI_Model::DeCompose(int datapoint, int series) const
