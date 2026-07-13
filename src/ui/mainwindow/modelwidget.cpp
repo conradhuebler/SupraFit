@@ -80,6 +80,7 @@
 #include <QtCore/QtMath>
 
 #include <QtGui/QAction>
+#include <QtGui/QActionGroup>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -290,10 +291,39 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
+    /* Fit-solver selection (LevMar vs. VarPro), appended to the Fit menu. The choice is written into the
+       model's optimizer config ("FitSolver") and thus propagates to the statistical post-processing,
+       whose fold re-fits inherit the key via Clone(). VarPro is only honoured by models with
+       SupportsVarPro() (nmr_any / uvvis_any); it is greyed out otherwise. Claude Generated. */
+    QAction* solver_levmar = new QAction(tr("LevMar (classic)"), this);
+    solver_levmar->setCheckable(true);
+    solver_levmar->setData(QStringLiteral("LevMar"));
+    QAction* solver_varpro = new QAction(tr("VarPro (projection)"), this);
+    solver_varpro->setCheckable(true);
+    solver_varpro->setData(QStringLiteral("VarPro"));
+    QActionGroup* solver_group = new QActionGroup(this);
+    solver_group->setExclusive(true);
+    solver_group->addAction(solver_levmar);
+    solver_group->addAction(solver_varpro);
+    m_solver_levmar = solver_levmar;
+    m_solver_varpro = solver_varpro;
+    connect(solver_levmar, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+    connect(solver_varpro, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("VarPro"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
+    menu->addSeparator();
+    menu->addAction(solver_levmar);
+    menu->addAction(solver_varpro);
+    connect(menu, &QMenu::aboutToShow, this, &ModelWidget::UpdateSolverMenu);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
@@ -854,6 +884,28 @@ void ModelWidget::GlobalMinimize()
 {
     QJsonObject config = m_model->getOptimizerConfig();
     MinimizeModel(config);
+}
+
+void ModelWidget::SetFitSolver(const QString& solver)
+{
+    /* Write the FitSolver choice into the model's optimizer config. Persisted with the model and
+       inherited by every statistical re-fit via Clone(), so MC/CV/RA use the same solver. Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["FitSolver"] = solver;
+    m_model->setOptimizerConfig(config);
+}
+
+void ModelWidget::UpdateSolverMenu()
+{
+    /* Refresh check marks and the VarPro enable state when the menu opens, so the display never
+       lags behind a config changed elsewhere (e.g. OptimizerSettings) or a freshly loaded model. */
+    const QString solver = m_model->getOptimizerConfig().value("FitSolver").toString(QStringLiteral("LevMar"));
+    const bool varpro = m_model->SupportsVarPro();
+    m_solver_varpro->setEnabled(varpro);
+    m_solver_varpro->setToolTip(varpro ? QString() : tr("Only available for nmr_any / uvvis_any models."));
+    const bool use_varpro = (varpro && solver == QLatin1String("VarPro"));
+    m_solver_levmar->setChecked(!use_varpro);
+    m_solver_varpro->setChecked(use_varpro);
 }
 
 void ModelWidget::MinimizeModel(const QJsonObject& config)

@@ -122,6 +122,7 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
+    QAction *m_solver_levmar, *m_solver_varpro; /* Fit-menu solver choice (LevMar/VarPro). Claude Generated. */
     QCheckBox *m_readonly, *m_legend;
     QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
@@ -135,6 +136,8 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const QJsonObject& config);
+    void SetFitSolver(const QString& solver); /* Claude Generated */
+    void UpdateSolverMenu(); /* Claude Generated */
     void LoadStatistic(const QJsonObject& data);
 
     QVBoxLayout* m_sign_layout;

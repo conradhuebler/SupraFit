@@ -26,6 +26,7 @@
 #include <QtCore/QJsonObject>
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QSpinBox>
@@ -61,6 +62,11 @@ void OptimizerWidget::setUi()
 QJsonObject OptimizerWidget::Config() const
 {
     QJsonObject config{
+        /* Fit solver selection: "LevMar" = classic full-vector Levenberg-Marquardt (default, reference oracle);
+           "VarPro" = variable-projection solver (only honoured by models with SupportsVarPro(), else LevMar).
+           Round-trips the existing key so OptimizerSettings no longer silently drops the solver choice. Claude Generated. */
+        { "FitSolver", m_solver->currentText() },
+
         /* This are the specific definitions, that work around Levenberg-Marquardt */
         { "MaxLevMarInter", m_maxiter->value() },
         { "ErrorConvergence", m_error_convergence->value() },
@@ -103,6 +109,14 @@ QWidget* OptimizerWidget::GeneralWidget()
     m_error_convergence->setDecimals(8);
     m_error_convergence->setValue(m_config["ErrorConvergence"].toDouble());
 
+    /* Fit solver selection. "VarPro" only takes effect for models with SupportsVarPro()
+       (nmr_any / uvvis_any); for everything else the Minimizer falls back to LevMar regardless. */
+    m_solver = new QComboBox;
+    m_solver->addItem(tr("LevMar (classic)"), QStringLiteral("LevMar"));
+    m_solver->addItem(tr("VarPro (projection)"), QStringLiteral("VarPro"));
+    const QString solver = m_config.value("FitSolver").toString(QStringLiteral("LevMar"));
+    m_solver->setCurrentIndex(solver == QLatin1String("VarPro") ? 1 : 0);
+
     layout->addWidget(new QLabel(tr("Maximal No. of Iterations")), 0, 0);
     layout->addWidget(m_maxiter, 0, 1);
 
@@ -111,6 +125,9 @@ QWidget* OptimizerWidget::GeneralWidget()
 
     layout->addWidget(new QLabel(tr("Tolerance Error Convergence")), 2, 0);
     layout->addWidget(m_error_convergence, 2, 1);
+
+    layout->addWidget(new QLabel(tr("Fit Solver")), 3, 0);
+    layout->addWidget(m_solver, 3, 1);
 
     widget->setLayout(layout);
     return widget;
