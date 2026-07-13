@@ -358,6 +358,7 @@ set(models_SRC
     src/core/models/titrations/fluorescence/fl_1_1_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_1_2_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_Model.cpp
+    src/core/models/titrations/fluorescence/fl_any_Model.cpp
 
     src/core/models/titrations/itc/blank.cpp
     src/core/models/titrations/itc/itc_1_1_Model.cpp

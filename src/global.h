@@ -181,6 +181,7 @@ enum Model {
     uv_vis_IItoI_ItoI_ItoII = 33,
     nmr_any = 34,
     uvvis_any = 35,
+    fl_any = 36,
     ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
@@ -408,6 +409,9 @@ inline QString Model2Name(SupraFit::Model model)
         return QString("UV/VIS %1").arg("2:1/1:1/1:2-Model");
     else if (model == SupraFit::uvvis_any)
         return "flexible UV/VIS Model";
+
+    else if (model == SupraFit::fl_any)
+        return QString("%1 %2").arg(Unicode_Phi).arg("flexible Fluorescence Model");
 
     else if (model == SupraFit::MonoMolecularModel)
         return "Monomoleculare Kinetics";

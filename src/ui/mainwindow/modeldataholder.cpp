@@ -31,6 +31,7 @@
 #include "src/core/analyse.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/projectmanager.h"
+#include "src/core/reactionparser.h"
 #include "src/core/models/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
@@ -237,17 +238,33 @@ MDHDockTitleBar::MDHDockTitleBar()
 
     // Attach a reaction-preset submenu to an N-component *_any action: "Define reactions…" opens the
     // usual dialog, while a preset entry adds the model straight away with its reactions pre-set
-    // (ModelDataHolder::AddModel skips the dialog when PresetReactions() is non-empty). Claude Generated.
-    auto attachPresets = [this](QAction* anyAction, SupraFit::Model model) {
+    // (ModelDataHolder::AddModel skips the dialog when PresetReactions() is non-empty). maxComponents
+    // filters presets whose reaction system exceeds the model's component limit (e.g. itc_any is
+    // 2-component); a section header is only added when its section retains at least one entry, so no
+    // empty "Three components" section shows up for the 2-component case. Claude Generated.
+    auto attachPresets = [this](QAction* anyAction, SupraFit::Model model, int maxComponents = INT_MAX) {
         QMenu* sub = new QMenu(this);
         QAction* custom = sub->addAction(tr("Define reactions…"));
         custom->setData(model);
         connect(custom, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-        for (const ReactionEditorWidget::Preset& p : ReactionEditorWidget::Presets()) {
+        const QVector<ReactionEditorWidget::Preset> presets = ReactionEditorWidget::Presets();
+        for (int idx = 0; idx < presets.size(); ++idx) {
+            const ReactionEditorWidget::Preset& p = presets[idx];
             if (p.isHeader()) {
-                sub->addSection(p.name);
+                // Look ahead: only add the section if at least one entry before the next header passes.
+                bool any = false;
+                for (int j = idx + 1; j < presets.size() && !presets[j].isHeader(); ++j) {
+                    if (ReactionParser::Parse(presets[j].reactions).components.size() <= maxComponents) {
+                        any = true;
+                        break;
+                    }
+                }
+                if (any)
+                    sub->addSection(p.name);
                 continue;
             }
+            if (ReactionParser::Parse(p.reactions).components.size() > maxComponents)
+                continue;
             QAction* a = sub->addAction(p.name);
             a->setToolTip(QString(p.reactions).replace('\n', QStringLiteral(" ; ")));
             const QString reactions = p.reactions;
@@ -276,6 +293,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_fl_model << addModel(SupraFit::fl_IItoI_ItoI);
     m_fl_model << addModel(SupraFit::fl_ItoI_ItoII);
     m_fl_model << addModel(SupraFit::fl_IItoI_ItoI_ItoII);
+    QAction* flAny = addModel(SupraFit::fl_any);
+    attachPresets(flAny, SupraFit::fl_any); // N-component: full preset set incl. three-component systems
+    m_fl_model << flAny;
     //#endif
 
     //#ifdef UV_VIS_Models
@@ -305,7 +325,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_fixed_model << addModel(SupraFit::itc_IItoI);
     m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
     m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
-    m_itc_fixed_model << addModel(SupraFit::itc_any);
+    QAction* itcAny = addModel(SupraFit::itc_any);
+    attachPresets(itcAny, SupraFit::itc_any, /*maxComponents=*/2); // ITC is 2-component (host/guest from protocol)
+    m_itc_fixed_model << itcAny;
 
     //m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);

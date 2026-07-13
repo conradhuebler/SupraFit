@@ -268,6 +268,36 @@ set_tests_properties(UvVisAnyTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# fl_any (flexible fluorescence, BFGS speciation + linear fluorescence-coefficient signal):
+# signal linearity + VarPro/LevMar equivalence. Claude Generated 2026.
+add_executable(test_fl_any_equivalence
+    test_fl_any_equivalence.cpp
+)
+
+target_link_libraries(test_fl_any_equivalence
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_fl_any_equivalence ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_fl_any_equivalence pthread dl)
+endif()
+
+add_test(NAME FlAnyEquivalenceTest COMMAND test_fl_any_equivalence)
+
+set_tests_properties(FlAnyEquivalenceTest PROPERTIES
+    TIMEOUT 120
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # itc_any BFGS speciation plumbing (grid + self-aggregation) - Claude Generated 2026
 add_executable(test_itc_any
     test_itc_any.cpp
