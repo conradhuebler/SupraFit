@@ -474,6 +474,12 @@ inline const QString included() { return QString("#77d740;"); }
 inline const QString excluded() { return QString("#e17f7f;"); }
 
 const QJsonObject OptimConfigBlock{
+    /* Fit solver selection: "LevMar" = the classic (unsupported-Eigen) full-vector Levenberg-Marquardt
+       (default, and the reference oracle); "VarPro" = the opt-in variable-projection solver that fits
+       only the non-linear global parameters and projects the linear locals (falls back to LevMar for
+       models without SupportsVarPro()). Selectable so old vs new can be benchmarked. Claude Generated. */
+    { "FitSolver", "LevMar" },
+
     /* This are the specific definitions, that work around Levenberg-Marquardt */
     { "MaxLevMarInter", 75 },
     { "ErrorConvergence", 5E-7 },

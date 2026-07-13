@@ -291,6 +291,12 @@ public:
     {
     }
 
+    /*! \brief Whether this model supports the opt-in variable-projection (VarPro) fit solver, i.e. its
+     * observable is linear in the local parameters given the global (non-linear) parameters, so the
+     * locals can be projected out by linear least-squares. Default false → the classic full-vector
+     * Levenberg-Marquardt is used. Claude Generated. */
+    virtual bool SupportsVarPro() const { return false; }
+
     virtual inline int Color(int i) const { return i; }
 
 
