@@ -8,7 +8,10 @@ mkdir build_x64
 cd build_x64
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release  ..
 if errorlevel 1 exit /b 1
-cmake --build  .
+REM Build only the two deployed executables (like the macOS/Linux scripts), in parallel. Building
+REM every target single-threaded - which -mbig-obj now lets run to completion - overran the 60 min CI
+REM cap. suprafit + suprafit_cli pull in all needed libs but skip the test suite. Claude Generated.
+cmake --build . --parallel 4 --target suprafit suprafit_cli
 if errorlevel 1 exit /b 1
 
 echo Packaging...
