@@ -59,18 +59,22 @@ void BFGSConcentrationSolver::setTotalConcentrations(const std::vector<double>& 
     m_active.assign(totals.size(), true);
     for (std::size_t i = 0; i < totals.size(); ++i)
         m_active[i] = totals[i] > 0.0;
-    if (m_free.size() != totals.size())
+    if (m_free.size() != totals.size()) {
         m_free.assign(totals.size(), 0.0);
-    m_has_guess = false;
+        m_has_guess = false; // dimensionality changed -> the previous solution is unusable as a start
+    }
+    // Otherwise keep m_has_guess as left by the previous solve(): its free concentrations are a good
+    // warm start for the next (nearby) point of a titration sweep, which is the dominant fit cost. The
+    // log-space potential is strictly convex, so any positive start converges to the same unique
+    // minimum - only the iteration count changes; newly-active components are seeded in solve(). This
+    // is the point-to-point warm start the class was designed for (was discarded here). Claude Generated.
 }
 
-void BFGSConcentrationSolver::Guess()
+double BFGSConcentrationSolver::GuessStart() const
 {
-    const int n = static_cast<int>(m_totals.size());
-    m_free.assign(n, 0.0);
-
     // Smallest positive total, scaled down by the largest complex order, gives a robust
     // low starting free concentration (Musketeer: within ~2 orders of the optimum).
+    const int n = static_cast<int>(m_totals.size());
     double min_total = 0.0;
     for (int i = 0; i < n; ++i) {
         if (!m_active[i])
@@ -85,7 +89,14 @@ void BFGSConcentrationSolver::Guess()
             order += m_M(i, j);
         max_order = std::max(max_order, order);
     }
-    const double start = min_total / (10.0 * (max_order + 1));
+    return min_total / (10.0 * (max_order + 1));
+}
+
+void BFGSConcentrationSolver::Guess()
+{
+    const int n = static_cast<int>(m_totals.size());
+    const double start = GuessStart();
+    m_free.assign(n, 0.0);
     for (int i = 0; i < n; ++i)
         m_free[i] = m_active[i] ? start : 0.0;
     m_has_guess = true;
@@ -197,10 +208,19 @@ std::vector<double> BFGSConcentrationSolver::solve()
         return m_free;
     }
 
+    // Build the log-concentration start. Active components carry over their warm-start value; any that
+    // lack a positive one (e.g. a component that was inactive at the previous swept point) fall back to
+    // the cold heuristic rather than ~0, so an activation point costs no extra iterations. CG.
+    double warm_fallback = 0.0;
     Eigen::VectorXd x(nv);
     for (int v = 0; v < nv; ++v) {
-        const double s = m_free[m_comp_of_var[v]];
-        x(v) = std::log(s > 0 ? s : 1e-30);
+        double s = m_free[m_comp_of_var[v]];
+        if (!(s > 0.0)) {
+            if (warm_fallback == 0.0)
+                warm_fallback = GuessStart();
+            s = warm_fallback > 0.0 ? warm_fallback : 1e-30;
+        }
+        x(v) = std::log(s);
     }
 
     Eigen::VectorXd g(nv);

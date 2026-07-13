@@ -102,6 +102,10 @@ public:
     /** @brief Build an initial guess for the free concentrations from the totals. */
     void Guess();
 
+    /** @brief Cold-start free-concentration magnitude from the totals (used by Guess() and, in solve(),
+     * to seed components that just became active during a warm-started sweep). Claude Generated. */
+    double GuessStart() const;
+
     /**
      * @brief Solve for the free component concentrations.
      * @return vector of length n_components with the free concentrations @f$s_i@f$.

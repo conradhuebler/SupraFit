@@ -634,6 +634,18 @@ target_compile_definitions(test_varpro_cv PRIVATE
 
 add_test(NAME VarProCVTest COMMAND test_varpro_cv)
 
+# Warm-started speciation solver: a threaded Monte Carlo on nmr_any must stay correct with both
+# speciation methods (per-clone engine, no warm-start race; SpeciationSolver propagates). CG 2026.
+add_executable(test_speciation_warmstart
+    test_speciation_warmstart.cpp
+)
+
+target_link_libraries(test_speciation_warmstart
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME SpeciationWarmstartTest COMMAND test_speciation_warmstart)
+
 set_tests_properties(VarProCVTest PROPERTIES
     TIMEOUT 300  # replays CV/RA on the paper datasets with both solvers
 )
