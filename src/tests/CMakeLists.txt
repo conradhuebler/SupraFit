@@ -588,6 +588,26 @@ set_tests_properties(NmrAnyEquivalenceTest PROPERTIES
     TIMEOUT 300  # re-fits + replays CV/RA on three paper datasets for both model families
 )
 
+# VarPro CV/RA statistics equivalence: masked projection must give the same resampling boxplots as
+# the classic solver under Cross-Validation/Reduction row-disabling (Claude Generated 2026).
+add_executable(test_varpro_cv
+    test_varpro_cv.cpp
+)
+
+target_link_libraries(test_varpro_cv
+    ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_varpro_cv PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME VarProCVTest COMMAND test_varpro_cv)
+
+set_tests_properties(VarProCVTest PROPERTIES
+    TIMEOUT 300  # replays CV/RA on the paper datasets with both solvers
+)
+
 # Add custom target to run all tests including new comprehensive CLI tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose

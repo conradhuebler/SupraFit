@@ -54,6 +54,11 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // The Beer-Lambert signal is linear in the extinction coefficients, so the locals can be projected
+    // out by the VarPro solver (reusing the m_concentrations design matrix). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
+
     bool DefineModel() override;
 
     void CalculateConcentrations();

@@ -29,6 +29,15 @@
  * Deliberately self-contained (no unsupported-Eigen module): the non-linear dimension is tiny (1-6
  * constants), which makes a hand-written LM both tractable and robust. Selected via the "FitSolver"
  * optimizer-config key; the classic solver stays the default/oracle. Claude Generated.
+ *
+ * CAVEAT — resampling on ill-determined directions. For the fit and for Cross-Validation, VarPro is
+ * numerically identical to the classic solver (see test_varpro / test_varpro_cv: CV boxplots match
+ * exactly). But the linear projection REGULARISES flat (ill-determined) directions: under Reduction
+ * Analysis the classic joint optimiser lets a barely-populated higher complex drift (large scatter —
+ * RA exposing the direction), whereas VarPro keeps the reduced-data fits nearer the optimum. Both
+ * still flag the direction, but the RA/MC statistic there is solver-dependent by design — VarPro
+ * reports a tighter distribution. Choose the solver accordingly: VarPro for speed, LevMar when the
+ * uncertainty-exposing behaviour of RA/MC on flat directions must match the established reference.
  */
 
 #include "src/global_config.h"

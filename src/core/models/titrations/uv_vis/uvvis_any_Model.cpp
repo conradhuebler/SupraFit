@@ -174,6 +174,15 @@ void uvvis_any_Model::CalculateConcentrations()
     }
 }
 
+void uvvis_any_Model::ProjectLinearParameters()
+{
+    // VarPro linear projection: build the Beer-Lambert design matrix for the current constants, then
+    // solve the extinction coefficients by masked least-squares (honours the active-point mask for
+    // correct CV/RA, unlike the unmasked initial-guess UpdateShifts()). Claude Generated.
+    CalculateConcentrations();
+    SolveLinearMasked(m_concentrations);
+}
+
 void uvvis_any_Model::UpdateShifts()
 {
     CalculateConcentrations();
