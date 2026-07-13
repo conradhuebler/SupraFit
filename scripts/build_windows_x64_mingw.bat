@@ -7,7 +7,9 @@ git pull --recurse-submodules
 mkdir build_x64
 cd build_x64
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release  ..
+if errorlevel 1 exit /b 1
 cmake --build  .
+if errorlevel 1 exit /b 1
 
 echo Packaging...
 cd %project_dir%

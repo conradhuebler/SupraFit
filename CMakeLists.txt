@@ -150,6 +150,14 @@ if(USE_AVX2)
 
 endif()
 
+if(MINGW)
+    # MinGW/COFF objects are capped at 65535 sections; heavy template
+    # instantiation (ChaiScript/duktape via scriptmodel.cpp) overflows this
+    # and fails with "file too big". -Wa,-mbig-obj selects the extended COFF
+    # object format that lifts the limit. Claude Generated
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+endif()
+
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/exprtk.hpp)
   file(DOWNLOAD https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp ${PROJECT_SOURCE_DIR}/external/exprtk.hpp
        TIMEOUT 60  # seconds

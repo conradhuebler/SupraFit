@@ -28,7 +28,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           modules: qtcharts
           cache: true
 
@@ -73,7 +73,7 @@ jobs:
       - name: Install Qt + MinGW
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           arch: win64_mingw
           modules: qtcharts
           tools: tools_mingw1310
@@ -106,7 +106,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           modules: qtcharts
           cache: true
 
