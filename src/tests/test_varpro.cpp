@@ -104,6 +104,9 @@ private slots:
 
         const int nmr = static_cast<int>(SupraFit::nmr_any);
         const int uvvis = static_cast<int>(SupraFit::uvvis_any);
+        // Fixed 1:1 model (ignores the Reactions field) - exercises the design-matrix refactor of the
+        // classic model, not just the generalised *_any path.
+        QTest::newRow("nmr_ItoI fixed 1:1") << static_cast<int>(SupraFit::nmr_ItoI) << QString() << QList<double>{ 4.0 } << 3 << 9.0;
         QTest::newRow("nmr 1:1") << nmr << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 9.0;
         QTest::newRow("nmr 1:1/1:2") << nmr << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 9.0;
         QTest::newRow("nmr 2:1/1:1") << nmr << QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") << QList<double>{ 4.2, 6.6 } << 2 << 9.0;
