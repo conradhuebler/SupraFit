@@ -538,6 +538,27 @@ set_tests_properties(ReferenceProjectsTest PROPERTIES
     TIMEOUT 300  # re-runs CV/RA post-processing on the paper datasets (~50 s)
 )
 
+# any-vs-fixed equivalence: nmr_any (via the Reactions field) must reproduce the hand-written
+# fixed NMR models (1:1, 2:1/1:1, 1:1/1:2) on identical data - fit AND CV/RA statistics
+# (Claude Generated 2026).
+add_executable(test_nmr_any_equivalence
+    test_nmr_any_equivalence.cpp
+)
+
+target_link_libraries(test_nmr_any_equivalence
+    ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_nmr_any_equivalence PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME NmrAnyEquivalenceTest COMMAND test_nmr_any_equivalence)
+
+set_tests_properties(NmrAnyEquivalenceTest PROPERTIES
+    TIMEOUT 300  # re-fits + replays CV/RA on three paper datasets for both model families
+)
+
 # Add custom target to run all tests including new comprehensive CLI tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
