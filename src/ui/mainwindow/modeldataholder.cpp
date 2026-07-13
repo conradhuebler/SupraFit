@@ -46,6 +46,7 @@
 #include "src/ui/mainwindow/modelwidget.h"
 
 #include "src/ui/widgets/preparewidget.h"
+#include "src/ui/widgets/reactioneditorwidget.h"
 #include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QDateTime>
@@ -234,12 +235,39 @@ MDHDockTitleBar::MDHDockTitleBar()
         return action;
     };
 
+    // Attach a reaction-preset submenu to an N-component *_any action: "Define reactions…" opens the
+    // usual dialog, while a preset entry adds the model straight away with its reactions pre-set
+    // (ModelDataHolder::AddModel skips the dialog when PresetReactions() is non-empty). Claude Generated.
+    auto attachPresets = [this](QAction* anyAction, SupraFit::Model model) {
+        QMenu* sub = new QMenu(this);
+        QAction* custom = sub->addAction(tr("Define reactions…"));
+        custom->setData(model);
+        connect(custom, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+        for (const ReactionEditorWidget::Preset& p : ReactionEditorWidget::Presets()) {
+            if (p.isHeader()) {
+                sub->addSection(p.name);
+                continue;
+            }
+            QAction* a = sub->addAction(p.name);
+            a->setToolTip(QString(p.reactions).replace('\n', QStringLiteral(" ; ")));
+            const QString reactions = p.reactions;
+            connect(a, &QAction::triggered, this, [this, model, reactions]() {
+                m_model_choosen = model;
+                m_preset_reactions = reactions;
+                emit AddModel();
+            });
+        }
+        anyAction->setMenu(sub);
+    };
+
     //#ifdef NMR_Models
     m_nmr_model << addModel(SupraFit::nmr_ItoI);
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI);
     m_nmr_model << addModel(SupraFit::nmr_ItoI_ItoII);
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI_ItoII);
-    m_nmr_model << addModel(SupraFit::nmr_any);
+    QAction* nmrAny = addModel(SupraFit::nmr_any);
+    attachPresets(nmrAny, SupraFit::nmr_any);
+    m_nmr_model << nmrAny;
 
     //#endif
 
@@ -255,7 +283,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI);
     m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI_ItoII);
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI_ItoII);
-    m_uv_vis_model << addModel(SupraFit::uvvis_any);
+    QAction* uvvisAny = addModel(SupraFit::uvvis_any);
+    attachPresets(uvvisAny, SupraFit::uvvis_any);
+    m_uv_vis_model << uvvisAny;
 
     //#endif
 
@@ -409,6 +439,7 @@ void MDHDockTitleBar::EnableBatch(bool enabled)
 void MDHDockTitleBar::PrepareAddModel()
 {
     m_model_choosen = qobject_cast<QAction*>(sender())->data().toInt();
+    m_preset_reactions.clear(); // plain add: no preset, show the definition dialog as usual
     emit AddModel();
 }
 
@@ -597,8 +628,8 @@ void ModelDataHolder::NewModel()
 
 void ModelDataHolder::AddModel()
 {
-    int model = qobject_cast<MDHDockTitleBar*>(sender())->Model();
-    AddModel(model);
+    MDHDockTitleBar* bar = qobject_cast<MDHDockTitleBar*>(sender());
+    AddModel(bar->Model(), bar->PresetReactions());
 }
 
 void ModelDataHolder::AddScriptModel(const QString& string)
@@ -614,7 +645,7 @@ void ModelDataHolder::AddScriptModel(const QString& string)
     ActiveModel(t);
 }
 
-void ModelDataHolder::AddModel(int model)
+void ModelDataHolder::AddModel(int model, const QString& presetReactions)
 {
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
     if (!t) {
@@ -622,7 +653,39 @@ void ModelDataHolder::AddModel(int model)
         emit m_data.toStrongRef()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
         return;
     }
-    if (t->DemandInput()) {
+
+    // A reaction system needs one independent concentration column per component; on a mismatch the
+    // model stays undefined. Warn the user instead of silently adding a broken model. Claude Generated.
+    auto reactionDataMatches = [this, &t]() -> bool {
+        if (AbstractTitrationModel* tm = qobject_cast<AbstractTitrationModel*>(t.data())) {
+            const int requested = tm->ReactionComponentMismatch();
+            if (requested > 0) {
+                QMessageBox::warning(this, tr("Reaction / data mismatch"),
+                    tr("The reaction equations define %1 components, but this data set provides %2 "
+                       "concentration column(s).\n\nImport data with one concentration column per "
+                       "component (%1 in total), or edit the reactions, then add the model again.")
+                        .arg(requested)
+                        .arg(t->InputParameterSize()));
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (!presetReactions.isEmpty()) {
+        // Preset chosen from the Add-model submenu: define straight from the preset and skip the
+        // "Define Model" dialog. Claude Generated.
+        QJsonObject reactions;
+        reactions["name"] = QStringLiteral("Reactions");
+        reactions["type"] = 6;
+        reactions["value"] = presetReactions;
+        QHash<QString, QJsonObject> elements;
+        elements[QStringLiteral("Reactions")] = reactions;
+        t->setModelDefinition(elements);
+        t->DefineModel(QJsonObject());
+        if (!reactionDataMatches() || !t->Complete())
+            return;
+    } else if (t->DemandInput()) {
         PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
@@ -635,23 +698,7 @@ void ModelDataHolder::AddModel(int model)
 
             t->DefineModel(model);
 
-            // A reaction system needs one independent concentration column per component; on a
-            // mismatch DefineModel() falls back to the grid. Tell the user instead of silently adding
-            // the wrong model, and abort so they can fix the data or the reactions. Claude Generated.
-            if (AbstractTitrationModel* tm = qobject_cast<AbstractTitrationModel*>(t.data())) {
-                const int requested = tm->ReactionComponentMismatch();
-                if (requested > 0) {
-                    QMessageBox::warning(this, tr("Reaction / data mismatch"),
-                        tr("The reaction equations define %1 components, but this data set provides %2 "
-                           "concentration column(s).\n\nImport data with one concentration column per "
-                           "component (%1 in total), or edit the reactions, then add the model again.")
-                            .arg(requested)
-                            .arg(t->InputParameterSize()));
-                    return;
-                }
-            }
-
-            if (!t->Complete())
+            if (!reactionDataMatches() || !t->Complete())
                 return;
         } else
             return;

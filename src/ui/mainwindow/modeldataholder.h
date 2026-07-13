@@ -100,6 +100,8 @@ public:
 
     const QAction* lastAction() const { return m_last_action; }
     int Model() const { return m_model_choosen; }
+    /** @brief Reaction preset chosen from the Add-model submenu (empty for a plain model). CG. */
+    QString PresetReactions() const { return m_preset_reactions; }
 
 private:
     QWidget* m_buttons;
@@ -108,6 +110,7 @@ private:
 
     QAction* m_last_action;
     int m_model_choosen = 404;
+    QString m_preset_reactions; ///< reactions for a preset submenu entry; cleared for plain adds
 private slots:
     void PrepareAddModel();
 
@@ -242,7 +245,7 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     QPointer<CompareDialog> m_compare_dialog;
     QVector<QPointer<ModelWidget>> m_model_widgets;
-    void AddModel(int model);
+    void AddModel(int model, const QString& presetReactions = QString());
     void ActiveBatch();
 
     QJsonObject m_config;
