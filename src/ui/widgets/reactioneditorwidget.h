@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QtCore/QStringList>
+#include <QtCore/QVector>
 
 #include <QtGui/QSyntaxHighlighter>
 #include <QtGui/QTextCharFormat>
@@ -58,8 +59,7 @@ private:
  * The user types one reaction per line (arrow syntax, e.g. "A + B <=> AB", "2 A <=> A2"); on every
  * change the text is parsed by ReactionParser and a preview shows the derived components, species and
  * any per-line errors. The raw reaction text is emitted via changed() and stored verbatim in the
- * model definition (re-parsed in DefineModel). Supersedes the spinbox SpeciesEditorWidget.
- * Claude Generated.
+ * model definition (re-parsed in DefineModel). Claude Generated.
  */
 class ReactionEditorWidget : public QWidget {
     Q_OBJECT
@@ -69,6 +69,17 @@ public:
 
     /** @brief Current reaction text (verbatim, one reaction per line). */
     QString reactionText() const;
+
+    /** @brief A built-in reaction preset. A header (grouping label) has an empty @c reactions. */
+    struct Preset {
+        QString name;
+        QString reactions;
+        bool isHeader() const { return reactions.isEmpty(); }
+    };
+
+    /** @brief Built-in presets (established models, host-dimerisation variants, three-component
+     * systems), shared by the editor's preset list and the "Add model" menu. Claude Generated. */
+    static QVector<Preset> Presets();
 
 signals:
     /** @brief Emitted on every edit; carries the raw reaction text. */
