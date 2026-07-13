@@ -297,6 +297,12 @@ public:
      * Levenberg-Marquardt is used. Claude Generated. */
     virtual bool SupportsVarPro() const { return false; }
 
+    /*! \brief Whether this model computes its equilibrium concentrations through the embedded
+     * SpeciationEngine (the reaction-driven *_any models) rather than a closed-form expression. Only
+     * these honour the "SpeciationSolver" optimizer-config key (LevMar/Newton vs. legacy BFGS); it gates
+     * the GUI switch. Default false. Claude Generated. */
+    virtual bool UsesSpeciationEngine() const { return false; }
+
     /*! \brief VarPro projection step: given the current global parameters, solve the linear local
      * parameters by (masked) least-squares and write them into LocalTable(). Called by the VarPro
      * solver before each residual evaluation. Default no-op (only meaningful for SupportsVarPro()
@@ -560,7 +566,9 @@ public:
     inline DataTable* LocalTable() const { return m_local_parameter; }
 
     inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
-    inline void setOptimizerConfig(const QJsonObject& config)
+    /*! \brief Store the optimizer config. Virtual so models embedding a SpeciationEngine can push the
+     * "SpeciationSolver" method to their solver whenever the config changes. Claude Generated. */
+    virtual void setOptimizerConfig(const QJsonObject& config)
     {
         m_opt_config = config;
     }

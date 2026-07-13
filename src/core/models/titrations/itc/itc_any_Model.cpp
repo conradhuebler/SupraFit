@@ -60,6 +60,13 @@ itc_any_Model::~itc_any_Model()
 {
 }
 
+void itc_any_Model::setOptimizerConfig(const QJsonObject& config)
+{
+    AbstractModel::setOptimizerConfig(config);
+    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
+}
+
 bool itc_any_Model::DefineModel()
 {
     // ITC gets the host/guest totals from the injection protocol, so at most two components are
@@ -74,6 +81,8 @@ bool itc_any_Model::DefineModel()
     m_speciation.setSystem(parsed);
     m_speciation.setMaxIter(1000);
     m_speciation.setConvergeThreshold(1e-12);
+    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 
     const ReactionSystem& sys = m_speciation.System();
     const int nSpecies = sys.species.size();

@@ -156,6 +156,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-13: ✅ **Speciation solver selectable in the GUI** — a "Speciation solver" submenu in `ModelWidget`'s Fit menu picks the equilibrium-concentration solver (LevMar/Newton vs. legacy BFGS) for the reaction-driven `*_any` models; writes the `SpeciationSolver` optimizer-config key (greyed out for closed-form models via `UsesSpeciationEngine()`, re-fits on select). `AbstractModel::setOptimizerConfig` is now virtual so the models push the method into their `SpeciationEngine`; `OptimizerWidget::Config()` round-trips the key.
 - 2026-07-12: ✅ **Model series visible on load** — `ModelElement::DisableSignal` passed 0/1 to `LineSeries::showLine(int)`, which only shows on `== Qt::Checked (2)`, so fit + error line-series stayed hidden until a manual toggle (a real `stateChanged` delivers 2). Fixed by passing a `bool` (`state != 0`) → the `showLine(bool)` overload. `modelelement.cpp:251`.
 - 2026-07-12: ✅ **`nmr_any` MC → add-model crash fixed** in core (`DataClassPrivate` `m_info` ownership); see AIChangelog / `SESSION_HANDOFF.md`.
 - 2026-07-13: **`SpeciesEditorWidget` (type 5) removed** — the `*_any` models are now defined solely through the reaction-equation editor (type 6); the legacy grid/species-editor path is gone.

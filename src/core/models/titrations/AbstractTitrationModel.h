@@ -82,6 +82,15 @@ public:
 
     inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
 
+    /*! \brief True for the reaction-driven *_any models (a valid speciation system is configured); they
+     * compute concentrations through m_speciation and honour the "SpeciationSolver" key. The fixed
+     * host/guest models leave the engine empty and use closed-form roots. Claude Generated. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the selected "SpeciationSolver" method into
+     * m_speciation, so a GUI/CLI change of the speciation solver takes effect on the next solve. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
+
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
         Q_UNUSED(i)
@@ -217,6 +226,10 @@ protected:
      * independent-table headers and returns true. Empty/invalid input leaves the 2-component grid
      * defaults untouched and returns false. Claude Generated. */
     bool BuildSpeciationFromReactions();
+
+    /*! \brief Read the "SpeciationSolver" optimizer-config key and select the matching method on
+     * m_speciation (LevMar/Newton default, "BFGS" = legacy). Claude Generated. */
+    void ApplySpeciationMethod();
 
     /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
     void UpdateComponentHeaders();

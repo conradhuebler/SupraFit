@@ -67,6 +67,10 @@ QJsonObject OptimizerWidget::Config() const
            Round-trips the existing key so OptimizerSettings no longer silently drops the solver choice. Claude Generated. */
         { "FitSolver", m_solver->currentText() },
 
+        /* Speciation solver (LevMar/Newton vs. legacy BFGS) is chosen from the Fit menu, not here;
+           round-trip it so applying this dialog does not silently reset the choice. Claude Generated. */
+        { "SpeciationSolver", m_config.value("SpeciationSolver").toString(QStringLiteral("LevMar")) },
+
         /* This are the specific definitions, that work around Levenberg-Marquardt */
         { "MaxLevMarInter", m_maxiter->value() },
         { "ErrorConvergence", m_error_convergence->value() },

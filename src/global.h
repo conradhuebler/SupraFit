@@ -484,6 +484,13 @@ const QJsonObject OptimConfigBlock{
        models without SupportsVarPro()). Selectable so old vs new can be benchmarked. Claude Generated. */
     { "FitSolver", "LevMar" },
 
+    /* Speciation (equilibrium concentration) solver for the reaction-driven *_any models: "LevMar" =
+       damped Newton with the analytic Hessian (default: fast + reaches 1e-12 uniformly); "BFGS" = the
+       legacy quasi-Newton (L-BFGS-style) update, slower and stalls on ill-conditioned points. Only the
+       models that embed the SpeciationEngine honour it (UsesSpeciationEngine()); ignored otherwise.
+       Parsed by BFGSConcentrationSolver::MethodFromString. Claude Generated. */
+    { "SpeciationSolver", "LevMar" },
+
     /* This are the specific definitions, that work around Levenberg-Marquardt */
     { "MaxLevMarInter", 75 },
     { "ErrorConvergence", 5E-7 },

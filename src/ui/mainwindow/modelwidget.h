@@ -47,6 +47,7 @@ class QCheckBox;
 class QDoubleSpinBox;
 class QGridLayout;
 class QLineEdit;
+class QMenu;
 class QSplitter;
 class QPushButton;
 class QVBoxLayout;
@@ -123,6 +124,8 @@ private:
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
     QAction *m_solver_levmar, *m_solver_varpro; /* Fit-menu solver choice (LevMar/VarPro). Claude Generated. */
+    QAction *m_speciation_levmar, *m_speciation_bfgs; /* Fit-menu speciation-solver choice. Claude Generated. */
+    QMenu* m_speciation_menu; /* submenu holding the speciation-solver choice; disabled off-engine. CG. */
     QCheckBox *m_readonly, *m_legend;
     QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
@@ -137,6 +140,7 @@ private:
     void Model2Text();
     void MinimizeModel(const QJsonObject& config);
     void SetFitSolver(const QString& solver); /* Claude Generated */
+    void SetSpeciationSolver(const QString& method); /* Claude Generated */
     void UpdateSolverMenu(); /* Claude Generated */
     void LoadStatistic(const QJsonObject& data);
 

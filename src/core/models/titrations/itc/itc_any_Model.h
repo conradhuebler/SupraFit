@@ -47,6 +47,13 @@ public:
 
     bool DefineModel() override;
 
+    /*! \brief itc_any always computes its species through the embedded SpeciationEngine, so it honours
+     * the "SpeciationSolver" key (LevMar/Newton vs. legacy BFGS) and enables the GUI switch. CG. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the "SpeciationSolver" method into m_speciation. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         return m_global_names[i];

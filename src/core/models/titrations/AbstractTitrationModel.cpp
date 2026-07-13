@@ -313,8 +313,21 @@ bool AbstractTitrationModel::BuildSpeciationFromReactions()
     m_component_count = nComp;
     m_speciation.setMaxIter(1000);
     m_speciation.setConvergeThreshold(1e-12);
+    ApplySpeciationMethod();
     UpdateComponentHeaders();
     return true;
+}
+
+void AbstractTitrationModel::ApplySpeciationMethod()
+{
+    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
+}
+
+void AbstractTitrationModel::setOptimizerConfig(const QJsonObject& config)
+{
+    AbstractModel::setOptimizerConfig(config);
+    ApplySpeciationMethod();
 }
 
 void AbstractTitrationModel::UpdateComponentHeaders()

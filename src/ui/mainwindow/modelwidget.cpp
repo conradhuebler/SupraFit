@@ -316,6 +316,31 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
     });
 
+    /* Speciation-solver selection (LevMar/Newton vs. legacy BFGS) for the reaction-driven *_any models.
+       Writes the "SpeciationSolver" optimizer-config key, which AbstractTitrationModel/itc_any push into
+       their embedded SpeciationEngine on setOptimizerConfig(); inherited by MC/CV/RA via Clone(). Only
+       enabled for models with UsesSpeciationEngine() (the fixed models use closed-form roots). CG. */
+    QAction* spec_levmar = new QAction(tr("LevMar / Newton (default)"), this);
+    spec_levmar->setCheckable(true);
+    spec_levmar->setData(QStringLiteral("LevMar"));
+    QAction* spec_bfgs = new QAction(tr("BFGS (legacy)"), this);
+    spec_bfgs->setCheckable(true);
+    spec_bfgs->setData(QStringLiteral("BFGS"));
+    QActionGroup* spec_group = new QActionGroup(this);
+    spec_group->setExclusive(true);
+    spec_group->addAction(spec_levmar);
+    spec_group->addAction(spec_bfgs);
+    m_speciation_levmar = spec_levmar;
+    m_speciation_bfgs = spec_bfgs;
+    connect(spec_levmar, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+    connect(spec_bfgs, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("BFGS"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
@@ -323,6 +348,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     menu->addSeparator();
     menu->addAction(solver_levmar);
     menu->addAction(solver_varpro);
+    QMenu* spec_menu = menu->addMenu(tr("Speciation solver"));
+    spec_menu->setToolTip(tr("Equilibrium-concentration solver used by the reaction-driven models."));
+    spec_menu->addAction(spec_levmar);
+    spec_menu->addAction(spec_bfgs);
+    m_speciation_menu = spec_menu;
     connect(menu, &QMenu::aboutToShow, this, &ModelWidget::UpdateSolverMenu);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
@@ -895,6 +925,16 @@ void ModelWidget::SetFitSolver(const QString& solver)
     m_model->setOptimizerConfig(config);
 }
 
+void ModelWidget::SetSpeciationSolver(const QString& method)
+{
+    /* Write the speciation-solver choice into the model's optimizer config. The model's
+       setOptimizerConfig() override pushes it into the embedded SpeciationEngine; MC/CV/RA inherit the
+       key via Clone(). Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["SpeciationSolver"] = method;
+    m_model->setOptimizerConfig(config);
+}
+
 void ModelWidget::UpdateSolverMenu()
 {
     /* Refresh check marks and the VarPro enable state when the menu opens, so the display never
@@ -906,6 +946,16 @@ void ModelWidget::UpdateSolverMenu()
     const bool use_varpro = (varpro && solver == QLatin1String("VarPro"));
     m_solver_levmar->setChecked(!use_varpro);
     m_solver_varpro->setChecked(use_varpro);
+
+    /* Speciation solver: only meaningful for the reaction-driven models that use the SpeciationEngine. */
+    const bool uses_engine = m_model->UsesSpeciationEngine();
+    m_speciation_menu->setEnabled(uses_engine);
+    m_speciation_menu->setToolTip(uses_engine ? tr("Equilibrium-concentration solver used by the reaction-driven models.")
+                                              : tr("Only the reaction-driven models (nmr_any / uvvis_any / fl_any / itc_any) use a speciation solver."));
+    const QString spec = m_model->getOptimizerConfig().value("SpeciationSolver").toString(QStringLiteral("LevMar"));
+    const bool use_bfgs = (spec == QLatin1String("BFGS"));
+    m_speciation_bfgs->setChecked(use_bfgs);
+    m_speciation_levmar->setChecked(!use_bfgs);
 }
 
 void ModelWidget::MinimizeModel(const QJsonObject& config)
