@@ -221,6 +221,13 @@ protected:
     /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
     void UpdateComponentHeaders();
 
+    /*! \brief VarPro linear projection: solve the linear local parameters for the given design matrix
+     * @p design (DataPoints × nLinear) by least-squares, per series and honouring the active-point mask
+     * (ActiveSignals(j) / DependentModel()->isChecked(i,j) / DataBegin..DataEnd), and write the result
+     * into LocalTable() (SeriesCount × nLinear). This is the masked generalisation of the individual
+     * models' UpdateShifts(); inactive series keep their current locals. Claude Generated. */
+    void SolveLinearMasked(const Eigen::MatrixXd& design);
+
     /*! \brief Data-derived initial guess for the cumulative stability constant lg(beta) of species
      * @p speciesIndex. Scales the constant to the concentration range of the actual data via
      * lg(beta) ~ (order - 1) * (-lg c_ref), where the reaction order is the sum of the species'

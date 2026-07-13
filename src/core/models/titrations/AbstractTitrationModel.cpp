@@ -323,6 +323,49 @@ void AbstractTitrationModel::UpdateComponentHeaders()
         IndependentModel()->setHeaderData(c, Qt::Horizontal, m_component_names[c], Qt::DisplayRole);
 }
 
+void AbstractTitrationModel::SolveLinearMasked(const Eigen::MatrixXd& design)
+{
+    const int nLinear = static_cast<int>(design.cols());
+    const int series = SeriesCount();
+    if (nLinear == 0 || series == 0)
+        return;
+
+    const Eigen::MatrixXd Y = DependentModel()->Table(); // DataPoints × series
+    const Eigen::MatrixXd current = LocalParameter()->Table(); // SeriesCount × nLinear (kept for inactive)
+    Eigen::MatrixXd L(nLinear, series); // solved locals per series (column j)
+
+    auto keepCurrent = [&](int j) {
+        for (int p = 0; p < nLinear; ++p)
+            L(p, j) = (j < current.rows() && p < current.cols()) ? current(j, p) : 0.0;
+    };
+
+    for (int j = 0; j < series; ++j) {
+        if (!ActiveSignals(j)) {
+            keepCurrent(j);
+            continue;
+        }
+        // Gather the active rows of this series (same mask the residual uses in SetValue).
+        std::vector<int> rows;
+        rows.reserve(DataEnd() - DataBegin());
+        for (int i = DataBegin(); i < DataEnd(); ++i)
+            if (DependentModel()->isChecked(i, j))
+                rows.push_back(i);
+        if (rows.empty()) {
+            keepCurrent(j);
+            continue;
+        }
+        Eigen::MatrixXd Dm(static_cast<int>(rows.size()), nLinear);
+        Eigen::VectorXd ym(static_cast<int>(rows.size()));
+        for (int r = 0; r < static_cast<int>(rows.size()); ++r) {
+            Dm.row(r) = design.row(rows[r]);
+            ym(r) = Y(rows[r], j);
+        }
+        // colPivHouseholderQr handles over- and (rank-deficient) under-determined systems gracefully.
+        L.col(j) = Dm.colPivHouseholderQr().solve(ym);
+    }
+    LocalParameter()->setTable(L.transpose());
+}
+
 double AbstractTitrationModel::GuessLgBeta(int speciesIndex) const
 {
     const Eigen::VectorXi stoich = m_speciation.SpeciesStoichiometry(speciesIndex);

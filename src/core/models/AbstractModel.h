@@ -297,6 +297,12 @@ public:
      * Levenberg-Marquardt is used. Claude Generated. */
     virtual bool SupportsVarPro() const { return false; }
 
+    /*! \brief VarPro projection step: given the current global parameters, solve the linear local
+     * parameters by (masked) least-squares and write them into LocalTable(). Called by the VarPro
+     * solver before each residual evaluation. Default no-op (only meaningful for SupportsVarPro()
+     * models). Claude Generated. */
+    virtual void ProjectLinearParameters() {}
+
     virtual inline int Color(int i) const { return i; }
 
 

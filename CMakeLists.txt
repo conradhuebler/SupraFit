@@ -233,6 +233,7 @@ set(core_SRC
     src/core/libmath.cpp
     src/core/minimizer.cpp
     src/core/optimizer/eigen_levenberg.cpp
+    src/core/optimizer/varpro_levenberg.cpp
     src/capabilities/datagenerator.cpp
     src/capabilities/resampleanalyse.cpp
     src/capabilities/abstractsearchclass.cpp

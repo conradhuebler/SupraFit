@@ -145,6 +145,35 @@ set_tests_properties(NmrSelfAggregationTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# VarPro solver equivalence: FitSolver="VarPro" must reach the same optimum as "LevMar" - CG 2026
+add_executable(test_varpro
+    test_varpro.cpp
+)
+
+target_link_libraries(test_varpro
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_varpro ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_varpro pthread dl)
+endif()
+
+add_test(NAME VarProTest COMMAND test_varpro)
+
+set_tests_properties(VarProTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 add_test(NAME BFGSSolverTest COMMAND test_bfgs_solver)
 
 set_tests_properties(BFGSSolverTest PROPERTIES

@@ -82,12 +82,24 @@ void NonLinearFitThread::setParameter(const QJsonObject& json)
 int NonLinearFitThread::NonLinearFit()
 {
     QList<int> locked = m_model->LockedParameters();
+    // CollectOptimizationParameters() is called unconditionally so the model's optimisation vector
+    // (and thus Parameter()/degrees-of-freedom for AIC etc.) is populated even in VarPro mode, where
+    // the solver drives only the global subset itself.
     QVector<qreal> parameter = m_model->CollectOptimizationParameters();
     if (parameter.isEmpty())
         return 0;
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
-    int iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
+
+    // Opt-in solver selection: VarPro (variable projection) for models that support it, otherwise the
+    // classic full-vector Levenberg-Marquardt. Selectable via the "FitSolver" optimizer-config key so
+    // the two can be benchmarked. Claude Generated.
+    const QString solver = m_model->getOptimizerConfig()["FitSolver"].toString();
+    int iter;
+    if (solver == QLatin1String("VarPro") && m_model->SupportsVarPro())
+        iter = VarProFit(m_model, m_history.sse, m_history.parameter);
+    else
+        iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

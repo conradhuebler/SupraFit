@@ -190,6 +190,15 @@ void nmr_any_Model::UpdateShifts()
     LocalParameter()->setTable(x.transpose());
 }
 
+void nmr_any_Model::ProjectLinearParameters()
+{
+    // VarPro linear projection: build the design matrix (mole fractions) for the current global
+    // parameters, then solve the shifts by masked least-squares (unlike UpdateShifts(), which is the
+    // unmasked initial-guess variant, this honours the active-point mask for correct CV/RA).
+    CalculateConcentrations();
+    SolveLinearMasked(m_molar_ratios);
+}
+
 void nmr_any_Model::CalculateVariables()
 {
     CalculateConcentrations();
