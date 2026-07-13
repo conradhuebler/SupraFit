@@ -33,7 +33,6 @@ class QDoubleSpinBox;
 class QLineEdit;
 class QSpinBox;
 class QTextEdit;
-class SpeciesEditorWidget;
 class ReactionEditorWidget;
 
 const QStringList function_names = QStringList() << "cos"
@@ -138,7 +137,6 @@ private:
     QSpinBox* m_spinbox;
     QDoubleSpinBox* m_doublespinbox;
     QTextEdit* m_textedit;
-    SpeciesEditorWidget* m_species_editor = nullptr;
     ReactionEditorWidget* m_reaction_editor = nullptr;
     QJsonObject m_json;
     QString m_name;

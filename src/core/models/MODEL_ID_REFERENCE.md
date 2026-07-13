@@ -45,10 +45,10 @@ This document provides a reference for the model IDs used in SupraFit. The model
 
 ## Notes
 
-The "flexible" models — **34** (`nmr_any`), **35** (`uvvis_any`) and **17** (`itc_any`) — accept an
-optional free-text *Reactions* field (arrow syntax, e.g. `A + B <=> AB`, `2 A <=> A2`, `A + C <=> AC`)
+The "flexible" models — **34** (`nmr_any`), **35** (`uvvis_any`) and **17** (`itc_any`) — are defined
+by a free-text *Reactions* field (arrow syntax, e.g. `A + B <=> AB`, `2 A <=> A2`, `A + C <=> AC`)
 parsed by `ReactionParser` into an equilibrium system solved by the general `BFGSConcentrationSolver`.
 `nmr_any`/`uvvis_any` support an **arbitrary number of components** (one independent concentration
 column per component); `itc_any` stays 2-component (host/guest totals come from the cell/syringe
-protocol) but allows arbitrary species. Leaving *Reactions* empty falls back to the legacy
-`MaxA`/`MaxB`/`MaxSelfA`/`Species` grid (backward compatible). Claude Generated.
+protocol) but allows arbitrary species. The *Reactions* field is **required** — an empty field leaves
+the model undefined (the legacy `MaxA`/`MaxB`/`MaxSelfA`/`Species` grid has been removed). Claude Generated.

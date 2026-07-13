@@ -64,13 +64,6 @@ private:
         return data;
     }
 
-    static QJsonObject intOption(int value)
-    {
-        QJsonObject o;
-        o["value"] = value;
-        return o;
-    }
-
     static QJsonObject strOption(const QString& value)
     {
         QJsonObject o;
@@ -84,7 +77,7 @@ private:
     }
 
 private slots:
-    /** Classic grid {AB} (MaxSelfA = 0): free host must match the analytic 1:1 quadratic root. */
+    /** 1:1 system {AB} (A + B <=> AB): free host must match the analytic 1:1 quadratic root. */
     void testGridMatchesAnalytic()
     {
         DataClass* data = makeData();
@@ -92,10 +85,8 @@ private slots:
         QVERIFY(!model.isNull());
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(1);
-        def["MaxSelfA"] = intOption(0); // no self-aggregation
-        model->DefineModel(def);
+        def["Reactions"] = strOption("A + B <=> AB");
+        QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->GlobalParameterSize(), 1); // only AB
 
@@ -135,10 +126,8 @@ private slots:
         QVERIFY(!model.isNull());
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(1);
-        def["MaxSelfA"] = intOption(2); // A2 <=> 2A
-        model->DefineModel(def);
+        def["Reactions"] = strOption("A + B <=> AB\n2 A <=> A2");
+        QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->GlobalParameterSize(), 2); // AB (index 0) and A2 (index 1)
 
@@ -180,11 +169,8 @@ private slots:
         QVERIFY(!model.isNull());
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(1);
-        def["MaxSelfA"] = intOption(0);
-        def["Species"] = strOption("2,0|1,1"); // {A2, AB} - order as written
-        model->DefineModel(def);
+        def["Reactions"] = strOption("2 A <=> A2\nA + B <=> AB"); // {A2, AB} - order as written
+        QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->GlobalParameterSize(), 2);
 

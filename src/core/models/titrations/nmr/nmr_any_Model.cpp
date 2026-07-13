@@ -18,8 +18,7 @@
  * The speciation (free component + species concentrations) is delegated to the shared
  * SpeciationEngine on AbstractTitrationModel; this model only maps those concentrations to the NMR
  * signal (fast-exchange population-weighted average of the observed component's chemical shifts).
- * The classic MaxA/MaxB/MaxSelfA/Species fields remain a backward-compatible 2-component fallback.
- * Claude Generated.
+ * The equilibrium system is defined solely through the free-text Reactions field. Claude Generated.
  */
 
 #include <Eigen/SVD>
@@ -48,7 +47,7 @@
 nmr_any_Model::nmr_any_Model(DataClass* data)
     : AbstractNMRModel(data)
 {
-    m_pre_input = { Reactions_Json, MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
+    m_pre_input = { Reactions_Json };
     m_complete = false;
 }
 
@@ -65,68 +64,15 @@ nmr_any_Model::~nmr_any_Model()
 {
 }
 
-ReactionSystem nmr_any_Model::buildLegacySystem() const
-{
-    ReactionSystem sys;
-    sys.components = QStringList() << "A" << "B";
-
-    auto add = [&sys](int a, int b) {
-        Eigen::VectorXi v(2);
-        v << a, b;
-        ReactionSpecies species;
-        species.stoich = v;
-        species.label = ReactionParser::SpeciesLabel(sys.components, v);
-        sys.species << species;
-    };
-
-    // Optional explicit species list "a,b|a,b|..." overrides the grid (order as written).
-    const QString speciesDef = m_defined_model.value("Species")["value"].toString().trimmed();
-    if (!speciesDef.isEmpty()) {
-        const QStringList tokens = speciesDef.split("|", Qt::SkipEmptyParts);
-        for (const QString& token : tokens) {
-            const QStringList ab = token.split(",");
-            if (ab.size() != 2)
-                continue;
-            bool okA = false, okB = false;
-            const int a = ab[0].trimmed().toInt(&okA);
-            const int b = ab[1].trimmed().toInt(&okB);
-            if (!okA || !okB || a < 0 || b < 0 || a + b < 2)
-                continue; // skip invalid tokens and the implicit free monomers
-            add(a, b);
-        }
-    } else {
-        // Classic A_aB_b grid first (a,b >= 1) so existing projects keep their indices, then the
-        // pure host oligomers A_n (b = 0) for self-aggregation.
-        const int maxA = m_maxA < 1 ? 1 : m_maxA;
-        const int maxB = m_maxB < 1 ? 1 : m_maxB;
-        for (int a = 1; a <= maxA; ++a)
-            for (int b = 1; b <= maxB; ++b)
-                add(a, b);
-        for (int n = 2; n <= m_maxSelfA; ++n)
-            add(n, 0);
-    }
-
-    sys.stoich = Eigen::MatrixXi(2, sys.species.size());
-    for (int j = 0; j < sys.species.size(); ++j)
-        sys.stoich.col(j) = sys.species[j].stoich;
-    sys.valid = !sys.species.isEmpty();
-    return sys;
-}
-
 bool nmr_any_Model::DefineModel()
 {
-    m_maxA = m_defined_model.value("MaxA")["value"].toInt();
-    m_maxB = m_defined_model.value("MaxB")["value"].toInt();
-    m_maxSelfA = m_defined_model.value("MaxSelfA")["value"].toInt();
     m_observed = 0; // NMR observes the first component (host A) by default
 
-    // Prefer the N-component reaction editor; otherwise fall back to the 2-component legacy grid.
+    // The N-component reaction editor is the sole definition path. Without a valid reaction system
+    // the model stays undefined (the GUI/CLI must supply reactions before it can be fitted).
     if (!BuildSpeciationFromReactions()) {
-        m_component_count = 2;
-        m_component_names = QStringList() << "A" << "B";
-        m_speciation.setSystem(buildLegacySystem());
-        m_speciation.setMaxIter(1000);
-        m_speciation.setConvergeThreshold(1e-12);
+        m_complete = false;
+        return false;
     }
     m_uses_bfgs = true;
 

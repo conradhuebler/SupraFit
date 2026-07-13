@@ -89,7 +89,6 @@ public:
     inline double ReductionCutOff() const override { return 1; }
 
     inline virtual bool DemandInput() const { return true; }
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
 
     void UpdateShifts();
     void UpdateLinear() override
@@ -98,12 +97,7 @@ public:
     }
 
 private:
-    /*! \brief Build a 2-component reaction system from the legacy MaxA/MaxB/MaxSelfA/Species fields
-     * (backward compatible with existing projects). Claude Generated. */
-    ReactionSystem buildLegacySystem() const;
-
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
     QStringList m_global_names, m_species_names;
     /*! \brief Beer-Lambert design matrix (DataPoints x (nComp + nSpecies)): absolute concentrations
      * of every free component followed by every species; fitted against the extinction coefficients. */

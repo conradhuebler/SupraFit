@@ -60,7 +60,6 @@ set(SFGui_SRC
                 widgets/optionswidget.cpp
                 widgets/systemparameterwidget.cpp
                 widgets/preparewidget.cpp
-                widgets/specieseditorwidget.cpp
                 widgets/reactioneditorwidget.cpp
                 widgets/dynamicmodelwidget.cpp
                 widgets/modelactions.cpp
