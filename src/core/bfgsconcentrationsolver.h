@@ -129,6 +129,15 @@ public:
      */
     std::vector<double> AllConcentrations() const;
 
+    /**
+     * @brief Analytic parameter sensitivities of the free (log-)concentrations, @f$S_{ij} =
+     *        \partial x_i / \partial \ln\beta_j@f$ (components × species), from the implicit-function
+     *        theorem on the converged mass balance, reusing the solution Hessian. Only exact for the
+     *        LevenbergMarquardt (Newton) method. Underpins the analytic outer fit Jacobian (VarPro).
+     *        Claude Generated.
+     */
+    Eigen::MatrixXd sensitivityMatrix() const;
+
     inline int LastIterations() const { return m_lastIter; }
     inline double LastConvergency() const { return m_lastConv; }
     inline bool Converged() const { return m_converged; }
@@ -149,6 +158,7 @@ private:
     std::vector<bool> m_active; ///< component present (total > 0)
     std::vector<int> m_comp_of_var; ///< active-variable index -> component row (per solve)
     std::vector<int> m_var_of_comp; ///< component row -> active-variable index, -1 if inactive
+    Eigen::MatrixXd m_H; ///< mass-balance Hessian at the solution (active dims); exact for Newton only
 
     Method m_method = Method::LevenbergMarquardt;
     double m_converge = 1e-10;

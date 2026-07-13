@@ -356,9 +356,60 @@ std::vector<double> BFGSConcentrationSolver::solve()
     for (int v = 0; v < nv; ++v)
         m_free[m_comp_of_var[v]] = std::exp(x(v));
 
+    // Keep the mass-balance Hessian at the solution (H = diag(s)+Σ c_j m_j m_jᵀ over the active
+    // components) so the outer fit can form analytic parameter sensitivities dx/dlnβ = -H⁻¹ m_j c_j
+    // (implicit-function theorem) without re-solving. Only exact for the Newton method, whose loop
+    // refreshes H at the accepted point; the BFGS branch leaves the initial H. Claude Generated.
+    m_H = H;
+
     m_has_guess = true; // keep result as warm start for the next solve
     m_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_start).count();
     return m_free;
+}
+
+Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
+{
+    // Sᵢⱼ = ∂x_i/∂ln(β_j) for free component i and species j, from the implicit-function theorem on the
+    // converged mass balance g(x,β)=0: H·(∂x/∂lnβ_j) = -∂g/∂lnβ_j, with ∂g/∂lnβ_j = m_j·c_j (the species
+    // stoichiometry column scaled by its concentration). Reuses the stored solution Hessian H — one
+    // factorisation, one solve per species, no re-solve of the speciation. Inactive components (total
+    // == 0) do not vary and get a zero row. Claude Generated.
+    const int n = static_cast<int>(m_totals.size());
+    const int m = static_cast<int>(m_M.cols());
+    const int nv = static_cast<int>(m_comp_of_var.size());
+    Eigen::MatrixXd S = Eigen::MatrixXd::Zero(n, m);
+    if (nv == 0 || m == 0 || m_H.rows() != nv)
+        return S;
+
+    // Right-hand side over the active variables: RHS(v, j) = M(comp,j) · c_j.
+    Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(nv, m);
+    for (int j = 0; j < m; ++j) {
+        if (m_beta[j] <= 0.0)
+            continue;
+        double cj = m_beta[j];
+        bool valid = true;
+        for (int c = 0; c < n; ++c) {
+            const int e = m_M(c, j);
+            if (e == 0)
+                continue;
+            const double s = m_free[c];
+            if (s <= 0.0) {
+                valid = false;
+                break;
+            }
+            cj *= std::pow(s, e);
+        }
+        if (!valid)
+            continue;
+        for (int v = 0; v < nv; ++v)
+            RHS(v, j) = static_cast<double>(m_M(m_comp_of_var[v], j)) * cj;
+    }
+
+    const Eigen::MatrixXd D = m_H.ldlt().solve(RHS); // H⁻¹ RHS
+    for (int v = 0; v < nv; ++v)
+        for (int j = 0; j < m; ++j)
+            S(m_comp_of_var[v], j) = -D(v, j);
+    return S;
 }
 
 std::vector<double> BFGSConcentrationSolver::AllConcentrations() const

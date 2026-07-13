@@ -152,6 +152,58 @@ private slots:
         QVERIFY2(relError(totalA, A0) < 1e-8,
             qPrintable(QString("mass balance A %1 vs %2").arg(totalA).arg(A0)));
     }
+
+    /** Analytic parameter sensitivities S = dx/dln(beta) (implicit-function theorem, reusing the
+     *  solution Hessian) must match central finite differences of the speciation solve. This is the
+     *  core of the analytic outer-fit Jacobian (Approach B). Claude Generated. */
+    void test_sensitivity_vs_finite_difference()
+    {
+        const double A0 = 1e-3, B0 = 2e-3;
+        Eigen::MatrixXi M(2, 2); // components A,B  x  species AB, A2B
+        M << 1, 2,
+            1, 1;
+        const std::vector<double> beta = { std::pow(10.0, 4.2), std::pow(10.0, 6.6) };
+
+        auto freeConc = [&](const std::vector<double>& b) {
+            BFGSConcentrationSolver s;
+            s.setMethod(BFGSConcentrationSolver::Method::LevenbergMarquardt);
+            s.setStoichiometry(M);
+            s.setStabilityConstants(b);
+            s.setTotalConcentrations({ A0, B0 });
+            s.setConvergeThreshold(1e-13);
+            s.Guess();
+            return s.solve();
+        };
+
+        BFGSConcentrationSolver solver;
+        solver.setMethod(BFGSConcentrationSolver::Method::LevenbergMarquardt);
+        solver.setStoichiometry(M);
+        solver.setStabilityConstants(beta);
+        solver.setTotalConcentrations({ A0, B0 });
+        solver.setConvergeThreshold(1e-13);
+        solver.Guess();
+        const std::vector<double> s0 = solver.solve();
+        QVERIFY(solver.Converged());
+        const Eigen::MatrixXd S = solver.sensitivityMatrix(); // (2 components x 2 species)
+        QCOMPARE(int(S.rows()), 2);
+        QCOMPARE(int(S.cols()), 2);
+        QVERIFY2(S.cwiseAbs().sum() > 1e-6, "sensitivity matrix is all-zero"); // must be non-trivial
+
+        const double h = 1e-4; // perturbation in ln(beta_j)
+        for (int j = 0; j < 2; ++j) {
+            std::vector<double> bp = beta, bm = beta;
+            bp[j] = beta[j] * std::exp(h);
+            bm[j] = beta[j] * std::exp(-h);
+            const std::vector<double> sp = freeConc(bp);
+            const std::vector<double> sm = freeConc(bm);
+            for (int c = 0; c < 2; ++c) {
+                const double fd = (std::log(sp[c]) - std::log(sm[c])) / (2.0 * h);
+                const double analytic = S(c, j);
+                QVERIFY2(std::abs(fd - analytic) < 1e-5 * (std::abs(analytic) + 1.0),
+                    qPrintable(QString("dx[%1]/dlnbeta[%2]: analytic %3 vs FD %4").arg(c).arg(j).arg(analytic, 0, 'g', 8).arg(fd, 0, 'g', 8)));
+            }
+        }
+    }
 };
 
 QTEST_MAIN(TestBFGSSolver)
