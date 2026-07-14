@@ -222,9 +222,25 @@ private slots:
                 host = m;
         QVERIFY2(!host.isNull(), "fixed model (data host) not reconstructed");
 
-        QMap<int, QPair<double, double>> cvLev, raLev, cvVar, raVar;
+        QMap<int, QPair<double, double>> cvLev, raLev, cvVar, raVar, cvAna, raAna;
         statisticsFor(QStringLiteral("LevMar"), reactions, host.data(), cvCtrl, raCtrl, cvLev, raLev);
         statisticsFor(QStringLiteral("VarPro"), reactions, host.data(), cvCtrl, raCtrl, cvVar, raVar);
+        statisticsFor(QStringLiteral("VarProAnalytic"), reactions, host.data(), cvCtrl, raCtrl, cvAna, raAna);
+
+        // VarProAnalytic solves the SAME reduced problem as VarPro (analytic vs finite-difference
+        // Jacobian, now mask-aware for CV/RA), so its CV/RA boxplot means must match VarPro's to solver
+        // tolerance on every parameter - no flat-direction carve-out needed between the two. CG.
+        auto matchVar = [&](const char* label, const QMap<int, QPair<double, double>>& var, const QMap<int, QPair<double, double>>& ana) {
+            for (auto it = var.constBegin(); it != var.constEnd(); ++it) {
+                if (!ana.contains(it.key()))
+                    continue;
+                const double v = it.value().first, a = ana.value(it.key()).first;
+                QVERIFY2(qAbs(a - v) / qMax(qAbs(v), 1e-9) <= kTolMean,
+                    qPrintable(QString("%1 global %2: VarProAnalytic mean %3 != VarPro %4").arg(label).arg(it.key()).arg(a).arg(v)));
+            }
+        };
+        matchVar("CV", cvVar, cvAna);
+        matchVar("RA", raVar, raAna);
 
         int compared = 0, documented = 0;
         auto compare = [&](const char* label, const QMap<int, QPair<double, double>>& lev, const QMap<int, QPair<double, double>>& var) {

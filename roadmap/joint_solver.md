@@ -313,25 +313,27 @@ inner Newton or writing a new KKT solver.
   (a stalled BFGS point is a bad seed). Results unchanged (strictly convex ⇒ start-independent); big fit
   speedups (`test_varpro` 3.5 s→0.73 s, `test_varpro_cv` 14.7 s→2.5 s). Verified thread-safe under MC/CV
   (per-model-clone engine) by `test_speciation_warmstart`.
-- **Approach B — working for `nmr_any`.** `BFGSConcentrationSolver::sensitivityMatrix()` = ∂x/∂lnβ from
-  the stored solution Hessian (`78098f43`, validated vs FD). `AbstractModel::AnalyticVarProJacobian`
-  (default: none → FD) implemented on `nmr_any` as the **full Golub–Pereyra** Jacobian — the Kaufman
-  (φ-fixed) form matched a fixed-φ FD but its rank-deficient Gauss–Newton Hessian stalled the outer LM;
-  adding the projection derivative ∂φ/∂β fixed it (`c853b5fb`). New `FitSolver=VarProAnalytic`. Validated:
-  analytic == full FD Jacobian to 1e-7; recovers β at the same SSE as FD VarPro (~1e-23).
+- **Approach B — working for `nmr_any`, incl. CV/RA.** `BFGSConcentrationSolver::sensitivityMatrix()` =
+  ∂x/∂lnβ from the stored solution Hessian (`78098f43`, validated vs FD). `AbstractModel::
+  AnalyticVarProJacobian` (default: none → FD) implemented on `nmr_any` as the **full Golub–Pereyra**
+  Jacobian — the Kaufman (φ-fixed) form matched a fixed-φ FD but its rank-deficient Gauss–Newton Hessian
+  stalled the outer LM; adding the projection derivative ∂φ/∂β fixed it (`c853b5fb`). Now **mask-aware**:
+  compacts rows to the residual list and projects per series over the checked rows, so `VarProAnalytic`
+  also accelerates Cross-Validation / Reduction Analysis. New `FitSolver=VarProAnalytic`. Validated:
+  analytic == full FD Jacobian to 1e-7 (full and masked); recovers β at the same SSE as FD VarPro
+  (~1e-23); CV/RA boxplots match FD VarPro (`test_varpro_cv`).
 - Phase 0 instrumentation (inner-solve/iteration counters in `benchmark_varpro`) — **not yet done**; the
   speedups above are wall-time from the test suite, not the isolated inner-iteration counts.
 - GUI: the speciation-solver switch is validated (operator-confirmed click behaviour).
 
 **Remaining — priority order:**
-1. **Analytic Jacobian for CV / RA (masked projection).** `nmr_any::AnalyticVarProJacobian` currently
-   returns false (→ FD fallback) whenever any point/series is masked: the `DataBegin..DataEnd` window
-   shrinks, a point is unchecked, or a series is inactive. To extend it, build the projection normal
-   matrix `DᵀD` and the residual `R` over the **same per-series active-row mask** `SolveLinearMasked`
-   uses (`ActiveSignals(l)` + `DependentModel()->isChecked(i,l)` + the window), instead of over all rows.
-   The sensitivities and the design-row chain rule are unchanged; only the projection block is masked.
-   Then `VarProAnalytic` accelerates CV/RA too (today the fold re-fits fall back to FD). Guard: keep the
-   `test_varpro_cv` boxplot parity as the acceptance gate.
+1. ~~**Analytic Jacobian for CV / RA (masked projection).**~~ **Done (2026-07-13).**
+   `nmr_any::AnalyticVarProJacobian` now compacts its rows to the residual list (active+checked, i-major
+   /j-minor) and builds the projection `DᵀD`/`R` per series over the checked rows — the same mask
+   `SolveLinearMasked` uses (CV/RA disable whole rows via `isChecked`; a shrunk `DataBegin..DataEnd`
+   window is still FD-fallback as it is not the CV/RA mechanism). Validated: analytic == FD on masked
+   data (`test_varpro::analyticJacobianMasked`, 3e-7), and `VarProAnalytic` CV/RA boxplots match FD
+   VarPro (`test_varpro_cv`, both fixtures). The unified path subsumes the full-data case.
 2. **MC/RA solver-behaviour investigation (projected vs joint).** *Behaviour is allowed to differ between
    the projected solvers and the classic joint LM — but it must be characterised, not silently inherited.*
    MC already warm-starts each resample from the point-fit optimum (`NonLinearFitThread` does no

@@ -287,6 +287,84 @@ private slots:
         delete data;
     }
 
+    // Masked case (Cross-Validation / Reduction disable rows): the analytic Jacobian must still match the
+    // FULL FD Jacobian over the COMPACTED residual list, projecting per-series over the checked rows.
+    void analyticJacobianMasked()
+    {
+        const int series = 2;
+        const QString reactions = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        const QList<double> betas{ 3.8, 5.9 };
+
+        DataClass* data = makeData(series);
+        {
+            QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
+            QJsonObject def;
+            def["Reactions"] = strOption(reactions);
+            truth->DefineModel(def);
+            truth->InitialGuess();
+            for (int k = 0; k < betas.size(); ++k)
+                truth->setGlobalParameter(betas[k], k);
+            for (int s = 0; s < series; ++s)
+                for (int p = 0; p < truth->LocalParameterSize(); ++p)
+                    truth->setLocalParameter(9.0 * (1.0 - 0.1 * p - 0.07 * s), p, s);
+            truth->Calculate();
+            data->setDependentTable(new DataTable(truth->ModelTable()->Table()));
+        }
+
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+        QJsonObject def;
+        def["Reactions"] = strOption(reactions);
+        model->DefineModel(def);
+        model->InitialGuess();
+        // Disable a few rows, as Reduction/CV do (un-check the whole row).
+        for (int i : { 2, 6, 11 })
+            model->DependentModel()->CheckRow(i, false);
+
+        model->setGlobalParameter(3.6, 0);
+        model->setGlobalParameter(5.6, 1);
+        model->ProjectLinearParameters();
+        model->Calculate();
+
+        std::vector<int> gidx;
+        for (int k = 0; k < model->GlobalParameterSize(); ++k)
+            if (model->GlobalParameter()->isChecked(0, k))
+                gidx.push_back(k);
+
+        Eigen::MatrixXd Ja;
+        QVERIFY2(model->AnalyticVarProJacobian(gidx, Ja), "no analytic Jacobian on masked data");
+        model->Calculate();
+        const QList<double> r0 = model->getCalculatedAbsoluteErrors();
+        QCOMPARE(int(Ja.rows()), r0.size());
+        QVERIFY2(r0.size() < N * series, "masking had no effect (row count not reduced)");
+
+        const double h = 1e-5;
+        double worst = 0.0;
+        for (int jj = 0; jj < int(gidx.size()); ++jj) {
+            const int j = gidx[jj];
+            const double b = model->GlobalParameter(j);
+            model->setGlobalParameter(b + h, j);
+            model->ProjectLinearParameters();
+            model->Calculate();
+            const QList<double> rp = model->getCalculatedAbsoluteErrors();
+            model->setGlobalParameter(b - h, j);
+            model->ProjectLinearParameters();
+            model->Calculate();
+            const QList<double> rm = model->getCalculatedAbsoluteErrors();
+            model->setGlobalParameter(b, j);
+            model->ProjectLinearParameters();
+            model->Calculate();
+            QCOMPARE(rp.size(), r0.size());
+            for (int row = 0; row < r0.size(); ++row) {
+                const double fd = (rp[row] - rm[row]) / (2.0 * h);
+                worst = std::max(worst, std::abs(fd - Ja(row, jj)));
+                QVERIFY2(std::abs(fd - Ja(row, jj)) < 1e-3 * (std::abs(Ja(row, jj)) + 1.0),
+                    qPrintable(QString("masked J(%1,%2): analytic %3 vs FD %4").arg(row).arg(jj).arg(Ja(row, jj), 0, 'g', 8).arg(fd, 0, 'g', 8)));
+            }
+        }
+        qInfo().noquote() << QString("[analyticJacobianMasked] rows=%1 (of %2) worst dev = %3").arg(r0.size()).arg(N * series).arg(worst, 0, 'g', 3);
+        delete data;
+    }
+
     // End-to-end: the VarProAnalytic solver (analytic Jacobian) must recover the true constants, matching
     // the finite-difference VarPro. Claude Generated.
     void analyticSolverEndToEnd_data()

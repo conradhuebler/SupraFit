@@ -215,18 +215,11 @@ bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::
         return false;
     const int P = 1 + nSpecies; // design columns: free observed + one per species
 
-    // The projection below uses all data rows; if any are masked (Cross-Validation / Reduction disable
-    // points or series, the DataBegin..DataEnd window shrinks) it would not match SolveLinearMasked, so
-    // return false there and let the VarPro solver finite-difference instead. Claude Generated.
+    // SolveLinearMasked (and the residual) run over [DataBegin, DataEnd); Cross-Validation / Reduction
+    // mask by *un-checking rows* inside that window (isChecked), which is handled below. A shrunk window
+    // itself is not the CV/RA mechanism, so fall back to FD for that rare case. Claude Generated.
     if (DataBegin() != 0 || DataEnd() != nData)
         return false;
-    for (int l = 0; l < series; ++l) {
-        if (!ActiveSignals(l))
-            return false;
-        for (int i = 0; i < nData; ++i)
-            if (!DependentModel()->isChecked(i, l))
-                return false;
-    }
 
     const Eigen::MatrixXi& Mst = m_speciation.Stoichiometry(); // components x species
     const double ln10 = std::log(10.0);
@@ -267,21 +260,49 @@ bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::
     const Eigen::MatrixXd& D = m_molar_ratios; // nData × P
     const Eigen::MatrixXd phi = LocalParameter()->Table(); // series × P
     const Eigen::MatrixXd Y = DependentModel()->Table(); // nData × series
-    const Eigen::MatrixXd R = D * phi.transpose() - Y; // residual (model − data), nData × series
-    const Eigen::LDLT<Eigen::MatrixXd> DtD = (D.transpose() * D).ldlt(); // shared projection normal matrix
 
-    J.setZero(nData * series, nG);
-    for (int jj = 0; jj < nG; ++jj) {
-        const Eigen::MatrixXd& dDj = dD[jj];
-        const Eigen::MatrixXd DtdDj = D.transpose() * dDj; // P × P
-        for (int l = 0; l < series; ++l) {
-            const Eigen::VectorXd phil = phi.row(l).transpose();
-            // ∂φ_l/∂ln(β_j) = −(DᵀD)⁻¹ [ dDjᵀ R_l + (Dᵀ dDj) φ_l ]  (least-squares projection derivative)
-            const Eigen::VectorXd dphil = -DtD.solve(dDj.transpose() * R.col(l) + DtdDj * phil);
-            // ∂(model_l)/∂ln(β_j) = dDj φ_l + D ∂φ_l/∂ln(β_j); residual = model − data.
-            const Eigen::VectorXd dmodel = dDj * phil + D * dphil;
-            for (int i = 0; i < nData; ++i)
-                J(i * series + l, jj) = ln10 * dmodel(i);
+    // Row map matching the residual list: SetValue appends i-major, j-minor, ONLY for active+checked
+    // (i,l). Build the same mapping so J's rows line up with getCalculatedAbsoluteErrors(). CV/RA mask
+    // by un-checking rows, so this is also the per-series least-squares mask of SolveLinearMasked.
+    std::vector<std::vector<int>> rowOf(nData, std::vector<int>(series, -1));
+    int nRows = 0;
+    for (int i = 0; i < nData; ++i)
+        for (int l = 0; l < series; ++l)
+            if (ActiveSignals(l) && DependentModel()->isChecked(i, l))
+                rowOf[i][l] = nRows++;
+
+    J.setZero(nRows, nG);
+    for (int l = 0; l < series; ++l) {
+        if (!ActiveSignals(l))
+            continue;
+        std::vector<int> rows; // checked rows of series l (the projection + residual mask)
+        for (int i = 0; i < nData; ++i)
+            if (DependentModel()->isChecked(i, l))
+                rows.push_back(i);
+        const int na = static_cast<int>(rows.size());
+        if (na == 0)
+            continue;
+
+        const Eigen::VectorXd phil = phi.row(l).transpose();
+        Eigen::MatrixXd Dm(na, P); // design over the masked rows
+        Eigen::VectorXd Rm(na); // residual (model − data) over the masked rows
+        for (int r = 0; r < na; ++r) {
+            Dm.row(r) = D.row(rows[r]);
+            Rm(r) = D.row(rows[r]).dot(phil) - Y(rows[r], l);
+        }
+        const Eigen::LDLT<Eigen::MatrixXd> DtD = (Dm.transpose() * Dm).ldlt();
+
+        for (int jj = 0; jj < nG; ++jj) {
+            Eigen::MatrixXd dDm(na, P);
+            for (int r = 0; r < na; ++r)
+                dDm.row(r) = dD[jj].row(rows[r]);
+            // ∂φ_l/∂ln(β_j) = −(DmᵀDm)⁻¹ [ dDmᵀ R_l + (Dmᵀ dDm) φ_l ]  over the masked rows
+            const Eigen::VectorXd dphil = -DtD.solve(dDm.transpose() * Rm + (Dm.transpose() * dDm) * phil);
+            for (int r = 0; r < na; ++r) {
+                // ∂(model)/∂ln(β_j) = dDm φ_l + Dm ∂φ_l/∂ln(β_j); residual = model − data, ×ln10 for log10.
+                const double dmodel = dDm.row(r).dot(phil) + Dm.row(r).dot(dphil);
+                J(rowOf[rows[r]][l], jj) = ln10 * dmodel;
+            }
         }
     }
     return true;
