@@ -199,6 +199,94 @@ void nmr_any_Model::ProjectLinearParameters()
     SolveLinearMasked(m_molar_ratios);
 }
 
+bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::MatrixXd& J)
+{
+    // Exact only for the Newton speciation method (its stored Hessian is the solution Hessian).
+    if (!m_speciation.isValid()
+        || m_speciation.method() != BFGSConcentrationSolver::Method::LevenbergMarquardt)
+        return false;
+
+    const int nSpecies = m_speciation.SpeciesCount();
+    const int nComp = m_component_count;
+    const int series = SeriesCount();
+    const int nG = static_cast<int>(gidx.size());
+    const int nData = DataPoints();
+    if (nSpecies == 0 || series == 0 || nG == 0)
+        return false;
+    const int P = 1 + nSpecies; // design columns: free observed + one per species
+
+    // The projection below uses all data rows; if any are masked (Cross-Validation / Reduction disable
+    // points or series, the DataBegin..DataEnd window shrinks) it would not match SolveLinearMasked, so
+    // return false there and let the VarPro solver finite-difference instead. Claude Generated.
+    if (DataBegin() != 0 || DataEnd() != nData)
+        return false;
+    for (int l = 0; l < series; ++l) {
+        if (!ActiveSignals(l))
+            return false;
+        for (int i = 0; i < nData; ++i)
+            if (!DependentModel()->isChecked(i, l))
+                return false;
+    }
+
+    const Eigen::MatrixXi& Mst = m_speciation.Stoichiometry(); // components x species
+    const double ln10 = std::log(10.0);
+
+    std::vector<double> constants(nSpecies);
+    for (int k = 0; k < nSpecies; ++k)
+        constants[k] = std::pow(10.0, GlobalParameter(k));
+    m_speciation.setStabilityConstants(constants);
+    CalculateConcentrations(); // refresh m_molar_ratios (the design D) at the current beta
+
+    // ∂(design row)/∂ln(β_j) per enabled global, D²  matrices (nData × P). Uses the analytic speciation
+    // sensitivities S_i = ∂x/∂ln(β). Then combine with the *projection* derivative ∂φ/∂β so J is the
+    // FULL (Golub–Pereyra) Jacobian of the projected residual - not the Kaufman (φ-fixed) one, which
+    // leaves a rank-deficient Gauss–Newton Hessian and stalls the outer LM. Claude Generated.
+    std::vector<Eigen::MatrixXd> dD(nG, Eigen::MatrixXd::Zero(nData, P));
+    std::vector<double> totals(nComp);
+    for (int i = 0; i < nData; ++i) {
+        for (int c = 0; c < nComp; ++c)
+            totals[c] = InitialConcentration(i, c);
+        m_speciation.solve(totals, i);
+        const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
+        const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
+        const Eigen::MatrixXd S = m_speciation.sensitivityMatrix(); // nComp × nSpecies
+        const double obs_total = totals[m_observed];
+        const double s_obs = freeConc[m_observed];
+        for (int jj = 0; jj < nG; ++jj) {
+            const int j = gidx[jj]; // enabled global index == species index
+            dD[jj](i, 0) = (s_obs / obs_total) * S(m_observed, j); // D[0] = s_obs / T_obs
+            for (int k = 0; k < nSpecies; ++k) {
+                double dlnck = (k == j) ? 1.0 : 0.0; // d ln c_k / d ln β_j = δ_kj + Σ_c M(c,k) S(c,j)
+                for (int c = 0; c < nComp; ++c)
+                    dlnck += static_cast<double>(Mst(c, k)) * S(c, j);
+                dD[jj](i, 1 + k) = (static_cast<double>(Mst(m_observed, k)) / obs_total) * speciesConc[k] * dlnck;
+            }
+        }
+    }
+
+    const Eigen::MatrixXd& D = m_molar_ratios; // nData × P
+    const Eigen::MatrixXd phi = LocalParameter()->Table(); // series × P
+    const Eigen::MatrixXd Y = DependentModel()->Table(); // nData × series
+    const Eigen::MatrixXd R = D * phi.transpose() - Y; // residual (model − data), nData × series
+    const Eigen::LDLT<Eigen::MatrixXd> DtD = (D.transpose() * D).ldlt(); // shared projection normal matrix
+
+    J.setZero(nData * series, nG);
+    for (int jj = 0; jj < nG; ++jj) {
+        const Eigen::MatrixXd& dDj = dD[jj];
+        const Eigen::MatrixXd DtdDj = D.transpose() * dDj; // P × P
+        for (int l = 0; l < series; ++l) {
+            const Eigen::VectorXd phil = phi.row(l).transpose();
+            // ∂φ_l/∂ln(β_j) = −(DᵀD)⁻¹ [ dDjᵀ R_l + (Dᵀ dDj) φ_l ]  (least-squares projection derivative)
+            const Eigen::VectorXd dphil = -DtD.solve(dDj.transpose() * R.col(l) + DtdDj * phil);
+            // ∂(model_l)/∂ln(β_j) = dDj φ_l + D ∂φ_l/∂ln(β_j); residual = model − data.
+            const Eigen::VectorXd dmodel = dDj * phil + D * dphil;
+            for (int i = 0; i < nData; ++i)
+                J(i * series + l, jj) = ln10 * dmodel(i);
+        }
+    }
+    return true;
+}
+
 void nmr_any_Model::CalculateVariables()
 {
     CalculateConcentrations();

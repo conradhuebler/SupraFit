@@ -203,6 +203,141 @@ private slots:
         }
         delete data;
     }
+
+    // Approach B: the analytic outer-fit Jacobian d(residual)/d(log10 beta) (implicit-function
+    // sensitivities of the speciation) must match central finite differences of the residual at the
+    // SAME (fixed) linear locals - the Kaufman VarPro Jacobian. Claude Generated.
+    void analyticJacobian()
+    {
+        const int series = 2;
+        const QString reactions = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        const QList<double> betas{ 3.8, 5.9 };
+
+        // Synthesise a signal so the projected locals are non-trivial.
+        DataClass* data = makeData(series);
+        {
+            QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
+            QJsonObject def;
+            def["Reactions"] = strOption(reactions);
+            truth->DefineModel(def);
+            truth->InitialGuess();
+            for (int k = 0; k < betas.size(); ++k)
+                truth->setGlobalParameter(betas[k], k);
+            for (int s = 0; s < series; ++s)
+                for (int p = 0; p < truth->LocalParameterSize(); ++p)
+                    truth->setLocalParameter(9.0 * (1.0 - 0.1 * p - 0.07 * s), p, s);
+            truth->Calculate();
+            data->setDependentTable(new DataTable(truth->ModelTable()->Table()));
+        }
+
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+        QJsonObject def;
+        def["Reactions"] = strOption(reactions);
+        model->DefineModel(def);
+        model->InitialGuess();
+        std::vector<int> gidx;
+        for (int k = 0; k < model->GlobalParameterSize(); ++k)
+            if (model->GlobalParameter()->isChecked(0, k))
+                gidx.push_back(k);
+        QVERIFY(gidx.size() >= 2);
+
+        // Check the analytic Jacobian at several beta (incl. off-optimum / near-stall points), each time
+        // at the locals PROJECTED for that beta - exactly how the LM uses it.
+        const QVector<QPair<double, double>> points = { { 3.5, 5.5 }, { 2.8, 5.2 }, { 3.8, 5.9 }, { 4.5, 6.6 } };
+        for (const auto& pt : points) {
+            model->setGlobalParameter(pt.first, gidx[0]);
+            model->setGlobalParameter(pt.second, gidx[1]);
+            model->ProjectLinearParameters();
+            model->Calculate();
+
+            Eigen::MatrixXd Ja;
+            QVERIFY2(model->AnalyticVarProJacobian(gidx, Ja), "nmr_any did not provide an analytic Jacobian");
+            model->Calculate();
+            const QList<double> r0 = model->getCalculatedAbsoluteErrors();
+            QCOMPARE(int(Ja.rows()), r0.size());
+            QCOMPARE(int(Ja.cols()), int(gidx.size()));
+
+            // FULL finite difference: re-project the locals at each perturbed beta (exactly what the
+            // VarPro FD Jacobian does), so this validates the Golub-Pereyra Jacobian, not the Kaufman one.
+            const double h = 1e-5;
+            double worst = 0.0;
+            for (int jj = 0; jj < int(gidx.size()); ++jj) {
+                const int j = gidx[jj];
+                const double b = model->GlobalParameter(j);
+                model->setGlobalParameter(b + h, j);
+                model->ProjectLinearParameters();
+                model->Calculate();
+                const QList<double> rp = model->getCalculatedAbsoluteErrors();
+                model->setGlobalParameter(b - h, j);
+                model->ProjectLinearParameters();
+                model->Calculate();
+                const QList<double> rm = model->getCalculatedAbsoluteErrors();
+                model->setGlobalParameter(b, j);
+                model->ProjectLinearParameters();
+                model->Calculate();
+                for (int row = 0; row < r0.size(); ++row) {
+                    const double fd = (rp[row] - rm[row]) / (2.0 * h);
+                    worst = std::max(worst, std::abs(fd - Ja(row, jj)));
+                    QVERIFY2(std::abs(fd - Ja(row, jj)) < 1e-3 * (std::abs(Ja(row, jj)) + 1.0),
+                        qPrintable(QString("beta(%1,%2) J(%3,%4): analytic %5 vs FD %6").arg(pt.first).arg(pt.second).arg(row).arg(jj).arg(Ja(row, jj), 0, 'g', 8).arg(fd, 0, 'g', 8)));
+                }
+            }
+            qInfo().noquote() << QString("[analyticJacobian] beta=(%1,%2) worst dev = %3").arg(pt.first).arg(pt.second).arg(worst, 0, 'g', 3);
+        }
+        delete data;
+    }
+
+    // End-to-end: the VarProAnalytic solver (analytic Jacobian) must recover the true constants, matching
+    // the finite-difference VarPro. Claude Generated.
+    void analyticSolverEndToEnd_data()
+    {
+        QTest::addColumn<QString>("reactions");
+        QTest::addColumn<QList<double>>("trueBetas");
+        QTest::newRow("nmr 1:1/1:2") << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 };
+        QTest::newRow("nmr 2:1/1:1") << QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") << QList<double>{ 4.2, 6.6 };
+    }
+
+    void analyticSolverEndToEnd()
+    {
+        QFETCH(QString, reactions);
+        QFETCH(QList<double>, trueBetas);
+        const int nmr = static_cast<int>(SupraFit::nmr_any);
+        const int series = 2;
+
+        DataClass* data = makeData(series);
+        {
+            QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
+            QJsonObject def;
+            def["Reactions"] = strOption(reactions);
+            truth->DefineModel(def);
+            truth->InitialGuess();
+            for (int k = 0; k < trueBetas.size(); ++k)
+                truth->setGlobalParameter(trueBetas[k], k);
+            for (int s = 0; s < series; ++s)
+                for (int p = 0; p < truth->LocalParameterSize(); ++p)
+                    truth->setLocalParameter(9.0 * (1.0 - 0.1 * p - 0.07 * s), p, s);
+            truth->Calculate();
+            data->setDependentTable(new DataTable(truth->ModelTable()->Table()));
+        }
+
+        QVector<double> bVar, bAna;
+        const double sseVar = fit(nmr, QStringLiteral("VarPro"), reactions, data, bVar);
+        const double sseAna = fit(nmr, QStringLiteral("VarProAnalytic"), reactions, data, bAna);
+        qInfo().noquote() << QString("[%1] SSE VarPro=%2 VarProAnalytic=%3")
+                                 .arg(QTest::currentDataTag()).arg(sseVar, 0, 'g', 4).arg(sseAna, 0, 'g', 4);
+
+        QCOMPARE(bAna.size(), trueBetas.size());
+        for (int k = 0; k < trueBetas.size(); ++k) {
+            qInfo().noquote() << QString("  [%1] lg beta[%2] true=%3 VarPro=%4 VarProAnalytic=%5")
+                                     .arg(QTest::currentDataTag()).arg(k).arg(trueBetas[k])
+                                     .arg(bVar[k], 0, 'g', 6).arg(bAna[k], 0, 'g', 6);
+            QVERIFY2(std::abs(bAna[k] - trueBetas[k]) < 1e-2,
+                qPrintable(QString("global %1: VarProAnalytic %2 did not recover truth %3").arg(k).arg(bAna[k]).arg(trueBetas[k])));
+            QVERIFY2(std::abs(bAna[k] - bVar[k]) < 1e-3,
+                qPrintable(QString("global %1: VarProAnalytic %2 != VarPro %3").arg(k).arg(bAna[k]).arg(bVar[k])));
+        }
+        delete data;
+    }
 };
 
 QTEST_MAIN(TestVarPro)

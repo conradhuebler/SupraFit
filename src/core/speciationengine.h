@@ -85,6 +85,10 @@ public:
     const std::vector<double>& SpeciesConcentrations() const { return m_species_conc; }
     bool Converged() const { return m_solver.Converged(); }
 
+    /** @brief ∂x/∂ln(β) (components × species) of the LAST solved point, for the analytic outer-fit
+     * Jacobian. Only exact for the LevenbergMarquardt method. Claude Generated. */
+    Eigen::MatrixXd sensitivityMatrix() const { return m_solver.sensitivityMatrix(); }
+
 private:
     ReactionSystem m_system;
     BFGSConcentrationSolver m_solver;

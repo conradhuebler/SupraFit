@@ -52,6 +52,7 @@ public:
     // by the VarPro solver (reusing the m_molar_ratios design matrix). Claude Generated.
     bool SupportsVarPro() const override { return true; }
     void ProjectLinearParameters() override;
+    bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian) override;
 
     bool DefineModel() override;
 

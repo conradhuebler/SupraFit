@@ -309,6 +309,18 @@ public:
      * models). Claude Generated. */
     virtual void ProjectLinearParameters() {}
 
+    /*! \brief Analytic VarPro outer Jacobian: fill @p jacobian with d(residual)/d(log10 β) at the
+     * current (already projected) linear locals, rows in getCalculatedAbsoluteErrors() order and columns
+     * in the order of the enabled global-parameter indices @p globalIndices. Returns false (default) if
+     * the model has no analytic Jacobian, so the VarPro solver finite-differences instead. Only meaningful
+     * for SupportsVarPro() models whose speciation uses the exact-Hessian Newton method. Claude Generated. */
+    virtual bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian)
+    {
+        Q_UNUSED(globalIndices)
+        Q_UNUSED(jacobian)
+        return false;
+    }
+
     virtual inline int Color(int i) const { return i; }
 
 

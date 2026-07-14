@@ -75,6 +75,9 @@ int VarProFit(QWeakPointer<AbstractModel> weak, QVector<double>& sse_history, QV
         return 0;
 
     const QJsonObject config = model->getOptimizerConfig();
+    // "VarProAnalytic" replaces the finite-difference Jacobian with the model's analytic
+    // implicit-function Jacobian (Approach B); falls back to FD per column if unavailable. CG.
+    const bool useAnalytic = config["FitSolver"].toString() == QLatin1String("VarProAnalytic");
     const int MaxIter = config["MaxLevMarInter"].toInt();
     const double ErrorConvergence = config["ErrorConvergence"].toDouble();
     const double DeltaParameter = config["DeltaParameter"].toDouble();
@@ -114,14 +117,25 @@ int VarProFit(QWeakPointer<AbstractModel> weak, QVector<double>& sse_history, QV
         parameter_history << row;
         sse_history << sse;
 
-        // Forward-difference Jacobian of the projected residual w.r.t. the globals (m × n).
+        // Jacobian of the projected residual w.r.t. the globals (m × n): the model's analytic
+        // implicit-function Jacobian when requested and available, else a forward-difference column each.
         const int m = static_cast<int>(r.size());
         Eigen::MatrixXd J(m, n);
-        for (int i = 0; i < n; ++i) {
-            Eigen::VectorXd bp = beta;
-            const double h = eps * std::max(1.0, std::abs(beta(i)));
-            bp(i) += h;
-            J.col(i) = (residualVector(bp) - r) / h;
+        bool analytic = false;
+        if (useAnalytic) {
+            Eigen::MatrixXd Ja;
+            if (model->AnalyticVarProJacobian(gidx, Ja) && Ja.rows() == m && Ja.cols() == n) {
+                J = Ja;
+                analytic = true;
+            }
+        }
+        if (!analytic) {
+            for (int i = 0; i < n; ++i) {
+                Eigen::VectorXd bp = beta;
+                const double h = eps * std::max(1.0, std::abs(beta(i)));
+                bp(i) += h;
+                J.col(i) = (residualVector(bp) - r) / h;
+            }
         }
         const Eigen::MatrixXd JtJ = J.transpose() * J;
         const Eigen::VectorXd Jtr = J.transpose() * r;

@@ -96,7 +96,7 @@ int NonLinearFitThread::NonLinearFit()
     // the two can be benchmarked. Claude Generated.
     const QString solver = m_model->getOptimizerConfig()["FitSolver"].toString();
     int iter;
-    if (solver == QLatin1String("VarPro") && m_model->SupportsVarPro())
+    if ((solver == QLatin1String("VarPro") || solver == QLatin1String("VarProAnalytic")) && m_model->SupportsVarPro())
         iter = VarProFit(m_model, m_history.sse, m_history.parameter);
     else
         iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);

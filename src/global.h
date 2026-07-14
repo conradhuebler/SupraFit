@@ -480,8 +480,10 @@ inline const QString excluded() { return QString("#e17f7f;"); }
 const QJsonObject OptimConfigBlock{
     /* Fit solver selection: "LevMar" = the classic (unsupported-Eigen) full-vector Levenberg-Marquardt
        (default, and the reference oracle); "VarPro" = the opt-in variable-projection solver that fits
-       only the non-linear global parameters and projects the linear locals (falls back to LevMar for
-       models without SupportsVarPro()). Selectable so old vs new can be benchmarked. Claude Generated. */
+       only the non-linear global parameters and projects the linear locals (finite-difference Jacobian);
+       "VarProAnalytic" = VarPro with the analytic implicit-function Jacobian (no speciation re-solve per
+       Jacobian column; falls back to finite differences where a model has none or the data is masked).
+       Both VarPro modes fall back to LevMar for models without SupportsVarPro(). Claude Generated. */
     { "FitSolver", "LevMar" },
 
     /* Speciation (equilibrium concentration) solver for the reaction-driven *_any models: "LevMar" =
