@@ -305,6 +305,59 @@ inner Newton or writing a new KKT solver.
 - **Full-space nonconvexity (C):** the joint problem is nonconvex in β; a full-space solver forfeits the
   per-point global-minimum guarantee and needs real globalisation work — the main reason to defer it.
 
+## Status & remaining work (2026-07-13)
+
+**Delivered (committed on `feature/bfgs-speciation-solver`):**
+- **Approach A — done.** Point-to-point warm start (`8b9ba806`) + per-point `x_i` cache keyed by data
+  index in `SpeciationEngine::solve(totals, index)` (`3fa7dc60`). Gated to the convergent Newton method
+  (a stalled BFGS point is a bad seed). Results unchanged (strictly convex ⇒ start-independent); big fit
+  speedups (`test_varpro` 3.5 s→0.73 s, `test_varpro_cv` 14.7 s→2.5 s). Verified thread-safe under MC/CV
+  (per-model-clone engine) by `test_speciation_warmstart`.
+- **Approach B — working for `nmr_any`.** `BFGSConcentrationSolver::sensitivityMatrix()` = ∂x/∂lnβ from
+  the stored solution Hessian (`78098f43`, validated vs FD). `AbstractModel::AnalyticVarProJacobian`
+  (default: none → FD) implemented on `nmr_any` as the **full Golub–Pereyra** Jacobian — the Kaufman
+  (φ-fixed) form matched a fixed-φ FD but its rank-deficient Gauss–Newton Hessian stalled the outer LM;
+  adding the projection derivative ∂φ/∂β fixed it (`c853b5fb`). New `FitSolver=VarProAnalytic`. Validated:
+  analytic == full FD Jacobian to 1e-7; recovers β at the same SSE as FD VarPro (~1e-23).
+- Phase 0 instrumentation (inner-solve/iteration counters in `benchmark_varpro`) — **not yet done**; the
+  speedups above are wall-time from the test suite, not the isolated inner-iteration counts.
+- GUI: the speciation-solver switch is validated (operator-confirmed click behaviour).
+
+**Remaining — priority order:**
+1. **Analytic Jacobian for CV / RA (masked projection).** `nmr_any::AnalyticVarProJacobian` currently
+   returns false (→ FD fallback) whenever any point/series is masked: the `DataBegin..DataEnd` window
+   shrinks, a point is unchecked, or a series is inactive. To extend it, build the projection normal
+   matrix `DᵀD` and the residual `R` over the **same per-series active-row mask** `SolveLinearMasked`
+   uses (`ActiveSignals(l)` + `DependentModel()->isChecked(i,l)` + the window), instead of over all rows.
+   The sensitivities and the design-row chain rule are unchanged; only the projection block is masked.
+   Then `VarProAnalytic` accelerates CV/RA too (today the fold re-fits fall back to FD). Guard: keep the
+   `test_varpro_cv` boxplot parity as the acceptance gate.
+2. **MC/RA solver-behaviour investigation (projected vs joint).** *Behaviour is allowed to differ between
+   the projected solvers and the classic joint LM — but it must be characterised, not silently inherited.*
+   MC already warm-starts each resample from the point-fit optimum (`NonLinearFitThread` does no
+   `InitialGuess`), so it is built to stay in the nearby minimum; the solver only sets how far the
+   ill-determined/nuisance directions may drift from there. Hypothesis to test: VarPro re-projects a
+   nuisance species' linear partner (shift/ε) every step, flattening its β direction → the nuisance
+   constant gets more "play" and its MC scatter smears the correlated correct constants, whereas the
+   joint LM keeps it pinned. Deliverable: a reproducible 3-way MC comparison (LevMar / VarPro /
+   VarProAnalytic) on a 1:1/1:2 dataset fitted with an *added* dimerisation species `2 A <=> A2` (a true
+   nuisance), reporting the distribution/scatter/correlation of β(A2) and of the correct β(AB)/β(AB2).
+   Open choice: synthetic (self-contained) vs the operator's real `1_1_1_2`-with-dimerisation data; and
+   CLI-benchmark (printed distributions) vs a ctest with a frozen expectation (turns red on solver change
+   → forces the investigation).
+3. **Extend `VarProAnalytic` to the other engine models.** `uvvis_any` (Beer–Lambert Σ c·ε), `fl_any`
+   (Σ c·φ), then `itc_any` last (its sequential per-point heat couples neighbours → the observable
+   Jacobian is more involved). Each needs its own `AnalyticVarProJacobian`; the `sensitivityMatrix()`
+   infrastructure is shared. Same FD cross-check gate as `nmr_any`.
+4. **Benchmark `VarProAnalytic` vs FD VarPro** (Phase 0 + the `benchmark_varpro` column): total inner
+   solves / iterations and wall-time vs `n_series` and `n_global` — quantify the removed `N·n_global`
+   speciation re-solves per Jacobian.
+
+**Non-solver housekeeping (surfaced during this work):**
+- The `release/` build tree has an **empty `CMAKE_BUILD_TYPE`** → it compiles **without `-O3`**;
+  reconfigure with `-DCMAKE_BUILD_TYPE=Release` (a full rebuild) for production/benchmark numbers.
+
+*Deliberately NOT done: Approach C (full-space KKT) — deferred as in the recommendation above.*
+
 ---
-*Claude Generated. Planning artefact only — no production code was modified. Copyright remains with
-Conrad Hübler.*
+*Claude Generated. Planning artefact + status. Copyright remains with Conrad Hübler.*
