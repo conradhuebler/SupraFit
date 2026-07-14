@@ -384,22 +384,8 @@ Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
     // Right-hand side over the active variables: RHS(v, j) = M(comp,j) · c_j.
     Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(nv, m);
     for (int j = 0; j < m; ++j) {
-        if (m_beta[j] <= 0.0)
-            continue;
-        double cj = m_beta[j];
-        bool valid = true;
-        for (int c = 0; c < n; ++c) {
-            const int e = m_M(c, j);
-            if (e == 0)
-                continue;
-            const double s = m_free[c];
-            if (s <= 0.0) {
-                valid = false;
-                break;
-            }
-            cj *= std::pow(s, e);
-        }
-        if (!valid)
+        const double cj = speciesConcentration(j);
+        if (cj == 0.0)
             continue;
         for (int v = 0; v < nv; ++v)
             RHS(v, j) = static_cast<double>(m_M(m_comp_of_var[v], j)) * cj;
@@ -412,6 +398,23 @@ Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
     return S;
 }
 
+double BFGSConcentrationSolver::speciesConcentration(int j) const
+{
+    if (!(m_beta[j] > 0.0))
+        return 0.0;
+    double c = m_beta[j];
+    const int n = static_cast<int>(m_totals.size());
+    for (int i = 0; i < n; ++i) {
+        const int e = m_M(i, j);
+        if (e == 0)
+            continue;
+        if (m_free[i] <= 0.0)
+            return 0.0; // a required free component is exhausted -> complex cannot form
+        c *= std::pow(m_free[i], e);
+    }
+    return c;
+}
+
 std::vector<double> BFGSConcentrationSolver::AllConcentrations() const
 {
     const int n = static_cast<int>(m_totals.size());
@@ -419,24 +422,7 @@ std::vector<double> BFGSConcentrationSolver::AllConcentrations() const
     std::vector<double> all(n + m, 0.0);
     for (int i = 0; i < n; ++i)
         all[i] = m_free[i];
-    for (int j = 0; j < m; ++j) {
-        if (!(m_beta[j] > 0)) {
-            all[n + j] = 0.0;
-            continue;
-        }
-        double c = m_beta[j];
-        bool formable = true;
-        for (int i = 0; i < n; ++i) {
-            const int coeff = m_M(i, j);
-            if (coeff == 0)
-                continue;
-            if (m_free[i] <= 0.0 && coeff > 0) {
-                formable = false;
-                break;
-            }
-            c *= std::pow(m_free[i], coeff);
-        }
-        all[n + j] = formable ? c : 0.0;
-    }
+    for (int j = 0; j < m; ++j)
+        all[n + j] = speciesConcentration(j);
     return all;
 }

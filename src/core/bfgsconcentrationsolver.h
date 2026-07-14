@@ -106,6 +106,10 @@ public:
      * to seed components that just became active during a warm-started sweep). Claude Generated. */
     double GuessStart() const;
 
+    /** @brief Concentration of complex @p j from the current free concentrations: c_j = β_j ∏_i s_i^{M_ij};
+     * 0 if the complex is disabled (β ≤ 0) or a required free component is non-positive. Claude Generated. */
+    double speciesConcentration(int j) const;
+
     /**
      * @brief Solve for the free component concentrations.
      * @return vector of length n_components with the free concentrations @f$s_i@f$.
