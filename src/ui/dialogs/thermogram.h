@@ -107,6 +107,15 @@ private:
      *
      * Only the experiment's are the titration's; see LoadITCFile. Claude Generated */
     void ApplySystemParameter(const QJsonObject& parameter);
+
+    /*! \brief The four import columns per injection: volume [uL], raw experiment heat, raw dilution
+     * heat, net heat [J].
+     *
+     * The single place that knows the column layout - the table, the charts and the export all
+     * render this. Columns 0 and 3 come from the ItcProcessor, which owns the volumes and the
+     * experiment-minus-dilution join; 1 and 2 are unscaled per-handler diagnostics read straight
+     * off the handlers, since the join has no use for them. Claude Generated */
+    QVector<QVector<qreal>> ResultRows() const;
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data, *m_import_row;
@@ -127,16 +136,14 @@ private:
 
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
 
-    const QVector<PeakPick::Peak>*m_experiment_peaks, *m_dilution_peaks;
 
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
     PeakPick::spectrum m_exp_therm, m_dil_therm;
     ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;
     QDialogButtonBox* m_buttonbox;
 
-    QString m_content, m_all_rows, m_root_dir;
+    QString m_root_dir;
     QJsonObject m_systemparameter, m_raw_data;
-    QVector<qreal> m_heat, m_raw, m_dil_heat;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
     bool m_updating_table = false; //!< guards UpdateTable() rebuilds against the cellChanged handler (Claude Generated)
     qreal m_heat_offset = 0, m_dil_offset = 0;

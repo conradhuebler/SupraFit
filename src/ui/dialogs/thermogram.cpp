@@ -74,16 +74,13 @@ void Thermogram::setUi()
     m_dilution_thermogram = m_processor->dilution();
 
     m_experiment = new ThermogramWidget(m_experiment_thermogram, this);
-    connect(m_experiment_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
-        m_experiment_peaks = m_experiment_thermogram->Peaks();
-        UpdateTable();
-    });
-
     m_dilution = new ThermogramWidget(m_dilution_thermogram, this);
-    connect(m_dilution_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
-        m_dilution_peaks = m_dilution_thermogram->Peaks();
-        UpdateTable();
-    });
+
+    /* One connection instead of one per handler: the processor's constructor already recomputes the
+     * net heat whenever either handler re-integrates, so resultChanged() fires once per change and
+     * always after the join is consistent. Listening to the handlers directly meant the dialog could
+     * render before the processor had re-joined. Claude Generated */
+    connect(m_processor, &ItcProcessor::resultChanged, this, &Thermogram::UpdateTable);
 
     QGridLayout* layout = new QGridLayout;
 
@@ -471,86 +468,74 @@ void Thermogram::setExperiment()
     setExperimentFile(filename);
 }
 
+QVector<QVector<qreal>> Thermogram::ResultRows() const
+{
+    const QVector<qreal> volumes = m_processor->injectionVolumes();
+    const QVector<qreal> net = m_processor->netHeat();
+    const QVector<qreal> raw_exp = m_processor->experiment()->Integrals();
+    // Only show a dilution column for a dilution that is actually being subtracted.
+    const QVector<qreal> raw_dil = m_processor->dilutionEnabled() ? m_processor->dilution()->Integrals() : QVector<qreal>();
+
+    // Rows past the known volumes fall back to the single value in the inject field, as the old
+    // renderer did. The uniform-volume commit resolves the vector up front and drops this.
+    const qreal fallback = QString(m_injct->text()).replace(",", ".").toDouble();
+
+    QVector<QVector<qreal>> rows;
+    rows.reserve(net.size());
+    for (int j = 0; j < net.size(); ++j) {
+        qreal volume = (j < volumes.size()) ? volumes[j] : fallback;
+        if (m_forceInject && !m_injct->text().isEmpty())
+            volume = fallback;
+
+        rows << (QVector<qreal>() << volume
+                                  << (j < raw_exp.size() ? raw_exp[j] : 0.0)
+                                  << (j < raw_dil.size() ? raw_dil[j] : 0.0)
+                                  << net[j]);
+    }
+    return rows;
+}
+
 void Thermogram::UpdateTable()
 {
     m_updating_table = true; // suppress the cellChanged handler while we repopulate the table
-    m_content.clear();
-    m_all_rows.clear();
     m_thm_series->clear();
     m_raw_series->clear();
     m_dil_series->clear();
-
-    m_exp_peaks = std::vector<PeakPick::Peak>(m_experiment_thermogram->Peaks()->begin(), m_experiment_thermogram->Peaks()->end());
-    m_dil_peaks = std::vector<PeakPick::Peak>(m_dilution_thermogram->Peaks()->begin(), m_dilution_thermogram->Peaks()->end());
-
-    m_raw.clear();
-    m_heat.clear();
-    m_dil_heat.clear();
-    QVector<qreal> integ_exp = m_experiment_thermogram->Integrals();
-    QVector<qreal> integ_dil = m_dilution_thermogram->Integrals();
-
-    QVector<qreal> integ_exp_scaled = m_experiment_thermogram->IntegralsScaled();
-    QVector<qreal> integ_dil_scaled = m_dilution_thermogram->IntegralsScaled();
     m_table->clear();
 
-    if (integ_exp.size() == 0) {
+    const QVector<QVector<qreal>> rows = ResultRows();
+    if (rows.isEmpty()) {
         m_updating_table = false;
         return;
     }
 
-    m_table->setRowCount(m_exp_peaks.size());
+    const bool dilution = m_processor->dilutionEnabled();
+    m_table->setRowCount(rows.size());
     m_table->setColumnCount(4);
     QChar mu = QChar(956);
-    const QVector<qreal> volumes = m_processor->injectionVolumes();
-    for (unsigned int j = 0; j < m_exp_peaks.size(); ++j) {
-        qreal integral = 0;
-        QTableWidgetItem* newItem;
-        if (static_cast<int>(j) < volumes.size()) {
-            if (m_forceInject && !m_injct->text().isEmpty())
-                newItem = new QTableWidgetItem(m_injct->text());
-            else
-                newItem = new QTableWidgetItem(QString::number(volumes[j]));
-        } else {
-            newItem = new QTableWidgetItem(m_injct->text());
-        }
-        m_content += newItem->data(Qt::DisplayRole).toString() + "\t";
-        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
+
+    for (int j = 0; j < rows.size(); ++j) {
+        QTableWidgetItem* newItem = new QTableWidgetItem(QString::number(rows[j][0]));
         m_table->setItem(j, 0, newItem);
 
-        //m_raw << m_exp_peaks[j].integ_num * m_experiment_thermogram->CalibrationRatio();
-        m_raw << integ_exp[j];
-        integral += integ_exp_scaled[j];
-        newItem = new QTableWidgetItem(QString::number(m_raw.last()));
-        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
+        newItem = new QTableWidgetItem(QString::number(rows[j][1]));
         newItem->background().setColor(m_raw_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable); // only the volume column is editable
-        m_raw_series->append(QPointF(j + 1, m_raw.last()));
-
         m_table->setItem(j, 1, newItem);
+        m_raw_series->append(QPointF(j + 1, rows[j][1]));
 
-        qreal dil = 0;
-        if (j < m_dil_peaks.size()) {
-            m_dil_heat << integ_dil[j];
-            dil = integ_dil[j];
-            integral -= integ_dil_scaled[j];
-        }
-        newItem = new QTableWidgetItem(QString::number(dil));
-        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
-
-        if (m_dil_peaks.size())
+        newItem = new QTableWidgetItem(QString::number(rows[j][2]));
+        if (dilution)
             newItem->setBackground(m_dil_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 2, newItem);
-        m_dil_series->append(QPointF(j + 1, dil));
+        m_dil_series->append(QPointF(j + 1, rows[j][2]));
 
-        newItem = new QTableWidgetItem(QString::number(integral));
-        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
-        m_content += newItem->data(Qt::DisplayRole).toString() + "\n";
+        newItem = new QTableWidgetItem(QString::number(rows[j][3]));
         newItem->background().setColor(m_thm_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 3, newItem);
-
-        m_thm_series->append(QPointF(j + 1, integral));
+        m_thm_series->append(QPointF(j + 1, rows[j][3]));
     }
 
     QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu)
@@ -562,8 +547,7 @@ void Thermogram::UpdateTable()
         volHeader->setToolTip(tr("Injection volume in %1L — double-click a cell to edit a single addition point (e.g. when the titration step size varies).").arg(mu));
     m_table->resizeColumnsToContents();
 
-
-    if (m_dil_peaks.size())
+    if (dilution)
         m_data_view->addSeries(m_dil_series);
 
     m_data_view->setXAxis("Inject Number");
@@ -574,20 +558,26 @@ void Thermogram::UpdateTable()
 
 QString Thermogram::Content() const
 {
-    QString content("");
-
-    for (int i = 0; i < m_table->rowCount(); ++i) {
-        content += m_table->item(i, 0)->data(Qt::DisplayRole).toString() + "\t";
-        content += m_table->item(i, 3)->data(Qt::DisplayRole).toString() + "\t";
+    /* Columns 0 and 3 of the rendered result: what the model is given is by construction what the
+     * table shows. Previously this scraped the QTableWidget back out of the view, dereferencing
+     * item(i, 0) unguarded and passing on a comma decimal from a manually edited cell that
+     * FileHandler would then misparse.
+     *
+     * Not m_processor->resultTable() yet: that reads the volume vector directly and yields 0 for
+     * rows the vector does not cover, while the table falls back to the inject field. The two agree
+     * once the volumes are resolved up front - see the uniform-volume commit - and this can become
+     * resultTable() then. Claude Generated */
+    QString content;
+    for (const QVector<qreal>& row : ResultRows()) {
+        content += QString::number(row[0]) + "\t";
+        content += QString::number(row[3]) + "\t";
         content += "\n";
     }
-
     return content;
 }
 
 void Thermogram::setDilution()
 {
-    m_dil_heat.clear();
     QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.txt *.dat *.itc *.ITC);;All files (*.*)"));
     if (filename.isEmpty())
         return;
@@ -604,6 +594,7 @@ void Thermogram::setDilutionFile(QString filename)
     if (filename.isEmpty()) {
         m_exp_file->setStyleSheet("background-color: " + excluded());
         qDebug() << "no thermogram found";
+        m_processor->setDilutionEnabled(false); // nothing loaded: nothing to subtract
         return;
     }
 
@@ -619,6 +610,7 @@ void Thermogram::setDilutionFile(QString filename)
         try {
             original = LoadITCFile(filename, &m_dil_peaks, offset, dilution_inject).first;
         } catch (int error) {
+            m_processor->setDilutionEnabled(false); // the load failed: do not subtract a stale one
             if (error == 404) {
                 m_dil_file->setStyleSheet("background-color: " + excluded());
                 qDebug() << "file no found";
@@ -651,6 +643,10 @@ void Thermogram::setDilutionFile(QString filename)
     m_dilution_thermogram->IntegrateThermogram();
     m_dilution->setEnabled(true);
 
+    // Now that the dilution is integrated, let it into the join - this is what makes the processor
+    // subtract it at all. Enabling it re-joins, so the table follows without further prompting.
+    m_processor->setDilutionEnabled(true);
+
     m_dil_therm = original;
     m_dil_file->setText(filename);
     m_mainwidget->setCurrentIndex(2);
@@ -675,6 +671,11 @@ void Thermogram::clearDilution()
     if (m_dil_file->text().isEmpty()) {
         m_dilution->clear();
         m_dil_peaks.clear();
+        /* Behaviour change, deliberate: clearing the dilution now really stops the subtraction. The
+         * widget's clear() only drops its own copies, the handler keeps its peaks, and the renderer
+         * re-read them from there - so the dilution kept being subtracted from a field the user had
+         * emptied. Claude Generated */
+        m_processor->setDilutionEnabled(false);
         UpdateData();
         m_dil_file->setStyleSheet("background-color: white");
         m_dilution->setDisabled(true);
@@ -776,12 +777,10 @@ void Thermogram::setDilutionFit(const QJsonObject& json)
 
 void Thermogram::ExportData()
 {
-    if (m_table->rowCount() && m_table->columnCount()) {
-        if (m_table->item(0, 0)->data(Qt::DisplayRole).toString().isNull() || m_table->item(0, 0)->data(Qt::DisplayRole).toString().isEmpty()) {
-            QMessageBox question(QMessageBox::Question, tr("Export Integration"), tr("First column is empty or zero. Do you still want to export the data?"), QMessageBox::Yes | QMessageBox::No, this);
-            if (question.exec() == QMessageBox::No) {
-                return;
-            }
+    if (!ResultRows().isEmpty() && qFuzzyIsNull(ResultRows().first()[0])) {
+        QMessageBox question(QMessageBox::Question, tr("Export Integration"), tr("First column is empty or zero. Do you still want to export the data?"), QMessageBox::Yes | QMessageBox::No, this);
+        if (question.exec() == QMessageBox::No) {
+            return;
         }
     }
 
@@ -797,16 +796,17 @@ void Thermogram::ExportData()
 
     QString output;
     QTextStream stream(&file);
+    const QVector<QVector<qreal>> rows = ResultRows();
 
     if (filename.contains(".dh", Qt::CaseInsensitive)) {
         output = "10\n";
-        output += "0," + QString::number(m_table->rowCount()) + ",0,0,0\n";
+        output += "0," + QString::number(rows.size()) + ",0,0,0\n";
         output += QString::number(m_systemparameter[QString::number(AbstractItcModel::Temperature)].toString().toDouble() - 273) + "," + m_systemparameter[QString::number(AbstractItcModel::CellConcentration)].toString() + "," + m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)].toString() + "," + QString::number(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString().toDouble() / 1000.0) + ",0\n";
         output += "0\n";
         output += "0\n";
 
-        for (int i = 0; i < m_table->rowCount(); ++i)
-            output += m_table->item(i, 0)->data(Qt::DisplayRole).toString().replace(",", ".") + "," + m_table->item(i, 3)->data(Qt::DisplayRole).toString().replace(",", ".") + "\n";
+        for (const QVector<qreal>& row : rows)
+            output += QString::number(row[0]) + "," + QString::number(row[3]) + "\n";
 
         stream << output;
     } else {
@@ -815,7 +815,10 @@ void Thermogram::ExportData()
         stream << QString("#Volume") + "\t" + " exp. heat " + "\t" + "dil. heat" + "\t" + "joined heat" + "\n";
         stream << QString("#[%1L]").arg(mu) + "\t" + "[raw]" + "\t" + "[raw]" + "\t" + "[J]" + "\n";
 
-        stream << m_all_rows;
+        for (const QVector<qreal>& row : rows) {
+            stream << QString::number(row[0]) + "\t" + QString::number(row[1]) + "\t"
+                    + QString::number(row[2]) + "\t" + QString::number(row[3]) + "\n";
+        }
     }
 }
 
