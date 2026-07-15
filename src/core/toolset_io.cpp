@@ -212,6 +212,13 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
 {
     QJsonObject systemparameter;
 
+    /* `peaks`, `offset`, `freq` and `inject` are outputs: they describe this file and nothing else.
+     * Both containers are filled by appending below, so they are cleared here rather than left to
+     * the caller - passing the same vector to two loads used to concatenate one file's injection
+     * volumes onto the other's. Claude Generated */
+    peaks->clear();
+    inject.clear();
+
     Vector x, y;
 
     QFileInfo info(filename);
