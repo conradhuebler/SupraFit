@@ -68,6 +68,66 @@ class TestItcThermogram : public QObject {
 
 private slots:
 
+    /*! \brief Pins the ABSOLUTE peak integrals to their measured values. Claude Generated
+     *
+     * The other tests here are relative invariants: testScalingLinearity compares a ratio and
+     * testDilutionSubtractsToZero subtracts a trace from itself. Both stay green under a uniform
+     * bias in the integration, so neither would notice if the numerical integration changed. This
+     * test is the one that would: it fixes what the pipeline actually computes on a real thermogram.
+     *
+     * Any change to the integration - in SupraFit or in libpeakpick underneath it - either fixes a
+     * defect or introduces one, and both must be visible. If this test fails, do not adjust the
+     * numbers to make it pass: establish which of the two happened first, then replace them in a
+     * commit that says why they moved.
+     *
+     * The values were MEASURED against data/samples/itc/reaction.dat (2026-07-15), not derived, so
+     * they pin behaviour rather than correctness. Tolerance is relative 1e-9: repeated runs differ
+     * in the last one or two bits (~1e-16 relative) because IntegrateNumerical sums under an OpenMP
+     * reduction and floating-point addition is not associative, so the thread scheduling reorders
+     * it. 1e-9 sits far above that noise and far below any change worth catching. */
+    void testAbsoluteIntegralsPinned()
+    {
+        // Unscaled peak integrals: the fingerprint of the numerical integration itself.
+        static const QVector<qreal> expected_raw = {
+            0.0030043654955833332, 0.00031275316342521583, -0.0011679504443039279, 0.0031370380013509488,
+            0.006761693551501826, 0.0065824939150939355, 0.0063003840125368527, 0.0063711045214132527,
+            0.0050663794604497506, 0.0013295367971036776, 0.00069578919918931461, 0.00044051125459215875,
+            0.00050554440436924135, 0.0004927183499344645, 0.00045780110185959615, 0.00027712997505625517,
+            0.00022831850569511629, -9.9031318189881149e-06, -0.015729648987413823, 0.031507749825159762
+        };
+
+        ItcProcessor proc;
+        configure(proc.experiment(), loadSample("reaction.dat"), 20);
+        proc.setScalingFactor(1.0);
+        proc.process();
+
+        const QVector<qreal> raw = proc.experiment()->Integrals();
+        QCOMPARE(raw.size(), expected_raw.size());
+        for (int i = 0; i < expected_raw.size(); ++i) {
+            QVERIFY2(qAbs(raw[i] - expected_raw[i]) <= 1e-9 * qAbs(expected_raw[i]),
+                qPrintable(QString("peak %1 integral moved: expected %2, got %3")
+                               .arg(i)
+                               .arg(expected_raw[i], 0, 'g', 17)
+                               .arg(raw[i], 0, 'g', 17)));
+        }
+
+        // Same run through the scaled path, so a regression in the cal->J application is separable
+        // from one in the integration above. ApplyScaling() is explicit because setScalingFactor()
+        // only assigns; the re-scale is the caller's job.
+        proc.setScalingFactor(cal2joule);
+        proc.experiment()->ApplyScaling();
+        const QVector<qreal> net = proc.netHeat();
+        QCOMPARE(net.size(), expected_raw.size());
+        for (int i = 0; i < expected_raw.size(); ++i) {
+            const qreal want = expected_raw[i] * cal2joule;
+            QVERIFY2(qAbs(net[i] - want) <= 1e-9 * qAbs(want),
+                qPrintable(QString("peak %1 net heat moved: expected %2, got %3")
+                               .arg(i)
+                               .arg(want, 0, 'g', 17)
+                               .arg(net[i], 0, 'g', 17)));
+        }
+    }
+
     // The pipeline runs headless and produces a (volume, net heat) table.
     void testHeadlessRunProducesResult()
     {
