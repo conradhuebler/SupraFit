@@ -113,6 +113,61 @@ jobs:
       - name: Build
         run: sh scripts/build_macOS_github.sh
 
+      - name: Smoke test app launch and file dialog
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$PWD/release/bin/macOS/suprafit.app"
+          BIN_PATH="$APP_PATH/Contents/MacOS/suprafit"
+          test -d "$APP_PATH"
+          test -x "$BIN_PATH"
+
+          # Basic startup sanity: executable responds without GUI interaction.
+          "$BIN_PATH" --help >/tmp/suprafit-help.txt 2>&1 || true
+          head -n 20 /tmp/suprafit-help.txt || true
+
+          APP_PROCESS="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
+          open -a "$APP_PATH"
+
+          for _ in {1..30}; do
+            if pgrep -x "$APP_PROCESS" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          pgrep -x "$APP_PROCESS" >/dev/null 2>&1
+          /usr/bin/osascript -e "tell application \"System Events\" to tell process \"$APP_PROCESS\" to set frontmost to true"
+          /usr/bin/osascript -e 'tell application "System Events" to keystroke "o" using command down'
+          sleep 2
+
+          DIALOG_STATE=$(/usr/bin/osascript -e "tell application \"System Events\" to tell process \"$APP_PROCESS\" to if ((count of sheets of windows) > 0) or ((count of windows) > 1) then return \"ok\" else return \"missing\"")
+          if [[ "$DIALOG_STATE" != "ok" ]]; then
+            echo "Open dialog did not appear after Cmd+O."
+            exit 1
+          fi
+
+          /usr/bin/osascript -e 'tell application "System Events" to key code 53' || true
+          /usr/bin/osascript -e 'tell application "System Events" to keystroke "q" using command down' || true
+          sleep 2
+          pkill -x "$APP_PROCESS" || true
+
+      - name: Verify app signing and macOS assessment
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$PWD/release/bin/macOS/suprafit.app"
+          test -d "$APP_PATH"
+
+          echo "codesign identity and metadata:"
+          codesign -dvv "$APP_PATH"
+
+          echo "codesign deep verification:"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+          echo "spctl assessment (informational in CI without notarization):"
+          spctl -a -vv --type exec "$APP_PATH" || true
+
       - name: Collect artifact
         run: |
           mkdir -p out
