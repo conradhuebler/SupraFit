@@ -95,11 +95,18 @@ private:
     void ImportRow();
     void File2JsonBlock(const QString& filename, QJsonObject& block) const;
 
-    /*! \brief Read an .itc file into `peaks` and `inject`, and adopt its system parameters.
+    /*! \brief Read an .itc file: returns its thermogram and the system parameters it recorded.
      *
-     * `inject` is an output holding this file's per-injection volumes; the caller decides whether
-     * they are the titration's (see setExperimentFile / setDilutionFile). Claude Generated */
-    PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject);
+     * Writes no members and touches no widgets - the caller decides what this file's contents mean.
+     * A dilution run carries its own injection volumes and its own cell/syringe concentrations, and
+     * neither of those is the titration's. `peaks` and `inject` are outputs describing this file.
+     * Claude Generated */
+    QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject);
+
+    /*! \brief Adopt `parameter` as the titration's system parameters and show them in the fields.
+     *
+     * Only the experiment's are the titration's; see LoadITCFile. Claude Generated */
+    void ApplySystemParameter(const QJsonObject& parameter);
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data, *m_import_row;

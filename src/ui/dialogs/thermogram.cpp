@@ -357,14 +357,19 @@ Thermogram::~Thermogram()
     settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
-PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
+QPair<PeakPick::spectrum, QJsonObject> Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
 {
     m_forceInject = false;
     m_injection = true;
     qreal freq = 0;
-    QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, peaks, offset, freq, inject);
-    PeakPick::spectrum original = pair.first;
-    m_systemparameter = pair.second;
+    // QSignalBlocker block(m_freq);
+    // m_freq->setValue(freq);
+    return ToolSet::LoadITCFile(filename, peaks, offset, freq, inject);
+}
+
+void Thermogram::ApplySystemParameter(const QJsonObject& parameter)
+{
+    m_systemparameter = parameter;
 
     m_Temperature->setText(m_systemparameter[QString::number(AbstractItcModel::Temperature)].toString());
     m_CellConcentration->setText(m_systemparameter[QString::number(AbstractItcModel::CellConcentration)].toString());
@@ -372,13 +377,6 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     m_CellVolume->setText(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString());
 
     m_UseParameter->setChecked(m_systemparameter.size() != 0);
-    // QSignalBlocker block(m_freq);
-    // m_freq->setValue(freq);
-    QSignalBlocker block(m_injct);
-    if (inject.size())
-        m_injct->setText(QString::number(inject.last()));
-
-    return original;
 }
 
 void Thermogram::setScaling(const QString& str)
@@ -413,9 +411,16 @@ void Thermogram::setExperimentFile(QString filename)
         qreal offset = 0;
         QVector<qreal> inject;
         try {
-            original = LoadITCFile(filename, &m_exp_peaks, offset, inject);
-            // The experiment's @-lines define the titration's injection protocol.
+            QPair<PeakPick::spectrum, QJsonObject> pair = LoadITCFile(filename, &m_exp_peaks, offset, inject);
+            original = pair.first;
+            // The experiment defines the titration: its @-lines are the injection protocol, and its
+            // cell/syringe concentrations are the system parameters.
             m_processor->setInjectionVolumes(inject);
+            ApplySystemParameter(pair.second);
+
+            QSignalBlocker block(m_injct);
+            if (inject.size())
+                m_injct->setText(QString::number(inject.last()));
         } catch (int error) {
             if (error == 404) {
                 m_exp_file->setStyleSheet("background-color: " + excluded());
@@ -606,12 +611,13 @@ void Thermogram::setDilutionFile(QString filename)
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
         qreal offset = 0;
-        /* Deliberately discarded: the injection protocol is a property of the experiment, so a
-         * dilution run's own @-line volumes are not the titration's. They used to be appended onto
-         * the experiment's, which corrupted the volume column. Claude Generated */
+        /* Both outputs are deliberately dropped. A dilution run has its own @-line volumes and its
+         * own cell/syringe concentrations, but the titration is defined by the experiment: adopting
+         * either from here used to append the volumes onto the experiment's and overwrite its
+         * concentrations in the fields. Claude Generated */
         QVector<qreal> dilution_inject;
         try {
-            original = LoadITCFile(filename, &m_dil_peaks, offset, dilution_inject);
+            original = LoadITCFile(filename, &m_dil_peaks, offset, dilution_inject).first;
         } catch (int error) {
             if (error == 404) {
                 m_dil_file->setStyleSheet("background-color: " + excluded());
