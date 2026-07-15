@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,8 +126,6 @@ public:
 
     virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize() * SeriesCount(); }
 
-    inline double getT() const { return m_T; }
-
     inline QString getPlotMode() const { return m_plotMode; }
 
     /*! \brief Calculate standard type statistics for stored statistic results */
@@ -144,12 +142,6 @@ public:
 
     //  virtual QVector<QJsonObject> PostGridSearch(const QList<QJsonObject> &models) const override;
 
-public slots:
-    // virtual void UpdateParameter() override;
-
-private:
-    //  virtual void DeclareSystemParameter() override;
-
 protected:
     /*
      * set the concentration of the @param int i datapoint to
@@ -161,8 +153,6 @@ protected:
 
     qreal InitialHostConcentration(int i) const;
     qreal InitialGuestConcentration(int i) const;
-
-    double m_T = 298; // K — default so getT() is never uninitialised (system parameter overrides)
 
     qreal GuessK(int index = 0);
 
