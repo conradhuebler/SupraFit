@@ -24,10 +24,9 @@
 
 #include "src/global.h"
 
-#include <QtCore/QCoreApplication>
 #include <QtCore/QJsonObject>
 
-#include "src/core/models/postprocess/thermo.h"
+#include "src/core/units.h"
 
 #include "statistic.h"
 
@@ -72,7 +71,7 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
 
     // Claude Generated: unit-aware formatting (SI kJ/mol, J·mol⁻¹·K⁻¹ or calorie-based) so ITC
     // results can be compared with e.g. NanoAnalyze; see Thermo::CurrentEnergyUnit().
-    const Thermo::EnergyUnit unit = Thermo::CurrentEnergyUnit();
+    const Units::EnergyUnit unit = Units::currentEnergy();
     auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
     auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
 
@@ -406,7 +405,7 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGl = dG - dGl;
 
     // Claude Generated: unit-aware formatting (see MonteCarlo2Thermo / Thermo::CurrentEnergyUnit()).
-    const Thermo::EnergyUnit unit = Thermo::CurrentEnergyUnit();
+    const Units::EnergyUnit unit = Units::currentEnergy();
     auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
     auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
 

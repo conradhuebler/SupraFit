@@ -347,6 +347,7 @@ set(models_SRC
 
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
+    src/core/units.cpp
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
     src/core/models/photophysics/decayrates.cpp

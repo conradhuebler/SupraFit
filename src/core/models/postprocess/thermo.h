@@ -23,23 +23,8 @@
 
 namespace Thermo {
 
-/*! \brief Runtime-selectable display unit for thermodynamic energies. Claude Generated
- *
- * Internally every energy is J/mol and every entropy J/(mol·K). This struct carries the
- * divisor + label needed to present them either in SI units (kJ/mol, J/(mol·K)) or in the
- * calorie-based units used e.g. by TA NanoAnalyze (kcal/mol, cal/(mol·K)), so results can be
- * compared without hand conversion. */
-struct EnergyUnit {
-    qreal energyDivisor = 1000.0; //!< divide a J/mol value by this for display (kJ: 1000, kcal: 1000·cal2joule)
-    qreal entropyDivisor = 1.0; //!< divide a J/(mol·K) value by this for display (J: 1, cal: cal2joule)
-    QString energyLabel = "kJ/mol"; //!< label for ΔG/ΔH/−TΔS
-    QString entropyLabel = "J/(molK)"; //!< label for ΔS
-};
-
-/*! \brief Current energy-unit selection, read from the global qApp property
- * "energy_unit_kcal" (bool); defaults to SI (kJ/mol). Claude Generated */
-EnergyUnit CurrentEnergyUnit();
-
+// The energy-unit selection lives centrally in Units (src/core/units.h) — see Units::EnergyUnit
+// and Units::currentEnergy(). FormatThermo formats in whatever unit that returns.
 QString FormatThermo(qreal K, qreal T, qreal H = 0);
 
 }

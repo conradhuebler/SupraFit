@@ -19,32 +19,19 @@
 
 #include "src/core/models/models.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/global.h"
 
-#include <QtCore/QCoreApplication>
 #include <QtCore/QJsonObject>
 
 #include "thermo.h"
 
 namespace Thermo{
 
-EnergyUnit CurrentEnergyUnit()
-{
-    EnergyUnit unit; // defaults to SI (kJ/mol, J/(mol·K))
-    const bool kcal = qApp && qApp->instance()->property("energy_unit_kcal").toBool();
-    if (kcal) {
-        unit.energyDivisor = 1000.0 * cal2joule; // J/mol -> kcal/mol
-        unit.entropyDivisor = cal2joule; // J/(mol·K) -> cal/(mol·K)
-        unit.energyLabel = "kcal/mol";
-        unit.entropyLabel = "cal/(molK)";
-    }
-    return unit;
-}
-
 QString FormatThermo(qreal K, qreal T, qreal H)
 {
-    const EnergyUnit unit = CurrentEnergyUnit();
+    const Units::EnergyUnit unit = Units::currentEnergy();
     QString result;
     qreal dG = ToolSet::K2G(K, T);
     qreal dS = ToolSet::GHE(dG, H, T);

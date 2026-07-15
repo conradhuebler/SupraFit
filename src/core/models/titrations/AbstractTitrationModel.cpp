@@ -22,6 +22,7 @@
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/core/models/dataclass.h"
 
@@ -94,7 +95,7 @@ void AbstractTitrationModel::UpdateParameter()
     m_T = getSystemParameter(Temperature).Double();
     m_plotMode = getSystemParameter(PlotMode).getString();
     m_HostAssignment = m_HostAssignmentList.indexOf(getSystemParameter(HostGuestAssignment).getString());
-    UpdateChart("concentration", m_plotMode, "c [mol/L]");
+    UpdateChart("concentration", m_plotMode, Units::concentrationAxis());
 }
 
 void AbstractTitrationModel::DeclareOptions()
@@ -136,7 +137,7 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     QStringList names = m_concentrations->header();
     names.removeFirst();
     addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
-    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
+    UpdateChart("Concentration Chart", m_plotMode, Units::concentrationAxis());
 }
 
 MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)

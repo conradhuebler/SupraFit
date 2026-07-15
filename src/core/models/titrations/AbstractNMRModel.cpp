@@ -22,6 +22,7 @@
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/core/models/dataclass.h"
 
@@ -113,7 +114,7 @@ void AbstractNMRModel::SetConcentration(int i, const Vector& equilibrium)
     QStringList names = m_concentrations->header();
     names.removeFirst();
     addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
-    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
+    UpdateChart("Concentration Chart", m_plotMode, Units::concentrationAxis());
 }
 
 MassResults AbstractNMRModel::MassBalance(qreal A, qreal B)
