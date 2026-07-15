@@ -47,6 +47,7 @@
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/widgets/thermogramwidget.h"
 
+#include "src/core/itcprocessor.h"
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
 
@@ -64,14 +65,20 @@ Thermogram::Thermogram()
 
 void Thermogram::setUi()
 {
-    m_experiment_thermogram = new ThermogramHandler;
+    // The ITC state (both thermograms + the experiment-minus-dilution join + injection volumes)
+    // is owned by the core, GUI-independent ItcProcessor; the dialog is a view/controller over it.
+    // The two handler members are non-owning pointers to the processor's handlers, which the
+    // ThermogramWidgets edit interactively. Claude Generated
+    m_processor = new ItcProcessor(this);
+    m_experiment_thermogram = m_processor->experiment();
+    m_dilution_thermogram = m_processor->dilution();
+
     m_experiment = new ThermogramWidget(m_experiment_thermogram, this);
     connect(m_experiment_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
         m_experiment_peaks = m_experiment_thermogram->Peaks();
         UpdateTable();
     });
 
-    m_dilution_thermogram = new ThermogramHandler;
     m_dilution = new ThermogramWidget(m_dilution_thermogram, this);
     connect(m_dilution_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
         m_dilution_peaks = m_dilution_thermogram->Peaks();

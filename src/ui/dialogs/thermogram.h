@@ -45,6 +45,7 @@ class QTableWidget;
 class QTabWidget;
 
 class ChartView;
+class ItcProcessor;
 class LineSeries;
 class ScatterSeries;
 class ThermogramWidget;
@@ -106,7 +107,8 @@ private:
     QDoubleSpinBox* m_freq;
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
-    ThermogramHandler *m_experiment_thermogram, *m_dilution_thermogram;
+    ItcProcessor* m_processor; //!< owns the two handlers + injection volumes + exp-minus-dilution join
+    ThermogramHandler *m_experiment_thermogram, *m_dilution_thermogram; //!< non-owning, point into m_processor
 
     ChartView* m_data_view;
     QSplitter* m_splitter;
