@@ -82,6 +82,7 @@ set(SFGui_SRC
                 mainwindow/mainwindow.cpp
                 mainwindow/projecttree.cpp
                 mainwindow/suprafitgui.cpp
+                settingsregistry.cpp
     )
 
 add_library(suprafit_gui ${SFGui_SRC})
