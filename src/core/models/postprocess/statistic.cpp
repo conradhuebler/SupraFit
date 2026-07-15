@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,10 @@
 
 #include "src/global.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QJsonObject>
+
+#include "src/core/models/postprocess/thermo.h"
 
 #include "statistic.h"
 
@@ -67,6 +70,12 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGu = dGu - dG;
     qreal conf_dGl = dG - dGl;
 
+    // Claude Generated: unit-aware formatting (SI kJ/mol, J·mol⁻¹·K⁻¹ or calorie-based) so ITC
+    // results can be compared with e.g. NanoAnalyze; see Thermo::CurrentEnergyUnit().
+    const Thermo::EnergyUnit unit = Thermo::CurrentEnergyUnit();
+    auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
+    auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
+
     result += "<table>";
     result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K), 3) + "";
 
@@ -80,12 +89,12 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + fmtE(dG) + "";
     if (!object.isEmpty())
-        result += " (+" + Print::printDouble(conf_dGu / 1000, 3) + "/-" + Print::printDouble(conf_dGl / 1000, 3) + ")";
-    result += "</td><td>kJ/mol</td></tr>";
+        result += " (+" + fmtE(conf_dGu) + "/-" + fmtE(conf_dGl) + ")";
+    result += "</td><td>" + unit.energyLabel + "</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGl)).arg(fmtE(dGu)).arg(unit.energyLabel);
 
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
@@ -119,24 +128,30 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
         qreal conf_dSu = conf.upper - dS;
         qreal conf_dSl = dS - conf.lower;
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + fmtE(H) + "";
 
         if (!object.isEmpty())
-            result += "(" + Print::printDouble(conf_dH11u / 1000.0, 3) + "/-" + Print::printDouble(conf_dH11l / 1000.0, 3) + ")";
-        result += "</td><td>kJ/mol</td></tr>";
+            result += "(" + fmtE(conf_dH11u) + "/-" + fmtE(conf_dH11l) + ")";
+        result += "</td><td>" + unit.energyLabel + "</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11l / 1000.0, 3)).arg(Print::printDouble(dH11u / 1000.0, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11l)).arg(fmtE(dH11u)).arg(unit.energyLabel);
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + fmtS(dS) + "";
         if (!object.isEmpty())
-            result += "(+" + Print::printDouble(conf_dSu, 3) + "/-" + Print::printDouble(conf_dSl, 3) + ")";
-        result += "</td><td>J/(molK)</td></tr>";
+            result += "(+" + fmtS(conf_dSu) + "/-" + fmtS(conf_dSl) + ")";
+        result += "</td><td>" + unit.entropyLabel + "</td></tr>";
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(conf.lower, 3)).arg(Print::printDouble(conf.upper, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtS(conf.lower)).arg(fmtS(conf.upper)).arg(unit.entropyLabel);
+
+        // -TΔS (entropy term of ΔG = ΔH − TΔS) in energy units, matching the NanoAnalyze
+        // convention. Range mirrors ΔS scaled by −T (bounds swap because of the sign).
+        result += "<tr><td><b>Entropy Term -T&Delta;S</b></td><td>" + fmtE(-T * dS) + "</td><td>" + unit.energyLabel + "</td></tr>";
+        if (!object.isEmpty())
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(-T * conf.upper)).arg(fmtE(-T * conf.lower)).arg(unit.energyLabel);
     }
     result += "</table>";
 
@@ -390,6 +405,11 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGu = dGu - dG;
     qreal conf_dGl = dG - dGl;
 
+    // Claude Generated: unit-aware formatting (see MonteCarlo2Thermo / Thermo::CurrentEnergyUnit()).
+    const Thermo::EnergyUnit unit = Thermo::CurrentEnergyUnit();
+    auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
+    auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
+
     result += "<table>";
     result += QString("<tr><td><b>Complexation Constant K</b></td><td> %1 ").arg(Print::printDouble(qPow(10, K), 3));
 
@@ -408,51 +428,56 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "  ";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + fmtE(dG) + "  ";
     if (!object.isEmpty())
-        result += " (+" + Print::printDouble(conf_dGu / 1000.0, 3) + "/-" + Print::printDouble(conf_dGl / 1000.0, 3) + ")</td>";
-    result += "<td>kJ/mol</td></tr>";
+        result += " (+" + fmtE(conf_dGu) + "/-" + fmtE(conf_dGl) + ")</td>";
+    result += "<td>" + unit.energyLabel + "</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGl)).arg(fmtE(dGu)).arg(unit.energyLabel);
 
     if (models.size()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "";
-        result += " (+" + Print::printDouble((dGu_gs - dG) / 1000.0, 3) + "/-" + Print::printDouble((dG - dGl_gs) / 1000.0, 3) + ")</td>";
-        result += "<td> kJ/mol</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGu_gs / 1000.0, 3)).arg(Print::printDouble(dGl_gs / 1000.0, 3));
+        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + fmtE(dG) + "";
+        result += " (+" + fmtE(dGu_gs - dG) + "/-" + fmtE(dG - dGl_gs) + ")</td>";
+        result += "<td> " + unit.energyLabel + "</td></tr>";
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGu_gs)).arg(fmtE(dGl_gs)).arg(unit.energyLabel);
     }
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
     if (heat) {
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "  ";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + fmtE(H) + "  ";
 
         if (!object.isEmpty())
-            result += "(" + Print::printDouble((dH11u - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l) / 1000.0, 3) + ")</td>";
-        result += "<td>kJ/mol</td></tr>";
+            result += "(" + fmtE(dH11u - H) + "/-" + fmtE(H - dH11l) + ")</td>";
+        result += "<td>" + unit.energyLabel + "</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg( Print::printDouble(dH11l / 1000.0, 3)).arg( Print::printDouble(dH11u / 1000.0, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11l)).arg(fmtE(dH11u)).arg(unit.energyLabel);
 
         if (models.size()) {
             result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
-            result += " (+" + Print::printDouble((dH11u_gs - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l_gs) / 1000.0, 3) + ")</td>";
-            result += "<td> kJ/mol</td></tr>";
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11u_gs / 1000.0, 3)).arg(Print::printDouble(dH11l_gs / 1000.0, 3));
+            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + fmtE(H) + "";
+            result += " (+" + fmtE(dH11u_gs - H) + "/-" + fmtE(H - dH11l_gs) + ")</td>";
+            result += "<td> " + unit.energyLabel + "</td></tr>";
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11u_gs)).arg(fmtE(dH11l_gs)).arg(unit.energyLabel);
         }
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + fmtS(dS) + "";
         if (!object.isEmpty())
-            result += " (+" + Print::printDouble(dSu_gs - dS, 3) + "/-" + Print::printDouble(dS - dSl_gs, 3) + ")</td>";
-        result += "<td>J/(molK)</td></tr>";
+            result += " (+" + fmtS(dSu_gs - dS) + "/-" + fmtS(dS - dSl_gs) + ")</td>";
+        result += "<td>" + unit.entropyLabel + "</td></tr>";
         if (models.size())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(dSl_gs, 3)).arg(Print::printDouble(dSu_gs, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtS(dSl_gs)).arg(fmtS(dSu_gs)).arg(unit.entropyLabel);
+
+        // -TΔS (entropy term of ΔG = ΔH − TΔS) in energy units, matching the NanoAnalyze convention.
+        result += "<tr><td><b>Entropy Term -T&Delta;S</b></td><td>" + fmtE(-T * dS) + "</td><td>" + unit.energyLabel + "</td></tr>";
+        if (models.size())
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(-T * dSu_gs)).arg(fmtE(-T * dSl_gs)).arg(unit.energyLabel);
     }
     result += "</table>";
 

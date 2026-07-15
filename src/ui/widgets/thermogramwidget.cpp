@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -503,13 +503,16 @@ void ThermogramWidget::setUi()
     vlayout = new QVBoxLayout;
     group = new QGroupBox;
 
-    group->setTitle(tr("Scaling"));
+    group->setTitle(tr("Scaling (raw heat unit)"));
     group->setMaximumWidth(maxwidth);
     group->setMaximumHeight(maxheight);
 
     triplett = new QHBoxLayout;
-    triplett->addWidget((new QLabel(tr("Scaling"))));
+    QLabel* scaling_label = new QLabel(tr("cal &rarr; J"));
+    scaling_label->setToolTip(tr("Factor the raw calorimeter heat is multiplied by. Use %1 to convert calories into Joule (so ΔH/ΔS come out in kJ/mol and J/(mol·K)); use 1 if the data are already in Joule (e.g. with a calibration peak). Leaving it at 1 for cal data is the usual reason results match calorie-based tools like NanoAnalyze.").arg(QString::number(cal2joule)));
+    triplett->addWidget(scaling_label);
     triplett->addWidget(m_scaling);
+    m_scaling->setToolTip(scaling_label->toolTip());
     vlayout->addLayout(triplett);
 
     triplett = new QHBoxLayout;
