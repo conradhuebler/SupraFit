@@ -95,7 +95,11 @@ private:
     void ImportRow();
     void File2JsonBlock(const QString& filename, QJsonObject& block) const;
 
-    PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
+    /*! \brief Read an .itc file into `peaks` and `inject`, and adopt its system parameters.
+     *
+     * `inject` is an output holding this file's per-injection volumes; the caller decides whether
+     * they are the titration's (see setExperimentFile / setDilutionFile). Claude Generated */
+    PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject);
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data, *m_import_row;
@@ -125,7 +129,7 @@ private:
 
     QString m_content, m_all_rows, m_root_dir;
     QJsonObject m_systemparameter, m_raw_data;
-    QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
+    QVector<qreal> m_heat, m_raw, m_dil_heat;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
     bool m_updating_table = false; //!< guards UpdateTable() rebuilds against the cellChanged handler (Claude Generated)
     qreal m_heat_offset = 0, m_dil_offset = 0;

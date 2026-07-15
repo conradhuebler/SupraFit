@@ -202,6 +202,32 @@ private slots:
             QVERIFY2(qAbs(h) < 1e-9, "experiment minus identical dilution should be ~0");
     }
 
+    /*! \brief LoadITCFile's out-params describe the file, not what the caller had before.
+     *
+     * The import dialog handed the same peak list and volume vector to two loads - the experiment's
+     * and the dilution's - and the loader only ever appended, so the dilution's injection volumes
+     * ended up concatenated onto the experiment's and the volume column was silently wrong.
+     * Claude Generated */
+    void testLoadItcFileClearsOutputs()
+    {
+        QString file = QString(SAMPLE_DIR) + "/synthetic.itc";
+        std::vector<PeakPick::Peak> peaks;
+        QVector<qreal> inject;
+        qreal offset = 0, freq = 0;
+
+        ToolSet::LoadITCFile(file, &peaks, offset, freq, inject);
+        const int injections = inject.size();
+        const int peak_count = static_cast<int>(peaks.size());
+        QVERIFY2(injections > 0, "synthetic.itc should declare injections");
+
+        // Reuse both containers, exactly as loading a dilution after an experiment does.
+        QString again = QString(SAMPLE_DIR) + "/synthetic.itc";
+        ToolSet::LoadITCFile(again, &peaks, offset, freq, inject);
+
+        QCOMPARE(inject.size(), injections); // appended, this would be 2x
+        QCOMPARE(static_cast<int>(peaks.size()), peak_count);
+    }
+
     // One volume for every injection, sized to the peak list, and it reaches the result table.
     void testUniformInjectionVolume()
     {

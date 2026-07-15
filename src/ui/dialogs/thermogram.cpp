@@ -244,9 +244,10 @@ void Thermogram::setUi()
     m_table = new QTableWidget;
     //m_table->setFixedWidth(250);
 
-    // Claude Generated: allow manual per-injection volume edits (column 0). The new value is
-    // persisted back into m_inject so a subsequent UpdateTable() rebuild keeps it; useful when the
-    // titration step size varies. Guarded by m_updating_table so programmatic fills don't recurse.
+    // Claude Generated: allow manual per-injection volume edits (column 0). The value goes to the
+    // processor, which owns the volume vector, so a later UpdateTable() rebuild keeps it and it is
+    // stored with the project; useful when the titration step size varies. Guarded by
+    // m_updating_table so programmatic fills don't recurse.
     connect(m_table, &QTableWidget::cellChanged, this, [this](int row, int column) {
         if (m_updating_table || column != 0 || row < 0)
             return;
@@ -257,9 +258,7 @@ void Thermogram::setUi()
         const qreal value = item->data(Qt::DisplayRole).toString().replace(",", ".").toDouble(&ok);
         if (!ok)
             return;
-        if (row >= m_inject.size())
-            m_inject.resize(row + 1);
-        m_inject[row] = value;
+        m_processor->setInjectionVolume(row, value);
         m_forceInject = false; // a manual per-point edit takes precedence over the single forced value
     });
 
@@ -358,13 +357,12 @@ Thermogram::~Thermogram()
     settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
-PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
+PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
 {
-    peaks->clear();
     m_forceInject = false;
     m_injection = true;
     qreal freq = 0;
-    QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, peaks, offset, freq, m_inject);
+    QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, peaks, offset, freq, inject);
     PeakPick::spectrum original = pair.first;
     m_systemparameter = pair.second;
 
@@ -376,9 +374,9 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     m_UseParameter->setChecked(m_systemparameter.size() != 0);
     // QSignalBlocker block(m_freq);
     // m_freq->setValue(freq);
-    QSignalBlocker inject(m_injct);
-    if (m_inject.size())
-        m_injct->setText(QString::number(m_inject.last()));
+    QSignalBlocker block(m_injct);
+    if (inject.size())
+        m_injct->setText(QString::number(inject.last()));
 
     return original;
 }
@@ -413,8 +411,11 @@ void Thermogram::setExperimentFile(QString filename)
 
     if (info.suffix() == "itc") {
         qreal offset = 0;
+        QVector<qreal> inject;
         try {
-            original = LoadITCFile(filename, &m_exp_peaks, offset);
+            original = LoadITCFile(filename, &m_exp_peaks, offset, inject);
+            // The experiment's @-lines define the titration's injection protocol.
+            m_processor->setInjectionVolumes(inject);
         } catch (int error) {
             if (error == 404) {
                 m_exp_file->setStyleSheet("background-color: " + excluded());
@@ -495,14 +496,15 @@ void Thermogram::UpdateTable()
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(4);
     QChar mu = QChar(956);
+    const QVector<qreal> volumes = m_processor->injectionVolumes();
     for (unsigned int j = 0; j < m_exp_peaks.size(); ++j) {
         qreal integral = 0;
         QTableWidgetItem* newItem;
-        if (j < m_inject.size()) {
+        if (static_cast<int>(j) < volumes.size()) {
             if (m_forceInject && !m_injct->text().isEmpty())
                 newItem = new QTableWidgetItem(m_injct->text());
             else
-                newItem = new QTableWidgetItem(QString::number(m_inject[j]));
+                newItem = new QTableWidgetItem(QString::number(volumes[j]));
         } else {
             newItem = new QTableWidgetItem(m_injct->text());
         }
@@ -604,8 +606,12 @@ void Thermogram::setDilutionFile(QString filename)
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
         qreal offset = 0;
+        /* Deliberately discarded: the injection protocol is a property of the experiment, so a
+         * dilution run's own @-line volumes are not the titration's. They used to be appended onto
+         * the experiment's, which corrupted the volume column. Claude Generated */
+        QVector<qreal> dilution_inject;
         try {
-            original = LoadITCFile(filename, &m_dil_peaks, offset);
+            original = LoadITCFile(filename, &m_dil_peaks, offset, dilution_inject);
         } catch (int error) {
             if (error == 404) {
                 m_dil_file->setStyleSheet("background-color: " + excluded());
@@ -817,8 +823,7 @@ void Thermogram::ImportRow()
     if (!file.open(QIODevice::ReadOnly))
         return;
 
-    m_inject.clear();
-
+    QVector<qreal> inject;
     QStringList blob = QString(file.readAll()).split("\n");
 
     for (const QString& str : qAsConst(blob)) {
@@ -827,9 +832,18 @@ void Thermogram::ImportRow()
 
         QStringList line = str.simplified().split(" ");
         if (line.size() == 1 && !str.contains("#")) {
-            m_inject << line[0].toDouble();
+            inject << line[0].toDouble();
         }
     }
-    m_injct->setText(QString::number(m_inject.last()));
+
+    // A comment-only or non-numeric file leaves nothing to import; last() would read off the end.
+    if (inject.isEmpty()) {
+        QMessageBox::warning(this, tr("Import Injection Volumes"),
+            tr("No single-column numeric values found in %1.").arg(filename));
+        return;
+    }
+
+    m_processor->setInjectionVolumes(inject);
+    m_injct->setText(QString::number(inject.last()));
     UpdateTable();
 }
