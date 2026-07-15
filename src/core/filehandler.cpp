@@ -25,6 +25,7 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
 #include "src/core/models/titrations/AbstractItcModel.h" // AbstractItcModel enum (was transitive via models.h)
+#include "src/core/itcprocessor.h"
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
 
@@ -288,7 +289,10 @@ void FileHandler::ReadITC()
 {
     m_rows = 1;
 
-    ThermogramHandler* thermogram = new ThermogramHandler;
+    // Drive the full ITC pipeline through the shared, GUI-independent ItcProcessor (same core the
+    // import dialog uses), so the CLI import and the GUI produce identical results. Claude Generated
+    ItcProcessor processor;
+    ThermogramHandler* thermogram = processor.experiment();
     thermogram->setThermogramParameter(m_thermogram_parameter);
     qreal offset = 0;
     std::vector<PeakPick::Peak> peak_list;
@@ -296,37 +300,27 @@ void FileHandler::ReadITC()
     QVector<qreal> inject;
     if (m_plain_thermogram) {
         QPair<Vector, Vector> pair = ToolSet::LoadXYFile(m_filename);
-        PeakPick::spectrum spectrum = PeakPick::spectrum(pair.first, pair.second);
-        thermogram->setThermogram(spectrum);
+        thermogram->setThermogram(PeakPick::spectrum(pair.first, pair.second));
         thermogram->setThermogramParameter(m_thermogram_parameter);
         inject.fill(m_thermogram_parameter["InjectVolume"].toDouble(), m_thermogram_parameter["PeakCount"].toInt());
     } else {
         QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(m_filename, &peak_list, offset, freq, inject);
-        PeakPick::spectrum spectrum = pair.first;
         m_systemparameter = pair.second;
-        thermogram->setThermogram(spectrum);
+        thermogram->setThermogram(pair.first);
         thermogram->setPeakList(peak_list);
     }
-    thermogram->Initialise();
-    thermogram->UpdatePeaks();
-    thermogram->AdjustIntegrationRange();
-    thermogram->IntegrateThermogram();
+    processor.setInjectionVolumes(inject);
+    processor.process();
 
-    QVector<qreal> integrals = thermogram->IntegralsScaled();
-    m_stored_table = new DataTable;
-    for (int i = 0; i < integrals.size(); ++i) {
-        QVector<qreal> row;
-        row << inject[i] << integrals[i];
-        m_stored_table->insertRow(row);
-    }
+    m_stored_table = processor.resultTable();
     ConvertTable();
+
     QJsonObject experiment;
     experiment["fit"] = thermogram->getThermogramParameter();
     experiment["file"] = m_filename;
     QJsonObject raw;
     raw["experiment"] = experiment;
     m_topjson["raw"] = raw;
-    delete thermogram;
 
     QJsonObject data;
     data["data"] = m_topjson;
