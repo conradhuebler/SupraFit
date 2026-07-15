@@ -83,6 +83,10 @@ public:
 
     void setCalibrationHeat(qreal heat) { m_CalibrationHeat = heat; }
     void setConstantOffset(qreal offset) { m_constant_offset = offset; }
+    //! Set the cal->J (or arbitrary) heat scaling factor applied on top of the calibration ratio. Claude Generated
+    void setScalingFactor(qreal factor) { m_scaling_factor = factor; }
+    qreal ScalingFactor() const { return m_scaling_factor; }
+    qreal ConstantOffset() const { return m_constant_offset; }
 
     void UpdatePeaks();
     void FitBaseLine();
