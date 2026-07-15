@@ -394,11 +394,15 @@ void ThermogramWidget::setUi()
     m_scaling->setMaximumWidth(100);
 
     connect(m_scaling, &QComboBox::currentTextChanged, m_scaling, [this]() {
+        // Push only the scaling factor via the typed setter and re-scale. Previously this rebuilt a
+        // full parameter block (LoadDefaultThermogram) from zeroed shadow fields, which silently reset
+        // CalibrationHeat/PeakDuration/PeakCount on the handler. Claude Generated
         m_ScalingFactor = m_scaling->currentText().toDouble();
-        LoadDefaultThermogram();
+        m_stored_thermogram->setScalingFactor(m_ScalingFactor);
         m_stored_thermogram->ApplyScaling();
     });
     m_ScalingFactor = m_scaling->currentText().toDouble();
+    m_stored_thermogram->setScalingFactor(m_ScalingFactor);
 
     m_integration_range_threshold = new QDoubleSpinBox;
     m_integration_range_threshold->setMinimum(0);
@@ -604,17 +608,6 @@ ThermogramWidget::~ThermogramWidget()
     settings.setValue("integration_range", m_integration_range->currentText());
 }
 
-void ThermogramWidget::LoadDefaultThermogram()
-{
-    QJsonObject thermo;
-    thermo["CalibrationStart"] = m_CalibrationStart;
-    thermo["CalibrationHeat"] = m_CalibrationHeat;
-    thermo["PeakDuration"] = m_PeakDuration;
-    thermo["PeakCount"] = m_PeakCount;
-    thermo["ScalingFactor"] = m_ScalingFactor;
-    m_stored_thermogram->setThermogramParameter(thermo);
-}
-
 void ThermogramWidget::LoadDefault()
 {
     QJsonObject thermo;
@@ -743,20 +736,6 @@ void ThermogramWidget::UpdateSeries()
 {
     m_thermogram_series->replace(m_stored_thermogram->ThermogramSeries());
 }
-
-void ThermogramWidget::ApplyCalibration()
-{
-    for (int i = 0; i < int(m_integrals_raw.size()); ++i) {
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-
-        if (m_calibration_heat->value() != 0)
-            (m_peak_list)[i].integ_num = m_integrals_raw[i] * m_calibration_heat->value() / m_calibration_peak.integ_num;
-
-        (m_peak_list)[i].integ_num -= m_const_offset->value();
-    }
-    emit CalibrationChanged(m_calibration_heat->value());
-}
-
 
 void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
 {

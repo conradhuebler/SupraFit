@@ -90,8 +90,6 @@ public slots:
 private:
     void setUi();
     void UpdateTable();
-    void UpdateExpTable();
-    void UpdateDilTable();
     void ExportData();
     void ImportRow();
     void File2JsonBlock(const QString& filename, QJsonObject& block) const;

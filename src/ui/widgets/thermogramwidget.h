@@ -86,13 +86,8 @@ public:
 
     inline double Frequency() const { return m_frequency; }
 
-    void LoadDefaultThermogram();
 
     void addOptionalSeries(const QList<QPointF>& series, const QString& name);
-
-signals:
-    void IntegrationChanged();
-    void CalibrationChanged(double value);
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
@@ -108,7 +103,6 @@ private:
     void UpdateSeries();
     void ApplyParameter();
 
-    void ApplyCalibration();
     void ResetGuideLabel();
 
     void setGuideText(const QString& str);

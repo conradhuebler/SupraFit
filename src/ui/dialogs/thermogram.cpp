@@ -318,8 +318,9 @@ void Thermogram::setUi()
 
     layout->addWidget(m_buttonbox, 5, 0, 1, 4);
 
-    connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateExpTable);
-    connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateDilTable);
+    // The dialog table is refreshed via each handler's ThermogramChanged signal (connected in
+    // setUi); the widget's IntegrationChanged/CalibrationChanged signals were never emitted after the
+    // move-to-core, so the old connections here were dead and have been removed. Claude Generated
 
     m_experiment->setDisabled(true);
     m_dilution->setDisabled(true);
@@ -329,10 +330,6 @@ void Thermogram::setUi()
     QSettings settings;
     settings.beginGroup("thermogram_dialog");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-
-    connect(m_experiment, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
-        this->UpdateTable();
-    });
 
     connect(m_showDilution, &QCheckBox::stateChanged, this, [this]() {
         if (!m_showDilution->isChecked())
@@ -618,7 +615,7 @@ void Thermogram::setDilutionFile(QString filename)
         m_dil_file->setStyleSheet("background-color: " + included());
         m_dilution->setFileType(ThermogramWidget::FileType::ITC);
         m_dilution_thermogram->setThermogram(original);
-        m_dilution_thermogram->setPeakList(m_exp_peaks);
+        m_dilution_thermogram->setPeakList(m_dil_peaks); // was m_exp_peaks (copy-paste bug): dilution must use its own peaks
         m_showDilution->setEnabled(true);
         //m_dilution->setThermogram(&original, offset);
         //m_dilution->setPeakList(m_exp_peaks);
@@ -667,15 +664,6 @@ void Thermogram::clearDilution()
     }
 }
 
-void Thermogram::UpdateExpTable()
-{
-    UpdateTable();
-}
-
-void Thermogram::UpdateDilTable()
-{
-    UpdateTable();
-}
 void Thermogram::UpdateData()
 {
     //m_offset->setText(QString::number((m_heat_offset + m_dil_offset) * m_scale->currentText().toDouble()) + " = Heat: " + QString::number(m_heat_offset * m_scale->currentText().toDouble()) + "+ Dilution:" + QString::number(m_dil_offset * m_scale->currentText().toDouble()) + "  ");
