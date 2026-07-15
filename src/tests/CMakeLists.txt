@@ -322,6 +322,31 @@ endif()
 
 add_test(NAME ItcAnyTest COMMAND test_itc_any)
 
+add_executable(test_itc_thermogram
+    test_itc_thermogram.cpp
+)
+
+target_compile_definitions(test_itc_thermogram PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+
+target_link_libraries(test_itc_thermogram
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_itc_thermogram ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_itc_thermogram pthread dl)
+endif()
+
+add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
