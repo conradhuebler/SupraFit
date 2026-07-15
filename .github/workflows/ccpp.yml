@@ -3,8 +3,7 @@ name: Build
 on:
   push:
     branches: [ master ] # build all platforms + publish nightly prerelease
-  pull_request:
-    branches: [ master ] # build only (no release)
+  pull_request: # build only (no release) for all PR targets
   workflow_dispatch:
 
 # The default GITHUB_TOKEN is read-only since 2023; publishing a release needs write.
