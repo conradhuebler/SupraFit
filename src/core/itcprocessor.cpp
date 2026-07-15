@@ -42,10 +42,59 @@ ItcProcessor::~ItcProcessor()
 {
 }
 
+int ItcProcessor::injectionCount() const
+{
+    return static_cast<int>(m_experiment->Peaks()->size());
+}
+
+void ItcProcessor::setInjectionVolume(int index, qreal volume)
+{
+    if (index < 0)
+        return;
+    if (index >= m_inject.size())
+        m_inject.resize(index + 1); // QVector value-initialises the gap to 0
+    m_inject[index] = volume;
+}
+
+void ItcProcessor::setUniformInjectionVolume(qreal volume)
+{
+    m_inject = QVector<qreal>(injectionCount(), volume);
+}
+
+void ItcProcessor::padInjectionVolumes(qreal fill)
+{
+    for (int i = m_inject.size(); i < injectionCount(); ++i)
+        m_inject << fill;
+}
+
+void ItcProcessor::setDilutionEnabled(bool enabled)
+{
+    if (m_use_dilution == enabled)
+        return;
+    m_use_dilution = enabled;
+    recomputeNetHeat();
+}
+
 void ItcProcessor::setScalingFactor(qreal factor)
 {
+    // qFuzzyCompare is false for two zeros, hence the +1.0 offset - the Qt idiom for values that
+    // may legitimately be 0.
+    if (qFuzzyCompare(1.0 + m_experiment->ScalingFactor(), 1.0 + factor)
+        && qFuzzyCompare(1.0 + m_dilution->ScalingFactor(), 1.0 + factor))
+        return;
+
     m_experiment->setScalingFactor(factor);
     m_dilution->setScalingFactor(factor);
+
+    // ApplyScaling() emits ThermogramChanged(), which lands in recomputeNetHeat() and finally
+    // resultChanged(). Re-scaling only; the peaks and the calibration are untouched.
+    m_experiment->ApplyScaling();
+    m_dilution->ApplyScaling();
+}
+
+qreal ItcProcessor::scalingFactor() const
+{
+    return m_experiment->ScalingFactor();
 }
 
 void ItcProcessor::process()
@@ -121,8 +170,20 @@ void ItcProcessor::fromJson(const QJsonObject& obj)
     if (m_use_dilution)
         m_dilution->setThermogramParameter(obj["dilution"].toObject()["fit"].toObject());
 
-    if (obj.contains("InjectVolume") && obj["InjectVolume"].isString())
+    m_inject.clear();
+    if (obj.contains("InjectVolume") && obj["InjectVolume"].isString()) {
+        // Current format: the full per-injection vector, so manual per-point edits survive a save.
         m_inject = ToolSet::String2DoubleVec(obj["InjectVolume"].toString());
-    // Legacy projects stored only a single "injectvolume" scalar; there the per-injection vector is
-    // re-derived from the source ITC file by the caller, so nothing to restore here.
+    } else if (obj.contains("injectvolume")) {
+        /* Legacy format: a single scalar that the import dialog re-expanded at render time. Spread
+         * it over the stored peak count so the vector stays the one source of truth. A caller that
+         * re-reads the source .itc afterwards gets the real per-injection volumes from the @-lines
+         * and should prefer those - this scalar cannot describe a variable-step titration.
+         * Claude Generated */
+        bool ok = false;
+        const qreal volume = obj["injectvolume"].toVariant().toString().replace(",", ".").toDouble(&ok);
+        const int count = obj["experiment"].toObject()["fit"].toObject()["PeakCount"].toInt();
+        if (ok && count > 0)
+            m_inject = QVector<qreal>(count, volume);
+    }
 }

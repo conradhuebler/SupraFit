@@ -49,11 +49,53 @@ public:
     void setInjectionVolumes(const QVector<qreal>& inject) { m_inject = inject; }
     QVector<qreal> injectionVolumes() const { return m_inject; }
 
-    void setDilutionEnabled(bool enabled) { m_use_dilution = enabled; }
+    /*! \brief How many injections the volume vector should describe: the experiment's peak count.
+     *
+     * Every integrated peak is one titrant addition, so the volumes and the peaks must line up for
+     * the (volume, heat) table to mean anything. Claude Generated */
+    int injectionCount() const;
+
+    /*! \brief Set one injection's volume, growing the vector with zeros if it is still short.
+     *
+     * For titrations whose step size varies and needs a per-point correction. Volumes feed
+     * resultTable() only, never the net heat, so this deliberately emits nothing. Claude Generated */
+    void setInjectionVolume(int index, qreal volume);
+
+    /*! \brief Give every injection the same volume (a uniform-step titration).
+     *
+     * Resizes to injectionCount() and overwrites, so what gets stored and exported is exactly what
+     * the caller asked for - no scalar that a renderer has to re-expand later. Claude Generated */
+    void setUniformInjectionVolume(qreal volume);
+
+    /*! \brief Extend the vector to injectionCount(), filling only the entries that are missing.
+     *
+     * Volumes already known - from the .itc file's @-lines or a manual edit - are kept, and the
+     * vector is never shortened, so a temporary drop in the peak count cannot destroy them.
+     * Claude Generated */
+    void padInjectionVolumes(qreal fill);
+
+    /*! \brief Enable or disable the dilution subtraction; recomputes on a real change.
+     *
+     * The flag is an input to the join, so flipping it has to re-join - otherwise the subtraction
+     * silently stops (or starts) without the result following.
+     *
+     * It selects whether an **already integrated** dilution takes part; it does not integrate one.
+     * Enabling it on a dilution that process() never ran over subtracts nothing (an empty integral
+     * list reads as zero heat), so enable it before process(), or after the handler has been
+     * integrated - which is what loading a dilution file does. Claude Generated */
+    void setDilutionEnabled(bool enabled);
     bool dilutionEnabled() const { return m_use_dilution; }
 
-    //! Set the cal->J heat scaling factor on both handlers.
+    /*! \brief Set the cal->J scaling factor on both handlers and re-scale them.
+     *
+     * cal->J converts the *measured* heat, so experiment and dilution must share it: subtracting a
+     * joule-scaled dilution from a calorie-scaled experiment is meaningless. The re-scale is folded
+     * in because a caller that forgets it gets a stale net heat with no signal to say so.
+     * Idempotent, which also stops two UI controls bound to this from ping-ponging. Claude Generated */
     void setScalingFactor(qreal factor);
+
+    //! The shared cal->J factor; both handlers hold the same value by construction. Claude Generated
+    qreal scalingFactor() const;
 
     //! Drive both handlers through the full integration pipeline and compute the net heat (headless).
     void process();
@@ -69,6 +111,8 @@ public:
     void fromJson(const QJsonObject& obj);
 
 signals:
+    /*! \brief The net heat changed. Injection-volume changes do not emit: they are an input to
+     * resultTable(), not to the join. */
     void resultChanged();
 
 private slots:
