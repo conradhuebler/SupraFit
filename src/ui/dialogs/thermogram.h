@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -127,6 +127,7 @@ private:
     QJsonObject m_systemparameter, m_raw_data;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
+    bool m_updating_table = false; //!< guards UpdateTable() rebuilds against the cellChanged handler (Claude Generated)
     qreal m_heat_offset = 0, m_dil_offset = 0;
 
 private slots:

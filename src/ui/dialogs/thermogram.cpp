@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -237,6 +237,25 @@ void Thermogram::setUi()
     m_table = new QTableWidget;
     //m_table->setFixedWidth(250);
 
+    // Claude Generated: allow manual per-injection volume edits (column 0). The new value is
+    // persisted back into m_inject so a subsequent UpdateTable() rebuild keeps it; useful when the
+    // titration step size varies. Guarded by m_updating_table so programmatic fills don't recurse.
+    connect(m_table, &QTableWidget::cellChanged, this, [this](int row, int column) {
+        if (m_updating_table || column != 0 || row < 0)
+            return;
+        QTableWidgetItem* item = m_table->item(row, column);
+        if (!item)
+            return;
+        bool ok = false;
+        const qreal value = item->data(Qt::DisplayRole).toString().replace(",", ".").toDouble(&ok);
+        if (!ok)
+            return;
+        if (row >= m_inject.size())
+            m_inject.resize(row + 1);
+        m_inject[row] = value;
+        m_forceInject = false; // a manual per-point edit takes precedence over the single forced value
+    });
+
     m_thm_series = new ScatterSeries;
     m_thm_series->setName(tr("Thermogram"));
     m_raw_series = new ScatterSeries;
@@ -444,6 +463,7 @@ void Thermogram::setExperiment()
 
 void Thermogram::UpdateTable()
 {
+    m_updating_table = true; // suppress the cellChanged handler while we repopulate the table
     m_content.clear();
     m_all_rows.clear();
     m_thm_series->clear();
@@ -463,8 +483,10 @@ void Thermogram::UpdateTable()
     QVector<qreal> integ_dil_scaled = m_dilution_thermogram->IntegralsScaled();
     m_table->clear();
 
-    if (integ_exp.size() == 0)
+    if (integ_exp.size() == 0) {
+        m_updating_table = false;
         return;
+    }
 
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(4);
@@ -490,6 +512,7 @@ void Thermogram::UpdateTable()
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         newItem->background().setColor(m_raw_series->color().lighter());
+        newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable); // only the volume column is editable
         m_raw_series->append(QPointF(j + 1, m_raw.last()));
 
         m_table->setItem(j, 1, newItem);
@@ -505,6 +528,7 @@ void Thermogram::UpdateTable()
 
         if (m_dil_peaks.size())
             newItem->setBackground(m_dil_series->color().lighter());
+        newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 2, newItem);
         m_dil_series->append(QPointF(j + 1, dil));
 
@@ -512,15 +536,19 @@ void Thermogram::UpdateTable()
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
         m_content += newItem->data(Qt::DisplayRole).toString() + "\n";
         newItem->background().setColor(m_thm_series->color().lighter());
+        newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 3, newItem);
 
         m_thm_series->append(QPointF(j + 1, integral));
     }
 
-    QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu) << " exp. heat \n[raw]"
-                                       << "dil. heat \n[raw]"
-                                       << "joined heat \n[J]";
+    QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu)
+                                       << "exp. heat\n[raw]"
+                                       << "dil. heat\n[raw]"
+                                       << "joined heat\n[J]";
     m_table->setHorizontalHeaderLabels(header);
+    if (QTableWidgetItem* volHeader = m_table->horizontalHeaderItem(0))
+        volHeader->setToolTip(tr("Injection volume in %1L — double-click a cell to edit a single addition point (e.g. when the titration step size varies).").arg(mu));
     m_table->resizeColumnsToContents();
 
 
@@ -530,6 +558,7 @@ void Thermogram::UpdateTable()
     m_data_view->setXAxis("Inject Number");
     m_data_view->setYAxis("Heat q");
     m_export_data->setEnabled(m_table->rowCount() && m_table->columnCount());
+    m_updating_table = false;
 }
 
 QString Thermogram::Content() const
