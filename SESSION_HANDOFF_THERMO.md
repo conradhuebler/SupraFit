@@ -1,12 +1,13 @@
-# Session Handoff — Thermogramm-GUI-Routing (2026-07-15)
+# Session Handoff — Thermogramm-GUI-Routing (2026-07-16)
 
 Branch: **`refactor/thermo-gui-routing`**, abgezweigt von `bugfix/thermo-nmr-chart-fixes` (`c2e0b0c7`).
-Alles unten ist **committet**. Der Branch ist **nicht gepusht** (kein Upstream).
+Alles unten ist **committet**. Der Branch ist **nicht gepusht** (kein Upstream). **Track A ist
+vollständig (C0–C11).**
 
 > Nicht verwechseln mit `SESSION_HANDOFF.md` — die gehört zur Speciation-Sitzung vom 2026-07-11 und
 > enthält den noch offenen D9-Befund (zwei Fenster, dieselben Projekte). Sie ist unangetastet.
 
-Vollständiger Plan mit den Details zu C8–C11: `/home/conrad/.claude/plans/iridescent-waddling-forest.md`
+Vollständiger Plan: `/home/conrad/.claude/plans/iridescent-waddling-forest.md`
 
 ---
 
@@ -18,15 +19,19 @@ Processor-Methode auf**. Der Processor war verkabelt und komplett inert: `m_use_
 `false`, sein Volumen-Vektor immer leer, `resultChanged()` ohne Zuhörer. `Thermogram::UpdateTable()`
 war eine Parallel-Implementierung von `recomputeNetHeat()`.
 
-Ziel: Der Core besitzt die Wissenschaft, die GUI rendert sie.
+Ziel: Der Core besitzt die Wissenschaft, die GUI rendert sie. **Erreicht.**
 
 ---
 
-## Erledigt (8 Commits, neueste zuerst)
+## Erledigt — Track A vollständig (12 Commits, neueste zuerst)
 
 | Commit | Inhalt |
 |---|---|
-| `b92c01ef` | **C7** — `UpdateTable()` ist reiner Renderer; Dilutions-Gating gesetzt; `Content()`/Export über `ResultRows()`; tote Member raus |
+| `d97d482b` | **C11** — tote Member/Decls raus, Copyright + Doku (AIChangelog, CLAUDE.md) |
+| `36119511` | **C10** — JSON über `toJson()`/`fromJson()` (Bug 4, F1); F5 als Verhaltensänderung markiert |
+| `9de1c44a` | **C9** — ein cal→J-Faktor, von Experiment + Dilution geteilt (behebt F2) |
+| `a45a2c96` | **C8** — explizite „Uniform volume"-Checkbox statt Paritäts-Toggle |
+| `b92c01ef` | **C7** — `UpdateTable()` ist reiner Renderer; Dilutions-Gating; `Content()`/Export über `ResultRows()` |
 | `d094c52f` | **C6** — nur das Experiment definiert die Titration (Systemparameter-Stomp, Bug 2) |
 | `bdb29334` | **C5** — Processor besitzt die Injektionsvolumina (Bug 1); `ImportRow`-Crash (Bug 3) |
 | `29c54ec0` | **C4** — `ToolSet::LoadITCFile` Out-Param-Vertrag + `data/samples/itc/synthetic.itc` |
@@ -36,6 +41,7 @@ Ziel: Der Core besitzt die Wissenschaft, die GUI rendert sie.
 | `6adeb3cf` | **C0** — Pin-Test für die absoluten ITC-Integrale |
 
 **Tests:** `test_itc_thermogram` 15/15 grün (vorher 7). GUI + CLI bauen.
+**Alle fünf Bugs erledigt** (1, 2, 3, 5 im Code; 4 in C10) + F1 + F2.
 
 **Bugs erledigt:** 1 (Volumina-Append), 2 (Systemparameter-Stomp), 3 (`ImportRow`-Crash),
 5 (ungeguardeter `item(i,0)`-Zugriff). **Offen: Bug 4** (Dilutions-Provenance) → C10.
@@ -63,16 +69,24 @@ Der Rendering-Pfad hat **keinen Harness** — der Pin-Test deckt nur den Core ab
 | 6 | **`.dh`- und `.dat`-Export** | vorher/nachher identische Bytes |
 | 7 | **Dilutions-Serie im Chart** | erscheint nur mit geladener Dilution; „Show Dilution" funktioniert |
 
-### 2. Entscheidungen, die ich nicht treffen kann
+### 2. Entscheidungen — zwei davon habe ich vorläufig getroffen, du kannst sie kippen
 
-- **F5 (in C10 fällig):** Heute schreibt `Raw():711` den Dilutions-`file` **unbedingt**, vor
-  `File2JsonBlock`. Mit `StoreFileName` **aus** behält die Dilution damit einen Pfad, während das
-  Experiment keinen speichert. Der Fix macht beide symmetrisch und **entfernt** ihn dann.
-  → Empfehlung: Symmetrie nehmen (die Asymmetrie ist versehentlich; ohne Experiment-Pfad lädt das
-  Projekt ohnehin nicht). **Braucht dein OK.**
-- **C11:** Das Aufräumen löscht auch auskommentierte Blöcke (`thermogram.cpp:99-100,153-161,165-183,
-  228-241`) — geparkte Features (Frequenz-Override, Per-Datei-Offset-Anzeige). Git bewahrt sie.
-  **Braucht dein OK.**
+- **F5 (in C10, bereits umgesetzt):** `Raw()` schrieb den Dilutions-`file` **unbedingt**. Mit
+  `StoreFileName` **aus** behielt die Dilution damit einen Pfad, während das Experiment keinen
+  speichert. Jetzt sind beide symmetrisch — der Dilutions-Pfad wird in diesem Modus **nicht mehr**
+  geschrieben. Ich habe die empfohlene Symmetrie genommen (die Asymmetrie war versehentlich; ohne
+  Experiment-Pfad lädt das Projekt ohnehin nicht) und im Commit `36119511` sichtbar markiert.
+  **Falls du das anders willst, hier rückgängig machen.**
+- **Geparkte Feature-Blöcke (in C11 bewusst NICHT gelöscht):** die auskommentierten Blöcke in
+  `thermogram.cpp` (Frequenz-Override `m_freq`, `m_scale`, Per-Datei-Offset `m_exp_base`/`m_dil_base`,
+  `m_refit`) und ihre Deklarationen **stehen noch** — Löschen geparkter Features wollte ich dir
+  überlassen. Sag Bescheid, dann raus (git bewahrt sie).
+
+### 2b. GUI-Verifikation gegen `master` — Vorsicht
+
+`master` hat den `ItcProcessor` noch nicht (der entstand auf `bugfix/thermo-nmr-chart-fixes`). Für
+den Spalte-3-Vergleich ist die ehrliche Baseline **`bugfix/thermo-nmr-chart-fixes`** (der eingefrorene
+Ausgangspunkt), nicht `master`.
 
 ### 3. Dein Arbeitsbaum (uncommitted, unangetastet gelassen)
 
@@ -94,62 +108,15 @@ von dieser Arbeit, gegen den Basis-Commit verifiziert.
 
 ---
 
-## Als Nächstes: C8 → C9 → C10 → C11
+## Als Nächstes
 
-### C8 — Uniform-Volumen-Checkbox *(entschieden: explizite Checkbox)*
+Track A (C0–C11) ist **fertig**. Was bleibt:
 
-Der heutige `forceInject`-Toggle (`thermogram.cpp:187-196`) kippt das Flag bei **jedem Tastendruck** —
-der effektive Wert hängt an der Zeichenzahl („12.5" tippen → true, false, true, false). Ein treuer
-Port würde den Bug mitportieren.
-
-- Neue `QCheckBox* m_uniformInject` („Uniform volume for all injections"), `m_injct` nur aktiv wenn
-  gecheckt; Paritäts-Toggle und `m_forceInject` löschen.
-- Neu `ResolveInjectionVolumes()`, zuerst aus `UpdateData()`: gecheckt → `setUniformInjectionVolume()`,
-  sonst → `padInjectionVolumes()`.
-- Per-Zell-Edit löst uniform (erhält `:263`), `setExperimentFile` resettet (erhält `:364`).
-- `m_message` ehrlich machen, inkl. der bisher **stillen** Dilutions-Größen-Divergenz
-  („Dilution deckt nur %1 von %2 Injektionen ab").
-
-> **C8 löst zugleich eine offene Kopplung:** `Content()` rendert derzeit bewusst aus `ResultRows()`,
-> **nicht** aus `resultTable()`. Grund: `resultTable()` liest den Volumen-Vektor direkt und liefert
-> `0.0` für Zeilen, die er nicht abdeckt, während die Tabelle auf das Inject-Feld zurückfällt — das
-> hätte **Tabelle und Modell auseinanderlaufen lassen**. Sobald `ResolveInjectionVolumes()` den Vektor
-> vollständig auflöst, stimmen beide überein und der Umstieg auf `resultTable()` wird ehrlich. Der
-> Kommentar in `Content()` sagt das.
-
-> **Bewusster Trade-off in C8:** eager Broadcast, kein Render-Zeit-Override. Checkbox an→aus stellt die
-> Datei-Volumina **nicht** wieder her (Datei neu laden). Das ist der Preis des aufgelösten Vektors —
-> und der ist es, der die Volumina überhaupt erst persistierbar macht (C10).
-
-### C9 — Gekoppelte Skalierung *(entschieden: gekoppelt)*
-
-`ThermogramWidget`: Combo → `ScalingFactorChanged(qreal)`-Signal, `setScalingFactor(qreal)`-Slot als
-reine View (QSignalBlocker), Ctor-Seed raus. **`LoadDefault()` (`:611-617`) muss adoptieren statt zu
-stampfen** — es schob bisher den Combo-Default in den Handler, weshalb ein projekt-gespeicherter
-`ScalingFactor` **jeden Reload nicht überlebte** (F2). Dialog koppelt beide über
-`m_processor->setScalingFactor()` (ist idempotent → keine Rückkopplung).
-
-### C10 — JSON *(entschieden: `toJson()` + Legacy-Fallback)*
-
-- `Raw()` = `m_processor->toJson()` + vom Dialog gemergte Provenance. **Der Core bekommt keinen
-  Hook**: die Regeln lesen `qApp`-Properties, und `ItcProcessor` läuft im CLI, wo die ungesetzt sind.
-  Core besitzt den wissenschaftlichen Inhalt, Dialog dekoriert mit Storage-Policy.
-- `File2JsonBlock` (`:680-698`) sein `filename`-Argument benutzen lassen statt hartkodiert
-  `m_exp_file->text()` → **Bug 4**.
-- `setRaw()`: `fromJson()`, dann **Dilution-Fit VOR Dilution-File** (F1 — `Initialise()` läuft
-  *innerhalb* `setDilutionFile`, sah die gespeicherten Parameter also nie), Vektor danach wieder
-  anlegen.
-- `fromJson()` liest den Legacy-Skalar bereits (in C3 gebaut + getestet).
-- **Härteste Anforderung:** alte `.suprafit`-ITC-Projekte müssen unverändert laden.
-
-### C11 — Aufräumen + Doku
-
-Tote Member (`m_exp_therm`, `m_dil_therm`, `m_injection`, `m_forceStep`, `m_heat_offset`,
-`m_dil_offset`, `m_offset`, `m_refit`, `m_scale`, `m_exp_base`, `m_dil_base`, `m_freq`), die nie
-definierten `PickPeaks()`/`fromSpectrum()`, `thermogramhandler.h:38-39` `Series()`/`Baseline()` +
-`m_integrals_list`. Copyright → `2016 - 2026`. `AIChangelog.md`, `src/ui/CLAUDE.md`,
-`src/core/CLAUDE.md`. Instructions-Eintrag *„move all thermogramm analysis to core / or finalise the
-move"* streichen, falls du ihn als erledigt siehst.
+1. **GUI manuell gegenprüfen** (Abschnitt „Deine Aufgaben" oben) — der Rendering-Pfad hat keinen
+   Harness. Das ist die Voraussetzung für den Merge.
+2. **F5** ggf. kippen und **geparkte Feature-Blöcke** ggf. löschen (beides oben).
+3. **C12** (unten) — Präzisions-Fix, eigener Review.
+4. **Track B** (unten) — libpeakpick-Mathe, eigener Branch, ändert Zahlen.
 
 ### C12 *(zurückgestellt, eigener Review)* — `ImportData`: DataTable direkt übergeben
 
