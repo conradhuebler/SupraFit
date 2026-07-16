@@ -51,6 +51,7 @@
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelchart.h"
+#include "src/ui/widgets/dynamicmodelwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
@@ -79,6 +80,7 @@
 #include <QtCore/QtMath>
 
 #include <QtGui/QAction>
+#include <QtGui/QActionGroup>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -289,10 +291,69 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
+    /* Fit-solver selection (LevMar vs. VarPro), appended to the Fit menu. The choice is written into the
+       model's optimizer config ("FitSolver") and thus propagates to the statistical post-processing,
+       whose fold re-fits inherit the key via Clone(). VarPro is only honoured by models with
+       SupportsVarPro() (nmr_any / uvvis_any); it is greyed out otherwise. Claude Generated. */
+    QAction* solver_levmar = new QAction(tr("LevMar (classic)"), this);
+    solver_levmar->setCheckable(true);
+    solver_levmar->setData(QStringLiteral("LevMar"));
+    QAction* solver_varpro = new QAction(tr("VarPro (projection)"), this);
+    solver_varpro->setCheckable(true);
+    solver_varpro->setData(QStringLiteral("VarPro"));
+    QActionGroup* solver_group = new QActionGroup(this);
+    solver_group->setExclusive(true);
+    solver_group->addAction(solver_levmar);
+    solver_group->addAction(solver_varpro);
+    m_solver_levmar = solver_levmar;
+    m_solver_varpro = solver_varpro;
+    connect(solver_levmar, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+    connect(solver_varpro, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("VarPro"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+
+    /* Speciation-solver selection (LevMar/Newton vs. legacy BFGS) for the reaction-driven *_any models.
+       Writes the "SpeciationSolver" optimizer-config key, which AbstractTitrationModel/itc_any push into
+       their embedded SpeciationEngine on setOptimizerConfig(); inherited by MC/CV/RA via Clone(). Only
+       enabled for models with UsesSpeciationEngine() (the fixed models use closed-form roots). CG. */
+    QAction* spec_levmar = new QAction(tr("LevMar / Newton (default)"), this);
+    spec_levmar->setCheckable(true);
+    spec_levmar->setData(QStringLiteral("LevMar"));
+    QAction* spec_bfgs = new QAction(tr("BFGS (legacy)"), this);
+    spec_bfgs->setCheckable(true);
+    spec_bfgs->setData(QStringLiteral("BFGS"));
+    QActionGroup* spec_group = new QActionGroup(this);
+    spec_group->setExclusive(true);
+    spec_group->addAction(spec_levmar);
+    spec_group->addAction(spec_bfgs);
+    m_speciation_levmar = spec_levmar;
+    m_speciation_bfgs = spec_bfgs;
+    connect(spec_levmar, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+    connect(spec_bfgs, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("BFGS"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
+    menu->addSeparator();
+    menu->addAction(solver_levmar);
+    menu->addAction(solver_varpro);
+    QMenu* spec_menu = menu->addMenu(tr("Speciation solver"));
+    spec_menu->setToolTip(tr("Equilibrium-concentration solver used by the reaction-driven models."));
+    spec_menu->addAction(spec_levmar);
+    spec_menu->addAction(spec_bfgs);
+    m_speciation_menu = spec_menu;
+    connect(menu, &QMenu::aboutToShow, this, &ModelWidget::UpdateSolverMenu);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
@@ -436,6 +497,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
+    // Scalable table view for models with many species (additive: the classic view is unchanged).
+    if (m_model->UseDynamicParameterWidget())
+        model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
 
     m_splitter->addWidget(model_tab);
 
@@ -850,6 +914,48 @@ void ModelWidget::GlobalMinimize()
 {
     QJsonObject config = m_model->getOptimizerConfig();
     MinimizeModel(config);
+}
+
+void ModelWidget::SetFitSolver(const QString& solver)
+{
+    /* Write the FitSolver choice into the model's optimizer config. Persisted with the model and
+       inherited by every statistical re-fit via Clone(), so MC/CV/RA use the same solver. Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["FitSolver"] = solver;
+    m_model->setOptimizerConfig(config);
+}
+
+void ModelWidget::SetSpeciationSolver(const QString& method)
+{
+    /* Write the speciation-solver choice into the model's optimizer config. The model's
+       setOptimizerConfig() override pushes it into the embedded SpeciationEngine; MC/CV/RA inherit the
+       key via Clone(). Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["SpeciationSolver"] = method;
+    m_model->setOptimizerConfig(config);
+}
+
+void ModelWidget::UpdateSolverMenu()
+{
+    /* Refresh check marks and the VarPro enable state when the menu opens, so the display never
+       lags behind a config changed elsewhere (e.g. OptimizerSettings) or a freshly loaded model. */
+    const QString solver = m_model->getOptimizerConfig().value("FitSolver").toString(QStringLiteral("LevMar"));
+    const bool varpro = m_model->SupportsVarPro();
+    m_solver_varpro->setEnabled(varpro);
+    m_solver_varpro->setToolTip(varpro ? QString() : tr("Only available for nmr_any / uvvis_any models."));
+    const bool use_varpro = (varpro && solver == QLatin1String("VarPro"));
+    m_solver_levmar->setChecked(!use_varpro);
+    m_solver_varpro->setChecked(use_varpro);
+
+    /* Speciation solver: only meaningful for the reaction-driven models that use the SpeciationEngine. */
+    const bool uses_engine = m_model->UsesSpeciationEngine();
+    m_speciation_menu->setEnabled(uses_engine);
+    m_speciation_menu->setToolTip(uses_engine ? tr("Equilibrium-concentration solver used by the reaction-driven models.")
+                                              : tr("Only the reaction-driven models (nmr_any / uvvis_any / fl_any / itc_any) use a speciation solver."));
+    const QString spec = m_model->getOptimizerConfig().value("SpeciationSolver").toString(QStringLiteral("LevMar"));
+    const bool use_bfgs = (spec == QLatin1String("BFGS"));
+    m_speciation_bfgs->setChecked(use_bfgs);
+    m_speciation_levmar->setChecked(!use_bfgs);
 }
 
 void ModelWidget::MinimizeModel(const QJsonObject& config)

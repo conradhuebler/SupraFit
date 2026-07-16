@@ -60,11 +60,11 @@ struct Functor {
 struct MyFunctor : Functor<double> {
     inline MyFunctor(int inputs, int values)
         : Functor(inputs, values)
-        , no_parameter(inputs)
-        , no_points(values)
     {
     }
-    inline ~MyFunctor() {}
+    // Residual: set the full parameter vector on the model, recompute, and return the per-point
+    // absolute errors plus the (global-only) penalty. inputs()/values() come from the Functor base
+    // (m_inputs/m_values), so no duplicate size members are kept here.
     inline int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
     {
         QVector<qreal> param(inputs());
@@ -81,14 +81,7 @@ struct MyFunctor : Functor<double> {
 
         return 0;
     }
-    int no_parameter;
-    int no_points;
     QSharedPointer<AbstractModel> model;
-    int inputs() const { return no_parameter; }
-    int values() const { return no_points; }
-};
-
-struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 };
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& sse, QVector<QVector<double>>& parameter_history)
@@ -128,9 +121,11 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     lm.parameters.gtol = config["LevMar_Gtol"].toDouble(); // tolerance for the norm of the gradient of the error vector
     lm.parameters.epsfcn = config["LevMar_epsfcn"].toDouble(); //error precision
 
-    // The LevMar status return is intentionally not used for the stop decision: this loop
-    // drives the steps manually and stops on its own SSE-change / parameter-norm criteria
-    // (ErrorConvergence / DeltaParameter) below.
+    // The LevMar status return is intentionally not used for the stop decision: this loop drives the
+    // steps manually and stops on its own SSE-change / parameter-norm criteria (ErrorConvergence /
+    // DeltaParameter) below. This manual driving is a workaround for the unsupported-module
+    // Eigen::LevenbergMarquardt (its status/stopping semantics are unreliable); the opt-in VarPro
+    // solver owns its own stop logic and does not need this. Claude Generated (documentation).
     lm.minimizeInit(parameter);
     qreal error_0 = 0;
     qreal error_2 = 1;

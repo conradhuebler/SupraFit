@@ -19,6 +19,7 @@
 
 #include "src/global.h"
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
+#include "src/core/models/titrations/AbstractTitrationModel.h" // reaction/data mismatch reporting
 #include "src/global_config.h"
 
 #include "src/capabilities/jobmanager.h"
@@ -30,6 +31,7 @@
 #include "src/core/analyse.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/projectmanager.h"
+#include "src/core/reactionparser.h"
 #include "src/core/models/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
@@ -45,6 +47,7 @@
 #include "src/ui/mainwindow/modelwidget.h"
 
 #include "src/ui/widgets/preparewidget.h"
+#include "src/ui/widgets/reactioneditorwidget.h"
 #include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QDateTime>
@@ -233,12 +236,55 @@ MDHDockTitleBar::MDHDockTitleBar()
         return action;
     };
 
+    // Attach a reaction-preset submenu to an N-component *_any action: "Define reactions…" opens the
+    // usual dialog, while a preset entry adds the model straight away with its reactions pre-set
+    // (ModelDataHolder::AddModel skips the dialog when PresetReactions() is non-empty). maxComponents
+    // filters presets whose reaction system exceeds the model's component limit (e.g. itc_any is
+    // 2-component); a section header is only added when its section retains at least one entry, so no
+    // empty "Three components" section shows up for the 2-component case. Claude Generated.
+    auto attachPresets = [this](QAction* anyAction, SupraFit::Model model, int maxComponents = INT_MAX) {
+        QMenu* sub = new QMenu(this);
+        QAction* custom = sub->addAction(tr("Define reactions…"));
+        custom->setData(model);
+        connect(custom, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+        const QVector<ReactionEditorWidget::Preset> presets = ReactionEditorWidget::Presets();
+        for (int idx = 0; idx < presets.size(); ++idx) {
+            const ReactionEditorWidget::Preset& p = presets[idx];
+            if (p.isHeader()) {
+                // Look ahead: only add the section if at least one entry before the next header passes.
+                bool any = false;
+                for (int j = idx + 1; j < presets.size() && !presets[j].isHeader(); ++j) {
+                    if (ReactionParser::Parse(presets[j].reactions).components.size() <= maxComponents) {
+                        any = true;
+                        break;
+                    }
+                }
+                if (any)
+                    sub->addSection(p.name);
+                continue;
+            }
+            if (ReactionParser::Parse(p.reactions).components.size() > maxComponents)
+                continue;
+            QAction* a = sub->addAction(p.name);
+            a->setToolTip(QString(p.reactions).replace('\n', QStringLiteral(" ; ")));
+            const QString reactions = p.reactions;
+            connect(a, &QAction::triggered, this, [this, model, reactions]() {
+                m_model_choosen = model;
+                m_preset_reactions = reactions;
+                emit AddModel();
+            });
+        }
+        anyAction->setMenu(sub);
+    };
+
     //#ifdef NMR_Models
     m_nmr_model << addModel(SupraFit::nmr_ItoI);
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI);
     m_nmr_model << addModel(SupraFit::nmr_ItoI_ItoII);
     m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI_ItoII);
-    m_nmr_model << addModel(SupraFit::nmr_any);
+    QAction* nmrAny = addModel(SupraFit::nmr_any);
+    attachPresets(nmrAny, SupraFit::nmr_any);
+    m_nmr_model << nmrAny;
 
     //#endif
 
@@ -247,6 +293,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_fl_model << addModel(SupraFit::fl_IItoI_ItoI);
     m_fl_model << addModel(SupraFit::fl_ItoI_ItoII);
     m_fl_model << addModel(SupraFit::fl_IItoI_ItoI_ItoII);
+    QAction* flAny = addModel(SupraFit::fl_any);
+    attachPresets(flAny, SupraFit::fl_any); // N-component: full preset set incl. three-component systems
+    m_fl_model << flAny;
     //#endif
 
     //#ifdef UV_VIS_Models
@@ -254,7 +303,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI);
     m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI_ItoII);
     m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI_ItoII);
-    m_uv_vis_model << addModel(SupraFit::uvvis_any);
+    QAction* uvvisAny = addModel(SupraFit::uvvis_any);
+    attachPresets(uvvisAny, SupraFit::uvvis_any);
+    m_uv_vis_model << uvvisAny;
 
     //#endif
 
@@ -274,7 +325,9 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_fixed_model << addModel(SupraFit::itc_IItoI);
     m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
     m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
-    m_itc_fixed_model << addModel(SupraFit::itc_any);
+    QAction* itcAny = addModel(SupraFit::itc_any);
+    attachPresets(itcAny, SupraFit::itc_any, /*maxComponents=*/2); // ITC is 2-component (host/guest from protocol)
+    m_itc_fixed_model << itcAny;
 
     //m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
@@ -408,6 +461,7 @@ void MDHDockTitleBar::EnableBatch(bool enabled)
 void MDHDockTitleBar::PrepareAddModel()
 {
     m_model_choosen = qobject_cast<QAction*>(sender())->data().toInt();
+    m_preset_reactions.clear(); // plain add: no preset, show the definition dialog as usual
     emit AddModel();
 }
 
@@ -596,8 +650,8 @@ void ModelDataHolder::NewModel()
 
 void ModelDataHolder::AddModel()
 {
-    int model = qobject_cast<MDHDockTitleBar*>(sender())->Model();
-    AddModel(model);
+    MDHDockTitleBar* bar = qobject_cast<MDHDockTitleBar*>(sender());
+    AddModel(bar->Model(), bar->PresetReactions());
 }
 
 void ModelDataHolder::AddScriptModel(const QString& string)
@@ -613,7 +667,7 @@ void ModelDataHolder::AddScriptModel(const QString& string)
     ActiveModel(t);
 }
 
-void ModelDataHolder::AddModel(int model)
+void ModelDataHolder::AddModel(int model, const QString& presetReactions)
 {
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
     if (!t) {
@@ -621,7 +675,39 @@ void ModelDataHolder::AddModel(int model)
         emit m_data.toStrongRef()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
         return;
     }
-    if (t->DemandInput()) {
+
+    // A reaction system needs one independent concentration column per component; on a mismatch the
+    // model stays undefined. Warn the user instead of silently adding a broken model. Claude Generated.
+    auto reactionDataMatches = [this, &t]() -> bool {
+        if (AbstractTitrationModel* tm = qobject_cast<AbstractTitrationModel*>(t.data())) {
+            const int requested = tm->ReactionComponentMismatch();
+            if (requested > 0) {
+                QMessageBox::warning(this, tr("Reaction / data mismatch"),
+                    tr("The reaction equations define %1 components, but this data set provides %2 "
+                       "concentration column(s).\n\nImport data with one concentration column per "
+                       "component (%1 in total), or edit the reactions, then add the model again.")
+                        .arg(requested)
+                        .arg(t->InputParameterSize()));
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (!presetReactions.isEmpty()) {
+        // Preset chosen from the Add-model submenu: define straight from the preset and skip the
+        // "Define Model" dialog. Claude Generated.
+        QJsonObject reactions;
+        reactions["name"] = QStringLiteral("Reactions");
+        reactions["type"] = 6;
+        reactions["value"] = presetReactions;
+        QHash<QString, QJsonObject> elements;
+        elements[QStringLiteral("Reactions")] = reactions;
+        t->setModelDefinition(elements);
+        t->DefineModel(QJsonObject());
+        if (!reactionDataMatches() || !t->Complete())
+            return;
+    } else if (t->DemandInput()) {
         PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
@@ -633,7 +719,8 @@ void ModelDataHolder::AddModel(int model)
             t->setModelDefinition(elements);
 
             t->DefineModel(model);
-            if (!t->Complete())
+
+            if (!reactionDataMatches() || !t->Complete())
                 return;
         } else
             return;

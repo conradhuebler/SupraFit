@@ -291,6 +291,36 @@ public:
     {
     }
 
+    /*! \brief Whether this model supports the opt-in variable-projection (VarPro) fit solver, i.e. its
+     * observable is linear in the local parameters given the global (non-linear) parameters, so the
+     * locals can be projected out by linear least-squares. Default false → the classic full-vector
+     * Levenberg-Marquardt is used. Claude Generated. */
+    virtual bool SupportsVarPro() const { return false; }
+
+    /*! \brief Whether this model computes its equilibrium concentrations through the embedded
+     * SpeciationEngine (the reaction-driven *_any models) rather than a closed-form expression. Only
+     * these honour the "SpeciationSolver" optimizer-config key (LevMar/Newton vs. legacy BFGS); it gates
+     * the GUI switch. Default false. Claude Generated. */
+    virtual bool UsesSpeciationEngine() const { return false; }
+
+    /*! \brief VarPro projection step: given the current global parameters, solve the linear local
+     * parameters by (masked) least-squares and write them into LocalTable(). Called by the VarPro
+     * solver before each residual evaluation. Default no-op (only meaningful for SupportsVarPro()
+     * models). Claude Generated. */
+    virtual void ProjectLinearParameters() {}
+
+    /*! \brief Analytic VarPro outer Jacobian: fill @p jacobian with d(residual)/d(log10 β) at the
+     * current (already projected) linear locals, rows in getCalculatedAbsoluteErrors() order and columns
+     * in the order of the enabled global-parameter indices @p globalIndices. Returns false (default) if
+     * the model has no analytic Jacobian, so the VarPro solver finite-differences instead. Only meaningful
+     * for SupportsVarPro() models whose speciation uses the exact-Hessian Newton method. Claude Generated. */
+    virtual bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian)
+    {
+        Q_UNUSED(globalIndices)
+        Q_UNUSED(jacobian)
+        return false;
+    }
+
     virtual inline int Color(int i) const { return i; }
 
 
@@ -548,7 +578,9 @@ public:
     inline DataTable* LocalTable() const { return m_local_parameter; }
 
     inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
-    inline void setOptimizerConfig(const QJsonObject& config)
+    /*! \brief Store the optimizer config. Virtual so models embedding a SpeciationEngine can push the
+     * "SpeciationSolver" method to their solver whenever the config changes. Claude Generated. */
+    virtual void setOptimizerConfig(const QJsonObject& config)
     {
         m_opt_config = config;
     }
@@ -699,6 +731,19 @@ public:
     /*! \brief Implement ModelInfo() const for output, that is printed after each recalculation
      * (or optimisation) - If there are demanding task, they should NOT go here */
     inline virtual QString ModelInfo() const { return QString(); }
+
+    /*! \brief Method-specific literature keys this model used beyond the base SupraFit citation
+     * (see the Citation namespace). Default: none. A model that routes speciation through the BFGS
+     * solver adds "musketeer". Claude Generated. */
+    inline virtual QStringList CitationKeys() const { return QStringList(); }
+
+    /*! \brief HTML "Please cite" block for this model (SupraFit + any method-specific citations from
+     * CitationKeys()); empty when no method-specific method was used. Claude Generated. */
+    QString CitationBlock() const;
+
+    /*! \brief Offer the scalable table-based parameter view (DynamicModelWidget) in the GUI. Default
+     * false (classic per-parameter widgets); the *_any models with many species opt in. CG. */
+    inline virtual bool UseDynamicParameterWidget() const { return false; }
 
     /*! \brief Implement AdditionalOutput() const for more optional calculation done on top of
      * the current model parameter, demaninding task (if any) should go here.

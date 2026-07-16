@@ -188,10 +188,12 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
     `ExportData`/`Size`/`SeriesCount`, GUI), müsste angefasst werden. Bewusst als Entscheidung offen —
     nicht reflexartig umlegen. Nutzen für einen Wissenschafts-Codebase fraglich, Risiko hoch.
 
-- **D6 – Submodul-Konsistenz** 🟢 *(kein Datenverlust — eigene Forks)*
-  CuteChart/libpeakpick sind Conrads eigene Forks; die Edits sind gewollt. Übrig bleibt nur
-  die kleine Inkonsistenz: `external/least-squares-cpp` ist ein Gitlink **ohne**
-  `.gitmodules`-Eintrag. *Datei:* `.gitmodules`.
+- **D6 – Submodul-Konsistenz** ✅ *(erledigt)*
+  CuteChart/libpeakpick sind Conrads eigene Forks; die Edits sind gewollt. Der verwaiste
+  Gitlink `external/least-squares-cpp` (im Index, aber **ohne** `.gitmodules`-Eintrag — Rest des
+  toten `LeastSquaresRookfighter`-Experiments, von keinem Build/Include genutzt) ist entfernt
+  (`git rm --cached`). Jetzt 9 Gitlinks = 9 `.gitmodules`-Einträge; er hatte das CI-`checkout
+  --recurse-submodules` zum Scheitern gebracht.
 
 - **D7 – Logging-/DEBUG_ON-Strategie** 🟢 *(Spam-Flut beseitigt)*
   ✅ **`DEBUG_ON` an Compile-Definition gebunden** (`if(DEBUG_ON) add_compile_definitions(DEBUG_ON)`).
@@ -212,6 +214,19 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
 - **D8 – Doc-Konsolidierung** 🟢 *(Root-Sprawl erledigt)*
   ✅ Die 4 abgelösten Root-MDs entfernt (Inhalt in diesem Dokument konsolidiert). ⬜ Verbleibend:
   `docs/outdated/`-Graveyard (~18 tracked Dateien) — eigener Aufräum-Commit.
+
+- **D9 – Fenster-agnostischer Projektspeicher** 🟡 *(GUI-Regression der Jan-2025-ProjectManager-Konsolidierung)*
+  `SupraFit::ProjectManager` ist ein **prozessweites Singleton**; jedes zweite Fenster (`NewWindow()` →
+  `new SupraFitGui`) zeigt dieselben Projekte. Zwei Hälften: (1) der Baum liest global —
+  `ProjectTree::getUnifiedProjectList()` (`projecttree.cpp:31`) → `instance().getLoadedProjectIds()`,
+  ohne Fenster-Filter; (2) Signal-Fan-out — jeder `SupraFitGui`-Ktor verbindet sich mit denselben
+  Singleton-Signalen (`suprafitgui.cpp:175`), also reagieren beide Fenster auf jeden Load. *Empfehlung
+  (Rang 1):* `ProjectManager` instanzierbar machen, jedes `SupraFitGui` bekommt eine eigene Instanz
+  (`instance()` bleibt für CLI/Tests); Manager-Pointer durch `ProjectTree`/`MainWindow`/`ModelDataHolder`
+  reichen (die hardcoden `instance()`: `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`).
+  App-weite `qApp`-Properties (threads, Settings) bleiben geteilt. Rang 2: Singleton behalten, Projekte
+  Owner-Window-tagged filtern. Rang 3 (Stopgap): Baum wieder aus per-Fenster `m_data_list` — behebt nur
+  die Dopplung, nicht den Signal-Fan-out. Full analysis: `SESSION_HANDOFF.md`.
 
 ---
 

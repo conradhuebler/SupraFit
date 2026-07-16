@@ -511,3 +511,56 @@ The pipeline now correctly:
 - Provides comprehensive file analysis
 - Supports mathematical data generation
 - Uses clean, professional output formatting
+
+## General equilibria with self-aggregation (BFGS speciation solver)
+
+The flexible NMR model (`nmr_any`, model id 34) now supports **self-aggregation** of the host in
+addition to the classic mixed A_aB_b complexes. Free/equilibrium concentrations are computed by a
+general **BFGS speciation solver** (`src/core/bfgsconcentrationsolver.h`) that works for arbitrary
+stoichiometry — a homo-dimer A₂ is simply a species with stoichiometry (2,0).
+
+### Defining the model
+
+The model definition (the "Define Model" block / `DefineModel` JSON) takes a single `Reactions`
+string: one reaction equation per line in arrow syntax, each defining a species as its formation
+from the free components (so the constant is the cumulative lg β).
+
+| Reactions line   | Species | Constant        |
+|------------------|---------|-----------------|
+| `A + B <=> AB`   | AB      | lg β(AB)        |
+| `2 A + B <=> A2B`| A₂B     | lg β(A₂B)       |
+| `2 A <=> A2`     | A₂      | lg β(A₂)        |
+| `A + C <=> AC`   | AC      | lg β(AC)        |
+
+Components are discovered in first-appearance order; species order follows the order of the reaction
+lines. The data must provide one independent concentration column per component (`itc_any` is the
+exception — host/guest totals come from the injection protocol). A "Concentration solver" option
+selects **BFGS** (default, general) or **Polynomial** (`EqnConc_2x`, 2-component grids only).
+
+### Example: complex formation with preceding dimerisation
+
+Host A dimerises and only the **monomer** binds the guest:
+
+```
+A + B <=> AB     (1:1 binding,       lg β(AB))
+2 A <=> A2       (self-aggregation,  lg β(A₂))
+```
+
+→ species `{AB, A₂}` (no A₂B). A large `lg β(A₂)` shifts the host into the dimer, which must
+dissociate before it can bind B.
+
+Runnable end-to-end verification lives in the test suite:
+
+```bash
+cd debug && ctest -R "BFGSSolverTest|NmrSelfAggregationTest" --output-on-failure
+```
+
+`test_bfgs_solver` checks the solver against the analytic 1:1 root, a closed-form homo-dimerisation
+and the grid `EqnConc_2x`; `test_nmr_selfaggregation` verifies the `nmr_any` grid path and the
+{AB, A₂} mass balance / dimer formation.
+
+### Reference
+
+The speciation method follows Daniil O. Soloviev and Christopher A. Hunter, *Musketeer: a software
+tool for the analysis of titration data*, Chem. Sci., 2024, **15**, 15299–15310,
+DOI [10.1039/d4sc03354j](https://doi.org/10.1039/d4sc03354j).

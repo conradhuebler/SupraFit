@@ -2,9 +2,8 @@ name: Build
 
 on:
   push:
-    branches: [ master ] # build all platforms + publish nightly prerelease
-  pull_request:
-    branches: [ master ] # build only (no release)
+    branches: [ master, "feature/**" ] # master: build + publish nightly; feature/*: build only
+  pull_request: # build only (no release) for all PR targets
   workflow_dispatch:
 
 # The default GITHUB_TOKEN is read-only since 2023; publishing a release needs write.
@@ -28,7 +27,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           modules: qtcharts
           cache: true
 
@@ -73,7 +72,7 @@ jobs:
       - name: Install Qt + MinGW
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           arch: win64_mingw
           modules: qtcharts
           tools: tools_mingw1310
@@ -106,12 +105,67 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.8.2"
+          version: "6.9.2"
           modules: qtcharts
           cache: true
 
       - name: Build
         run: sh scripts/build_macOS_github.sh
+
+      - name: Smoke test app launch and file dialog
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$PWD/release/bin/macOS/suprafit.app"
+          BIN_PATH="$APP_PATH/Contents/MacOS/suprafit"
+          test -d "$APP_PATH"
+          test -x "$BIN_PATH"
+
+          # Basic startup sanity: executable responds without GUI interaction.
+          "$BIN_PATH" --help >/tmp/suprafit-help.txt 2>&1 || true
+          head -n 20 /tmp/suprafit-help.txt || true
+
+          APP_PROCESS="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
+          open -a "$APP_PATH"
+
+          for _ in {1..30}; do
+            if pgrep -x "$APP_PROCESS" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          pgrep -x "$APP_PROCESS" >/dev/null 2>&1
+          /usr/bin/osascript -e "tell application \"System Events\" to tell process \"$APP_PROCESS\" to set frontmost to true"
+          /usr/bin/osascript -e 'tell application "System Events" to keystroke "o" using command down'
+          sleep 2
+
+          DIALOG_STATE=$(/usr/bin/osascript -e "tell application \"System Events\" to tell process \"$APP_PROCESS\" to if ((count of sheets of windows) > 0) or ((count of windows) > 1) then return \"ok\" else return \"missing\"")
+          if [[ "$DIALOG_STATE" != "ok" ]]; then
+            echo "Open dialog did not appear after Cmd+O."
+            exit 1
+          fi
+
+          /usr/bin/osascript -e 'tell application "System Events" to key code 53' || true
+          /usr/bin/osascript -e 'tell application "System Events" to keystroke "q" using command down' || true
+          sleep 2
+          pkill -x "$APP_PROCESS" || true
+
+      - name: Verify app signing and macOS assessment
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$PWD/release/bin/macOS/suprafit.app"
+          test -d "$APP_PATH"
+
+          echo "codesign identity and metadata:"
+          codesign -dvv "$APP_PATH"
+
+          echo "codesign deep verification:"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+          echo "spctl assessment (informational in CI without notarization):"
+          spctl -a -vv --type exec "$APP_PATH" || true
 
       - name: Collect artifact
         run: |
@@ -126,11 +180,12 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Publish nightly prerelease
+    name: Publish prerelease
     runs-on: ubuntu-latest
     needs: [linux, windows, macos]
-    # Publish whatever built (a single failing platform must not block the others),
-    # but only for real pushes / manual runs — not pull requests.
+    # Publish whatever built (a single failing platform must not block the others) for real pushes /
+    # manual runs — not pull requests. master publishes the shared `nightly`; a feature branch
+    # publishes its own `ci-<branch>` prerelease so it never clobbers the master nightly.
     if: ${{ github.event_name != 'pull_request' && !cancelled() }}
     steps:
       - uses: actions/checkout@v4
@@ -140,18 +195,30 @@ jobs:
         with:
           path: dist
 
-      - name: Move the nightly tag to this commit
+      - name: Compute release identity
+        id: rel
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/master" ]; then
+            echo "tag=nightly" >> "$GITHUB_OUTPUT"
+            echo "name=SupraFit Nightly" >> "$GITHUB_OUTPUT"
+          else
+            slug="$(echo "${GITHUB_REF_NAME}" | tr '/' '-' | tr -cd 'A-Za-z0-9._-')"
+            echo "tag=ci-${slug}" >> "$GITHUB_OUTPUT"
+            echo "name=SupraFit CI (${GITHUB_REF_NAME})" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Move the release tag to this commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f nightly "${GITHUB_SHA}"
-          git push origin refs/tags/nightly --force
+          git tag -f "${{ steps.rel.outputs.tag }}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${{ steps.rel.outputs.tag }}" --force
 
-      - name: Publish nightly release
+      - name: Publish prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
-          name: SupraFit Nightly
+          tag_name: ${{ steps.rel.outputs.tag }}
+          name: ${{ steps.rel.outputs.name }}
           prerelease: true
           make_latest: false
           target_commitish: ${{ github.sha }}
@@ -161,7 +228,7 @@ jobs:
             dist/**/*.zip
             dist/**/*.dmg
           body: |
-            Automated nightly build (2.5.${{ github.run_number }}).
+            Automated build (2.5.${{ github.run_number }}) from `${{ github.ref_name }}`.
             Commit: ${{ github.sha }}
             Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           append_body: false

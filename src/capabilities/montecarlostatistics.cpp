@@ -288,6 +288,8 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     int MaxSteps = m_controller["MaxSteps"].toInt();
 
     int maxthreads = qApp->instance()->property("threads").toInt();
+    if (maxthreads < 1)
+        maxthreads = 1; // property unset (e.g. headless/test context) -> avoid an integer div-by-zero. CG
     int blocksize = MaxSteps / maxthreads / 20;
     if (blocksize < 1)
         blocksize = 1;

@@ -30,6 +30,7 @@
 #include <QtCore/QtMath>
 
 #include "src/core/models/AbstractModel.h"
+#include "src/core/speciationengine.h"
 
 typedef Eigen::VectorXd Vector;
 
@@ -38,21 +39,16 @@ struct MassResults {
     Vector Components;
 };
 
-const QJsonObject MaxA_Json{
-    { "name", "MaxA" },
-    { "title", "Highest stoichiometry of A" },
-    { "description", "Define the a, the highest stoichiometry in which A may appear" },
-    { "value", 1 }, // default value
-    { "type", 1 }, // 1 = int, 2 = double, 3 = string
-    { "once", true }
-};
-
-const QJsonObject MaxB_Json{
-    { "name", "MaxB" },
-    { "title", "Highest stoichiometry of B" },
-    { "description", "Define the b, the highest stoichiometry in which B may appear" },
-    { "value", 1 }, // default value
-    { "type", 1 }, // 1 = int, 2 = double, 3 = string
+// Free-text reaction equations defining the N-component equilibrium system, one reaction per line in
+// arrow syntax, e.g. "A + B <=> AB\n2 A <=> A2\nA + C <=> AC". Parsed by ReactionParser into the
+// component/species stoichiometry driving the BFGS speciation solver. Required: an empty field leaves
+// the model undefined (the legacy MaxA/MaxB/MaxSelfA/Species grid was removed). Claude Generated.
+const QJsonObject Reactions_Json{
+    { "name", "Reactions" },
+    { "title", "Reaction equations" },
+    { "description", "Reaction equations, one per line, e.g. 'A + B <=> AB'. Defines the N-component equilibrium system driving the speciation solver." },
+    { "value", "" },
+    { "type", 6 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor, 6 = reaction editor
     { "once", true }
 };
 
@@ -85,6 +81,15 @@ public:
     inline int Size() const override { return DataClass::Size(); }
 
     inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
+
+    /*! \brief True for the reaction-driven *_any models (a valid speciation system is configured); they
+     * compute concentrations through m_speciation and honour the "SpeciationSolver" key. The fixed
+     * host/guest models leave the engine empty and use closed-form roots. Claude Generated. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the selected "SpeciationSolver" method into
+     * m_speciation, so a GUI/CLI change of the speciation solver takes effect on the next solve. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
 
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
@@ -125,9 +130,15 @@ public:
 
     inline Vector getConcentration(int row) const { return m_concentrations->Row(row); }
 
-    /*! \brief we have two concentrations for all titration models, host and guest
+    /*! \brief > 0 if the last DefineModel() parsed a valid reaction system whose component count did
+     * not match the number of independent concentration columns (the model then fell back to the
+     * grid). The value is the number of components the reactions requested. Claude Generated. */
+    inline int ReactionComponentMismatch() const { return m_reaction_component_mismatch; }
+
+    /*! \brief number of free components (independent concentration columns). Two by default
+     * (host + guest); an N-component reaction system raises it (see BuildSpeciationFromReactions).
      */
-    virtual inline int InputParameterSize() const override { return 2; }
+    virtual inline int InputParameterSize() const override { return m_component_count; }
     virtual int LocalParameterSize(int series = 0) const override
     {
         Q_UNUSED(series)
@@ -143,6 +154,15 @@ public:
     virtual qreal PrintOutIndependent(int i) const override;
 
     virtual QString ModelInfo() const override;
+
+    // Adds the Musketeer citation once speciation ran through the BFGS engine. Claude Generated.
+    inline QStringList CitationKeys() const override
+    {
+        QStringList keys;
+        if (m_uses_bfgs)
+            keys << QStringLiteral("musketeer");
+        return keys;
+    }
 
     virtual inline bool SupportSeries() const override { return true; }
 
@@ -195,6 +215,45 @@ protected:
 
     qreal InitialHostConcentration(int i) const;
     qreal InitialGuestConcentration(int i) const;
+
+    /*! \brief Total (analytical) concentration of free component @p component at data point @p i.
+     * Generalises InitialHost/GuestConcentration to arbitrary components; component 0/1 are the
+     * classic host/guest. Claude Generated. */
+    qreal InitialConcentration(int i, int component) const;
+
+    /*! \brief Parse the "Reactions" model-definition field into an N-component speciation system.
+     * On success sets m_component_count / m_component_names, configures m_speciation, refreshes the
+     * independent-table headers and returns true. Empty/invalid input leaves the 2-component grid
+     * defaults untouched and returns false. Claude Generated. */
+    bool BuildSpeciationFromReactions();
+
+    /*! \brief Read the "SpeciationSolver" optimizer-config key and select the matching method on
+     * m_speciation (LevMar/Newton default, "BFGS" = legacy). Claude Generated. */
+    void ApplySpeciationMethod();
+
+    /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
+    void UpdateComponentHeaders();
+
+    /*! \brief VarPro linear projection: solve the linear local parameters for the given design matrix
+     * @p design (DataPoints × nLinear) by least-squares, per series and honouring the active-point mask
+     * (ActiveSignals(j) / DependentModel()->isChecked(i,j) / DataBegin..DataEnd), and write the result
+     * into LocalTable() (SeriesCount × nLinear). This is the masked generalisation of the individual
+     * models' UpdateShifts(); inactive series keep their current locals. Claude Generated. */
+    void SolveLinearMasked(const Eigen::MatrixXd& design);
+
+    /*! \brief Data-derived initial guess for the cumulative stability constant lg(beta) of species
+     * @p speciesIndex. Scales the constant to the concentration range of the actual data via
+     * lg(beta) ~ (order - 1) * (-lg c_ref), where the reaction order is the sum of the species'
+     * stoichiometric coefficients and c_ref is the geometric-mean per-component maximum total. This
+     * keeps higher-order complexes (e.g. AB2) from starting far too high, which otherwise sends the
+     * optimiser into a flat runaway direction. Claude Generated. */
+    double GuessLgBeta(int speciesIndex) const;
+
+    int m_component_count = 2; ///< number of free components (2 = classic host/guest)
+    QStringList m_component_names; ///< component symbols, e.g. ["A","B","C"] (empty => host/guest)
+    SpeciationEngine m_speciation; ///< reaction system + BFGS solver (used by the *_any models)
+    bool m_uses_bfgs = false; ///< true once speciation ran through the BFGS engine (citation hint)
+    int m_reaction_component_mismatch = 0; ///< components requested by reactions if != data columns
 
     double m_T = 298; // K — default so getT() is never uninitialised (system parameter overrides)
 

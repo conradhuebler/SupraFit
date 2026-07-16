@@ -143,38 +143,51 @@ void uv_vis_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
         addLocalParameter(3);
 }
 
-void uv_vis_ItoI_ItoII_Model::CalculateVariables()
+void uv_vis_ItoI_ItoII_Model::FillDesign()
 {
-    auto hostguest = getHostGuestPair();
-
-    qreal K11 = qPow(10, GlobalParameter(0));
-    qreal K12 = qPow(10, GlobalParameter(1));
-
+    if (m_design.rows() != DataPoints() || m_design.cols() != 4)
+        m_design.resize(DataPoints(), 4);
+    const auto hostguest = getHostGuestPair();
+    const double hf = hostguest.first ? 1.0 : 0.0;
+    const double gf = hostguest.second ? 1.0 : 0.0;
+    const qreal K11 = qPow(10, GlobalParameter(0));
+    const qreal K12 = qPow(10, GlobalParameter(1));
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-
         qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
-
-        Vector vector(5);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
-        vector(3) = complex_11;
-        vector(4) = complex_12;
-
-        if (!m_fast)
+        m_design(i, 0) = host * hf; // eps_A
+        m_design(i, 1) = guest * gf; // eps_B
+        m_design(i, 2) = complex_11; // eps_AB
+        m_design(i, 3) = complex_12; // eps_AB2
+        if (!m_fast) {
+            Vector vector(5);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest;
+            vector(3) = complex_11;
+            vector(4) = complex_12;
             SetConcentration(i, vector);
-
-        qreal value = 0;
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(j, 0) * hostguest.first + guest * LocalTable()->data(j, 1) * hostguest.second + complex_11 * LocalTable()->data(j, 2) + complex_12 * LocalTable()->data(j, 3);
-            SetValue(i, j, value);
         }
     }
+}
+
+void uv_vis_ItoI_ItoII_Model::CalculateVariables()
+{
+    FillDesign();
+    for (int i = 0; i < DataPoints(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2) + m_design(i, 3) * LocalTable()->data(j, 3));
+}
+
+void uv_vis_ItoI_ItoII_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> uv_vis_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const

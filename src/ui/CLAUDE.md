@@ -156,6 +156,18 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-16: ✅ **Thermogram dialog routed through core `ItcProcessor`** — the dialog renders the processor's (volume, net heat) result instead of recomputing the join; the processor owns the injection volumes, the shared cal→J factor and the exp−dilution gate. `UpdateTable()` is a pure renderer over `ResultRows()`; `Content()`/`Raw()` go through `resultTable()`/`toJson()`. "Force inject" is now an explicit "Uniform volume" checkbox; both scaling combos are coupled; clearing the dilution really stops the subtraction. **GUI paths need manual operator validation** (see `SESSION_HANDOFF_THERMO.md`).
+- 2026-07-14: ✅ **Settings single source of truth** — `settingsregistry.{h,cpp}` (`SupraFitSettings::registry()`) holds every app setting (key, default, kind, group, label, tooltip, range, dependsOn). `SupraFitGui::ReadSettings/WriteSettings` derive persistence+defaults from it (the 49-entry `m_properties` list and the ~145-line default if-chain are gone); `ConfigDialog` is generated from it (tabs per group, `dependsOn` enable-chains, `Custom` kind for the hand-built directory section). New setting = one table row instead of four edits.
+- 2026-07-14: ✅ **Thermogram per-injection volume editable** — column 0 of the import dialog table (`thermogram.cpp`) accepts manual edits (guarded by `m_updating_table`; heat columns read-only). Now persisted through `ItcProcessor::setInjectionVolume` (see 2026-07-16). `ThermogramWidget` scaling relabelled "cal → J" with a tooltip (leaving it at 1 for cal data is why results match calorie tools).
+- 2026-07-14: ✅ **Thermodynamics unit toggle** — ConfigDialog checkbox "Report thermodynamics in kcal/mol" → `energy_unit_kcal` qApp property (persisted via `m_properties`); drives `Thermo::CurrentEnergyUnit()` used by `FormatThermo`/`statistic.cpp`. −TΔS row added to ITC output.
+- 2026-07-13: ✅ **Speciation solver selectable in the GUI** — a "Speciation solver" submenu in `ModelWidget`'s Fit menu picks the equilibrium-concentration solver (LevMar/Newton vs. legacy BFGS) for the reaction-driven `*_any` models; writes the `SpeciationSolver` optimizer-config key (greyed out for closed-form models via `UsesSpeciationEngine()`, re-fits on select). `AbstractModel::setOptimizerConfig` is now virtual so the models push the method into their `SpeciationEngine`; `OptimizerWidget::Config()` round-trips the key.
+- 2026-07-12: ✅ **Model series visible on load** — `ModelElement::DisableSignal` passed 0/1 to `LineSeries::showLine(int)`, which only shows on `== Qt::Checked (2)`, so fit + error line-series stayed hidden until a manual toggle (a real `stateChanged` delivers 2). Fixed by passing a `bool` (`state != 0`) → the `showLine(bool)` overload. `modelelement.cpp:251`.
+- 2026-07-12: ✅ **`nmr_any` MC → add-model crash fixed** in core (`DataClassPrivate` `m_info` ownership); see AIChangelog / `SESSION_HANDOFF.md`.
+- 2026-07-13: **`SpeciesEditorWidget` (type 5) removed** — the `*_any` models are now defined solely through the reaction-equation editor (type 6); the legacy grid/species-editor path is gone.
+- 2026-07-13: ✅ **Fit-solver (LevMar/VarPro) selectable in the GUI** — `ModelWidget`'s Fit menu lists checkable LevMar/VarPro entries after a separator (VarPro greyed out when `!SupportsVarPro()`); writes the `FitSolver` optimizer-config key, which MC/CV/RA inherit via `Clone()`. `OptimizerWidget::Config()` now round-trips `FitSolver` (+ a combo in its General tab) instead of dropping the key on Apply.
+- 2026-07-13: ✅ **Preset submenus for `itc_any` + new `fl_any`** — `MDHDockTitleBar::attachPresets` (`modeldataholder.cpp`) gained a `maxComponents` filter (`ReactionParser::Parse`, drops empty sections): `itc_any` gets a preset submenu limited to 2-component presets (ITC is host/guest from protocol); the new reaction-based `fl_any` gets the full N-component preset submenu (incl. three-component systems). `nmr_any`/`uvvis_any` unchanged.
+- 2026-07-11: **Reaction-equation editor** (`widgets/reactioneditorwidget`) — live-parsed reaction text (arrow syntax) with component/species preview, wired as `PrepareBox` type 6.
+- 2026-07-11: **Dynamic model widget** (`widgets/dynamicmodelwidget`) — scalable "Parameter Table" tab (QTableView over Global/Local tables) added in `modelwidget` for models with `UseDynamicParameterWidget()` (the `*_any` models); additive, classic view unchanged.
 - Modern Qt6 migration completed
 - Enhanced chart visualization capabilities
 - Improved responsive layout system
@@ -168,7 +180,15 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **Compatibility**: ✅ Cross-platform deployment working
 
 ### Known UI Issues
-- None currently identified
+- **Two windows show the same projects** (regression of the Jan-2025 ProjectManager consolidation).
+  `SupraFit::ProjectManager` is a process-wide **singleton**; `ProjectTree::getUnifiedProjectList()`
+  (`projecttree.cpp:31`) reads `instance().getLoadedProjectIds()`, and every `SupraFitGui` connects to
+  the same singleton's signals (`suprafitgui.cpp:175`), so a second window (`NewWindow()` → `new
+  SupraFitGui`) sees all projects and reacts to the other window's loads. Recommended fix: make
+  `ProjectManager` instantiable and give each `SupraFitGui` its own instance (keep `instance()` for
+  CLI/tests), threading a `ProjectManager*` through `ProjectTree`/`MainWindow`/`ModelDataHolder` (they
+  hard-code `instance()` at `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`). Keep app-level
+  `qApp` properties (threads, settings) shared. See `TECHNICAL_DEBT.md` D9.
 
 ### User Experience Priorities
 1. Streamlined data import workflows
@@ -201,7 +221,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
     signatures are tagged `// REFACTOR(D3-…)` (`grep -rn "REFACTOR(D3" src/client`).
 - if loading simulation files using DataGenerator, give comprehensive information and execute datageneration and open generated project file
 - add widget to generate and control simulation input files
-- move all thermogramm analysis to core / or finalise the move
+- ✅ **thermogram analysis moved to core** (2026-07-16) — `ItcProcessor` owns the ITC state + net-heat computation; the dialog renders it. Remaining: hand the `DataTable` to `ImportData` directly instead of the string hop (C12, precision), and the libpeakpick math cleanup (Track B, changes numbers) — both in `SESSION_HANDOFF_THERMO.md`.
 - projecttree- logik sollte mit core/**Project Analysis Migration** synchronisiert werden
 ### Vision
 <!-- Add long-term architectural goals here -->

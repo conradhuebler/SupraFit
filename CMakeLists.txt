@@ -150,6 +150,14 @@ if(USE_AVX2)
 
 endif()
 
+if(MINGW)
+    # MinGW/COFF objects are capped at 65535 sections; heavy template
+    # instantiation (ChaiScript/duktape via scriptmodel.cpp) overflows this
+    # and fails with "file too big". -Wa,-mbig-obj selects the extended COFF
+    # object format that lifts the limit. Claude Generated
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+endif()
+
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/exprtk.hpp)
   file(DOWNLOAD https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp ${PROJECT_SOURCE_DIR}/external/exprtk.hpp
        TIMEOUT 60  # seconds
@@ -225,6 +233,7 @@ set(core_SRC
     src/core/libmath.cpp
     src/core/minimizer.cpp
     src/core/optimizer/eigen_levenberg.cpp
+    src/core/optimizer/varpro_levenberg.cpp
     src/capabilities/datagenerator.cpp
     src/capabilities/resampleanalyse.cpp
     src/capabilities/abstractsearchclass.cpp
@@ -247,8 +256,13 @@ set(core_SRC
     src/core/toolset_print.cpp
     src/core/toolset_statistics.cpp
     src/core/thermogramhandler.cpp
+    src/core/itcprocessor.cpp
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp
+    src/core/bfgsconcentrationsolver.cpp
+    src/core/reactionparser.cpp
+    src/core/speciationengine.cpp
+    src/core/citations.cpp
     src/global.cpp
 )
 
@@ -266,6 +280,11 @@ else()
 endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
+# core TUs (analysis_manager.cpp, projectmanager.cpp) call fmt::print; link the header-only fmt so
+# FMT_HEADER_ONLY is defined when compiling them. Without this, those objects emit an external
+# reference to the non-inline fmt::vprint that nothing links, and a clean build only succeeds by
+# accident (stale objects / a weak symbol pulled from the executable's own TUs). Claude Generated.
+target_link_libraries(core fmt::fmt-header-only)
 # core calls CreateModel() (defined in models) and models use core utilities — declare the cyclic
 # static-library dependency so CMake repeats the archives on every link line (Claude Generated, R5).
 target_link_libraries(core models)
@@ -329,6 +348,7 @@ set(models_SRC
 
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
+    src/core/units.cpp
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
     src/core/models/photophysics/decayrates.cpp
@@ -340,6 +360,7 @@ set(models_SRC
     src/core/models/titrations/fluorescence/fl_1_1_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_1_2_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_Model.cpp
+    src/core/models/titrations/fluorescence/fl_any_Model.cpp
 
     src/core/models/titrations/itc/blank.cpp
     src/core/models/titrations/itc/itc_1_1_Model.cpp

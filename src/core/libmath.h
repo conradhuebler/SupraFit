@@ -62,3 +62,9 @@ qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& rmsd, QVector<QVector<double>>& parameter);
+
+/*! \brief Opt-in variable-projection (VarPro) fit: a self-contained damped Levenberg-Marquardt over
+ * only the non-linear global parameters; the linear local parameters are projected out by masked
+ * least-squares (AbstractModel::ProjectLinearParameters()) at each residual evaluation. For models
+ * with SupportsVarPro(); selected via the "FitSolver" optimizer-config key. Claude Generated. */
+int VarProFit(QWeakPointer<AbstractModel> model, QVector<double>& rmsd, QVector<QVector<double>>& parameter);

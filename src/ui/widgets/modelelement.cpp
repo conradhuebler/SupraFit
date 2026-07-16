@@ -251,8 +251,12 @@ void ModelElement::toggleActive()
 void ModelElement::DisableSignal(int state)
 {
     m_show->setChecked(state);
-    m_error_series->showLine(state);
-    m_signal_series->showLine(state);
+    // Pass a bool so overload resolution picks LineSeries::showLine(bool). The showLine(int) overload
+    // treats its argument as a Qt::CheckState and only shows on == Qt::Checked (2); the load path calls
+    // this with a plain 0/1, so showLine(1) was hiding the fit + error line-series until the user
+    // manually toggled (a real stateChanged delivers 2). Claude Generated.
+    m_error_series->showLine(state != 0);
+    m_signal_series->showLine(state != 0);
     for (int i = 0; i < m_constants.size(); ++i) {
         m_constants[i]->setEnabled(m_include->isChecked());
     }

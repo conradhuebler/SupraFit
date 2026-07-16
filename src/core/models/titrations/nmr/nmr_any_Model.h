@@ -27,8 +27,6 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractNMRModel.h"
 
-class ConcentrationalPolynomial;
-class EqnConc_2x;
 class nmr_any_Model : public AbstractNMRModel {
     Q_OBJECT
 
@@ -42,10 +40,19 @@ public:
 
     virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }
+    // AbstractNMRModel hard-codes 2; a reaction system raises the component count. Claude Generated.
+    inline int InputParameterSize() const override { return m_component_count; }
+    inline bool UseDynamicParameterWidget() const override { return true; }
 
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
+
+    // The NMR signal is linear in the per-species chemical shifts, so the locals can be projected out
+    // by the VarPro solver (reusing the m_molar_ratios design matrix). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
+    bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian) override;
 
     bool DefineModel() override;
 
@@ -81,8 +88,7 @@ public:
 
     inline double ReductionCutOff() const override { return 1; }
 
-    inline virtual bool DemandInput() const { return true; }
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
+    inline virtual bool DemandInput() const override { return true; }
 
     void UpdateShifts();
     void UpdateLinear() override
@@ -92,10 +98,8 @@ public:
 
 private:
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
+    int m_observed = 0; ///< index of the observed component (NMR nucleus), default = component 0 (A)
     QStringList m_global_names, m_species_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
-    QVector<EqnConc_2x*> m_ext_solvers;
     Eigen::MatrixXd m_concentrations, m_molar_ratios;
 
 protected:

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,6 +83,8 @@
 #include <QtCharts/QChartView>
 
 #include <stdio.h>
+
+#include "src/ui/settingsregistry.h"
 
 #include "suprafitgui.h"
 
@@ -1255,153 +1257,14 @@ void SupraFitGui::ReadSettings()
     QSettings _settings;
     _settings.beginGroup("main");
 
-    for (const QString& str : qAsConst(m_properties))
+    for (const QString& str : SupraFitSettings::persistedKeys())
         qApp->instance()->setProperty(qPrintable(str), _settings.value(str));
     _settings.endGroup();
 
-    /* We start with the default values, which should replace all invalid QVariants eg. no yet set properties */
-    if (qApp->instance()->property("ask_on_exit") == QVariant())
-        qApp->instance()->setProperty("ask_on_exit", true);
-
-    if (qApp->instance()->property("save_on_exit") == QVariant())
-        qApp->instance()->setProperty("save_on_exit", true);
-
-    if (qApp->instance()->property("tooltips") == QVariant())
-        qApp->instance()->setProperty("tooltips", true);
-
-    if (qApp->instance()->property("chartanimation") == QVariant())
-        qApp->instance()->setProperty("chartanimation", true);
-
-    if (qApp->instance()->property("threads") == QVariant())
-        qApp->instance()->setProperty("threads", QThread::idealThreadCount());
-
-    if (qApp->instance()->property("ColorFullSearch") == QVariant())
-        qApp->instance()->setProperty("ColorFullSearch", true);
-
-    if (qApp->instance()->property("auto_confidence") == QVariant())
-        qApp->instance()->setProperty("auto_confidence", true);
-
-    if (qApp->instance()->property("series_confidence") == QVariant())
-        qApp->instance()->setProperty("series_confidence", false);
-
-    if (qApp->instance()->property("charttheme") == QVariant())
-        qApp->instance()->setProperty("charttheme", 0);
-
-    if (qApp->instance()->property("dirlevel") == QVariant())
-        qApp->instance()->setProperty("dirlevel", 1);
-
-    if (qApp->instance()->property("thermogram_guidelines") == QVariant())
-        qApp->instance()->setProperty("thermogram_guidelines", true);
-
-    if (qApp->instance()->property("p_value") == QVariant())
-        qApp->instance()->setProperty("p_value", 0.95);
-
-    if (qApp->instance()->property("calibration_start") == QVariant())
-        qApp->instance()->setProperty("calibration_start", 0);
-
-    if (qApp->instance()->property("calibration_heat") == QVariant())
-        qApp->instance()->setProperty("calibration_heat", 0);
-
-    if (qApp->instance()->property("markerSize") == QVariant())
-        qApp->instance()->setProperty("markerSize", 6);
-
-    if (qApp->instance()->property("lineWidth") == QVariant())
-        qApp->instance()->setProperty("lineWidth", 20);
-
-    if (qApp->instance()->property("chartScaling") == QVariant())
-        qApp->instance()->setProperty("chartScaling", 4);
-
-    if (qApp->instance()->property("transparentChart") == QVariant())
-        qApp->instance()->setProperty("transparentChart", true);
-
-    if (qApp->instance()->property("cropedChart") == QVariant())
-        qApp->instance()->setProperty("cropedChart", true);
-
-    if (qApp->instance()->property("MetaSeries") == QVariant())
-        qApp->instance()->setProperty("MetaSeries", false);
-
-    if (qApp->instance()->property("noGrid") == QVariant())
-        qApp->instance()->setProperty("noGrid", true);
-
-    if (qApp->instance()->property("UnsafeCopy") == QVariant())
-        qApp->instance()->setProperty("UnsafeCopy", false);
-
-    if (qApp->instance()->property("empAxis") == QVariant())
-        qApp->instance()->setProperty("empAxis", true);
-
-    if (qApp->instance()->property("auto_thermo_dialog") == QVariant())
-        qApp->instance()->setProperty("auto_thermo_dialog", false);
-
-    if (qApp->instance()->property("OverwriteBins") == QVariant())
-        qApp->instance()->setProperty("OverwriteBins", false);
-
-    if (qApp->instance()->property("advanced_ui") == QVariant()) {
-        qApp->instance()->setProperty("advanced_ui", false);
+    /* Apply defaults for any keys still unset — single source of truth: SupraFitSettings::registry(). */
+    const QStringList newlyInitialised = SupraFitSettings::applyDefaults(qApp->instance());
+    if (newlyInitialised.contains("advanced_ui"))
         QTimer::singleShot(10, this, SLOT(FirstStart()));
-    }
-
-    if (qApp->instance()->property("ModelParameterColums") == QVariant())
-        qApp->instance()->setProperty("ModelParameterColums", 2);
-
-    if (qApp->instance()->property("xSize") == QVariant())
-        qApp->instance()->setProperty("xSize", 600);
-
-    if (qApp->instance()->property("ySize") == QVariant())
-        qApp->instance()->setProperty("ySize", 400);
-
-    if (qApp->instance()->property("EntropyBins") == QVariant())
-        qApp->instance()->setProperty("EntropyBins", 30);
-
-    if (qApp->instance()->property("FastConfidenceScaling") == QVariant())
-        qApp->instance()->setProperty("FastConfidenceScaling", -4);
-
-    if (qApp->instance()->property("FastConfidenceSteps") == QVariant())
-        qApp->instance()->setProperty("FastConfidenceSteps", 100);
-
-    if (qApp->instance()->property("InitialiseRandom") == QVariant())
-        qApp->instance()->setProperty("InitialiseRandom", true);
-
-    if (qApp->instance()->property("StoreRawData") == QVariant())
-        qApp->instance()->setProperty("StoreRawData", true);
-
-    if (qApp->instance()->property("StoreRawData") == QVariant())
-        qApp->instance()->setProperty("StoreRawData", true);
-
-    if (qApp->instance()->property("FullShannon") == QVariant())
-        qApp->instance()->setProperty("FullShannon", false);
-
-    if (qApp->instance()->property("StoreFileName") == QVariant())
-        qApp->instance()->setProperty("StoreFileName", true);
-
-    if (qApp->instance()->property("StoreAbsolutePath") == QVariant())
-        qApp->instance()->setProperty("StoreAbsolutePath", false);
-
-    if (qApp->instance()->property("StoreFileHash") == QVariant())
-        qApp->instance()->setProperty("StoreFileHash", false);
-
-    if (qApp->instance()->property("FindFileRecursive") == QVariant())
-        qApp->instance()->setProperty("FindFileRecursive", false);
-
-    if (qApp->instance()->property("LastSpectraType") == QVariant())
-        qApp->instance()->setProperty("LastSpectraType", "csv");
-
-    if (qApp->instance()->property("MarkerPointFeedback") == QVariant())
-        qApp->instance()->setProperty("MarkerPointFeedback", 0);
-
-    if (qApp->instance()->property("PointFeedback") == QVariant())
-        qApp->instance()->setProperty("PointFeedback", false);
-
-    if (qApp->instance()->property("ModuloPointFeedback") == QVariant())
-        qApp->instance()->setProperty("ModuloPointFeedback", 0);
-
-    if (qApp->instance()->property("lastSize") == QVariant())
-        qApp->instance()->setProperty("lastSize", 2);
-
-    if (qApp->instance()->property("ScriptTimeout") == QVariant())
-        qApp->instance()->setProperty("ScriptTimeout", 500);
-
-    if (qApp->instance()->property("MaxSeriesPoints") == QVariant() || qApp->instance()->property("MaxSeriesPoints").toInt() == 0)
-        qApp->instance()->setProperty("MaxSeriesPoints", 200);
 
     qApp->instance()->setProperty("lastDir", getDir());
 }
@@ -1421,8 +1284,7 @@ void SupraFitGui::WriteSettings(bool ignore_window_state)
 
     _settings.beginGroup("main");
 
-    QStringList properties;
-    for (const QString& str : qAsConst(m_properties))
+    for (const QString& str : SupraFitSettings::persistedKeys())
         _settings.setValue(str, qApp->instance()->property(qPrintable(str)));
     _settings.endGroup();
 

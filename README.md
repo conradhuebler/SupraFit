@@ -49,6 +49,8 @@ SupraFit handles tables that are composed as follows:
 
 The first two columns contain the concentrations of host (fixed concentration) and guest (variable concentration, silent component), the following columns should contain the NMR or UV/VIS signal.
 
+Besides the classic fixed-stoichiometry models (1:1, 1:2, 2:1, …), SupraFit supports **flexible binding stoichiometries**: the equilibrium system is defined by free-text reaction equations (e.g. `A + B <=> AB`, `A + 2 B <=> AB2`, `2 A <=> A2` for host self-aggregation), from which a general N-component speciation is solved numerically. This covers NMR, UV-VIS, fluorescence and ITC and handles arbitrary species, including intermediate complexes reused as reactants and self-association preceding complex formation.
+
 ### ITC data
 | v | q |
 |:-----:|:----:|
@@ -190,6 +192,12 @@ If you obtain results with SupraFit, I kindly ask to include in your citation:
 If the Monte Carlo simulation and Resampling plans were helpfull:
 
 - C. Hübler, PeerJ Analytical Chemistry 2022, 4:e23 [https://doi.org/10.7717/peerj-achem.23](https://peerj.com/articles/achem-23/)
+
+### Methods and references
+
+The general BFGS equilibrium speciation solver (arbitrary stoichiometry including self-aggregation, e.g. host dimerisation preceding complex formation) implements the method of:
+
+- Daniil O. Soloviev and Christopher A. Hunter, *Musketeer: a software tool for the analysis of titration data*, Chem. Sci., 2024, **15**, 15299–15310. DOI [10.1039/d4sc03354j](https://doi.org/10.1039/d4sc03354j)
 
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)

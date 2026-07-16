@@ -20,6 +20,7 @@
 #include "dataclass.h"
 
 #include "src/core/libmath.h"
+#include "src/core/citations.h"
 #include "src/core/toolset.h"
 #include "src/global.h"
 #include "src/version.h"
@@ -214,6 +215,16 @@ void AbstractModel::DefineModel(const QJsonObject &model)
         DependentModel()->setHeaderData(i, Qt::Horizontal, m_depmodel_names[i], Qt::DisplayRole);
 }
 */
+
+QString AbstractModel::CitationBlock() const
+{
+    const QStringList method = CitationKeys();
+    if (method.isEmpty())
+        return QString();
+    QStringList keys;
+    keys << QStringLiteral("suprafit") << method;
+    return Citation::FormatHtml(keys);
+}
 
 void AbstractModel::PrepareParameter(int global, int local)
 {

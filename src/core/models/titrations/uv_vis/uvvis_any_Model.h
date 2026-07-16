@@ -27,8 +27,6 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractTitrationModel.h"
 
-class ConcentrationalPolynomial;
-class EqnConc_2x;
 class uvvis_any_Model : public AbstractTitrationModel {
     Q_OBJECT
 
@@ -42,10 +40,24 @@ public:
 
     virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }
+    // Beer-Lambert: one extinction coefficient per free component plus one per species. Claude Generated.
+    inline int LocalParameterSize(int series = 0) const override
+    {
+        Q_UNUSED(series)
+        return GlobalParameterSize() + m_component_count;
+    }
+    QString LocalParameterName(int i = 0) const override;
+    QString LocalParameterDescription(int i = 0) const override { return LocalParameterName(i); }
+    inline bool UseDynamicParameterWidget() const override { return true; }
 
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
+
+    // The Beer-Lambert signal is linear in the extinction coefficients, so the locals can be projected
+    // out by the VarPro solver (reusing the m_concentrations design matrix). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
 
     bool DefineModel() override;
 
@@ -82,7 +94,6 @@ public:
     inline double ReductionCutOff() const override { return 1; }
 
     inline virtual bool DemandInput() const { return true; }
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
 
     void UpdateShifts();
     void UpdateLinear() override
@@ -92,11 +103,10 @@ public:
 
 private:
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
     QStringList m_global_names, m_species_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
-    QVector<EqnConc_2x*> m_ext_solvers;
-    Eigen::MatrixXd m_concentrations, m_molar_ratios;
+    /*! \brief Beer-Lambert design matrix (DataPoints x (nComp + nSpecies)): absolute concentrations
+     * of every free component followed by every species; fitted against the extinction coefficients. */
+    Eigen::MatrixXd m_concentrations;
 
 protected:
     virtual void CalculateVariables() override;

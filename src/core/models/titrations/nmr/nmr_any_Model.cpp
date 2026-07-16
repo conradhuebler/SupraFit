@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SupraFit - flexible NMR titration model (arbitrary N-component equilibrium via BFGS speciation)
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * The speciation (free component + species concentrations) is delegated to the shared
+ * SpeciationEngine on AbstractTitrationModel; this model only maps those concentrations to the NMR
+ * signal (fast-exchange population-weighted average of the observed component's chemical shifts).
+ * The equilibrium system is defined solely through the free-text Reactions field. Claude Generated.
  */
 
 #include <Eigen/SVD>
-#include "src/core/models/titrations/AbstractTitrationModel.h" // MaxA_Json/MaxB_Json (was transitive via models.h)
 
-#include "EqnConc_2.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h" // Reactions/MaxA/MaxB JSON templates
 
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/bc50.h"
-#include "src/core/concentrationalpolynomial.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
+#include "src/core/reactionparser.h"
 #include "src/core/toolset.h"
 
 #include "src/core/models/models.h"
@@ -44,7 +47,7 @@
 nmr_any_Model::nmr_any_Model(DataClass* data)
     : AbstractNMRModel(data)
 {
-    m_pre_input = { MaxA_Json, MaxB_Json };
+    m_pre_input = { Reactions_Json };
     m_complete = false;
 }
 
@@ -53,199 +56,124 @@ nmr_any_Model::nmr_any_Model(AbstractNMRModel* data)
 {
     DefineModel();
 
-    // DefineModel(m_model_definition);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
 }
 
 nmr_any_Model::~nmr_any_Model()
 {
-    qDeleteAll(m_solvers);
-    qDeleteAll(m_ext_solvers);
 }
 
 bool nmr_any_Model::DefineModel()
 {
-    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    m_observed = 0; // NMR observes the first component (host A) by default
 
-    QJsonObject object = m_defined_model.value("MaxA");
-    m_maxA = object["value"].toInt();
+    // The N-component reaction editor is the sole definition path. Without a valid reaction system
+    // the model stays undefined (the GUI/CLI must supply reactions before it can be fitted).
+    if (!BuildSpeciationFromReactions()) {
+        m_complete = false;
+        return false;
+    }
+    m_uses_bfgs = true;
 
-    object = m_defined_model.value("MaxB");
-    m_maxB = object["value"].toInt();
+    const ReactionSystem& sys = m_speciation.System();
+    const int nSpecies = sys.species.size();
 
     m_global_names.clear();
     m_species_names.clear();
-    for (int i = 1; i <= m_maxA; ++i) {
-        QString name_i = QString::number(i);
-        QString name_i_short = QString::number(i);
-        if (i == 1)
-            name_i_short.clear();
-        name_i = ToolSet::UnicodeLowerInteger(name_i);
-        name_i_short = ToolSet::UnicodeLowerInteger(name_i_short);
-
-        for (int j = 1; j <= m_maxB; ++j) {
-            QString name_j = QString::number(j);
-            QString name_j_short = QString::number(j);
-
-            if (j == 1)
-                name_j_short.clear();
-            name_j = ToolSet::UnicodeLowerInteger(name_j);
-            name_j_short = ToolSet::UnicodeLowerInteger(name_j_short);
-
-            m_global_names << QString("lg %1%2%3").arg(Unicode_beta).arg(name_i).arg(name_j);
-            m_species_names << QString("A%1B%2").arg(name_i_short).arg(name_j_short);
-
-            QStringList host = QStringList() << "yes"
-                                             << "no";
-            addOption(Host + 1 + Index(i, j), QString("A%1B%2").arg(name_i_short).arg(name_j_short), host);
-        }
+    for (int k = 0; k < nSpecies; ++k) {
+        const QString sname = sys.species[k].label;
+        m_species_names << sname;
+        m_global_names << QString("lg %1(%2)").arg(Unicode_beta).arg(sname);
+        addOption(Host + 1 + k, sname, QStringList() << "yes" << "no");
     }
 
-    m_global_parametersize = m_maxA * m_maxB;
+    m_global_parametersize = nSpecies;
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
-    for (int i = 0; i < GlobalParameterSize(); ++i)
-        setOption(Host + 1 + i, "yes");
+    for (int k = 0; k < GlobalParameterSize(); ++k)
+        setOption(Host + 1 + k, "yes");
 
     CollectOptimizationParameters_Private();
     m_complete = true;
-
-    for (int i = 0; i < DataPoints(); ++i) {
-        qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
-
-        ConcentrationalPolynomial* solver = new ConcentrationalPolynomial;
-        m_solvers << solver;
-        solver->setStoichiometry(m_maxA, m_maxB);
-        solver->setInitialConcentrations(host_0, guest_0);
-        solver->Guess();
-        solver->setMaxIter(m_maxA * m_maxB * 100);
-        solver->setConvergeThreshold(1e-15);
-
-        EqnConc_2x* solver_ext = new EqnConc_2x;
-        m_ext_solvers << solver_ext;
-        solver_ext->setStoichiometry({ m_maxA, m_maxB });
-        solver_ext->setInitialConcentrations({ host_0, guest_0 });
-        solver_ext->Guess();
-        solver_ext->setMaxIter(m_maxA * m_maxB * 100);
-        solver_ext->setConvergeThreshold(1e-16);
-    }
-    // std::cout << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
-
     return true;
 }
 
 void nmr_any_Model::InitialGuess_Private()
 {
     LocalTable()->setColumn(DependentModel()->firstRow(), 0);
-    QVector<double> ratios;
-    double factor = double(m_maxA * m_maxB);
-    double last = 1 / double(InitialGuestConcentration(DataPoints() - 1) / InitialHostConcentration(DataPoints() - 1));
-    for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
-        ratios << InitialGuestConcentration(i) / InitialHostConcentration(i) * last * factor;
+    const int nSpecies = m_speciation.SpeciesCount();
+    for (int k = 0; k < nSpecies; ++k) {
+        // data-derived guess (scaled to the concentration range) instead of a fixed constant, so
+        // higher-order complexes (AB2, ...) do not start far too high and send the optimiser into a
+        // flat runaway direction. Claude Generated.
+        (*GlobalTable())[k] = GuessLgBeta(k);
+        LocalTable()->setColumn(DependentModel()->Row(DataPoints() - 1), 1 + k);
     }
-    // qDebug() << ratios;
-    double guess_K = 4;
-    (*GlobalTable())[0] = guess_K;
-    for (int a = 1; a <= m_maxA; ++a)
-        for (int b = 1; b <= m_maxB; ++b) {
-
-            double ratio = b / a;
-            int best_index = 0;
-            double diff = ratios.last();
-            for (int index = 0; index < ratios.size(); ++index) {
-                if (abs(ratio - ratios[index]) < diff) {
-                    best_index = index;
-                    diff = abs(ratio - ratios[index]);
-                }
-            }
-            //       qDebug() << b/a << best_index;
-            (*GlobalTable())[(Index(a, b))] = guess_K + a + b;
-            LocalTable()->setColumn(DependentModel()->Row(best_index), 1 + Index(a, b));
-        }
-    // UpdateShifts();
     Calculate();
 }
 
 void nmr_any_Model::CollectOptimizationParameters_Private()
 {
-    for (int a = 1; a <= m_maxA; ++a)
-        for (int b = 1; b <= m_maxB; ++b) {
-            if (getOption(Host + 1 + Index(a, b)) == "yes") {
-                addGlobalParameter(Index(a, b));
-                addLocalParameter(1 + Index(a, b));
-            }
+    const int nSpecies = m_speciation.SpeciesCount();
+    for (int k = 0; k < nSpecies; ++k) {
+        if (getOption(Host + 1 + k) == "yes") {
+            addGlobalParameter(k);
+            addLocalParameter(1 + k);
         }
-    QString host = getOption(Host);
-
-    if (host == "no")
+    }
+    if (getOption(Host) == "no")
         addLocalParameter(0);
 }
 
 void nmr_any_Model::CalculateConcentrations()
 {
-    std::vector<double> constants(GlobalParameterSize());
-    for (int i = 0; i < GlobalParameterSize(); ++i) {
-        if (GlobalTable()->isChecked(0, i))
-            constants[i] = pow(10, GlobalParameter(i));
+    const int nComp = m_component_count;
+    const int nSpecies = m_speciation.SpeciesCount();
+    const ReactionSystem& sys = m_speciation.System();
+
+    // Linear stability constants; a deactivated (option "no") or unchecked species contributes 0.
+    std::vector<double> constants(nSpecies);
+    for (int k = 0; k < nSpecies; ++k) {
+        if (getOption(Host + 1 + k) == "yes" && GlobalTable()->isChecked(0, k))
+            constants[k] = pow(10, GlobalParameter(k));
         else
-            constants[i] = 0;
+            constants[k] = 0;
     }
+    m_speciation.setStabilityConstants(constants);
 
-    for (int a = 1; a <= m_maxA; ++a)
-        for (int b = 1; b <= m_maxB; ++b) {
-            if (getOption(Host + 1 + Index(a, b)) == "yes") {
-                constants[Index(a, b)] = pow(10, GlobalParameter(Index(a, b)));
-            } else
-                constants[Index(a, b)] = 0;
-        }
-    m_concentrations = Eigen::MatrixXd(DataPoints(), 2 + m_species_names.size());
-    m_molar_ratios = Eigen::MatrixXd(DataPoints(), 1 + m_species_names.size());
+    m_concentrations = Eigen::MatrixXd(DataPoints(), nComp + nSpecies);
+    m_molar_ratios = Eigen::MatrixXd(DataPoints(), 1 + nSpecies);
 
-    qreal value = 0;
-    // int timer = 0;
-    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    bool failed = false;
+    std::vector<double> totals(nComp);
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
-        //  m_solvers[i]->Guess();
-        //  m_solvers[i]->setStabilityConstants(constants);
-        m_ext_solvers[i]->setStabilityConstants(constants);
-        qreal host_0 = InitialHostConcentration(i);
-        std::vector<double> result;
-        // result = m_solvers[i]->solver();
-        // failed = failed || m_solvers[i]->LastIterations() == (m_solvers[i]->MaxIter());
+        for (int c = 0; c < nComp; ++c)
+            totals[c] = InitialConcentration(i, c);
 
-        result = m_ext_solvers[i]->solver();
+        m_speciation.solve(totals, i);
+        const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
+        const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
 
-        // std::cout << m_solvers[i]->LastIterations() << " " << m_solvers[i]->LastConvergency() << std::endl;
+        const double obs_total = totals[m_observed];
 
-        //  timer += m_solvers[i]->Timer();
-        double host = result[0];
-        double guest = result[1];
-        m_concentrations(i, 0) = host;
-        m_concentrations(i, 1) = guest;
+        // free component concentrations
+        for (int c = 0; c < nComp; ++c)
+            m_concentrations(i, c) = freeConc[c];
+        m_molar_ratios(i, 0) = freeConc[m_observed] / obs_total;
 
-        m_molar_ratios(i, 0) = host / host_0;
-
-        Vector vector(m_species_names.size() + 3);
+        // stored concentration vector: [idx, free_0..free_{n-1}, obsBound_0..obsBound_{m-1}]
+        Vector vector(nComp + 1 + nSpecies);
         vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
+        for (int c = 0; c < nComp; ++c)
+            vector(1 + c) = freeConc[c];
 
-        int index = 3;
-        for (int a = 1; a <= m_maxA; ++a) {
-            double powA = a * pow(host, a);
-            for (int b = 1; b <= m_maxB; b++) {
-                double beta = constants[Index(a, b)];
-                const double c = (beta * pow(guest, b) * powA);
-                m_concentrations(i, index - 1) = c;
-                m_molar_ratios(i, index - 2) = c / host_0;
-
-                vector(index++) = c;
-            }
+        for (int k = 0; k < nSpecies; ++k) {
+            // moles of the observed component bound in species k = M(observed,k) * [species_k]
+            const int obsCoeff = sys.species[k].stoich(m_observed);
+            const double bound = obsCoeff * speciesConc[k];
+            m_concentrations(i, nComp + k) = bound;
+            m_molar_ratios(i, 1 + k) = bound / obs_total;
+            vector(1 + nComp + k) = bound;
         }
         if (!m_fast)
             SetConcentration(i, vector);
@@ -255,125 +183,141 @@ void nmr_any_Model::CalculateConcentrations()
 void nmr_any_Model::UpdateShifts()
 {
     CalculateConcentrations();
-    // std::cout << m_concentrations << std::endl <<m_molar_ratios << std::endl;
+    // Solve the linear response problem: fit the per-species chemical shifts (local parameters)
+    // to the observed signal given the species mole fractions (m_molar_ratios).
     Eigen::MatrixXd dep = DependentModel()->Table();
-    // std::cout << dep << std::endl;
-    // Eigen::MatrixXd x = m_molar_ratios.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(dep);// m_molar_ratios.llt().solve(dep);
-    Eigen::MatrixXd x = m_molar_ratios.colPivHouseholderQr().solve(dep); // m_molar_ratios.llt().solve(dep);
-
-    // std::cout << x << std::endl;
-    qreal value = 0;
-    // int timer = 0;
-    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    bool failed = false;
+    Eigen::MatrixXd x = m_molar_ratios.colPivHouseholderQr().solve(dep);
     LocalParameter()->setTable(x.transpose());
+}
+
+void nmr_any_Model::ProjectLinearParameters()
+{
+    // VarPro linear projection: build the design matrix (mole fractions) for the current global
+    // parameters, then solve the shifts by masked least-squares (unlike UpdateShifts(), which is the
+    // unmasked initial-guess variant, this honours the active-point mask for correct CV/RA).
+    CalculateConcentrations();
+    SolveLinearMasked(m_molar_ratios);
+}
+
+bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::MatrixXd& J)
+{
+    // Exact only for the Newton speciation method (its stored Hessian is the solution Hessian).
+    if (!m_speciation.isValid()
+        || m_speciation.method() != BFGSConcentrationSolver::Method::LevenbergMarquardt)
+        return false;
+
+    const int nSpecies = m_speciation.SpeciesCount();
+    const int nComp = m_component_count;
+    const int series = SeriesCount();
+    const int nG = static_cast<int>(gidx.size());
+    const int nData = DataPoints();
+    if (nSpecies == 0 || series == 0 || nG == 0)
+        return false;
+    const int P = 1 + nSpecies; // design columns: free observed + one per species
+
+    // SolveLinearMasked (and the residual) run over [DataBegin, DataEnd); Cross-Validation / Reduction
+    // mask by *un-checking rows* inside that window (isChecked), which is handled below. A shrunk window
+    // itself is not the CV/RA mechanism, so fall back to FD for that rare case. Claude Generated.
+    if (DataBegin() != 0 || DataEnd() != nData)
+        return false;
+
+    const Eigen::MatrixXi& Mst = m_speciation.Stoichiometry(); // components x species
+    const double ln10 = std::log(10.0);
+
+    std::vector<double> constants(nSpecies);
+    for (int k = 0; k < nSpecies; ++k)
+        constants[k] = std::pow(10.0, GlobalParameter(k));
+    m_speciation.setStabilityConstants(constants);
+    CalculateConcentrations(); // refresh m_molar_ratios (the design D) at the current beta
+
+    // ∂(design row)/∂ln(β_j) per enabled global, D²  matrices (nData × P). Uses the analytic speciation
+    // sensitivities S_i = ∂x/∂ln(β). Then combine with the *projection* derivative ∂φ/∂β so J is the
+    // FULL (Golub–Pereyra) Jacobian of the projected residual - not the Kaufman (φ-fixed) one, which
+    // leaves a rank-deficient Gauss–Newton Hessian and stalls the outer LM. Claude Generated.
+    std::vector<Eigen::MatrixXd> dD(nG, Eigen::MatrixXd::Zero(nData, P));
+    std::vector<double> totals(nComp);
+    for (int i = 0; i < nData; ++i) {
+        for (int c = 0; c < nComp; ++c)
+            totals[c] = InitialConcentration(i, c);
+        m_speciation.solve(totals, i);
+        const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
+        const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
+        const Eigen::MatrixXd S = m_speciation.sensitivityMatrix(); // nComp × nSpecies
+        const double obs_total = totals[m_observed];
+        const double s_obs = freeConc[m_observed];
+        for (int jj = 0; jj < nG; ++jj) {
+            const int j = gidx[jj]; // enabled global index == species index
+            dD[jj](i, 0) = (s_obs / obs_total) * S(m_observed, j); // D[0] = s_obs / T_obs
+            for (int k = 0; k < nSpecies; ++k) {
+                double dlnck = (k == j) ? 1.0 : 0.0; // d ln c_k / d ln β_j = δ_kj + Σ_c M(c,k) S(c,j)
+                for (int c = 0; c < nComp; ++c)
+                    dlnck += static_cast<double>(Mst(c, k)) * S(c, j);
+                dD[jj](i, 1 + k) = (static_cast<double>(Mst(m_observed, k)) / obs_total) * speciesConc[k] * dlnck;
+            }
+        }
+    }
+
+    const Eigen::MatrixXd& D = m_molar_ratios; // nData × P
+    const Eigen::MatrixXd phi = LocalParameter()->Table(); // series × P
+    const Eigen::MatrixXd Y = DependentModel()->Table(); // nData × series
+
+    // Row map matching the residual list: SetValue appends i-major, j-minor, ONLY for active+checked
+    // (i,l). Build the same mapping so J's rows line up with getCalculatedAbsoluteErrors(). CV/RA mask
+    // by un-checking rows, so this is also the per-series least-squares mask of SolveLinearMasked.
+    std::vector<std::vector<int>> rowOf(nData, std::vector<int>(series, -1));
+    int nRows = 0;
+    for (int i = 0; i < nData; ++i)
+        for (int l = 0; l < series; ++l)
+            if (ActiveSignals(l) && DependentModel()->isChecked(i, l))
+                rowOf[i][l] = nRows++;
+
+    J.setZero(nRows, nG);
+    for (int l = 0; l < series; ++l) {
+        if (!ActiveSignals(l))
+            continue;
+        std::vector<int> rows; // checked rows of series l (the projection + residual mask)
+        for (int i = 0; i < nData; ++i)
+            if (DependentModel()->isChecked(i, l))
+                rows.push_back(i);
+        const int na = static_cast<int>(rows.size());
+        if (na == 0)
+            continue;
+
+        const Eigen::VectorXd phil = phi.row(l).transpose();
+        Eigen::MatrixXd Dm(na, P); // design over the masked rows
+        Eigen::VectorXd Rm(na); // residual (model − data) over the masked rows
+        for (int r = 0; r < na; ++r) {
+            Dm.row(r) = D.row(rows[r]);
+            Rm(r) = D.row(rows[r]).dot(phil) - Y(rows[r], l);
+        }
+        const Eigen::LDLT<Eigen::MatrixXd> DtD = (Dm.transpose() * Dm).ldlt();
+
+        for (int jj = 0; jj < nG; ++jj) {
+            Eigen::MatrixXd dDm(na, P);
+            for (int r = 0; r < na; ++r)
+                dDm.row(r) = dD[jj].row(rows[r]);
+            // ∂φ_l/∂ln(β_j) = −(DmᵀDm)⁻¹ [ dDmᵀ R_l + (Dmᵀ dDm) φ_l ]  over the masked rows
+            const Eigen::VectorXd dphil = -DtD.solve(dDm.transpose() * Rm + (Dm.transpose() * dDm) * phil);
+            for (int r = 0; r < na; ++r) {
+                // ∂(model)/∂ln(β_j) = dDm φ_l + Dm ∂φ_l/∂ln(β_j); residual = model − data, ×ln10 for log10.
+                const double dmodel = dDm.row(r).dot(phil) + Dm.row(r).dot(dphil);
+                J(rowOf[rows[r]][l], jj) = ln10 * dmodel;
+            }
+        }
+    }
+    return true;
 }
 
 void nmr_any_Model::CalculateVariables()
 {
-    /*
-    std::vector<double> constants(GlobalParameterSize());
-    for (int i = 0; i < GlobalParameterSize(); ++i) {
-        if (GlobalTable()->isChecked(0, i))
-            constants[i] = pow(10, GlobalParameter(i));
-        else
-            constants[i] = 0;
-    }
-
-    for (int a = 1; a <= m_maxA; ++a)
-        for (int b = 1; b <= m_maxB; ++b) {
-            if (getOption(Host + 1 + Index(a, b)) == "yes") {
-                constants[Index(a, b)] = pow(10, GlobalParameter(Index(a, b)));
-            } else
-                constants[Index(a, b)] = 0;
-        }
-    */
-    // UpdateShifts();
-    // std::cout << x << std::endl;
-    qreal value = 0;
-    // int timer = 0;
-    // qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    bool failed = false;
     CalculateConcentrations();
+    // Model signal = observed-component mole fractions weighted by the per-species chemical shifts.
     Eigen::MatrixXd m = m_molar_ratios * LocalParameter()->Table().transpose();
     for (int i = 0; i < DataPoints(); ++i)
         for (int j = 0; j < SeriesCount(); ++j)
             SetValue(i, j, m(i, j));
-    /*
-        for (int i = 0; i < DataPoints(); ++i) {
-            // m_solvers[i]->Guess();
-             m_solvers[i]->setStabilityConstants(constants);
-            m_ext_solvers[i]->setStabilityConstants(constants);
-            qreal host_0 = InitialHostConcentration(i);
-            std::vector<double> result;
-            // result = m_solvers[i]->solver();
-            // failed = failed || m_solvers[i]->LastIterations() == (m_solvers[i]->MaxIter());
-
-            result = m_ext_solvers[i]->solver();
-
-            // std::cout << m_solvers[i]->LastIterations() << " " << m_solvers[i]->LastConvergency() << std::endl;
-
-            //  timer += m_solvers[i]->Timer();
-            double host = result[0];
-            double guest = result[1];
-
-            Vector vector(m_species_names.size() + 3);
-            vector(0) = i + 1;
-            vector(1) = host;
-            vector(2) = guest;
-
-            int index = 3;
-            for (int a = 1; a <= m_maxA; ++a) {
-                double powA = a*pow(host, a);
-                for (int b = 1; b <= m_maxB; b++) {
-                    double beta = constants[Index(a, b)];
-                    const double c = (beta * pow(guest, b)*powA);
-                    vector(index++) = c;
-                }
-            }
-
-            for (int j = 0; j < SeriesCount(); ++j) {
-                value = host / host_0 * LocalTable()->data(j, 0);
-                for (int a = 1; a <= m_maxA; ++a) {
-                    double powA = a * pow(host, a);
-                    for (int b = 1; b <= m_maxB; b++) {
-                        double beta = constants[Index(a, b)];
-                        const double c = (beta * pow(guest, b) * powA);
-                        value += (a * c / host_0 * LocalTable()->data(j, Index(a, b) + 1)) * GlobalTable()->isChecked(0, Index(a, b));
-                    }
-                }
-
-                //+ complex / host_0 * LocalTable()->data(j, 1);
-                SetValue(i, j, value);
-            }
-            if (!m_fast)
-                SetConcentration(i, vector);
-        }*/
-    if (failed)
-        m_corrupt = true;
-    //  std::cout << timer << "  " << QDateTime::currentMSecsSinceEpoch() - t0 << std::endl;
 }
-/*
-QVector<qreal> nmr_any_Model::DeCompose(int datapoint, int series) const
-{
-    QString method = getOption(Method);
 
-    QVector<qreal> vector;
-    qreal host_0 = InitialHostConcentration(datapoint);
-
-    Vector concentration = getConcentration(datapoint);
-
-    qreal host = concentration(1);
-
-    qreal complex = concentration(3);
-    ;
-
-    vector << host / host_0 * LocalTable()->data(series, 0);
-    vector << complex / host_0 * LocalTable()->data(series, 1);
-
-    return vector;
-}
-*/
 QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<nmr_any_Model>(new nmr_any_Model(this), &QObject::deleteLater);
@@ -393,36 +337,25 @@ QString nmr_any_Model::AdditionalOutput() const
 {
     QString result;
     return result;
-
-    double delta = 1e-3;
-    qreal host_0 = 1.0;
-    qreal host = 0;
-    qreal diff = host_0 - host;
-    Vector integral(3);
-    qreal end = delta;
-    for (end = delta; diff > 1e-5; end += delta) {
-        qreal guest_0 = end;
-        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = host_0 - host;
-
-        integral(0) += host * delta;
-        integral(1) += (guest_0 - complex) * delta;
-        integral(2) += complex * delta;
-
-        diff = host_0 - complex;
-        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        // std::cout << host << " "
-        //          << " " << guest_0 - complex << " " << complex << std::endl;
-        // std::cout << integral.transpose() << std::endl;
-    }
-    integral(0) /= end;
-    integral(1) /= end;
-    integral(2) /= end;
 }
 
 QString nmr_any_Model::ParameterComment(int parameter) const
 {
-    Q_UNUSED(parameter)
+    const ReactionSystem& sys = m_speciation.System();
+    if (parameter >= 0 && parameter < sys.species.size()) {
+        const Eigen::VectorXi& v = sys.species[parameter].stoich;
+        QStringList lhs;
+        for (int c = 0; c < sys.components.size() && c < v.size(); ++c) {
+            if (v(c) <= 0)
+                continue;
+            lhs << (v(c) == 1 ? sys.components[c] : QString("%1 %2").arg(v(c)).arg(sys.components[c]));
+        }
+        const bool selfAgg = lhs.size() == 1; // a single component on the left -> self-aggregation
+        return QString("%1: %2 &#8652; %3")
+            .arg(selfAgg ? "Self-aggregation" : "Reaction")
+            .arg(lhs.join(" + "))
+            .arg(sys.species[parameter].label);
+    }
     return QString("Reaction: A + B &#8652; AB");
 }
 
