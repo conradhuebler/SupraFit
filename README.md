@@ -49,6 +49,8 @@ SupraFit handles tables that are composed as follows:
 
 The first two columns contain the concentrations of host (fixed concentration) and guest (variable concentration, silent component), the following columns should contain the NMR or UV/VIS signal.
 
+Besides the classic fixed-stoichiometry models (1:1, 1:2, 2:1, …), SupraFit supports **flexible binding stoichiometries**: the equilibrium system is defined by free-text reaction equations (e.g. `A + B <=> AB`, `A + 2 B <=> AB2`, `2 A <=> A2` for host self-aggregation), from which a general N-component speciation is solved numerically. This covers NMR, UV-VIS, fluorescence and ITC and handles arbitrary species, including intermediate complexes reused as reactants and self-association preceding complex formation.
+
 ### ITC data
 | v | q |
 |:-----:|:----:|
