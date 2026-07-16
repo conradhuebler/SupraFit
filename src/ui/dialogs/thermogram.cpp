@@ -758,40 +758,40 @@ void Thermogram::UpdateData()
 
 void Thermogram::File2JsonBlock(const QString& filename, QJsonObject& block) const
 {
-    if (qApp->instance()->property("StoreFileName").toBool()) {
-        QFileInfo info(filename);
-        if (qApp->instance()->property("StoreAbsolutePath").toBool())
-            block["file"] = m_exp_file->text();
-        else
-            block["file"] = info.fileName();
-        if (qApp->instance()->property("StoreFileHash").toBool()) {
-            QCryptographicHash fileHashed(QCryptographicHash::Md5);
+    if (!qApp->instance()->property("StoreFileName").toBool())
+        return;
 
-            QFile file(filename);
-            if (file.open(QIODevice::ReadOnly)) {
-                fileHashed.addData(file.readAll());
-                block["md5"] = QString(fileHashed.result());
-            }
+    QFileInfo info(filename);
+    // Use the filename passed in, not m_exp_file->text(): the latter meant the dilution block was
+    // tagged with the experiment's path (and, since the block object was reused, its md5 too).
+    block["file"] = qApp->instance()->property("StoreAbsolutePath").toBool() ? info.absoluteFilePath() : info.fileName();
+
+    if (qApp->instance()->property("StoreFileHash").toBool()) {
+        QCryptographicHash fileHashed(QCryptographicHash::Md5);
+        QFile file(filename);
+        if (file.open(QIODevice::ReadOnly)) {
+            fileHashed.addData(file.readAll());
+            block["md5"] = QString(fileHashed.result());
         }
     }
 }
 
 QJsonObject Thermogram::Raw() const
 {
-    QJsonObject raw, block;
+    /* The canonical content - the fit blocks and the full per-injection volume vector - comes from
+     * the core ItcProcessor. The dialog only adds the storage-policy provenance (file path, md5),
+     * which depends on qApp settings the GUI-free processor must not know about. Claude Generated */
+    QJsonObject raw = m_processor->toJson();
 
-    block["fit"] = m_experiment_thermogram->getThermogramParameter();
-    File2JsonBlock(m_exp_file->text(), block);
+    QJsonObject experiment = raw["experiment"].toObject();
+    File2JsonBlock(m_exp_file->text(), experiment);
+    raw["experiment"] = experiment;
 
-    raw["experiment"] = block;
-
-    if (!m_dil_file->text().isEmpty()) {
-        block["fit"] = m_dilution_thermogram->getThermogramParameter();
-        block["file"] = m_dil_file->text();
-        File2JsonBlock(m_dil_file->text(), block);
-        raw["dilution"] = block;
+    if (raw.contains("dilution")) {
+        QJsonObject dilution = raw["dilution"].toObject();
+        File2JsonBlock(m_dil_file->text(), dilution);
+        raw["dilution"] = dilution;
     }
-    raw["injectvolume"] = m_injct->text();
     return raw;
 }
 
@@ -799,20 +799,45 @@ void Thermogram::setRaw(const QJsonObject& object)
 {
     m_raw_data = object;
 
-    m_injct->setText(m_raw_data["injectvolume"].toString());
+    // Fit blocks, dilution flag and injection volumes (current vector or legacy scalar) in one step.
+    m_processor->fromJson(object);
 
-    if (m_raw_data.keys().contains("dilution")) {
-        QJsonObject experiment = m_raw_data["dilution"].toObject();
-        setDilutionFile(experiment["file"].toString());
-        setDilutionFit(experiment["fit"].toObject());
+    /* Whether the JSON carried a real per-injection vector. Loading the .itc files below refills the
+     * volumes from the file's @-lines, which must beat a legacy broadcast scalar (a variable-step
+     * titration would otherwise be flattened to one value) but must NOT overwrite manual per-injection
+     * edits - those live only in the stored vector. Claude Generated */
+    const bool had_vector = object["InjectVolume"].isString() && !object["InjectVolume"].toString().isEmpty();
+    const QVector<qreal> stored = m_processor->injectionVolumes();
+
+    // Seed the display field with the legacy scalar; setExperimentFile re-seeds it from the file.
+    if (object.contains("injectvolume"))
+        m_injct->setText(object["injectvolume"].toVariant().toString());
+
+    if (object.contains("dilution")) {
+        const QJsonObject dilution = object["dilution"].toObject();
+        // Fit before file: Initialise()/IntegrateThermogram() run inside setDilutionFile and have to
+        // see the stored parameters - the old order applied them afterwards, so they never took.
+        setDilutionFit(dilution["fit"].toObject());
+        setDilutionFile(dilution["file"].toString());
     }
 
-    QJsonObject experiment = m_raw_data["experiment"].toObject();
+    const QJsonObject experiment = object["experiment"].toObject();
     setExperimentFit(experiment["fit"].toObject());
     setExperimentFile(experiment["file"].toString());
 
-    if (m_raw_data.keys().contains("scaling"))
-        setScaling(m_raw_data["scaling"].toString());
+    if (had_vector && stored.size())
+        m_processor->setInjectionVolumes(stored); // manual edits win over the file's @-lines
+    else if (stored.size() && m_processor->injectionVolumes().isEmpty())
+        m_processor->setInjectionVolumes(stored); // a legacy scalar only fills a gap the file left
+
+    // An old project could carry different factors on the two fit blocks; the experiment's is the
+    // titration's. setScalingFactor couples both handlers to it.
+    setScalingFactor(m_processor->scalingFactor());
+
+    if (object.contains("scaling")) // very old top-level key
+        setScaling(object["scaling"].toString());
+
+    UpdateData();
 }
 
 void Thermogram::setSystemParameter(const QJsonObject& object)
