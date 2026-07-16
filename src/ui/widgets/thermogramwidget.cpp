@@ -394,15 +394,13 @@ void ThermogramWidget::setUi()
     m_scaling->setMaximumWidth(100);
 
     connect(m_scaling, &QComboBox::currentTextChanged, m_scaling, [this]() {
-        // Push only the scaling factor via the typed setter and re-scale. Previously this rebuilt a
-        // full parameter block (LoadDefaultThermogram) from zeroed shadow fields, which silently reset
-        // CalibrationHeat/PeakDuration/PeakCount on the handler. Claude Generated
+        // Announce the choice; the ItcProcessor owns the factor and applies it to both handlers, so
+        // the experiment and the dilution stay in the same unit. The widget no longer pushes it to
+        // its own handler directly - that let the two thermograms drift to different scalings.
+        // Claude Generated
         m_ScalingFactor = m_scaling->currentText().toDouble();
-        m_stored_thermogram->setScalingFactor(m_ScalingFactor);
-        m_stored_thermogram->ApplyScaling();
+        emit ScalingFactorChanged(m_ScalingFactor);
     });
-    m_ScalingFactor = m_scaling->currentText().toDouble();
-    m_stored_thermogram->setScalingFactor(m_ScalingFactor);
 
     m_integration_range_threshold = new QDoubleSpinBox;
     m_integration_range_threshold->setMinimum(0);
@@ -608,11 +606,20 @@ ThermogramWidget::~ThermogramWidget()
     settings.setValue("integration_range", m_integration_range->currentText());
 }
 
+void ThermogramWidget::setScalingFactor(qreal factor)
+{
+    QSignalBlocker block(m_scaling);
+    m_ScalingFactor = factor;
+    m_scaling->setCurrentText(QString::number(factor));
+}
+
 void ThermogramWidget::LoadDefault()
 {
-    QJsonObject thermo;
-    thermo["ScalingFactor"] = m_ScalingFactor;
-    m_stored_thermogram->UpdateParameter(thermo);
+    /* Adopt the handler's scaling factor into the combo, rather than stamping the combo's value onto
+     * the handler. This runs on ThermogramInitialised, i.e. after a project restores the handler's
+     * stored ScalingFactor - the old stamp overwrote it with the widget's default every reload, so a
+     * saved cal->J factor never survived. Claude Generated */
+    setScalingFactor(m_stored_thermogram->ScalingFactor());
     Update();
 }
 

@@ -94,6 +94,17 @@ public slots:
     void UpdatePeaks();
     void UpdateBaseLine();
 
+    /*! \brief Show `factor` in the cal->J combo without pushing it anywhere.
+     *
+     * The factor is owned by the ItcProcessor - experiment and dilution must share it - so this
+     * widget is only a view on it. Blocks the combo's own signal, so syncing the two widgets cannot
+     * feed back. Claude Generated */
+    void setScalingFactor(qreal factor);
+
+signals:
+    //! The user picked a new cal->J factor; the owner (ItcProcessor) decides what to do. Claude Generated
+    void ScalingFactorChanged(qreal factor);
+
 private:
     void LoadDefault();
     void setUi();

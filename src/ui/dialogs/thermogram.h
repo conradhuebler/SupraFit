@@ -82,6 +82,10 @@ public:
     void setExperimentFit(const QJsonObject& json);
     void setDilutionFit(const QJsonObject& json);
     void setScaling(const QString& str);
+
+    /*! \brief The one entry point for the cal->J factor: the processor re-scales both handlers, then
+     * both combos are synced to show the same value. Claude Generated */
+    void setScalingFactor(qreal factor);
     void setRaw(const QJsonObject& object);
     void setSystemParameter(const QJsonObject& object);
     void setRootDir(const QString& str) { m_root_dir = str; }

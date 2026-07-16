@@ -86,6 +86,11 @@ void Thermogram::setUi()
      * resolve emits nothing, so this does not re-enter. Claude Generated */
     connect(m_processor, &ItcProcessor::resultChanged, this, &Thermogram::UpdateData);
 
+    // Either combo drives the shared cal->J factor through the processor; both then show it.
+    connect(m_experiment, &ThermogramWidget::ScalingFactorChanged, this, &Thermogram::setScalingFactor);
+    connect(m_dilution, &ThermogramWidget::ScalingFactorChanged, this, &Thermogram::setScalingFactor);
+    setScalingFactor(cal2joule); // seed the processor and both combos
+
     QGridLayout* layout = new QGridLayout;
 
     m_exp_button = new QPushButton(tr("Load Experiment"));
@@ -386,9 +391,22 @@ void Thermogram::ApplySystemParameter(const QJsonObject& parameter)
     m_UseParameter->setChecked(m_systemparameter.size() != 0);
 }
 
+void Thermogram::setScalingFactor(qreal factor)
+{
+    // The processor sets and re-scales both handlers (emitting resultChanged -> re-render); then
+    // both combos are synced to show the shared value. The processor's setter is idempotent and each
+    // widget blocks its own combo, so this cannot loop between the two widgets.
+    m_processor->setScalingFactor(factor);
+    m_experiment->setScalingFactor(factor);
+    m_dilution->setScalingFactor(factor);
+}
+
 void Thermogram::setScaling(const QString& str)
 {
-    //m_scale->setCurrentText(str);
+    bool ok = false;
+    const qreal factor = QString(str).replace(",", ".").toDouble(&ok);
+    if (ok)
+        setScalingFactor(factor);
 }
 
 PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
