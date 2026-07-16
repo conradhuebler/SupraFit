@@ -188,7 +188,6 @@ void Thermogram::setUi()
     m_freq->setReadOnly(true);
 */
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
-    m_offset = new QLabel(tr("No offset"));
 
     // An explicit switch for "use the field's value for every injection", instead of the old
     // per-keystroke toggle whose value depended on how many characters had been typed. The field is
@@ -421,8 +420,6 @@ PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
 
 void Thermogram::setExperimentFile(QString filename)
 {
-    m_heat_offset = 0;
-
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
         m_exp_file->setStyleSheet("background-color: " + excluded());
@@ -481,7 +478,6 @@ void Thermogram::setExperimentFile(QString filename)
     m_experiment_thermogram->Initialise();
     m_experiment_thermogram->IntegrateThermogram();
 
-    m_exp_therm = original;
     m_experiment->setEnabled(true);
 
     m_exp_file->setText(filename);
@@ -697,7 +693,6 @@ void Thermogram::setDilutionFile(QString filename)
     // subtract it at all. Enabling it re-joins, so the table follows without further prompting.
     m_processor->setDilutionEnabled(true);
 
-    m_dil_therm = original;
     m_dil_file->setText(filename);
     m_mainwidget->setCurrentIndex(2);
 }
@@ -797,8 +792,6 @@ QJsonObject Thermogram::Raw() const
 
 void Thermogram::setRaw(const QJsonObject& object)
 {
-    m_raw_data = object;
-
     // Fit blocks, dilution flag and injection volumes (current vector or legacy scalar) in one step.
     m_processor->fromJson(object);
 

@@ -130,7 +130,7 @@ private:
     QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume, *m_showDilution, *m_uniformInject;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QComboBox* m_scale;
-    QLabel *m_message, *m_offset;
+    QLabel* m_message;
     QTabWidget* m_mainwidget;
     QDoubleSpinBox* m_freq;
     QTableWidget* m_table;
@@ -140,21 +140,15 @@ private:
 
     ChartView* m_data_view;
     QSplitter* m_splitter;
-    LineSeries* fromSpectrum(const PeakPick::spectrum original);
-
-    std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
-
 
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
-    PeakPick::spectrum m_exp_therm, m_dil_therm;
     ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;
     QDialogButtonBox* m_buttonbox;
 
     QString m_root_dir;
-    QJsonObject m_systemparameter, m_raw_data;
-    bool m_injection = false, m_forceStep = false, m_ParameterUsed = false;
+    QJsonObject m_systemparameter;
+    bool m_ParameterUsed = false;
     bool m_updating_table = false; //!< guards UpdateTable() rebuilds against the cellChanged handler (Claude Generated)
-    qreal m_heat_offset = 0, m_dil_offset = 0;
 
 private slots:
     void setExperiment();

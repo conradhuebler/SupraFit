@@ -14,7 +14,8 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 ### File Management  
 - **filehandler.cpp/h**: File I/O operations with range selection capabilities (Claude Generated)
 - **jsonhandler.cpp/h**: JSON serialization and deserialization for project files
-- **thermogramhandler.cpp/h**: Specialized thermogram data processing
+- **thermogramhandler.cpp/h**: Specialized thermogram data processing (one per ITC trace)
+- **itcprocessor.cpp/h**: GUI-free ITC import orchestrator (Claude Generated) — owns the experiment + optional dilution `ThermogramHandler`, the per-injection volumes and the shared cal→J factor; produces the (volume, net heat) table via the experiment−dilution join. Used by both `FileHandler::ReadITC` and the GUI import dialog. Volume-vector helpers (`injectionCount`/`setUniformInjectionVolume`/`padInjectionVolumes`), coupled `setScalingFactor`, and `setDilutionEnabled` (gates an already-integrated dilution into the join).
 - **spectrahandler.cpp/h**: Spectral data import and processing
 
 ### Mathematical Operations
