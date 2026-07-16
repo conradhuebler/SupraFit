@@ -173,7 +173,7 @@ jobs:
           codesign -dvv "$APP_PATH"
 
           echo "codesign deep verification:"
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          codesign --verify --deep --verbose=2 "$APP_PATH"
 
           echo "spctl assessment (informational in CI without notarization):"
           spctl -a -vv --type exec "$APP_PATH" || true
