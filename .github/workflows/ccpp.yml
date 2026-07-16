@@ -140,7 +140,18 @@ jobs:
           /usr/bin/osascript -e 'tell application "System Events" to keystroke "o" using command down'
           sleep 2
 
-          DIALOG_STATE=$(/usr/bin/osascript -e "tell application \"System Events\" to tell process \"$APP_PROCESS\" to if ((count of sheets of windows) > 0) or ((count of windows) > 1) then return \"ok\" else return \"missing\"")
+          DIALOG_STATE=$(/usr/bin/osascript <<EOF
+          tell application "System Events"
+            tell process "$APP_PROCESS"
+              if ((count of sheets of windows) > 0) or ((count of windows) > 1) then
+                return "ok"
+              else
+                return "missing"
+              end if
+            end tell
+          end tell
+          EOF
+          )
           if [[ "$DIALOG_STATE" != "ok" ]]; then
             echo "Open dialog did not appear after Cmd+O."
             exit 1
