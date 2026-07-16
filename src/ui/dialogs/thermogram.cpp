@@ -79,8 +79,12 @@ void Thermogram::setUi()
     /* One connection instead of one per handler: the processor's constructor already recomputes the
      * net heat whenever either handler re-integrates, so resultChanged() fires once per change and
      * always after the join is consistent. Listening to the handlers directly meant the dialog could
-     * render before the processor had re-joined. Claude Generated */
-    connect(m_processor, &ItcProcessor::resultChanged, this, &Thermogram::UpdateTable);
+     * render before the processor had re-joined.
+     *
+     * UpdateData (resolve volumes, then render), not UpdateTable directly: re-integration can change
+     * the peak count, so the volume vector has to be brought back to length before it is shown. The
+     * resolve emits nothing, so this does not re-enter. Claude Generated */
+    connect(m_processor, &ItcProcessor::resultChanged, this, &Thermogram::UpdateData);
 
     QGridLayout* layout = new QGridLayout;
 
@@ -181,15 +185,20 @@ void Thermogram::setUi()
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
     m_offset = new QLabel(tr("No offset"));
 
-    connect(m_injct, &QLineEdit::textChanged, m_injct, [this]() {
-        if (m_forceInject) {
-            m_message->setText("Inject Volume will be taken from ITC file (if available)!");
-            m_forceInject = false;
-        } else {
-            m_message->setText("Inject Volume will NOT be taken from ITC file!");
-            m_forceInject = true;
-        }
-        UpdateTable();
+    // An explicit switch for "use the field's value for every injection", instead of the old
+    // per-keystroke toggle whose value depended on how many characters had been typed. The field is
+    // only editable while the box is checked. Claude Generated
+    m_uniformInject = new QCheckBox(tr("Uniform volume for all injections"));
+    m_uniformInject->setToolTip(tr("Apply the volume on the left to every injection instead of the "
+                                   "per-injection volumes from the .itc file. Loading a file resets this."));
+    m_injct->setEnabled(false);
+
+    connect(m_uniformInject, &QCheckBox::toggled, this, [this](bool on) {
+        m_injct->setEnabled(on);
+        UpdateData();
+    });
+    connect(m_injct, &QLineEdit::textChanged, this, [this]() {
+        UpdateData();
     });
 
     QHBoxLayout* hlayout = new QHBoxLayout;
@@ -220,7 +229,8 @@ void Thermogram::setUi()
 
     layout->addWidget(new QLabel(tr("Inject Volume")), 2, 0);
     layout->addWidget(m_injct, 2, 1);
-    layout->addWidget(m_message, 2, 2, 1, 2);
+    layout->addWidget(m_uniformInject, 2, 2);
+    layout->addWidget(m_message, 2, 3);
 
     /*
     hlayout = new QHBoxLayout;
@@ -256,7 +266,9 @@ void Thermogram::setUi()
         if (!ok)
             return;
         m_processor->setInjectionVolume(row, value);
-        m_forceInject = false; // a manual per-point edit takes precedence over the single forced value
+        // A manual per-point edit is a per-injection choice, so leave uniform mode - otherwise the
+        // next resolve would broadcast the field's value straight back over it.
+        m_uniformInject->setChecked(false);
     });
 
     m_thm_series = new ScatterSeries;
@@ -356,8 +368,6 @@ Thermogram::~Thermogram()
 
 QPair<PeakPick::spectrum, QJsonObject> Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
 {
-    m_forceInject = false;
-    m_injection = true;
     qreal freq = 0;
     // QSignalBlocker block(m_freq);
     // m_freq->setValue(freq);
@@ -415,6 +425,9 @@ void Thermogram::setExperimentFile(QString filename)
             m_processor->setInjectionVolumes(inject);
             ApplySystemParameter(pair.second);
 
+            // The file's per-injection volumes are now authoritative; leave uniform mode so they are
+            // not overwritten, and give the operator a recovery path (a reload always wins).
+            m_uniformInject->setChecked(false);
             QSignalBlocker block(m_injct);
             if (inject.size())
                 m_injct->setText(QString::number(inject.last()));
@@ -470,24 +483,18 @@ void Thermogram::setExperiment()
 
 QVector<QVector<qreal>> Thermogram::ResultRows() const
 {
+    // ResolveInjectionVolumes() has already made the vector as long as the peak list, so a row past
+    // its end means no volume is known - shown as 0, not invented.
     const QVector<qreal> volumes = m_processor->injectionVolumes();
     const QVector<qreal> net = m_processor->netHeat();
     const QVector<qreal> raw_exp = m_processor->experiment()->Integrals();
     // Only show a dilution column for a dilution that is actually being subtracted.
     const QVector<qreal> raw_dil = m_processor->dilutionEnabled() ? m_processor->dilution()->Integrals() : QVector<qreal>();
 
-    // Rows past the known volumes fall back to the single value in the inject field, as the old
-    // renderer did. The uniform-volume commit resolves the vector up front and drops this.
-    const qreal fallback = QString(m_injct->text()).replace(",", ".").toDouble();
-
     QVector<QVector<qreal>> rows;
     rows.reserve(net.size());
     for (int j = 0; j < net.size(); ++j) {
-        qreal volume = (j < volumes.size()) ? volumes[j] : fallback;
-        if (m_forceInject && !m_injct->text().isEmpty())
-            volume = fallback;
-
-        rows << (QVector<qreal>() << volume
+        rows << (QVector<qreal>() << (j < volumes.size() ? volumes[j] : 0.0)
                                   << (j < raw_exp.size() ? raw_exp[j] : 0.0)
                                   << (j < raw_dil.size() ? raw_dil[j] : 0.0)
                                   << net[j]);
@@ -554,6 +561,32 @@ void Thermogram::UpdateTable()
     m_data_view->setYAxis("Heat q");
     m_export_data->setEnabled(m_table->rowCount() && m_table->columnCount());
     m_updating_table = false;
+
+    UpdateMessage(rows.size());
+}
+
+void Thermogram::UpdateMessage(int injections)
+{
+    QString message;
+    if (m_uniformInject->isChecked())
+        message = tr("Uniform volume %1 %2L applied to all %3 injections.")
+                      .arg(m_injct->text())
+                      .arg(QChar(956))
+                      .arg(injections);
+    else
+        message = tr("Injection volumes taken from the ITC file (%1 injections).").arg(injections);
+
+    // The dilution/experiment length mismatch used to be silent: shorter dilutions just subtracted
+    // zero past their last peak.
+    if (m_processor->dilutionEnabled()) {
+        const int dil = m_processor->dilution()->Integrals().size();
+        if (dil < injections)
+            message += tr(" Dilution covers only %1 of %2 injections; the rest are treated as zero "
+                          "dilution heat.")
+                           .arg(dil)
+                           .arg(injections);
+    }
+    m_message->setText(message);
 }
 
 QString Thermogram::Content() const
@@ -563,10 +596,9 @@ QString Thermogram::Content() const
      * item(i, 0) unguarded and passing on a comma decimal from a manually edited cell that
      * FileHandler would then misparse.
      *
-     * Not m_processor->resultTable() yet: that reads the volume vector directly and yields 0 for
-     * rows the vector does not cover, while the table falls back to the inject field. The two agree
-     * once the volumes are resolved up front - see the uniform-volume commit - and this can become
-     * resultTable() then. Claude Generated */
+     * Renders ResultRows() rather than m_processor->resultTable(): the two are now equal (the volume
+     * vector is resolved to the peak count before every render), but ResultRows() reads the same
+     * resolved vector the table does without depending on that resolve having run. Claude Generated */
     QString content;
     for (const QVector<qreal>& row : ResultRows()) {
         content += QString::number(row[0]) + "\t";
@@ -684,9 +716,25 @@ void Thermogram::clearDilution()
     }
 }
 
+void Thermogram::ResolveInjectionVolumes()
+{
+    if (m_processor->injectionCount() == 0)
+        return;
+
+    bool ok = false;
+    const qreal scalar = QString(m_injct->text()).replace(",", ".").toDouble(&ok);
+
+    if (m_uniformInject->isChecked() && ok)
+        m_processor->setUniformInjectionVolume(scalar);
+    else
+        // Keep the per-injection volumes; only fill rows the vector does not yet cover. This is the
+        // renderer's old "value for rows past the vector" fallback, made a property of the vector.
+        m_processor->padInjectionVolumes(ok ? scalar : 0.0);
+}
+
 void Thermogram::UpdateData()
 {
-    //m_offset->setText(QString::number((m_heat_offset + m_dil_offset) * m_scale->currentText().toDouble()) + " = Heat: " + QString::number(m_heat_offset * m_scale->currentText().toDouble()) + "+ Dilution:" + QString::number(m_dil_offset * m_scale->currentText().toDouble()) + "  ");
+    ResolveInjectionVolumes();
     UpdateTable();
 }
 
