@@ -13,7 +13,7 @@ Comprehensive test suite for SupraFit functionality using Qt Test framework. Ens
 
 ### Advanced Component Tests
 - **test_datagenerator.cpp**: DataGenerator comprehensive testing ✅ **PASSED** (0.04s)
-- **test_pipeline.cpp**: ML pipeline integration tests ❌ **FAILED** (1.03s) - API mismatches
+- **test_pipeline.cpp**: ML pipeline integration tests ❌ **FAILED** (17/35) - API mismatches; links since 2026-07-17
 
 ### Comprehensive CLI Testing Suite (Claude Generated - 2025-09-04) ✅ **CLI MIGRATION COMPLETED**
 - **test_cli_core.cpp**: CLI argument parsing, parameter extraction ❌ **FAILED** (0.93s) - API mismatches (migrated ✅)
@@ -124,7 +124,22 @@ make run_tests
 
 ## Test Results Summary - Updated 2025-01-09
 
-**CURRENT STATUS (measured 2026-07-03 via `ctest`): 11/26 tests passing (42%)**
+**CURRENT STATUS (measured 2026-07-17 via `ctest`): 25/39 tests passing (64%), ~26 min**
+
+The 14 red are the CLI family (`CliCore`, `CliDataGeneration`, `CliMLPipeline`, `DataGeneration`,
+`ModelFitting`, `PostProcessing`, `MLExtraction`, `MultiProject`, `FileOperations`, `Integration`,
+`ComprehensiveRealData`), plus `Pipeline`, `AnalysisManager` and `MLPipelineExamples` (timeout) —
+all stale expectations against the `suprafit_cli` binary, not build breaks. `PipelineTest` links
+since 2026-07-17 (`data_factory.cpp` was missing from `CLIENT_SOURCES`) and now fails on its
+assertions rather than at the linker: 17/35.
+
+⚠️ **`ReferenceProjectsTest` is flaky under parallel ctest load** — 13/1 once while a `make -j4` was
+running, 14/0 on retry and on three consecutive standalone runs. It sets `qApp->setProperty("threads", 4)`
+and competes for the pool. Re-run a lone red isolated before believing it.
+
+Note: Qt totals include `initTestCase`/`cleanupTestCase`, so they are two above the slot count.
+
+**Older status (2026-07-03): 11/26 (42%)**
 
 - ✅ **`test_dataclass` now PASSES** (the long-standing 30s timeout no longer reproduces).
 - The 15 failing tests are mostly CLI tests that invoke the `suprafit_cli` binary and assert on

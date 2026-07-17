@@ -56,7 +56,14 @@ derives `lg β ≈ (order-1)·(-lg c_ref)` from stoichiometry + data concentrati
 - Debug tests: `cd debug && cmake . && make <target> -j4`; run `./src/tests/<t>`. Release (for perf):
   `cd release`. NOTE: shell cwd persists between calls — always `cd` explicitly.
 - Green: `test_reactionparser` (16), `test_nmr_selfaggregation` (5), `test_nmr_ncomponent` (6),
-  `test_uvvis_any` (3), `test_itc_any` (4), `test_bfgs_solver` (5), reference regression (14/0, ~55 s).
+  `test_uvvis_any` (3), `test_itc_any` (6 since 2026-07-17), `test_bfgs_solver` (5),
+  reference regression (14/0 + 4 skipped, ~55 s idle / ~120 s under load).
+- **`ReferenceProjectsTest` is flaky under parallel `ctest` load** (seen 2026-07-17): 13/1 once while
+  a `make -j4` was running, then 14/0 on the ctest retry and on three consecutive standalone runs.
+  Treat a lone red here as suspect and re-run it isolated before believing it. The test sets
+  `qApp->setProperty("threads", 4)`, so it is competing for the same pool.
+- Counts in this file are Qt's totals, which include `initTestCase`/`cleanupTestCase` — two more than
+  the number of test slots.
 - GUI builds + launches offscreen (`QT_QPA_PLATFORM=offscreen`). Links `suprafit_gui models core
   cutechart`.
 
