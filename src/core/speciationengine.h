@@ -55,6 +55,19 @@ public:
     Eigen::VectorXi SpeciesStoichiometry(int j) const;
     const Eigen::MatrixXi& Stoichiometry() const { return m_system.stoich; }
 
+    /**
+     * @brief Seed for lg beta of species @p j, from its stoichiometric order and a concentration scale.
+     *
+     * lg beta ~ (order - 1) * (-lg c_ref): a species of order n is half-formed where the product of
+     * n-1 free concentrations balances beta, so the constant that puts it on the titration's own
+     * concentration scale grows with its order. Floored at 1 to stay in a physical range.
+     *
+     * @param logcref log10 of the reference concentration; the caller supplies it, since where the
+     *        totals come from is the model's business (titration data vs. ITC cell/syringe protocol).
+     * Claude Generated
+     */
+    double GuessLgBeta(int j, double logcref) const;
+
     /** @brief Linear (not log10) cumulative stability constants, one per species; 0 disables one. */
     void setStabilityConstants(const std::vector<double>& beta);
     void setMaxIter(int maxiter);
