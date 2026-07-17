@@ -3,8 +3,9 @@
 Drive SupraFit's model fitting and statistical post-processing from Python. The default backend
 shells out to the `suprafit_cli` executable over JSON. An in-process **native backend** (pybind11)
 is a drop-in via `suprafit.set_backend("native")` — same scripts, no subprocess/temp files. The
-native backend currently covers **fitting** (array/file data); statistical post-processing stays on
-the CLI backend for now (Phase 3). See `roadmap/python_interface.md`.
+native backend covers **fitting and post-processing** (Monte Carlo, cross-validation, …) for
+array/file data; the equation/model data generators remain CLI-only. See
+`roadmap/python_interface.md`.
 
 ## Native backend (optional, faster)
 

@@ -80,17 +80,32 @@ def test_native_matches_cli_backend(reference_arrays):
                        np.asarray(cli.local_parameters), rtol=1e-6)
 
 
-def test_native_postprocessing_fails_cleanly(reference_arrays):
+def test_native_postprocessing_in_process(reference_arrays):
+    """Monte Carlo + cross-validation run in-process via the native backend (Phase 3).
+
+    The statistics engine divides by the app-wide "threads" property; the module must set it (as the
+    CLI does) or JobManager SIGFPEs. This exercises that path end-to-end."""
     indep, dep = reference_arrays
     sf.set_backend("native")
     try:
         proj = sf.Project.from_arrays(indep, dep)
         proj.add_model("nmr_1_1")
-        proj.monte_carlo(steps=20)
-        with pytest.raises(NotImplementedError, match="Phase 3"):
-            proj.fit(nproc=2)
+        proj.monte_carlo(steps=100, variance_source="SEy", seed=42)
+        proj.cross_validation(cv_type="L0O")
+        proj.fit(nproc=4)
+        m = proj.model("nmr_1_1")
     finally:
         sf.set_backend("cli")
+    assert m is not None
+    assert "MonteCarlo" in m.statistics and "CrossValidation" in m.statistics
+    # MC gives a 95% confidence interval bracketing the fitted lg K (~2.8957); stochastic -> loose.
+    mc = m.statistics["MonteCarlo"][0]["parameters"]["0"]
+    lo, hi = mc["confidence"]["lower"], mc["confidence"]["upper"]
+    assert lo < 2.8957 < hi
+    assert hi - lo == pytest.approx(0.07, abs=0.05)
+    # CV is (near) deterministic here; its boxplot mean sits on the fitted value.
+    cv = m.statistics["CrossValidation"][0]["parameters"]["0"]
+    assert cv["boxplot"]["mean"] == pytest.approx(2.8957, abs=1e-2)
 
 
 def _cli_available() -> bool:

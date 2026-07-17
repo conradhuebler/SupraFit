@@ -129,20 +129,11 @@ class NativeBackend(Backend):
             import numpy as np
         except ImportError as e:
             raise NotImplementedError("NativeBackend requires numpy for in-process data exchange.") from e
-        # Post-fit statistics (Monte Carlo, cross-validation, ...) are Phase 3: JobManager::RunJobs()
-        # is not yet safe to drive in-process. Fail clearly instead of crashing so the user switches
-        # to the CLI backend for those. Claude Generated.
-        methods = (task_config.get("PostFitAnalysis") or {}).get("methods")
-        if methods:
-            raise NotImplementedError(
-                "NativeBackend does the fit only (Phase 2). Post-fit analysis "
-                f"({len(methods)} method(s) requested) is Phase 3 — run it via the CLI backend: "
-                "suprafit.set_backend('cli')."
-            )
         indep = _table_from_block(task_config.get("Independent", {}), np)
         dep = _table_from_block(task_config.get("Dependent", {}), np)
         models_json = json.dumps(task_config.get("AddModels", {}))
-        project_json = self._core.fit_from_tables(indep, dep, models_json)
+        analysis_json = json.dumps(task_config.get("PostFitAnalysis", {}) or {})
+        project_json = self._core.fit_from_tables(indep, dep, models_json, analysis_json, int(nproc))
         try:
             return json.loads(project_json)
         except (json.JSONDecodeError, TypeError) as e:

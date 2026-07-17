@@ -28,6 +28,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
+#include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 
 #include "src/core/analysis_manager.h"
@@ -74,14 +75,23 @@ static void ensureQCoreApplication()
  * \param dependent    data points (rows) x series (cols)
  * \param modelsJson   the CLI `AddModels` object, e.g. {"nmr_1_1": {"ID": 1, "Options": {...}}}
  * \param analysisJson the post-fit config, e.g. {"methods": [{"Method": 1, ...}]} (may be empty)
+ * \param nproc        worker threads for post-fit statistics; <=0 uses the pool's max thread count
  * Claude Generated.
  */
 static std::string fitFromTables(const Eigen::MatrixXd& independent,
     const Eigen::MatrixXd& dependent,
     const std::string& modelsJson,
-    const std::string& analysisJson)
+    const std::string& analysisJson,
+    int nproc)
 {
     ensureQCoreApplication();
+
+    // The statistics engine (JobManager / MonteCarloStatistics / ResampleAnalyse) reads the worker
+    // count from the app-wide "threads" property and DIVIDES by it (blocksize = MaxSteps/threads/20).
+    // The CLI/GUI set this; a bare module does not, so an unset property reads as 0 and post-fit
+    // analysis crashes with SIGFPE. Set it here exactly as suprafit_cli does. Claude Generated.
+    const int threads = nproc > 0 ? nproc : QThreadPool::globalInstance()->maxThreadCount();
+    QCoreApplication::instance()->setProperty("threads", threads);
 
     // Each table is duplicated into its raw slot; the DataClass owns all four and frees them in its
     // destructor (see the DataClassPrivate table-ownership fixes).
@@ -134,6 +144,7 @@ PYBIND11_MODULE(_core, m)
     m.def("fit_from_tables", &fitFromTables,
         py::arg("independent"), py::arg("dependent"),
         py::arg("models_json"), py::arg("analysis_json") = std::string("{}"),
-        "Fit models to independent/dependent tables in-process; returns the project JSON string "
-        "(same shape as the CLI backend). See _core.fitFromTables docs.");
+        py::arg("nproc") = 0,
+        "Fit models to independent/dependent tables in-process (optionally with post-fit analysis); "
+        "returns the project JSON string (same shape as the CLI backend).");
 }

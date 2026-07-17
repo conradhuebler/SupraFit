@@ -139,10 +139,13 @@ NumPy integration ultimately live.
   `NativeBackend` is wired so `set_backend("native")` is a transparent drop-in for array/file data;
   it recovers the reference oracle's constants exactly and matches the CLI backend
   (`python/tests/test_native.py`).
-- **Deferred to Phase 3:** in-process post-fit statistics — `JobManager::RunJobs()` currently
-  SIGFPEs when driven from the module, so `NativeBackend` raises a clear error and post-processing
-  stays on the CLI backend. Also still to bind: the lower-level verbs (create_model, set_global,
-  ModelTable/ErrorTable as NumPy) and the equation/model data generators.
+- **Phase 3 post-fit statistics also DONE in-process (2026-07-17):** the earlier SIGFPE was just the
+  app-wide `threads` property being unset — the statistics engine divides by it
+  (`blocksize = MaxSteps/threads/20`), so an unset 0 crashed; the module now sets it as the CLI does.
+  Monte Carlo + cross-validation (and the other methods) run in-process via `fit_from_tables(..., nproc)`
+  and reproduce the reference oracle's summaries (`python/tests/test_native.py`).
+- **Still to bind (later):** the lower-level verbs (create_model, set_global, ModelTable/ErrorTable
+  as NumPy) and the equation/model data generators (native currently needs array/file data).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
   pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).
