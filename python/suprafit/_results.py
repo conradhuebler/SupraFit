@@ -149,6 +149,9 @@ class Model:
         self.global_parameters = _parse_global_parameters(raw.get("data", {}).get("globalParameter"))
         self.local_parameters = _parse_local_parameters(raw.get("data", {}).get("localParameter"))
         self.statistics = _parse_methods(raw.get("data", {}).get("methods"))
+        # Standardized ML feature vector computed in C++ (StatisticTool::ExtractModelMLFeatures);
+        # populated by the native backend (dict), None on the CLI backend. Claude Generated.
+        self.ml_features = raw.get("ml_features")
 
     @property
     def raw(self) -> dict:

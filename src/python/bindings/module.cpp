@@ -21,6 +21,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+#include <cmath>
 #include <string>
 
 #include <QtCore/QByteArray>
@@ -31,7 +32,10 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 
+#include "src/core/analyse.h"
 #include "src/core/analysis_manager.h"
+#include "src/core/jsonhandler.h"
+#include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/models/datatable.h"
 #include "src/core/projectmanager.h"
@@ -114,8 +118,38 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
     project["data"] = data->ExportData();
     for (int i = 0; i < fitted.size(); ++i) {
         const QJsonObject& r = fitted.at(i);
-        if (r.contains("model_export") && r.value("model_export").isObject())
-            project[QStringLiteral("model_%1").arg(i)] = r.value("model_export").toObject();
+        if (!r.contains("model_export") || !r.value("model_export").isObject())
+            continue;
+        QJsonObject entry = r.value("model_export").toObject();
+        // Reconstruct the fitted model from its export to attach the standardized C++ ML feature
+        // vector (StatisticTool::ExtractModelMLFeatures) — rmse/sigma/dof/complexity/reduced-chi²
+        // etc., richer than the raw export. This is the in-process ML deliverable (roadmap goal #5)
+        // and reuses the same Json2Model path the CLI uses. Claude Generated.
+        QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(entry, data);
+        if (model) {
+            model->CalculateStatistics(true);
+            model->Calculate();
+            QJsonObject feats = StatisticTool::ExtractModelMLFeatures(model);
+            // ExtractModelMLFeatures reads the error stats off the model, but a model rebuilt from
+            // JSON has empty error accumulators (they are only filled by the full fit), so its
+            // SSE-derived features come out 0/null. Overwrite those from the reliable exported
+            // statistics; the structural features (counts, dof, complexity) are already correct.
+            // Claude Generated.
+            const double sse = entry.value("SSE").toDouble();
+            const int points = feats.value("datapoints").toInt();
+            const int dof = feats.value("degrees_of_freedom").toInt();
+            const double sigma = entry.value("standard_error").toDouble();
+            const double rmse = points > 0 ? std::sqrt(sse / points) : 0.0;
+            feats["sse"] = sse;
+            feats["rmse"] = rmse;
+            feats["reduced_chi_squared"] = dof > 0 ? sse / dof : 0.0;
+            feats["sigma"] = sigma;
+            feats["normalized_rmse"] = sigma > 0.0 ? rmse / sigma : 0.0;
+            feats["aic"] = entry.value("AIC").toDouble();
+            feats["aicc"] = entry.value("AICc").toDouble();
+            entry["ml_features"] = feats;
+        }
+        project[QStringLiteral("model_%1").arg(i)] = entry;
     }
 
     const std::string out = QJsonDocument(project).toJson(QJsonDocument::Compact).toStdString();

@@ -80,6 +80,30 @@ def test_native_matches_cli_backend(reference_arrays):
                        np.asarray(cli.local_parameters), rtol=1e-6)
 
 
+def test_native_ml_features(reference_arrays):
+    """The native backend attaches a standardized C++ ML feature vector (roadmap goal #5)."""
+    indep, dep = reference_arrays
+    sf.set_backend("native")
+    try:
+        proj = sf.Project.from_arrays(indep, dep)
+        proj.add_model("nmr_1_1")
+        proj.fit(nproc=2)
+        m = proj.model("nmr_1_1")
+    finally:
+        sf.set_backend("cli")
+    f = m.ml_features
+    assert isinstance(f, dict)
+    # structural + error features, all consistent with the fit
+    for key in ("sse", "rmse", "reduced_chi_squared", "aic", "aicc", "degrees_of_freedom",
+                "complexity_ratio", "datapoints", "series_count", "total_parameters"):
+        assert key in f, f"ml_features missing {key}"
+    assert f["sse"] == pytest.approx(m.sse, rel=1e-9)
+    assert f["rmse"] == pytest.approx((f["sse"] / f["datapoints"]) ** 0.5, rel=1e-9)
+    assert f["reduced_chi_squared"] == pytest.approx(f["sse"] / f["degrees_of_freedom"], rel=1e-9)
+    assert f["total_parameters"] == f["global_parameters"] + f["local_parameters"]
+    assert f["series_count"] == 7
+
+
 def test_native_postprocessing_in_process(reference_arrays):
     """Monte Carlo + cross-validation run in-process via the native backend (Phase 3).
 

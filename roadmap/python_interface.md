@@ -144,6 +144,11 @@ NumPy integration ultimately live.
   (`blocksize = MaxSteps/threads/20`), so an unset 0 crashed; the module now sets it as the CLI does.
   Monte Carlo + cross-validation (and the other methods) run in-process via `fit_from_tables(..., nproc)`
   and reproduce the reference oracle's summaries (`python/tests/test_native.py`).
+- **ML features DONE (2026-07-17):** `fit_from_tables` reconstructs each fitted model
+  (`JsonHandler::Json2Model`) and attaches `StatisticTool::ExtractModelMLFeatures` as
+  `model_export.ml_features`; the reconstructed model's empty error accumulators are backfilled from
+  the reliable exported statistics (SSE/AIC/AICc/standard_error). Surfaced as `Model.ml_features`
+  (native only; None on the CLI). `python/tests/test_native.py::test_native_ml_features`.
 - **Still to bind (later):** the lower-level verbs (create_model, set_global, ModelTable/ErrorTable
   as NumPy) and the equation/model data generators (native currently needs array/file data).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +

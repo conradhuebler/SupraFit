@@ -68,6 +68,9 @@ df = proj.results_frame()                 # one row per model: scalars + flatten
 
 Scalar accessors on each `Model`: `sse`, `sae`, `aic`, `aicc`, `standard_error`, `mean_error`,
 `variance`, `valid`, `converged` (any not present in the project JSON read back as `None`/`False`).
+On the native backend each `Model` also carries `m.ml_features` — a standardized C++ feature dict
+(rmse, sigma, degrees_of_freedom, complexity_ratio, reduced_chi_squared, series_count, parameter
+values, …) computed by `StatisticTool::ExtractModelMLFeatures`; it is `None` on the CLI backend.
 
 Other constructors: `Project.from_file("data.dat", indep_cols=slice(0,2), dep_cols=slice(2,9))`
 and `Project.from_equations("0.001|(X-1)*1e-4", n_points=10, n_vars=2)`.
