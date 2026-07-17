@@ -45,6 +45,7 @@ class QTableWidget;
 class QTabWidget;
 
 class ChartView;
+class DataTable;
 class ItcProcessor;
 class LineSeries;
 class ScatterSeries;
@@ -58,7 +59,13 @@ public:
     Thermogram();
     virtual ~Thermogram();
 
-    QString Content() const;
+    /*! \brief The (injection volume, net heat) result as a fresh DataTable - the caller owns it.
+     *
+     * Hands the processor's table straight over instead of routing the heats through a formatted
+     * string, which capped them at six significant digits. This is the same table
+     * FileHandler::ReadITC() imports, so the GUI and the CLI now read identical numbers.
+     * Claude Generated */
+    DataTable* ResultTable() const;
     inline QJsonObject SystemParamter() const { return m_systemparameter; }
     inline bool ParameterUsed() const { return m_ParameterUsed; }
 

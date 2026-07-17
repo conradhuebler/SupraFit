@@ -553,23 +553,13 @@ void Thermogram::UpdateMessage(int injections)
     m_message->setText(message);
 }
 
-QString Thermogram::Content() const
+DataTable* Thermogram::ResultTable() const
 {
     /* Columns 0 and 3 of the rendered result: what the model is given is by construction what the
-     * table shows. Previously this scraped the QTableWidget back out of the view, dereferencing
-     * item(i, 0) unguarded and passing on a comma decimal from a manually edited cell that
-     * FileHandler would then misparse.
-     *
-     * Renders ResultRows() rather than m_processor->resultTable(): the two are now equal (the volume
-     * vector is resolved to the peak count before every render), but ResultRows() reads the same
-     * resolved vector the table does without depending on that resolve having run. Claude Generated */
-    QString content;
-    for (const QVector<qreal>& row : ResultRows()) {
-        content += QString::number(row[0]) + "\t";
-        content += QString::number(row[3]) + "\t";
-        content += "\n";
-    }
-    return content;
+     * table shows. resultTable() and ResultRows() read the same m_inject/m_net_heat members with the
+     * same padding, so this is the table's own content - only without the round-trip through a
+     * formatted string, which cost every heat all but six significant digits. Claude Generated */
+    return m_processor->resultTable();
 }
 
 void Thermogram::setDilution()
