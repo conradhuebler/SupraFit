@@ -30,6 +30,16 @@ def _as_array(values):
     return [float(v) for v in values]
 
 
+def _num_or_none(value):
+    """Coerce a scalar JSON value to float, or None if absent/unparseable. Claude Generated."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _parse_global_parameters(gp_block: dict | None):
     """globalParameter is {data: {"0": "2.8957 4.6"}, ...} -> a 1D array of lg K values."""
     if not gp_block:
@@ -125,7 +135,16 @@ class Model:
         self._raw = raw
         self.model_id: int = int(raw.get("model", -1))
         self.name: str = raw.get("name", "")
+        # Scalar fit statistics (present in fresh CLI output; some are slimmed out of the reference
+        # fixtures, hence the None fallback). Claude Generated.
         self.sse: float = float(raw.get("SSE", float("nan")))
+        self.sae = _num_or_none(raw.get("SAE"))
+        self.aic = _num_or_none(raw.get("AIC"))
+        self.aicc = _num_or_none(raw.get("AICc"))
+        self.standard_error = _num_or_none(raw.get("standard_error"))
+        self.mean_error = _num_or_none(raw.get("mean_error"))
+        self.variance = _num_or_none(raw.get("variance"))
+        self.valid: bool = bool(raw.get("valid", False))
         self.converged: bool = bool(raw.get("converged", False))
         self.global_parameters = _parse_global_parameters(raw.get("data", {}).get("globalParameter"))
         self.local_parameters = _parse_local_parameters(raw.get("data", {}).get("localParameter"))
@@ -135,6 +154,34 @@ class Model:
     def raw(self) -> dict:
         """The verbatim model entry from the output JSON (for fields this wrapper does not surface)."""
         return self._raw
+
+    def features(self) -> dict:
+        """Flatten this fit into a flat scalar feature dict for ML / scikit-learn.
+
+        Combines the scalar fit statistics with the fitted global and local parameters
+        (`global_<i>`, `local_s<series>_p<param>`). Missing scalars are None. Feed a list of
+        these into `pandas.DataFrame` (or `Project.results_frame()`) to build a feature table.
+        Claude Generated."""
+        feats: dict[str, Any] = {
+            "model_id": self.model_id,
+            "sse": self.sse,
+            "sae": self.sae,
+            "aic": self.aic,
+            "aicc": self.aicc,
+            "standard_error": self.standard_error,
+            "mean_error": self.mean_error,
+            "variance": self.variance,
+            "converged": self.converged,
+            "valid": self.valid,
+        }
+        if self.global_parameters is not None:
+            for i, v in enumerate(self.global_parameters):
+                feats[f"global_{i}"] = float(v)
+        if self.local_parameters is not None:
+            for s, row in enumerate(self.local_parameters):
+                for p, v in enumerate(row):
+                    feats[f"local_s{s}_p{p}"] = float(v)
+        return feats
 
     def __repr__(self) -> str:
         return f"Model(name={self.name!r}, id={self.model_id}, sse={self.sse:.4g}, converged={self.converged})"

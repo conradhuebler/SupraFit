@@ -121,6 +121,20 @@ class Project:
                 return m
         return None
 
+    def results_frame(self):
+        """Return a pandas DataFrame with one row per fitted model (from `Model.features()`).
+
+        Requires pandas (optional). Raises ImportError with guidance if it is not installed.
+        Claude Generated."""
+        try:
+            import pandas as pd
+        except ImportError as e:
+            raise ImportError(
+                "results_frame() needs pandas (pip install pandas); without it use "
+                "[m.features() for m in project.models]."
+            ) from e
+        return pd.DataFrame([m.features() for m in self.models])
+
     def save_config(self, path) -> None:
         """Write the current task-config to disk (useful for debugging / CLI re-runs)."""
         Path(path).write_text(json.dumps(self._task_config(), indent=2))

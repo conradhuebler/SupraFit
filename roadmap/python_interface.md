@@ -109,12 +109,19 @@ NumPy integration ultimately live.
 - **Files:** new `python/suprafit/` package (docs/spec only), reuse `input/*.json` fixtures.
 - **Effort:** 0.5 wk · **Risk:** low.
 
-### Phase 1 — MVP: Option C subprocess wrapper (1 wk)
+### Phase 1 — MVP: Option C subprocess wrapper (1 wk) — ✅ DONE + hardened
 - **Scope:** `suprafit.cli` runner (locate `suprafit_cli`, run with a temp JSON config, capture
   result JSON), plus loaders that parse project/model JSON into dicts and optional pandas frames.
   Cover: generate data, load project, fit models, run post-processing, extract statistics/ML features.
-- **Files (new):** `python/suprafit/__init__.py`, `runner.py`, `project.py`, `results.py`,
-  `pyproject.toml`; reuses `suprafit_cli` (`-i/-o/-l/-x`, `Jobs`, `PostFitAnalysis`, ML pipeline).
+- **Files (shipped):** `python/suprafit/` package (`__init__.py`, `_cli.py`, `_backend.py`,
+  `_config.py`, `_data.py`, `_jobs.py`, `_models.py`, `_project.py`, `_results.py`, `errors.py`),
+  `pyproject.toml`; reuses `suprafit_cli` (`-i/-o/-n`, `AddModels`, `PostFitAnalysis`, ML pipeline).
+- **Hardening (2026-07-17):** `Model` surfaces scalar fit statistics (`aic`, `aicc`, `sae`,
+  `standard_error`, `mean_error`, `variance`, `valid`, plus `sse`/`converged`); added
+  `Model.features()` + `Project.results_frame()` (feature table for scikit-learn); parser-only
+  golden regression `python/tests/test_reference.py` against `data/samples/reference/simulated_1_1.json`
+  (the oracle for Phase 2, runs without a built CLI). Note: real ML feature vectors are assembled
+  Python-side — the CLI's `-ml-features` file is only a slimmed project and is intentionally not read.
 - **Effort:** ~1 wk · **Risk:** low (subprocess/temp-file overhead only).
 
 ### Phase 2 — pybind11 core module, MVP surface (1.5 wk)

@@ -37,13 +37,21 @@ proj.fit(nproc=4)
 
 m = proj.model("nmr_1_1")
 print(m.sse, m.global_parameters)        # SSE + lg K (NumPy array)
+print(m.aic, m.aicc, m.standard_error)   # scalar fit statistics (None if absent in the JSON)
+print(m.features())                      # flat scalar+parameter dict, ready for scikit-learn
 
 # post-processing
 proj.monte_carlo(steps=500, variance_source="SEy", seed=42)
 proj.cross_validation(cv_type="L0O")
 proj.fit(nproc=4)
 mc = m.statistics["MonteCarlo"][0]        # list of result blocks (one per stored run)
+
+# a feature table over all fitted models (needs pandas; else use [m.features() for m in proj.models])
+df = proj.results_frame()                 # one row per model: scalars + flattened parameters
 ```
+
+Scalar accessors on each `Model`: `sse`, `sae`, `aic`, `aicc`, `standard_error`, `mean_error`,
+`variance`, `valid`, `converged` (any not present in the project JSON read back as `None`/`False`).
 
 Other constructors: `Project.from_file("data.dat", indep_cols=slice(0,2), dep_cols=slice(2,9))`
 and `Project.from_equations("0.001|(X-1)*1e-4", n_points=10, n_vars=2)`.
@@ -63,5 +71,9 @@ cd python && pytest
 ## Scope (Phase 1)
 
 In scope: build/load a project, add models, fit, run the seven post-processing methods, read back
-parameters/statistics as dicts/NumPy arrays. Out of scope here: scripted models via Python, GUI/chart
-automation, wheel packaging with bundled Qt (see `roadmap/python_interface.md`).
+parameters/statistics/scalar fit metrics as dicts/NumPy arrays, and assemble flat feature
+tables (`Model.features()` / `Project.results_frame()`). ML feature vectors are assembled
+Python-side from the fitted model — the CLI's `-ml-features` file is only a slimmed project and is
+intentionally not read. Out of scope here: scripted models via Python, GUI/chart automation, wheel
+packaging with bundled Qt, and the in-process native backend (`sf.set_backend("native")`, Phase 2 —
+see `roadmap/python_interface.md`).
