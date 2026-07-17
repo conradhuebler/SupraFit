@@ -35,6 +35,28 @@ def _decompress_suprafit(path: Path) -> dict:
         raise ResultParseError(f"could not parse {path} as (compressed) JSON: {e}") from e
 
 
+def _table_from_block(block, np):
+    """Reconstruct a 2D float array from a task-config Independent/Dependent block.
+
+    Only the file source (`Source: "file"`, written by `Project.from_arrays` / `from_file`) is
+    supported by the native backend; the equation/model generators are CLI-only. Claude Generated."""
+    src = block.get("Source") if isinstance(block, dict) else None
+    if src != "file":
+        raise NotImplementedError(
+            "NativeBackend supports only array/file data (Source: 'file'); the equation/model "
+            f"generators are CLI-only. Got Source={src!r}. Use the CLI backend for generated data."
+        )
+    spec = block.get("File", {})
+    arr = np.loadtxt(spec["Path"])
+    if arr.ndim == 1:
+        arr = arr.reshape(-1, 1)
+    start_row, start_col = int(spec.get("StartRow", 0)), int(spec.get("StartCol", 0))
+    rows, cols = int(spec.get("Rows", 0)), int(spec.get("Cols", 0))
+    end_row = start_row + rows if rows > 0 else arr.shape[0]
+    end_col = start_col + cols if cols > 0 else arr.shape[1]
+    return np.ascontiguousarray(arr[start_row:end_row, start_col:end_col], dtype=float)
+
+
 def _find_fitted_project(td: Path, base: str) -> Path:
     """Locate the fitted project file the CLI writes: `<base>-project-0.suprafit` (ML-pipeline path).
     Falls back to any `*-project-*.suprafit`, then any `*.suprafit` in the temp dir."""
@@ -84,20 +106,47 @@ class CLIBackend(Backend):
 
 
 class NativeBackend(Backend):
-    """Phase 2 stub: in-process pybind11 execution. Not implemented yet — raises if used so the
-    CLI backend stays the only working path until the `suprafit._core` module exists."""
+    """In-process execution via the pybind11 `suprafit._core` module (Phase 2).
+
+    Consumes the same task-config as the CLI backend and returns the same project JSON, but fits
+    in-process — no subprocess, temp files, or file round-trip. Data must come from arrays or a data
+    file (`Source: "file"`, i.e. `Project.from_arrays` / `from_file`); the equation/model generators
+    (`Source: "generator"`) remain CLI-only. `nproc`/`timeout` are ignored (the fit path is
+    synchronous; post-processing uses SupraFit's own QThreadPool). Claude Generated."""
 
     def __init__(self, *args, **kwargs):
         try:
-            import suprafit._core  # noqa: F401  (Phase 2)
+            import suprafit._core as _core
         except ImportError as e:
             raise NotImplementedError(
-                "NativeBackend (pybind11 suprafit._core) is not built yet — use the CLI backend. "
-                "See roadmap/python_interface.md Phase 2."
+                "NativeBackend needs the pybind11 module suprafit._core, which is not built. "
+                "Build it with `cmake -DSUPRAFIT_PYBIND=ON` (see roadmap/python_interface.md Phase 2)."
             ) from e
+        self._core = _core
 
     def run(self, task_config: dict, nproc: int = 4, timeout: float | None = None) -> dict:
-        raise NotImplementedError("NativeBackend.run() is Phase 2; use CLIBackend.")
+        try:
+            import numpy as np
+        except ImportError as e:
+            raise NotImplementedError("NativeBackend requires numpy for in-process data exchange.") from e
+        # Post-fit statistics (Monte Carlo, cross-validation, ...) are Phase 3: JobManager::RunJobs()
+        # is not yet safe to drive in-process. Fail clearly instead of crashing so the user switches
+        # to the CLI backend for those. Claude Generated.
+        methods = (task_config.get("PostFitAnalysis") or {}).get("methods")
+        if methods:
+            raise NotImplementedError(
+                "NativeBackend does the fit only (Phase 2). Post-fit analysis "
+                f"({len(methods)} method(s) requested) is Phase 3 — run it via the CLI backend: "
+                "suprafit.set_backend('cli')."
+            )
+        indep = _table_from_block(task_config.get("Independent", {}), np)
+        dep = _table_from_block(task_config.get("Dependent", {}), np)
+        models_json = json.dumps(task_config.get("AddModels", {}))
+        project_json = self._core.fit_from_tables(indep, dep, models_json)
+        try:
+            return json.loads(project_json)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ResultParseError(f"native backend returned unparseable JSON: {e}") from e
 
 
 _BACKENDS = {"cli": CLIBackend, "native": NativeBackend}

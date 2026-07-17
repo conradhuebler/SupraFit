@@ -75,6 +75,9 @@ option (_Theme
 option (_Python
     "Enable python interface" OFF)
 
+option (SUPRAFIT_PYBIND
+    "Build the in-process pybind11 Python module (suprafit._core, Phase 2)" OFF)
+
 option (_Models
 	"Enable custom models" ON)
 
@@ -196,6 +199,26 @@ if(_Python)
     endif()
 endif()
 
+# Phase 2 in-process binding: pybind11 brings its own modern find_package(Python3 Development.Module)
+# and provides pybind11_add_module. Kept separate from the legacy _Python demo wiring above. core
+# and models stay STATIC (their mutual CreateModel cycle is only legal for static libs) but must be
+# position-independent to link into the SHARED _core module, so we build the whole tree PIC.
+# Claude Generated.
+if(SUPRAFIT_PYBIND)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    # pybind11's find_package(Python ...) uses an internal cache variable literally named `_Python`,
+    # which collides with this project's `_Python` OPTION and would clobber it to a truthy string
+    # (wrongly forcing SHARED core/models + the embedded-CPython path). Save the option value and
+    # restore it (as a normal variable that shadows the polluted cache entry for the rest of this
+    # file). Claude Generated.
+    set(_suprafit_python_option "${_Python}")
+    add_subdirectory(${PROJECT_SOURCE_DIR}/external/pybind11 EXCLUDE_FROM_ALL)
+    # Keep pybind11's own `_Python` bookkeeping ("Python") to hand back to pybind11_add_module later,
+    # but restore the project option value for the SHARED-guard / configure_file logic in between.
+    set(_pybind11_python_kind "${_Python}")
+    set(_Python "${_suprafit_python_option}")
+endif()
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/fmt EXCLUDE_FROM_ALL)
 
 
@@ -265,6 +288,8 @@ ENDIF(_Python)
 if(_Python)
     add_library(core SHARED ${core_SRC})
 else()
+    # SUPRAFIT_PYBIND keeps core STATIC (the core<->models cycle is only allowed for static libs)
+    # but position-independent (set globally below) so it links into the SHARED _core module.
     add_library(core ${core_SRC}
         src/core/models/exprtkinterpreter.h src/core/models/exprtkinterpreter.cpp)
 endif()
@@ -535,6 +560,24 @@ IF(_Python)
 ENDIF()
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 17)
+
+# Phase 2: the in-process Python module `suprafit._core`. core+models (and their deps) are linked
+# in statically, so the module is self-contained apart from Qt/system libs. Built straight into the
+# python/ package directory so the editable install imports it without a copy step. Claude Generated.
+if(SUPRAFIT_PYBIND)
+    # Hand pybind11 back its own `_Python` bookkeeping value (see the add_subdirectory block above),
+    # which pybind11_add_module needs to detect the FindPython version.
+    set(_Python "${_pybind11_python_kind}")
+    pybind11_add_module(suprafit_pycore src/python/bindings/module.cpp)
+    target_link_libraries(suprafit_pycore PRIVATE core models)
+    set_target_properties(suprafit_pycore PROPERTIES
+        OUTPUT_NAME _core
+        CXX_STANDARD 17
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/python/suprafit)
+    # Restore the project option value so the legacy `if(_Python)` install/demo blocks below stay off.
+    set(_Python "${_suprafit_python_option}")
+endif()
+
 if(BUILD_GUI)
     set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
 endif()

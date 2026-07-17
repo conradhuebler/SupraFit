@@ -124,15 +124,27 @@ NumPy integration ultimately live.
   Python-side — the CLI's `-ml-features` file is only a slimmed project and is intentionally not read.
 - **Effort:** ~1 wk · **Risk:** low (subprocess/temp-file overhead only).
 
-### Phase 2 — pybind11 core module, MVP surface (1.5 wk)
+### Phase 2 — pybind11 core module, MVP surface (1.5 wk) — ✅ fit path DONE
 - **Scope:** `import suprafit._core`; lazy `QCoreApplication`. Bind the JSON façade:
   `create_data(json)`, `create_model(id, data)`, `import_model/export_model(json)`,
   `set_global/set_local`, `initial_guess()`, `fit()` (wrap `NonLinearFitThread::run()` synchronously),
   scalar getters (SSE/AIC/AICc/R²/χ²), and `ModelTable/ErrorTable` as NumPy (Eigen↔NumPy).
-- **Files (new):** `src/python/bindings/` (`module.cpp`, `bind_data.cpp`, `bind_model.cpp`,
-  `bind_fit.cpp`); **touch** `CMakeLists.txt` (add pybind11 target under `_Python`, migrate to
-  `find_package(Python3 COMPONENTS Development.Module)` + add `external/pybind11` submodule),
-  `global_config.h.in` (unchanged flag, reused).
+- **Delivered (2026-07-17):** new CMake option `SUPRAFIT_PYBIND` builds `suprafit._core` from
+  `src/python/bindings/module.cpp`; `external/pybind11` (v3.0.4) submodule added. core/models stay
+  **STATIC but PIC** and are linked into the SHARED module (their `CreateModel` cycle is illegal for
+  shared libs — this is why the old `_Python=ON` never configured). Resolved a nasty name collision
+  between the project's `_Python` option and CMake's FindPython internal `_Python` variable. The
+  bound `fit_from_tables(indep, dep, models_json)` builds a DataClass from Eigen matrices and calls
+  the same `AnalysisManager::fitModelsToData` the CLI uses, returning the identical project JSON.
+  `NativeBackend` is wired so `set_backend("native")` is a transparent drop-in for array/file data;
+  it recovers the reference oracle's constants exactly and matches the CLI backend
+  (`python/tests/test_native.py`).
+- **Deferred to Phase 3:** in-process post-fit statistics — `JobManager::RunJobs()` currently
+  SIGFPEs when driven from the module, so `NativeBackend` raises a clear error and post-processing
+  stays on the CLI backend. Also still to bind: the lower-level verbs (create_model, set_global,
+  ModelTable/ErrorTable as NumPy) and the equation/model data generators.
+- **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
+  pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).
 
 ### Phase 3 — Statistics, jobs & ML features in-process (1 wk)

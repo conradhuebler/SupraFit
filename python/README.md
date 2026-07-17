@@ -1,8 +1,23 @@
 # suprafit — Python control interface
 
-Drive SupraFit's model fitting and statistical post-processing from Python. This Phase-1 release
-shells out to the `suprafit_cli` executable over JSON; a native pybind11 backend is a planned
-drop-in (`suprafit.set_backend("native")`) that won't change scripts.
+Drive SupraFit's model fitting and statistical post-processing from Python. The default backend
+shells out to the `suprafit_cli` executable over JSON. An in-process **native backend** (pybind11)
+is a drop-in via `suprafit.set_backend("native")` — same scripts, no subprocess/temp files. The
+native backend currently covers **fitting** (array/file data); statistical post-processing stays on
+the CLI backend for now (Phase 3). See `roadmap/python_interface.md`.
+
+## Native backend (optional, faster)
+
+Build the in-process module once, then switch backend — nothing else in your script changes:
+
+```bash
+cmake -S . -B build-pybind -DSUPRAFIT_PYBIND=ON -DPython_EXECUTABLE=$(which python)
+cmake --build build-pybind --target suprafit_pycore -j4   # writes python/suprafit/_core*.so
+```
+```python
+import suprafit as sf
+sf.set_backend("native")     # in-process; falls back to a clear error if _core isn't built
+```
 
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 

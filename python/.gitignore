@@ -8,3 +8,6 @@ build/
 dist/
 .pytest_cache/
 .coverage
+
+# Native pybind11 module built in-tree (cmake -DSUPRAFIT_PYBIND=ON)
+suprafit/_core*.so
