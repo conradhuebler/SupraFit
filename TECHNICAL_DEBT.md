@@ -223,7 +223,7 @@ Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere An
   Singleton-Signalen (`suprafitgui.cpp:175`), also reagieren beide Fenster auf jeden Load. *Empfehlung
   (Rang 1):* `ProjectManager` instanzierbar machen, jedes `SupraFitGui` bekommt eine eigene Instanz
   (`instance()` bleibt für CLI/Tests); Manager-Pointer durch `ProjectTree`/`MainWindow`/`ModelDataHolder`
-  reichen (die hardcoden `instance()`: `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`).
+  reichen (die hardcoden `instance()`: `mainwindow.cpp:138`, `modeldataholder.cpp:538,857,949,1423`).
   App-weite `qApp`-Properties (threads, Settings) bleiben geteilt. Rang 2: Singleton behalten, Projekte
   Owner-Window-tagged filtern. Rang 3 (Stopgap): Baum wieder aus per-Fenster `m_data_list` — behebt nur
   die Dopplung, nicht den Signal-Fan-out. Full analysis: `SESSION_HANDOFF.md`.
