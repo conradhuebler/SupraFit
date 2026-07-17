@@ -126,13 +126,11 @@ private:
     QVector<QVector<qreal>> ResultRows() const;
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
-    QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data, *m_import_row;
+    QPushButton *m_exp_button, *m_dil_button, *m_export_data, *m_import_row;
     QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume, *m_showDilution, *m_uniformInject;
-    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
-    QComboBox* m_scale;
+    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QLabel* m_message;
     QTabWidget* m_mainwidget;
-    QDoubleSpinBox* m_freq;
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
     ItcProcessor* m_processor; //!< owns the two handlers + injection volumes + exp-minus-dilution join
