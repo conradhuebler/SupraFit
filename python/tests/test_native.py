@@ -204,6 +204,32 @@ def test_native_generate_dependent(reference_arrays):
     assert not np.allclose(a, gen)
 
 
+def test_native_itc_model():
+    """ITC models are usable via system parameters: generate a heat curve, then refit recovers it.
+
+    ITC models need the experiment setup (cell/syringe concentration, cell volume, temperature) as
+    system parameters; without them the heat is identically zero. This drives that whole path."""
+    n = 16
+    indep = np.full((n, 1), 8.0)  # µL per injection
+    sysp = {"cell_volume": 202.8, "cell_concentration": 0.5,
+            "syringe_concentration": 5.0, "temperature": 298}
+    gen = sf.native_model("itc_1_1", indep, np.zeros((n, 1)), system_parameters=sysp)
+    gen.set_global(4.5, 0)                       # lg K
+    for p, v in enumerate([-38000.0, 0.0, 1.0, 1.0]):  # dH, m, n, fx
+        gen.set_local(v, 0, p)
+    gen.calculate()
+    heat = np.asarray(gen.model_signal())
+    assert np.any(np.abs(heat) > 1.0), "ITC heat is zero — system parameters did not load"
+
+    fit = sf.native_model("itc_1_1", indep, heat, system_parameters=sysp)
+    fit.initial_guess()
+    fit.fit()
+    assert fit.converged() is True
+    assert fit.sse() < 1e-6
+    assert np.asarray(fit.global_parameters()).ravel()[0] == pytest.approx(4.5, rel=1e-4)
+    assert np.asarray(fit.local_parameters()).ravel()[0] == pytest.approx(-38000.0, rel=1e-3)
+
+
 def _cli_available() -> bool:
     try:
         sf._cli.find_cli()

@@ -217,6 +217,16 @@ public:
     void setGlobal(double value, int index) { m_model->setGlobalParameter(value, index); }
     void setLocal(double value, int series, int param) { m_model->setLocalParameter(value, param, series); }
     void initialGuess() { m_model->InitialGuess(); }
+    void calculate() { m_model->CalculateStatistics(true); m_model->Calculate(); }
+
+    // System parameters (e.g. ITC: CellVolume=1, CellConcentration=2, SyringeConcentration=3,
+    // Temperature=4). CreateModel declares them with defaults; set the experiment's values here,
+    // then load_system_parameters() to push them into the model's internal state before fitting.
+    // NB: this calls UpdateParameter() (which reads the values into the model's m_cell_concentration
+    // etc.), NOT LoadSystemParameter() — the latter reloads from stored JSON and would discard the
+    // just-set values. Claude Generated.
+    void setSystemParameter(int index, double value) { m_model->setSystemParameterValue(index, value); }
+    void loadSystemParameters() { m_model->UpdateParameter(); }
 
     // Run the real Levenberg-Marquardt fit from the current parameters (call initial_guess() or set
     // parameters first). Minimize() imports the optimum back into the model; enabling statistics and
@@ -381,7 +391,10 @@ PYBIND11_MODULE(_core, m)
             py::arg("model_id"), py::arg("independent"), py::arg("dependent"))
         .def("set_global", &LiveModel::setGlobal, py::arg("value"), py::arg("index"))
         .def("set_local", &LiveModel::setLocal, py::arg("value"), py::arg("series"), py::arg("param"))
+        .def("set_system_parameter", &LiveModel::setSystemParameter, py::arg("index"), py::arg("value"))
+        .def("load_system_parameters", &LiveModel::loadSystemParameters)
         .def("initial_guess", &LiveModel::initialGuess)
+        .def("calculate", &LiveModel::calculate)
         .def("fit", &LiveModel::fit)
         .def("model_id", &LiveModel::modelId)
         .def("name", &LiveModel::name)

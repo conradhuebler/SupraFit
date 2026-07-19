@@ -52,17 +52,39 @@ def generate_dependent(model, independent, global_params, local_params, noise_st
     )
 
 
-def native_model(model, independent, dependent):
+# ITC system-parameter indices (AbstractItcModel::CellVolume=1 … Temperature=4). Friendly names map
+# to these so callers don't hard-code integers. Claude Generated.
+SYSTEM_PARAMETERS = {
+    "cell_volume": 1,
+    "cell_concentration": 2,
+    "syringe_concentration": 3,
+    "temperature": 4,
+}
+
+
+def native_model(model, independent, dependent, system_parameters=None):
     """Create a live in-process model handle (native backend) for interactive use.
 
-    `model` is a snake_case name (e.g. "nmr_1_1") or an integer id; `independent`/`dependent` are
-    array-likes. The returned object exposes `set_global(value, index)`, `set_local(value, series,
-    param)`, `initial_guess()`, `fit()`, and getters `sse()`, `aic()`, `aicc()`, `converged()`,
+    `model` is a snake_case name (e.g. "nmr_1_1", "itc_1_1") or an integer id; `independent`/
+    `dependent` are array-likes. For ITC models pass `system_parameters` as a dict of the experiment
+    setup, keyed by friendly name (`cell_volume`, `cell_concentration`, `syringe_concentration`,
+    `temperature` — concentrations in mmol/L, volume in µL, temperature in K) or by integer index;
+    they are set and loaded before the model is returned.
+
+    The returned object exposes `set_global(value, index)`, `set_local(value, series, param)`,
+    `set_system_parameter(index, value)`, `load_system_parameters()`, `initial_guess()`,
+    `calculate()`, `fit()`, and getters `sse()`, `aic()`, `aicc()`, `converged()`,
     `global_parameters()`, `local_parameters()`, `model_signal()`, `export_json()`. Requires NumPy.
     Claude Generated."""
     import numpy as np
     core = _require_core()
     mid = _models.model_id(model)
-    return core.Model(mid,
-                      np.ascontiguousarray(independent, dtype=float),
-                      np.ascontiguousarray(dependent, dtype=float))
+    m = core.Model(mid,
+                   np.ascontiguousarray(independent, dtype=float),
+                   np.ascontiguousarray(dependent, dtype=float))
+    if system_parameters:
+        for key, value in system_parameters.items():
+            index = SYSTEM_PARAMETERS.get(key, key) if isinstance(key, str) else int(key)
+            m.set_system_parameter(int(index), float(value))
+        m.load_system_parameters()
+    return m

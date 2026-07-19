@@ -47,6 +47,20 @@ dep = sf.generate_dependent("nmr_1_1", indep,
                             noise_std=0.01, seed=42)   # optional i.i.d. Gaussian noise
 ```
 
+**ITC models** need the experiment setup as *system parameters* (without them the heat is zero) —
+`independent` is the per-injection volumes (µL), `dependent` the measured heats:
+
+```python
+m = sf.native_model("itc_1_1", inject_volumes, heats, system_parameters={
+    "cell_volume": 202.8,          # µL
+    "cell_concentration": 0.5,     # mmol/L
+    "syringe_concentration": 5.0,  # mmol/L
+    "temperature": 298,            # K
+})
+m.initial_guess(); m.fit()
+m.global_parameters()   # lg K ;  m.local_parameters()[0] -> [dH, m, n, fx]
+```
+
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 
 ## Requirements

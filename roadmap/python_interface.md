@@ -166,6 +166,14 @@ NumPy integration ultimately live.
   noise — deterministic **ground-truth** generation (draw random parameters in NumPy for random
   datasets, so the truth is always known). Round-trip verified (params → data → refit recovers the
   params at ~0 SSE). `python/tests/test_native.py::test_native_generate_dependent`.
+- **ITC models usable (2026-07-19):** ITC models need the experiment setup as *system parameters*
+  (CellVolume/CellConcentration/SyringeConcentration/Temperature) or the heat is identically zero.
+  `LiveModel` gained `set_system_parameter(index, value)` + `load_system_parameters()` (which calls
+  the model's `UpdateParameter()`, reading the values into `m_cell_concentration` etc. — NOT
+  `LoadSystemParameter()`, which would reload stored JSON and discard them), plus `calculate()`.
+  `suprafit.native_model(..., system_parameters={"cell_volume":…, "cell_concentration":…, …})`
+  wires it up by friendly name. Round-trip verified (K/dH → heat → refit recovers them at ~0 SSE);
+  `python/tests/test_native.py::test_native_itc_model`.
 - **Phase 3 is complete.** Remaining across the whole roadmap: Phase 4 (wheel packaging with bundled
   Qt) and Phase 5 (retire/modernise the legacy `pythonbridge` ctypes demo).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
