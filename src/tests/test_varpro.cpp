@@ -52,14 +52,17 @@ private:
         return o;
     }
 
-    // Host-constant / guest-titrated 2-component data with @p series (simulated) dependent columns.
-    static DataClass* makeData(int series)
+    /* Host-constant / guest-titrated 2-component data with @p series (simulated) dependent columns.
+     * @p hostTotal matters for the 2:1 models: A2B = K11*K21*[H]^2*[G] is SECOND order in the host, so
+     * at the default 1 mM it never exceeds ~10% of the host (median 3.6%) and K21 is barely
+     * identifiable; at 10 mM it reaches ~42% (median 31%). Claude Generated. */
+    static DataClass* makeData(int series, double hostTotal = A0)
     {
         Eigen::MatrixXd indep(N, 2);
         Eigen::MatrixXd dep(N, series);
         for (int i = 0; i < N; ++i) {
-            indep(i, 0) = A0;
-            indep(i, 1) = 3e-3 * i / (N - 1);
+            indep(i, 0) = hostTotal;
+            indep(i, 1) = 3.0 * hostTotal * i / (N - 1);
             for (int j = 0; j < series; ++j)
                 dep(i, j) = 0.0;
         }
@@ -101,31 +104,32 @@ private slots:
         QTest::addColumn<QList<double>>("trueBetas"); // in species order
         QTest::addColumn<int>("series");
         QTest::addColumn<double>("localScale"); // magnitude of the linear locals (shifts / extinction)
+        QTest::addColumn<double>("hostTotal"); // 2:1 species need concentration to be identifiable
 
         const int nmr = static_cast<int>(SupraFit::nmr_any);
         const int uvvis = static_cast<int>(SupraFit::uvvis_any);
         // Fixed 1:1 model (ignores the Reactions field) - exercises the design-matrix refactor of the
         // classic model, not just the generalised *_any path.
-        QTest::newRow("nmr_ItoI fixed 1:1") << static_cast<int>(SupraFit::nmr_ItoI) << QString() << QList<double>{ 4.0 } << 3 << 9.0;
+        QTest::newRow("nmr_ItoI fixed 1:1") << static_cast<int>(SupraFit::nmr_ItoI) << QString() << QList<double>{ 4.0 } << 3 << 9.0 << 1e-3;
         // GP order is stepwise (K21, K11); K21=2.4,K11=4.2 == cumulative beta(AB)=4.2, beta(A2B)=6.6,
         // the same well-conditioned system as the "nmr 2:1/1:1" any-model row.
-        QTest::newRow("nmr_IItoI_ItoI fixed 2:1/1:1") << static_cast<int>(SupraFit::nmr_IItoI_ItoI) << QString() << QList<double>{ 2.4, 4.2 } << 2 << 9.0;
-        QTest::newRow("nmr_ItoI_ItoII fixed 1:1/1:2") << static_cast<int>(SupraFit::nmr_ItoI_ItoII) << QString() << QList<double>{ 4.0, 2.0 } << 2 << 9.0;
-        QTest::newRow("nmr 1:1") << nmr << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 9.0;
-        QTest::newRow("nmr 1:1/1:2") << nmr << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 9.0;
-        QTest::newRow("nmr 2:1/1:1") << nmr << QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") << QList<double>{ 4.2, 6.6 } << 2 << 9.0;
-        QTest::newRow("uvvis 1:1") << uvvis << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 4000.0;
-        QTest::newRow("uvvis 1:1/1:2") << uvvis << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 4000.0;
+        QTest::newRow("nmr_IItoI_ItoI fixed 2:1/1:1") << static_cast<int>(SupraFit::nmr_IItoI_ItoI) << QString() << QList<double>{ 2.4, 4.2 } << 2 << 9.0 << 1e-2;
+        QTest::newRow("nmr_ItoI_ItoII fixed 1:1/1:2") << static_cast<int>(SupraFit::nmr_ItoI_ItoII) << QString() << QList<double>{ 4.0, 2.0 } << 2 << 9.0 << 1e-3;
+        QTest::newRow("nmr 1:1") << nmr << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 9.0 << 1e-3;
+        QTest::newRow("nmr 1:1/1:2") << nmr << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 9.0 << 1e-3;
+        QTest::newRow("nmr 2:1/1:1") << nmr << QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") << QList<double>{ 4.2, 6.6 } << 2 << 9.0 << 1e-2;
+        QTest::newRow("uvvis 1:1") << uvvis << QStringLiteral("A + B <=> AB") << QList<double>{ 4.0 } << 3 << 4000.0 << 1e-3;
+        QTest::newRow("uvvis 1:1/1:2") << uvvis << QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") << QList<double>{ 3.8, 5.9 } << 2 << 4000.0 << 1e-3;
         // Fixed UV/Vis (Beer-Lambert) models - default options (silent guest) keep VarPro engaged
         // because the silent column is zeroed, not a fixed non-zero value.
-        QTest::newRow("uv_vis_ItoI fixed 1:1") << static_cast<int>(SupraFit::uv_vis_ItoI) << QString() << QList<double>{ 4.0 } << 2 << 4000.0;
+        QTest::newRow("uv_vis_ItoI fixed 1:1") << static_cast<int>(SupraFit::uv_vis_ItoI) << QString() << QList<double>{ 4.0 } << 2 << 4000.0 << 1e-3;
         // NOTE: {2.4,4.2} (the NMR row's constants) is a bad-basin instance for the Beer-Lambert
         // objective here - the weakly-populated A2B leaves a nearly-flat K21 valley that BOTH solvers
         // miss from the blind InitialGuess (VarPro collapses to K11~0). VarPro's projection is correct
         // (seeded at those constants it recovers SSE~0); almost any other well-populated pair converges.
         // {3.0,4.5} is such a well-conditioned instance, so both solvers reach the true optimum.
-        QTest::newRow("uv_vis_IItoI_ItoI fixed 2:1/1:1") << static_cast<int>(SupraFit::uv_vis_IItoI_ItoI) << QString() << QList<double>{ 3.0, 4.5 } << 2 << 4000.0;
-        QTest::newRow("uv_vis_ItoI_ItoII fixed 1:1/1:2") << static_cast<int>(SupraFit::uv_vis_ItoI_ItoII) << QString() << QList<double>{ 4.0, 2.0 } << 2 << 4000.0;
+        QTest::newRow("uv_vis_IItoI_ItoI fixed 2:1/1:1") << static_cast<int>(SupraFit::uv_vis_IItoI_ItoI) << QString() << QList<double>{ 3.0, 4.5 } << 2 << 4000.0 << 1e-2;
+        QTest::newRow("uv_vis_ItoI_ItoII fixed 1:1/1:2") << static_cast<int>(SupraFit::uv_vis_ItoI_ItoII) << QString() << QList<double>{ 4.0, 2.0 } << 2 << 4000.0 << 1e-3;
     }
 
     void equivalence()
@@ -135,9 +139,10 @@ private slots:
         QFETCH(QList<double>, trueBetas);
         QFETCH(int, series);
         QFETCH(double, localScale);
+        QFETCH(double, hostTotal);
 
         // (1) synthesise a noise-free signal with a truth model at the true constants + linear locals.
-        DataClass* data = makeData(series);
+        DataClass* data = makeData(series, hostTotal);
         {
             QSharedPointer<AbstractModel> truth = CreateModel(static_cast<SupraFit::Model>(modelId), data);
             QJsonObject def;

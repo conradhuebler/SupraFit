@@ -42,10 +42,10 @@ QPair<long double, long double> QuadraticRoots(long double a, long double b, lon
 /**
  * @brief Selectable implementations behind MinCubicRoot(). Claude Generated.
  *
- * @c Newton is the historical behaviour and stays the DEFAULT so existing fit results are bit-for-bit
- * reproducible. @c Analytic is the closed-form (Cardano / trigonometric) solution: no iteration, and
- * it returns the smallest non-negative root, which is the physically meaningful one for a free
- * concentration.
+ * @c Analytic is the DEFAULT: the closed-form (Cardano / trigonometric) solution used as a seed and
+ * refined by a safeguarded Newton inside a guaranteed bracket. It returns the smallest non-negative
+ * root — the physically meaningful one for a free concentration. @c Newton is the legacy
+ * three-search implementation, kept so old results can be reproduced on demand.
  *
  * The two do NOT agree in every case, by design — the Newton path has known defects (its third root
  * iterates on the derivative instead of the function, so it is not a root at all, and two branches of
@@ -53,8 +53,8 @@ QPair<long double, long double> QuadraticRoots(long double a, long double b, lon
  */
 namespace CubicSolver {
 enum class Method {
-    Newton, ///< historical three-Newton search (default)
-    Analytic ///< closed-form Cardano / trigonometric solution
+    Newton, ///< legacy three-Newton search (inaccurate in parts of the parameter space)
+    Analytic ///< closed form + safeguarded refinement (default)
 };
 void setMethod(Method method);
 Method method();

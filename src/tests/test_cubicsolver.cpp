@@ -49,7 +49,7 @@ private:
     }
 
 private slots:
-    void cleanup() { CubicSolver::setMethod(CubicSolver::Method::Newton); }
+    void cleanup() { CubicSolver::setMethod(CubicSolver::Method::Analytic); }
 
     // The returned value must actually satisfy the cubic, across both discriminant branches.
     void testAnalyticIsARoot()
@@ -196,10 +196,93 @@ private slots:
         QVERIFY2(samples > 3000, "too few usable samples — the generator is not exercising the solver");
     }
 
-    // The selector must default to the historical path.
-    void testDefaultsToNewton()
+    /* Diagnosis of the VarPro divergence on nmr_IItoI_ItoI: a fit varies the constants continuously,
+     * so the returned free concentration must be a SMOOTH function of them and stay inside its
+     * physical window [0, H0]. A jump between roots makes the finite-difference Jacobian meaningless,
+     * which is fatal for VarPro because it has only the global directions to work with. CG. */
+    void testHostBranchIsPhysicalAndSmooth()
     {
-        QVERIFY(CubicSolver::method() == CubicSolver::Method::Newton);
+        const double H0 = 1e-3; // A0 of test_varpro
+        const double G0 = 3e-3 * 8.0 / 15.0; // a mid-titration point
+        const double K11 = std::pow(10.0, 4.2);
+
+        for (int m = 0; m < 2; ++m) {
+            CubicSolver::setMethod(m == 0 ? CubicSolver::Method::Newton : CubicSolver::Method::Analytic);
+            const char* name = (m == 0) ? "Newton  " : "Analytic";
+
+            double previous = -1.0, maxJump = 0.0;
+            int outside = 0, n = 0;
+            for (double lgK21 = -1.0; lgK21 <= 6.001; lgK21 += 0.05, ++n) {
+                const double K21 = std::pow(10.0, lgK21);
+                const double a = K11 * K21;
+                const double b = K11 * (2 * K21 * G0 - K21 * H0 + 1);
+                const double c = K11 * (G0 - H0) + 1;
+                const double host = MinCubicRoot(a, b, c, -H0);
+
+                if (host < -1e-12 || host > H0 * (1.0 + 1e-9))
+                    ++outside;
+                if (previous >= 0.0)
+                    maxJump = std::max(maxJump, std::abs(host - previous) / H0);
+                previous = host;
+            }
+            qInfo().noquote() << QString("  %1: %2 of %3 samples outside [0, H0], largest step %4 x H0")
+                                     .arg(name).arg(outside).arg(n).arg(maxJump, 0, 'g', 3);
+            // Only the candidate for the default is asserted; the legacy path is known to be defective
+            // and is reported for comparison rather than pinned.
+            if (m == 1) {
+                QVERIFY2(outside == 0,
+                    qPrintable(QString("analytic leaves the physical window in %1 samples").arg(outside)));
+                QVERIFY2(maxJump < 0.2,
+                    qPrintable(QString("analytic jumps by %1 x H0 between neighbouring constants").arg(maxJump)));
+            }
+        }
+    }
+
+    /* The decisive physical check for the 2:1/1:1 model (nmr_IItoI_ItoI): the model derives the free
+     * guest algebraically from the free host, so the GUEST balance holds by construction and the cubic
+     * alone has to satisfy the HOST balance
+     *     H0 = [H] + K11[H][G] + 2 K11 K21 [H]^2 [G].
+     * Whichever solver satisfies it is returning the physical root. Claude Generated. */
+    void testHostMassBalance()
+    {
+        const double H0 = 1e-3;
+        double worst[2] = { 0.0, 0.0 };
+        int violations[2] = { 0, 0 };
+
+        for (int m = 0; m < 2; ++m) {
+            CubicSolver::setMethod(m == 0 ? CubicSolver::Method::Newton : CubicSolver::Method::Analytic);
+            for (double lgK21 = 0.0; lgK21 <= 6.001; lgK21 += 0.25) {
+                for (double lgK11 = 2.0; lgK11 <= 6.001; lgK11 += 0.5) {
+                    const double K21 = std::pow(10.0, lgK21), K11 = std::pow(10.0, lgK11);
+                    for (int i = 1; i <= 15; ++i) {
+                        const double G0 = 3e-3 * i / 15.0;
+                        // exactly the coefficients equil.h IItoI_ItoI uses
+                        const double host = MinCubicRoot(K11 * K21,
+                            K11 * (2 * K21 * G0 - K21 * H0 + 1),
+                            K11 * (G0 - H0) + 1, -H0);
+                        const double guest = G0 / (K11 * host + K11 * K21 * host * host + 1);
+                        const double c11 = K11 * host * guest;
+                        const double c21 = K11 * K21 * host * host * guest;
+                        const double rel = std::abs(H0 - (host + c11 + 2.0 * c21)) / H0;
+                        worst[m] = std::max(worst[m], rel);
+                        if (rel > 1e-6)
+                            ++violations[m];
+                    }
+                }
+            }
+        }
+        qInfo().noquote() << QString("  host mass balance | Newton: worst %1, %2 violations"
+                                     " | Analytic: worst %3, %4 violations")
+                                 .arg(worst[0], 0, 'g', 3).arg(violations[0])
+                                 .arg(worst[1], 0, 'g', 3).arg(violations[1]);
+        QVERIFY2(worst[1] < 1e-9,
+            qPrintable(QString("analytic violates the host mass balance by %1").arg(worst[1])));
+    }
+
+    // The accurate closed-form path is the default; Newton remains selectable for reproduction.
+    void testDefaultsToAnalytic()
+    {
+        QVERIFY(CubicSolver::method() == CubicSolver::Method::Analytic);
     }
 };
 
