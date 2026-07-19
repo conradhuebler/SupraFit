@@ -259,7 +259,7 @@ set(core_SRC
     src/core/itcprocessor.cpp
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp
-    src/core/bfgsconcentrationsolver.cpp
+    src/core/concentrationsolver.cpp
     src/core/reactionparser.cpp
     src/core/speciationengine.cpp
     src/core/citations.cpp

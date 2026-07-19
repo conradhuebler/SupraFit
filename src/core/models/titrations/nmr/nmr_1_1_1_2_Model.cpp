@@ -144,11 +144,19 @@ void nmr_ItoI_ItoII_Model::FillDesign()
         m_design.resize(DataPoints(), 3);
     const qreal K11 = qPow(10, GlobalParameter(0));
     const qreal K12 = qPow(10, GlobalParameter(1));
+    // Hoisted out of the loop: this used to be built twice PER DATA POINT, i.e. two heap allocations
+    // per point on every residual evaluation of the fit. Claude Generated.
+    const QList<qreal> constants = QList<qreal>() << K11 << K12;
     for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
-        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
+        // Only the guest cubic is solved numerically (MinCubicRoot is a Newton search, and it runs
+        // three of them — one per root). The free host then follows from its own mass balance,
+        // H0 = [H](1 + K11[G] + K11K12[G]^2) — exactly the relation the guest cubic was derived from.
+        // This halves the root finding and, unlike two independently converged Newton solves, makes
+        // host and guest mass-balance consistent by construction. Claude Generated.
+        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, constants);
+        qreal host = host_0 / (1.0 + K11 * guest + K11 * K12 * guest * guest);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
         m_design(i, 0) = host / host_0; // free-host shift coefficient

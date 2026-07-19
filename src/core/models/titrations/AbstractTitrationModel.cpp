@@ -321,7 +321,7 @@ bool AbstractTitrationModel::BuildSpeciationFromReactions()
 
 void AbstractTitrationModel::ApplySpeciationMethod()
 {
-    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+    m_speciation.setMethod(ConcentrationSolver::MethodFromString(
         getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 }
 

@@ -490,7 +490,7 @@ const QJsonObject OptimConfigBlock{
        damped Newton with the analytic Hessian (default: fast + reaches 1e-12 uniformly); "BFGS" = the
        legacy quasi-Newton (L-BFGS-style) update, slower and stalls on ill-conditioned points. Only the
        models that embed the SpeciationEngine honour it (UsesSpeciationEngine()); ignored otherwise.
-       Parsed by BFGSConcentrationSolver::MethodFromString. Claude Generated. */
+       Parsed by ConcentrationSolver::MethodFromString. Claude Generated. */
     { "SpeciationSolver", "LevMar" },
 
     /* This are the specific definitions, that work around Levenberg-Marquardt */

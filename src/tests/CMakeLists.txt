@@ -41,6 +41,8 @@ endif(UNIX)
 # Client sources for test_pipeline (not in libcore/libmodels)
 set(CLIENT_SOURCES
     ../client/suprafit_cli.cpp
+    ../client/data_factory.cpp # DataFactory was split out of SupraFitCli (D3); without it test_pipeline
+                               # fails to link (undefined DataFactory::loadDataTableFromFile)
     ../client/analysis_reporter.cpp
     ../client/ml_export.cpp
     ../client/ml_pipeline_manager.cpp
@@ -92,14 +94,14 @@ target_link_libraries(test_simple
 add_test(NAME SimpleTest COMMAND test_simple)
 
 # BFGS Speciation Solver Test - general equilibrium solver, self-aggregation (Claude Generated 2026)
-add_executable(test_bfgs_solver
-    test_bfgs_solver.cpp
+add_executable(test_concentrationsolver
+    test_concentrationsolver.cpp
 )
 
 # core<->models are mutually dependent static archives; wrap them in a linker group so the
 # cyclic references (e.g. core's DataGenerator -> models' CreateModel) resolve regardless of
 # archive scan order (Claude Generated).
-target_link_libraries(test_bfgs_solver
+target_link_libraries(test_concentrationsolver
     Qt6::Core
     Qt6::Test
     Qt6::Qml
@@ -109,11 +111,11 @@ target_link_libraries(test_bfgs_solver
 )
 
 if(ML_NEURAL_NETWORKS)
-    target_link_libraries(test_bfgs_solver ml)
+    target_link_libraries(test_concentrationsolver ml)
 endif()
 
 if(UNIX)
-    target_link_libraries(test_bfgs_solver pthread dl)
+    target_link_libraries(test_concentrationsolver pthread dl)
 endif()
 
 # nmr_any self-aggregation model test (grid + preceding-dimerisation path) - Claude Generated 2026
@@ -174,9 +176,38 @@ set_tests_properties(VarProTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_test(NAME BFGSSolverTest COMMAND test_bfgs_solver)
+add_test(NAME ConcentrationSolverTest COMMAND test_concentrationsolver)
 
-set_tests_properties(BFGSSolverTest PROPERTIES
+set_tests_properties(ConcentrationSolverTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Closed-form vs. Newton cubic root solver (Claude Generated 2026)
+add_executable(test_cubicsolver
+    test_cubicsolver.cpp
+)
+
+target_link_libraries(test_cubicsolver
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_cubicsolver ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_cubicsolver pthread dl)
+endif()
+
+add_test(NAME CubicSolverTest COMMAND test_cubicsolver)
+
+set_tests_properties(CubicSolverTest PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -206,6 +237,35 @@ endif()
 add_test(NAME ReactionParserTest COMMAND test_reactionparser)
 
 set_tests_properties(ReactionParserTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Scripted-model engine (ScriptModel/ExprTk): closed-form correctness, per-series locals, legacy key
+add_executable(test_scriptmodel
+    test_scriptmodel.cpp
+)
+
+target_link_libraries(test_scriptmodel
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_scriptmodel ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_scriptmodel pthread dl)
+endif()
+
+add_test(NAME ScriptModelTest COMMAND test_scriptmodel)
+
+set_tests_properties(ScriptModelTest PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -917,6 +977,20 @@ message(STATUS "  File Import CLI: ./test_file_import_cli")
 # compiles+links (needs a core<->models link group); its remaining failures are a
 # stale test-data contract (createTestProjectJson) vs current validateProjectJson.
 # Speciation microbenchmark (Claude Generated 2026) - manual perf tool, not a ctest
+# Scripted-model engine benchmark (Claude Generated 2026) - manual perf tool, not a ctest:
+# closed form vs. bisection written in ExprTk vs. native BFGS solver called from the script.
+add_executable(benchmark_scriptengine benchmark_scriptengine.cpp)
+target_link_libraries(benchmark_scriptengine
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_scriptengine ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_scriptengine pthread dl)
+endif()
+
 add_executable(benchmark_speciation benchmark_speciation.cpp)
 target_link_libraries(benchmark_speciation
     Qt6::Core Qt6::Test Qt6::Qml

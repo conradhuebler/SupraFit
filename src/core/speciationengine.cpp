@@ -79,7 +79,7 @@ std::vector<double> SpeciationEngine::solve(const std::vector<double>& totals, i
     // NOT fully converge, so caching a stalled point and reusing it just moves (and can slow) the stall;
     // it keeps the mild point-to-point warm start instead. Claude Generated.
     const bool cache = pointIndex >= 0
-        && m_solver.method() == BFGSConcentrationSolver::Method::LevenbergMarquardt;
+        && m_solver.method() == ConcentrationSolver::Method::LevenbergMarquardt;
 
     m_solver.setTotalConcentrations(totals);
     if (cache && pointIndex < static_cast<int>(m_point_cache.size())

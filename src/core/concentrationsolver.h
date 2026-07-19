@@ -1,5 +1,5 @@
 /*
- * SupraFit - general BFGS equilibrium speciation solver
+ * SupraFit - general equilibrium concentration (speciation) solver
  * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,11 @@
 #include <QtCore/QString>
 
 /**
- * @brief General equilibrium speciation solver based on quasi-Newton (BFGS) minimisation.
+ * @brief General equilibrium speciation solver.
+ *
+ * Despite the historical class name this is NOT a BFGS solver by default: the default method is a
+ * damped Newton iteration with the analytic Hessian (Method::LevenbergMarquardt). BFGS is kept only
+ * as the legacy option. Renamed from BFGSConcentrationSolver 2026-07-19. Claude Generated.
  *
  * Computes the free concentrations of the @em components of an arbitrary
  * multi-equilibrium system from their total (analytical) concentrations and the
@@ -61,9 +65,9 @@
  *
  * Claude Generated.
  */
-class BFGSConcentrationSolver {
+class ConcentrationSolver {
 public:
-    BFGSConcentrationSolver() = default;
+    ConcentrationSolver() = default;
 
     /**
      * @brief Set the stoichiometry matrix of the formed complexes.

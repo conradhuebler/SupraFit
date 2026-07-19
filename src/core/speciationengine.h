@@ -24,7 +24,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
-#include "src/core/bfgsconcentrationsolver.h"
+#include "src/core/concentrationsolver.h"
 #include "src/core/reactionparser.h"
 
 /**
@@ -60,8 +60,8 @@ public:
     void setMaxIter(int maxiter);
     void setConvergeThreshold(double converge);
     /** @brief Select the minimisation method of the underlying solver (default LevenbergMarquardt). */
-    void setMethod(BFGSConcentrationSolver::Method method) { m_solver.setMethod(method); }
-    BFGSConcentrationSolver::Method method() const { return m_solver.method(); }
+    void setMethod(ConcentrationSolver::Method method) { m_solver.setMethod(method); }
+    ConcentrationSolver::Method method() const { return m_solver.method(); }
 
     /**
      * @brief Solve one data point given the total concentration of every component.
@@ -91,7 +91,7 @@ public:
 
 private:
     ReactionSystem m_system;
-    BFGSConcentrationSolver m_solver;
+    ConcentrationSolver m_solver;
     std::vector<double> m_free; ///< free component concentrations of the last solve
     std::vector<double> m_species_conc; ///< species concentrations of the last solve
     std::vector<std::vector<double>> m_point_cache; ///< per-point free-conc warm starts (by data index)

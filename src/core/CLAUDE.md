@@ -73,11 +73,11 @@ Comprehensive support for analytical chemistry techniques:
 - **eyring**: Eyring equation for reaction kinetics
 - **bet**: BET isotherm for surface adsorption
 
-### Scripting Integration
-- **scriptmodel.cpp/h**: Base class for scripted models
-- **chaiinterpreter.cpp/h**: ChaiScript integration
-- **pymodelinterpreter.cpp/h**: Python model interpreter
-- **exprtkinterpreter.cpp/h**: ExprTk mathematical expression parser
+### Scripting Integration (user-defined models)
+- **scriptingengine.h**: backend interface — compile once, bind names to stable slots, `evaluate()`; `MakeScriptingEngine()` picks the backend from the model `Engine` field (default ExprTk)
+- **exprtkinterpreter.h**: `ExprTkEngine` (active default, fast slot binding) + the engine factory
+- **scriptmodel.cpp/h**: `ScriptModel` (id 100); equation under JSON key `Equation` (legacy `ChaiScript` still read); locals bound per series, real multi-series
+- **chaiinterpreter/pymodelinterpreter/dukmodelinterpreter**: optional backends (flags `_Models`/`_Python`/`Use_Duktape`); not yet ported to `ScriptingEngine` — see `roadmap/scriptmodel_performance.md`
 
 ## Key Features
 
@@ -136,7 +136,7 @@ model->setLocalParameter(value, seriesIndex, parameterIndex);
 ### 🔧 Core Functionality
 - Complete model library for supramolecular chemistry
 - High-performance numerical operations via Eigen
-- Flexible scripting integration (ChaiScript, Python, ExprTk)
+- Flexible scripting integration via the `ScriptingEngine` interface (ExprTk default; Chai/Python/Duktape optional)
 - Comprehensive file format support
 
 ## Dependencies
@@ -236,8 +236,8 @@ model->Calculate();
 #### **📋 LOW PRIORITY** - Long-term:
 - ✅ Refactor bc50 code, no more inlining (de-inlined into bc50.cpp)
 - Refactor optimizer logic: **A/B/C + seed-unify + converged-fix done** (2026-07-05) — deleted dead LeastSquaresRookfighter; renamed `OptimizeParameters()`→`CollectOptimizationParameters()`; cleaned/documented `eigen_levenberg.cpp`; retired `BisectParameter` so `NewtonRoot` is the single seed heuristic; fixed the `converged` flag to use the real stop criteria instead of `iter<MaxIter`.
-- ✅ **BFGS concentration solver** (2026-07-10) — `bfgsconcentrationsolver.{h,cpp}`, general convex log-space speciation (Musketeer, DOI 10.1039/d4sc03354j); handles self-aggregation. Tests: `test_bfgs_solver`, `test_nmr_selfaggregation`.
-- ✅ **Speciation solver 12-27x faster** (2026-07-11) — `bfgsconcentrationsolver` now uses a damped Levenberg-Marquardt **Newton** method with the analytic Hessian (kept the class name); precomputed log(β), allocation-free `Objective`. 7-8 iterations (was 54-146), uniform 1e-12 accuracy (the old BFGS stalled on host-excess 1:1). Perf tool: `src/tests/benchmark_speciation` (manual, not a ctest).
+- ✅ **Concentration (speciation) solver** (2026-07-10, renamed 2026-07-19) — `concentrationsolver.{h,cpp}` (was `BFGSConcentrationSolver`; default method is damped Newton with analytic Hessian, BFGS is legacy), general convex log-space speciation (Musketeer, DOI 10.1039/d4sc03354j); handles self-aggregation. Tests: `test_concentrationsolver`, `test_nmr_selfaggregation`.
+- ✅ **Speciation solver 12-27x faster** (2026-07-11) — `concentrationsolver` now uses a damped Levenberg-Marquardt **Newton** method with the analytic Hessian (kept the class name); precomputed log(β), allocation-free `Objective`. 7-8 iterations (was 54-146), uniform 1e-12 accuracy (the old BFGS stalled on host-excess 1:1). Perf tool: `src/tests/benchmark_speciation` (manual, not a ctest).
 - ✅ **N-component equilibrium models + reaction editor** (2026-07-11) — `reactionparser.{h,cpp}` (free-text reaction equations → components + stoichiometry) and `speciationengine.{h,cpp}` (reaction system + BFGS solver) generalise the `*_any` titration models to arbitrary components. `AbstractTitrationModel` carries `m_component_count`/`InitialConcentration(i,c)`/dynamic `InputParameterSize()`; `nmr_any`+`uvvis_any` are N-component, `itc_any` is 2-component-from-protocol with arbitrary species. GUI: reaction-editor `PrepareBox` type 6 (`ui/widgets/reactioneditorwidget`). `Reactions` is the sole definition path — the legacy `MaxA/MaxB/MaxSelfA/Species` grid and its `SpeciesEditorWidget` (type 5) were removed (2026-07-13); an empty `Reactions` field now leaves the model undefined. Tests: `test_reactionparser`, `test_nmr_ncomponent`, `test_uvvis_any`, `test_itc_any`, `test_nmr_any_equivalence`.
 - ✅ **`fl_any` fluorescence model** (2026-07-13) — `fluorescence/fl_any_Model.{h,cpp}` is the fluorescence counterpart of `uvvis_any`: BFGS speciation from `Reactions`, signal = linear `Σ c·φ` (per-species fluorescence coefficients, the form `fl_1_1_1_2`/`fl_2_1_1_1` use, generalised to N components); `SupportsVarPro()`, `UseDynamicParameterWidget()`. Registered `fl_any=36`. Test `test_fl_any_equivalence` (signal linearity + VarPro recovers truth).
 - ✅ **Runtime citations** (2026-07-11) — `citations.{h,cpp}` + `AbstractModel::CitationKeys()`/`CitationBlock()`; BFGS-driven models cite Musketeer alongside SupraFit in `ModelInfo()`.

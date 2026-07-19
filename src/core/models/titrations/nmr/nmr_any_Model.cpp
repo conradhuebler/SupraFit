@@ -203,7 +203,7 @@ bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::
 {
     // Exact only for the Newton speciation method (its stored Hessian is the solution Hessian).
     if (!m_speciation.isValid()
-        || m_speciation.method() != BFGSConcentrationSolver::Method::LevenbergMarquardt)
+        || m_speciation.method() != ConcentrationSolver::Method::LevenbergMarquardt)
         return false;
 
     const int nSpecies = m_speciation.SpeciesCount();

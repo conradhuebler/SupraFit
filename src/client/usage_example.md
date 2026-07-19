@@ -516,7 +516,7 @@ The pipeline now correctly:
 
 The flexible NMR model (`nmr_any`, model id 34) now supports **self-aggregation** of the host in
 addition to the classic mixed A_aB_b complexes. Free/equilibrium concentrations are computed by a
-general **BFGS speciation solver** (`src/core/bfgsconcentrationsolver.h`) that works for arbitrary
+general **BFGS speciation solver** (`src/core/concentrationsolver.h`) that works for arbitrary
 stoichiometry — a homo-dimer A₂ is simply a species with stoichiometry (2,0).
 
 ### Defining the model
@@ -555,7 +555,7 @@ Runnable end-to-end verification lives in the test suite:
 cd debug && ctest -R "BFGSSolverTest|NmrSelfAggregationTest" --output-on-failure
 ```
 
-`test_bfgs_solver` checks the solver against the analytic 1:1 root, a closed-form homo-dimerisation
+`test_concentrationsolver` checks the solver against the analytic 1:1 root, a closed-form homo-dimerisation
 and the grid `EqnConc_2x`; `test_nmr_selfaggregation` verifies the `nmr_any` grid path and the
 {AB, A₂} mass balance / dimer formation.
 

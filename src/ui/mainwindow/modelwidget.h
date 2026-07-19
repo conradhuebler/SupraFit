@@ -113,6 +113,10 @@ public slots:
 private:
     void AddScriptModelTab(QTabWidget* model_tab);
     void AddSystemParameterTab(QTabWidget* model_tab);
+    /*! \brief QSettings key for the splitter geometry — includes the pane count, because a model's
+     * pane layout varies (e.g. scripted models only get the per-series parameter pane when they
+     * declare local parameters). Claude Generated. */
+    QString SplitterSettingsKey() const;
 
     QSharedPointer<AbstractModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;

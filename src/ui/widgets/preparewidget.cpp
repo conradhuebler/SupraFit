@@ -183,7 +183,17 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
         highlighter->setDocument(m_textedit->document());
         QStringList execute;
         QJsonObject value = object["value"].toObject();
-        for (const QString& key : value.keys())
+        // Line keys are numbers stored as strings and QJsonObject::keys() sorts LEXICOGRAPHICALLY
+        // ("0","1","10",…,"2"), so an equation longer than ten lines came back scrambled. Sort
+        // numerically; the write side below zero-pads so both orders agree. Claude Generated.
+        QStringList valueKeys = value.keys();
+        std::sort(valueKeys.begin(), valueKeys.end(), [](const QString& a, const QString& b) {
+            bool okA = false, okB = false;
+            const int ia = a.toInt(&okA);
+            const int ib = b.toInt(&okB);
+            return (okA && okB) ? ia < ib : a < b;
+        });
+        for (const QString& key : valueKeys)
             execute << value[key].toString();
         m_textedit->setText(execute.join("\n"));
         layout->addWidget(m_textedit);
@@ -194,8 +204,10 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
             QString script = m_textedit->document()->toPlainText();
             QStringList lines = script.split("\n");
             QJsonObject json;
+            // Zero-padded keys so the lexicographic order of QJsonObject::keys() matches the line
+            // order (older projects with unpadded keys are handled by the numeric sort). CG.
             for (int i = 0; i < lines.size(); ++i)
-                json[QString::number(i)] = lines[i];
+                json[QStringLiteral("%1").arg(i, 3, 10, QLatin1Char('0'))] = lines[i];
             m_json["value"] = json;
             emit this->changed();
         });

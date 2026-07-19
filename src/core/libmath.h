@@ -38,6 +38,31 @@ long double MinQuadraticRoot(long double a, long double b, long double c);
 long double MaxQuadraticRoot(long double a, long double b, long double c);
 
 QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
+
+/**
+ * @brief Selectable implementations behind MinCubicRoot(). Claude Generated.
+ *
+ * @c Newton is the historical behaviour and stays the DEFAULT so existing fit results are bit-for-bit
+ * reproducible. @c Analytic is the closed-form (Cardano / trigonometric) solution: no iteration, and
+ * it returns the smallest non-negative root, which is the physically meaningful one for a free
+ * concentration.
+ *
+ * The two do NOT agree in every case, by design — the Newton path has known defects (its third root
+ * iterates on the derivative instead of the function, so it is not a root at all, and two branches of
+ * its root selection are unreachable). Opt in per run, compare, then decide.
+ */
+namespace CubicSolver {
+enum class Method {
+    Newton, ///< historical three-Newton search (default)
+    Analytic ///< closed-form Cardano / trigonometric solution
+};
+void setMethod(Method method);
+Method method();
+}
+
+/*! \brief Closed-form real root of a x^3 + b x^2 + c x + d, smallest non-negative one. CG. */
+qreal AnalyticCubicRoot(qreal a, qreal b, qreal c, qreal d);
+
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
 PeakPick::LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);

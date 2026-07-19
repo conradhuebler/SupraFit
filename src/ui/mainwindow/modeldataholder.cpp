@@ -19,6 +19,7 @@
 
 #include "src/global.h"
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
+#include "src/core/models/scriptmodel.h" // ScriptModel + ScriptModelPreset (predefined-model menu)
 #include "src/core/models/titrations/AbstractTitrationModel.h" // reaction/data mismatch reporting
 #include "src/global_config.h"
 
@@ -350,9 +351,30 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_define_model->setFlat(true);
     m_define_model->setIcon(Icon("list-add"));
 
-    connect(m_define_model, &QPushButton::clicked, this, [this]() {
-        emit this->NewModel();
+    // A dropdown of predefined scripted models (Michaelis-Menten, Hill, …): the first entry opens the
+    // usual blank definition dialog, each preset opens it pre-filled. Mirrors the reaction-preset
+    // submenus of the *_any models. Claude Generated.
+    QMenu* scriptPresets = new QMenu(this);
+    QAction* customModel = scriptPresets->addAction(tr("Custom (empty)"));
+    connect(customModel, &QAction::triggered, this, [this]() { emit this->NewModel(); });
+    scriptPresets->addSection(tr("Predefined models"));
+    const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+    for (int i = 0; i < presets.size(); ++i) {
+        QAction* a = scriptPresets->addAction(presets[i].name);
+        a->setToolTip(tr("%1 — needs %2 independent column(s)").arg(presets[i].name).arg(presets[i].inputSize));
+        connect(a, &QAction::triggered, this, [this, i]() { emit this->NewModelFromPreset(i); });
+        m_script_preset_actions << qMakePair(QPointer<QAction>(a), presets[i].inputSize);
+    }
+    // Grey out presets that need more independent columns than the current data provides (0 = unknown
+    // -> leave everything enabled). Re-evaluated every time the menu opens. Claude Generated.
+    connect(scriptPresets, &QMenu::aboutToShow, this, [this]() {
+        for (const auto& entry : m_script_preset_actions) {
+            if (entry.first)
+                entry.first->setEnabled(m_independent_count <= 0 || entry.second <= m_independent_count);
+        }
     });
+    scriptPresets->setToolTipsVisible(true);
+    m_define_model->setMenu(scriptPresets);
 
     m_any_model = new QPushButton(tr("Any Model"));
     m_any_model->setFlat(true);
@@ -494,6 +516,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, qOverload<>(&MDHDockTitleBar::AddModel), this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddScriptModel, this, &ModelDataHolder::AddScriptModel);
     connect(m_TitleBarWidget, &MDHDockTitleBar::NewModel, this, &ModelDataHolder::NewModel);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::NewModelFromPreset, this, &ModelDataHolder::NewModelFromPreset);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
@@ -566,6 +589,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         auto dataRef = m_data.toStrongRef();
         if (dataRef && dataRef->IndependentModel()) {
             m_TitleBarWidget->addToMenu(dataRef->IndependentModel()->columnCount());
+            m_TitleBarWidget->setIndependentCount(dataRef->IndependentModel()->columnCount());
             qDebug() << "✅ DEBUG setData: Successfully added menu with" << dataRef->IndependentModel()->columnCount() << "columns";
         } else {
             qWarning() << "❌ DEBUG setData: IndependentModel is null, skipping menu setup";
@@ -626,9 +650,23 @@ void ModelDataHolder::setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPo
 
 void ModelDataHolder::NewModel()
 {
+    NewScriptModelDialog(QVector<QJsonObject>());
+}
+
+void ModelDataHolder::NewModelFromPreset(int index)
+{
+    const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+    NewScriptModelDialog(index >= 0 && index < presets.size() ? presets[index].block
+                                                              : QVector<QJsonObject>());
+}
+
+void ModelDataHolder::NewScriptModelDialog(const QVector<QJsonObject>& presetBlock)
+{
     QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
     if (t->DemandInput()) {
-        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
+        // Pre-fill the dialog from the preset block, or fall back to the blank template. Claude Generated.
+        const QVector<QJsonObject> block = presetBlock.isEmpty() ? t->getInputBlock() : presetBlock;
+        PrepareWidget* prepareWidget = new PrepareWidget(block, true, this);
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
             QHash<QString, QJsonObject> elements = prepareWidget->getObject();

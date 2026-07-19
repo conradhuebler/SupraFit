@@ -33,6 +33,11 @@
 
 #include "chaiinterpreter.h"
 
+chaiscript::ModulePtr SupraFitChaiMathModule()
+{
+    return chaiscript::extras::math::bootstrap();
+}
+
 ChaiInterpreter::ChaiInterpreter()
 {
 

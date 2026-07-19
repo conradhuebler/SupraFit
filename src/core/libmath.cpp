@@ -127,8 +127,90 @@ QPair<long double, long double> QuadraticRoot(long double a, long double b, long
     return pair;
 }
 
+namespace CubicSolver {
+namespace {
+    Method g_method = Method::Newton; // default: unchanged historical behaviour
+}
+void setMethod(Method method) { g_method = method; }
+Method method() { return g_method; }
+}
+
+qreal AnalyticCubicRoot(qreal a, qreal b, qreal c, qreal d)
+{
+    // Degenerate leading coefficient -> quadratic (or linear) fallback.
+    if (qAbs(a) < 1e-30) {
+        if (qAbs(b) < 1e-30)
+            return (qAbs(c) < 1e-30) ? 0.0 : -d / c;
+        const qreal disc = c * c - 4.0 * b * d;
+        if (disc < 0)
+            return 0.0;
+        const qreal s = std::sqrt(disc);
+        const qreal r1 = (-c + s) / (2.0 * b);
+        const qreal r2 = (-c - s) / (2.0 * b);
+        const qreal lo = std::min(r1, r2), hi = std::max(r1, r2);
+        return lo >= 0 ? lo : (hi >= 0 ? hi : lo);
+    }
+
+    // Depress: x = t - p/3  =>  t^3 + P t + Q = 0
+    const qreal p = b / a, q = c / a, r = d / a;
+    const qreal P = q - p * p / 3.0;
+    const qreal Q = 2.0 * p * p * p / 27.0 - p * q / 3.0 + r;
+    const qreal shift = p / 3.0;
+
+    qreal roots[3];
+    int n = 0;
+    const qreal disc = Q * Q / 4.0 + P * P * P / 27.0;
+    if (disc > 0) { // one real root
+        const qreal s = std::sqrt(disc);
+        roots[n++] = std::cbrt(-Q / 2.0 + s) + std::cbrt(-Q / 2.0 - s) - shift;
+    } else { // three real roots — trigonometric form (P < 0 here)
+        const qreal m = 2.0 * std::sqrt(-P / 3.0);
+        qreal arg = 3.0 * Q / (P * m);
+        arg = std::max(-1.0, std::min(1.0, arg)); // guard rounding
+        const qreal theta = std::acos(arg) / 3.0;
+        for (int k = 0; k < 3; ++k)
+            roots[n++] = m * std::cos(theta - 2.0 * M_PI * k / 3.0) - shift;
+    }
+
+    // Physically meaningful root of a free concentration: the smallest non-negative one.
+    qreal best = roots[0];
+    bool found = false;
+    for (int i = 0; i < n; ++i) {
+        if (roots[i] >= 0.0 && (!found || roots[i] < best)) {
+            best = roots[i];
+            found = true;
+        }
+    }
+    if (!found) // no non-negative root: return the largest (least negative)
+        for (int i = 0; i < n; ++i)
+            best = std::max(best, roots[i]);
+
+    // Polish with a few Newton steps on the ORIGINAL coefficients. The closed form is exact in real
+    // arithmetic but badly conditioned for the coefficient ranges a binding equilibrium produces
+    // (a = b11*b12 ~ 1e11 against d ~ -1e-4), where the depressed-cubic terms cancel catastrophically.
+    // Two or three steps recover full precision and are still far cheaper than searching from scratch.
+    // Claude Generated.
+    for (int it = 0; it < 4; ++it) {
+        const qreal f = ((a * best + b) * best + c) * best + d;
+        const qreal df = (3.0 * a * best + 2.0 * b) * best + c;
+        if (!std::isfinite(f) || !std::isfinite(df) || std::abs(df) < 1e-300)
+            break;
+        const qreal step = f / df;
+        const qreal next = best - step;
+        if (!std::isfinite(next))
+            break;
+        best = (found && next < 0.0) ? 0.0 : next; // a concentration cannot go negative
+        if (std::abs(step) <= 1e-15 * std::max(1.0, std::abs(best)))
+            break;
+    }
+    return best;
+}
+
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
 {
+    if (CubicSolver::method() == CubicSolver::Method::Analytic)
+        return AnalyticCubicRoot(a, b, c, d);
+
     qreal root1 = 0;
     qreal root2 = 0;
     qreal root3 = 0;

@@ -30,9 +30,12 @@
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
-#include "src/core/models/chaiinterpreter.h"
-#include "src/core/models/dukmodelinterpreter.h"
-#include "src/core/models/exprtkinterpreter.h"
+#include <memory>
+
+#include "src/core/models/scriptingengine.h"
+#include "src/core/speciationengine.h"
+
+#include "src/core/models/chaiinterpreter.h" // ChaiInterpreter used by CalculateThread (threaded path, WIP)
 
 class CalculateThread : public CxxThread {
 public:
@@ -144,12 +147,51 @@ const QJsonObject PrintX_Json{
     { "type", 3 } // 1 = int, 2 = double, 3 = string
 };
 
-const QJsonObject ChaiScript_Json{
-    { "name", "ChaiScript" }, // internal name, not to be printed
+// The equation text. Renamed from the historical (misleading) "ChaiScript" key; old projects that
+// still carry a "ChaiScript" block are read for backward compatibility in DefineModel(). CG.
+const QJsonObject Equation_Json{
+    { "name", "Equation" }, // internal name, not to be printed
     { "title", "Define model equation" },
-    { "description", "The model has to be defined here using a working equation. The equation will be evaluated using the ChaiScript Interpreter." },
+    { "description", "Define the model here as a working equation, evaluated by the selected scripting engine (see Engine)." },
     { "value", "" },
     { "type", 4 } // 1 = int, 2 = double, 3 = string, 4 = text
+};
+
+// Optional reaction system. When non-empty the model owns a native equilibrium solver which the
+// equation can call as spec_solve(t0,t1,…), spec_free(i) and spec_conc(j) — the fast alternative to
+// solving the mass balance inside the script. Same JSON key and editor type as the titration models,
+// but declared here so scriptmodel stays independent of that hierarchy (a second definition of
+// Reactions_Json would clash where both headers meet). Claude Generated.
+const QJsonObject ScriptReactions_Json{
+    { "name", "Reactions" },
+    { "title", "Reaction equations (optional)" },
+    { "description", "One reaction per line, e.g. 'A + B <=> AB'. Leave empty for a plain equation. When set, the equation may call spec_solve(totals…), spec_free(i) and spec_conc(j); the first N global parameters are the lg beta of the N species." },
+    { "value", "" },
+    { "type", 6 }, // 6 = reaction editor
+    { "once", true }
+};
+
+// Chooses which scripting backend evaluates the equation. Default ExprTk (fast, always available);
+// ChaiScript / Duktape / Python are optional and only usable when compiled in. Claude Generated.
+const QJsonObject Engine_Json{
+    { "name", "Engine" }, // internal name, not to be printed
+    { "title", "Scripting engine" },
+    { "description", "Backend used to evaluate the equation: ExprTk (default) | ChaiScript | Duktape | Python | QJS." },
+    { "value", "ExprTk" },
+    { "type", 3 } // 1 = int, 2 = double, 3 = string, 4 = text
+};
+
+/**
+ * @brief A predefined scripted model (Michaelis-Menten, Hill, …) for one-click definition.
+ *
+ * @c block is a ready-to-use list of definition descriptors (same shape as getInputBlock()) with the
+ * "value" fields already filled, so it can be fed straight into a PrepareWidget — the "New Model"
+ * dialog then opens with every field pre-populated for the user to review or tweak. Claude Generated.
+ */
+struct ScriptModelPreset {
+    QString name; ///< menu label, e.g. "Michaelis-Menten"
+    int inputSize = 1; ///< independent columns the equation needs (titration models need 2: host+guest)
+    QVector<QJsonObject> block; ///< filled definition descriptors
 };
 
 class ScriptModel : public AbstractModel {
@@ -175,7 +217,10 @@ public:
 
     bool DefineModel() override;
 
-    inline QString getExecute() const { return m_chai_execute; }
+    /*! \brief Predefined scripted models offered as one-click presets in the GUI. Claude Generated. */
+    static QVector<ScriptModelPreset> Presets();
+
+    inline QString getExecute() const { return m_equation; }
 
     virtual inline int InputParameterSize() const override { return m_input_size; }
     virtual inline QString GlobalParameterName(int i = 0) const override
@@ -185,7 +230,20 @@ public:
         else
             return QString();
     }
-    virtual inline int LocalParameterSize(int i = 0) const override { return m_local_parameter_size; }
+    virtual inline int LocalParameterSize(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return m_local_parameter_size;
+    }
+
+    /*! \brief Name of a local (per-series) parameter, e.g. "dAB" — labels the per-series shift editors
+     * in the GUI. Without this override the scripted names were dropped. Claude Generated. */
+    virtual inline QString LocalParameterName(int i = 0) const override
+    {
+        if (i >= 0 && i < m_local_parameter_names.size())
+            return m_local_parameter_names[i];
+        return QString();
+    }
 
     virtual qreal PrintOutIndependent(int i) const override;
 
@@ -203,35 +261,30 @@ public:
     void UpdateModelDefinition();
 
 private:
+    /*! \brief (Re)build the scripting engine, compile the equation, and resolve the input/global/
+     * local variable slots once. Called lazily from CalculateVariables(). Claude Generated. */
+    void PrepareEngine();
+
     QVector<CalculateThread*> m_threads;
-    CxxThreadPool* m_thread_pool;
+    CxxThreadPool* m_thread_pool = nullptr;
     QString m_ylabel = QString(), m_xlabel = QString();
     int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
-    bool m_support_series = false, m_chai = false, m_python = false, m_duktape = false;
+    bool m_support_series = false;
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
-    QStringList m_execute_python, m_execute_chai, m_execute_duktape;
-    QString m_chai_execute;
+    QString m_equation; ///< the model equation text (joined lines)
     QString m_calculate_print;
-    QMultiMap<double, QString> m_global_names_map;
     mutable QVector<double> m_x_printout;
-#ifdef _Models
-    ChaiInterpreter m_interp;
-#endif
-    ExprTkInterpreter m_exprTk;
+
+    // Optional native equilibrium solver exposed to the script (spec_solve/spec_free/spec_conc).
+    // The first SpeciesCount() global parameters are the lg beta pushed into it. Claude Generated.
+    SpeciationEngine m_speciation;
+    bool m_has_speciation = false;
+
+    // Scripting backend (fast, index-aligned slot binding). Claude Generated.
+    ScriptBackend m_backend = ScriptBackend::ExprTk;
+    std::unique_ptr<ScriptingEngine> m_engine;
     bool m_formula_prepared = false;
-#ifdef Use_Duktape
-     DuktapeModelInterpreter m_duktapeinterp;
-#endif
-
-    void CalculateChai();
-    void CalculateChaiV1();
-    void CalculateChaiV2();
-
-    void CalculateExprTk();
-
-    void CalculatePython();
-    void CalculateDuktape();
-    void CalculateQJSEngine();
+    QVector<int> m_input_slots, m_global_slots, m_local_slots; ///< engine slot per input/global/local
 
 protected:
     virtual void CalculateVariables() override;

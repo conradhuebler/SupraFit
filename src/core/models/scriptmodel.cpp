@@ -123,21 +123,26 @@ ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
 }
 
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
     m_complete = AbstractModel::DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, ChaiScript_Json };
-    m_complete = false;
+    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
+    // The base copy constructor brings m_defined_model along, so re-run DefineModel() to rebuild the
+    // sizes, names, equation, engine and series-awareness from it. Without this every clone (Monte
+    // Carlo, cross-validation, statistics, model duplication) silently had LocalParameterSize()==0,
+    // SupportSeries()==false and an EMPTY equation — Clone() had its DefineModel call commented out.
+    // Mirrors what fl_any_Model does in its copy constructor. Claude Generated.
+    m_complete = DefineModel();
 }
 
 ScriptModel::~ScriptModel()
@@ -158,7 +163,7 @@ void ScriptModel::InitialThreads()
     m_thread_pool = new CxxThreadPool;
     m_thread_pool->setProgressBar(CxxThreadPool::ProgressBarType::None);
     for (int i = 0; i <= use_threads; ++i) {
-        CalculateThread* thread = new CalculateThread(DataPoints(), SeriesCount(), IndependentModel(), GlobalParameter(), LocalParameter(), m_input_names, m_global_parameter_names, m_local_parameter_names, m_chai_execute);
+        CalculateThread* thread = new CalculateThread(DataPoints(), SeriesCount(), IndependentModel(), GlobalParameter(), LocalParameter(), m_input_names, m_global_parameter_names, m_local_parameter_names, m_equation);
         thread->setRange(DataPoints() / use_threads * i, DataPoints() / use_threads * (i + 1));
         m_thread_pool->addThread(thread);
         m_threads << thread;
@@ -191,6 +196,12 @@ bool ScriptModel::DefineModel()
     object = m_defined_model["LocalParameterSize"];
     m_local_parameter_size = object["value"].toInt();
 
+    // Local parameters are the per-series degrees of freedom, so a scripted model is series-aware
+    // exactly when it declares locals. Without this the GUI treats every scripted model as single-
+    // series and never enables per-series local editing/fitting (SupportSeries gates LocalEnabled,
+    // the results/search widgets and the statistics loops). Claude Generated.
+    m_support_series = m_local_parameter_size > 0;
+
     object = m_defined_model["LocalParameterNames"];
     if (!object.isEmpty())
         m_local_parameter_names = object["value"].toString().split("|");
@@ -205,16 +216,51 @@ bool ScriptModel::DefineModel()
     object = m_defined_model["InputSize"];
     m_input_size = object["value"].toInt();
 
-    object = m_defined_model["ChaiScript"];
+    // Equation text — read the new "Equation" key, falling back to the legacy "ChaiScript" key of
+    // older projects. Accept both the descriptor form ({..., "value": {lines}}) and a raw {lines}
+    // object so nothing regresses. Claude Generated.
+    auto readEquation = [this](const QString& key) -> QString {
+        const QJsonObject o = m_defined_model.value(key);
+        if (o.isEmpty())
+            return QString();
+        const QJsonObject lines = o.contains("value") ? o["value"].toObject() : o;
+        // The line keys are numbers stored as strings, and QJsonObject::keys() sorts them
+        // LEXICOGRAPHICALLY ("0","1","10","11",…,"2"). Any equation with more than ten lines would be
+        // reassembled in the wrong order — silently scrambling blocks and breaking brackets. Sort
+        // numerically. Claude Generated.
+        QStringList keys = lines.keys();
+        std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) {
+            bool okA = false, okB = false;
+            const int ia = a.toInt(&okA);
+            const int ib = b.toInt(&okB);
+            return (okA && okB) ? ia < ib : a < b;
+        });
+        QStringList strings;
+        for (const QString& k : keys)
+            strings << lines[k].toString();
+        return strings.join("\n");
+    };
+    m_equation = readEquation("Equation");
+    if (m_equation.isEmpty())
+        m_equation = readEquation("ChaiScript");
 
-    QStringList strings;
-    QJsonObject exec = object["value"].toObject();
+    // Scripting backend selection (default ExprTk); the actual fallback to ExprTk for backends that
+    // were not compiled in happens in MakeScriptingEngine() when the engine is built.
+    {
+        const QJsonObject engineObj = m_defined_model.value("Engine");
+        m_backend = engineObj.isEmpty() ? ScriptBackend::ExprTk
+                                        : ScriptBackendFromString(engineObj["value"].toString());
+    }
+    // Optional reaction system: gives the equation a native equilibrium solver via spec_solve()/
+    // spec_free()/spec_conc(). Empty -> plain equation mode, nothing changes. Claude Generated.
+    {
+        const QJsonObject reactions = m_defined_model.value("Reactions");
+        const QString text = reactions.contains("value") ? reactions["value"].toString() : QString();
+        m_has_speciation = !text.trimmed().isEmpty() && m_speciation.setReactions(text);
+    }
 
-    for (const QString& key : exec.keys())
-        strings << exec[key].toString();
-    m_chai_execute = strings.join("\n");
-    m_python = false;
-    m_chai = true;
+    m_formula_prepared = false;
+    m_engine.reset();
 
     object = m_defined_model["Name"];
     m_name = object["value"].toString();
@@ -286,39 +332,32 @@ bool ScriptModel::DefineModel()
 
     for (int i = 0; i < m_depmodel_names.size(); ++i)
         DependentModel()->setHeaderData(i, Qt::Horizontal, m_depmodel_names[i], Qt::DisplayRole);
-#ifdef _Models
-    m_interp.setInput(IndependentModel()->Table());
-    m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    m_interp.setLocal(LocalParameter()->Table());
-    m_interp.setInputNames(m_input_names);
+    // PrepareParameter() resets the enabled masks (m_enabled_global/m_enabled_local) to 0, and only
+    // addGlobal-/addLocalParameter() set them again — i.e. only when the optimisation parameters are
+    // collected. Without this call every parameter reports Global-/LocalEnabled()==false, so the GUI
+    // paints them red and disables their "optimise" checkbox (and the live-update timer of the model
+    // definition tab re-triggered DefineModel(), wiping the flags again on every edit). fl_any_Model
+    // does the same at the end of its DefineModel(). Claude Generated.
+    CollectOptimizationParameters();
 
-    // m_exprTk.setInput(IndependentModel()->Table());
-    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    m_exprTk.setLocal(LocalParameter()->Table());
-    // m_exprTk.setInputNames(m_input_names);
-    //  m_interp.setExecute(m_execute_chai);
-    m_interp.InitialiseChai();
-#endif
-
-#ifdef Use_Duktape
-    m_duktapeinterp.Initialise();
-#endif
-
-    m_global_names_map.clear();
-    m_global_parameter_names.clear();
-    if (m_global_parameter_names.size() != GlobalParameterSize()) {
-#pragma message("double")
-        m_global_parameter_names.clear();
-        for (int i = 0; i < GlobalParameterSize(); ++i)
-            m_global_parameter_names << QString("A%1").arg(i + 1);
-    }
-
-    for (int i = 0; i < GlobalParameterSize(); ++i) {
-        m_global_names_map.insert(1 / double(m_global_parameter_names[i].size()), m_global_parameter_names[i]);
-    }
+    // The engine is (re)built and the equation compiled lazily in PrepareEngine() on the first
+    // CalculateVariables(), once all parameter names/sizes are final. Claude Generated.
     UpdateModelDefinition();
+
+#ifdef DEBUG_ON
+    // Shows exactly what the model parsed from the definition dialog / project file. Claude Generated.
+    qDebug().noquote() << QString("[ScriptModel::DefineModel] inputs=%1 globals=%2 (%3) locals=%4 (%5) series=%6 supportSeries=%7 engine=%8 equation=%9")
+                                .arg(m_input_size)
+                                .arg(m_global_parameter_size)
+                                .arg(m_global_parameter_names.join(","))
+                                .arg(m_local_parameter_size)
+                                .arg(m_local_parameter_names.join(","))
+                                .arg(SeriesCount())
+                                .arg(m_support_series)
+                                .arg(ScriptBackendName(m_backend))
+                                .arg(m_equation.simplified());
+#endif
     return true;
-    // InitialThreads();
 }
 
 void ScriptModel::UpdateModelDefinition()
@@ -340,316 +379,255 @@ void ScriptModel::UpdateModelDefinition()
     m_defined_model["GlobalParameterGuess"] = object;
 }
 
+QVector<ScriptModelPreset> ScriptModel::Presets()
+{
+    // Fill a copy of a base descriptor with its value.
+    auto withValue = [](QJsonObject descriptor, const QJsonValue& value) {
+        descriptor["value"] = value;
+        return descriptor;
+    };
+    // An equation (possibly multiple ";"-separated statements on separate lines) as the {"0":..,"1":..}
+    // object the type-4 (multiline) editor expects; DefineModel joins the lines back with "\n".
+    auto eq = [](const QString& text) {
+        QJsonObject o;
+        const QStringList lines = text.split('\n');
+        // Zero-padded so QJsonObject's lexicographic key order matches the line order. CG.
+        for (int i = 0; i < lines.size(); ++i)
+            o[QStringLiteral("%1").arg(i, 3, 10, QLatin1Char('0'))] = lines[i];
+        return o;
+    };
+    // Assemble one preset's definition block, mirroring the m_pre_input field order so the "New Model"
+    // dialog opens with every widget pre-filled. Inputs default to X1..Xn (no InputNames field).
+    auto build = [&](const QString& name, int inputSize, int globalSize, const QString& globalNames,
+                     int localSize, const QString& localNames, const QString& equation,
+                     const QString& printX = QStringLiteral("X1"),
+                     const QString& globalGuess = QString()) {
+        ScriptModelPreset p;
+        p.name = name;
+        p.inputSize = inputSize;
+        p.block << withValue(ModelName_Json, name)
+                << withValue(InputSize_Json, inputSize)
+                << withValue(GlobalParameterSize_Json, globalSize)
+                << withValue(GlobalParameterNames_Json, globalNames)
+                << withValue(LocalParameterSize_Json, localSize)
+                << withValue(LocalParameterNames_Json, localNames)
+                << withValue(PrintX_Json, printX)
+                << withValue(Engine_Json, QStringLiteral("ExprTk"))
+                << withValue(Equation_Json, eq(equation));
+        if (!globalGuess.isEmpty())
+            p.block << withValue(GlobalParameterGuess_Json, globalGuess);
+        return p;
+    };
+
+    QVector<ScriptModelPreset> presets;
+    presets << build(QStringLiteral("Michaelis-Menten"), 1, 2, QStringLiteral("vmax|Km"), 0, QString(),
+        QStringLiteral("(vmax*X1)/(Km+X1)"));
+    presets << build(QStringLiteral("Linear"), 1, 2, QStringLiteral("m|b"), 0, QString(),
+        QStringLiteral("m*X1 + b"));
+    presets << build(QStringLiteral("Hill"), 1, 3, QStringLiteral("Vmax|K|n"), 0, QString(),
+        QStringLiteral("(Vmax*pow(X1,n))/(pow(K,n) + pow(X1,n))"));
+    presets << build(QStringLiteral("Exponential decay"), 1, 2, QStringLiteral("A|k"), 0, QString(),
+        QStringLiteral("A*exp(-k*X1)"));
+    presets << build(QStringLiteral("Quadratic"), 1, 3, QStringLiteral("a|b|c"), 0, QString(),
+        QStringLiteral("a + b*X1 + c*X1*X1"));
+
+    // Titration models: two independent columns (host total X1, guest total X2). The 1:1 complex has a
+    // closed form AB = ½[(H0+G0+1/K) − √((H0+G0+1/K)² − 4·H0·G0)] (no equilibrium solver needed). The
+    // observable is a SIGNAL per series built from the concentrations weighted by per-series LOCAL
+    // coefficients — so each series (dataset/observable) fits its own coefficients (series-aware). The
+    // first statement solves the complex, the last statement is the returned signal. Claude Generated.
+    // The binding constant is fitted on a log10 scale (lgK), exactly like the built-in binding models:
+    // K spans orders of magnitude, so optimising it linearly is badly conditioned and lands on wrong
+    // optima. The x axis is the guest/host ratio (equivalents) — plotting against the constant host
+    // total X1 would collapse the axis. Claude Generated.
+    const QString solveAB = QStringLiteral("var K := pow(10, lgK);\n")
+        + QStringLiteral("var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2));");
+    const QString ratioX = QStringLiteral("X2/X1");
+    const QString lgKGuess = QStringLiteral("[2;6]");
+    // UV/Vis / fluorescence: extensive signal = free-host·eHost + complex·eAB (locals per series).
+    presets << build(QStringLiteral("Binding 1:1 — signal (Σ c·ε)"), 2, 1, QStringLiteral("lgK"), 2,
+        QStringLiteral("eHost|eAB"), solveAB + QStringLiteral("\n(X1 - AB)*eHost + AB*eAB"),
+        ratioX, lgKGuess);
+    // Host-observed NMR: intensive shift = mole-fraction-weighted host/complex shifts (locals per series).
+    presets << build(QStringLiteral("Binding 1:1 — NMR shift"), 2, 1, QStringLiteral("lgK"), 2,
+        QStringLiteral("dHost|dAB"), solveAB + QStringLiteral("\n((X1 - AB)*dHost + AB*dAB)/X1"),
+        ratioX, lgKGuess);
+
+    // 1:1 / 1:2 (H + G ⇌ HG, H + 2G ⇌ HG2). No closed form — the mass balance has to be solved
+    // numerically, which is exactly what makes it the interesting performance case. Substituting
+    // [H] = H0 / (1 + β11[G] + β12[G]²) collapses the 2x2 system to ONE equation in the free guest:
+    //     f([G]) = [G] + H0·(β11[G] + 2β12[G]²)/(1 + β11[G] + β12[G]²) − G0
+    // f is monotonically increasing with f(0) = −G0 < 0 and f(G0) > 0, so bisection on [0, G0] is
+    // bracketed, so a SAFEGUARDED Newton is used: take the Newton step when it stays inside the
+    // bracket, otherwise bisect. Quadratic convergence (~5 iterations) with the robustness of
+    // bisection — a plain 60-step bisection was 2.7x slower. Observable = mole-fraction-weighted
+    // host shifts (locals per series). Claude Generated.
+    const QString solve112 = QStringLiteral(
+        "var b11 := pow(10, lgK11);\n"
+        "var b12 := pow(10, lgB12);\n"
+        "var lo := 0;\n"
+        "var hi := X2;\n"
+        "var G := 0.5*X2;\n"
+        "var d := 1; var f := 0; var df := 1;\n"
+        "var num := 0; var dnum := 0; var dd := 0; var step := 0;\n"
+        "var it := 0;\n"
+        "while (it < 40)\n"
+        "{\n"
+        "  d := 1 + b11*G + b12*G*G;\n"
+        "  num := b11*G + 2*b12*G*G;\n"
+        "  f := G + X1*num/d - X2;\n"
+        "  if (f > 0) { hi := G; } else { lo := G; };\n"
+        "  if (abs(f) < 1e-16*(X2 + 1e-15)) { it := 1000; }\n"
+        "  else\n"
+        "  {\n"
+        "    dnum := b11 + 4*b12*G;\n"
+        "    dd := b11 + 2*b12*G;\n"
+        "    df := 1 + X1*(dnum*d - num*dd)/(d*d);\n"
+        "    step := G - f/df;\n"
+        "    if ((step > lo) and (step < hi)) { G := step; } else { G := 0.5*(lo + hi); };\n"
+        "    it += 1;\n"
+        "  };\n"
+        "};\n"
+        "d := 1 + b11*G + b12*G*G;\n"
+        "var H := X1/d;\n"
+        "var HG := b11*H*G;\n"
+        "var HG2 := b12*H*G*G;");
+    presets << build(QStringLiteral("Binding 1:1/1:2 — NMR shift"), 2, 2,
+        QStringLiteral("lgK11|lgB12"), 3, QStringLiteral("dH|dHG|dHG2"),
+        solve112 + QStringLiteral("\n(H*dH + HG*dHG + HG2*dHG2)/X1"),
+        ratioX, QStringLiteral("[2;6]|[3;9]"));
+
+    // Same 1:1/1:2 system again, but the free guest comes from the primitive library instead of a
+    // hand-written iteration: the mass balance reduces to a cubic in [G], and cubic_root() solves it
+    // in closed form. No loop in the script at all. Claude Generated.
+    presets << build(QStringLiteral("Binding 1:1/1:2 — cubic_root primitive"), 2, 2,
+        QStringLiteral("lgK11|lgB12"), 3, QStringLiteral("dH|dHG|dHG2"),
+        QStringLiteral(
+            "var b11 := pow(10, lgK11);\n"
+            "var b12 := pow(10, lgB12);\n"
+            "// mass balance -> cubic in the free guest, cumulative betas: b12 G^3 + (b11 + b12(2H0-G0)) G^2\n"
+            "// + (1 + b11(H0-G0)) G - G0 = 0   (equil.h uses STEPWISE K12, hence different coefficients)\n"
+            "var G := cubic_root(b12, b11 + b12*(2*X1 - X2), 1 + b11*(X1 - X2), -X2);\n"
+            "var d := 1 + b11*G + b12*G*G;\n"
+            "var H := X1/d;\n"
+            "var HG := b11*H*G;\n"
+            "var HG2 := b12*H*G*G;\n"
+            "(H*dH + HG*dHG + HG2*dHG2)/X1"),
+        ratioX, QStringLiteral("[2;6]|[3;9]"));
+
+    // Same 1:1/1:2 system, but the mass balance is solved by the NATIVE speciation engine called
+    // from the script instead of a bisection loop written in ExprTk. Identical physics, so the two are
+    // directly comparable — this is the pair the engine benchmark measures. Claude Generated.
+    {
+        ScriptModelPreset p = build(QStringLiteral("Binding 1:1/1:2 — native solver"), 2, 2,
+            QStringLiteral("lgB11|lgB12"), 3, QStringLiteral("dH|dHG|dHG2"),
+            QStringLiteral("spec_solve(X1, X2);\n"
+                           "(spec_free(0)*dH + spec_conc(0)*dHG + spec_conc(1)*dHG2)/X1"),
+            ratioX, QStringLiteral("[2;6]|[3;9]"));
+        QJsonObject reactions = ScriptReactions_Json;
+        reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        p.block << reactions;
+        presets << p;
+    }
+    return presets;
+}
+
 void ScriptModel::InitialGuess_Private()
 {
+    // Start from the middle of each declared guess range. InitialiseRandom() is a no-op unless the
+    // application property "InitialiseRandom" is set, so without this every scripted parameter would
+    // start at 0 — a hopeless start for e.g. a binding constant, and the reason a fitted constant came
+    // out wrong. Writing the tables directly (not setGlobalParameter) bypasses the checked mask, which
+    // is what an initial guess should do. Claude Generated.
+    for (int i = 0; i < GlobalParameterSize() && i < m_random_global.size(); ++i)
+        (*GlobalTable())[i] = 0.5 * (m_random_global[i].first + m_random_global[i].second);
+
+    for (int j = 0; j < SeriesCount() && j < m_random_local.size(); ++j)
+        for (int i = 0; i < LocalParameterSize() && i < m_random_local[j].size(); ++i)
+            LocalTable()->data(j, i) = 0.5 * (m_random_local[j][i].first + m_random_local[j][i].second);
+
     InitialiseRandom();
+}
+
+void ScriptModel::PrepareEngine()
+{
+    bool fellBack = false;
+    m_engine = MakeScriptingEngine(m_backend, &fellBack);
+    if (fellBack)
+        emit Info()->Message(tr("Scripting engine '%1' is not available in this build; using ExprTk instead.")
+                                 .arg(ScriptBackendName(m_backend)));
+
+    // Attach the native solver BEFORE compiling — spec_solve()/spec_free()/spec_conc() must exist
+    // when the parser sees them. Claude Generated.
+    m_engine->setSpeciation(m_has_speciation ? &m_speciation : nullptr);
+
+    // All bindable identifiers, in a fixed order: inputs, then globals, then locals.
+    QStringList variables;
+    variables << m_input_names << m_global_parameter_names << m_local_parameter_names;
+
+    m_formula_prepared = m_engine->prepare(m_equation, variables);
+    // A failed compile would otherwise show up as a silently all-zero model. Claude Generated.
+    if (!m_formula_prepared)
+        emit Info()->Warning(tr("The model equation could not be compiled: %1").arg(m_engine->lastError()));
+
+    // Resolve each parameter/input name to its stable engine slot exactly once — the hot loop then
+    // only writes doubles, no per-point name lookups. Claude Generated.
+    m_input_slots.resize(m_input_names.size());
+    for (int k = 0; k < m_input_names.size(); ++k)
+        m_input_slots[k] = m_engine->slotFor(m_input_names[k]);
+
+    m_global_slots.resize(m_global_parameter_names.size());
+    for (int g = 0; g < m_global_parameter_names.size(); ++g)
+        m_global_slots[g] = m_engine->slotFor(m_global_parameter_names[g]);
+
+    m_local_slots.resize(m_local_parameter_names.size());
+    for (int l = 0; l < m_local_parameter_names.size(); ++l)
+        m_local_slots[l] = m_engine->slotFor(m_local_parameter_names[l]);
 }
 
 void ScriptModel::CalculateVariables()
 {
-    // if (m_python)
-    //     CalculatePython();
-    // else if (m_chai)
-    // CalculateChai();
+    if (!m_engine || !m_formula_prepared)
+        PrepareEngine();
 
-    if (!m_formula_prepared) {
-        m_formula_prepared = m_exprTk.PrepareFormula(
-            m_chai_execute,
-            m_input_names,
-            m_global_parameter_names);
+    const int inputs = m_input_slots.size();
+    const int globals = m_global_slots.size();
+    const int locals = m_local_slots.size();
+
+    // Globals are series-independent — write them once per Calculate().
+    for (int g = 0; g < globals; ++g)
+        m_engine->set(m_global_slots[g], GlobalParameter(g));
+
+    // Speciation mode: the first SpeciesCount() globals are lg beta and drive the native solver
+    // (they are pushed here, not read by the script). Claude Generated.
+    if (m_has_speciation) {
+        const int species = m_speciation.SpeciesCount();
+        std::vector<double> beta(species, 0.0);
+        for (int k = 0; k < species && k < GlobalParameterSize(); ++k)
+            beta[k] = std::pow(10.0, GlobalParameter(k));
+        m_speciation.setStabilityConstants(beta);
     }
 
-    // Update Parameter
-    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    m_exprTk.setLocal(LocalParameter()->Table());
-
     for (int series = 0; series < SeriesCount(); ++series) {
+        // Local parameters vary per series — bind this series' row before its points. This is the
+        // wiring the old ExprTk path was missing (locals were silently ignored). Claude Generated.
+        for (int l = 0; l < locals; ++l)
+            m_engine->set(m_local_slots[l], LocalParameter(l, series));
+
         for (int i = 0; i < DataPoints(); ++i) {
-            // Sammle X-Werte für diesen Datenpunkt
-            QVector<QPair<QString, double>> x_values;
-            for (int parameter = 0; parameter < InputParameterSize(); ++parameter) {
-                x_values.append({ m_input_names[parameter],
-                    IndependentModel()->data(i, parameter) });
-            }
+            for (int k = 0; k < inputs; ++k)
+                m_engine->set(m_input_slots[k], IndependentModel()->data(i, k));
+
+            // Let spec_solve() warm-start from this point's previous solution. The totals depend only
+            // on the point (not the series), so the cache is valid across series too. Claude Generated.
+            if (m_has_speciation)
+                m_engine->setSpeciationPoint(i);
 
             int error = 0;
-            double result = m_exprTk.evaluate(x_values, error);
-
-            if (error == 1) {
-                // Fehlerbehandlung wenn nötig
-            }
-
+            const double result = m_engine->evaluate(error);
             SetValue(i, series, result);
         }
     }
-
-    // CalculateQJSEngine();
-    //  else if(m_duktape)
-    // CalculateDuktape();
-}
-
-void ScriptModel::CalculateQJSEngine()
-{
-    QJSEngine engine;
-    for (int i = 0; i < GlobalParameterSize(); ++i) {
-        engine.globalObject().setProperty(QString("%1").arg(GlobalParameterName(i)), GlobalParameter(i));
-    }
-    /*for(int i = 0; i < LocalParameterSize(); ++i)
-    {
-        engine.globalObject().setProperty(QString("%1").arg(LocalParameterName(i)), LocalParameter(i));
-    }*/
-    auto Matrix = GlobalParameter()->Table();
-
-    QString expression = m_chai_execute;
-    for (const auto& pair : m_global_names_map) {
-        int i = m_global_parameter_names.indexOf(pair);
-        expression.replace(m_global_parameter_names[i], QString::number(Matrix(0, i)));
-    }
-
-    for (int series = 0; series < SeriesCount(); ++series) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            QString cache = expression;
-            for (int parameter = 0; parameter < InputParameterSize();
-                 ++parameter) {
-                cache.replace(
-                    m_input_names[parameter],
-                    QString::number(IndependentModel()->data(i, parameter)));
-            }
-            int error = 0;
-            double result = 0;
-            bool ok;
-            double tmp_result = cache.toDouble(&ok);
-            if (ok)
-                result = tmp_result;
-            else
-                result = engine.evaluate(cache).toNumber();
-            SetValue(i, series, result);
-            qDebug() << result << cache << engine.catchError().toString();
-        }
-    }
-}
-
-void ScriptModel::CalculatePython()
-{
-#ifdef _Python
-    PyModelInterpreter interp;
-
-    interp.setInput(IndependentModel()->Table());
-    interp.setModel(ModelTable()->Table());
-    interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    interp.setLocal(LocalParameter()->Table());
-    interp.setExecute(m_execute_python);
-    interp.InitialisePython();
-
-    for (int i = 0; i < DataPoints(); ++i) {
-        for (int j = 0; j < SeriesCount(); ++j) {
-            SetValue(i, j, interp.EvaluatePython(j, i));
-        }
-    }
-
-    interp.FinalisePython();
-#else
-    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortunately SupraFit was compiled without Pyhton Script Support. Beside, the Python Models are not working yet."));
-    m_complete = false;
-#endif
-}
-
-void ScriptModel::CalculateChai()
-{
-#ifdef _Models
-    /*
-    setThreads(2);
-    int use_threads = Threads();
-    //while(use_threads > DataPoints())
-    //    use_threads /= 2;
-    QVector<CalculateThread *> threads;
-    CxxThreadPool *pool = new CxxThreadPool;
-    pool->setProgressBar(CxxThreadPool::ProgressBarType::None);
-    for(int i = 0; i <= use_threads; ++i)
-    {
-        CalculateThread *thread = new CalculateThread(DataPoints(), SeriesCount(), IndependentModel(),  GlobalParameter(), LocalParameter(), m_input_names, m_global_parameter_names, m_local_parameter_names, m_chai_execute);
-        thread->setRange(DataPoints()/use_threads*i, DataPoints()/use_threads*(i+1));
-        pool->addThread(thread);
-        threads << thread;
-    }
-    pool->setActiveThreadCount(use_threads);
-    */
-    /*
-    for(int i = 0; i < m_threads.size(); ++i)
-        m_threads[i]->UpdateParameter(GlobalParameter(), LocalParameter());
-    m_thread_pool->Reset();
-    m_thread_pool->StartAndWait();
-    for(const CalculateThread *thread :m_threads)
-    {
-        if(!thread->isValid())
-            continue;
-
-        for(int i = thread->Start(); i < thread->End(); ++i)
-        {
-            for(int j = 0; j < SeriesCount(); ++j)
-                SetValue(i, j, thread->Result()->data(j, i));
-        }
-    }
-    */
-    // delete pool;
-
-    // CalculateChaiV1();
-    // CalculateExprTk();
-
-    // CalculateChaiV2();
-#else
-    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
-    m_complete = false;
-#endif
-}
-
-void ScriptModel::CalculateChaiV1()
-{
-    m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    m_interp.setLocal(LocalParameter()->Table());
-    m_interp.UpdateChai();
-    for (int series = 0; series < SeriesCount(); ++series) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            QCoreApplication::processEvents();
-            QString cache = m_chai_execute;
-            for (int parameter = 0; parameter < InputParameterSize();
-                 ++parameter) {
-                cache.replace(
-                    m_input_names[parameter],
-                    QString::number(IndependentModel()->data(i, parameter)));
-          }
-          int error = 0;
-          double result = 0;
-          bool ok;
-          double tmp_result = cache.toDouble(&ok);
-          if (ok)
-              result = tmp_result;
-          else
-              result = m_interp.Evaluate(cache.toUtf8(), error);
-          if (error == 1) {
-            cache.replace("var", "");
-            result = m_interp.Evaluate(cache.toUtf8(), error);
-          }
-          SetValue(i, series, result);
-        }
-    }
-}
-
-void ScriptModel::CalculateChaiV2()
-{
-    // QJSEngine engine;
-
-    auto Matrix = GlobalParameter()->Table();
-    m_interp.setGlobal(Matrix, m_global_parameter_names);
-    // m_interp.setLocal(LocalParameter()->Table());
-    m_interp.UpdateChai();
-
-    QString expression = m_chai_execute;
-    for (const auto& pair : m_global_names_map) {
-        int i = m_global_parameter_names.indexOf(pair);
-        expression.replace(m_global_parameter_names[i], QString::number(Matrix(0, i)));
-        qDebug() << Matrix(0, i);
-    }
-    qDebug() << expression;
-    for (int series = 0; series < SeriesCount(); ++series) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            QCoreApplication::processEvents();
-            QString cache = expression;
-            for (int parameter = 0; parameter < InputParameterSize();
-                 ++parameter) {
-                cache.replace(
-                    m_input_names[parameter],
-                    QString::number(IndependentModel()->data(i, parameter)));
-            }
-            int error = 0;
-            double result = 0;
-            bool ok;
-            double tmp_result = cache.toDouble(&ok);
-            if (ok)
-                result = tmp_result;
-            else
-                result = m_interp.Evaluate(cache.toUtf8(), error);
-            if (error == 1) {
-                cache.replace("var", "");
-                result = m_interp.Evaluate(cache.toUtf8(), error);
-            }
-            SetValue(i, series, result);
-        }
-    }
-}
-
-void ScriptModel::CalculateExprTk()
-{
-    auto Matrix = GlobalParameter()->Table();
-
-    m_exprTk.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
-    m_exprTk.setLocal(LocalParameter()->Table());
-    // m_exprTk.UpdateVariables();
-    QString expression = m_chai_execute;
-    for (const auto& pair : m_global_names_map) {
-        int i = m_global_parameter_names.indexOf(pair);
-        expression.replace(m_global_parameter_names[i], QString::number(Matrix(0, i)));
-        // qDebug() << Matrix(0, i);
-    }
-    for (int series = 0; series < SeriesCount(); ++series) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            QCoreApplication::processEvents();
-
-            QString formula = expression; // Deine Formel
-
-            // Ersetze Input-Parameter
-            for (int parameter = 0; parameter < InputParameterSize(); ++parameter) {
-                formula.replace(
-                    m_input_names[parameter],
-                    QString::number(IndependentModel()->data(i, parameter)));
-            }
-
-            int error = 0;
-            double result = m_exprTk.evaluate(formula, error);
-
-            if (error == 1) {
-                formula.replace("var", "");
-                result = m_exprTk.evaluate(formula, error);
-            }
-
-            SetValue(i, series, result);
-        }
-    }
-}
-
-void ScriptModel::CalculateDuktape()
-{
-
-#ifdef Use_Duktape
-QString execute = m_execute_chai.join("\n");
-    std::vector<std::string> list;
-    for (const QString& str : m_global_parameter_names)
-        list.push_back(str.toStdString());
-
-    m_duktapeinterp.setGlobal(GlobalParameter()->Table(), list);
-    m_duktapeinterp.Update();
-    for (int series = 0; series < SeriesCount(); ++series) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            //QString calculate = QString("%1*%2/(%3+%2)").arg(km).arg(IndependentModel()->data(0, i)).arg(vmax);
-            QString calculate = QString("vmax*%1/(Km+%1)").arg(IndependentModel()->data(0, i));
-
-            // QString calculate = QString("%1*%3/(%2+%3)").arg(GlobalParameter()->Table()(0,0)).arg(GlobalParameter()->Table()(0,1)).arg(IndependentModel()->data(0, i));
-            // qDebug() << calculate;
-            QString t = m_execute_chai[0];
-            QString cache = execute;
-            cache.replace("S", QString::number((IndependentModel()->data(0, i))));
-            QString result(m_duktapeinterp.Evaluate(cache.toUtf8()));
-            //QString result(m_duktapeinterp.Evaluate(calculate.toUtf8()));
-            double val = result.toDouble();
-            SetValue(i, series, val); //row[i]);
-        }
-    }
-    // m_duktapeinterp.Finalise();
-
-#else
-    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Duktape Script Support."));
-    m_complete = false;
-#endif
 }
 
 QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
