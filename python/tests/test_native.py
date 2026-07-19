@@ -151,6 +151,34 @@ def test_native_postprocessing_in_process(reference_arrays):
     assert cv["boxplot"]["mean"] == pytest.approx(2.8957, abs=1e-2)
 
 
+def test_native_generate_independent():
+    """The equation data generator produces the expected independent grid (rows x variables)."""
+    grid = np.asarray(sf.generate_independent("0.001|(X-1)*1e-4", 20))
+    assert grid.shape == (20, 2)
+    # X is the 1-based row index: column 0 is constant 0.001, column 1 is (X-1)*1e-4.
+    assert np.allclose(grid[:, 0], 0.001)
+    assert grid[0, 1] == pytest.approx(0.0)
+    assert grid[5, 1] == pytest.approx(5e-4)
+
+
+def test_native_live_model(reference_arrays):
+    """The low-level live model handle fits the reference data and honours set_global."""
+    indep, dep = reference_arrays
+    m = sf.native_model("nmr_1_1", indep, dep)  # snake_case name accepted
+    m.initial_guess()
+    m.fit()
+    assert m.converged() is True
+    assert m.sse() == pytest.approx(0.012710165623140661, rel=1e-6)
+    assert np.asarray(m.global_parameters()).ravel()[0] == pytest.approx(2.8957, rel=1e-5)
+    assert np.asarray(m.model_signal()).shape == dep.shape
+    # a low-level verb takes effect immediately
+    m.set_global(1.0, 0)
+    assert np.asarray(m.global_parameters()).ravel()[0] == pytest.approx(1.0)
+    # and the fit re-converges to the optimum from the new start
+    m.fit()
+    assert np.asarray(m.global_parameters()).ravel()[0] == pytest.approx(2.8957, rel=1e-5)
+
+
 def _cli_available() -> bool:
     try:
         sf._cli.find_cli()

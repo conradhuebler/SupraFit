@@ -153,9 +153,15 @@ NumPy integration ultimately live.
   model signal (`ModelTable()`, reliable after reconstruction) and the residuals (derived as
   `dependent - signal`, since the rebuilt model's `ErrorTable()` is not filled) as row-major arrays;
   surfaced as `Model.model_signal` / `Model.model_error` (2D NumPy). `test_native_model_tables`.
-- **Still to bind (later):** the lower-level interactive verbs (create_model, set_global,
-  initial_guess on a live model handle) and the equation/model data generators (native currently
-  needs array/file data — the CLI backend covers generated data).
+- **Low-level verbs + data generation DONE (2026-07-19):** a `_core.Model` class (exposed as
+  `suprafit.native_model(id_or_name, indep, dep)`) gives a live model handle — `set_global`,
+  `set_local`, `initial_guess`, `fit` (real Minimizer), and getters `sse/aic/aicc/converged/
+  global_parameters/local_parameters/model_signal/export_json` (tables as NumPy). `_core`'s
+  `generate_independent(equations, datapoints)` (exposed as `suprafit.generate_independent`) drives
+  the CLI equation generator. `python/tests/test_native.py::{test_native_live_model,
+  test_native_generate_independent}`.
+- **Still to bind (later):** native dependent-data generation from a model (random parameters +
+  noise, `DataGenerator::EvaluateWithModel`) — independent-only generation is bound today.
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
   pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).

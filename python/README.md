@@ -20,6 +20,23 @@ import suprafit as sf
 sf.set_backend("native")     # in-process; falls back to a clear error if _core isn't built
 ```
 
+### Low-level (interactive) API
+
+Beyond the backend-transparent `Project`, the native module exposes an interactive model handle and
+the data generator directly:
+
+```python
+import suprafit as sf
+
+x = sf.generate_independent("0.001|(X-1)*1e-4", 20)   # independent grid (NumPy), X = 1-based row
+
+m = sf.native_model("nmr_1_1", indep, dep)            # live model on two arrays
+m.initial_guess()
+m.set_global(3.0, 0)                                  # tweak a global lg K before fitting
+m.fit()
+m.sse(), m.global_parameters(), m.model_signal()      # scalars + tables as NumPy
+```
+
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 
 ## Requirements

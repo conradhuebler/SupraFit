@@ -33,12 +33,15 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 
+#include "src/capabilities/datagenerator.h"
 #include "src/core/analyse.h"
 #include "src/core/analysis_manager.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/minimizer.h"
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/models/datatable.h"
+#include "src/core/models/models.h"
 #include "src/core/projectmanager.h"
 #include "src/version.h"
 
@@ -186,6 +189,90 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
     return out;
 }
 
+/*!
+ * \brief A live, in-process model handle for interactive (notebook-grade) use.
+ *
+ * Wraps a DataClass built from two matrices plus a model created on it, and exposes the low-level
+ * verbs the roadmap calls for: set global/local parameters, run an initial guess, fit, and read back
+ * scalars / parameter tables / the fitted signal as NumPy — all without a project-JSON round-trip.
+ * The DataClass is owned for the model's lifetime. Claude Generated.
+ */
+class LiveModel {
+public:
+    LiveModel(int modelId, const Eigen::MatrixXd& independent, const Eigen::MatrixXd& dependent)
+    {
+        ensureQCoreApplication();
+        m_data = QSharedPointer<DataClass>(new DataClass());
+        m_data->setIndependentTable(new DataTable(independent));
+        m_data->setIndependentRawTable(new DataTable(independent));
+        m_data->setDependentTable(new DataTable(dependent));
+        m_data->setDependentRawTable(new DataTable(dependent));
+        m_data->setType(DataClassPrivate::DataType::Table);
+        m_model = CreateModel(modelId, m_data.data());
+        if (!m_model)
+            throw std::runtime_error("CreateModel failed for model id " + std::to_string(modelId));
+    }
+
+    void setGlobal(double value, int index) { m_model->setGlobalParameter(value, index); }
+    void setLocal(double value, int series, int param) { m_model->setLocalParameter(value, param, series); }
+    void initialGuess() { m_model->InitialGuess(); }
+
+    // Run the real Levenberg-Marquardt fit from the current parameters (call initial_guess() or set
+    // parameters first). Minimize() imports the optimum back into the model; enabling statistics and
+    // recalculating then populates SSE / the model tables for the getters below.
+    void fit()
+    {
+        m_model->setFast(false);
+        Minimizer minimizer(false);
+        minimizer.setModel(m_model);
+        minimizer.Minimize();
+        m_model->CalculateStatistics(true);
+        m_model->Calculate();
+    }
+
+    int modelId() const { return m_model->SFModel(); }
+    std::string name() const { return m_model->Name().toStdString(); }
+    double sse() const { return m_model->SSE(); }
+    double aic() const { return m_model->GetAIC(); }
+    double aicc() const { return m_model->GetAICc(); }
+    bool converged() const { return m_model->isConverged(); }
+    Eigen::MatrixXd globalParameters() const { return m_model->GlobalTable()->Table(); }
+    Eigen::MatrixXd localParameters() const { return m_model->LocalTable()->Table(); }
+    Eigen::MatrixXd modelSignal() const { return m_model->ModelTable()->Table(); }
+
+    std::string exportJson() const
+    {
+        return QJsonDocument(m_model->ExportModel(true, true)).toJson(QJsonDocument::Compact).toStdString();
+    }
+
+private:
+    QSharedPointer<DataClass> m_data;
+    QSharedPointer<AbstractModel> m_model;
+};
+
+/*!
+ * \brief Generate an independent data table from the CLI's equation generator.
+ *
+ * \param equations pipe-separated per-variable expressions, e.g. "0.001|(X-1)*1e-4"
+ * \param datapoints number of rows to generate
+ * \return the generated table (rows x variables) as a NumPy-convertible Eigen matrix
+ * Claude Generated.
+ */
+static Eigen::MatrixXd generateIndependent(const std::string& equations, int datapoints)
+{
+    ensureQCoreApplication();
+    const QString eq = QString::fromStdString(equations);
+    QJsonObject cfg;
+    cfg["equations"] = eq;
+    cfg["datapoints"] = datapoints;
+    cfg["independent"] = eq.split("|").size(); // DataGenerator needs one equation per variable
+    DataGenerator gen;
+    gen.setJson(cfg);
+    if (!gen.Evaluate() || !gen.Table())
+        throw std::runtime_error("data generator evaluation failed for equations: " + equations);
+    return gen.Table()->Table();
+}
+
 PYBIND11_MODULE(_core, m)
 {
     m.doc() = "SupraFit in-process core (pybind11). Phase 2 native backend — Claude Generated.";
@@ -210,4 +297,31 @@ PYBIND11_MODULE(_core, m)
         py::arg("nproc") = 0,
         "Fit models to independent/dependent tables in-process (optionally with post-fit analysis); "
         "returns the project JSON string (same shape as the CLI backend).");
+
+    m.def("generate_independent", &generateIndependent,
+        py::arg("equations"), py::arg("datapoints"),
+        "Generate an independent data table (rows x variables) from pipe-separated equations, "
+        "e.g. generate_independent(\"0.001|(X-1)*1e-4\", 20).");
+
+    // Low-level interactive model handle (notebook-grade): build a model on two tables, set/guess
+    // parameters, fit, and read scalars / parameter tables / the fitted signal as NumPy.
+    py::class_<LiveModel>(m, "Model",
+        "A live in-process model: set_global/set_local, initial_guess, fit, then read sse()/"
+        "global_parameters()/model_signal()/export_json(). Claude Generated.")
+        .def(py::init<int, const Eigen::MatrixXd&, const Eigen::MatrixXd&>(),
+            py::arg("model_id"), py::arg("independent"), py::arg("dependent"))
+        .def("set_global", &LiveModel::setGlobal, py::arg("value"), py::arg("index"))
+        .def("set_local", &LiveModel::setLocal, py::arg("value"), py::arg("series"), py::arg("param"))
+        .def("initial_guess", &LiveModel::initialGuess)
+        .def("fit", &LiveModel::fit)
+        .def("model_id", &LiveModel::modelId)
+        .def("name", &LiveModel::name)
+        .def("sse", &LiveModel::sse)
+        .def("aic", &LiveModel::aic)
+        .def("aicc", &LiveModel::aicc)
+        .def("converged", &LiveModel::converged)
+        .def("global_parameters", &LiveModel::globalParameters)
+        .def("local_parameters", &LiveModel::localParameters)
+        .def("model_signal", &LiveModel::modelSignal)
+        .def("export_json", &LiveModel::exportJson);
 }
