@@ -40,6 +40,16 @@ def _num_or_none(value):
         return None
 
 
+def _parse_matrix(values):
+    """A JSON list-of-rows -> 2D numpy array (or a list of float rows without numpy). None if absent.
+    Claude Generated."""
+    if not values:
+        return None
+    if _HAVE_NUMPY:
+        return np.asarray(values, dtype=float)
+    return [[float(x) for x in row] for row in values]
+
+
 def _parse_global_parameters(gp_block: dict | None):
     """globalParameter is {data: {"0": "2.8957 4.6"}, ...} -> a 1D array of lg K values."""
     if not gp_block:
@@ -152,6 +162,10 @@ class Model:
         # Standardized ML feature vector computed in C++ (StatisticTool::ExtractModelMLFeatures);
         # populated by the native backend (dict), None on the CLI backend. Claude Generated.
         self.ml_features = raw.get("ml_features")
+        # Fitted model signal (calculated curve) and residuals as 2D arrays (rows x series);
+        # native backend only (not in the CLI's export JSON). Claude Generated.
+        self.model_signal = _parse_matrix(raw.get("model_signal"))
+        self.model_error = _parse_matrix(raw.get("model_error"))
 
     @property
     def raw(self) -> dict:

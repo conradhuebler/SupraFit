@@ -149,8 +149,13 @@ NumPy integration ultimately live.
   `model_export.ml_features`; the reconstructed model's empty error accumulators are backfilled from
   the reliable exported statistics (SSE/AIC/AICc/standard_error). Surfaced as `Model.ml_features`
   (native only; None on the CLI). `python/tests/test_native.py::test_native_ml_features`.
-- **Still to bind (later):** the lower-level verbs (create_model, set_global, ModelTable/ErrorTable
-  as NumPy) and the equation/model data generators (native currently needs array/file data).
+- **ModelTable/ErrorTable as NumPy DONE (2026-07-19):** `fit_from_tables` also returns the fitted
+  model signal (`ModelTable()`, reliable after reconstruction) and the residuals (derived as
+  `dependent - signal`, since the rebuilt model's `ErrorTable()` is not filled) as row-major arrays;
+  surfaced as `Model.model_signal` / `Model.model_error` (2D NumPy). `test_native_model_tables`.
+- **Still to bind (later):** the lower-level interactive verbs (create_model, set_global,
+  initial_guess on a live model handle) and the equation/model data generators (native currently
+  needs array/file data — the CLI backend covers generated data).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
   pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).

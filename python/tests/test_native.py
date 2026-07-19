@@ -104,6 +104,25 @@ def test_native_ml_features(reference_arrays):
     assert f["series_count"] == 7
 
 
+def test_native_model_tables(reference_arrays):
+    """The native backend returns the fitted signal (calculated curve) and residuals as 2D arrays."""
+    indep, dep = reference_arrays
+    sf.set_backend("native")
+    try:
+        proj = sf.Project.from_arrays(indep, dep)
+        proj.add_model("nmr_1_1")
+        proj.fit(nproc=2)
+        m = proj.model("nmr_1_1")
+    finally:
+        sf.set_backend("cli")
+    sig, err = m.model_signal, m.model_error
+    assert sig is not None and err is not None
+    assert sig.shape == dep.shape == err.shape
+    # residuals are dependent - fitted signal, summing (near, to data precision) to the SSE
+    assert np.allclose(err, dep - sig, atol=1e-9)
+    assert float(np.sum(err ** 2)) == pytest.approx(m.sse, rel=1e-3)
+
+
 def test_native_postprocessing_in_process(reference_arrays):
     """Monte Carlo + cross-validation run in-process via the native backend (Phase 3).
 

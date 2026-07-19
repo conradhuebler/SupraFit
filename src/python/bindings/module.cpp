@@ -26,6 +26,7 @@
 
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
@@ -62,6 +63,22 @@ static void ensureQCoreApplication()
     static char* argv[] = { arg0, nullptr };
     // Leaked on purpose: lives for the whole process, torn down by the OS at exit.
     new QCoreApplication(argc, argv);
+}
+
+/*!
+ * \brief Serialise an Eigen matrix as a JSON array of rows (row-major list of lists).
+ * Used to hand the fitted model signal and residual tables back to Python as arrays. Claude Generated.
+ */
+static QJsonArray matrixToJson(const Eigen::MatrixXd& m)
+{
+    QJsonArray rows;
+    for (int r = 0; r < m.rows(); ++r) {
+        QJsonArray row;
+        for (int c = 0; c < m.cols(); ++c)
+            row.append(m(r, c));
+        rows.append(row);
+    }
+    return rows;
 }
 
 /*!
@@ -148,6 +165,18 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
             feats["aic"] = entry.value("AIC").toDouble();
             feats["aicc"] = entry.value("AICc").toDouble();
             entry["ml_features"] = feats;
+
+            // The fitted model signal (calculated curve) is not in the export JSON — it is recomputed
+            // on load. CalculateVariables() (run unconditionally by Calculate()) fills ModelTable(),
+            // so it is reliable after reconstruction; expose it as a row-major array for NumPy. The
+            // model's ErrorTable() is NOT filled on a rebuilt model, so derive the residuals directly
+            // as dependent - signal (correct regardless of the model's internal accumulators).
+            if (model->ModelTable()) {
+                const Eigen::MatrixXd& signal = model->ModelTable()->Table();
+                entry["model_signal"] = matrixToJson(signal);
+                if (signal.rows() == dependent.rows() && signal.cols() == dependent.cols())
+                    entry["model_error"] = matrixToJson(dependent - signal);
+            }
         }
         project[QStringLiteral("model_%1").arg(i)] = entry;
     }
