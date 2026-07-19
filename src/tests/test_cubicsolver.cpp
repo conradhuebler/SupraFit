@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include <QtCore/QRandomGenerator>
 #include <QtTest/QtTest>
 
 #include "src/core/libmath.h"
@@ -112,6 +113,87 @@ private slots:
                 }
             }
         }
+    }
+
+    /* Randomised sweep over both cubic families that share MinCubicRoot (1:1/1:2 guest cubic and
+     * 2:1/1:1 host cubic), across the full range of constants and concentrations a titration can
+     * produce. Both variants are compared against a high-precision bracketed reference, so a
+     * disagreement also says WHICH one is wrong. Seeded, so any failure is reproducible. CG. */
+    void testRandomisedAgreementWithReference()
+    {
+        QRandomGenerator rng(20260719u);
+        auto uni = [&rng](double lo, double hi) { return lo + (hi - lo) * rng.generateDouble(); };
+
+        // High-precision root of the cubic inside [0, upper] (the physically valid window).
+        auto reference = [](double a, double b, double c, double d, double upper, bool& ok) {
+            long double lo = 0.0L, hi = static_cast<long double>(upper);
+            auto P = [&](long double x) { return ((a * x + b) * x + c) * x + d; };
+            long double flo = P(lo), fhi = P(hi);
+            int guard = 0;
+            while (flo * fhi > 0.0L && guard++ < 60) { // widen if the root sits outside
+                hi *= 2.0L;
+                fhi = P(hi);
+            }
+            ok = (flo * fhi <= 0.0L);
+            if (!ok)
+                return 0.0;
+            for (int i = 0; i < 300; ++i) {
+                const long double mid = 0.5L * (lo + hi);
+                ((P(mid) * flo) <= 0.0L ? hi : lo) = mid;
+            }
+            return static_cast<double>(0.5L * (lo + hi));
+        };
+
+        int samples = 0, skipped = 0, newtonOutliers = 0;
+        double maxAnalyticRel = 0.0, maxNewtonRel = 0.0;
+
+        for (int n = 0; n < 4000; ++n) {
+            const double lgA = uni(0.0, 9.0); // lg of the first constant
+            const double lgB = uni(0.0, 9.0); // lg of the second
+            const double K1 = std::pow(10.0, lgA), K2 = std::pow(10.0, lgB);
+            const double H0 = std::pow(10.0, uni(-6.0, -1.0));
+            const double G0 = H0 * uni(0.0, 5.0);
+
+            // Both families have the same shape with the roles of the two totals swapped; see equil.h.
+            const bool guestFamily = (n % 2 == 0);
+            const double self = guestFamily ? G0 : H0; // total whose free concentration we solve for
+            const double other = guestFamily ? H0 : G0;
+            const double a = K1 * K2;
+            const double b = K1 * (2.0 * K2 * other - K2 * self + 1.0);
+            const double c = K1 * (other - self) + 1.0;
+            const double d = -self;
+
+            bool ok = false;
+            const double ref = reference(a, b, c, d, std::max(self, 1e-30), ok);
+            if (!ok || self <= 0.0) {
+                ++skipped;
+                continue;
+            }
+
+            CubicSolver::setMethod(CubicSolver::Method::Analytic);
+            const double analytic = MinCubicRoot(a, b, c, d);
+            CubicSolver::setMethod(CubicSolver::Method::Newton);
+            const double newton = MinCubicRoot(a, b, c, d);
+
+            const double scale = std::max(ref, 1e-12);
+            maxAnalyticRel = std::max(maxAnalyticRel, std::abs(analytic - ref) / scale);
+            const double newtonRel = std::abs(newton - ref) / scale;
+            maxNewtonRel = std::max(maxNewtonRel, newtonRel);
+            if (newtonRel > 1e-4)
+                ++newtonOutliers;
+
+            QVERIFY2(std::abs(analytic - ref) <= 1e-6 * scale,
+                qPrintable(QString("analytic %1 != reference %2 (lgK1=%3 lgK2=%4 H0=%5 G0=%6)")
+                               .arg(analytic).arg(ref).arg(lgA).arg(lgB).arg(H0).arg(G0)));
+            ++samples;
+        }
+
+        qInfo().noquote() << QString("  %1 samples (%2 skipped) | max rel. error: analytic %3, Newton %4"
+                                     " | Newton off by >1e-4 in %5 cases")
+                                 .arg(samples).arg(skipped)
+                                 .arg(maxAnalyticRel, 0, 'g', 3).arg(maxNewtonRel, 0, 'g', 3)
+                                 .arg(newtonOutliers);
+        QVERIFY2(samples > 3000, "too few usable samples — the generator is not exercising the solver");
     }
 
     // The selector must default to the historical path.

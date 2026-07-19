@@ -185,25 +185,48 @@ qreal AnalyticCubicRoot(qreal a, qreal b, qreal c, qreal d)
         for (int i = 0; i < n; ++i)
             best = std::max(best, roots[i]);
 
-    // Polish with a few Newton steps on the ORIGINAL coefficients. The closed form is exact in real
-    // arithmetic but badly conditioned for the coefficient ranges a binding equilibrium produces
-    // (a = b11*b12 ~ 1e11 against d ~ -1e-4), where the depressed-cubic terms cancel catastrophically.
-    // Two or three steps recover full precision and are still far cheaper than searching from scratch.
+    // The closed form is exact in real arithmetic but can be catastrophically ill-conditioned for the
+    // coefficient ranges a binding equilibrium produces (a = beta11*beta12 up to ~1e17 against
+    // d ~ -1e-1): a randomised sweep found it returning -0.27 where the true root is 3.8e-10. So it is
+    // used only as a SEED and then refined by a safeguarded Newton inside a guaranteed bracket, which
+    // makes the result correct regardless of the seed while still converging in a couple of steps.
     // Claude Generated.
-    for (int it = 0; it < 4; ++it) {
-        const qreal f = ((a * best + b) * best + c) * best + d;
-        const qreal df = (3.0 * a * best + 2.0 * b) * best + c;
-        if (!std::isfinite(f) || !std::isfinite(df) || std::abs(df) < 1e-300)
-            break;
-        const qreal step = f / df;
-        const qreal next = best - step;
-        if (!std::isfinite(next))
-            break;
-        best = (found && next < 0.0) ? 0.0 : next; // a concentration cannot go negative
-        if (std::abs(step) <= 1e-15 * std::max(1.0, std::abs(best)))
+    auto poly = [&](qreal x) { return ((a * x + b) * x + c) * x + d; };
+    const qreal p0 = poly(0.0);
+    if (p0 == 0.0)
+        return 0.0;
+
+    // Bracket the smallest non-negative root: expand until the sign flips.
+    qreal lo = 0.0, hi = (found && best > 0.0) ? best : 1e-12;
+    qreal fhi = poly(hi);
+    for (int i = 0; i < 200 && (p0 * fhi) > 0.0; ++i) {
+        lo = hi;
+        hi *= 2.0;
+        fhi = poly(hi);
+        if (!std::isfinite(fhi))
             break;
     }
-    return best;
+    if ((p0 * fhi) > 0.0 || !std::isfinite(fhi))
+        return best; // no sign change reachable — keep the closed-form answer
+
+    const qreal flo_sign = (poly(lo) >= 0.0) ? 1.0 : -1.0;
+    qreal x = (best >= lo && best <= hi) ? best : 0.5 * (lo + hi);
+    for (int it = 0; it < 80; ++it) {
+        const qreal f = poly(x);
+        if (f == 0.0)
+            break;
+        ((f * flo_sign) > 0.0 ? lo : hi) = x;
+        const qreal df = (3.0 * a * x + 2.0 * b) * x + c;
+        qreal next = (std::abs(df) > 1e-300) ? x - f / df : 0.5 * (lo + hi);
+        if (!std::isfinite(next) || next <= lo || next >= hi)
+            next = 0.5 * (lo + hi); // Newton left the bracket -> bisect
+        if (std::abs(next - x) <= 1e-16 * std::max(1.0, std::abs(x))) {
+            x = next;
+            break;
+        }
+        x = next;
+    }
+    return x;
 }
 
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
