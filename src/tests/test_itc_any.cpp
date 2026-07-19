@@ -59,13 +59,6 @@ private:
         return data;
     }
 
-    static QJsonObject intOption(int value)
-    {
-        QJsonObject o;
-        o["value"] = value;
-        return o;
-    }
-
     static QJsonObject strOption(const QString& value)
     {
         QJsonObject o;
@@ -83,7 +76,7 @@ private:
     }
 
 private slots:
-    /** Classic 1:1 grid: one species AB, four local parameters (dH, m, n, fx). */
+    /** Classic 1:1 (A + B <=> AB): one species AB, four local parameters (dH, m, n, fx). */
     void testGridCounts()
     {
         DataClass* data = makeData();
@@ -91,9 +84,8 @@ private slots:
         QVERIFY(!model.isNull());
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(1);
-        model->DefineModel(def);
+        def["Reactions"] = strOption("A + B <=> AB");
+        QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->InputParameterSize(), 1); // injection volume only
         QCOMPARE(model->GlobalParameterSize(), 1); // AB

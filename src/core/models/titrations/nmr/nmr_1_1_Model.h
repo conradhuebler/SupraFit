@@ -44,6 +44,12 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // The NMR signal is linear in the chemical shifts, so the VarPro solver can project them out.
+    // Applies only when all shifts are free — the default ("Fix Host Signal" = no); if the host shift
+    // is fixed, fall back to the classic full-vector solver. Claude Generated.
+    bool SupportsVarPro() const override { return getOption(Host) == QLatin1String("no"); }
+    void ProjectLinearParameters() override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
@@ -82,4 +88,11 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the two linear-response columns (free-host and complex mole fractions
+     * of the observed host) at the current stability constant, so both the signal (m_design·shifts)
+     * and the VarPro projection share one design matrix. Claude Generated. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

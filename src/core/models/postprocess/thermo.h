@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,12 @@
 
 #pragma once
 
-namespace Thermo{
+#include <QtCore/QString>
 
+namespace Thermo {
+
+// The energy-unit selection lives centrally in Units (src/core/units.h) — see Units::EnergyUnit
+// and Units::currentEnergy(). FormatThermo formats in whatever unit that returns.
 QString FormatThermo(qreal K, qreal T, qreal H = 0);
 
 }

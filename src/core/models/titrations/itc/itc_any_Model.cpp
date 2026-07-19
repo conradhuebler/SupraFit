@@ -44,7 +44,7 @@
 itc_any_Model::itc_any_Model(DataClass* data)
     : AbstractItcModel(data)
 {
-    m_pre_input = { Reactions_Json, MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
+    m_pre_input = { Reactions_Json };
     m_complete = false;
 }
 
@@ -60,72 +60,29 @@ itc_any_Model::~itc_any_Model()
 {
 }
 
-ReactionSystem itc_any_Model::buildLegacySystem() const
+void itc_any_Model::setOptimizerConfig(const QJsonObject& config)
 {
-    ReactionSystem sys;
-    sys.components = QStringList() << "A" << "B";
-
-    auto add = [&sys](int a, int b) {
-        Eigen::VectorXi v(2);
-        v << a, b;
-        ReactionSpecies species;
-        species.stoich = v;
-        species.label = ReactionParser::SpeciesLabel(sys.components, v);
-        sys.species << species;
-    };
-
-    const QString speciesDef = m_defined_model.value("Species")["value"].toString().trimmed();
-    if (!speciesDef.isEmpty()) {
-        const QStringList tokens = speciesDef.split("|", Qt::SkipEmptyParts);
-        for (const QString& token : tokens) {
-            const QStringList ab = token.split(",");
-            if (ab.size() != 2)
-                continue;
-            bool okA = false, okB = false;
-            const int a = ab[0].trimmed().toInt(&okA);
-            const int b = ab[1].trimmed().toInt(&okB);
-            if (!okA || !okB || a < 0 || b < 0 || a + b < 2)
-                continue;
-            add(a, b);
-        }
-    } else {
-        const int maxA = m_maxA < 1 ? 1 : m_maxA;
-        const int maxB = m_maxB < 1 ? 1 : m_maxB;
-        for (int a = 1; a <= maxA; ++a)
-            for (int b = 1; b <= maxB; ++b)
-                add(a, b);
-        for (int n = 2; n <= m_maxSelfA; ++n)
-            add(n, 0);
-    }
-
-    sys.stoich = Eigen::MatrixXi(2, sys.species.size());
-    for (int j = 0; j < sys.species.size(); ++j)
-        sys.stoich.col(j) = sys.species[j].stoich;
-    sys.valid = !sys.species.isEmpty();
-    return sys;
+    AbstractModel::setOptimizerConfig(config);
+    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 }
 
 bool itc_any_Model::DefineModel()
 {
-    m_maxA = m_defined_model.value("MaxA")["value"].toInt();
-    m_maxB = m_defined_model.value("MaxB")["value"].toInt();
-    m_maxSelfA = m_defined_model.value("MaxSelfA")["value"].toInt();
-
-    // Only a 2-component reaction system is meaningful for ITC (host + guest totals from the
-    // protocol); a larger system falls back to the classic grid.
-    bool reactionMode = false;
+    // ITC gets the host/guest totals from the injection protocol, so at most two components are
+    // meaningful. The reaction editor is the sole definition path: an empty, unparsable or
+    // >2-component system leaves the model undefined until the user supplies valid reactions.
     const QString reactions = m_defined_model.value("Reactions")["value"].toString().trimmed();
-    if (!reactions.isEmpty()) {
-        ReactionSystem sys = ReactionParser::Parse(reactions);
-        if (sys.valid && sys.components.size() <= 2) {
-            m_speciation.setSystem(sys);
-            reactionMode = true;
-        }
+    const ReactionSystem parsed = ReactionParser::Parse(reactions);
+    if (reactions.isEmpty() || !parsed.valid || parsed.components.size() < 1 || parsed.components.size() > 2) {
+        m_complete = false;
+        return false;
     }
-    if (!reactionMode)
-        m_speciation.setSystem(buildLegacySystem());
+    m_speciation.setSystem(parsed);
     m_speciation.setMaxIter(1000);
     m_speciation.setConvergeThreshold(1e-12);
+    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 
     const ReactionSystem& sys = m_speciation.System();
     const int nSpecies = sys.species.size();
@@ -227,7 +184,7 @@ void itc_any_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i) * fx;
         qreal guest_0 = InitialGuestConcentration(i);
 
-        m_speciation.solve({ host_0, guest_0 });
+        m_speciation.solve({ host_0, guest_0 }, i);
         const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
         const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
         const double host = freeConc.empty() ? 0.0 : freeConc[0];

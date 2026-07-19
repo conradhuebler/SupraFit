@@ -1,6 +1,6 @@
 /*
  * <Class to handle thermogram import and manipulation.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,9 +34,6 @@ class ThermogramHandler : public QObject {
     Q_OBJECT
 public:
     ThermogramHandler();
-
-    QVector<QPointF> Series();
-    QVector<QPointF> Baseline();
 
     inline void setThermogram(const PeakPick::spectrum& spectrum) { m_spectrum = spectrum; }
     inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list) { m_peak_list = QVector<PeakPick::Peak>(peak_list.begin(), peak_list.end()); }
@@ -83,6 +80,10 @@ public:
 
     void setCalibrationHeat(qreal heat) { m_CalibrationHeat = heat; }
     void setConstantOffset(qreal offset) { m_constant_offset = offset; }
+    //! Set the cal->J (or arbitrary) heat scaling factor applied on top of the calibration ratio. Claude Generated
+    void setScalingFactor(qreal factor) { m_scaling_factor = factor; }
+    qreal ScalingFactor() const { return m_scaling_factor; }
+    qreal ConstantOffset() const { return m_constant_offset; }
 
     void UpdatePeaks();
     void FitBaseLine();
@@ -112,7 +113,7 @@ private:
     /* Chart Series use QList */
     QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid, m_baseline_ignored_series;
     QVector<QPointF> m_peak_rules;
-    QVector<qreal> m_integrals_list, m_integrals_raw, m_integrals_scaled;
+    QVector<qreal> m_integrals_raw, m_integrals_scaled;
     QVector<PeakPick::Peak> m_peak_list;
     PeakPick::spectrum m_spectrum;
     PeakPick::Peak m_calibration_peak;

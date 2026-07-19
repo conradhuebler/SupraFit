@@ -49,6 +49,17 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // VarPro applies only when all shifts are free and independent: default cooperativity ("full")
+    // and free host shift ("Fix Host Signal" = no). The coupled cooperativities (additive/statistical/
+    // noncooperative) derive one shift from others in EvaluateOptions() and a fixed host shift removes
+    // a column - those are a TODO (see task: VarPro for coupled cooperativities + fixed parameters);
+    // until then they fall back to the classic full-vector solver. Claude Generated.
+    bool SupportsVarPro() const override
+    {
+        return getOption(Cooperativity) == QLatin1String("full") && getOption(Host) == QLatin1String("no");
+    }
+    void ProjectLinearParameters() override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
@@ -96,4 +107,10 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the three linear-response columns (free-host, A2B and AB mole
+     * fractions of the observed host) so the signal and the VarPro projection share one matrix. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

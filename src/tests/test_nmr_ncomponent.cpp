@@ -91,13 +91,6 @@ private:
         return o;
     }
 
-    static QJsonObject intOption(int value)
-    {
-        QJsonObject o;
-        o["value"] = value;
-        return o;
-    }
-
     static double relError(double got, double expected)
     {
         return std::abs(got - expected) / std::max(std::abs(expected), 1e-30);
@@ -237,9 +230,7 @@ private slots:
         data->setDataEnd(N);
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(2);
-        def["MaxSelfA"] = intOption(0);
+        def["Reactions"] = strOption("A + B <=> AB\nA + 2 B <=> AB2"); // {AB, AB2}
         const double trueAB = 3.8, trueAB2 = 5.9; // cumulative lg beta
 
         // truth model -> synthesise the observed signal

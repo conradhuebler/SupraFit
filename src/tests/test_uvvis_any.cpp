@@ -61,7 +61,7 @@ private:
         return data;
     }
 
-    static QJsonObject intOption(int value)
+    static QJsonObject strOption(const QString& value)
     {
         QJsonObject o;
         o["value"] = value;
@@ -81,10 +81,8 @@ private slots:
         QVERIFY(!model.isNull());
 
         QJsonObject def;
-        def["MaxA"] = intOption(1);
-        def["MaxB"] = intOption(1);
-        def["MaxSelfA"] = intOption(0);
-        model->DefineModel(def);
+        def["Reactions"] = strOption("A + B <=> AB");
+        QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->InputParameterSize(), 2);
         QCOMPARE(model->GlobalParameterSize(), 1); // AB

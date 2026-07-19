@@ -18,8 +18,8 @@
  * The speciation is delegated to the shared SpeciationEngine on AbstractTitrationModel; this model
  * maps the absolute concentrations to the UV/Vis signal by Beer-Lambert: absorbance is the sum over
  * every free component and every complex of concentration times its molar extinction coefficient
- * (fitted linearly). Classic MaxA/MaxB/MaxSelfA/Species remain a backward-compatible 2-component
- * fallback. Claude Generated.
+ * (fitted linearly). The equilibrium system is defined solely through the free-text Reactions field.
+ * Claude Generated.
  */
 
 #include <Eigen/SVD>
@@ -46,7 +46,7 @@
 uvvis_any_Model::uvvis_any_Model(DataClass* data)
     : AbstractTitrationModel(data)
 {
-    m_pre_input = { Reactions_Json, MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
+    m_pre_input = { Reactions_Json };
     m_complete = false;
 }
 
@@ -72,63 +72,13 @@ QString uvvis_any_Model::LocalParameterName(int i) const
     return QString("%1 %2").arg(Unicode_epsilion).arg(SpeciesName(i - m_component_count));
 }
 
-ReactionSystem uvvis_any_Model::buildLegacySystem() const
-{
-    ReactionSystem sys;
-    sys.components = QStringList() << "A" << "B";
-
-    auto add = [&sys](int a, int b) {
-        Eigen::VectorXi v(2);
-        v << a, b;
-        ReactionSpecies species;
-        species.stoich = v;
-        species.label = ReactionParser::SpeciesLabel(sys.components, v);
-        sys.species << species;
-    };
-
-    const QString speciesDef = m_defined_model.value("Species")["value"].toString().trimmed();
-    if (!speciesDef.isEmpty()) {
-        const QStringList tokens = speciesDef.split("|", Qt::SkipEmptyParts);
-        for (const QString& token : tokens) {
-            const QStringList ab = token.split(",");
-            if (ab.size() != 2)
-                continue;
-            bool okA = false, okB = false;
-            const int a = ab[0].trimmed().toInt(&okA);
-            const int b = ab[1].trimmed().toInt(&okB);
-            if (!okA || !okB || a < 0 || b < 0 || a + b < 2)
-                continue;
-            add(a, b);
-        }
-    } else {
-        const int maxA = m_maxA < 1 ? 1 : m_maxA;
-        const int maxB = m_maxB < 1 ? 1 : m_maxB;
-        for (int a = 1; a <= maxA; ++a)
-            for (int b = 1; b <= maxB; ++b)
-                add(a, b);
-        for (int n = 2; n <= m_maxSelfA; ++n)
-            add(n, 0);
-    }
-
-    sys.stoich = Eigen::MatrixXi(2, sys.species.size());
-    for (int j = 0; j < sys.species.size(); ++j)
-        sys.stoich.col(j) = sys.species[j].stoich;
-    sys.valid = !sys.species.isEmpty();
-    return sys;
-}
-
 bool uvvis_any_Model::DefineModel()
 {
-    m_maxA = m_defined_model.value("MaxA")["value"].toInt();
-    m_maxB = m_defined_model.value("MaxB")["value"].toInt();
-    m_maxSelfA = m_defined_model.value("MaxSelfA")["value"].toInt();
-
+    // The N-component reaction editor is the sole definition path. Without a valid reaction system
+    // the model stays undefined (the GUI/CLI must supply reactions before it can be fitted).
     if (!BuildSpeciationFromReactions()) {
-        m_component_count = 2;
-        m_component_names = QStringList() << "A" << "B";
-        m_speciation.setSystem(buildLegacySystem());
-        m_speciation.setMaxIter(1000);
-        m_speciation.setConvergeThreshold(1e-12);
+        m_complete = false;
+        return false;
     }
     m_uses_bfgs = true;
 
@@ -205,7 +155,7 @@ void uvvis_any_Model::CalculateConcentrations()
         for (int c = 0; c < nComp; ++c)
             totals[c] = InitialConcentration(i, c);
 
-        m_speciation.solve(totals);
+        m_speciation.solve(totals, i);
         const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
         const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
 
@@ -222,6 +172,15 @@ void uvvis_any_Model::CalculateConcentrations()
         if (!m_fast)
             SetConcentration(i, vector);
     }
+}
+
+void uvvis_any_Model::ProjectLinearParameters()
+{
+    // VarPro linear projection: build the Beer-Lambert design matrix for the current constants, then
+    // solve the extinction coefficients by masked least-squares (honours the active-point mask for
+    // correct CV/RA, unlike the unmasked initial-guess UpdateShifts()). Claude Generated.
+    CalculateConcentrations();
+    SolveLinearMasked(m_concentrations);
 }
 
 void uvvis_any_Model::UpdateShifts()

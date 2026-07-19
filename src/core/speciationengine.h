@@ -70,13 +70,29 @@ public:
      */
     std::vector<double> solve(const std::vector<double>& totals);
 
+    /**
+     * @brief Solve one data point, warm-started from this point's own previous solution.
+     * @param pointIndex data-point index into the per-point warm-start cache (< 0 disables caching).
+     *        Across outer fit iterations each point then seeds from its own last converged solution -
+     *        a nearer start than the neighbouring swept point. Claude Generated.
+     */
+    std::vector<double> solve(const std::vector<double>& totals, int pointIndex);
+
+    /** @brief Drop the per-point warm-start cache (e.g. before a fresh, unrelated evaluation). CG. */
+    void clearPointCache() { m_point_cache.clear(); }
+
     const std::vector<double>& FreeConcentrations() const { return m_free; }
     const std::vector<double>& SpeciesConcentrations() const { return m_species_conc; }
     bool Converged() const { return m_solver.Converged(); }
+
+    /** @brief ∂x/∂ln(β) (components × species) of the LAST solved point, for the analytic outer-fit
+     * Jacobian. Only exact for the LevenbergMarquardt method. Claude Generated. */
+    Eigen::MatrixXd sensitivityMatrix() const { return m_solver.sensitivityMatrix(); }
 
 private:
     ReactionSystem m_system;
     BFGSConcentrationSolver m_solver;
     std::vector<double> m_free; ///< free component concentrations of the last solve
     std::vector<double> m_species_conc; ///< species concentrations of the last solve
+    std::vector<std::vector<double>> m_point_cache; ///< per-point free-conc warm starts (by data index)
 };

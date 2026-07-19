@@ -22,7 +22,9 @@
 
 #include <QtGui/QFont>
 
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QListWidget>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 
@@ -92,18 +94,62 @@ void ReactionHighlighter::highlightBlock(const QString& text)
     }
 }
 
+QVector<ReactionEditorWidget::Preset> ReactionEditorWidget::Presets()
+{
+    // Grouped into the established host-guest stoichiometries, their host-dimerisation variants (a
+    // preceding 2 A <=> A2), and a few three-component systems. This replaces the convenience the
+    // removed MaxA/MaxB grid gave. A header has an empty reactions string. Claude Generated.
+    return {
+        { tr("— Established models —"), QString() },
+        { tr("1:1"), QStringLiteral("A + B <=> AB") },
+        { tr("2:1 / 1:1"), QStringLiteral("A + B <=> AB\n2 A + B <=> A2B") },
+        { tr("1:1 / 1:2"), QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2") },
+        { tr("2:1 / 1:1 / 1:2"), QStringLiteral("A + B <=> AB\n2 A + B <=> A2B\nA + 2 B <=> AB2") },
+        { tr("— + host dimerisation —"), QString() },
+        { tr("1:1, A2"), QStringLiteral("2 A <=> A2\nA + B <=> AB") },
+        { tr("2:1 / 1:1, A2"), QStringLiteral("2 A <=> A2\nA + B <=> AB\n2 A + B <=> A2B") },
+        { tr("1:1 / 1:2, A2"), QStringLiteral("2 A <=> A2\nA + B <=> AB\nA + 2 B <=> AB2") },
+        { tr("2:1 / 1:1 / 1:2, A2"), QStringLiteral("2 A <=> A2\nA + B <=> AB\n2 A + B <=> A2B\nA + 2 B <=> AB2") },
+        { tr("— Three components —"), QString() },
+        { tr("Competitive (A+B, A+C)"), QStringLiteral("A + B <=> AB\nA + C <=> AC") },
+        { tr("Ternary (A+B+C <=> ABC)"), QStringLiteral("A + B <=> AB\nA + B + C <=> ABC") },
+    };
+}
+
 ReactionEditorWidget::ReactionEditorWidget(const QString& initial, QWidget* parent)
     : QWidget(parent)
 {
-    QVBoxLayout* outer = new QVBoxLayout(this);
+    QHBoxLayout* outer = new QHBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
+
+    // Left: one-click presets (shared with the "Add model" menu via Presets()).
+    QListWidget* presets = new QListWidget;
+    presets->setMaximumWidth(210);
+    presets->setToolTip(tr("Click a preset to load its reaction system into the editor."));
+    for (const Preset& p : Presets()) {
+        QListWidgetItem* item = new QListWidgetItem(p.name, presets);
+        if (p.isHeader()) { // section header: bold, not selectable
+            item->setFlags(Qt::NoItemFlags);
+            QFont f = item->font();
+            f.setBold(true);
+            item->setFont(f);
+        } else {
+            item->setData(Qt::UserRole, p.reactions);
+            item->setToolTip(QString(p.reactions).replace('\n', QStringLiteral(" ; ")));
+        }
+    }
+    outer->addWidget(presets);
+
+    // Right: hint, editor and live preview.
+    QVBoxLayout* right = new QVBoxLayout;
+    right->setContentsMargins(0, 0, 0, 0);
 
     QLabel* hint = new QLabel(tr("One reaction per line, e.g. <tt>A + B &lt;=&gt; AB</tt> or "
                                  "<tt>2 A &lt;=&gt; A2</tt>. The left side lists the free components; "
                                  "arrows <tt>&lt;=&gt; = &lt;-&gt; -&gt;</tt> are accepted. Component "
                                  "order follows first appearance and maps to the data columns."));
     hint->setWordWrap(true);
-    outer->addWidget(hint);
+    right->addWidget(hint);
 
     m_editor = new QTextEdit;
     m_editor->setAcceptRichText(false);
@@ -113,18 +159,26 @@ ReactionEditorWidget::ReactionEditorWidget(const QString& initial, QWidget* pare
     mono.setFamily(QStringLiteral("monospace"));
     m_editor->setFont(mono);
     m_editor->setMinimumHeight(90);
-    outer->addWidget(m_editor);
+    right->addWidget(m_editor);
 
     m_highlighter = new ReactionHighlighter(m_editor->document());
 
     m_preview = new QLabel;
     m_preview->setWordWrap(true);
     m_preview->setTextFormat(Qt::RichText);
-    outer->addWidget(m_preview);
+    right->addWidget(m_preview);
+
+    outer->addLayout(right, 1);
 
     connect(m_editor, &QTextEdit::textChanged, this, [this]() {
         updatePreview();
         emit changed(reactionText());
+    });
+    // A preset click loads its full reaction system (replaces the current text); headers carry no data.
+    connect(presets, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+        const QString reactions = item->data(Qt::UserRole).toString();
+        if (!reactions.isEmpty())
+            m_editor->setPlainText(reactions);
     });
 
     updatePreview();
@@ -141,7 +195,7 @@ void ReactionEditorWidget::updatePreview()
     m_highlighter->setComponents(system.components);
 
     if (reactionText().trimmed().isEmpty()) {
-        m_preview->setText(tr("<i>No reactions — the model falls back to the MaxA/MaxB grid.</i>"));
+        m_preview->setText(tr("<i>No reactions — the model stays undefined. Enter at least one, e.g. 'A + B &lt;=&gt; AB'.</i>"));
         return;
     }
 

@@ -145,6 +145,35 @@ set_tests_properties(NmrSelfAggregationTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# VarPro solver equivalence: FitSolver="VarPro" must reach the same optimum as "LevMar" - CG 2026
+add_executable(test_varpro
+    test_varpro.cpp
+)
+
+target_link_libraries(test_varpro
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_varpro ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_varpro pthread dl)
+endif()
+
+add_test(NAME VarProTest COMMAND test_varpro)
+
+set_tests_properties(VarProTest PROPERTIES
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 add_test(NAME BFGSSolverTest COMMAND test_bfgs_solver)
 
 set_tests_properties(BFGSSolverTest PROPERTIES
@@ -239,6 +268,36 @@ set_tests_properties(UvVisAnyTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# fl_any (flexible fluorescence, BFGS speciation + linear fluorescence-coefficient signal):
+# signal linearity + VarPro/LevMar equivalence. Claude Generated 2026.
+add_executable(test_fl_any_equivalence
+    test_fl_any_equivalence.cpp
+)
+
+target_link_libraries(test_fl_any_equivalence
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_fl_any_equivalence ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_fl_any_equivalence pthread dl)
+endif()
+
+add_test(NAME FlAnyEquivalenceTest COMMAND test_fl_any_equivalence)
+
+set_tests_properties(FlAnyEquivalenceTest PROPERTIES
+    TIMEOUT 120
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # itc_any BFGS speciation plumbing (grid + self-aggregation) - Claude Generated 2026
 add_executable(test_itc_any
     test_itc_any.cpp
@@ -262,6 +321,31 @@ if(UNIX)
 endif()
 
 add_test(NAME ItcAnyTest COMMAND test_itc_any)
+
+add_executable(test_itc_thermogram
+    test_itc_thermogram.cpp
+)
+
+target_compile_definitions(test_itc_thermogram PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+
+target_link_libraries(test_itc_thermogram
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_itc_thermogram ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_itc_thermogram pthread dl)
+endif()
+
+add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
 
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
@@ -538,6 +622,59 @@ set_tests_properties(ReferenceProjectsTest PROPERTIES
     TIMEOUT 300  # re-runs CV/RA post-processing on the paper datasets (~50 s)
 )
 
+# any-vs-fixed equivalence: nmr_any (via the Reactions field) must reproduce the hand-written
+# fixed NMR models (1:1, 2:1/1:1, 1:1/1:2) on identical data - fit AND CV/RA statistics
+# (Claude Generated 2026).
+add_executable(test_nmr_any_equivalence
+    test_nmr_any_equivalence.cpp
+)
+
+target_link_libraries(test_nmr_any_equivalence
+    ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_nmr_any_equivalence PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME NmrAnyEquivalenceTest COMMAND test_nmr_any_equivalence)
+
+set_tests_properties(NmrAnyEquivalenceTest PROPERTIES
+    TIMEOUT 300  # re-fits + replays CV/RA on three paper datasets for both model families
+)
+
+# VarPro CV/RA statistics equivalence: masked projection must give the same resampling boxplots as
+# the classic solver under Cross-Validation/Reduction row-disabling (Claude Generated 2026).
+add_executable(test_varpro_cv
+    test_varpro_cv.cpp
+)
+
+target_link_libraries(test_varpro_cv
+    ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_varpro_cv PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+add_test(NAME VarProCVTest COMMAND test_varpro_cv)
+
+# Warm-started speciation solver: a threaded Monte Carlo on nmr_any must stay correct with both
+# speciation methods (per-clone engine, no warm-start race; SpeciationSolver propagates). CG 2026.
+add_executable(test_speciation_warmstart
+    test_speciation_warmstart.cpp
+)
+
+target_link_libraries(test_speciation_warmstart
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME SpeciationWarmstartTest COMMAND test_speciation_warmstart)
+
+set_tests_properties(VarProCVTest PROPERTIES
+    TIMEOUT 300  # replays CV/RA on the paper datasets with both solvers
+)
+
 # Add custom target to run all tests including new comprehensive CLI tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
@@ -790,4 +927,30 @@ if(ML_NEURAL_NETWORKS)
 endif()
 if(UNIX)
     target_link_libraries(benchmark_speciation pthread dl)
+endif()
+
+# VarPro vs classic LevMar fit-time benchmark (Claude Generated 2026) - manual perf tool, not a ctest
+add_executable(benchmark_varpro benchmark_varpro.cpp)
+target_link_libraries(benchmark_varpro
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_varpro ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_varpro pthread dl)
+endif()
+
+# Dimer-model fit on clean 1:1/1:2 data: LevMar vs VarPro on the flat lg beta(A2) direction (Claude Generated 2026) - manual, not a ctest
+add_executable(benchmark_dimer_flat benchmark_dimer_flat.cpp)
+target_link_libraries(benchmark_dimer_flat
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_dimer_flat ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_dimer_flat pthread dl)
 endif()

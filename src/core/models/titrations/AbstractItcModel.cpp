@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -190,6 +190,14 @@ qreal AbstractItcModel::GuessFx()
             y << DependentModel()->data(i);
         }
         QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
+        /* With too few points left, no way of splitting the data into three segments has points in
+         * all of them, and the regression comes back empty - first() would then read from an empty
+         * map, and the intersections below index regressions[0..2]. Report the guess as failed, the
+         * same way a missing cell/syringe concentration does above. Claude Generated */
+        if (result.isEmpty() || result.first().regressions.size() < 3) {
+            m_guess_failed = true;
+            return 1;
+        }
         PeakPick::MultiRegression regression = result.first();
 
         qreal x1 = 0, x2 = 0;

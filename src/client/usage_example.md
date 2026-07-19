@@ -521,30 +521,33 @@ stoichiometry — a homo-dimer A₂ is simply a species with stoichiometry (2,0)
 
 ### Defining the model
 
-The model definition (the "Define Model" block / `DefineModel` JSON) takes three integer fields:
+The model definition (the "Define Model" block / `DefineModel` JSON) takes a single `Reactions`
+string: one reaction equation per line in arrow syntax, each defining a species as its formation
+from the free components (so the constant is the cumulative lg β).
 
-| Field      | Meaning                                                            |
-|------------|-------------------------------------------------------------------|
-| `MaxA`     | highest stoichiometry of A in mixed complexes A_aB_b (a ≥ 1)       |
-| `MaxB`     | highest stoichiometry of B in mixed complexes A_aB_b (b ≥ 1)       |
-| `MaxSelfA` | highest pure host oligomer A_n (0/1 = off, 2 = dimer A₂, 3 = trimer)|
+| Reactions line   | Species | Constant        |
+|------------------|---------|-----------------|
+| `A + B <=> AB`   | AB      | lg β(AB)        |
+| `2 A + B <=> A2B`| A₂B     | lg β(A₂B)       |
+| `2 A <=> A2`     | A₂      | lg β(A₂)        |
+| `A + C <=> AC`   | AC      | lg β(AC)        |
 
-The species list is the mixed A_aB_b grid first (so existing projects keep their parameter order),
-then the pure host oligomers A₂…A_MaxSelfA are appended. Each species can be toggled on/off, and a
-"Concentration solver" option selects **BFGS** (default, general) or **Polynomial** (`EqnConc_2x`,
-pure grid only).
+Components are discovered in first-appearance order; species order follows the order of the reaction
+lines. The data must provide one independent concentration column per component (`itc_any` is the
+exception — host/guest totals come from the injection protocol). A "Concentration solver" option
+selects **BFGS** (default, general) or **Polynomial** (`EqnConc_2x`, 2-component grids only).
 
 ### Example: complex formation with preceding dimerisation
 
 Host A dimerises and only the **monomer** binds the guest:
 
 ```
-A₂ ⇌ 2 A         (self-aggregation,  lg β(A₂))
-A + B ⇌ AB       (1:1 binding,       lg β(AB))
+A + B <=> AB     (1:1 binding,       lg β(AB))
+2 A <=> A2       (self-aggregation,  lg β(A₂))
 ```
 
-Set `MaxA = 1`, `MaxB = 1`, `MaxSelfA = 2` → species `{AB, A₂}` (no A₂B). A large `lg β(A₂)` shifts
-the host into the dimer, which must dissociate before it can bind B.
+→ species `{AB, A₂}` (no A₂B). A large `lg β(A₂)` shifts the host into the dimer, which must
+dissociate before it can bind B.
 
 Runnable end-to-end verification lives in the test suite:
 

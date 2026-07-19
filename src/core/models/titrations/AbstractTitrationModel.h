@@ -39,57 +39,14 @@ struct MassResults {
     Vector Components;
 };
 
-const QJsonObject MaxA_Json{
-    { "name", "MaxA" },
-    { "title", "Highest stoichiometry of A" },
-    { "description", "Define the a, the highest stoichiometry in which A may appear" },
-    { "value", 1 }, // default value
-    { "type", 1 }, // 1 = int, 2 = double, 3 = string
-    { "once", true }
-};
-
-const QJsonObject MaxB_Json{
-    { "name", "MaxB" },
-    { "title", "Highest stoichiometry of B" },
-    { "description", "Define the b, the highest stoichiometry in which B may appear" },
-    { "value", 1 }, // default value
-    { "type", 1 }, // 1 = int, 2 = double, 3 = string
-    { "once", true }
-};
-
-// Highest pure host self-aggregation A_n (A2, A3, ...). 0/1 disables self-aggregation and keeps
-// the classic A_aB_b grid; >= 2 appends the homo-oligomers A2..A_n (b = 0). Claude Generated.
-const QJsonObject MaxSelfA_Json{
-    { "name", "MaxSelfA" },
-    { "title", "Highest self-aggregation of A" },
-    { "description", "Define n, the highest pure host oligomer A_n (e.g. 2 = dimerisation A2). 0 or 1 disables self-aggregation." },
-    { "value", 0 }, // default value: no self-aggregation (backward compatible)
-    { "type", 1 }, // 1 = int, 2 = double, 3 = string
-    { "once", true }
-};
-
-// Optional explicit species list overriding the MaxA/MaxB/MaxSelfA grid. Format "a,b|a,b|..." with
-// stoichiometric coefficients per species (free monomers 1,0 / 0,1 are implicit), e.g. "2,0|1,1"
-// defines {A2, AB} (host dimerisation preceding 1:1 binding). Empty = use the grid. Claude Generated.
-// @deprecated superseded by Reactions_Json (type 6, arbitrary N-component reaction equations); kept
-// only so existing type-5 model definitions still load. Will be removed once type 6 is validated.
-const QJsonObject Species_Json{
-    { "name", "Species" },
-    { "title", "Explicit species (optional, deprecated)" },
-    { "description", "Deprecated — use the reaction editor. Optional explicit species list 'a,b|a,b', e.g. '2,0|1,1' for {A2, AB}. Overrides MaxA/MaxB/MaxSelfA; leave empty to use the grid." },
-    { "value", "" },
-    { "type", 5 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor (deprecated)
-    { "once", true }
-};
-
-// Free-text reaction equations defining an arbitrary N-component equilibrium system, one reaction per
-// line in arrow syntax, e.g. "A + B <=> AB\n2 A <=> A2\nA + C <=> AC". Parsed by ReactionParser into
-// the component/species stoichiometry driving the BFGS speciation solver. Empty = fall back to the
-// MaxA/MaxB/MaxSelfA/Species grid (backward compatible). Claude Generated.
+// Free-text reaction equations defining the N-component equilibrium system, one reaction per line in
+// arrow syntax, e.g. "A + B <=> AB\n2 A <=> A2\nA + C <=> AC". Parsed by ReactionParser into the
+// component/species stoichiometry driving the BFGS speciation solver. Required: an empty field leaves
+// the model undefined (the legacy MaxA/MaxB/MaxSelfA/Species grid was removed). Claude Generated.
 const QJsonObject Reactions_Json{
     { "name", "Reactions" },
-    { "title", "Reaction equations (optional)" },
-    { "description", "Optional reaction equations, one per line, e.g. 'A + B <=> AB'. Defines an arbitrary equilibrium system; overrides MaxA/MaxB/MaxSelfA. Leave empty to use the grid." },
+    { "title", "Reaction equations" },
+    { "description", "Reaction equations, one per line, e.g. 'A + B <=> AB'. Defines the N-component equilibrium system driving the speciation solver." },
     { "value", "" },
     { "type", 6 }, // 1 = int, 2 = double, 3 = string, 4 = script text, 5 = species editor, 6 = reaction editor
     { "once", true }
@@ -124,6 +81,15 @@ public:
     inline int Size() const override { return DataClass::Size(); }
 
     inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
+
+    /*! \brief True for the reaction-driven *_any models (a valid speciation system is configured); they
+     * compute concentrations through m_speciation and honour the "SpeciationSolver" key. The fixed
+     * host/guest models leave the engine empty and use closed-form roots. Claude Generated. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the selected "SpeciationSolver" method into
+     * m_speciation, so a GUI/CLI change of the speciation solver takes effect on the next solve. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
 
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
@@ -261,8 +227,19 @@ protected:
      * defaults untouched and returns false. Claude Generated. */
     bool BuildSpeciationFromReactions();
 
+    /*! \brief Read the "SpeciationSolver" optimizer-config key and select the matching method on
+     * m_speciation (LevMar/Newton default, "BFGS" = legacy). Claude Generated. */
+    void ApplySpeciationMethod();
+
     /*! \brief Set the independent-table column headers from m_component_names. Claude Generated. */
     void UpdateComponentHeaders();
+
+    /*! \brief VarPro linear projection: solve the linear local parameters for the given design matrix
+     * @p design (DataPoints × nLinear) by least-squares, per series and honouring the active-point mask
+     * (ActiveSignals(j) / DependentModel()->isChecked(i,j) / DataBegin..DataEnd), and write the result
+     * into LocalTable() (SeriesCount × nLinear). This is the masked generalisation of the individual
+     * models' UpdateShifts(); inactive series keep their current locals. Claude Generated. */
+    void SolveLinearMasked(const Eigen::MatrixXd& design);
 
     /*! \brief Data-derived initial guess for the cumulative stability constant lg(beta) of species
      * @p speciesIndex. Scales the constant to the concentration range of the actual data via

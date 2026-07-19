@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,6 +113,13 @@ DataTable* LoadTableFile(const QString& file);
 QPair<Vector, Vector> LoadCSVFile(const QString& filename);
 QPair<Vector, Vector> LoadAbsorbFile(const QString& filename);
 QPair<Vector, Vector> LoadXYFile(const QString& filename);
+/*! \brief Read an .itc thermogram: returns the trace and the system parameters (cell/syringe
+ * concentration, volume, temperature) the instrument recorded.
+ *
+ * `filename` is resolved against the last directory if the given path does not exist, and updated
+ * to what was actually opened. `peaks`, `offset`, `freq` and `inject` are **outputs** describing
+ * this file alone - both containers are cleared on entry, so reusing them across calls is safe.
+ * Throws 404 if the file cannot be found or opened, 101 if it holds no thermogram. */
 QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject);
 
 /*! \brief Convert log K (complexation constant) to free Enthalpy for given T */

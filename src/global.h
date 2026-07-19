@@ -181,6 +181,7 @@ enum Model {
     uv_vis_IItoI_ItoI_ItoII = 33,
     nmr_any = 34,
     uvvis_any = 35,
+    fl_any = 36,
     ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
@@ -409,6 +410,9 @@ inline QString Model2Name(SupraFit::Model model)
     else if (model == SupraFit::uvvis_any)
         return "flexible UV/VIS Model";
 
+    else if (model == SupraFit::fl_any)
+        return QString("%1 %2").arg(Unicode_Phi).arg("flexible Fluorescence Model");
+
     else if (model == SupraFit::MonoMolecularModel)
         return "Monomoleculare Kinetics";
     else if (model == SupraFit::BiMolecularModel)
@@ -474,6 +478,21 @@ inline const QString included() { return QString("#77d740;"); }
 inline const QString excluded() { return QString("#e17f7f;"); }
 
 const QJsonObject OptimConfigBlock{
+    /* Fit solver selection: "LevMar" = the classic (unsupported-Eigen) full-vector Levenberg-Marquardt
+       (default, and the reference oracle); "VarPro" = the opt-in variable-projection solver that fits
+       only the non-linear global parameters and projects the linear locals (finite-difference Jacobian);
+       "VarProAnalytic" = VarPro with the analytic implicit-function Jacobian (no speciation re-solve per
+       Jacobian column; falls back to finite differences where a model has none or the data is masked).
+       Both VarPro modes fall back to LevMar for models without SupportsVarPro(). Claude Generated. */
+    { "FitSolver", "LevMar" },
+
+    /* Speciation (equilibrium concentration) solver for the reaction-driven *_any models: "LevMar" =
+       damped Newton with the analytic Hessian (default: fast + reaches 1e-12 uniformly); "BFGS" = the
+       legacy quasi-Newton (L-BFGS-style) update, slower and stalls on ill-conditioned points. Only the
+       models that embed the SpeciationEngine honour it (UsesSpeciationEngine()); ignored otherwise.
+       Parsed by BFGSConcentrationSolver::MethodFromString. Claude Generated. */
+    { "SpeciationSolver", "LevMar" },
+
     /* This are the specific definitions, that work around Levenberg-Marquardt */
     { "MaxLevMarInter", 75 },
     { "ErrorConvergence", 5E-7 },

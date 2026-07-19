@@ -74,28 +74,42 @@ void nmr_ItoI_Model::CollectOptimizationParameters_Private()
     addLocalParameter(1);
 }
 
-void nmr_ItoI_Model::CalculateVariables()
+void nmr_ItoI_Model::FillDesign()
 {
-    qreal value = 0;
+    if (m_design.rows() != DataPoints() || m_design.cols() != 2)
+        m_design.resize(DataPoints(), 2);
     for (int i = DataBegin(); i < DataEnd(); ++i) {
-        // for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;
-        Vector vector(4);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
-
-        if (!m_fast)
+        m_design(i, 0) = host / host_0; // free-host mole fraction (host-shift coefficient)
+        m_design(i, 1) = complex / host_0; // complex mole fraction (AB-shift coefficient)
+        if (!m_fast) {
+            Vector vector(4);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest_0 - complex;
+            vector(3) = complex;
             SetConcentration(i, vector);
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host / host_0 * LocalTable()->data(j, 0) + complex / host_0 * LocalTable()->data(j, 1);
-            SetValue(i, j, value);
         }
     }
+}
+
+void nmr_ItoI_Model::CalculateVariables()
+{
+    FillDesign();
+    // Signal = population-weighted shifts: value(i,j) = free-host fraction * host-shift + complex
+    // fraction * AB-shift. Same math as before, now expressed through the shared design matrix.
+    for (int i = DataBegin(); i < DataEnd(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j, m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1));
+}
+
+void nmr_ItoI_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> nmr_ItoI_Model::DeCompose(int datapoint, int series) const

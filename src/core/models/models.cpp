@@ -77,6 +77,7 @@ const QHash<int, ModelFactory>& modelFactories()
         { SupraFit::fl_ItoI_ItoII, [](DataClass* d) { return new fl_ItoI_ItoII_Model(d); } },
         { SupraFit::fl_IItoI_ItoI, [](DataClass* d) { return new fl_IItoI_ItoI_Model(d); } },
         { SupraFit::fl_IItoI_ItoI_ItoII, [](DataClass* d) { return new fl_IItoI_ItoI_ItoII_Model(d); } },
+        { SupraFit::fl_any, [](DataClass* d) { return new fl_any_Model(d); } },
         { SupraFit::uv_vis_ItoI, [](DataClass* d) { return new uv_vis_ItoI_Model(d); } },
         { SupraFit::uv_vis_ItoI_ItoII, [](DataClass* d) { return new uv_vis_ItoI_ItoII_Model(d); } },
         { SupraFit::uv_vis_IItoI_ItoI, [](DataClass* d) { return new uv_vis_IItoI_ItoI_Model(d); } },

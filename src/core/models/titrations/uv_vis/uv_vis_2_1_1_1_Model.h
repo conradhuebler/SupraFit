@@ -49,6 +49,12 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // VarPro when the extinction coefficients are independent: default cooperativity ("full"). A
+    // silent host/guest only zeroes its design column (harmless). Coupled cooperativities are a TODO
+    // and fall back to LevMar. Claude Generated.
+    bool SupportsVarPro() const override { return getOption(Cooperativity) == QLatin1String("full"); }
+    void ProjectLinearParameters() override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
@@ -96,4 +102,10 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the free-host, free-guest, A2B and AB extinction columns, shared by
+     * the signal and the VarPro projection. Claude Generated. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

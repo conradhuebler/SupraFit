@@ -18,8 +18,7 @@
  * The speciation (free component + species concentrations) is delegated to the shared
  * SpeciationEngine on AbstractTitrationModel; this model only maps those concentrations to the NMR
  * signal (fast-exchange population-weighted average of the observed component's chemical shifts).
- * The classic MaxA/MaxB/MaxSelfA/Species fields remain a backward-compatible 2-component fallback.
- * Claude Generated.
+ * The equilibrium system is defined solely through the free-text Reactions field. Claude Generated.
  */
 
 #include <Eigen/SVD>
@@ -48,7 +47,7 @@
 nmr_any_Model::nmr_any_Model(DataClass* data)
     : AbstractNMRModel(data)
 {
-    m_pre_input = { Reactions_Json, MaxA_Json, MaxB_Json, MaxSelfA_Json, Species_Json };
+    m_pre_input = { Reactions_Json };
     m_complete = false;
 }
 
@@ -65,68 +64,15 @@ nmr_any_Model::~nmr_any_Model()
 {
 }
 
-ReactionSystem nmr_any_Model::buildLegacySystem() const
-{
-    ReactionSystem sys;
-    sys.components = QStringList() << "A" << "B";
-
-    auto add = [&sys](int a, int b) {
-        Eigen::VectorXi v(2);
-        v << a, b;
-        ReactionSpecies species;
-        species.stoich = v;
-        species.label = ReactionParser::SpeciesLabel(sys.components, v);
-        sys.species << species;
-    };
-
-    // Optional explicit species list "a,b|a,b|..." overrides the grid (order as written).
-    const QString speciesDef = m_defined_model.value("Species")["value"].toString().trimmed();
-    if (!speciesDef.isEmpty()) {
-        const QStringList tokens = speciesDef.split("|", Qt::SkipEmptyParts);
-        for (const QString& token : tokens) {
-            const QStringList ab = token.split(",");
-            if (ab.size() != 2)
-                continue;
-            bool okA = false, okB = false;
-            const int a = ab[0].trimmed().toInt(&okA);
-            const int b = ab[1].trimmed().toInt(&okB);
-            if (!okA || !okB || a < 0 || b < 0 || a + b < 2)
-                continue; // skip invalid tokens and the implicit free monomers
-            add(a, b);
-        }
-    } else {
-        // Classic A_aB_b grid first (a,b >= 1) so existing projects keep their indices, then the
-        // pure host oligomers A_n (b = 0) for self-aggregation.
-        const int maxA = m_maxA < 1 ? 1 : m_maxA;
-        const int maxB = m_maxB < 1 ? 1 : m_maxB;
-        for (int a = 1; a <= maxA; ++a)
-            for (int b = 1; b <= maxB; ++b)
-                add(a, b);
-        for (int n = 2; n <= m_maxSelfA; ++n)
-            add(n, 0);
-    }
-
-    sys.stoich = Eigen::MatrixXi(2, sys.species.size());
-    for (int j = 0; j < sys.species.size(); ++j)
-        sys.stoich.col(j) = sys.species[j].stoich;
-    sys.valid = !sys.species.isEmpty();
-    return sys;
-}
-
 bool nmr_any_Model::DefineModel()
 {
-    m_maxA = m_defined_model.value("MaxA")["value"].toInt();
-    m_maxB = m_defined_model.value("MaxB")["value"].toInt();
-    m_maxSelfA = m_defined_model.value("MaxSelfA")["value"].toInt();
     m_observed = 0; // NMR observes the first component (host A) by default
 
-    // Prefer the N-component reaction editor; otherwise fall back to the 2-component legacy grid.
+    // The N-component reaction editor is the sole definition path. Without a valid reaction system
+    // the model stays undefined (the GUI/CLI must supply reactions before it can be fitted).
     if (!BuildSpeciationFromReactions()) {
-        m_component_count = 2;
-        m_component_names = QStringList() << "A" << "B";
-        m_speciation.setSystem(buildLegacySystem());
-        m_speciation.setMaxIter(1000);
-        m_speciation.setConvergeThreshold(1e-12);
+        m_complete = false;
+        return false;
     }
     m_uses_bfgs = true;
 
@@ -204,7 +150,7 @@ void nmr_any_Model::CalculateConcentrations()
         for (int c = 0; c < nComp; ++c)
             totals[c] = InitialConcentration(i, c);
 
-        m_speciation.solve(totals);
+        m_speciation.solve(totals, i);
         const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
         const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
 
@@ -242,6 +188,124 @@ void nmr_any_Model::UpdateShifts()
     Eigen::MatrixXd dep = DependentModel()->Table();
     Eigen::MatrixXd x = m_molar_ratios.colPivHouseholderQr().solve(dep);
     LocalParameter()->setTable(x.transpose());
+}
+
+void nmr_any_Model::ProjectLinearParameters()
+{
+    // VarPro linear projection: build the design matrix (mole fractions) for the current global
+    // parameters, then solve the shifts by masked least-squares (unlike UpdateShifts(), which is the
+    // unmasked initial-guess variant, this honours the active-point mask for correct CV/RA).
+    CalculateConcentrations();
+    SolveLinearMasked(m_molar_ratios);
+}
+
+bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::MatrixXd& J)
+{
+    // Exact only for the Newton speciation method (its stored Hessian is the solution Hessian).
+    if (!m_speciation.isValid()
+        || m_speciation.method() != BFGSConcentrationSolver::Method::LevenbergMarquardt)
+        return false;
+
+    const int nSpecies = m_speciation.SpeciesCount();
+    const int nComp = m_component_count;
+    const int series = SeriesCount();
+    const int nG = static_cast<int>(gidx.size());
+    const int nData = DataPoints();
+    if (nSpecies == 0 || series == 0 || nG == 0)
+        return false;
+    const int P = 1 + nSpecies; // design columns: free observed + one per species
+
+    // SolveLinearMasked (and the residual) run over [DataBegin, DataEnd); Cross-Validation / Reduction
+    // mask by *un-checking rows* inside that window (isChecked), which is handled below. A shrunk window
+    // itself is not the CV/RA mechanism, so fall back to FD for that rare case. Claude Generated.
+    if (DataBegin() != 0 || DataEnd() != nData)
+        return false;
+
+    const Eigen::MatrixXi& Mst = m_speciation.Stoichiometry(); // components x species
+    const double ln10 = std::log(10.0);
+
+    std::vector<double> constants(nSpecies);
+    for (int k = 0; k < nSpecies; ++k)
+        constants[k] = std::pow(10.0, GlobalParameter(k));
+    m_speciation.setStabilityConstants(constants);
+    CalculateConcentrations(); // refresh m_molar_ratios (the design D) at the current beta
+
+    // ∂(design row)/∂ln(β_j) per enabled global, D²  matrices (nData × P). Uses the analytic speciation
+    // sensitivities S_i = ∂x/∂ln(β). Then combine with the *projection* derivative ∂φ/∂β so J is the
+    // FULL (Golub–Pereyra) Jacobian of the projected residual - not the Kaufman (φ-fixed) one, which
+    // leaves a rank-deficient Gauss–Newton Hessian and stalls the outer LM. Claude Generated.
+    std::vector<Eigen::MatrixXd> dD(nG, Eigen::MatrixXd::Zero(nData, P));
+    std::vector<double> totals(nComp);
+    for (int i = 0; i < nData; ++i) {
+        for (int c = 0; c < nComp; ++c)
+            totals[c] = InitialConcentration(i, c);
+        m_speciation.solve(totals, i);
+        const std::vector<double>& freeConc = m_speciation.FreeConcentrations();
+        const std::vector<double>& speciesConc = m_speciation.SpeciesConcentrations();
+        const Eigen::MatrixXd S = m_speciation.sensitivityMatrix(); // nComp × nSpecies
+        const double obs_total = totals[m_observed];
+        const double s_obs = freeConc[m_observed];
+        for (int jj = 0; jj < nG; ++jj) {
+            const int j = gidx[jj]; // enabled global index == species index
+            dD[jj](i, 0) = (s_obs / obs_total) * S(m_observed, j); // D[0] = s_obs / T_obs
+            for (int k = 0; k < nSpecies; ++k) {
+                double dlnck = (k == j) ? 1.0 : 0.0; // d ln c_k / d ln β_j = δ_kj + Σ_c M(c,k) S(c,j)
+                for (int c = 0; c < nComp; ++c)
+                    dlnck += static_cast<double>(Mst(c, k)) * S(c, j);
+                dD[jj](i, 1 + k) = (static_cast<double>(Mst(m_observed, k)) / obs_total) * speciesConc[k] * dlnck;
+            }
+        }
+    }
+
+    const Eigen::MatrixXd& D = m_molar_ratios; // nData × P
+    const Eigen::MatrixXd phi = LocalParameter()->Table(); // series × P
+    const Eigen::MatrixXd Y = DependentModel()->Table(); // nData × series
+
+    // Row map matching the residual list: SetValue appends i-major, j-minor, ONLY for active+checked
+    // (i,l). Build the same mapping so J's rows line up with getCalculatedAbsoluteErrors(). CV/RA mask
+    // by un-checking rows, so this is also the per-series least-squares mask of SolveLinearMasked.
+    std::vector<std::vector<int>> rowOf(nData, std::vector<int>(series, -1));
+    int nRows = 0;
+    for (int i = 0; i < nData; ++i)
+        for (int l = 0; l < series; ++l)
+            if (ActiveSignals(l) && DependentModel()->isChecked(i, l))
+                rowOf[i][l] = nRows++;
+
+    J.setZero(nRows, nG);
+    for (int l = 0; l < series; ++l) {
+        if (!ActiveSignals(l))
+            continue;
+        std::vector<int> rows; // checked rows of series l (the projection + residual mask)
+        for (int i = 0; i < nData; ++i)
+            if (DependentModel()->isChecked(i, l))
+                rows.push_back(i);
+        const int na = static_cast<int>(rows.size());
+        if (na == 0)
+            continue;
+
+        const Eigen::VectorXd phil = phi.row(l).transpose();
+        Eigen::MatrixXd Dm(na, P); // design over the masked rows
+        Eigen::VectorXd Rm(na); // residual (model − data) over the masked rows
+        for (int r = 0; r < na; ++r) {
+            Dm.row(r) = D.row(rows[r]);
+            Rm(r) = D.row(rows[r]).dot(phil) - Y(rows[r], l);
+        }
+        const Eigen::LDLT<Eigen::MatrixXd> DtD = (Dm.transpose() * Dm).ldlt();
+
+        for (int jj = 0; jj < nG; ++jj) {
+            Eigen::MatrixXd dDm(na, P);
+            for (int r = 0; r < na; ++r)
+                dDm.row(r) = dD[jj].row(rows[r]);
+            // ∂φ_l/∂ln(β_j) = −(DmᵀDm)⁻¹ [ dDmᵀ R_l + (Dmᵀ dDm) φ_l ]  over the masked rows
+            const Eigen::VectorXd dphil = -DtD.solve(dDm.transpose() * Rm + (Dm.transpose() * dDm) * phil);
+            for (int r = 0; r < na; ++r) {
+                // ∂(model)/∂ln(β_j) = dDm φ_l + Dm ∂φ_l/∂ln(β_j); residual = model − data, ×ln10 for log10.
+                const double dmodel = dDm.row(r).dot(phil) + Dm.row(r).dot(dphil);
+                J(rowOf[rows[r]][l], jj) = ln10 * dmodel;
+            }
+        }
+    }
+    return true;
 }
 
 void nmr_any_Model::CalculateVariables()

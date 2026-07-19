@@ -47,6 +47,13 @@ public:
 
     bool DefineModel() override;
 
+    /*! \brief itc_any always computes its species through the embedded SpeciationEngine, so it honours
+     * the "SpeciationSolver" key (LevMar/Newton vs. legacy BFGS) and enables the GUI switch. CG. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the "SpeciationSolver" method into m_speciation. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         return m_global_names[i];
@@ -97,14 +104,7 @@ public:
     }
 
 private:
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
-    /*! \brief Build a 2-component (host + guest) reaction system from the legacy
-     * MaxA/MaxB/MaxSelfA/Species fields. ITC totals come from the cell/syringe protocol, so only two
-     * components are physically defined; the reaction editor still enables arbitrary species. CG. */
-    ReactionSystem buildLegacySystem() const;
-
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
     QStringList m_global_names, m_species_names, m_local_names;
     SpeciationEngine m_speciation; ///< reaction system + BFGS solver (host + guest totals)
 

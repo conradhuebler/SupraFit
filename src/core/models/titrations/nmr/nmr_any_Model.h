@@ -48,6 +48,12 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // The NMR signal is linear in the per-species chemical shifts, so the locals can be projected out
+    // by the VarPro solver (reusing the m_molar_ratios design matrix). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
+    bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian) override;
+
     bool DefineModel() override;
 
     void CalculateConcentrations();
@@ -83,10 +89,6 @@ public:
     inline double ReductionCutOff() const override { return 1; }
 
     inline virtual bool DemandInput() const override { return true; }
-    /*! \brief Position of the mixed complex A_aB_b in the grid part of the species list
-     * (a,b >= 1). Only valid for the classic grid; self-aggregation species are appended
-     * after the grid — use m_species for the general mapping. */
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
 
     void UpdateShifts();
     void UpdateLinear() override
@@ -95,13 +97,7 @@ public:
     }
 
 private:
-    /*! \brief Build a 2-component reaction system from the legacy MaxA/MaxB/MaxSelfA/Species fields:
-     * the classic A_aB_b grid (a,b >= 1) first (old projects keep their indices), pure host oligomers
-     * A_n appended, or the explicit "a,b|a,b" species list. Claude Generated. */
-    ReactionSystem buildLegacySystem() const;
-
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0, m_maxSelfA = 0;
     int m_observed = 0; ///< index of the observed component (NMR nucleus), default = component 0 (A)
     QStringList m_global_names, m_species_names;
     Eigen::MatrixXd m_concentrations, m_molar_ratios;

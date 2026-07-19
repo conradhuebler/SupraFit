@@ -44,6 +44,12 @@ public:
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
+    // Beer-Lambert absorbance is linear in the extinction coefficients, so VarPro can project them.
+    // A silent host/guest just zeroes its design column (guest*0), so projecting it yields eps=0
+    // harmlessly - no gating needed here (user-locked locals remain a TODO). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
@@ -82,4 +88,10 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the free-host, free-guest and complex extinction columns (silent
+     * components carry a 0 multiplier), shared by the signal and the VarPro projection. CG. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

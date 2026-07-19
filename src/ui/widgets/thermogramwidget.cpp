@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -394,11 +394,13 @@ void ThermogramWidget::setUi()
     m_scaling->setMaximumWidth(100);
 
     connect(m_scaling, &QComboBox::currentTextChanged, m_scaling, [this]() {
+        // Announce the choice; the ItcProcessor owns the factor and applies it to both handlers, so
+        // the experiment and the dilution stay in the same unit. The widget no longer pushes it to
+        // its own handler directly - that let the two thermograms drift to different scalings.
+        // Claude Generated
         m_ScalingFactor = m_scaling->currentText().toDouble();
-        LoadDefaultThermogram();
-        m_stored_thermogram->ApplyScaling();
+        emit ScalingFactorChanged(m_ScalingFactor);
     });
-    m_ScalingFactor = m_scaling->currentText().toDouble();
 
     m_integration_range_threshold = new QDoubleSpinBox;
     m_integration_range_threshold->setMinimum(0);
@@ -503,13 +505,16 @@ void ThermogramWidget::setUi()
     vlayout = new QVBoxLayout;
     group = new QGroupBox;
 
-    group->setTitle(tr("Scaling"));
+    group->setTitle(tr("Scaling (raw heat unit)"));
     group->setMaximumWidth(maxwidth);
     group->setMaximumHeight(maxheight);
 
     triplett = new QHBoxLayout;
-    triplett->addWidget((new QLabel(tr("Scaling"))));
+    QLabel* scaling_label = new QLabel(tr("cal &rarr; J"));
+    scaling_label->setToolTip(tr("Factor the raw calorimeter heat is multiplied by. Use %1 to convert calories into Joule (so ΔH/ΔS come out in kJ/mol and J/(mol·K)); use 1 if the data are already in Joule (e.g. with a calibration peak). Leaving it at 1 for cal data is the usual reason results match calorie-based tools like NanoAnalyze.").arg(QString::number(cal2joule)));
+    triplett->addWidget(scaling_label);
     triplett->addWidget(m_scaling);
+    m_scaling->setToolTip(scaling_label->toolTip());
     vlayout->addLayout(triplett);
 
     triplett = new QHBoxLayout;
@@ -601,22 +606,20 @@ ThermogramWidget::~ThermogramWidget()
     settings.setValue("integration_range", m_integration_range->currentText());
 }
 
-void ThermogramWidget::LoadDefaultThermogram()
+void ThermogramWidget::setScalingFactor(qreal factor)
 {
-    QJsonObject thermo;
-    thermo["CalibrationStart"] = m_CalibrationStart;
-    thermo["CalibrationHeat"] = m_CalibrationHeat;
-    thermo["PeakDuration"] = m_PeakDuration;
-    thermo["PeakCount"] = m_PeakCount;
-    thermo["ScalingFactor"] = m_ScalingFactor;
-    m_stored_thermogram->setThermogramParameter(thermo);
+    QSignalBlocker block(m_scaling);
+    m_ScalingFactor = factor;
+    m_scaling->setCurrentText(QString::number(factor));
 }
 
 void ThermogramWidget::LoadDefault()
 {
-    QJsonObject thermo;
-    thermo["ScalingFactor"] = m_ScalingFactor;
-    m_stored_thermogram->UpdateParameter(thermo);
+    /* Adopt the handler's scaling factor into the combo, rather than stamping the combo's value onto
+     * the handler. This runs on ThermogramInitialised, i.e. after a project restores the handler's
+     * stored ScalingFactor - the old stamp overwrote it with the widget's default every reload, so a
+     * saved cal->J factor never survived. Claude Generated */
+    setScalingFactor(m_stored_thermogram->ScalingFactor());
     Update();
 }
 
@@ -740,20 +743,6 @@ void ThermogramWidget::UpdateSeries()
 {
     m_thermogram_series->replace(m_stored_thermogram->ThermogramSeries());
 }
-
-void ThermogramWidget::ApplyCalibration()
-{
-    for (int i = 0; i < int(m_integrals_raw.size()); ++i) {
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-
-        if (m_calibration_heat->value() != 0)
-            (m_peak_list)[i].integ_num = m_integrals_raw[i] * m_calibration_heat->value() / m_calibration_peak.integ_num;
-
-        (m_peak_list)[i].integ_num -= m_const_offset->value();
-    }
-    emit CalibrationChanged(m_calibration_heat->value());
-}
-
 
 void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
 {

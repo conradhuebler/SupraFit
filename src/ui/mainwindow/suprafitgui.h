@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -183,54 +183,6 @@ private:
 
     QFile m_file;
     virtual void closeEvent(QCloseEvent* event) override;
-    const QStringList m_properties = QStringList() << "threads"
-                                                   << "chartanimation"
-                                                   << "workingdir"
-                                                   << "dirlevel"
-                                                   << "auto_confidence"
-                                                   << "lastdir"
-                                                   << "p_value"
-                                                   << "charttheme"
-                                                   << "ask_on_exit"
-                                                   << "tooltips"
-                                                   << "recent"
-                                                   << "markerSize"
-                                                   << "lineWidth"
-                                                   << "transparentChart"
-                                                   << "cropedChart"
-                                                   << "noGrid"
-                                                   << "empAxis"
-                                                   << "xSize"
-                                                   << "ySize"
-                                                   << "chartScaling"
-                                                   << "FastConfidenceScaling"
-                                                   << "FastConfidenceSteps"
-                                                   << "ColorFullSearch"
-                                                   << "series_confidence"
-                                                   << "auto_thermo_dialog"
-                                                   << "calibration_start"
-                                                   << "calibration_heat"
-                                                   << "thermogram_guidelines"
-                                                   << "advanced_ui"
-                                                   << "MetaSeries"
-                                                   << "UnsafeCopy"
-                                                   << "EntropyBins"
-                                                   << "OverwriteBins"
-                                                   << "InitialiseRandom"
-                                                   << "StoreRawData"
-                                                   << "StoreFileName"
-                                                   << "StoreAbsolutePath"
-                                                   << "StoreFileHash"
-                                                   << "FindFileRecursive"
-                                                   << "ModelParameterColums"
-                                                   << "LastSpectraType"
-                                                   << "MarkerPointFeedback"
-                                                   << "PointFeedback"
-                                                   << "ModuloPointFeedback"
-                                                   << "FullShannon"
-                                                   << "lastSize"
-                                                   << "ScriptTimeout"
-                                                   << "MaxSeriesPoints";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

@@ -102,6 +102,14 @@ public:
     /** @brief Build an initial guess for the free concentrations from the totals. */
     void Guess();
 
+    /** @brief Cold-start free-concentration magnitude from the totals (used by Guess() and, in solve(),
+     * to seed components that just became active during a warm-started sweep). Claude Generated. */
+    double GuessStart() const;
+
+    /** @brief Concentration of complex @p j from the current free concentrations: c_j = β_j ∏_i s_i^{M_ij};
+     * 0 if the complex is disabled (β ≤ 0) or a required free component is non-positive. Claude Generated. */
+    double speciesConcentration(int j) const;
+
     /**
      * @brief Solve for the free component concentrations.
      * @return vector of length n_components with the free concentrations @f$s_i@f$.
@@ -114,11 +122,25 @@ public:
     /** @brief The free component concentrations of the last solve. */
     inline std::vector<double> currentConcentration() const { return m_free; }
 
+    /** @brief Inject a warm start (e.g. this data point's solution from the previous outer iteration).
+     * Ignored if the size does not match the current totals (a stale/structural mismatch). Must be called
+     * after setTotalConcentrations(). Claude Generated. */
+    void setWarmStart(const std::vector<double>& free);
+
     /**
      * @brief All species concentrations: the n free components followed by the m complexes
      *        (in column order of @f$M@f$).
      */
     std::vector<double> AllConcentrations() const;
+
+    /**
+     * @brief Analytic parameter sensitivities of the free (log-)concentrations, @f$S_{ij} =
+     *        \partial x_i / \partial \ln\beta_j@f$ (components × species), from the implicit-function
+     *        theorem on the converged mass balance, reusing the solution Hessian. Only exact for the
+     *        LevenbergMarquardt (Newton) method. Underpins the analytic outer fit Jacobian (VarPro).
+     *        Claude Generated.
+     */
+    Eigen::MatrixXd sensitivityMatrix() const;
 
     inline int LastIterations() const { return m_lastIter; }
     inline double LastConvergency() const { return m_lastConv; }
@@ -140,6 +162,7 @@ private:
     std::vector<bool> m_active; ///< component present (total > 0)
     std::vector<int> m_comp_of_var; ///< active-variable index -> component row (per solve)
     std::vector<int> m_var_of_comp; ///< component row -> active-variable index, -1 if inactive
+    Eigen::MatrixXd m_H; ///< mass-balance Hessian at the solution (active dims); exact for Newton only
 
     Method m_method = Method::LevenbergMarquardt;
     double m_converge = 1e-10;

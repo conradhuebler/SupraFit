@@ -59,18 +59,30 @@ void BFGSConcentrationSolver::setTotalConcentrations(const std::vector<double>& 
     m_active.assign(totals.size(), true);
     for (std::size_t i = 0; i < totals.size(); ++i)
         m_active[i] = totals[i] > 0.0;
-    if (m_free.size() != totals.size())
+    if (m_free.size() != totals.size()) {
         m_free.assign(totals.size(), 0.0);
-    m_has_guess = false;
+        m_has_guess = false; // dimensionality changed -> the previous solution is unusable as a start
+    }
+    // Otherwise keep m_has_guess as left by the previous solve(): its free concentrations are a good
+    // warm start for the next (nearby) point of a titration sweep, which is the dominant fit cost. The
+    // log-space potential is strictly convex, so any positive start converges to the same unique
+    // minimum - only the iteration count changes; newly-active components are seeded in solve(). This
+    // is the point-to-point warm start the class was designed for (was discarded here). Claude Generated.
 }
 
-void BFGSConcentrationSolver::Guess()
+void BFGSConcentrationSolver::setWarmStart(const std::vector<double>& free)
 {
-    const int n = static_cast<int>(m_totals.size());
-    m_free.assign(n, 0.0);
+    if (free.size() != m_totals.size())
+        return; // stale/mismatched cache entry -> keep whatever setTotalConcentrations() left
+    m_free = free;
+    m_has_guess = true;
+}
 
+double BFGSConcentrationSolver::GuessStart() const
+{
     // Smallest positive total, scaled down by the largest complex order, gives a robust
     // low starting free concentration (Musketeer: within ~2 orders of the optimum).
+    const int n = static_cast<int>(m_totals.size());
     double min_total = 0.0;
     for (int i = 0; i < n; ++i) {
         if (!m_active[i])
@@ -85,7 +97,14 @@ void BFGSConcentrationSolver::Guess()
             order += m_M(i, j);
         max_order = std::max(max_order, order);
     }
-    const double start = min_total / (10.0 * (max_order + 1));
+    return min_total / (10.0 * (max_order + 1));
+}
+
+void BFGSConcentrationSolver::Guess()
+{
+    const int n = static_cast<int>(m_totals.size());
+    const double start = GuessStart();
+    m_free.assign(n, 0.0);
     for (int i = 0; i < n; ++i)
         m_free[i] = m_active[i] ? start : 0.0;
     m_has_guess = true;
@@ -197,10 +216,19 @@ std::vector<double> BFGSConcentrationSolver::solve()
         return m_free;
     }
 
+    // Build the log-concentration start. Active components carry over their warm-start value; any that
+    // lack a positive one (e.g. a component that was inactive at the previous swept point) fall back to
+    // the cold heuristic rather than ~0, so an activation point costs no extra iterations. CG.
+    double warm_fallback = 0.0;
     Eigen::VectorXd x(nv);
     for (int v = 0; v < nv; ++v) {
-        const double s = m_free[m_comp_of_var[v]];
-        x(v) = std::log(s > 0 ? s : 1e-30);
+        double s = m_free[m_comp_of_var[v]];
+        if (!(s > 0.0)) {
+            if (warm_fallback == 0.0)
+                warm_fallback = GuessStart();
+            s = warm_fallback > 0.0 ? warm_fallback : 1e-30;
+        }
+        x(v) = std::log(s);
     }
 
     Eigen::VectorXd g(nv);
@@ -328,9 +356,63 @@ std::vector<double> BFGSConcentrationSolver::solve()
     for (int v = 0; v < nv; ++v)
         m_free[m_comp_of_var[v]] = std::exp(x(v));
 
+    // Keep the mass-balance Hessian at the solution (H = diag(s)+Σ c_j m_j m_jᵀ over the active
+    // components) so the outer fit can form analytic parameter sensitivities dx/dlnβ = -H⁻¹ m_j c_j
+    // (implicit-function theorem) without re-solving. Only exact for the Newton method, whose loop
+    // refreshes H at the accepted point; the BFGS branch leaves the initial H. Claude Generated.
+    m_H = H;
+
     m_has_guess = true; // keep result as warm start for the next solve
     m_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_start).count();
     return m_free;
+}
+
+Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
+{
+    // Sᵢⱼ = ∂x_i/∂ln(β_j) for free component i and species j, from the implicit-function theorem on the
+    // converged mass balance g(x,β)=0: H·(∂x/∂lnβ_j) = -∂g/∂lnβ_j, with ∂g/∂lnβ_j = m_j·c_j (the species
+    // stoichiometry column scaled by its concentration). Reuses the stored solution Hessian H — one
+    // factorisation, one solve per species, no re-solve of the speciation. Inactive components (total
+    // == 0) do not vary and get a zero row. Claude Generated.
+    const int n = static_cast<int>(m_totals.size());
+    const int m = static_cast<int>(m_M.cols());
+    const int nv = static_cast<int>(m_comp_of_var.size());
+    Eigen::MatrixXd S = Eigen::MatrixXd::Zero(n, m);
+    if (nv == 0 || m == 0 || m_H.rows() != nv)
+        return S;
+
+    // Right-hand side over the active variables: RHS(v, j) = M(comp,j) · c_j.
+    Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(nv, m);
+    for (int j = 0; j < m; ++j) {
+        const double cj = speciesConcentration(j);
+        if (cj == 0.0)
+            continue;
+        for (int v = 0; v < nv; ++v)
+            RHS(v, j) = static_cast<double>(m_M(m_comp_of_var[v], j)) * cj;
+    }
+
+    const Eigen::MatrixXd D = m_H.ldlt().solve(RHS); // H⁻¹ RHS
+    for (int v = 0; v < nv; ++v)
+        for (int j = 0; j < m; ++j)
+            S(m_comp_of_var[v], j) = -D(v, j);
+    return S;
+}
+
+double BFGSConcentrationSolver::speciesConcentration(int j) const
+{
+    if (!(m_beta[j] > 0.0))
+        return 0.0;
+    double c = m_beta[j];
+    const int n = static_cast<int>(m_totals.size());
+    for (int i = 0; i < n; ++i) {
+        const int e = m_M(i, j);
+        if (e == 0)
+            continue;
+        if (m_free[i] <= 0.0)
+            return 0.0; // a required free component is exhausted -> complex cannot form
+        c *= std::pow(m_free[i], e);
+    }
+    return c;
 }
 
 std::vector<double> BFGSConcentrationSolver::AllConcentrations() const
@@ -340,24 +422,7 @@ std::vector<double> BFGSConcentrationSolver::AllConcentrations() const
     std::vector<double> all(n + m, 0.0);
     for (int i = 0; i < n; ++i)
         all[i] = m_free[i];
-    for (int j = 0; j < m; ++j) {
-        if (!(m_beta[j] > 0)) {
-            all[n + j] = 0.0;
-            continue;
-        }
-        double c = m_beta[j];
-        bool formable = true;
-        for (int i = 0; i < n; ++i) {
-            const int coeff = m_M(i, j);
-            if (coeff == 0)
-                continue;
-            if (m_free[i] <= 0.0 && coeff > 0) {
-                formable = false;
-                break;
-            }
-            c *= std::pow(m_free[i], coeff);
-        }
-        all[n + j] = formable ? c : 0.0;
-    }
+    for (int j = 0; j < m; ++j)
+        all[n + j] = speciesConcentration(j);
     return all;
 }

@@ -35,7 +35,6 @@
 
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/widgets/reactioneditorwidget.h"
-#include "src/ui/widgets/specieseditorwidget.h"
 
 #include "preparewidget.h"
 
@@ -203,26 +202,14 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
         setMaximumWidth(700);
         setMinimumWidth(700);
         setMinimumHeight(50);
-    } else if (m_type == 5) {
-        // Graphical species editor (Claude Generated): assemble the equilibrium species list
-        // (mixed complexes A_aB_b and self-aggregates like A2) and store it as an "a,b|a,b" string.
-        m_species_editor = new SpeciesEditorWidget(object["value"].toString(), this);
-        layout->addWidget(m_species_editor);
-        setMaximumWidth(500);
-        setMinimumWidth(500);
-        m_json["value"] = m_species_editor->toSpeciesString();
-        connect(m_species_editor, &SpeciesEditorWidget::changed, this, [this](const QString& species) {
-            m_json["value"] = species;
-            emit this->changed();
-        });
     } else if (m_type == 6) {
         // Live-parsed reaction-equation editor (Claude Generated): the user types reaction equations
         // (arrow syntax) that ReactionParser turns into the N-component species list; the raw text is
-        // stored verbatim and re-parsed in the model's DefineModel(). Supersedes the type-5 editor.
+        // stored verbatim and re-parsed in the model's DefineModel().
         m_reaction_editor = new ReactionEditorWidget(object["value"].toString(), this);
         layout->addWidget(m_reaction_editor);
-        setMaximumWidth(700);
-        setMinimumWidth(500);
+        setMaximumWidth(920); // room for the preset list on the left plus the editor
+        setMinimumWidth(640);
         m_json["value"] = m_reaction_editor->reactionText();
         connect(m_reaction_editor, &ReactionEditorWidget::changed, this, [this](const QString& reactions) {
             m_json["value"] = reactions;
