@@ -10,6 +10,15 @@ from __future__ import annotations
 
 from . import _models
 
+# ITC system-parameter indices (AbstractItcModel::CellVolume=1 … Temperature=4). Friendly names map
+# to these so callers don't hard-code integers. Claude Generated.
+SYSTEM_PARAMETERS = {
+    "cell_volume": 1,
+    "cell_concentration": 2,
+    "syringe_concentration": 3,
+    "temperature": 4,
+}
+
 
 def _require_core():
     try:
@@ -32,6 +41,39 @@ def resolve_system_parameters(system_parameters):
         index = SYSTEM_PARAMETERS.get(key, key) if isinstance(key, str) else int(key)
         resolved[int(index)] = float(value)
     return resolved
+
+
+_INDEX_TO_SYSTEM_NAME = {v: k for k, v in SYSTEM_PARAMETERS.items()}
+
+
+def read_itc(path):
+    """Read a raw .itc thermogram file into arrays + system parameters (via ItcProcessor).
+
+    Returns a dict with `independent` (per-injection volumes, NumPy Nx1), `dependent` (net heats,
+    NumPy Nx1), and `system_parameters` (the file's metadata: cell volume + temperature, keyed by
+    friendly name). The .itc file rarely carries the sample concentrations, so add
+    `cell_concentration`/`syringe_concentration` before fitting, then pass the whole dict to
+    `native_model("itc_1_1", indep, dep, system_parameters=...)` or `Project.from_arrays(...,
+    system_parameters=...)`. Requires the native module. Claude Generated."""
+    import json
+    import numpy as np
+    data = json.loads(_require_core().read_itc(str(path)))
+    system_parameters = {}
+    for key, value in (data.get("system_parameters") or {}).items():
+        try:
+            name = _INDEX_TO_SYSTEM_NAME.get(int(key), int(key))
+        except (ValueError, TypeError):
+            system_parameters[key] = value
+            continue
+        try:
+            system_parameters[name] = float(value)
+        except (ValueError, TypeError):
+            system_parameters[name] = value
+    return {
+        "independent": np.asarray(data["independent"], dtype=float),
+        "dependent": np.asarray(data["dependent"], dtype=float),
+        "system_parameters": system_parameters,
+    }
 
 
 def generate_independent(equations: str, datapoints: int):
@@ -62,16 +104,6 @@ def generate_dependent(model, independent, global_params, local_params, noise_st
         float(noise_std),
         int(seed),
     )
-
-
-# ITC system-parameter indices (AbstractItcModel::CellVolume=1 … Temperature=4). Friendly names map
-# to these so callers don't hard-code integers. Claude Generated.
-SYSTEM_PARAMETERS = {
-    "cell_volume": 1,
-    "cell_concentration": 2,
-    "syringe_concentration": 3,
-    "temperature": 4,
-}
 
 
 def native_model(model, independent, dependent, system_parameters=None):

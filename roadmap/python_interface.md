@@ -179,12 +179,14 @@ NumPy integration ultimately live.
   `fitModelsToData` creates its models, so every model inherits the cell/syringe setup;
   `Project.from_arrays(..., system_parameters={...})` (friendly names) threads it through the task
   config → NativeBackend. Verified via Project + native backend (`test_project_itc_native`).
-- **Thermogram import — NOT shipped (blocked):** binding `read_itc` via the ItcProcessor pipeline
-  (`ToolSet::LoadITCFile` → `ThermogramHandler` → `process()`) hangs inside `process()` on the only
-  available sample (`data/samples/itc/synthetic.itc`, a degenerate 12-point trace); the headless
-  test integrates real `.dat` thermograms (`reaction.dat`) via peak *rules*, not `.itc` peak lists.
-  Needs a real `.itc` file to validate and likely a fix in the core integration for tiny/degenerate
-  traces. Deferred rather than ship an unverifiable, hang-prone binding.
+- **Thermogram import DONE (2026-07-19):** `suprafit.read_itc(path)` loads a raw `.itc` trace
+  (`ToolSet::LoadITCFile` → `ThermogramHandler` → `ItcProcessor::process()`, integrating over one
+  repeating peak rule spanning the trace) and returns `{independent: per-injection volumes,
+  dependent: net heats, system_parameters}` (cell volume + temperature from the file metadata, keyed
+  by friendly name). Add the sample `cell_concentration`/`syringe_concentration` (the `.itc` rarely
+  carries them) and fit. Verified on `data/samples/itc/sample.itc` (61 injections → itc_1_1 fit,
+  lg K≈5.0, converged; `test_read_itc_and_fit`). NB: the earlier hang was specific to the degenerate
+  12-point `synthetic.itc`, not a code defect — real thermograms integrate fine.
 - **Phase 3 is complete.** Remaining across the whole roadmap: Phase 4 (wheel packaging with bundled
   Qt) and Phase 5 (retire/modernise the legacy `pythonbridge` ctypes demo).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +

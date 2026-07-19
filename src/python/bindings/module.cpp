@@ -23,6 +23,7 @@
 #include <pybind11/stl.h>
 
 #include <cmath>
+#include <memory>
 #include <random>
 #include <string>
 
@@ -40,6 +41,9 @@
 
 #include "src/capabilities/datagenerator.h"
 #include "src/core/analyse.h"
+#include "src/core/itcprocessor.h"
+#include "src/core/thermogramhandler.h"
+#include "src/core/toolset.h"
 #include "src/core/analysis_manager.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
@@ -198,6 +202,65 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
     const std::string out = QJsonDocument(project).toJson(QJsonDocument::Compact).toStdString();
     delete data;
     return out;
+}
+
+/*!
+ * \brief Read a raw .itc thermogram file into (injection volumes, net heats) + system parameters.
+ *
+ * Loads the .itc trace (ToolSet::LoadITCFile), integrates it through the GUI-independent ItcProcessor
+ * and returns a JSON string with `independent` (per-injection volumes, column 0), `dependent` (net
+ * heats, column 1) and `system_parameters` (the file's metadata block) — ready to feed to
+ * native_model / Project for an ITC fit. Claude Generated.
+ */
+static std::string readItc(const std::string& path)
+{
+    ensureQCoreApplication();
+    QString file = QString::fromStdString(path);
+    std::vector<PeakPick::Peak> peaks;
+    qreal offset = 0, freq = 0;
+    QVector<qreal> inject;
+    QPair<PeakPick::spectrum, QJsonObject> loaded = ToolSet::LoadITCFile(file, &peaks, offset, freq, inject);
+
+    // process() calls UpdatePeaks(), which rebuilds the peak list from peak *rules* (a setPeakList()
+    // is discarded). Define one repeating rule spanning the trace with ~one peak per injection — the
+    // pattern the headless ItcProcessor test uses; the duration is > 0 so integration terminates.
+    const qreal begin = loaded.first.XMin();
+    const qreal end = loaded.first.XMax();
+    const int nInjections = inject.size();
+    if (nInjections <= 0 || !(end > begin))
+        throw std::runtime_error("read_itc: no injections / empty thermogram in " + path);
+    const qreal duration = (end - begin) / (nInjections + 1);
+    QVector<QPointF> rules;
+    rules << QPointF(begin + duration, duration);
+
+    ItcProcessor proc;
+    ThermogramHandler* th = proc.experiment();
+    th->setThermogram(loaded.first);
+    th->setThermogramBegin(begin);
+    th->setThermogramEnd(end);
+    th->setPeakRules(rules);
+    proc.setInjectionVolumes(inject);
+    proc.process();
+
+    std::unique_ptr<DataTable> table(proc.resultTable());
+    if (!table || table->Table().rows() == 0)
+        throw std::runtime_error("read_itc: no injections integrated from " + path + " (is it a .itc thermogram?)");
+
+    const Eigen::MatrixXd& m = table->Table();
+    QJsonArray indep, dep;
+    for (int r = 0; r < m.rows(); ++r) {
+        QJsonArray irow;
+        irow.append(m(r, 0)); // injection volume
+        indep.append(irow);
+        QJsonArray drow;
+        drow.append(m.cols() > 1 ? m(r, 1) : 0.0); // net heat
+        dep.append(drow);
+    }
+    QJsonObject out;
+    out["independent"] = indep;
+    out["dependent"] = dep;
+    out["system_parameters"] = loaded.second;
+    return QJsonDocument(out).toJson(QJsonDocument::Compact).toStdString();
 }
 
 /*!
@@ -380,6 +443,10 @@ PYBIND11_MODULE(_core, m)
         py::arg("nproc") = 0, py::arg("system_parameters") = std::map<int, double>(),
         "Fit models to independent/dependent tables in-process (optionally with post-fit analysis "
         "and ITC system parameters {index: value}); returns the project JSON (same shape as CLI).");
+
+    m.def("read_itc", &readItc, py::arg("path"),
+        "Read a raw .itc thermogram: returns a JSON string with `independent` (per-injection "
+        "volumes), `dependent` (net heats), and `system_parameters` from the file's metadata.");
 
     m.def("generate_independent", &generateIndependent,
         py::arg("equations"), py::arg("datapoints"),

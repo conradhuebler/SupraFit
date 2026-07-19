@@ -258,6 +258,28 @@ def test_project_itc_native():
     assert np.asarray(m.global_parameters).ravel()[0] == pytest.approx(4.5, rel=1e-4)
 
 
+def test_read_itc_and_fit():
+    """A real .itc thermogram reads into (volumes, heats) + system parameters and fits an ITC model."""
+    itc = Path(__file__).resolve().parents[2] / "data" / "samples" / "itc" / "sample.itc"
+    if not itc.exists():
+        pytest.skip(f"sample .itc missing: {itc}")
+    r = sf.read_itc(str(itc))
+    indep, dep = r["independent"], r["dependent"]
+    assert indep.shape[0] == dep.shape[0] > 0
+    assert indep.shape[1] == 1 and dep.shape[1] == 1
+    assert np.any(np.abs(dep) > 1.0)  # real integrated heats, not zeros
+    sysp = dict(r["system_parameters"])
+    assert "cell_volume" in sysp and "temperature" in sysp
+    # the .itc file carries the instrument setup but not the sample concentrations; add them to fit
+    sysp["cell_concentration"] = 0.5
+    sysp["syringe_concentration"] = 5.0
+    m = sf.native_model("itc_1_1", indep, dep, system_parameters=sysp)
+    m.initial_guess()
+    m.fit()
+    assert m.converged() is True
+    assert np.isfinite(m.sse())
+
+
 def _cli_available() -> bool:
     try:
         sf._cli.find_cli()

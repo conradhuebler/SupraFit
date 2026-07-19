@@ -73,6 +73,17 @@ proj.add_model("itc_1_1")
 proj.fit()
 ```
 
+Read a raw `.itc` thermogram directly (integrated in-process via the ItcProcessor pipeline):
+
+```python
+r = sf.read_itc("experiment.itc")   # {independent: volumes, dependent: net heats, system_parameters}
+sysp = dict(r["system_parameters"])  # cell_volume + temperature from the file
+sysp["cell_concentration"] = 0.5     # the .itc rarely carries the sample concentrations — add them
+sysp["syringe_concentration"] = 5.0
+m = sf.native_model("itc_1_1", r["independent"], r["dependent"], system_parameters=sysp)
+m.initial_guess(); m.fit()
+```
+
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 
 ## Requirements
