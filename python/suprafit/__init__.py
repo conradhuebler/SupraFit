@@ -29,7 +29,7 @@ from ._jobs import (
     weakened_grid_search,
 )
 from ._models import ID_TO_NAME, MODELS, model_id, model_name
-from ._native import generate_independent, native_model
+from ._native import generate_dependent, generate_independent, native_model
 from ._project import Project
 from ._results import Model
 from .errors import (
@@ -63,6 +63,7 @@ __all__ = [
     "set_backend",
     "native_model",
     "generate_independent",
+    "generate_dependent",
     "SupraFitError",
     "SupraFitNotFoundError",
     "ModelNameError",

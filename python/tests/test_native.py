@@ -179,6 +179,31 @@ def test_native_live_model(reference_arrays):
     assert np.asarray(m.global_parameters()).ravel()[0] == pytest.approx(2.8957, rel=1e-5)
 
 
+def test_native_generate_dependent(reference_arrays):
+    """Deterministic ground-truth generation: params -> data -> a fit recovers the params."""
+    indep, dep = reference_arrays
+    m = sf.native_model("nmr_1_1", indep, dep)
+    m.initial_guess()
+    m.fit()
+    g = np.asarray(m.global_parameters()).ravel()
+    local = np.asarray(m.local_parameters())
+
+    # noise-free: the generated data is exactly the model, so a refit recovers it with ~0 SSE
+    gen = np.asarray(sf.generate_dependent("nmr_1_1", indep, g, local, noise_std=0.0))
+    assert gen.shape == dep.shape
+    m2 = sf.native_model("nmr_1_1", indep, gen)
+    m2.initial_guess()
+    m2.fit()
+    assert np.asarray(m2.global_parameters()).ravel()[0] == pytest.approx(g[0], rel=1e-4)
+    assert m2.sse() < 1e-12
+
+    # noise is applied and reproducible via the seed
+    a = np.asarray(sf.generate_dependent("nmr_1_1", indep, g, local, noise_std=0.01, seed=7))
+    b = np.asarray(sf.generate_dependent("nmr_1_1", indep, g, local, noise_std=0.01, seed=7))
+    assert np.allclose(a, b)
+    assert not np.allclose(a, gen)
+
+
 def _cli_available() -> bool:
     try:
         sf._cli.find_cli()

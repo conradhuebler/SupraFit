@@ -160,8 +160,14 @@ NumPy integration ultimately live.
   `generate_independent(equations, datapoints)` (exposed as `suprafit.generate_independent`) drives
   the CLI equation generator. `python/tests/test_native.py::{test_native_live_model,
   test_native_generate_independent}`.
-- **Still to bind (later):** native dependent-data generation from a model (random parameters +
-  noise, `DataGenerator::EvaluateWithModel`) — independent-only generation is bound today.
+- **Dependent-data generation DONE (2026-07-19):** `_core.generate_dependent`
+  (`suprafit.generate_dependent(model, indep, global_params, local_params, noise_std, seed)`) builds
+  a model at caller-supplied parameters, computes the signal, and adds reproducible i.i.d. Gaussian
+  noise — deterministic **ground-truth** generation (draw random parameters in NumPy for random
+  datasets, so the truth is always known). Round-trip verified (params → data → refit recovers the
+  params at ~0 SSE). `python/tests/test_native.py::test_native_generate_dependent`.
+- **Phase 3 is complete.** Remaining across the whole roadmap: Phase 4 (wheel packaging with bundled
+  Qt) and Phase 5 (retire/modernise the legacy `pythonbridge` ctypes demo).
 - **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
   pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).

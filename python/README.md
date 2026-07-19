@@ -37,6 +37,16 @@ m.fit()
 m.sse(), m.global_parameters(), m.model_signal()      # scalars + tables as NumPy
 ```
 
+Generate synthetic datasets with known ground truth (parameters you supply — draw them in NumPy for
+reproducible random datasets):
+
+```python
+dep = sf.generate_dependent("nmr_1_1", indep,
+                            global_params=[3.0],       # lg K
+                            local_params=local_2d,     # series x local-params
+                            noise_std=0.01, seed=42)   # optional i.i.d. Gaussian noise
+```
+
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 
 ## Requirements

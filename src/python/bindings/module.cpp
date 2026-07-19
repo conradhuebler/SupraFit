@@ -22,6 +22,7 @@
 #include <pybind11/pybind11.h>
 
 #include <cmath>
+#include <random>
 #include <string>
 
 #include <QtCore/QByteArray>
@@ -273,6 +274,68 @@ static Eigen::MatrixXd generateIndependent(const std::string& equations, int dat
     return gen.Table()->Table();
 }
 
+/*!
+ * \brief Generate a dependent data table from a model at known parameters (+ optional noise).
+ *
+ * Deterministic, ground-truth generation: the caller supplies the global and local parameters, so
+ * the exact parameters that produced the data are known (ideal for supervised ML / fit validation).
+ * Draws the random-parameter distribution in NumPy and pass it here; this only computes the model
+ * signal and adds i.i.d. Gaussian noise. The series count is taken from the local-parameter rows.
+ *
+ * \param modelId      SupraFit model id (see enum SupraFit::Model)
+ * \param independent  data points (rows) x independent variables (cols)
+ * \param globalParams the global parameters (e.g. lg K values), one per global parameter
+ * \param localParams  series (rows) x local-parameters-per-series (cols)
+ * \param noiseStd     standard deviation of added Gaussian noise (0 = noise-free)
+ * \param seed         RNG seed for the noise (reproducible)
+ * Claude Generated.
+ */
+static Eigen::MatrixXd generateDependent(int modelId,
+    const Eigen::MatrixXd& independent,
+    const Eigen::VectorXd& globalParams,
+    const Eigen::MatrixXd& localParams,
+    double noiseStd,
+    unsigned long seed)
+{
+    ensureQCoreApplication();
+    const int series = static_cast<int>(localParams.rows());
+    if (series <= 0)
+        throw std::runtime_error("generate_dependent needs local_params with one row per series");
+
+    QSharedPointer<DataClass> data(new DataClass());
+    data->setIndependentTable(new DataTable(independent));
+    data->setIndependentRawTable(new DataTable(independent));
+    // A zero dependent table of the right width tells the model how many series to build.
+    const Eigen::MatrixXd placeholder = Eigen::MatrixXd::Zero(independent.rows(), series);
+    data->setDependentTable(new DataTable(placeholder));
+    data->setDependentRawTable(new DataTable(placeholder));
+    data->setType(DataClassPrivate::DataType::Table);
+
+    QSharedPointer<AbstractModel> model = CreateModel(modelId, data.data());
+    if (!model)
+        throw std::runtime_error("CreateModel failed for model id " + std::to_string(modelId));
+
+    for (int i = 0; i < globalParams.size(); ++i)
+        model->setGlobalParameter(globalParams(i), i);
+    for (int s = 0; s < localParams.rows(); ++s)
+        for (int p = 0; p < localParams.cols(); ++p)
+            model->setLocalParameter(localParams(s, p), p, s);
+    model->Calculate();
+
+    if (!model->ModelTable())
+        throw std::runtime_error("generate_dependent: model produced no signal table");
+    Eigen::MatrixXd signal = model->ModelTable()->Table();
+
+    if (noiseStd > 0.0) {
+        std::mt19937_64 rng(seed);
+        std::normal_distribution<double> noise(0.0, noiseStd);
+        for (int r = 0; r < signal.rows(); ++r)
+            for (int c = 0; c < signal.cols(); ++c)
+                signal(r, c) += noise(rng);
+    }
+    return signal;
+}
+
 PYBIND11_MODULE(_core, m)
 {
     m.doc() = "SupraFit in-process core (pybind11). Phase 2 native backend — Claude Generated.";
@@ -302,6 +365,12 @@ PYBIND11_MODULE(_core, m)
         py::arg("equations"), py::arg("datapoints"),
         "Generate an independent data table (rows x variables) from pipe-separated equations, "
         "e.g. generate_independent(\"0.001|(X-1)*1e-4\", 20).");
+
+    m.def("generate_dependent", &generateDependent,
+        py::arg("model_id"), py::arg("independent"), py::arg("global_params"),
+        py::arg("local_params"), py::arg("noise_std") = 0.0, py::arg("seed") = 0,
+        "Generate a dependent table from a model at known parameters (+ optional Gaussian noise); "
+        "series count is the number of local_params rows. Deterministic ground-truth generation.");
 
     // Low-level interactive model handle (notebook-grade): build a model on two tables, set/guess
     // parameters, fit, and read scalars / parameter tables / the fitted signal as NumPy.
