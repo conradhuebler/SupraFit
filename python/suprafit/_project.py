@@ -19,12 +19,17 @@ class Project:
     """A SupraFit project: data + models + post-processing, driven through a Backend."""
 
     def __init__(self, *, independent: dict, dependent: dict, data_sources: _data.DataSources | None = None,
-                 backend: _backend.Backend | None = None, outfile: str = "suprafit_result"):
+                 backend: _backend.Backend | None = None, outfile: str = "suprafit_result",
+                 system_parameters: dict | None = None):
         self._independent = independent
         self._dependent = dependent
         self._data_sources = data_sources
         self._backend = backend or _backend.get_backend()
         self._outfile = outfile
+        # ITC etc. system parameters (cell/syringe concentration, cell volume, temperature),
+        # resolved to {int index: float value}; only the native backend consumes them. Claude Generated.
+        from . import _native
+        self._system_parameters = _native.resolve_system_parameters(system_parameters)
         # pending models: label -> {id, options, definition}
         self._models: dict[str, dict] = {}
         # pending post-fit methods (controller dicts)
@@ -101,6 +106,7 @@ class Project:
             models=self._models,
             post_fit_methods=self._post_methods,
             out_file=self._outfile,
+            system_parameters=self._system_parameters,
         )
 
     def fit(self, nproc: int = 4, timeout: float | None = None) -> list[_results.Model]:

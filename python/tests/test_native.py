@@ -230,6 +230,34 @@ def test_native_itc_model():
     assert np.asarray(fit.local_parameters()).ravel()[0] == pytest.approx(-38000.0, rel=1e-3)
 
 
+def test_project_itc_native():
+    """ITC fits run through the transparent Project + native backend when system parameters are given."""
+    n = 16
+    indep = np.full((n, 1), 8.0)
+    sysp = {"cell_volume": 202.8, "cell_concentration": 0.5,
+            "syringe_concentration": 5.0, "temperature": 298}
+    gen = sf.native_model("itc_1_1", indep, np.zeros((n, 1)), system_parameters=sysp)
+    gen.set_global(4.5, 0)
+    for p, v in enumerate([-38000.0, 0.0, 1.0, 1.0]):
+        gen.set_local(v, 0, p)
+    gen.calculate()
+    heat = np.asarray(gen.model_signal())
+
+    sf.set_backend("native")
+    try:
+        proj = sf.Project.from_arrays(indep, heat, system_parameters=sysp)
+        proj.add_model("itc_1_1")
+        proj.fit(nproc=2)
+        m = proj.model("itc_1_1")
+    finally:
+        sf.set_backend("cli")
+    # system parameters set on the shared DataClass propagate to the models fitModelsToData creates
+    assert m is not None
+    assert m.converged is True
+    assert m.sse < 1e-6
+    assert np.asarray(m.global_parameters).ravel()[0] == pytest.approx(4.5, rel=1e-4)
+
+
 def _cli_available() -> bool:
     try:
         sf._cli.find_cli()

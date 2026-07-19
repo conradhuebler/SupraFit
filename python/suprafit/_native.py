@@ -22,6 +22,18 @@ def _require_core():
         ) from e
 
 
+def resolve_system_parameters(system_parameters):
+    """Map a friendly-name/int-keyed system-parameter dict to {int index: float value}.
+    Returns {} for a falsy input. Claude Generated."""
+    if not system_parameters:
+        return {}
+    resolved = {}
+    for key, value in system_parameters.items():
+        index = SYSTEM_PARAMETERS.get(key, key) if isinstance(key, str) else int(key)
+        resolved[int(index)] = float(value)
+    return resolved
+
+
 def generate_independent(equations: str, datapoints: int):
     """Generate an independent data table (rows x variables) from the CLI equation generator.
 

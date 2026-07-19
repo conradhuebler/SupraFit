@@ -61,6 +61,18 @@ m.initial_guess(); m.fit()
 m.global_parameters()   # lg K ;  m.local_parameters()[0] -> [dH, m, n, fx]
 ```
 
+The transparent `Project` + native backend takes the same `system_parameters` (they are set on the
+shared data so every fitted model inherits them):
+
+```python
+sf.set_backend("native")
+proj = sf.Project.from_arrays(inject_volumes, heats, system_parameters={
+    "cell_volume": 202.8, "cell_concentration": 0.5,
+    "syringe_concentration": 5.0, "temperature": 298})
+proj.add_model("itc_1_1")
+proj.fit()
+```
+
 Copyright (C) 2016 - 2026 Conrad Hübler. Claude Generated.
 
 ## Requirements

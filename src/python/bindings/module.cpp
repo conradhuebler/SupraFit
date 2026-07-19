@@ -20,6 +20,7 @@
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <cmath>
 #include <random>
@@ -30,9 +31,12 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QPointer>
 #include <QtCore/QString>
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
+
+#include <map>
 
 #include "src/capabilities/datagenerator.h"
 #include "src/core/analyse.h"
@@ -107,7 +111,8 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
     const Eigen::MatrixXd& dependent,
     const std::string& modelsJson,
     const std::string& analysisJson,
-    int nproc)
+    int nproc,
+    const std::map<int, double>& systemParams)
 {
     ensureQCoreApplication();
 
@@ -126,6 +131,11 @@ static std::string fitFromTables(const Eigen::MatrixXd& independent,
     data->setDependentTable(new DataTable(dependent));
     data->setDependentRawTable(new DataTable(dependent));
     data->setType(DataClassPrivate::DataType::Table);
+    // ITC (and other) system parameters are set on the shared DataClass so every model
+    // fitModelsToData creates on it inherits them; setSystemParameterValue emits
+    // SystemParameterChanged, which each model's ctor wires to UpdateParameter(). Claude Generated.
+    for (const auto& kv : systemParams)
+        data->setSystemParameterValue(kv.first, kv.second);
 
     const QJsonObject modelsConfig
         = QJsonDocument::fromJson(QByteArray::fromStdString(modelsJson)).object();
@@ -367,9 +377,9 @@ PYBIND11_MODULE(_core, m)
     m.def("fit_from_tables", &fitFromTables,
         py::arg("independent"), py::arg("dependent"),
         py::arg("models_json"), py::arg("analysis_json") = std::string("{}"),
-        py::arg("nproc") = 0,
-        "Fit models to independent/dependent tables in-process (optionally with post-fit analysis); "
-        "returns the project JSON string (same shape as the CLI backend).");
+        py::arg("nproc") = 0, py::arg("system_parameters") = std::map<int, double>(),
+        "Fit models to independent/dependent tables in-process (optionally with post-fit analysis "
+        "and ITC system parameters {index: value}); returns the project JSON (same shape as CLI).");
 
     m.def("generate_independent", &generateIndependent,
         py::arg("equations"), py::arg("datapoints"),

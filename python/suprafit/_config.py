@@ -40,6 +40,7 @@ def build_task_config(
     fit_models: bool = True,
     process_ml_pipeline: bool = False,
     noise: dict | None = None,
+    system_parameters: dict | None = None,
 ) -> dict:
     """Assemble the full task-config dict."""
     config: dict = {
@@ -51,6 +52,10 @@ def build_task_config(
         "Independent": independent,
         "Dependent": dependent,
     }
+    # ITC (and other) system parameters as {index: value}; consumed in-process by the native
+    # backend (the CLI backend ignores them for now). Claude Generated.
+    if system_parameters:
+        config["SystemParameters"] = {str(k): float(v) for k, v in system_parameters.items()}
     # The fit actually runs on the CLI's ML-pipeline path, which writes the fitted project to
     # `<base>-project-0.suprafit`; without ProcessMLPipeline the CLI only generates data. So force
     # it on whenever we are fitting (or running post-processing). Claude Generated.

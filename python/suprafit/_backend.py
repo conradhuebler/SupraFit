@@ -133,7 +133,9 @@ class NativeBackend(Backend):
         dep = _table_from_block(task_config.get("Dependent", {}), np)
         models_json = json.dumps(task_config.get("AddModels", {}))
         analysis_json = json.dumps(task_config.get("PostFitAnalysis", {}) or {})
-        project_json = self._core.fit_from_tables(indep, dep, models_json, analysis_json, int(nproc))
+        system_params = {int(k): float(v) for k, v in (task_config.get("SystemParameters") or {}).items()}
+        project_json = self._core.fit_from_tables(
+            indep, dep, models_json, analysis_json, int(nproc), system_params)
         try:
             return json.loads(project_json)
         except (json.JSONDecodeError, TypeError) as e:
