@@ -123,20 +123,35 @@ ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
+    // Order = the order of the dialog's grid. What you WRITE comes first (name, engine, reactions,
+    // equation, which of its symbols are per-series); the fields that are now DERIVED from the
+    // equation are read-outs and sit at the bottom. Claude Generated.
+    m_pre_input = { ModelName_Json, Engine_Json, ScriptReactions_Json, Equation_Json,
+        LocalParameterNames_Json, PrintX_Json,
+        InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json };
 }
 
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
+    // Order = the order of the dialog's grid. What you WRITE comes first (name, engine, reactions,
+    // equation, which of its symbols are per-series); the fields that are now DERIVED from the
+    // equation are read-outs and sit at the bottom. Claude Generated.
+    m_pre_input = { ModelName_Json, Engine_Json, ScriptReactions_Json, Equation_Json,
+        LocalParameterNames_Json, PrintX_Json,
+        InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json };
     m_complete = AbstractModel::DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
-    m_pre_input = { ModelName_Json, InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json, LocalParameterNames_Json, PrintX_Json, Engine_Json, ScriptReactions_Json, Equation_Json };
+    // Order = the order of the dialog's grid. What you WRITE comes first (name, engine, reactions,
+    // equation, which of its symbols are per-series); the fields that are now DERIVED from the
+    // equation are read-outs and sit at the bottom. Claude Generated.
+    m_pre_input = { ModelName_Json, Engine_Json, ScriptReactions_Json, Equation_Json,
+        LocalParameterNames_Json, PrintX_Json,
+        InputSize_Json, GlobalParameterSize_Json, GlobalParameterNames_Json, LocalParameterSize_Json };
     // The base copy constructor brings m_defined_model along, so re-run DefineModel() to rebuild the
     // sizes, names, equation, engine and series-awareness from it. Without this every clone (Monte
     // Carlo, cross-validation, statistics, model duplication) silently had LocalParameterSize()==0,

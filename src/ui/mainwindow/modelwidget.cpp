@@ -664,6 +664,11 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     update->setIcon(Icon("dialog-ok-apply"));
     QScrollArea* scrollArea = new QScrollArea;
     PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+    // Same live guidance as the creation dialog: which identifiers the equation may use for the
+    // current reaction system, and which globals are the stability constants. Claude Generated.
+    widget->AddScriptGuidance();
+    if (ScriptModel* script = qobject_cast<ScriptModel*>(m_model.data()))
+        widget->setEquilibriumMode(script->UsesSpeciation());
     QSignalBlocker block(widget);
     QProgressBar* bar = new QProgressBar;
     connect(m_script_timer, &QTimer::timeout, this, [this, widget, bar]() {

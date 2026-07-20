@@ -139,6 +139,11 @@ public:
 
     QString id() const override { return QStringLiteral("ExprTk"); }
 
+    /*! \brief Free variables referenced by @c formula, in order of first appearance, without needing a
+     * symbol table. Script-local "var x := …" declarations are excluded. Lets the definition dialog
+     * derive the parameter list from the equation itself. Claude Generated. */
+    static QStringList CollectSymbols(const QString& formula);
+
     void setSpeciation(SpeciationEngine* engine) override { m_speciation = engine; }
     void setSpeciationPoint(int index) override { m_solve_fn.point = index; }
 

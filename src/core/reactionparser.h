@@ -83,4 +83,8 @@ public:
 
     /** @brief Canonical species label from a stoichiometry vector, e.g. (2,1)/[A,B] -> "A₂B". */
     static QString SpeciesLabel(const QStringList& components, const Eigen::VectorXi& stoich);
+
+    /** @brief Same, but as a plain ASCII identifier: (2,1)/[A,B] -> "A2B". SpeciesLabel uses unicode
+     * subscripts, which are not valid variable names in any scripting backend. Claude Generated. */
+    static QString AsciiSpeciesId(const QStringList& components, const Eigen::VectorXi& stoich);
 };

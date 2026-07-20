@@ -105,8 +105,8 @@ const QJsonObject GlobalParameterGuess_Json{
 
 const QJsonObject GlobalParameterNames_Json{
     { "name", "GlobalParameterNames" }, // internal name, not to be printed
-    { "title", "Number of global parameters" },
-    { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
+    { "title", "Names of global parameters" },
+    { "description", "Name the global parameters as a |-separated list, e.g. 'lgK11|lgK12'. These names are the identifiers the equation refers to." },
     { "value", "" },
     { "type", 3 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
@@ -132,8 +132,8 @@ const QJsonObject LocalParameterGuess_Json{
 
 const QJsonObject LocalParameterNames_Json{
     { "name", "LocalParameterNames" }, // internal name, not to be printed
-    { "title", "Number of global parameters" },
-    { "description", "Set number of parameters to be fitted which act globally on several subsets of a data sets" },
+    { "title", "Names of local parameters" },
+    { "description", "Name the local (per-series) parameters as a |-separated list, e.g. 'dHost|dAB'. These names are the identifiers the equation refers to." },
     { "value", "" },
     { "type", 3 }, // 1 = int, 2 = double, 3 = string
     { "once", true }
@@ -221,6 +221,8 @@ public:
     static QVector<ScriptModelPreset> Presets();
 
     inline QString getExecute() const { return m_equation; }
+    /*! \brief Whether a reaction system is active (equilibrium model). Claude Generated. */
+    inline bool UsesSpeciation() const { return m_has_speciation; }
 
     virtual inline int InputParameterSize() const override { return m_input_size; }
     virtual inline QString GlobalParameterName(int i = 0) const override

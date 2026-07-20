@@ -27,6 +27,8 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonValue>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QCoreApplication>
 #include <QtTest/QtTest>
 
 #include <Eigen/Dense>
@@ -655,6 +657,119 @@ private slots:
     }
 
     // (3) legacy projects store the equation under the old "ChaiScript" key -> must still load.
+    // (13) The definition dialog derives the parameter declaration from the equation itself
+    // (ExprTkEngine::CollectSymbols). This guards that rule against every shipped preset: whatever a
+    // preset declares by hand must be exactly what the equation implies, otherwise the dialog and the
+    // preset would disagree the moment a user opens one. Claude Generated.
+    void testPresetsMatchDerivedParameters()
+    {
+        static const QRegularExpression inputRe(QStringLiteral("^[Xx](\\d+)$"));
+        const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+        QVERIFY(!presets.isEmpty());
+
+        for (const ScriptModelPreset& preset : presets) {
+            const QHash<QString, QJsonObject> elements = presetToElements(preset);
+            // Presets that drive the native speciation engine carry their stability constants outside
+            // the equation (spec_solve/spec_conc), so the equation cannot imply them.
+            if (!elements.value("Reactions")["value"].toString().trimmed().isEmpty())
+                continue;
+
+            // Rebuild the equation the way DefineModel does.
+            const QJsonObject lines = elements.value("Equation")["value"].toObject();
+            QStringList keys = lines.keys();
+            std::sort(keys.begin(), keys.end());
+            QStringList text;
+            for (const QString& k : keys)
+                text << lines[k].toString();
+
+            const QStringList declaredLocals
+                = elements.value("LocalParameterNames")["value"].toString().split("|", Qt::SkipEmptyParts);
+            const QStringList declaredGlobals
+                = elements.value("GlobalParameterNames")["value"].toString().split("|", Qt::SkipEmptyParts);
+
+            // Same rule the dialog applies: Xn are inputs, declared locals are local, rest is global.
+            int maxInput = 0;
+            QStringList globals;
+            const QStringList symbols = ExprTkEngine::CollectSymbols(text.join("\n"));
+            for (const QString& symbol : symbols) {
+                const QRegularExpressionMatch m = inputRe.match(symbol);
+                if (m.hasMatch()) {
+                    maxInput = qMax(maxInput, m.captured(1).toInt());
+                    continue;
+                }
+                if (declaredLocals.contains(symbol))
+                    continue;
+                if (!globals.contains(symbol))
+                    globals << symbol;
+            }
+
+            const QString where = QString("preset '%1'").arg(preset.name);
+
+            // Every declared local must really occur in the equation (otherwise: dead fit parameter).
+            for (const QString& local : declaredLocals) {
+                QVERIFY2(symbols.contains(local),
+                    qPrintable(QString("%1: local '%2' never appears in the equation").arg(where, local)));
+            }
+
+            QStringList sortedDerived = globals, sortedDeclared = declaredGlobals;
+            sortedDerived.sort();
+            sortedDeclared.sort();
+            QVERIFY2(sortedDerived == sortedDeclared,
+                qPrintable(QString("%1: derived globals [%2] != declared [%3]")
+                               .arg(where, sortedDerived.join(","), sortedDeclared.join(","))));
+
+            QCOMPARE(elements.value("GlobalParameterSize")["value"].toInt(), declaredGlobals.size());
+            QCOMPARE(elements.value("LocalParameterSize")["value"].toInt(), declaredLocals.size());
+            QVERIFY2(elements.value("InputSize")["value"].toInt() == maxInput,
+                qPrintable(QString("%1: declared InputSize %2, equation uses up to X%3")
+                               .arg(where)
+                               .arg(elements.value("InputSize")["value"].toInt())
+                               .arg(maxInput)));
+        }
+    }
+
+    // (14) Lifecycle of the definition dialog: its live preview builds a THROWAWAY ScriptModel on the
+    // real DataClass for every keystroke and drops it again, and cancelling the dialog discards a model
+    // that was never defined. Both share the project's DataClassPrivate, so a bad ownership assumption
+    // shows up as a crash on close/cancel rather than at the point of the mistake. Claude Generated.
+    void testThrowawayModelsDoNotDisturbTheData()
+    {
+        DataClass* data = makeData(2);
+        const int points = data->IndependentModel()->rowCount();
+        const double firstX = data->IndependentModel()->data(0, 0);
+
+        // (a) A model created and dropped WITHOUT ever being defined — the cancel path.
+        {
+            QSharedPointer<AbstractModel> discarded = CreateModel(SupraFit::ScriptModel, data);
+            QVERIFY(!discarded.isNull());
+        }
+        QCoreApplication::processEvents(); // CreateModel deletes via deleteLater
+
+        // (b) A run of defined-and-dropped models — the live-preview path.
+        for (int round = 0; round < 8; ++round) {
+            QSharedPointer<AbstractModel> preview = CreateModel(SupraFit::ScriptModel, data);
+            QVERIFY(!preview.isNull());
+            QVERIFY(preview->DefineModel(makeDefinition("A1*X1 + B1", 1, "A1", 1, "B1")));
+            preview->InitialGuess();
+            preview->Calculate();
+            QCoreApplication::processEvents();
+        }
+        QCoreApplication::processEvents();
+
+        // The shared data must be untouched, and still usable for the model that is finally kept.
+        QCOMPARE(data->IndependentModel()->rowCount(), points);
+        QCOMPARE(data->IndependentModel()->data(0, 0), firstX);
+
+        QSharedPointer<AbstractModel> kept = CreateModel(SupraFit::ScriptModel, data);
+        QVERIFY(!kept.isNull());
+        QVERIFY(kept->DefineModel(makeDefinition("A1*X1 + B1", 1, "A1", 1, "B1")));
+        kept->InitialGuess();
+        kept->Calculate();
+        QCOMPARE(kept->DataPoints(), points);
+        delete data;
+        QCoreApplication::processEvents();
+    }
+
     void testLegacyChaiScriptKey()
     {
         DataClass* data = makeData(1);

@@ -75,7 +75,7 @@ Comprehensive support for analytical chemistry techniques:
 
 ### Scripting Integration (user-defined models)
 - **scriptingengine.h**: backend interface — compile once, bind names to stable slots, `evaluate()`; `MakeScriptingEngine()` picks the backend from the model `Engine` field (default ExprTk)
-- **exprtkinterpreter.h**: `ExprTkEngine` (active default, fast slot binding) + the engine factory
+- **exprtkinterpreter.h**: `ExprTkEngine` (active default, fast slot binding) + the engine factory; `CollectSymbols()` enumerates an equation's free variables so the GUI can derive the parameter declaration — register the primitive library + `add_constants()` first, an unknown function makes the whole collection pass fail
 - **scriptmodel.cpp/h**: `ScriptModel` (id 100); equation under JSON key `Equation` (legacy `ChaiScript` still read); locals bound per series, real multi-series
 - **chaiinterpreter/pymodelinterpreter/dukmodelinterpreter**: optional backends (flags `_Models`/`_Python`/`Use_Duktape`); not yet ported to `ScriptingEngine` — see `roadmap/scriptmodel_performance.md`
 

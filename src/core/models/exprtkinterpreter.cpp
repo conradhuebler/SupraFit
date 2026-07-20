@@ -22,12 +22,89 @@
 #include "exprtkinterpreter.h"
 #include "scriptingengine.h"
 
+#include <QtCore/QRegularExpression>
+#include <QtCore/QSet>
+
+#include <algorithm>
+#include <deque>
+#include <limits>
+
 #ifdef _Models
 #include "chaiengine.h"
 #endif
 
 // Additional backends are wired here as they are ported to the ScriptingEngine interface
 // (guarded by _Models / Use_Duktape / _Python). ExprTk is always compiled. Claude Generated.
+
+QStringList ExprTkEngine::CollectSymbols(const QString& formula)
+{
+    // exprtk can enumerate the free variables of an expression without compiling it against a symbol
+    // table. That is what lets the dialog derive the parameter list from the equation instead of
+    // making the user declare it twice. Claude Generated.
+    // The collection pass PARSES the expression, so every function it may call has to be known —
+    // with an empty symbol table a single cubic_root() makes the whole collection fail and return
+    // nothing. Register the primitive library and the speciation hooks (they are never called here,
+    // only resolved) and the built-in constants, so pi & co. are not mistaken for parameters.
+    exprtk::symbol_table<double> table;
+    CubicFn cubic;
+    QuadraticFn quadratic;
+    SolveFn solve;
+    FreeFn freeConc;
+    ConcFn speciesConc;
+    table.add_function("cubic_root", cubic);
+    table.add_function("quadratic_root", quadratic);
+    table.add_function("spec_solve", solve);
+    table.add_function("spec_free", freeConc);
+    table.add_function("spec_conc", speciesConc);
+    table.add_constants();
+
+    std::deque<std::string> symbols;
+    if (!exprtk::collect_variables(formula.toStdString(), table, symbols))
+        return QStringList();
+
+    // Comments are stripped before anything is searched in the text: a name mentioned in a comment
+    // must not decide the spelling or the ordering of a real parameter.
+    QString code = formula;
+    code.replace(QRegularExpression(QStringLiteral("/\\*.*?\\*/"), QRegularExpression::DotMatchesEverythingOption),
+        QStringLiteral(" "));
+    code.replace(QRegularExpression(QStringLiteral("//[^\n]*")), QStringLiteral(" "));
+
+    // Script-local variables ("var t := …") are free variables to the collector but are NOT model
+    // parameters — they are scratch values the script itself defines. exprtk is case-insensitive, so
+    // the comparison is too.
+    QSet<QString> declared;
+    static const QRegularExpression varDecl(QStringLiteral("\\bvar\\s+([A-Za-z_][A-Za-z0-9_]*)"));
+    QRegularExpressionMatchIterator it = varDecl.globalMatch(code);
+    while (it.hasNext())
+        declared.insert(it.next().captured(1).toLower());
+
+    // exprtk hands the names back LOWER-CASED and alphabetically ordered. Recover the spelling that
+    // actually occurs in the equation — that is the identifier the user reads and the model binds —
+    // and order by first appearance so the derived parameter order follows the reading order.
+    struct Symbol {
+        QString name;
+        qsizetype position;
+    };
+    QVector<Symbol> found;
+    for (const std::string& s : symbols) {
+        const QString lowered = QString::fromStdString(s);
+        if (declared.contains(lowered))
+            continue;
+        const QRegularExpression occurrence(QStringLiteral("\\b") + QRegularExpression::escape(lowered)
+                + QStringLiteral("\\b"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = occurrence.match(code);
+        found.push_back({ match.hasMatch() ? match.captured(0) : lowered,
+            match.hasMatch() ? match.capturedStart(0) : std::numeric_limits<qsizetype>::max() });
+    }
+    std::stable_sort(found.begin(), found.end(),
+        [](const Symbol& a, const Symbol& b) { return a.position < b.position; });
+
+    QStringList names;
+    for (const Symbol& symbol : found)
+        names << symbol.name;
+    return names;
+}
 
 QString ScriptBackendName(ScriptBackend backend)
 {
