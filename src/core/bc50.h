@@ -36,6 +36,34 @@
 
 namespace BC50 {
 
+/*! \brief Host-guest systems for which a BC50 is implemented. Claude Generated (2026). */
+enum class System {
+    Unsupported, //!< no BC50 definition available for this reaction system
+    ItoI, //!< AB
+    ItoII, //!< AB, AB2
+    IItoI, //!< A2B, AB
+    IItoII //!< A2B, AB, AB2
+};
+
+/*! \brief Classify a reaction-defined system by its stoichiometry (components x species).
+ *
+ * The reaction-driven `*_any` models carry an arbitrary system, but BC50 is only defined for the
+ * four host-guest patterns above. Anything else — three or more components, self-aggregation,
+ * higher stoichiometries — returns Unsupported so the caller can omit the value instead of
+ * reporting a wrong one. Claude Generated (2026). */
+System Classify(const Eigen::MatrixXi& stoich);
+
+/*! \brief BC50 for a reaction-defined system, or a negative value when unsupported.
+ *
+ * \param stoich components x species, as produced by ReactionParser/SpeciationEngine.
+ * \param lgBeta CUMULATIVE lg beta per species, in the column order of \p stoich — the convention
+ *        the `*_any` models use for their global parameters. The fixed-stoichiometry entry points
+ *        below take STEPWISE constants, so this converts. Claude Generated (2026). */
+qreal FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta);
+
+/*! \brief Formatted BC50 block for a reaction-defined system; empty when unsupported. CG (2026). */
+QString Format_FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta);
+
 namespace ItoI {
     qreal BC50(const qreal logK11);
     QString Format_BC50(const qreal logK11);

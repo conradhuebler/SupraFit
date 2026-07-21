@@ -213,7 +213,7 @@ QSharedPointer<AbstractModel> fl_any_Model::Clone(bool statistics)
 QString fl_any_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
+    result += BC50::Format_FromSpeciation(m_speciation.Stoichiometry(), GlobalParameterVector());
 
     return result;
 }
@@ -246,12 +246,12 @@ QString fl_any_Model::ParameterComment(int parameter) const
 
 QString fl_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 QString fl_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 #include "fl_any_Model.moc"

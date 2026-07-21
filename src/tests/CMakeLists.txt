@@ -1099,3 +1099,28 @@ if(UNIX)
 endif()
 
 add_test(NAME BC50AccuracyTest COMMAND test_bc50_accuracy)
+
+# BC50 dispatch for reaction-defined (*_any) systems (Claude Generated 2026) - the any-models used
+# to report the 1:1 formula whatever system they carried.
+add_executable(test_bc50_speciation
+    test_bc50_speciation.cpp
+)
+
+target_link_libraries(test_bc50_speciation
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_speciation ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_speciation pthread dl)
+endif()
+
+add_test(NAME BC50SpeciationTest COMMAND test_bc50_speciation)

@@ -328,7 +328,7 @@ QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
 QString nmr_any_Model::ModelInfo() const
 {
     QString result = AbstractNMRModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
+    result += BC50::Format_FromSpeciation(m_speciation.Stoichiometry(), GlobalParameterVector());
 
     return result;
 }
@@ -361,12 +361,12 @@ QString nmr_any_Model::ParameterComment(int parameter) const
 
 QString nmr_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 QString nmr_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 #include "nmr_any_Model.moc"

@@ -264,7 +264,7 @@ QString itc_any_Model::AdditionalOutput() const
 QString itc_any_Model::ModelInfo() const
 {
     QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
+    result += BC50::Format_FromSpeciation(m_speciation.Stoichiometry(), GlobalParameterVector());
     result += CitationBlock();
 
     return result;
@@ -292,12 +292,12 @@ QString itc_any_Model::ParameterComment(int parameter) const
 
 QString itc_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 QString itc_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-    return prependBC50(AbstractItcModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
+    return prependBC50(AbstractItcModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_Speciation(m_speciation.Stoichiometry(), GlobalParameterVector(), object));
 }
 
 #include "itc_any_Model.moc"

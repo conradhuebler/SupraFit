@@ -245,6 +245,55 @@ QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonO
     return result;
 }
 
+QString MonteCarlo2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object)
+{
+    const qreal nominal = BC50::FromSpeciation(stoich, lgBeta);
+    if (nominal < 0)
+        return QString(); // no BC50 defined for this reaction system
+
+    const qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
+
+    QList<qreal> s;
+    for (const QVector<qreal>& global : RawGlobalParameters(object)) {
+        const qreal value = BC50::FromSpeciation(stoich, global);
+        if (value > 0)
+            s << value * 1e6;
+    }
+    if (s.isEmpty())
+        return QString();
+
+    std::sort(s.begin(), s.end());
+    const SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
+    const qreal BC50 = nominal * 1e6;
+
+    QString result;
+    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf.upper - BC50).arg(BC50 - conf.lower).arg(QChar(956));
+    result += QString("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));
+    return result;
+}
+
+QString GridSearch2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object)
+{
+    const qreal nominal = BC50::FromSpeciation(stoich, lgBeta);
+    if (nominal < 0)
+        return QString();
+
+    const qreal BC50 = nominal * 1e6;
+    qreal lower = BC50, upper = BC50;
+    for (const QVector<qreal>& global : RawGlobalParameters(object)) {
+        const qreal value = BC50::FromSpeciation(stoich, global);
+        if (value <= 0)
+            continue;
+        lower = qMin(value * 1e6, lower);
+        upper = qMax(value * 1e6, upper);
+    }
+
+    QString result;
+    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(upper - BC50).arg(BC50 - lower).arg(QChar(956));
+    result += QString("[%1 - %2] %3M</p>").arg(lower).arg(upper).arg(QChar(956));
+    return result;
+}
+
 QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object)
 {
     QString result;

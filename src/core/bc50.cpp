@@ -77,7 +77,93 @@ namespace {
         return SimpsonIntegrate(0, 1, substituted, parameter, 1.0 / SaturationPanels());
     }
 
+    /*! \brief Column of the species with stoichiometry (a, b), or -1. */
+    int FindSpecies(const Eigen::MatrixXi& stoich, int a, int b)
+    {
+        for (int j = 0; j < stoich.cols(); ++j)
+            if (stoich(0, j) == a && stoich(1, j) == b)
+                return j;
+        return -1;
+    }
+
 } // namespace
+
+System Classify(const Eigen::MatrixXi& stoich)
+{
+    if (stoich.rows() != 2 || stoich.cols() < 1 || stoich.cols() > 3)
+        return System::Unsupported;
+
+    const int i11 = FindSpecies(stoich, 1, 1);
+    const int i12 = FindSpecies(stoich, 1, 2);
+    const int i21 = FindSpecies(stoich, 2, 1);
+
+    /* Every species must be one of the three recognised ones - a system carrying anything else
+     * (self-aggregation A2, a 2:2 complex, ...) has no implemented BC50. The 1:1 complex is part
+     * of all four patterns. */
+    const int recognised = (i11 >= 0) + (i12 >= 0) + (i21 >= 0);
+    if (i11 < 0 || recognised != stoich.cols())
+        return System::Unsupported;
+
+    if (i12 >= 0 && i21 >= 0)
+        return System::IItoII;
+    if (i12 >= 0)
+        return System::ItoII;
+    if (i21 >= 0)
+        return System::IItoI;
+    return System::ItoI;
+}
+
+qreal FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta)
+{
+    const System system = Classify(stoich);
+    if (system == System::Unsupported || lgBeta.size() != stoich.cols())
+        return -1;
+
+    /* The fixed-stoichiometry entry points take STEPWISE constants (they rebuild the cumulative
+     * beta as 10^(lgK11 + lgK12)), while the reaction-driven models carry CUMULATIVE lg beta. */
+    const qreal lgB11 = lgBeta[FindSpecies(stoich, 1, 1)];
+    const qreal lgK12 = (FindSpecies(stoich, 1, 2) >= 0) ? lgBeta[FindSpecies(stoich, 1, 2)] - lgB11 : 0.0;
+    const qreal lgK21 = (FindSpecies(stoich, 2, 1) >= 0) ? lgBeta[FindSpecies(stoich, 2, 1)] - lgB11 : 0.0;
+
+    switch (system) {
+    case System::ItoI:
+        return ItoI::BC50(lgB11);
+    case System::ItoII:
+        return ItoII::BC50(lgB11, lgK12);
+    case System::IItoI:
+        return IItoI::BC50(lgK21, lgB11);
+    case System::IItoII:
+        return IItoII::BC50_A0(lgK21, lgB11, lgK12);
+    case System::Unsupported:
+        break;
+    }
+    return -1;
+}
+
+QString Format_FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta)
+{
+    const System system = Classify(stoich);
+    if (system == System::Unsupported || lgBeta.size() != stoich.cols())
+        return QString();
+
+    const qreal lgB11 = lgBeta[FindSpecies(stoich, 1, 1)];
+    const qreal lgK12 = (FindSpecies(stoich, 1, 2) >= 0) ? lgBeta[FindSpecies(stoich, 1, 2)] - lgB11 : 0.0;
+    const qreal lgK21 = (FindSpecies(stoich, 2, 1) >= 0) ? lgBeta[FindSpecies(stoich, 2, 1)] - lgB11 : 0.0;
+
+    switch (system) {
+    case System::ItoI:
+        return ItoI::Format_BC50(lgB11);
+    case System::ItoII:
+        return ItoII::Format_BC50(lgB11, lgK12);
+    case System::IItoI:
+        return IItoI::Format_BC50(lgK21, lgB11);
+    case System::IItoII:
+        return IItoII::Format_BC50(lgK21, lgB11, lgK12);
+    case System::Unsupported:
+        break;
+    }
+    return QString();
+}
 
 namespace ItoI {
     qreal BC50(const qreal logK11) { return 1 / qPow(10, logK11); }

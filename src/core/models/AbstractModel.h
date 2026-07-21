@@ -618,6 +618,20 @@ public:
      */
     virtual inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
 
+    /*! \brief All global parameters as a plain vector.
+     *
+     * For the reaction-defined `*_any` models these are the cumulative lg beta, one per species,
+     * in the column order of the speciation stoichiometry matrix — which is what the BC50
+     * dispatcher expects. Claude Generated (2026). */
+    inline QVector<qreal> GlobalParameterVector() const
+    {
+        QVector<qreal> values;
+        values.reserve(GlobalParameterSize());
+        for (int i = 0; i < GlobalParameterSize(); ++i)
+            values << GlobalParameter(i);
+        return values;
+    }
+
     /*! \brief return the table of local parameter values, overloaded function
      */
     virtual inline QPointer<DataTable> LocalParameter() const { return LocalTable(); }
