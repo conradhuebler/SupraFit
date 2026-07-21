@@ -210,8 +210,17 @@ Context: the quadrature bug masked how these integrals behave at full saturation
   these should be (finite upper saturation? a different definition?) or stop reporting them.
 - **`ItoII::Format_BC50` same family, but integrable** (`B ~ (1-x)^-0.5`), so the integrals exist;
   they shifted 0.3-1.0 %. The open endpoint rule only reaches ~sqrt(h) accuracy there.
-- **Restore full Simpson order for the BC50 integrals** via the substitution x = 1 - t², which
-  absorbs the sqrt singularity. Would make the open-endpoint fallback unnecessary for these.
+- ✅ **Substitution x = 1 - t² implemented** (2026-07-21, `BC50::IntegrateSaturation`, all 27 call
+  sites). Relative error 1e-8 -> 1e-13 against an independent reference. **Open lever:** the
+  substituted integrand hits machine precision already at delta = 1e-3 (10x fewer panels) and
+  6e-10 at 1e-2 (100x fewer, still 80x better than the old direct integration). Default left at
+  1e-4 because relaxing it changes numbers — but BC50 runs once per resampled model, so this is
+  the cheapest remaining speedup of the Monte-Carlo confidence text.
+- 🔥 **`IItoII::Format_BC50` hand-rolls its own quadrature** (`bc50.cpp`, the `increments` loop)
+  and still carries the overlap defect fixed in `SimpsonIntegrate` plus an OpenMP pessimisation.
+  Not ported because its cross-terms (A2B, AB2, A0, B0) are an approximation of their own — they
+  multiply Simpson-weighted sums rather than integrating the product — which needs a modelling
+  decision first.
 - **Give the 12 `x/(1-x)` integrands their analytic endpoint limits** instead of relying on the
   non-finite fallback (`ItoII::BC50_Y` -> 0, `ItoII::ABFunction` -> b11/(2·b12), `AFunction` -> 0).
 - **`IItoII::BC50_A0_X` runs a 150-iteration fixed-point loop per evaluation** with no convergence
