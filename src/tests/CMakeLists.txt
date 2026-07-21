@@ -1074,3 +1074,28 @@ if(UNIX)
 endif()
 
 add_test(NAME QuadratureTest COMMAND test_quadrature)
+
+# BC50 integration accuracy at the configurable density (Claude Generated 2026) - pins what the
+# BC50IntegrationPoints setting actually buys, against an independent high-accuracy reference.
+add_executable(test_bc50_accuracy
+    test_bc50_accuracy.cpp
+)
+
+target_link_libraries(test_bc50_accuracy
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_accuracy ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_accuracy pthread dl)
+endif()
+
+add_test(NAME BC50AccuracyTest COMMAND test_bc50_accuracy)

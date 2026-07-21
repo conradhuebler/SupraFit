@@ -96,6 +96,7 @@ const QVector<SettingDef>& registry()
         v << Def("EntropyBins", 30, Kind::Int).group(gCalc).label(QObject::tr("# bins for Shannon Entropy Calculation")).range(10, 100000);
         v << Def("OverwriteBins", false, Kind::Bool).group(gCalc).label(QObject::tr("Overwrite stored bin number"));
         v << Def("FullShannon", false, Kind::Bool).group(gCalc).label(QObject::tr("Calculate full Shannon entropy!")).tip(QObject::tr("Calculate Shannon entropy including the discretisation term. Not recommended, as the ordering of appropriate parameters and models is reversed."));
+        v << Def("BC50IntegrationPoints", 10000, Kind::Int).group(gCalc).label(QObject::tr("# integration points for BC50")).range(20, 1000000).tip(QObject::tr("Number of Simpson panels for the BC50 integration. The substitution x = 1-t² makes the integrand smooth, so few points already suffice: the relative error stays below 1e-6 at 100 points, 1e-9 at 1000 and 1e-12 at 10000."));
 
         // ---- Chart Settings ----
         v << Def("MaxSeriesPoints", 200, Kind::Int).group(gChart).note(QObject::tr("General Chart Settings:")).label(QObject::tr("Maximal number of visualised points per series.")).range(0, 2147483647).resetIfZero();
