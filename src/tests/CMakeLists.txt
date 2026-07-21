@@ -1049,3 +1049,28 @@ if(BUILD_GUI)
         target_link_libraries(benchmark_mcwidget pthread dl)
     endif()
 endif()
+
+# Quadrature regression tests (Claude Generated 2026) - pins SimpsonIntegrate against analytically
+# known integrals, including the endpoint singularities the BC50 integrands carry.
+add_executable(test_quadrature
+    test_quadrature.cpp
+)
+
+target_link_libraries(test_quadrature
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_quadrature ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_quadrature pthread dl)
+endif()
+
+add_test(NAME QuadratureTest COMMAND test_quadrature)

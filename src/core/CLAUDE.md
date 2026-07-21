@@ -20,6 +20,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 
 ### Mathematical Operations
 - **libmath.cpp/h**: Mathematical utilities and algorithms
+  - `SimpsonIntegrate`: exact composite Simpson; panels whose endpoint is non-finite use an open rule (the BC50 integrands are defined on the half-open [0,1) — alpha = x/(1-x) diverges at full saturation). Pinned by `test_quadrature`; do not "simplify" the endpoint handling away.
 - **minimizer.cpp/h**: Optimization algorithms for parameter fitting
 - **equil.cpp/h**: Equilibrium calculations for supramolecular systems
 - **concentrationalpolynomial.cpp/h**: Concentration-based polynomial calculations
