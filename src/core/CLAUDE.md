@@ -218,15 +218,27 @@ Context: the quadrature bug masked how these integrals behave at full saturation
   check on exit — expensive (it is called ~10⁴× per BC50) and silently returns the last iterate.
 - ✅ **Literature cross-check RESOLVED (2026-07-21).** Recomputing the operator's Jan-2016 table
   (`Zusammenfassungen/Januar 2016`) with today's code reproduces his independent octave reference
-  on **every** row (1:1, 1:1/2:1, and both 1:1/1:2 definitions). The 2016 hypothesis — that the
-  numerical integration causes the discrepancies — does not hold: the 1:1 rows use a closed form
-  with no integration at all, and their mismatch is just publication ROUNDING (lit. 940 µM implies
-  lg beta = 3.0269, published rounded as 3.03, which recomputes to 933.25 µM; same for 2.3796 ->
-  2.380). The "deutlich kleinere" 1:1/1:2 values are the alternative definition
-  `BC50 = int [A] dx` vs. Roelens `1/BC50 = 2 int 1/BC50 dx`, differing by 1.056-1.097x — a
-  DEFINITIONAL difference the report itself already derived, not numerics. Roelens matches the
-  literature within its error bars. Note: the table's last cell `1.8277e-4` is a factor-10 typo,
-  the mantissa matches to 5 digits (correct: 1.8277e-3).
+  on **every** row; an independent high-accuracy Python integration (substitution x = 1-t², which
+  removes the endpoint singularity entirely) agrees to 6-7 digits. So SupraFit's numerics were and
+  are sound. Findings, quantified — note the published constants limit what is testable at all:
+  - The **"deutlich kleineren" 1:1/1:2 values are a DEFINITIONAL difference**, not numerics:
+    `BC50 = int [A] dx` vs. Roelens `1/BC50 = 2 int 1/BC50 dx`, ratio 1.056-1.097. The report
+    itself already derives this.
+  - **A systematic calculator error at the 0.5-0.9 % level is EXCLUDED.** For 1:1, BC50 = 1/beta11
+    is an exact identity, so the published pairs can be inverted: 940 µM -> lg beta 3.02687 (rounds
+    to the published 3.03) and 4173 µM -> 2.37955 (rounds to 2.380). Both round-trip. The 3-decimal
+    row is the discriminating one: a +0.72 % bias equals 0.0031 in lg beta, 6x its rounding
+    half-width, yet its inverted value differs by only 0.00045.
+  - **Where the constants are precise enough to test, a real ~0.1 % difference remains**: the
+    8.3424/16.911 row (4-5 decimals, rounding only ±0.047 %) deviates by -0.080 %. All larger
+    apparent deviations sit inside the ±1.15 % that 2-decimal lg beta permits and are therefore
+    uninformative.
+  - Do NOT argue from the published BC50 error bars (an earlier version of this note did): they
+    propagate the beta uncertainty, they say nothing about whether two calculators agree on
+    identical input.
+  - Side observation: row `3.03 ± 0.01 / 940 ± 3 µM` is internally inconsistent — ±0.01 in lg beta
+    implies ±21.6 µM, not ±3. The 2.380/4173 row propagates correctly (±28.8 vs ±28 published).
+  - The table's last cell `1.8277e-4` is a factor-10 typo; the mantissa matches to 5 digits.
 - **Which BC50 definition should be reported** is therefore still open, and it is a scientific
   choice, not a bug: `ItoII::BC50` implements Roelens (matches literature), while
   `Format_BC50`'s BC(A)₀ is the alternative definition. Both are shown side by side today.
