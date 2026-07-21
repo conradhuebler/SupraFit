@@ -156,6 +156,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-21: ✅ **MC results widget 15x faster** — the cost was never the chart/render chain (30 ms) but `WriteConfidence` → BC50 integration; see AIChangelog. Measure this path with `benchmark_mcwidget` (offscreen, `src/tests/`), never by feel.
 - 2026-07-20: ✅ **Scripted-model form derives its parameters** — `PrepareWidget::DeriveDefinition()` reads inputs/globals/counts out of the equation (`ExprTkEngine::CollectSymbols`); only "Names of local parameters" stays user-owned. The other four fields are read-only *(derived)*.
 - 2026-07-20: ✅ **`FieldValue(name)` is the single reader for definition fields** — the model-definition tab filters out every `"once"` descriptor, so reading the visible boxes reported the model's own symbols as undefined (ERR238). Never scan `m_stored_objects` for a field value.
 - 2026-07-20: ✅ **Dialog close crash fixed** — `~PrepareWidget` must block the boxes' signals before deleting the Highlighter; `~QSyntaxHighlighter` re-enters the form via `contentsChanged` and would call back into the half-destroyed object.

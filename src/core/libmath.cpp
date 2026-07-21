@@ -323,8 +323,12 @@ qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, cons
     omp_set_num_threads(qApp->instance()->property("threads").toInt());
 #endif
 
-#pragma omp parallel for reduction(+ \
-                                   : integ)
+    /* Deliberately serial: the integrand is a std::function call over ~10^4 increments, so a
+     * parallel region costs more in fork/join and reduction than the arithmetic it distributes.
+     * Post-processing calls this once per resampled model (2000x for a Monte-Carlo run), where the
+     * repeated parallel regions dominated the whole results-widget build. Serial summation is also
+     * deterministic, unlike a reduction over a nondeterministic thread order.
+     * Claude Generated (2026, MC results-widget performance fix). */
     for (int i = 0; i < increments - 1; ++i) {
         double x = lower + i / double(increments);
         qreal b = x + delta;

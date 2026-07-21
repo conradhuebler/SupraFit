@@ -39,6 +39,8 @@
 #include <iostream>
 #include <random>
 
+#include "src/core/phasetiming.h"
+
 #include "montecarlostatistics.h"
 
 MonteCarloThread::MonteCarloThread()
@@ -186,14 +188,20 @@ MonteCarloStatistics::~MonteCarloStatistics()
 bool MonteCarloStatistics::Run()
 {
     m_models.clear();
+    // Runs on the CALLING thread and allocates ~3 DataTables per step before the first worker starts,
+    // so it is wall time the progress bar never covers. Claude Generated.
     QVector<QPointer<MonteCarloBatch>> threads = GenerateData();
+    PhaseTiming::Mark(QStringLiteral("generate resampled data tables (single-threaded)"));
+
     while (m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
 
     m_multicore_time = QDateTime::currentMSecsSinceEpoch() - m_t0;
     // QCoreApplication::processEvents();
+    PhaseTiming::Mark(QStringLiteral("fit all resampled sets (threaded, progress bar)"));
 
     Collect(threads);
+    PhaseTiming::Mark(QStringLiteral("collect results + free data tables"));
     if (m_models.size() == 0)
         return false;
 
@@ -231,6 +239,7 @@ bool MonteCarloStatistics::Run()
         data["y"] = ToolSet::DoubleVec2String(y);
         m_results[i] = data;
     }
+    PhaseTiming::Mark(QStringLiteral("evaluate parameters (histograms, confidence)"));
 
     return true;
 }

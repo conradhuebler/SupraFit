@@ -101,6 +101,8 @@
 #include <iostream>
 #include <random>
 
+#include "src/core/phasetiming.h"
+
 #include "modelwidget.h"
 
 class CPBar : public QWidget {
@@ -603,6 +605,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        // Phase timing starts at the click, not inside the job: the table generation that precedes
+        // the first worker thread is part of what the user waits for. Claude Generated.
+        PhaseTiming::Begin(QString("%1 on %2")
+                               .arg(SupraFit::Method2Name(AccessCI(job, "Method").toInt()))
+                               .arg(m_model->Name()));
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
@@ -614,6 +621,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         }
 
         QApplication::restoreOverrideCursor();
+        // The chart is on screen now — this is the end of what the user perceives as "running".
+        PhaseTiming::Mark(QStringLiteral("render results widget + chart"));
+        PhaseTiming::End();
     });
 
     //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);

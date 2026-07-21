@@ -1028,3 +1028,24 @@ endif()
 if(UNIX)
     target_link_libraries(benchmark_dimer_flat pthread dl)
 endif()
+
+# Offscreen render-time benchmark for the Monte-Carlo results widget (Claude Generated 2026) -
+# manual perf tool, not a ctest. First test target linking the GUI layer; it constructs
+# ResultsWidget/MCResultsWidget under PhaseTiming to split the widget-build cost.
+if(BUILD_GUI)
+    add_executable(benchmark_mcwidget benchmark_mcwidget.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h) # Q_OBJECT; its moc output otherwise only exists in the suprafit executable target
+    target_link_libraries(benchmark_mcwidget
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(benchmark_mcwidget PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    )
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(benchmark_mcwidget ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(benchmark_mcwidget pthread dl)
+    endif()
+endif()

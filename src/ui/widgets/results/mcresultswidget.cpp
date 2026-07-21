@@ -54,6 +54,8 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
 
+#include "src/core/phasetiming.h"
+
 #include "mcresultswidget.h"
 
 MCResultsWidget::MCResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models)
@@ -89,6 +91,7 @@ void MCResultsWidget::setUi()
     layout->addWidget(tabs, 0, 0, 1, 7);
 
     m_histgram = MakeHistogram();
+    PhaseTiming::Mark(QStringLiteral("    mc: MakeHistogram"));
     //m_box = MakeBoxPlot();
     if (has_histogram)
         tabs->addTab(m_histgram, tr("Histogram"));
@@ -98,10 +101,12 @@ void MCResultsWidget::setUi()
     if (m_data["controller"].toObject().contains("raw")) {
         m_scatter = MakeScatter();
         tabs->addTab(m_scatter, tr("Scatter Plot"));
+        PhaseTiming::Mark(QStringLiteral("    mc: MakeScatter"));
     }
     if (m_data["controller"].toObject().contains("chart")) {
         m_series_chart = MakeSeriesChart();
         tabs->addTab(m_series_chart, tr("Series Chart"));
+        PhaseTiming::Mark(QStringLiteral("    mc: MakeSeriesChart"));
     }
 
     m_save = new QPushButton(tr("Export Results"));
