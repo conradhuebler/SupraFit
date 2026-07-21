@@ -198,6 +198,29 @@ model->Calculate();
 
 ## Instructions Block (Operator-Defined Tasks and Vision)
 
+### BC50 open items (opened 2026-07-21, after the `SimpsonIntegrate` fix `164505f7`)
+
+Context: the quadrature bug masked how these integrals behave at full saturation
+(`alpha = x/(1-x)`, x -> 1). `BC50` itself is sound; the breakdown quantities are not.
+
+- 🔥 **`IItoI::Format_BC50` reports divergent integrals as numbers.** In `ABPair` the free host `A`
+  is x-INDEPENDENT, so `B = alpha/const ~ 1/(1-x)`: `int B dx` diverges logarithmically. BC(B)₀,
+  BC(AB)₀, BC(A2B)₀, BC(A0)₀, BC(B0)₀ are therefore set purely by where the quadrature truncates —
+  all five moved by the identical factor 1.2738 (+27.4 %) when the tiling was fixed. Decide what
+  these should be (finite upper saturation? a different definition?) or stop reporting them.
+- **`ItoII::Format_BC50` same family, but integrable** (`B ~ (1-x)^-0.5`), so the integrals exist;
+  they shifted 0.3-1.0 %. The open endpoint rule only reaches ~sqrt(h) accuracy there.
+- **Restore full Simpson order for the BC50 integrals** via the substitution x = 1 - t², which
+  absorbs the sqrt singularity. Would make the open-endpoint fallback unnecessary for these.
+- **Give the 12 `x/(1-x)` integrands their analytic endpoint limits** instead of relying on the
+  non-finite fallback (`ItoII::BC50_Y` -> 0, `ItoII::ABFunction` -> b11/(2·b12), `AFunction` -> 0).
+- **`IItoII::BC50_A0_X` runs a 150-iteration fixed-point loop per evaluation** with no convergence
+  check on exit — expensive (it is called ~10⁴× per BC50) and silently returns the last iterate.
+- **Cross-check BC50 against the literature values** that never matched (operator, ~2016). The
+  quadrature is now trustworthy to ~1e-4, so a remaining disagreement is a real modelling
+  difference, not numerics. Verified change on the operator's reference system: 149.283 ->
+  149.301 µM (+1.2e-4).
+
 ### Future Tasks (Restructured 2025-01-28)
 
 #### **✅ COMPLETED TASKS**:
