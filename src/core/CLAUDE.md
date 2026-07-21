@@ -216,10 +216,20 @@ Context: the quadrature bug masked how these integrals behave at full saturation
   non-finite fallback (`ItoII::BC50_Y` -> 0, `ItoII::ABFunction` -> b11/(2·b12), `AFunction` -> 0).
 - **`IItoII::BC50_A0_X` runs a 150-iteration fixed-point loop per evaluation** with no convergence
   check on exit — expensive (it is called ~10⁴× per BC50) and silently returns the last iterate.
-- **Cross-check BC50 against the literature values** that never matched (operator, ~2016). The
-  quadrature is now trustworthy to ~1e-4, so a remaining disagreement is a real modelling
-  difference, not numerics. Verified change on the operator's reference system: 149.283 ->
-  149.301 µM (+1.2e-4).
+- ✅ **Literature cross-check RESOLVED (2026-07-21).** Recomputing the operator's Jan-2016 table
+  (`Zusammenfassungen/Januar 2016`) with today's code reproduces his independent octave reference
+  on **every** row (1:1, 1:1/2:1, and both 1:1/1:2 definitions). The 2016 hypothesis — that the
+  numerical integration causes the discrepancies — does not hold: the 1:1 rows use a closed form
+  with no integration at all, and their mismatch is just publication ROUNDING (lit. 940 µM implies
+  lg beta = 3.0269, published rounded as 3.03, which recomputes to 933.25 µM; same for 2.3796 ->
+  2.380). The "deutlich kleinere" 1:1/1:2 values are the alternative definition
+  `BC50 = int [A] dx` vs. Roelens `1/BC50 = 2 int 1/BC50 dx`, differing by 1.056-1.097x — a
+  DEFINITIONAL difference the report itself already derived, not numerics. Roelens matches the
+  literature within its error bars. Note: the table's last cell `1.8277e-4` is a factor-10 typo,
+  the mantissa matches to 5 digits (correct: 1.8277e-3).
+- **Which BC50 definition should be reported** is therefore still open, and it is a scientific
+  choice, not a bug: `ItoII::BC50` implements Roelens (matches literature), while
+  `Format_BC50`'s BC(A)₀ is the alternative definition. Both are shown side by side today.
 
 ### Future Tasks (Restructured 2025-01-28)
 
