@@ -251,6 +251,16 @@ Context: the quadrature bug masked how these integrals behave at full saturation
 - **Which BC50 definition should be reported** is therefore still open, and it is a scientific
   choice, not a bug: `ItoII::BC50` implements Roelens (matches literature), while
   `Format_BC50`'s BC(A)₀ is the alternative definition. Both are shown side by side today.
+- ✅ **`*_any` models dispatch on their stoichiometry** (2026-07-21, `BC50::Classify` /
+  `FromSpeciation`); they used to report the 1:1 formula regardless, up to 273 % wrong.
+- **A general BC50 over the speciation is feasible** — the construction behind the hardcoded
+  formulas is stoichiometry-independent and was derived + verified numerically: x is the bound
+  fraction of the host (α = x/(1-x) = bound/free host), the seemingly arbitrary
+  `A = 1/(β11+2β12·B)` is exactly the condition *50 % of the guest is bound*, and BC50(x) = the
+  total host concentration. Only the free concentrations and the stoichiometry matrix are needed,
+  both of which `SpeciationEngine` provides — so a 2-component version is a 2x2 solve per
+  quadrature point. **Blocked on a definition for ≥3 components:** "50 % of the guest" needs a
+  designated receptor/substrate pair and a rule for the remaining components.
 
 ### Future Tasks (Restructured 2025-01-28)
 
