@@ -253,6 +253,13 @@ Context: the quadrature bug masked how these integrals behave at full saturation
   `Format_BC50`'s BC(A)₀ is the alternative definition. Both are shown side by side today.
 - ✅ **`*_any` models dispatch on their stoichiometry** (2026-07-21, `BC50::Classify` /
   `FromSpeciation`); they used to report the 1:1 formula regardless, up to 273 % wrong.
+- ✅ **BC50 unified onto one path** (2026-07-21) — every titration model returns a
+  `BC50::ModelSystem` via `BC50System()`; the three titration base classes append BC50 once. The 8
+  `Statistic::*BC50_{1,1_2,2_1,2_2}` functions and the per-model overrides are gone (−437 lines).
+  Fixed models' output is byte-identical (golden-verified); `BC50ModelDispatchTest` pins the
+  per-model mapping. To add BC50 to a new model, override `BC50System()` — do not add a formula
+  call. Three intended behaviour changes: grid-search intervals now correct (old `qMin`-both-bounds
+  bug), itc_1_2/2_1/2_2 gain grid-search BC50, IItoII detailed output regains its raw-value list.
 - **A general BC50 over the speciation is feasible** — the construction behind the hardcoded
   formulas is stoichiometry-independent and was derived + verified numerically: x is the bound
   fraction of the host (α = x/(1-x) = bound/free host), the seemingly arbitrary

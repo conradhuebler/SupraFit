@@ -26,11 +26,6 @@
 namespace Statistic {
 
 QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
-QString MonteCarlo2BC50_1(const qreal logK11, const QJsonObject& object);
-QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
-QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
-QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
-
 /*! \brief Monte-Carlo BC50 for a reaction-defined system, dispatched on its stoichiometry.
  *
  * The `*_any` models carry their equilibrium system in a stoichiometry matrix rather than in the
@@ -42,11 +37,6 @@ QString MonteCarlo2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<
 
 QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
 QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, int index, qreal H = 0);
-QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object);
-QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
-QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
-QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
-
 /*! \brief Grid-search BC50 for a reaction-defined system. See MonteCarlo2BC50_Speciation. CG (2026). */
 QString GridSearch2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object);
 

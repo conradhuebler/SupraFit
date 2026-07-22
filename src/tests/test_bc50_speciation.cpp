@@ -108,6 +108,18 @@ private slots:
         QCOMPARE(BC50::FromSpeciation(s, { 4.0 }), BC50::ItoI::BC50(4.0));
     }
 
+    void matchesIItoII()
+    {
+        const double lgK21 = 2.5, lgK11 = 4.0, lgK12 = 3.0;
+        // Species AB(1,1), A2B(2,1), AB2(1,2), cumulative lg beta.
+        const QVector<qreal> lgBeta = { lgK11, lgK11 + lgK21, lgK11 + lgK12 };
+        const Eigen::MatrixXi s = stoich({ { 1, 1 }, { 2, 1 }, { 1, 2 } });
+
+        QCOMPARE(BC50::Classify(s), BC50::System::IItoII);
+        QVERIFY(std::abs(BC50::FromSpeciation(s, lgBeta) - BC50::IItoII::BC50_A0(lgK21, lgK11, lgK12))
+            / BC50::IItoII::BC50_A0(lgK21, lgK11, lgK12) < 1e-12);
+    }
+
     /*! The species order in a reaction system is whatever the user typed, so the dispatcher must
      *  key on the stoichiometry, not on the column index. */
     void isIndependentOfSpeciesOrder()

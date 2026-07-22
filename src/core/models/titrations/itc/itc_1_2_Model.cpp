@@ -280,27 +280,13 @@ QString itc_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString itc_ItoII_Model::ModelInfo() const
+BC50::ModelSystem itc_ItoII_Model::BC50System() const
 {
-    QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    /*
-    const QJsonObject& object = QJsonObject();
-
-    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-    result += "<p>Reaction: A + B &#8652; AB</p>";
-    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
-    result += "<p>Reaction: AB + B &#8652; AB<sub>2</sub></p>";
-    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
-    */
-    return result;
-}
-
-QString itc_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
 #include "itc_1_2_Model.moc"

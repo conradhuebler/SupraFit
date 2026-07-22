@@ -1124,3 +1124,28 @@ if(UNIX)
 endif()
 
 add_test(NAME BC50SpeciationTest COMMAND test_bc50_speciation)
+
+# Per-model BC50 dispatch (Claude Generated 2026) - each model's BC50System() must reproduce the
+# value its old hardcoded per-stoichiometry call produced.
+add_executable(test_bc50_model_dispatch
+    test_bc50_model_dispatch.cpp
+)
+
+target_link_libraries(test_bc50_model_dispatch
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_model_dispatch ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_model_dispatch pthread dl)
+endif()
+
+add_test(NAME BC50ModelDispatchTest COMMAND test_bc50_model_dispatch)

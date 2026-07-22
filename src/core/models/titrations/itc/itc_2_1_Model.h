@@ -102,11 +102,9 @@ public:
 
     virtual QString AdditionalOutput() const override;
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
     QString ParameterComment(int parameter) const override;
 
-    QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
 protected:
     virtual void CalculateVariables() override;

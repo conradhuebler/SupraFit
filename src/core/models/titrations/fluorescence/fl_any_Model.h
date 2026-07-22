@@ -90,12 +90,9 @@ public:
     }
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
     virtual QString AdditionalOutput() const override;
-
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
     inline double ReductionCutOff() const override { return 1; }
 
