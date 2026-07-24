@@ -114,6 +114,23 @@
 
 ---
 
+## SupraFit 3.0 Beta
+
+- [ ] **2:1/1:1 cross-validation mean deviates from the reference by 22 %** (`ReferenceProjectsTest::referenceResampleCVRA`, `simulated_2_1_1_1.json`, ¹H 2:1/1:1, p6: 4.65-4.67 vs 5.96). The CV block is exhaustive leave-one-out (19 points, no sampling), so the deviation is reproducible. Open: which of the 19 fits deviates, and whether the reference or the recomputed value is the correct one. Deliberately not blocking the scripted-model merge.
+- [ ] **The same CV mean jitters by 0.45 % between runs** — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
+- [ ] Regenerate the 2:1/1:1 reference data so the stored SSE matches the closed-form cubic root (`referenceFit` is 0.13 % off at a 0.1 % tolerance — the known, deliberate consequence of the solver change).
+
+### ITC thermogram analysis (libpeakpick maths, "Track B" — own branch, changes numbers)
+- [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.
+- [ ] **B1 `Peak.end` convention** — SupraFit builds the range inclusive, libpeakpick reads it exclusive; the core of the integration discrepancy.
+- [ ] **B2 Undefined behaviour → defined** (`spectrum.h:170-176`, `:198-204`: the `i >= size() && i < 0` guard is never true).
+- [ ] **B3 Number-changing corrections, one commit each with the measured delta** (`baseline.h:484`: `|| gradient - 1` is always true).
+- [ ] **B4 Hygiene** — `spectrum` rule-of-zero (a user destructor plus copy operators suppress moves, so every copy is deep).
+- [ ] Deferred with a FIXME in the code: `nxlinregress.h:56` uses `initial[i]` where `initial[j]` is meant.
+- Guard for all of the above: `testAbsoluteIntegralsPinned` pins the 20 unscaled integrals at 1e-9 (the OpenMP reduction scatters in the last bit, ~1e-16). A moved number needs a reason, not a new expectation.
+
+---
+
 ## Completed Tasks
 
 ### ✅ ProjectManager Integration (January 2025)
