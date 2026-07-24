@@ -120,6 +120,10 @@
 - [ ] **The same CV mean jitters by 0.45 % between runs** — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
 - [ ] Regenerate the 2:1/1:1 reference data so the stored SSE matches the closed-form cubic root (`referenceFit` is 0.13 % off at a 0.1 % tolerance — the known, deliberate consequence of the solver change).
 
+### Solver defaults
+- [ ] **Decide the default fit solver.** `OptimConfigBlock` ships `FitSolver = "LevMar"` (`global.h`); VarPro is opt-in although the fixed NMR/UV-VIS models support it (conditionally on their options) alongside the `*_any` models. Equivalence is covered (`test_varpro` 17/17 across 11 model/solver combinations, `test_varpro_cv` for the fold re-fits) and VarPro is 2.5-3.7x faster on the two models measured — but the decision needs behaviour on flat/unidentifiable directions, which is what `benchmark_dimer_flat` is for. Run it across start values before flipping.
+- [ ] If flipped: choose between `VarPro` and `VarProAnalytic` (the latter falls back to finite differences on masked data), keep `LevMar` reachable as the reference oracle the equivalence tests compare against, and check what stored projects do — their own optimizer config must keep winning over the new default.
+
 ### ITC thermogram analysis (libpeakpick maths, "Track B" — own branch, changes numbers)
 - [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.
 - [ ] **B1 `Peak.end` convention** — SupraFit builds the range inclusive, libpeakpick reads it exclusive; the core of the integration discrepancy.
