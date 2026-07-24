@@ -117,7 +117,7 @@
 ## SupraFit 3.0 Beta
 
 - [ ] **2:1/1:1 cross-validation mean deviates from the reference by 22 %** (`ReferenceProjectsTest::referenceResampleCVRA`, `simulated_2_1_1_1.json`, ¹H 2:1/1:1, p6: 4.65-4.67 vs 5.96). The CV block is exhaustive leave-one-out (19 points, no sampling), so the deviation is reproducible. Open: which of the 19 fits deviates, and whether the reference or the recomputed value is the correct one. Deliberately not blocking the scripted-model merge.
-- [ ] **The same CV mean jitters by 0.45 % between runs** — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
+- [ ] **The same CV mean jitters by ~2 % between runs** (4.645 / 4.666 / 4.738 over three) — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
 - [ ] Regenerate the 2:1/1:1 reference data so the stored SSE matches the closed-form cubic root (`referenceFit` is 0.13 % off at a 0.1 % tolerance — the known, deliberate consequence of the solver change).
 
 ### Solver defaults
