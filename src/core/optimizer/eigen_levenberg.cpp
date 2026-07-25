@@ -107,6 +107,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     Eigen::VectorXd parameter(param.size());
     for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
+    const Eigen::VectorXd parameter_initial = parameter; // reference point for the "never moved" test below
 
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
@@ -155,7 +156,16 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     // AND parameter step below DeltaParameter), NOT merely "iter < MaxIter". The old proxy
     // falsely reported a fit that reached the minimum exactly at the iteration limit as
     // not-converged (see the diagnostics behind the InitialGuess root-cause).
-    const bool converged = (qAbs(error_0 - error_2) <= ErrorConvergence) && (norm <= DeltaParameter);
+    //
+    // Both criteria are also trivially satisfied by a solver that never left its start value - a
+    // stall then reports success at whatever SSE the start happened to have. The gradient tells the
+    // two apart: lm.gnorm is MINPACK's scaled gradient (a cosine, hence dimensionless), ~0 at a
+    // stationary point and O(1) at a point the solver merely failed to leave. It is therefore
+    // required only where nothing moved; a fit that did move keeps the criteria above unchanged.
+    const bool settled = (qAbs(error_0 - error_2) <= ErrorConvergence) && (norm <= DeltaParameter);
+    const bool moved = (parameter - parameter_initial).cwiseAbs().sum() > DeltaParameter;
+    const bool stationary = lm.gnorm <= config["LevMar_Gtol"].toDouble();
+    const bool converged = settled && (moved || stationary);
     model.toStrongRef()->setConverged(converged);
     return iter;
 }

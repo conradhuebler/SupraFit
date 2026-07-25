@@ -163,8 +163,14 @@ int VarProFit(QWeakPointer<AbstractModel> weak, QVector<double>& sse_history, QV
             lambda = std::min(lambda * 3.0, 1e12);
         }
 
-        if (!improved)
-            break; // sitting in a (local) minimum: no downhill step found
+        if (!improved) {
+            // No step reduced the SSE although lambda was escalated to 1e12, i.e. the solver sits in
+            // a (local) minimum. That IS convergence: leaving the flag false here reported an exact
+            // fit - one that reached the optimum so closely that no downhill direction remains - as
+            // a failed one. A non-finite SSE is the genuine failure and stays not-converged.
+            converged = std::isfinite(sse);
+            break;
+        }
 
         const double sseChange = std::abs(sse - trialSse);
         const double stepNorm = (trialBeta - beta).cwiseAbs().sum();
