@@ -1,6 +1,10 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
+- Python interface (`import suprafit`), off by default, built with `-DSUPRAFIT_PYBIND=ON`
+- thermogram import shows the full precision of the core instead of six significant digits
+- a fit stuck on its start value is no longer reported as converged
+- macOS builds are signed and published again
 - add desktop notification after finished optimisation and statistics
 - make maximal number of points per series changeable
 - add logfermi potential function to realise constrained optimisation
