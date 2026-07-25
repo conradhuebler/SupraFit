@@ -21,6 +21,9 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
+#include <QtGui/QGuiApplication>
+#include <QtGui/QScreen>
+#include <QtWidgets/QScrollArea>
 
 #include "genericwidgetdialog.h"
 
@@ -29,7 +32,13 @@ GenericWidgetDialog::GenericWidgetDialog(const QString& title, QWidget* widget, 
     , m_widget(widget)
 {
     setModal(true);
-    resize(800, 600);
+    // A fixed 800x600 was too small for content-rich widgets — the scripted-model definition alone has
+    // ten fields plus a preset column and a guidance panel — so every open began with a manual resize.
+    // Size relative to the available screen instead, capped so it stays a dialog. Claude Generated.
+    QScreen* screen = QGuiApplication::primaryScreen();
+    const QRect available = screen ? screen->availableGeometry() : QRect(0, 0, 1280, 900);
+    resize(qMin(1500, static_cast<int>(available.width() * 0.85)),
+        qMin(950, static_cast<int>(available.height() * 0.85)));
     setWindowTitle(title.toUtf8());
     setUi();
 }
@@ -39,7 +48,16 @@ void GenericWidgetDialog::setUi()
     QGridLayout* mainlayout = new QGridLayout;
     setLayout(mainlayout);
 
-    mainlayout->addWidget(m_widget, 0, 1, 1, 3);
+    // The hosted widget can be far taller than the dialog — the scripted-model definition alone has
+    // ten fields in a flow layout — so it goes into a scroll area instead of overflowing the dialog
+    // and pushing the buttons off screen. setWidgetResizable lets it use the full width and reflow.
+    // Claude Generated.
+    QScrollArea* scroll = new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scroll->setWidget(m_widget);
+    mainlayout->addWidget(scroll, 0, 1, 1, 3);
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 

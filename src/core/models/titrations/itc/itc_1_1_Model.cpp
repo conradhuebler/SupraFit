@@ -188,34 +188,19 @@ QString itc_ItoI_Model::AdditionalOutput() const
     return result;
 }
 
-QString itc_ItoI_Model::ModelInfo() const
+BC50::ModelSystem itc_ItoI_Model::BC50System() const
 {
-    QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    /*
-    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-    result += "<p>Reaction: A + B &#8652; AB</p>";
-    result += Statistic::MonteCarlo2Thermo(0, getT(), QJsonObject());*/
-
-    return result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 1);
+    sys.stoich << 1, 1;
+    sys.lgBeta = { GlobalParameter(0) };
+    return sys;
 }
 
 QString itc_ItoI_Model::ParameterComment(int parameter) const
 {
     Q_UNUSED(parameter)
     return QString("Reaction: A + B &#8652; AB");
-}
-
-QString itc_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
-}
-
-QString itc_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractItcModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "itc_1_1_Model.moc"

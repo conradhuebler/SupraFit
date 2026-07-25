@@ -41,6 +41,8 @@ endif(UNIX)
 # Client sources for test_pipeline (not in libcore/libmodels)
 set(CLIENT_SOURCES
     ../client/suprafit_cli.cpp
+    ../client/data_factory.cpp # DataFactory was split out of SupraFitCli (D3); without it test_pipeline
+                               # fails to link (undefined DataFactory::loadDataTableFromFile)
     ../client/analysis_reporter.cpp
     ../client/data_factory.cpp
     ../client/ml_export.cpp
@@ -93,14 +95,14 @@ target_link_libraries(test_simple
 add_test(NAME SimpleTest COMMAND test_simple)
 
 # BFGS Speciation Solver Test - general equilibrium solver, self-aggregation (Claude Generated 2026)
-add_executable(test_bfgs_solver
-    test_bfgs_solver.cpp
+add_executable(test_concentrationsolver
+    test_concentrationsolver.cpp
 )
 
 # core<->models are mutually dependent static archives; wrap them in a linker group so the
 # cyclic references (e.g. core's DataGenerator -> models' CreateModel) resolve regardless of
 # archive scan order (Claude Generated).
-target_link_libraries(test_bfgs_solver
+target_link_libraries(test_concentrationsolver
     Qt6::Core
     Qt6::Test
     Qt6::Qml
@@ -110,11 +112,11 @@ target_link_libraries(test_bfgs_solver
 )
 
 if(ML_NEURAL_NETWORKS)
-    target_link_libraries(test_bfgs_solver ml)
+    target_link_libraries(test_concentrationsolver ml)
 endif()
 
 if(UNIX)
-    target_link_libraries(test_bfgs_solver pthread dl)
+    target_link_libraries(test_concentrationsolver pthread dl)
 endif()
 
 # nmr_any self-aggregation model test (grid + preceding-dimerisation path) - Claude Generated 2026
@@ -175,9 +177,38 @@ set_tests_properties(VarProTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-add_test(NAME BFGSSolverTest COMMAND test_bfgs_solver)
+add_test(NAME ConcentrationSolverTest COMMAND test_concentrationsolver)
 
-set_tests_properties(BFGSSolverTest PROPERTIES
+set_tests_properties(ConcentrationSolverTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Closed-form vs. Newton cubic root solver (Claude Generated 2026)
+add_executable(test_cubicsolver
+    test_cubicsolver.cpp
+)
+
+target_link_libraries(test_cubicsolver
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_cubicsolver ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_cubicsolver pthread dl)
+endif()
+
+add_test(NAME CubicSolverTest COMMAND test_cubicsolver)
+
+set_tests_properties(CubicSolverTest PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -207,6 +238,35 @@ endif()
 add_test(NAME ReactionParserTest COMMAND test_reactionparser)
 
 set_tests_properties(ReactionParserTest PROPERTIES
+    TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Scripted-model engine (ScriptModel/ExprTk): closed-form correctness, per-series locals, legacy key
+add_executable(test_scriptmodel
+    test_scriptmodel.cpp
+)
+
+target_link_libraries(test_scriptmodel
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_scriptmodel ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_scriptmodel pthread dl)
+endif()
+
+add_test(NAME ScriptModelTest COMMAND test_scriptmodel)
+
+set_tests_properties(ScriptModelTest PROPERTIES
     TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -918,6 +978,20 @@ message(STATUS "  File Import CLI: ./test_file_import_cli")
 # compiles+links (needs a core<->models link group); its remaining failures are a
 # stale test-data contract (createTestProjectJson) vs current validateProjectJson.
 # Speciation microbenchmark (Claude Generated 2026) - manual perf tool, not a ctest
+# Scripted-model engine benchmark (Claude Generated 2026) - manual perf tool, not a ctest:
+# closed form vs. bisection written in ExprTk vs. native BFGS solver called from the script.
+add_executable(benchmark_scriptengine benchmark_scriptengine.cpp)
+target_link_libraries(benchmark_scriptengine
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_scriptengine ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_scriptengine pthread dl)
+endif()
+
 add_executable(benchmark_speciation benchmark_speciation.cpp)
 target_link_libraries(benchmark_speciation
     Qt6::Core Qt6::Test Qt6::Qml
@@ -955,3 +1029,124 @@ endif()
 if(UNIX)
     target_link_libraries(benchmark_dimer_flat pthread dl)
 endif()
+
+# Offscreen render-time benchmark for the Monte-Carlo results widget (Claude Generated 2026) -
+# manual perf tool, not a ctest. First test target linking the GUI layer; it constructs
+# ResultsWidget/MCResultsWidget under PhaseTiming to split the widget-build cost.
+if(BUILD_GUI)
+    add_executable(benchmark_mcwidget benchmark_mcwidget.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h) # Q_OBJECT; its moc output otherwise only exists in the suprafit executable target
+    target_link_libraries(benchmark_mcwidget
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions(benchmark_mcwidget PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    )
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(benchmark_mcwidget ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(benchmark_mcwidget pthread dl)
+    endif()
+endif()
+
+# Quadrature regression tests (Claude Generated 2026) - pins SimpsonIntegrate against analytically
+# known integrals, including the endpoint singularities the BC50 integrands carry.
+add_executable(test_quadrature
+    test_quadrature.cpp
+)
+
+target_link_libraries(test_quadrature
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_quadrature ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_quadrature pthread dl)
+endif()
+
+add_test(NAME QuadratureTest COMMAND test_quadrature)
+
+# BC50 integration accuracy at the configurable density (Claude Generated 2026) - pins what the
+# BC50IntegrationPoints setting actually buys, against an independent high-accuracy reference.
+add_executable(test_bc50_accuracy
+    test_bc50_accuracy.cpp
+)
+
+target_link_libraries(test_bc50_accuracy
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_accuracy ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_accuracy pthread dl)
+endif()
+
+add_test(NAME BC50AccuracyTest COMMAND test_bc50_accuracy)
+
+# BC50 dispatch for reaction-defined (*_any) systems (Claude Generated 2026) - the any-models used
+# to report the 1:1 formula whatever system they carried.
+add_executable(test_bc50_speciation
+    test_bc50_speciation.cpp
+)
+
+target_link_libraries(test_bc50_speciation
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_speciation ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_speciation pthread dl)
+endif()
+
+add_test(NAME BC50SpeciationTest COMMAND test_bc50_speciation)
+
+# Per-model BC50 dispatch (Claude Generated 2026) - each model's BC50System() must reproduce the
+# value its old hardcoded per-stoichiometry call produced.
+add_executable(test_bc50_model_dispatch
+    test_bc50_model_dispatch.cpp
+)
+
+target_link_libraries(test_bc50_model_dispatch
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_bc50_model_dispatch ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_bc50_model_dispatch pthread dl)
+endif()
+
+add_test(NAME BC50ModelDispatchTest COMMAND test_bc50_model_dispatch)

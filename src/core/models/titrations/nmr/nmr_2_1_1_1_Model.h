@@ -91,13 +91,9 @@ public:
     }
 
     /*! \brief Calculate standard type of monte carlo statistics */
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
-
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+    BC50::ModelSystem BC50System() const override;
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 

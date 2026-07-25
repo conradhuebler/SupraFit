@@ -221,13 +221,6 @@ QString fl_IItoI_ItoI_Model::ParameterComment(int parameter) const
         return QString("Reaction: A + B &#8652; AB");
 }
 
-QString fl_IItoI_ItoI_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::IItoI::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString fl_IItoI_ItoI_Model::AdditionalOutput() const
 {
@@ -277,13 +270,15 @@ QString fl_IItoI_ItoI_Model::AdditionalOutput() const
     return result;
 }
 
-QString fl_IItoI_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+BC50::ModelSystem fl_IItoI_ItoI_Model::BC50System() const
 {
-    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 2, 1, 1;
+    sys.lgBeta = { GlobalParameter(1), GlobalParameter(1) + GlobalParameter(0) };
+    return sys;
 }
 
-QString fl_IItoI_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
-}
+
 #include "fl_2_1_1_1_Model.moc"

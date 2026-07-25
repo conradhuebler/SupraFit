@@ -28,7 +28,7 @@
 
 #include <Eigen/Dense>
 
-#include "src/core/bfgsconcentrationsolver.h"
+#include "src/core/concentrationsolver.h"
 #include "src/core/equil.h"
 
 namespace {
@@ -57,9 +57,9 @@ std::vector<std::vector<double>> sweep(int components, int points)
 double g_threshold = 1e-12;
 
 // Return {ns per solve, avg iterations per solve, max mass-balance residual}.
-void benchScenario(const Scenario& s, int points, int reps, BFGSConcentrationSolver::Method method)
+void benchScenario(const Scenario& s, int points, int reps, ConcentrationSolver::Method method)
 {
-    BFGSConcentrationSolver solver;
+    ConcentrationSolver solver;
     solver.setMethod(method);
     solver.setStoichiometry(s.stoich);
     solver.setStabilityConstants(s.beta);
@@ -137,14 +137,14 @@ int main(int argc, char** argv)
     scenarios.push_back({ "3-comp (AB,AC)", M({ { 1, 1 }, { 1, 0 }, { 0, 1 } }), { 1e4, 3e3 }, 3 });
 
     // Compare both minimisation methods head to head (argv[3] = "bfgs" or "levmar" limits to one).
-    std::vector<BFGSConcentrationSolver::Method> methods = {
-        BFGSConcentrationSolver::Method::LevenbergMarquardt, BFGSConcentrationSolver::Method::BFGS
+    std::vector<ConcentrationSolver::Method> methods = {
+        ConcentrationSolver::Method::LevenbergMarquardt, ConcentrationSolver::Method::BFGS
     };
     if (argc > 3)
-        methods = { BFGSConcentrationSolver::MethodFromString(QString::fromLatin1(argv[3])) };
+        methods = { ConcentrationSolver::MethodFromString(QString::fromLatin1(argv[3])) };
 
-    for (BFGSConcentrationSolver::Method method : methods) {
-        std::printf("--- method: %s ---\n", BFGSConcentrationSolver::MethodToString(method).toLatin1().constData());
+    for (ConcentrationSolver::Method method : methods) {
+        std::printf("--- method: %s ---\n", ConcentrationSolver::MethodToString(method).toLatin1().constData());
         for (const Scenario& s : scenarios) {
             std::printf("  running %-20s ...\r", s.name.c_str());
             benchScenario(s, points, reps, method);

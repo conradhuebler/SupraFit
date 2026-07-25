@@ -210,12 +210,12 @@ QSharedPointer<AbstractModel> uvvis_any_Model::Clone(bool statistics)
     return model;
 }
 
-QString uvvis_any_Model::ModelInfo() const
+BC50::ModelSystem uvvis_any_Model::BC50System() const
 {
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    return result;
+    BC50::ModelSystem sys;
+    sys.stoich = m_speciation.Stoichiometry();
+    sys.lgBeta = GlobalParameterVector();
+    return sys;
 }
 
 QString uvvis_any_Model::AdditionalOutput() const
@@ -242,16 +242,6 @@ QString uvvis_any_Model::ParameterComment(int parameter) const
             .arg(sys.species[parameter].label);
     }
     return QString("Reaction: A + B &#8652; AB");
-}
-
-QString uvvis_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
-}
-
-QString uvvis_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "uvvis_any_Model.moc"

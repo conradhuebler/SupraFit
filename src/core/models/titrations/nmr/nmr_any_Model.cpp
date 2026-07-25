@@ -203,7 +203,7 @@ bool nmr_any_Model::AnalyticVarProJacobian(const std::vector<int>& gidx, Eigen::
 {
     // Exact only for the Newton speciation method (its stored Hessian is the solution Hessian).
     if (!m_speciation.isValid()
-        || m_speciation.method() != BFGSConcentrationSolver::Method::LevenbergMarquardt)
+        || m_speciation.method() != ConcentrationSolver::Method::LevenbergMarquardt)
         return false;
 
     const int nSpecies = m_speciation.SpeciesCount();
@@ -325,12 +325,12 @@ QSharedPointer<AbstractModel> nmr_any_Model::Clone(bool statistics)
     return model;
 }
 
-QString nmr_any_Model::ModelInfo() const
+BC50::ModelSystem nmr_any_Model::BC50System() const
 {
-    QString result = AbstractNMRModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    return result;
+    BC50::ModelSystem sys;
+    sys.stoich = m_speciation.Stoichiometry();
+    sys.lgBeta = GlobalParameterVector();
+    return sys;
 }
 
 QString nmr_any_Model::AdditionalOutput() const
@@ -357,16 +357,6 @@ QString nmr_any_Model::ParameterComment(int parameter) const
             .arg(sys.species[parameter].label);
     }
     return QString("Reaction: A + B &#8652; AB");
-}
-
-QString nmr_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
-}
-
-QString nmr_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "nmr_any_Model.moc"

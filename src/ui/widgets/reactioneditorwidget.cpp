@@ -189,6 +189,12 @@ QString ReactionEditorWidget::reactionText() const
     return m_editor->toPlainText();
 }
 
+void ReactionEditorWidget::setReactionText(const QString& text)
+{
+    if (m_editor && m_editor->toPlainText() != text)
+        m_editor->setPlainText(text);
+}
+
 void ReactionEditorWidget::updatePreview()
 {
     const ReactionSystem system = ReactionParser::Parse(reactionText());

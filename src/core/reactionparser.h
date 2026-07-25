@@ -48,7 +48,7 @@ struct ReactionDiagnostic {
  * @brief Result of parsing a block of reaction equations.
  *
  * @c stoich is the (n_components × n_species) integer matrix ready to hand to
- * BFGSConcentrationSolver::setStoichiometry (rows = components, columns = complexes). Component
+ * ConcentrationSolver::setStoichiometry (rows = components, columns = complexes). Component
  * order is the order of first appearance in the text — it also defines the mapping of components to
  * the independent concentration columns of the data set. Claude Generated.
  */
@@ -83,4 +83,8 @@ public:
 
     /** @brief Canonical species label from a stoichiometry vector, e.g. (2,1)/[A,B] -> "A₂B". */
     static QString SpeciesLabel(const QStringList& components, const Eigen::VectorXi& stoich);
+
+    /** @brief Same, but as a plain ASCII identifier: (2,1)/[A,B] -> "A2B". SpeciesLabel uses unicode
+     * subscripts, which are not valid variable names in any scripting backend. Claude Generated. */
+    static QString AsciiSpeciesId(const QStringList& components, const Eigen::VectorXi& stoich);
 };

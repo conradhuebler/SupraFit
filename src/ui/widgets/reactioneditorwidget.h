@@ -69,6 +69,8 @@ public:
 
     /** @brief Current reaction text (verbatim, one reaction per line). */
     QString reactionText() const;
+    /*! \brief Replace the editor content — lets an outer preset fill this field too. CG. */
+    void setReactionText(const QString& text);
 
     /** @brief A built-in reaction preset. A header (grouping label) has an empty @c reactions. */
     struct Preset {

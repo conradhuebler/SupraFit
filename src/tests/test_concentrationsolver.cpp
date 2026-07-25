@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Validates BFGSConcentrationSolver (Musketeer method, DOI 10.1039/d4sc03354j) against
+ * Validates ConcentrationSolver (Musketeer method, DOI 10.1039/d4sc03354j) against
  * the analytic 1:1 root, a closed-form homo-dimerisation, and the grid EqnConc_2x solver.
  * Claude Generated.
  */
@@ -29,7 +29,7 @@
 
 #include "EqnConc_2.h"
 
-#include "src/core/bfgsconcentrationsolver.h"
+#include "src/core/concentrationsolver.h"
 #include "src/core/equil.h"
 
 class TestBFGSSolver : public QObject {
@@ -51,7 +51,7 @@ private slots:
         M << 1,
             1;
 
-        BFGSConcentrationSolver solver;
+        ConcentrationSolver solver;
         solver.setStoichiometry(M);
         solver.setStabilityConstants({ std::pow(10.0, logK) });
         solver.setTotalConcentrations({ A0, B0 });
@@ -78,7 +78,7 @@ private slots:
         Eigen::MatrixXi M(1, 1); // component A  x  complex A2
         M << 2;
 
-        BFGSConcentrationSolver solver;
+        ConcentrationSolver solver;
         solver.setStoichiometry(M);
         solver.setStabilityConstants({ Kdim });
         solver.setTotalConcentrations({ A0 });
@@ -130,7 +130,7 @@ private slots:
                 ++col;
             }
 
-        BFGSConcentrationSolver solver;
+        ConcentrationSolver solver;
         solver.setStoichiometry(M);
         solver.setStabilityConstants(beta);
         solver.setTotalConcentrations({ A0, B0 });
@@ -165,8 +165,8 @@ private slots:
         const std::vector<double> beta = { std::pow(10.0, 4.2), std::pow(10.0, 6.6) };
 
         auto freeConc = [&](const std::vector<double>& b) {
-            BFGSConcentrationSolver s;
-            s.setMethod(BFGSConcentrationSolver::Method::LevenbergMarquardt);
+            ConcentrationSolver s;
+            s.setMethod(ConcentrationSolver::Method::LevenbergMarquardt);
             s.setStoichiometry(M);
             s.setStabilityConstants(b);
             s.setTotalConcentrations({ A0, B0 });
@@ -175,8 +175,8 @@ private slots:
             return s.solve();
         };
 
-        BFGSConcentrationSolver solver;
-        solver.setMethod(BFGSConcentrationSolver::Method::LevenbergMarquardt);
+        ConcentrationSolver solver;
+        solver.setMethod(ConcentrationSolver::Method::LevenbergMarquardt);
         solver.setStoichiometry(M);
         solver.setStabilityConstants(beta);
         solver.setTotalConcentrations({ A0, B0 });
@@ -207,4 +207,4 @@ private slots:
 };
 
 QTEST_MAIN(TestBFGSSolver)
-#include "test_bfgs_solver.moc"
+#include "test_concentrationsolver.moc"

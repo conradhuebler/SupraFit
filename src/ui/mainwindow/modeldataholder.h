@@ -102,6 +102,9 @@ public:
     int Model() const { return m_model_choosen; }
     /** @brief Reaction preset chosen from the Add-model submenu (empty for a plain model). CG. */
     QString PresetReactions() const { return m_preset_reactions; }
+    /** @brief Tell the bar how many independent columns the current data has, so the scripted-model
+     * preset menu can grey out presets that need more inputs than are available. Claude Generated. */
+    void setIndependentCount(int n) { m_independent_count = n; }
 
 private:
     QWidget* m_buttons;
@@ -111,11 +114,15 @@ private:
     QAction* m_last_action;
     int m_model_choosen = 404;
     QString m_preset_reactions; ///< reactions for a preset submenu entry; cleared for plain adds
+    int m_independent_count = 0; ///< independent columns of the current data set (preset input-awareness)
+    QVector<QPair<QPointer<QAction>, int>> m_script_preset_actions; ///< (preset action, required inputs)
 private slots:
     void PrepareAddModel();
 
 signals:
     void NewModel();
+    /** @brief Create a scripted model pre-filled from ScriptModel::Presets()[index]. Claude Generated. */
+    void NewModelFromPreset(int index);
     void AddModel();
     void AddScriptModel(const QString& model);
     void CloseAll();
@@ -265,8 +272,16 @@ private:
     QString m_currentProjectId;
 private slots:
     void NewModel();
+    void NewModelFromPreset(int index); // Claude Generated
     void AddModel();
     void AddScriptModel(const QString& str);
+
+private:
+    /*! \brief Open the "Define Model" dialog for a new ScriptModel, its widgets pre-filled from
+     * @p presetBlock (empty -> the blank getInputBlock() template). Claude Generated. */
+    void NewScriptModelDialog(const QVector<QJsonObject>& presetBlock);
+
+private slots:
 
     void SetProjectTabName();
     void RunJobs(const QJsonObject& job);

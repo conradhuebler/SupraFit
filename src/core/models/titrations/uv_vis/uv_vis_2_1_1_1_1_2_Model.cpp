@@ -333,13 +333,6 @@ MassResults uv_vis_IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
     return result;
 }
 
-QString uv_vis_IItoI_ItoI_ItoII_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::IItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
-
-    return result;
-}
 
 QString uv_vis_IItoI_ItoI_ItoII_Model::ParameterComment(int parameter) const
 {
@@ -382,14 +375,16 @@ QString uv_vis_IItoI_ItoI_ItoII_Model::AdditionalOutput() const
     return result;
 }
 
-QString uv_vis_IItoI_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem uv_vis_IItoI_ItoI_ItoII_Model::BC50System() const
 {
-    return prependBC50(AbstractTitrationModel::AnalyseMonteCarlo(object), forceAll, Statistic::MonteCarlo2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object));
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 3);
+    sys.stoich << 1, 2, 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(1), GlobalParameter(1) + GlobalParameter(0), GlobalParameter(1) + GlobalParameter(2) };
+    return sys;
 }
 
-QString uv_vis_IItoI_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractTitrationModel::AnalyseGridSearch(object), forceAll, Statistic::GridSearch2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object));
-}
 
 #include "uv_vis_2_1_1_1_1_2_Model.moc"

@@ -89,13 +89,11 @@ public:
     QString ParameterComment(int parameter) const override;
 
     QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
     // itc_any always drives speciation through the BFGS engine -> cite Musketeer. Claude Generated.
     inline QStringList CitationKeys() const override { return QStringList() << QStringLiteral("musketeer"); }
     inline bool UseDynamicParameterWidget() const override { return true; }
-
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-    QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
     inline virtual bool DemandInput() const { return true; }
 
     static QSharedPointer<AbstractModel> CreateModel(QPointer<DataClass> data)

@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/bc50.h"
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
@@ -194,6 +195,9 @@ QString AbstractTitrationModel::ModelInfo() const
     }
 
     result += CitationBlock();
+
+    const BC50::ModelSystem sys = BC50System();
+    result += BC50::Format_FromSpeciation(sys.stoich, sys.lgBeta);
     return result;
 }
 
@@ -244,7 +248,8 @@ QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object, boo
 
     result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::MonteCarlo2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
@@ -264,7 +269,8 @@ QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, boo
 
     result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::GridSearch2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 /*
@@ -321,7 +327,7 @@ bool AbstractTitrationModel::BuildSpeciationFromReactions()
 
 void AbstractTitrationModel::ApplySpeciationMethod()
 {
-    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+    m_speciation.setMethod(ConcentrationSolver::MethodFromString(
         getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 }
 

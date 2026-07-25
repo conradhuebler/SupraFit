@@ -93,10 +93,7 @@ public:
 
     QString ParameterComment(int parameter) const override;
 
-    QString ModelInfo() const override;
-
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-    QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+    BC50::ModelSystem BC50System() const override;
 
 protected:
     virtual void CalculateVariables() override;

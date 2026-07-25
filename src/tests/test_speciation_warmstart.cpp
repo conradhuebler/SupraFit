@@ -18,7 +18,7 @@
 
 /*
  * The speciation (equilibrium-concentration) solver warm-starts each solve from the previous point's
- * result (BFGSConcentrationSolver, unlocked by keeping the warm start across setTotalConcentrations).
+ * result (ConcentrationSolver, unlocked by keeping the warm start across setTotalConcentrations).
  * Warm-starting adds per-solver state, so this test guards the resampling paths that clone the model
  * across worker threads: a full Monte Carlo run on nmr_any (JobManager, multiple threads) must complete
  * and produce finite, sane parameter statistics with BOTH speciation methods (LevMar/Newton and the

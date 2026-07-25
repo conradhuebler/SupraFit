@@ -116,6 +116,17 @@
 
 ## SupraFit 3.0 Beta
 
+### Fit results and reference data
+- [ ] **2:1/1:1 cross-validation mean deviates from the reference by 22 %** (`ReferenceProjectsTest::referenceResampleCVRA`, `simulated_2_1_1_1.json`, ¹H 2:1/1:1, p6: 4.65-4.67 vs 5.96). The CV block is exhaustive leave-one-out (19 points, no sampling), so the deviation is reproducible. Open: which of the 19 fits deviates, and whether the reference or the recomputed value is the correct one. Deliberately not blocking the scripted-model merge.
+- [ ] **The same CV mean jitters by ~2 % between runs** (4.645 / 4.666 / 4.738 over three) — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
+- [ ] Regenerate the 2:1/1:1 reference data so the stored SSE matches the closed-form cubic root (`referenceFit` is 0.13 % off at a 0.1 % tolerance — the known, deliberate consequence of the solver change).
+
+### Solver defaults
+- [ ] **Decide the default fit solver.** `OptimConfigBlock` ships `FitSolver = "LevMar"` (`global.h`); VarPro is opt-in although the fixed NMR/UV-VIS models support it (conditionally on their options) alongside the `*_any` models. Equivalence is covered (`test_varpro`, `test_varpro_cv`) and VarPro is 2-5x faster. **`benchmark_dimer_flat`, measured 2026-07-24 (release, 6 configurations): neither solver wins throughout, so a blanket switch is not supported.** VarPro recovers the truth exactly in 3 of 6 but returns lg β12 = -7.32 / 0.15 in the two runs started at lg β(A2) = 5, at an SSE (1e-3) that noisy real data would hide; LevMar sits on its start value in 2 of 6 (SSE 2.5 and 11.1). One adversarial scenario — enough to reject the blanket switch, not enough to conclude the opposite.
+- ✅ **`isConverged()` fixed (2026-07-24).** It used to read backwards in both failure modes — LevMar reported converged while sitting on its start at SSE 11.1, VarPro reported *not* converged where it landed exactly on the truth. The benchmark numbers quoted above come from that run; SSE and parameters were unchanged by the fix, only the flag.
+- [ ] Worth trying instead of one default: VarPro to reach the valley, then a full-vector LevMar polish — VarPro's failures are wrong parameters at a plausible SSE, LevMar's are visible non-movement.
+- [ ] If flipped after all: choose between `VarPro` and `VarProAnalytic` (the latter falls back to finite differences on masked data), keep `LevMar` reachable as the reference oracle the equivalence tests compare against, and check what stored projects do — their own optimizer config must keep winning over the new default.
+
 ### ITC thermogram — GUI verification still outstanding
 The thermogram dialog was routed through the core `ItcProcessor` and merged without these checks: the
 rendering path has no test harness, and the core pin test (`testAbsoluteIntegralsPinned`) covers only

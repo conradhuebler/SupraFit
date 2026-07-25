@@ -285,17 +285,13 @@ QString itc_IItoI_Model::ParameterComment(int parameter) const
         return QString("Reaction: A + B &#8652; AB");
 }
 
-QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+BC50::ModelSystem itc_IItoI_Model::BC50System() const
 {
-    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object));
-}
-
-QString itc_IItoI_Model::ModelInfo() const
-{
-    QString result = AbstractItcModel::ModelInfo();
-    result += BC50::IItoI::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 2, 1, 1;
+    sys.lgBeta = { GlobalParameter(1), GlobalParameter(1) + GlobalParameter(0) };
+    return sys;
 }
 
 #include "itc_2_1_Model.moc"

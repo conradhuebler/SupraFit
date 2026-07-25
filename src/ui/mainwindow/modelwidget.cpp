@@ -101,6 +101,8 @@
 #include <iostream>
 #include <random>
 
+#include "src/core/phasetiming.h"
+
 #include "modelwidget.h"
 
 class CPBar : public QWidget {
@@ -432,6 +434,28 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         head->addWidget(m_readonly);
 
     m_sign_layout->addLayout(head);
+#ifdef DEBUG_ON
+    // Diagnostic for scripted models: these values decide whether the per-series parameter widgets
+    // (shift editors + optimise checkboxes) are built at all. Claude Generated.
+    if (m_model->SFModel() == SupraFit::ScriptModel) {
+        QString active, checked;
+        for (int s = 0; s < m_model->SeriesCount(); ++s)
+            active += m_model->ActiveSignals(s) ? QStringLiteral("1") : QStringLiteral("0");
+        for (int s = 0; s < m_model->LocalTable()->rowCount(); ++s)
+            for (int p = 0; p < m_model->LocalTable()->columnCount(); ++p)
+                checked += m_model->LocalTable()->isChecked(s, p) ? QStringLiteral("1") : QStringLiteral("0");
+        qDebug().noquote() << QString("[ScriptModel] SupportSeries=%1 LocalParameterSize=%2 GlobalParameterSize=%3 SeriesCount=%4 ChartSeries=%5 optParams=%6 activeSignals=%7 localChecked=%8")
+                                  .arg(m_model->SupportSeries())
+                                  .arg(m_model->LocalParameterSize())
+                                  .arg(m_model->GlobalParameterSize())
+                                  .arg(m_model->SeriesCount())
+                                  .arg(m_charts.signal_wrapper ? m_charts.signal_wrapper->SeriesSize() : -1)
+                                  .arg(m_model->CollectOptimizationParameters().size())
+                                  .arg(active)
+                                  .arg(checked);
+    }
+#endif
+
     if (m_model->SupportSeries()) {
         if (m_model->LocalParameterSize()) {
             for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
@@ -581,6 +605,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        // Phase timing starts at the click, not inside the job: the table generation that precedes
+        // the first worker thread is part of what the user waits for. Claude Generated.
+        PhaseTiming::Begin(QString("%1 on %2")
+                               .arg(SupraFit::Method2Name(AccessCI(job, "Method").toInt()))
+                               .arg(m_model->Name()));
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
@@ -592,6 +621,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         }
 
         QApplication::restoreOverrideCursor();
+        // The chart is on screen now — this is the end of what the user perceives as "running".
+        PhaseTiming::Mark(QStringLiteral("render results widget + chart"));
+        PhaseTiming::End();
     });
 
     //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
@@ -607,14 +639,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         QTimer::singleShot(10, this, &ModelWidget::recalculate);
     }
 */
-    //    for (int i = 0; i < m_splitter->count(); ++i)
-    //        m_splitter->setCollapsible(i, false);
-
-    QString model_ident = QString("model %1").arg(m_model->SFModel());
+    // No pane may collapse to nothing: the per-series parameter pane (the shift editors) is the last
+    // one added and would otherwise silently vanish. Claude Generated.
+    for (int i = 0; i < m_splitter->count(); ++i)
+        m_splitter->setCollapsible(i, false);
 
     QSettings settings;
     settings.beginGroup("model");
-    m_splitter->restoreState(settings.value(model_ident).toByteArray());
+    m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
     settings.endGroup();
     emit m_model->Recalculated();
 }
@@ -642,6 +674,11 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     update->setIcon(Icon("dialog-ok-apply"));
     QScrollArea* scrollArea = new QScrollArea;
     PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+    // Same live guidance as the creation dialog: which identifiers the equation may use for the
+    // current reaction system, and which globals are the stability constants. Claude Generated.
+    widget->AddScriptGuidance();
+    if (ScriptModel* script = qobject_cast<ScriptModel*>(m_model.data()))
+        widget->setEquilibriumMode(script->UsesSpeciation());
     QSignalBlocker block(widget);
     QProgressBar* bar = new QProgressBar;
     connect(m_script_timer, &QTimer::timeout, this, [this, widget, bar]() {
@@ -788,12 +825,22 @@ void ModelWidget::setKeys(const QString& str)
     }
 }
 
+QString ModelWidget::SplitterSettingsKey() const
+{
+    /* The saved splitter geometry must be keyed by the pane COUNT as well, not just the model id: a
+     * scripted model has a different number of panes depending on whether it declares local
+     * parameters (the per-series parameter pane is only added when LocalParameterSize() > 0). All
+     * scripted models shared the key "model 100", so a state saved for a 2-pane layout was restored
+     * into a 3-pane one and QSplitter gave the extra pane height 0 — the per-series shift editors
+     * disappeared entirely even though the model was fully defined. Claude Generated. */
+    return QString("model %1 panes %2").arg(m_model->SFModel()).arg(m_splitter->count());
+}
+
 void ModelWidget::SplitterResized()
 {
-    QString model_ident = QString("model %1").arg(m_model->SFModel());
     QSettings settings;
     settings.beginGroup("model");
-    settings.setValue(model_ident, m_splitter->saveState());
+    settings.setValue(SplitterSettingsKey(), m_splitter->saveState());
     settings.endGroup();
 }
 

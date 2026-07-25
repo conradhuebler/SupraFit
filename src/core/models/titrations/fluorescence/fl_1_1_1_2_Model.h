@@ -81,13 +81,9 @@ public:
             return i + 2;
     }
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
-
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 

@@ -63,7 +63,7 @@ itc_any_Model::~itc_any_Model()
 void itc_any_Model::setOptimizerConfig(const QJsonObject& config)
 {
     AbstractModel::setOptimizerConfig(config);
-    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+    m_speciation.setMethod(ConcentrationSolver::MethodFromString(
         getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 }
 
@@ -81,7 +81,7 @@ bool itc_any_Model::DefineModel()
     m_speciation.setSystem(parsed);
     m_speciation.setMaxIter(1000);
     m_speciation.setConvergeThreshold(1e-12);
-    m_speciation.setMethod(BFGSConcentrationSolver::MethodFromString(
+    m_speciation.setMethod(ConcentrationSolver::MethodFromString(
         getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
 
     const ReactionSystem& sys = m_speciation.System();
@@ -286,11 +286,20 @@ QString itc_any_Model::AdditionalOutput() const
 
 QString itc_any_Model::ModelInfo() const
 {
+    // BC50 is appended by AbstractItcModel::ModelInfo() through BC50System(); only the citation
+    // block is itc_any-specific.
     QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
     result += CitationBlock();
 
     return result;
+}
+
+BC50::ModelSystem itc_any_Model::BC50System() const
+{
+    BC50::ModelSystem sys;
+    sys.stoich = m_speciation.Stoichiometry();
+    sys.lgBeta = GlobalParameterVector();
+    return sys;
 }
 
 QString itc_any_Model::ParameterComment(int parameter) const
@@ -311,16 +320,6 @@ QString itc_any_Model::ParameterComment(int parameter) const
             .arg(sys.species[parameter].label);
     }
     return QString("Reaction: A + B &#8652; AB");
-}
-
-QString itc_any_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractItcModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object));
-}
-
-QString itc_any_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractItcModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1(GlobalParameter(0), object));
 }
 
 #include "itc_any_Model.moc"

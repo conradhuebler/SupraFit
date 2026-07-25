@@ -21,6 +21,8 @@
 
 #include "src/global.h"
 
+#include "src/core/bc50system.h"
+
 #include <Eigen/Dense>
 
 #include <QtCore/QDebug>
@@ -618,6 +620,20 @@ public:
      */
     virtual inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
 
+    /*! \brief All global parameters as a plain vector.
+     *
+     * For the reaction-defined `*_any` models these are the cumulative lg beta, one per species,
+     * in the column order of the speciation stoichiometry matrix — which is what the BC50
+     * dispatcher expects. Claude Generated (2026). */
+    inline QVector<qreal> GlobalParameterVector() const
+    {
+        QVector<qreal> values;
+        values.reserve(GlobalParameterSize());
+        for (int i = 0; i < GlobalParameterSize(); ++i)
+            values << GlobalParameter(i);
+        return values;
+    }
+
     /*! \brief return the table of local parameter values, overloaded function
      */
     virtual inline QPointer<DataTable> LocalParameter() const { return LocalTable(); }
@@ -731,6 +747,15 @@ public:
     /*! \brief Implement ModelInfo() const for output, that is printed after each recalculation
      * (or optimisation) - If there are demanding task, they should NOT go here */
     inline virtual QString ModelInfo() const { return QString(); }
+
+    /*! \brief The model's binding system for the BC50 machinery, or an empty descriptor.
+     *
+     * The single entry point through which every titration model tells the shared BC50 code what
+     * system it is (stoichiometry + cumulative lg beta per species). The titration base classes use
+     * it to append the BC50 block to ModelInfo / the post-processing reports, so there is one BC50
+     * code path instead of a hand-picked formula call per stoichiometry. Default: no BC50.
+     * Claude Generated (2026). */
+    virtual BC50::ModelSystem BC50System() const { return {}; }
 
     /*! \brief Method-specific literature keys this model used beyond the base SupraFit citation
      * (see the Citation namespace). Default: none. A model that routes speciation through the BFGS

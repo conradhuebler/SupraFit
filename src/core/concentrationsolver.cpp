@@ -23,27 +23,27 @@
 #include <chrono>
 #include <cmath>
 
-#include "bfgsconcentrationsolver.h"
+#include "concentrationsolver.h"
 
-BFGSConcentrationSolver::Method BFGSConcentrationSolver::MethodFromString(const QString& name)
+ConcentrationSolver::Method ConcentrationSolver::MethodFromString(const QString& name)
 {
     return name.trimmed().compare(QStringLiteral("BFGS"), Qt::CaseInsensitive) == 0
         ? Method::BFGS
         : Method::LevenbergMarquardt; // "LevMar"/"Newton"/"LM"/"" -> default
 }
 
-QString BFGSConcentrationSolver::MethodToString(Method method)
+QString ConcentrationSolver::MethodToString(Method method)
 {
     return method == Method::BFGS ? QStringLiteral("BFGS") : QStringLiteral("LevMar");
 }
 
-void BFGSConcentrationSolver::setStoichiometry(const Eigen::MatrixXi& M)
+void ConcentrationSolver::setStoichiometry(const Eigen::MatrixXi& M)
 {
     m_M = M;
     m_has_guess = false;
 }
 
-void BFGSConcentrationSolver::setStabilityConstants(const std::vector<double>& beta)
+void ConcentrationSolver::setStabilityConstants(const std::vector<double>& beta)
 {
     m_beta = beta;
     // Precompute log(beta) once instead of in every Objective() call. Deactivated complexes
@@ -53,7 +53,7 @@ void BFGSConcentrationSolver::setStabilityConstants(const std::vector<double>& b
         m_logbeta[j] = beta[j] > 0.0 ? std::log(beta[j]) : 0.0;
 }
 
-void BFGSConcentrationSolver::setTotalConcentrations(const std::vector<double>& totals)
+void ConcentrationSolver::setTotalConcentrations(const std::vector<double>& totals)
 {
     m_totals = totals;
     m_active.assign(totals.size(), true);
@@ -70,7 +70,7 @@ void BFGSConcentrationSolver::setTotalConcentrations(const std::vector<double>& 
     // is the point-to-point warm start the class was designed for (was discarded here). Claude Generated.
 }
 
-void BFGSConcentrationSolver::setWarmStart(const std::vector<double>& free)
+void ConcentrationSolver::setWarmStart(const std::vector<double>& free)
 {
     if (free.size() != m_totals.size())
         return; // stale/mismatched cache entry -> keep whatever setTotalConcentrations() left
@@ -78,7 +78,7 @@ void BFGSConcentrationSolver::setWarmStart(const std::vector<double>& free)
     m_has_guess = true;
 }
 
-double BFGSConcentrationSolver::GuessStart() const
+double ConcentrationSolver::GuessStart() const
 {
     // Smallest positive total, scaled down by the largest complex order, gives a robust
     // low starting free concentration (Musketeer: within ~2 orders of the optimum).
@@ -100,7 +100,7 @@ double BFGSConcentrationSolver::GuessStart() const
     return min_total / (10.0 * (max_order + 1));
 }
 
-void BFGSConcentrationSolver::Guess()
+void ConcentrationSolver::Guess()
 {
     const int n = static_cast<int>(m_totals.size());
     const double start = GuessStart();
@@ -110,7 +110,7 @@ void BFGSConcentrationSolver::Guess()
     m_has_guess = true;
 }
 
-double BFGSConcentrationSolver::Objective(const Eigen::VectorXd& x, Eigen::VectorXd* gradient, Eigen::MatrixXd* hessian) const
+double ConcentrationSolver::Objective(const Eigen::VectorXd& x, Eigen::VectorXd* gradient, Eigen::MatrixXd* hessian) const
 {
     // x holds the log free concentrations of the active components. The active-variable <-> component
     // maps (m_comp_of_var / m_var_of_comp) and log(beta) are precomputed by the caller / setters, so
@@ -188,7 +188,7 @@ double BFGSConcentrationSolver::Objective(const Eigen::VectorXd& x, Eigen::Vecto
     return G;
 }
 
-std::vector<double> BFGSConcentrationSolver::solve()
+std::vector<double> ConcentrationSolver::solve()
 {
     const auto t_start = std::chrono::steady_clock::now();
     const int n = static_cast<int>(m_totals.size());
@@ -367,7 +367,7 @@ std::vector<double> BFGSConcentrationSolver::solve()
     return m_free;
 }
 
-Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
+Eigen::MatrixXd ConcentrationSolver::sensitivityMatrix() const
 {
     // Sᵢⱼ = ∂x_i/∂ln(β_j) for free component i and species j, from the implicit-function theorem on the
     // converged mass balance g(x,β)=0: H·(∂x/∂lnβ_j) = -∂g/∂lnβ_j, with ∂g/∂lnβ_j = m_j·c_j (the species
@@ -398,7 +398,7 @@ Eigen::MatrixXd BFGSConcentrationSolver::sensitivityMatrix() const
     return S;
 }
 
-double BFGSConcentrationSolver::speciesConcentration(int j) const
+double ConcentrationSolver::speciesConcentration(int j) const
 {
     if (!(m_beta[j] > 0.0))
         return 0.0;
@@ -415,7 +415,7 @@ double BFGSConcentrationSolver::speciesConcentration(int j) const
     return c;
 }
 
-std::vector<double> BFGSConcentrationSolver::AllConcentrations() const
+std::vector<double> ConcentrationSolver::AllConcentrations() const
 {
     const int n = static_cast<int>(m_totals.size());
     const int m = static_cast<int>(m_M.cols());

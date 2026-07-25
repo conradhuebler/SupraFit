@@ -26,17 +26,19 @@
 namespace Statistic {
 
 QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
-QString MonteCarlo2BC50_1(const qreal logK11, const QJsonObject& object);
-QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
-QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
-QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
+/*! \brief Monte-Carlo BC50 for a reaction-defined system, dispatched on its stoichiometry.
+ *
+ * The `*_any` models carry their equilibrium system in a stoichiometry matrix rather than in the
+ * model id, so they cannot pick a fixed BC50 formula at compile time. Returns an empty string when
+ * the system has no implemented BC50, so the caller reports nothing instead of a wrong number.
+ * \param lgBeta CUMULATIVE lg beta per species, in the column order of \p stoich.
+ * Claude Generated (2026). */
+QString MonteCarlo2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object);
 
 QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
 QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, int index, qreal H = 0);
-QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object);
-QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
-QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
-QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
+/*! \brief Grid-search BC50 for a reaction-defined system. See MonteCarlo2BC50_Speciation. CG (2026). */
+QString GridSearch2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object);
 
 QString PseudoANOVA(const QPointer<const AbstractModel>& model);
 }

@@ -162,6 +162,20 @@ QString ReactionParser::SpeciesLabel(const QStringList& components, const Eigen:
     return label;
 }
 
+QString ReactionParser::AsciiSpeciesId(const QStringList& components, const Eigen::VectorXi& stoich)
+{
+    QString id;
+    for (int i = 0; i < components.size() && i < stoich.size(); ++i) {
+        const int n = stoich(i);
+        if (n <= 0)
+            continue;
+        id += components[i];
+        if (n > 1)
+            id += QString::number(n);
+    }
+    return id;
+}
+
 ReactionSystem ReactionParser::Parse(const QString& text)
 {
     ReactionSystem system;

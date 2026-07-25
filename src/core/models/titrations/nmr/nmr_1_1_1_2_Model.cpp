@@ -144,11 +144,19 @@ void nmr_ItoI_ItoII_Model::FillDesign()
         m_design.resize(DataPoints(), 3);
     const qreal K11 = qPow(10, GlobalParameter(0));
     const qreal K12 = qPow(10, GlobalParameter(1));
+    // Hoisted out of the loop: this used to be built twice PER DATA POINT, i.e. two heap allocations
+    // per point on every residual evaluation of the fit. Claude Generated.
+    const QList<qreal> constants = QList<qreal>() << K11 << K12;
     for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
-        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
+        // Only the guest cubic is solved numerically (MinCubicRoot is a Newton search, and it runs
+        // three of them — one per root). The free host then follows from its own mass balance,
+        // H0 = [H](1 + K11[G] + K11K12[G]^2) — exactly the relation the guest cubic was derived from.
+        // This halves the root finding and, unlike two independently converged Newton solves, makes
+        // host and guest mass-balance consistent by construction. Claude Generated.
+        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, constants);
+        qreal host = host_0 / (1.0 + K11 * guest + K11 * K12 * guest * guest);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
         m_design(i, 0) = host / host_0; // free-host shift coefficient
@@ -216,13 +224,6 @@ QString nmr_ItoI_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString nmr_ItoI_ItoII_Model::ModelInfo() const
-{
-    QString result = AbstractNMRModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString nmr_ItoI_ItoII_Model::AdditionalOutput() const
 {
@@ -256,14 +257,16 @@ QString nmr_ItoI_ItoII_Model::AdditionalOutput() const
     return result;
 }
 
-QString nmr_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem nmr_ItoI_ItoII_Model::BC50System() const
 {
-    return prependBC50(AbstractNMRModel::AnalyseMonteCarlo(object, forceAll), forceAll, Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
-QString nmr_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    return prependBC50(AbstractNMRModel::AnalyseGridSearch(object, forceAll), forceAll, Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object));
-}
 
 #include "nmr_1_1_1_2_Model.moc"

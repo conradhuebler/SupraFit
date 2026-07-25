@@ -19,6 +19,13 @@
 
 #include "src/global.h"
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
+#include "src/core/models/scriptmodel.h"
+
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
+#include <QtGui/QPainter> // ScriptModel + ScriptModelPreset (predefined-model menu)
 #include "src/core/models/titrations/AbstractTitrationModel.h" // reaction/data mismatch reporting
 #include "src/global_config.h"
 
@@ -350,9 +357,30 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_define_model->setFlat(true);
     m_define_model->setIcon(Icon("list-add"));
 
-    connect(m_define_model, &QPushButton::clicked, this, [this]() {
-        emit this->NewModel();
+    // A dropdown of predefined scripted models (Michaelis-Menten, Hill, …): the first entry opens the
+    // usual blank definition dialog, each preset opens it pre-filled. Mirrors the reaction-preset
+    // submenus of the *_any models. Claude Generated.
+    QMenu* scriptPresets = new QMenu(this);
+    QAction* customModel = scriptPresets->addAction(tr("Custom (empty)"));
+    connect(customModel, &QAction::triggered, this, [this]() { emit this->NewModel(); });
+    scriptPresets->addSection(tr("Predefined models"));
+    const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+    for (int i = 0; i < presets.size(); ++i) {
+        QAction* a = scriptPresets->addAction(presets[i].name);
+        a->setToolTip(tr("%1 — needs %2 independent column(s)").arg(presets[i].name).arg(presets[i].inputSize));
+        connect(a, &QAction::triggered, this, [this, i]() { emit this->NewModelFromPreset(i); });
+        m_script_preset_actions << qMakePair(QPointer<QAction>(a), presets[i].inputSize);
+    }
+    // Grey out presets that need more independent columns than the current data provides (0 = unknown
+    // -> leave everything enabled). Re-evaluated every time the menu opens. Claude Generated.
+    connect(scriptPresets, &QMenu::aboutToShow, this, [this]() {
+        for (const auto& entry : m_script_preset_actions) {
+            if (entry.first)
+                entry.first->setEnabled(m_independent_count <= 0 || entry.second <= m_independent_count);
+        }
     });
+    scriptPresets->setToolTipsVisible(true);
+    m_define_model->setMenu(scriptPresets);
 
     m_any_model = new QPushButton(tr("Any Model"));
     m_any_model->setFlat(true);
@@ -494,6 +522,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, qOverload<>(&MDHDockTitleBar::AddModel), this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddScriptModel, this, &ModelDataHolder::AddScriptModel);
     connect(m_TitleBarWidget, &MDHDockTitleBar::NewModel, this, &ModelDataHolder::NewModel);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::NewModelFromPreset, this, &ModelDataHolder::NewModelFromPreset);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
@@ -566,6 +595,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         auto dataRef = m_data.toStrongRef();
         if (dataRef && dataRef->IndependentModel()) {
             m_TitleBarWidget->addToMenu(dataRef->IndependentModel()->columnCount());
+            m_TitleBarWidget->setIndependentCount(dataRef->IndependentModel()->columnCount());
             qDebug() << "✅ DEBUG setData: Successfully added menu with" << dataRef->IndependentModel()->columnCount() << "columns";
         } else {
             qWarning() << "❌ DEBUG setData: IndependentModel is null, skipping menu setup";
@@ -624,11 +654,140 @@ void ModelDataHolder::setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPo
     setData(strongData, wrapper);
 }
 
+
+namespace {
+/*! \brief Draw the definition currently in the dialog against the real data: build a throwaway
+ * ScriptModel, seed it and calculate. Answers "do my numbers look sensible?" before the model is
+ * ever created, which was impossible before. Claude Generated. */
+void RefreshScriptPreview(QChartView* view, PrepareWidget* fields, QPointer<DataClass> data)
+{
+    if (!view || !fields || !data)
+        return;
+
+    // QChartView::setChart RELEASES the previous chart instead of deleting it, so every refresh — and
+    // this runs on every keystroke — leaked a whole chart with all its series. Claude Generated.
+    QChart* previous = view->chart();
+
+    QChart* chart = new QChart;
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::ScriptModel, data);
+    bool ok = false;
+    if (model) {
+        model->setModelDefinition(fields->getObject());
+        ok = model->DefineModel(QJsonObject()) && model->Complete();
+    }
+    if (!ok) {
+        chart->setTitle(QObject::tr("Definition incomplete — no preview"));
+        view->setChart(chart);
+        delete previous;
+        return;
+    }
+
+    model->InitialGuess();
+    model->Calculate();
+
+    const int series = model->SeriesCount();
+    for (int j = 0; j < series && j < 4; ++j) { // four curves are plenty for a thumbnail
+        QScatterSeries* measured = new QScatterSeries;
+        measured->setMarkerSize(6);
+        measured->setName(QObject::tr("data %1").arg(j + 1));
+        QLineSeries* computed = new QLineSeries;
+        computed->setName(QObject::tr("model %1").arg(j + 1));
+        for (int i = 0; i < model->DataPoints(); ++i) {
+            const double x = model->PrintOutIndependent(i);
+            measured->append(x, model->DependentModel()->data(i, j));
+            computed->append(x, model->ModelTable()->data(i, j));
+        }
+        chart->addSeries(measured);
+        chart->addSeries(computed);
+    }
+    chart->createDefaultAxes();
+    chart->setTitle(QObject::tr("Preview at the initial guess"));
+    view->setChart(chart);
+    delete previous;
+}
+}
+
 void ModelDataHolder::NewModel()
+{
+    NewScriptModelDialog(QVector<QJsonObject>());
+}
+
+void ModelDataHolder::NewModelFromPreset(int index)
+{
+    const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+    if (index < 0 || index >= presets.size())
+        return;
+
+    // A preset picked from the MENU creates the model straight away — the same UX the reaction presets
+    // of the *_any models have (AddModel skips the dialog when PresetReactions() is set). Presets
+    // offered INSIDE the dialog fill the fields instead. Claude Generated.
+    QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
+    if (!t)
+        return;
+    QHash<QString, QJsonObject> elements;
+    for (const QJsonObject& descriptor : presets[index].block)
+        elements[descriptor["name"].toString()] = descriptor;
+    t->setModelDefinition(elements);
+    t->DefineModel(QJsonObject());
+    if (!t->Complete()) {
+        QMessageBox::warning(this, tr("Model not complete"),
+            tr("The preset \"%1\" could not be applied to this data set. It needs %2 independent "
+               "column(s).")
+                .arg(presets[index].name)
+                .arg(presets[index].inputSize));
+        return;
+    }
+    t->InitialGuess();
+    m_history = false;
+    ActiveModel(t);
+}
+
+void ModelDataHolder::NewScriptModelDialog(const QVector<QJsonObject>& presetBlock)
 {
     QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
     if (t->DemandInput()) {
-        PrepareWidget* prepareWidget = new PrepareWidget(t->getInputBlock(), true, this);
+        // Pre-fill the dialog from the preset block, or fall back to the blank template. Claude Generated.
+        const QVector<QJsonObject> block = presetBlock.isEmpty() ? t->getInputBlock() : presetBlock;
+        PrepareWidget* prepareWidget = new PrepareWidget(block, true, this);
+
+        // Click-to-fill presets beside the fields. Only those the data can actually satisfy are
+        // offered — a preset needing two independent columns is useless on a one-column data set.
+        const int available = (m_data && m_data.toStrongRef() && m_data.toStrongRef()->IndependentModel())
+            ? m_data.toStrongRef()->IndependentModel()->columnCount()
+            : 0;
+        QVector<QPair<QString, QVector<QJsonObject>>> presets;
+        for (const ScriptModelPreset& preset : ScriptModel::Presets()) {
+            if (available <= 0 || preset.inputSize <= available)
+                presets << qMakePair(preset.name, preset.block);
+        }
+        prepareWidget->AddPresets(presets);
+        // Makes the otherwise invisible Reactions <-> Equation coupling explicit.
+        prepareWidget->AddScriptGuidance();
+        // The preset determines the kind of model; a blank dialog starts as a free equation, so the
+        // reaction editor stays out of the way until it is actually wanted. Claude Generated.
+        bool equilibrium = false;
+        for (const QJsonObject& descriptor : block) {
+            if (descriptor["name"].toString() == QLatin1String("Reactions")
+                && !descriptor["value"].toString().trimmed().isEmpty())
+                equilibrium = true;
+        }
+        prepareWidget->setEquilibriumMode(equilibrium);
+
+        // Live preview against the real data, debounced so typing does not rebuild a model per key.
+        QChartView* preview = new QChartView;
+        preview->setRenderHint(QPainter::Antialiasing);
+        prepareWidget->AddPreview(preview);
+        QTimer* debounce = new QTimer(prepareWidget);
+        debounce->setSingleShot(true);
+        debounce->setInterval(400);
+        connect(debounce, &QTimer::timeout, prepareWidget,
+            [preview, prepareWidget, this]() { RefreshScriptPreview(preview, prepareWidget, m_data.toStrongRef().data()); });
+        connect(prepareWidget, &PrepareWidget::changed, debounce, qOverload<>(&QTimer::start));
+        RefreshScriptPreview(preview, prepareWidget, m_data.toStrongRef().data());
+
         GenericWidgetDialog dialog("Define Model", prepareWidget);
         if (dialog.exec() == QDialog::Accepted) {
             QHash<QString, QJsonObject> elements = prepareWidget->getObject();

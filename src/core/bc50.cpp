@@ -27,6 +27,144 @@
 
 namespace BC50 {
 
+namespace {
+
+    /*! \brief Simpson panels over the saturation interval, from the `BC50IntegrationPoints` setting.
+     *
+     * Since the x = 1 - t^2 substitution below makes the integrand smooth, Simpson converges fast
+     * and the density can be cut hard. Worst case over a spread of binding constants, measured
+     * against an independent reference: 4e-13 relative error at 10000 panels, 3e-10 at 1000 and
+     * 4e-7 at 100 — the middle one still beats what the pre-substitution code managed at 10000.
+     * BC50 runs once per resampled model, so this is a direct Monte-Carlo lever.
+     * `test_bc50_accuracy` pins these figures; do not quote accuracy from a single parameter set,
+     * it varies by orders of magnitude between them.
+     *
+     * Falls back to the default whenever the property is absent or implausible: the CLI and the
+     * tests run on a QCoreApplication that never saw the settings registry, and a zero here would
+     * turn the step into infinity. Claude Generated (2026).
+     */
+    int SaturationPanels()
+    {
+        int panels = 0;
+        if (QCoreApplication::instance())
+            panels = QCoreApplication::instance()->property("BC50IntegrationPoints").toInt();
+        return (panels >= 20) ? panels : 10000;
+    }
+
+    /*! \brief int_0^1 f(x) dx over the saturation coordinate, via the substitution x = 1 - t^2.
+     *
+     * Every BC50 integral runs over the saturation fraction x in [0,1], where the binding ratio
+     * alpha = x/(1-x) diverges at the upper end. The integrands inherit that as sqrt-type endpoint
+     * behaviour - BC50_Y vanishes like sqrt(1-x), the free guest of the 1:1/1:2 system grows like
+     * (1-x)^(-1/2). On a uniform mesh that caps a closed rule at O(h^1.5) however correct the rule
+     * itself is, and it forces the non-finite-endpoint fallback in SimpsonIntegrate.
+     *
+     * With x = 1 - t^2 (dx = -2t dt) the interval maps to t in [0,1] and the square root is
+     * absorbed exactly: (1-x)^(-1/2) * 2t dt = 2 dt. The transformed integrand is smooth, so
+     * Simpson recovers its full O(h^4). For BC50_Y the substitution is analytically
+     * 2 * t^2 * sqrt(b11^2 t^2 + 4 b12 (1 - t^2)), which is a plain smooth function of t.
+     *
+     * A change of variables cannot create a value that does not exist: the genuinely divergent
+     * integrands (IItoI's free guest ~ 1/(1-x)) stay divergent and remain truncation-dependent.
+     * Those are tracked as an open item in src/core/CLAUDE.md.
+     * Claude Generated (2026).
+     */
+    qreal IntegrateSaturation(const std::function<qreal(qreal, const QVector<qreal>&)>& function,
+        const QVector<qreal>& parameter)
+    {
+        std::function<qreal(qreal, const QVector<qreal>)> substituted
+            = [&function](qreal t, const QVector<qreal>& p) { return 2.0 * t * function(1.0 - t * t, p); };
+        return SimpsonIntegrate(0, 1, substituted, parameter, 1.0 / SaturationPanels());
+    }
+
+    /*! \brief Column of the species with stoichiometry (a, b), or -1. */
+    int FindSpecies(const Eigen::MatrixXi& stoich, int a, int b)
+    {
+        for (int j = 0; j < stoich.cols(); ++j)
+            if (stoich(0, j) == a && stoich(1, j) == b)
+                return j;
+        return -1;
+    }
+
+} // namespace
+
+System Classify(const Eigen::MatrixXi& stoich)
+{
+    if (stoich.rows() != 2 || stoich.cols() < 1 || stoich.cols() > 3)
+        return System::Unsupported;
+
+    const int i11 = FindSpecies(stoich, 1, 1);
+    const int i12 = FindSpecies(stoich, 1, 2);
+    const int i21 = FindSpecies(stoich, 2, 1);
+
+    /* Every species must be one of the three recognised ones - a system carrying anything else
+     * (self-aggregation A2, a 2:2 complex, ...) has no implemented BC50. The 1:1 complex is part
+     * of all four patterns. */
+    const int recognised = (i11 >= 0) + (i12 >= 0) + (i21 >= 0);
+    if (i11 < 0 || recognised != stoich.cols())
+        return System::Unsupported;
+
+    if (i12 >= 0 && i21 >= 0)
+        return System::IItoII;
+    if (i12 >= 0)
+        return System::ItoII;
+    if (i21 >= 0)
+        return System::IItoI;
+    return System::ItoI;
+}
+
+qreal FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta)
+{
+    const System system = Classify(stoich);
+    if (system == System::Unsupported || lgBeta.size() != stoich.cols())
+        return -1;
+
+    /* The fixed-stoichiometry entry points take STEPWISE constants (they rebuild the cumulative
+     * beta as 10^(lgK11 + lgK12)), while the reaction-driven models carry CUMULATIVE lg beta. */
+    const qreal lgB11 = lgBeta[FindSpecies(stoich, 1, 1)];
+    const qreal lgK12 = (FindSpecies(stoich, 1, 2) >= 0) ? lgBeta[FindSpecies(stoich, 1, 2)] - lgB11 : 0.0;
+    const qreal lgK21 = (FindSpecies(stoich, 2, 1) >= 0) ? lgBeta[FindSpecies(stoich, 2, 1)] - lgB11 : 0.0;
+
+    switch (system) {
+    case System::ItoI:
+        return ItoI::BC50(lgB11);
+    case System::ItoII:
+        return ItoII::BC50(lgB11, lgK12);
+    case System::IItoI:
+        return IItoI::BC50(lgK21, lgB11);
+    case System::IItoII:
+        return IItoII::BC50_A0(lgK21, lgB11, lgK12);
+    case System::Unsupported:
+        break;
+    }
+    return -1;
+}
+
+QString Format_FromSpeciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta)
+{
+    const System system = Classify(stoich);
+    if (system == System::Unsupported || lgBeta.size() != stoich.cols())
+        return QString();
+
+    const qreal lgB11 = lgBeta[FindSpecies(stoich, 1, 1)];
+    const qreal lgK12 = (FindSpecies(stoich, 1, 2) >= 0) ? lgBeta[FindSpecies(stoich, 1, 2)] - lgB11 : 0.0;
+    const qreal lgK21 = (FindSpecies(stoich, 2, 1) >= 0) ? lgBeta[FindSpecies(stoich, 2, 1)] - lgB11 : 0.0;
+
+    switch (system) {
+    case System::ItoI:
+        return ItoI::Format_BC50(lgB11);
+    case System::ItoII:
+        return ItoII::Format_BC50(lgB11, lgK12);
+    case System::IItoI:
+        return IItoI::Format_BC50(lgK21, lgB11);
+    case System::IItoII:
+        return IItoII::Format_BC50(lgK21, lgB11, lgK12);
+    case System::Unsupported:
+        break;
+    }
+    return QString();
+}
+
 namespace ItoI {
     qreal BC50(const qreal logK11) { return 1 / qPow(10, logK11); }
 
@@ -150,26 +288,24 @@ namespace IItoI {
         parameter << b21 << b11;
 
 
-        qreal upper = 1;
-        qreal prec = 1e-4;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BFunction;
-        B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B = IntegrateSaturation(function, parameter);
 
         function = AFunction;
-        A = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A = IntegrateSaturation(function, parameter);
 
         function = ABfunction;
-        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB = IntegrateSaturation(function, parameter);
 
         function = A2Bfunction;
-        A2B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A2B = IntegrateSaturation(function, parameter);
 
 #ifdef conservative
         function = A0Function;
-        A0 = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A0 = IntegrateSaturation(function, parameter);
 
         function = B0Function;
-        B0 = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B0 = IntegrateSaturation(function, parameter);
 
         rCD_B = B/B0;
         rCD_A2B = A2B/B0;
@@ -221,7 +357,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_Y;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return double(1) / double(2) / integ;
     }
 /*
@@ -246,7 +382,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_A0_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 
@@ -275,7 +411,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_A_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 
@@ -300,7 +436,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_B0_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter, 1e-6);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 
@@ -322,7 +458,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_ItoI_ItoII_SF_Y_0;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 */
@@ -410,25 +546,23 @@ namespace ItoII {
 
         qreal A = 0, B = 0, AB = 0, AB2 = 0, /*A0 = 0, */ B0 = 0;
 
-        qreal upper = 1;
-        qreal prec = 1e-5;
         std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
-        A = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A = IntegrateSaturation(function, parameter);
         function = BFunction;
-        B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B = IntegrateSaturation(function, parameter);
         function = ABFunction;
 
-        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB = IntegrateSaturation(function, parameter);
         function = AB2Function;
 
-        AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB2 =IntegrateSaturation(function, parameter);
 
 #ifdef conservative
         function = A0Function;
-        A0 = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A0 = IntegrateSaturation(function, parameter);
 
         function = B0Function;
-        B0 = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B0 = IntegrateSaturation(function, parameter);
 #else
         //A0 = A + AB + AB2;
         B0 = B + AB +2*AB2;
@@ -507,7 +641,7 @@ namespace IItoII {
         QVector<qreal> parameter;
         parameter << b21 << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_A0_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return double(1) / double(2) / integ;
     }
 
@@ -615,7 +749,7 @@ namespace IItoII {
         QVector<qreal> parameter;
         parameter << b21 << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_A_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 
@@ -675,7 +809,7 @@ namespace IItoII {
         QVector<qreal> parameter;
         parameter << b21 << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_B0_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = IntegrateSaturation(function, parameter);
         return integ;
     }
 
@@ -762,10 +896,15 @@ namespace IItoII {
 
         qreal A = 0, B = 0, AB = 0, A2B = 0, AB2 = 0, A0 = 0, B0 = 0;
 
-        qreal upper = 1;
         qreal delta = 1e-5;
 
-        // qreal integ = 0;
+        // TODO(BC50): this hand-rolled loop is a copy of the quadrature that was fixed in
+        // SimpsonIntegrate (2026-07-21) and still carries the same defects: the panels overlap
+        // because x advances by i/increments while delta is used as the width, and the parallel
+        // region is a pessimisation. Left untouched for now because the cross-terms below
+        // (A2B, AB2, A0, B0) are an approximation of their own that needs a modelling decision,
+        // not a mechanical port. See src/core/CLAUDE.md.
+        qreal upper = 1;
         int increments = (upper - 0) / delta + 1;
 #ifndef conservative
 #ifdef openMP
@@ -798,25 +937,25 @@ namespace IItoII {
 #else
         /* this block contains the slower integration of each single species - this results are nearly identical to the above */
         std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
-        A = SimpsonIntegrate(0, upper, function, parameter, delta);
+        A = IntegrateSaturation(function, parameter);
 
         function = BFunction;
-        B = SimpsonIntegrate(0, upper, function, parameter, delta);
+        B = IntegrateSaturation(function, parameter);
 
         function = A2BFunction;
-        A2B = SimpsonIntegrate(0, upper, function, parameter, delta);
+        A2B = IntegrateSaturation(function, parameter);
 
         function = ABFunction;
-        AB = SimpsonIntegrate(0, upper, function, parameter, delta);
+        AB = IntegrateSaturation(function, parameter);
 
         function = AB2Function;
-        AB2 =SimpsonIntegrate(0, upper, function, parameter, delta);
+        AB2 =IntegrateSaturation(function, parameter);
 
         function = A0Function;
-        A0 =SimpsonIntegrate(0, upper, function, parameter, delta);
+        A0 =IntegrateSaturation(function, parameter);
 
         function = B0Function;
-        B0 =SimpsonIntegrate(0, upper, function, parameter, delta);
+        B0 =IntegrateSaturation(function, parameter);
 #endif
 
         qreal bc50 = BC50_A0(logK21, logK11, logK12);

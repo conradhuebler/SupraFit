@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/bc50.h"
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
@@ -170,6 +171,9 @@ QString AbstractNMRModel::ModelInfo() const
         result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
+    const BC50::ModelSystem sys = BC50System();
+    result += BC50::Format_FromSpeciation(sys.stoich, sys.lgBeta);
+
     return result;
 }
 
@@ -219,7 +223,8 @@ QString AbstractNMRModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::MonteCarlo2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
@@ -238,7 +243,8 @@ QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::GridSearch2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const

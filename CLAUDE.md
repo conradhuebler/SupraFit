@@ -35,6 +35,13 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - Function/variable names reflecting scientific meaning
 
 ### Implementation Rules
+- **Keep development context out of user-facing text.** Tooltips, labels, dialogs and console output
+  should state what the setting or result *is*; rationale, history, commit and test references
+  usually fit better in code comments, CLAUDE.md or the changelog. If such context seems genuinely
+  useful to the user, ask before adding it. (See also `~/.claude/CLAUDE.md`.)
+- **Quote numbers from a spread, not a single sample.** Accuracy, error and performance figures vary
+  with the parameters — measure across representative cases and quote the worst case, and pin it
+  with a test where possible.
 - Mark new functions as "Claude Generated"
 - Document functions (doxygen ready) with scientific context
 - Document existing undocumented functions if appearing regularly (briefly and doxygen ready)
