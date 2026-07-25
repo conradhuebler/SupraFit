@@ -44,6 +44,7 @@ set(CLIENT_SOURCES
     ../client/data_factory.cpp # DataFactory was split out of SupraFitCli (D3); without it test_pipeline
                                # fails to link (undefined DataFactory::loadDataTableFromFile)
     ../client/analysis_reporter.cpp
+    ../client/data_factory.cpp
     ../client/ml_export.cpp
     ../client/ml_pipeline_manager.cpp
 )

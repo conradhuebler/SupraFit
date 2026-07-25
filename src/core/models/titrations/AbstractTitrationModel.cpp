@@ -388,9 +388,6 @@ void AbstractTitrationModel::SolveLinearMasked(const Eigen::MatrixXd& design)
 
 double AbstractTitrationModel::GuessLgBeta(int speciesIndex) const
 {
-    const Eigen::VectorXi stoich = m_speciation.SpeciesStoichiometry(speciesIndex);
-    const int order = stoich.size() ? stoich.sum() : 2;
-
     // c_ref = geometric mean of the per-component maximum total concentration in the data.
     double logsum = 0.0;
     int nc = 0;
@@ -404,7 +401,7 @@ double AbstractTitrationModel::GuessLgBeta(int speciesIndex) const
         }
     }
     const double logcref = nc ? logsum / nc : -3.0; // fallback ~1e-3
-    return std::max(1.0, (order - 1) * (-logcref));
+    return m_speciation.GuessLgBeta(speciesIndex, logcref);
 }
 
 qreal AbstractTitrationModel::GuessK(int index, double min, double max)

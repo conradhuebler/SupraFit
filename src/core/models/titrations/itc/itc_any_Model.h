@@ -102,6 +102,14 @@ public:
     }
 
 private:
+    /*! \brief Seed for lg beta of species \a speciesIndex, scaled to this titration's concentrations.
+     *
+     * The ITC counterpart of AbstractTitrationModel::GuessLgBeta - itc_any sits on the AbstractItcModel
+     * branch and so does not inherit it. Both share the formula via SpeciationEngine::GuessLgBeta and
+     * differ only in where the totals come from: here the cell/syringe protocol via m_c0.
+     * Claude Generated */
+    double GuessLgBeta(int speciesIndex) const;
+
     int m_global_parametersize = 0;
     QStringList m_global_names, m_species_names, m_local_names;
     SpeciationEngine m_speciation; ///< reaction system + BFGS solver (host + guest totals)

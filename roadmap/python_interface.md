@@ -109,23 +109,88 @@ NumPy integration ultimately live.
 - **Files:** new `python/suprafit/` package (docs/spec only), reuse `input/*.json` fixtures.
 - **Effort:** 0.5 wk · **Risk:** low.
 
-### Phase 1 — MVP: Option C subprocess wrapper (1 wk)
+### Phase 1 — MVP: Option C subprocess wrapper (1 wk) — ✅ DONE + hardened
 - **Scope:** `suprafit.cli` runner (locate `suprafit_cli`, run with a temp JSON config, capture
   result JSON), plus loaders that parse project/model JSON into dicts and optional pandas frames.
   Cover: generate data, load project, fit models, run post-processing, extract statistics/ML features.
-- **Files (new):** `python/suprafit/__init__.py`, `runner.py`, `project.py`, `results.py`,
-  `pyproject.toml`; reuses `suprafit_cli` (`-i/-o/-l/-x`, `Jobs`, `PostFitAnalysis`, ML pipeline).
+- **Files (shipped):** `python/suprafit/` package (`__init__.py`, `_cli.py`, `_backend.py`,
+  `_config.py`, `_data.py`, `_jobs.py`, `_models.py`, `_project.py`, `_results.py`, `errors.py`),
+  `pyproject.toml`; reuses `suprafit_cli` (`-i/-o/-n`, `AddModels`, `PostFitAnalysis`, ML pipeline).
+- **Hardening (2026-07-17):** `Model` surfaces scalar fit statistics (`aic`, `aicc`, `sae`,
+  `standard_error`, `mean_error`, `variance`, `valid`, plus `sse`/`converged`); added
+  `Model.features()` + `Project.results_frame()` (feature table for scikit-learn); parser-only
+  golden regression `python/tests/test_reference.py` against `data/samples/reference/simulated_1_1.json`
+  (the oracle for Phase 2, runs without a built CLI). Note: real ML feature vectors are assembled
+  Python-side — the CLI's `-ml-features` file is only a slimmed project and is intentionally not read.
 - **Effort:** ~1 wk · **Risk:** low (subprocess/temp-file overhead only).
 
-### Phase 2 — pybind11 core module, MVP surface (1.5 wk)
+### Phase 2 — pybind11 core module, MVP surface (1.5 wk) — ✅ fit path DONE
 - **Scope:** `import suprafit._core`; lazy `QCoreApplication`. Bind the JSON façade:
   `create_data(json)`, `create_model(id, data)`, `import_model/export_model(json)`,
   `set_global/set_local`, `initial_guess()`, `fit()` (wrap `NonLinearFitThread::run()` synchronously),
   scalar getters (SSE/AIC/AICc/R²/χ²), and `ModelTable/ErrorTable` as NumPy (Eigen↔NumPy).
-- **Files (new):** `src/python/bindings/` (`module.cpp`, `bind_data.cpp`, `bind_model.cpp`,
-  `bind_fit.cpp`); **touch** `CMakeLists.txt` (add pybind11 target under `_Python`, migrate to
-  `find_package(Python3 COMPONENTS Development.Module)` + add `external/pybind11` submodule),
-  `global_config.h.in` (unchanged flag, reused).
+- **Delivered (2026-07-17):** new CMake option `SUPRAFIT_PYBIND` builds `suprafit._core` from
+  `src/python/bindings/module.cpp`; `external/pybind11` (v3.0.4) submodule added. core/models stay
+  **STATIC but PIC** and are linked into the SHARED module (their `CreateModel` cycle is illegal for
+  shared libs — this is why the old `_Python=ON` never configured). Resolved a nasty name collision
+  between the project's `_Python` option and CMake's FindPython internal `_Python` variable. The
+  bound `fit_from_tables(indep, dep, models_json)` builds a DataClass from Eigen matrices and calls
+  the same `AnalysisManager::fitModelsToData` the CLI uses, returning the identical project JSON.
+  `NativeBackend` is wired so `set_backend("native")` is a transparent drop-in for array/file data;
+  it recovers the reference oracle's constants exactly and matches the CLI backend
+  (`python/tests/test_native.py`).
+- **Phase 3 post-fit statistics also DONE in-process (2026-07-17):** the earlier SIGFPE was just the
+  app-wide `threads` property being unset — the statistics engine divides by it
+  (`blocksize = MaxSteps/threads/20`), so an unset 0 crashed; the module now sets it as the CLI does.
+  Monte Carlo + cross-validation (and the other methods) run in-process via `fit_from_tables(..., nproc)`
+  and reproduce the reference oracle's summaries (`python/tests/test_native.py`).
+- **ML features DONE (2026-07-17):** `fit_from_tables` reconstructs each fitted model
+  (`JsonHandler::Json2Model`) and attaches `StatisticTool::ExtractModelMLFeatures` as
+  `model_export.ml_features`; the reconstructed model's empty error accumulators are backfilled from
+  the reliable exported statistics (SSE/AIC/AICc/standard_error). Surfaced as `Model.ml_features`
+  (native only; None on the CLI). `python/tests/test_native.py::test_native_ml_features`.
+- **ModelTable/ErrorTable as NumPy DONE (2026-07-19):** `fit_from_tables` also returns the fitted
+  model signal (`ModelTable()`, reliable after reconstruction) and the residuals (derived as
+  `dependent - signal`, since the rebuilt model's `ErrorTable()` is not filled) as row-major arrays;
+  surfaced as `Model.model_signal` / `Model.model_error` (2D NumPy). `test_native_model_tables`.
+- **Low-level verbs + data generation DONE (2026-07-19):** a `_core.Model` class (exposed as
+  `suprafit.native_model(id_or_name, indep, dep)`) gives a live model handle — `set_global`,
+  `set_local`, `initial_guess`, `fit` (real Minimizer), and getters `sse/aic/aicc/converged/
+  global_parameters/local_parameters/model_signal/export_json` (tables as NumPy). `_core`'s
+  `generate_independent(equations, datapoints)` (exposed as `suprafit.generate_independent`) drives
+  the CLI equation generator. `python/tests/test_native.py::{test_native_live_model,
+  test_native_generate_independent}`.
+- **Dependent-data generation DONE (2026-07-19):** `_core.generate_dependent`
+  (`suprafit.generate_dependent(model, indep, global_params, local_params, noise_std, seed)`) builds
+  a model at caller-supplied parameters, computes the signal, and adds reproducible i.i.d. Gaussian
+  noise — deterministic **ground-truth** generation (draw random parameters in NumPy for random
+  datasets, so the truth is always known). Round-trip verified (params → data → refit recovers the
+  params at ~0 SSE). `python/tests/test_native.py::test_native_generate_dependent`.
+- **ITC models usable (2026-07-19):** ITC models need the experiment setup as *system parameters*
+  (CellVolume/CellConcentration/SyringeConcentration/Temperature) or the heat is identically zero.
+  `LiveModel` gained `set_system_parameter(index, value)` + `load_system_parameters()` (which calls
+  the model's `UpdateParameter()`, reading the values into `m_cell_concentration` etc. — NOT
+  `LoadSystemParameter()`, which would reload stored JSON and discard them), plus `calculate()`.
+  `suprafit.native_model(..., system_parameters={"cell_volume":…, "cell_concentration":…, …})`
+  wires it up by friendly name. Round-trip verified (K/dH → heat → refit recovers them at ~0 SSE);
+  `python/tests/test_native.py::test_native_itc_model`.
+- **ITC through the transparent Project (2026-07-19):** `fit_from_tables` takes a
+  `system_parameters` {index: value} map and sets it on the shared DataClass *before*
+  `fitModelsToData` creates its models, so every model inherits the cell/syringe setup;
+  `Project.from_arrays(..., system_parameters={...})` (friendly names) threads it through the task
+  config → NativeBackend. Verified via Project + native backend (`test_project_itc_native`).
+- **Thermogram import DONE (2026-07-19):** `suprafit.read_itc(path)` loads a raw `.itc` trace
+  (`ToolSet::LoadITCFile` → `ThermogramHandler` → `ItcProcessor::process()`, integrating over one
+  repeating peak rule spanning the trace) and returns `{independent: per-injection volumes,
+  dependent: net heats, system_parameters}` (cell volume + temperature from the file metadata, keyed
+  by friendly name). Add the sample `cell_concentration`/`syringe_concentration` (the `.itc` rarely
+  carries them) and fit. Verified on `data/samples/itc/sample.itc` (61 injections → itc_1_1 fit,
+  lg K≈5.0, converged; `test_read_itc_and_fit`). NB: the earlier hang was specific to the degenerate
+  12-point `synthetic.itc`, not a code defect — real thermograms integrate fine.
+- **Phase 3 is complete.** Remaining across the whole roadmap: Phase 4 (wheel packaging with bundled
+  Qt) and Phase 5 (retire/modernise the legacy `pythonbridge` ctypes demo).
+- **Files:** `src/python/bindings/module.cpp`; `CMakeLists.txt` (SUPRAFIT_PYBIND option +
+  pybind11 subdir + PIC + module target); `external/pybind11` submodule; `python/suprafit/_backend.py`.
 - **Effort:** ~1.5 wk · **Risk:** medium (Qt app lifetime, Eigen/NumPy copies, threading).
 
 ### Phase 3 — Statistics, jobs & ML features in-process (1 wk)

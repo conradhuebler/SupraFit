@@ -11,14 +11,22 @@ A Open Source Qt6 based fitting tool for supramolecular titration experiments (N
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
 ## Getting SupraFit
-[SupraFit 2.0 binaries](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) are available for Linux (as AppImage), for Windows and macOS. 
+
+Three builds are available:
+
+- **[SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0)** — the stable release, for Linux (AppImage), Windows and macOS. It does not change.
+- **[SupraFit 2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139)** — a fixed snapshot of the development version, for Linux (AppImage and tar.gz) and Windows. Several years of work beyond 2.0, and like 2.0 it stays exactly as it is, so a result obtained with it can be reproduced later.
+- **[Nightly](https://github.com/conradhuebler/SupraFit/releases/tag/nightly)** — rebuilt from the master branch on every change, for Linux, Windows and macOS. The newest features, and the newest bugs.
+
+**Please try the development version and say what you find.** Much of it has been used on far fewer real datasets than the stable release, and the problems that matter tend to show up only on someone else's data. Bug reports, results that look wrong, and things that are simply awkward to use are all equally welcome — open an issue or write to the address on page 18 of the Quickstart.
+
 
 Windows users please note, that SupraFit 2.0 requires the Microsoft Visual C++ Redistributable for Visual Studio 2015, 2017 and 2019 to be installed, which includes for example msvcp140.dll and msvcp140_1.dll.
-It may be downloaded [from the official website.](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) This holds not true for the most recent Nightly Build for Windows platforms. They are compilied with MinGW and all dlls are shipped with the zip archive.
+It may be downloaded [from the official website.](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) This holds not true for the development builds (2.5.x and the nightly) for Windows platforms. They are compilied with MinGW and all dlls are shipped with the zip archive.
 
 ### History
 - [SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) stable version, first public release
-- [SupraFit 2.x](https://github.com/conradhuebler/SupraFit/releases) most recent development version. Automatic builds for Windows and Linux are not work currently.
+- [SupraFit 2.x](https://github.com/conradhuebler/SupraFit/releases) most recent development version, built automatically for Linux, Windows and macOS on every change to the master branch.
 
 
 ## Running
@@ -37,6 +45,10 @@ Latest snapshots (not more than 5) of the current development can be found via t
 - Custom models are work in progress and not yet well documented. For the start, please have a look at [here](https://github.com/conradhuebler/SupraFit/blob/master/docs/ScriptedModels.md) (Qt 6)
 - The current master branch contains a snapshot of an improved  thermogram handling, that was developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511). (Qt 5)
 - The current master branch contains a snaphsot of a spectra import interface.  The latest commit without the new branch is [b5af8cd](https://github.com/conradhuebler/SupraFit/commit/b5af8cd9e8c29792c15b893aee8bcffa8a19dd8d). (Qt 5)
+- The current master branch contains the thermogram import routed through the core, developed in the **refactor/thermo-gui-routing** branch. The import dialog now shows the full precision that the command line has always read, so its volume and heat columns display more digits than before. The last binaries without this change are [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
+- The current master branch contains a Python interface (`import suprafit`), developed in the **feature/python-interface** branch. It is not part of the binaries above and has to be built with `-DSUPRAFIT_PYBIND=ON`; see [python/README.md](https://github.com/conradhuebler/SupraFit/blob/master/python/README.md).
+
+A fit that stops without moving off its start value is no longer reported as converged, and a fit that reaches the optimum exactly now is. This changes the flag shown next to a result, not the result itself.
 
 ## Usage
 SupraFit handles tables that are composed as follows:

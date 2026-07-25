@@ -102,9 +102,6 @@ void Thermogram::setUi()
     m_showDilution = new QCheckBox(tr("Show Dilution"));
     m_showDilution->setEnabled(false);
 
-    // m_refit = new QPushButton(tr("Update"));
-    // connect(m_refit, &QPushButton::clicked, this, &Thermogram::UpdateData);
-
     m_exp_file = new QLineEdit;
     m_exp_file->setClearButtonEnabled(true);
     connect(m_exp_file, &QLineEdit::textEdited, this, &Thermogram::clearExperiment);
@@ -156,37 +153,9 @@ void Thermogram::setUi()
     m_dil_file->setClearButtonEnabled(true);
     connect(m_dil_file, &QLineEdit::textEdited, this, &Thermogram::clearDilution);
 
-    /*
-    m_scale = new QComboBox;
-    m_scale->addItem(QString::number(cal2joule));
-    m_scale->addItem("1");
-    m_scale->setEditable(true);
-    connect(m_scale, &QComboBox::currentTextChanged, m_scale, [this]() {
-        this->UpdateTable();
-    });
-    */
     m_injct = new QLineEdit;
     //m_injct->setMaximumWidth(100);
 
-    //m_exp_base = new QLineEdit;
-    //m_exp_base->setMaximumWidth(100);
-
-    //m_dil_base = new QLineEdit;
-    //m_dil_base->setMaximumWidth(100);
-
-    /*
-    m_freq = new QDoubleSpinBox;
-    m_freq->setValue(1.0);
-    m_freq->setStyleSheet("background-color: green");
-    connect(m_freq, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](qreal freq) {
-        m_forceStep = true;
-        this->setDilutionFile(m_dil_file->text());
-        this->setExperimentFile(m_exp_file->text());
-        this->m_dilution->setFrequency(freq);
-        this->m_experiment->setFrequency(freq);
-    });
-    m_freq->setReadOnly(true);
-*/
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
 
     // An explicit switch for "use the field's value for every injection", instead of the old
@@ -236,20 +205,6 @@ void Thermogram::setUi()
     layout->addWidget(m_uniformInject, 2, 2);
     layout->addWidget(m_message, 2, 3);
 
-    /*
-    hlayout = new QHBoxLayout;
-    hlayout->addWidget(new QLabel(tr("Freq:")));
-    hlayout->addWidget(m_freq);
-    hlayout->addWidget(new QLabel(tr("cal->J")));
-    //hlayout->addWidget(m_scale);
-    hlayout->addWidget(new QLabel(tr("Experiment Heat:")));
-    hlayout->addWidget(m_exp_base);
-    hlayout->addWidget(new QLabel(tr("Dilution Heat:")));
-    hlayout->addWidget(m_dil_base);
-    hlayout->addWidget(m_refit);
-
-    layout->addLayout(hlayout, 3, 0, 1, 4);
-*/
     m_mainwidget = new QTabWidget;
 
     m_table = new QTableWidget;
@@ -373,8 +328,6 @@ Thermogram::~Thermogram()
 QPair<PeakPick::spectrum, QJsonObject> Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
 {
     qreal freq = 0;
-    // QSignalBlocker block(m_freq);
-    // m_freq->setValue(freq);
     return ToolSet::LoadITCFile(filename, peaks, offset, freq, inject);
 }
 
@@ -460,7 +413,6 @@ void Thermogram::setExperimentFile(QString filename)
         }
         m_exp_file->setText(filename);
         m_exp_file->setStyleSheet("background-color: " + included());
-        //m_exp_base->setText(QString::number(offset));
         m_experiment->setFileType(ThermogramWidget::FileType::ITC);
         m_experiment_thermogram->setThermogram(original);
         m_experiment_thermogram->setPeakList(m_exp_peaks);
@@ -469,8 +421,6 @@ void Thermogram::setExperimentFile(QString filename)
         //m_exp_peaks = m_experiment->Peaks();
     } else {
         original = LoadXYFile(filename);
-        // QSignalBlocker block(m_freq);
-        // m_freq->setValue(original.Step());
         m_experiment_thermogram->setThermogram(original);
         //m_experiment->setFileType(ThermogramWidget::FileType::RAW);
         //m_experiment->setThermogram(&original);
@@ -603,23 +553,13 @@ void Thermogram::UpdateMessage(int injections)
     m_message->setText(message);
 }
 
-QString Thermogram::Content() const
+DataTable* Thermogram::ResultTable() const
 {
     /* Columns 0 and 3 of the rendered result: what the model is given is by construction what the
-     * table shows. Previously this scraped the QTableWidget back out of the view, dereferencing
-     * item(i, 0) unguarded and passing on a comma decimal from a manually edited cell that
-     * FileHandler would then misparse.
-     *
-     * Renders ResultRows() rather than m_processor->resultTable(): the two are now equal (the volume
-     * vector is resolved to the peak count before every render), but ResultRows() reads the same
-     * resolved vector the table does without depending on that resolve having run. Claude Generated */
-    QString content;
-    for (const QVector<qreal>& row : ResultRows()) {
-        content += QString::number(row[0]) + "\t";
-        content += QString::number(row[3]) + "\t";
-        content += "\n";
-    }
-    return content;
+     * table shows. resultTable() and ResultRows() read the same m_inject/m_net_heat members with the
+     * same padding, so this is the table's own content - only without the round-trip through a
+     * formatted string, which cost every heat all but six significant digits. Claude Generated */
+    return m_processor->resultTable();
 }
 
 void Thermogram::setDilution()
@@ -676,7 +616,6 @@ void Thermogram::setDilutionFile(QString filename)
         m_showDilution->setEnabled(true);
         //m_dilution->setThermogram(&original, offset);
         //m_dilution->setPeakList(m_exp_peaks);
-        //m_dil_base->setText(QString::number(offset));
         //m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);

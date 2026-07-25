@@ -56,7 +56,14 @@ derives `lg β ≈ (order-1)·(-lg c_ref)` from stoichiometry + data concentrati
 - Debug tests: `cd debug && cmake . && make <target> -j4`; run `./src/tests/<t>`. Release (for perf):
   `cd release`. NOTE: shell cwd persists between calls — always `cd` explicitly.
 - Green: `test_reactionparser` (16), `test_nmr_selfaggregation` (5), `test_nmr_ncomponent` (6),
-  `test_uvvis_any` (3), `test_itc_any` (4), `test_bfgs_solver` (5), reference regression (14/0, ~55 s).
+  `test_uvvis_any` (3), `test_itc_any` (6 since 2026-07-17), `test_bfgs_solver` (5),
+  reference regression (14/0 + 4 skipped, ~55 s idle / ~120 s under load).
+- **`ReferenceProjectsTest` is flaky under parallel `ctest` load** (seen 2026-07-17): 13/1 once while
+  a `make -j4` was running, then 14/0 on the ctest retry and on three consecutive standalone runs.
+  Treat a lone red here as suspect and re-run it isolated before believing it. The test sets
+  `qApp->setProperty("threads", 4)`, so it is competing for the same pool.
+- Counts in this file are Qt's totals, which include `initTestCase`/`cleanupTestCase` — two more than
+  the number of test slots.
 - GUI builds + launches offscreen (`QT_QPA_PLATFORM=offscreen`). Links `suprafit_gui models core
   cutechart`.
 
@@ -135,16 +142,45 @@ the real workflow (reaction editor + SEy MC); ASan prints the exact corrupting w
 Build fix required en route (committed): `core` now links `fmt::fmt-header-only` (CMakeLists.txt ~272) —
 `analysis_manager.cpp`/`projectmanager.cpp` use `fmt::print` but `core` linked no fmt, so their objects
 emitted an external `fmt::vprint` reference nothing resolved on a clean build (worked only via stale
-objects). `src/tests/test_mc_crash.cpp` is a **temporary** harness (remove once the crash is fixed).
+objects). The temporary `src/tests/test_mc_crash.cpp` harness has since been removed.
 
-## Follow-ups the user raised (not done)
-- `itc_any` InitialGuess uses `K+K` for higher species — same runaway risk; could reuse a GuessLgBeta
-  analogue (itc doesn't derive from AbstractTitrationModel).
-- Fit-solver **variable projection**: optimise only the nonlinear lg K, project out the linear
-  shifts/ε (they are already refit via QR in `UpdateShifts`) — the main remaining fit speedup.
-- GUI **config** option to pick the speciation method per model (call + benchmark flag exist; GUI
-  option not yet).
-- "nmr_any slower than the classic model" — expected (general iterative vs specialised solver).
+## Follow-ups the user raised
+
+**Done since:**
+- ~~`itc_any` `K+K`~~ — fixed (`6c157794`). The formula now lives on `SpeciationEngine::GuessLgBeta(j,
+  logcref)`, where the stoichiometry already is; both branches derive their own concentration scale
+  (titration from the data, itc from the cell/syringe protocol), so no duplication and the titration
+  numbers are untouched. Species 0 keeps `GuessK()`.
+- ~~Fit-solver variable projection~~ — landed (`439c1b78` and the VarPro series before it).
+- ~~GUI config option for the speciation method~~ — exists (`modelwidget.cpp:333-355`, LevMar/BFGS
+  submenu writing the `SpeciationSolver` key).
+- "nmr_any slower than the classic model" — expected (general iterative vs specialised solver). Not a
+  task.
+
+## OPEN (2026-07-17) — `itc_any` fit runs away from a correctly scaled seed
+
+Found while building the regression test for the `K+K` fix, and **not** caused by it — this happens
+with the corrected seed. A separate defect, in the optimiser rather than the model.
+
+Repro (the setup of `test_itc_any::testTruthIsExactMinimum`, which pins the model half of it):
+synthetic itc_any `A + B <=> AB` / `A + 2 B <=> AB2`, guest-rich protocol (cell 1 mmol/L, syringe
+50 mmol/L, 1400 µL, 12 × 10 µL), truth `lg β = [5.0, 8.0]`, `dH = [-40, -25]`, `m=0`, `n=1`, `fx=1`.
+
+- **SSE at the truth = 3.9e-21** — the model is right, the truth is an exact minimum.
+- **Fitting from the truth** → `lg β = [4.988, 7.929]`, but SSE **0.198**: the globals survive, the
+  minimiser resets the local parameters (`InitialGuess`'s `m = -1000`, `fx` from `GuessFx()`) and
+  settles worse than where it started.
+- **Fitting from the seed** (`[5.53, 5.41]`) → `lg β = [268, -42400]`, SSE 13.5. Full runaway.
+
+So a sane seed is not sufficient here. Prime suspects: the local-parameter reset during `Minimize()`,
+and ITC's lg β ↔ dH ↔ fx ↔ n correlation. Deliberately not chased in the seeding commit.
+
+Note for whoever picks this up: an itc_any test **must** set the cell/syringe protocol on the *model*
+(`setSystemParameterValue` + `UpdateParameter()`), not on the DataClass beforehand — building a model
+runs `DeclareSystemParameter()` then `LoadSystemParameter()` and drops values planted earlier. Without
+a protocol `m_c0` stays zero, `GuessdH()` returns its `-4000` failure path and every
+concentration-derived guess silently falls back. That is why `testGridCounts`/
+`testSelfAggregationSpecies` cannot see any of this.
 
 ## Roadmaps (from sub-agents, committed)
 `roadmap/python_interface.md` (recommend JSON/CLI wrapper first, then pybind11; drop embedding),
@@ -170,13 +206,37 @@ clobbers the master nightly. PRs still build-only. (Submodule consistency — th
 resolved, TECHNICAL_DEBT D6.)
 
 **Open finding — two windows show the same projects (TECHNICAL_DEBT D9).** `SupraFit::ProjectManager` is
-a process-wide singleton. Two halves: (1) `ProjectTree::getUnifiedProjectList()` (`projecttree.cpp:31`)
-reads `instance().getLoadedProjectIds()` with no per-window filter; (2) every `SupraFitGui` ctor
-connects to the same singleton's signals (`suprafitgui.cpp:175`), so a second window (`NewWindow()` →
-`new SupraFitGui`, `suprafitgui.cpp:904`) both displays all projects and reacts to the other's loads.
-Recommended fix (Rank 1): make `ProjectManager` instantiable, one instance per `SupraFitGui`, keep
-`instance()` for CLI/tests; thread a `ProjectManager*` through `ProjectTree`/`MainWindow`/`ModelDataHolder`
-(they hard-code `instance()` at `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`). Keep
-app-level `qApp` properties (threads, settings) shared. Rank 2: owner-window-tagged singleton + per-window
-filter. Rank 3 (stopgap): tree reads per-window `m_data_list` — fixes only the duplication, not the
-signal fan-out. Not implemented (bigger change, touches CLI-shared code — needs a go-ahead on direction).
+a process-wide singleton. Two halves: (1) `ProjectTree::getUnifiedProjectList()` (`projecttree.cpp:31`,
+the `instance()` call is on `:34`) reads `instance().getLoadedProjectIds()` with no per-window filter;
+(2) every `SupraFitGui` ctor connects to the same singleton's signals (`suprafitgui.cpp:177`), so a
+second window (`NewWindow()` → `new SupraFitGui`, `suprafitgui.cpp:906`) both displays all projects and
+reacts to the other's loads. Rank 1 (**chosen, own branch after the thermo merge**): make
+`ProjectManager` instantiable, one instance per `SupraFitGui`, keep `instance()` for CLI/tests; thread a
+`ProjectManager*` through `ProjectTree`/`MainWindow`/`ModelDataHolder` (they hard-code `instance()` at
+`mainwindow.cpp:138`, `modeldataholder.cpp:538,857,949,1423` — the older `485,788,880,1354` had drifted).
+Keep app-level `qApp` properties (threads, settings) shared. Rank 2: owner-window-tagged singleton +
+per-window filter. Rank 3 (stopgap): tree reads per-window `m_data_list` — fixes only the duplication,
+not the signal fan-out.
+
+Three things the D9 planning turned up that are worth knowing before starting:
+- **Destruction order is the trap.** A by-value/QScopedPointer member dies before
+  `~QObject::deleteChildren()`, and the children are the PM's users (`m_stack_widget` → `MainWindow` →
+  `~MainWindow` → `CloseAllForced()` → `ModelDataHolder`). `new ProjectManager(this)` + `QPointer` in
+  the holders turns that from silent UAF into an observable null check.
+- **The parent chain is unusable for injection**: at `mainwindow.cpp:138` `parent()` is still `nullptr`
+  in 4 of the 5 construction sites (reparenting happens later via `m_stack_widget->addWidget`).
+  Ctor injection without a default argument.
+- **`suprafit_gui` is C++14** (`src/ui/CMakeLists.txt:89`) while `core`/`models` are C++17
+  (`CMakeLists.txt:549`) — `projectmanager.h` must parse under both.
+
+**Open finding — D9b: `dropMimeData` indexes a list nobody fills any more.** `m_data_list` is not
+populated on the ProjectManager path at all (the only writers are the deprecated `SetData`,
+`suprafitgui.cpp:756`, and the model paths `:821`/`:885`; `onProjectAdded` appends nothing, see the
+comment at `:2282`). `projecttree.cpp:773` and `:782` index it and dereference `toStrongRef().data()`
+with neither a bounds check nor a null check — a crash path on an empty list. Independent of D9;
+removing the `getUnifiedProjectList` fallback does **not** help.
+
+**Open finding — `qApp` properties stay process-global.** `projectpath`/`projectname`/`recent`
+(`suprafitgui.cpp:969-970, 627, 1331-1332`). This is the other half of D9: once each window has its own
+projects, they still share one `projectpath`, so window B's save default and the save-on-exit in
+`closeEvent` take whatever window A wrote last — B can save over A's file. D9 does not fix this.

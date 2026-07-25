@@ -116,17 +116,37 @@
 
 ## SupraFit 3.0 Beta
 
+### Fit results and reference data
 - [ ] **2:1/1:1 cross-validation mean deviates from the reference by 22 %** (`ReferenceProjectsTest::referenceResampleCVRA`, `simulated_2_1_1_1.json`, ¹H 2:1/1:1, p6: 4.65-4.67 vs 5.96). The CV block is exhaustive leave-one-out (19 points, no sampling), so the deviation is reproducible. Open: which of the 19 fits deviates, and whether the reference or the recomputed value is the correct one. Deliberately not blocking the scripted-model merge.
 - [ ] **The same CV mean jitters by ~2 % between runs** (4.645 / 4.666 / 4.738 over three) — unexpected for exhaustive leave-one-out; the test sets `threads=4`, so start at the JobManager's result ordering.
 - [ ] Regenerate the 2:1/1:1 reference data so the stored SSE matches the closed-form cubic root (`referenceFit` is 0.13 % off at a 0.1 % tolerance — the known, deliberate consequence of the solver change).
 
 ### Solver defaults
 - [ ] **Decide the default fit solver.** `OptimConfigBlock` ships `FitSolver = "LevMar"` (`global.h`); VarPro is opt-in although the fixed NMR/UV-VIS models support it (conditionally on their options) alongside the `*_any` models. Equivalence is covered (`test_varpro`, `test_varpro_cv`) and VarPro is 2-5x faster. **`benchmark_dimer_flat`, measured 2026-07-24 (release, 6 configurations): neither solver wins throughout, so a blanket switch is not supported.** VarPro recovers the truth exactly in 3 of 6 but returns lg β12 = -7.32 / 0.15 in the two runs started at lg β(A2) = 5, at an SSE (1e-3) that noisy real data would hide; LevMar sits on its start value in 2 of 6 (SSE 2.5 and 11.1). One adversarial scenario — enough to reject the blanket switch, not enough to conclude the opposite.
-- [ ] **`isConverged()` is not a quality signal on flat directions.** In the same run LevMar reports converged while sitting on its start at SSE 11.1, and VarPro reports *not* converged in the two rows where it lands exactly on the truth. The GUI shows this flag. Fix the semantics before it decides anything.
+- ✅ **`isConverged()` fixed (2026-07-24).** It used to read backwards in both failure modes — LevMar reported converged while sitting on its start at SSE 11.1, VarPro reported *not* converged where it landed exactly on the truth. The benchmark numbers quoted above come from that run; SSE and parameters were unchanged by the fix, only the flag.
 - [ ] Worth trying instead of one default: VarPro to reach the valley, then a full-vector LevMar polish — VarPro's failures are wrong parameters at a plausible SSE, LevMar's are visible non-movement.
 - [ ] If flipped after all: choose between `VarPro` and `VarProAnalytic` (the latter falls back to finite differences on masked data), keep `LevMar` reachable as the reference oracle the equivalence tests compare against, and check what stored projects do — their own optimizer config must keep winning over the new default.
 
-### ITC thermogram analysis (libpeakpick maths, "Track B" — own branch, changes numbers)
+### ITC thermogram — GUI verification still outstanding
+The thermogram dialog was routed through the core `ItcProcessor` and merged without these checks: the
+rendering path has no test harness, and the core pin test (`testAbsoluteIntegralsPinned`) covers only
+the integrals. Compare against `bugfix/thermo-nmr-chart-fixes`, the frozen starting point — not
+against `master`, which did not have the processor.
+
+- [ ] Load an `.itc` experiment: column 0 shows the file's injection volumes.
+- [ ] Load an experiment, then a dilution: column 0 and the four concentration fields stay unchanged.
+- [ ] Column 3 against the baseline, with and without dilution. It now shows *more* digits — the GUI
+      used to round to 6 significant digits while the CLI always read full precision. Expected.
+- [ ] Clear the dilution field: column 3 falls back to the experiment values. **This did not happen
+      before — deliberate change, confirm it is wanted.**
+- [ ] Import a comment-only file via "Import Row": warning instead of a crash.
+- [ ] `.dh` and `.dat` export: byte-identical before and after.
+- [ ] Dilution series in the chart: appears only with a dilution loaded, "Show Dilution" works.
+- [ ] **Decide F5:** `Raw()` used to write the dilution file path unconditionally, so with
+      `StoreFileName` off the dilution kept a path while the experiment did not. Both are symmetric
+      now (no path written in that mode). Revertible if the asymmetry was wanted.
+
+### ITC thermogram — libpeakpick maths ("Track B", own branch, changes numbers)
 - [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.
 - [ ] **B1 `Peak.end` convention** — SupraFit builds the range inclusive, libpeakpick reads it exclusive; the core of the integration discrepancy.
 - [ ] **B2 Undefined behaviour → defined** (`spectrum.h:170-176`, `:198-204`: the `i >= size() && i < 0` guard is never true).
@@ -134,6 +154,10 @@
 - [ ] **B4 Hygiene** — `spectrum` rule-of-zero (a user destructor plus copy operators suppress moves, so every copy is deep).
 - [ ] Deferred with a FIXME in the code: `nxlinregress.h:56` uses `initial[i]` where `initial[j]` is meant.
 - Guard for all of the above: `testAbsoluteIntegralsPinned` pins the 20 unscaled integrals at 1e-9 (the OpenMP reduction scatters in the last bit, ~1e-16). A moved number needs a reason, not a new expectation.
+
+### itc_any
+- [ ] **`itc_any` fits run away from a correctly scaled seed** — recorded on 2026-07-17, separate from
+      the seeding fix and not caused by it.
 
 ---
 
