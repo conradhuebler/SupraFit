@@ -112,6 +112,25 @@ bool itc_any_Model::DefineModel()
     return true;
 }
 
+double itc_any_Model::GuessLgBeta(int speciesIndex) const
+{
+    // c_ref = geometric mean of the maximum host and guest total in the protocol. Mirrors the
+    // titration-branch loop, which for two components reads exactly these two accessors.
+    double logsum = 0.0;
+    int nc = 0;
+    for (int c = 0; c < 2; ++c) {
+        double maxTotal = 0.0;
+        for (int i = DataBegin(); i < DataEnd(); ++i)
+            maxTotal = std::max(maxTotal, c ? InitialGuestConcentration(i) : InitialHostConcentration(i));
+        if (maxTotal > 0.0) {
+            logsum += std::log10(maxTotal);
+            ++nc;
+        }
+    }
+    const double logcref = nc ? logsum / nc : -3.0; // fallback ~1e-3, e.g. before the protocol is set
+    return m_speciation.GuessLgBeta(speciesIndex, logcref);
+}
+
 void itc_any_Model::InitialGuess_Private()
 {
     double heat = GuessdH();
@@ -122,10 +141,14 @@ void itc_any_Model::InitialGuess_Private()
     LocalTable()->data(0, m_global_parametersize + 1) = 1;
     LocalTable()->data(0, m_global_parametersize + 2) = GuessFx();
 
+    // Species 0 keeps GuessK() - a real numeric minimisation over lg K. The higher species used to
+    // get K + K, i.e. twice that, for every one of them regardless of stoichiometry; a data-derived
+    // seed scaled to the concentration range instead, so an AB2 does not start far too high and send
+    // the optimiser into a flat runaway direction (the nmr_any failure mode). Claude Generated
     double K = GuessK();
     (*GlobalTable())[0] = K;
     for (int i = 1; i < GlobalParameterSize(); ++i)
-        (*GlobalTable())[i] = K + K;
+        (*GlobalTable())[i] = GuessLgBeta(i);
 
     AbstractModel::Calculate();
 }

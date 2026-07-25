@@ -42,6 +42,7 @@ class QSpinBox;
 class QCheckBox;
 
 class DataTable;
+class Thermogram;
 
 class ImportData : public QDialog {
     Q_OBJECT
@@ -72,6 +73,11 @@ public slots:
     bool ImportThermogram();
 
 private:
+    /*! \brief Runs the dialog and takes over its result; shared by both ImportThermogram overloads,
+     * which differ only in how they set the dialog up. Takes ownership of \a thermogram.
+     * Claude Generated */
+    bool RunThermogram(Thermogram* thermogram);
+
     void setUi();
     void ReshapeTable();
     void Evaluate();

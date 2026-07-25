@@ -1,11 +1,12 @@
-# Session Handoff — Thermogramm-GUI-Routing (2026-07-16)
+# Session Handoff — Thermogramm-GUI-Routing (Stand 2026-07-17)
 
-Branch: **`refactor/thermo-gui-routing`**, abgezweigt von `bugfix/thermo-nmr-chart-fixes` (`c2e0b0c7`).
-Alles unten ist **committet**. Der Branch ist **nicht gepusht** (kein Upstream). **Track A ist
-vollständig (C0–C11).**
+Branch: **`refactor/thermo-gui-routing`**, abgezweigt von `bugfix/thermo-nmr-chart-fixes` (`c2e0b0c7`),
+gepusht auf `origin`. Alles unten ist **committet**. **Track A (C0–C11) und C12 sind vollständig.**
+`master` ist ein reiner Vorfahre — der Merge ist ein Fast-Forward, sobald die GUI-Prüfungen durch sind.
 
 > Nicht verwechseln mit `SESSION_HANDOFF.md` — die gehört zur Speciation-Sitzung vom 2026-07-11 und
-> enthält den noch offenen D9-Befund (zwei Fenster, dieselben Projekte). Sie ist unangetastet.
+> enthält den offenen D9-Befund (zwei Fenster, dieselben Projekte), der als eigener Branch nach dem
+> Merge angegangen wird, sowie einen neuen offenen `itc_any`-Fit-Befund.
 
 Vollständiger Plan: `/home/conrad/.claude/plans/iridescent-waddling-forest.md`
 
@@ -40,11 +41,11 @@ Ziel: Der Core besitzt die Wissenschaft, die GUI rendert sie. **Erreicht.**
 | `4a40cf0b` | **C1** — libpeakpick auf Upstream + schnellere Integration |
 | `6adeb3cf` | **C0** — Pin-Test für die absoluten ITC-Integrale |
 
-**Tests:** `test_itc_thermogram` 15/15 grün (vorher 7). GUI + CLI bauen.
-**Alle fünf Bugs erledigt** (1, 2, 3, 5 im Code; 4 in C10) + F1 + F2.
+**Tests:** `test_itc_thermogram` 15/15 grün (vorher 7). GUI + CLI bauen. (Die 15 sind Qt's Totals,
+d.h. 13 Slots plus `initTestCase`/`cleanupTestCase` — nicht mit der Slot-Zahl verwechseln.)
 
-**Bugs erledigt:** 1 (Volumina-Append), 2 (Systemparameter-Stomp), 3 (`ImportRow`-Crash),
-5 (ungeguardeter `item(i,0)`-Zugriff). **Offen: Bug 4** (Dilutions-Provenance) → C10.
+**Alle fünf Bugs erledigt:** 1 (Volumina-Append), 2 (Systemparameter-Stomp), 3 (`ImportRow`-Crash),
+5 (ungeguardeter `item(i,0)`-Zugriff) im Code; 4 (Dilutions-Provenance) in C10. Dazu F1 + F2.
 
 ### libpeakpick
 
@@ -69,7 +70,7 @@ Der Rendering-Pfad hat **keinen Harness** — der Pin-Test deckt nur den Core ab
 | 6 | **`.dh`- und `.dat`-Export** | vorher/nachher identische Bytes |
 | 7 | **Dilutions-Serie im Chart** | erscheint nur mit geladener Dilution; „Show Dilution" funktioniert |
 
-### 2. Entscheidungen — zwei davon habe ich vorläufig getroffen, du kannst sie kippen
+### 2. Entscheidungen — eine davon habe ich vorläufig getroffen, du kannst sie kippen
 
 - **F5 (in C10, bereits umgesetzt):** `Raw()` schrieb den Dilutions-`file` **unbedingt**. Mit
   `StoreFileName` **aus** behielt die Dilution damit einen Pfad, während das Experiment keinen
@@ -77,10 +78,11 @@ Der Rendering-Pfad hat **keinen Harness** — der Pin-Test deckt nur den Core ab
   geschrieben. Ich habe die empfohlene Symmetrie genommen (die Asymmetrie war versehentlich; ohne
   Experiment-Pfad lädt das Projekt ohnehin nicht) und im Commit `36119511` sichtbar markiert.
   **Falls du das anders willst, hier rückgängig machen.**
-- **Geparkte Feature-Blöcke (in C11 bewusst NICHT gelöscht):** die auskommentierten Blöcke in
-  `thermogram.cpp` (Frequenz-Override `m_freq`, `m_scale`, Per-Datei-Offset `m_exp_base`/`m_dil_base`,
-  `m_refit`) und ihre Deklarationen **stehen noch** — Löschen geparkter Features wollte ich dir
-  überlassen. Sag Bescheid, dann raus (git bewahrt sie).
+- ~~Geparkte Feature-Blöcke~~ — **erledigt** (`90c8feb6`). `m_freq`, `m_scale`, `m_exp_base`,
+  `m_dil_base`, `m_refit` sind raus; alle fünf waren deklariert und kompiliert, aber jede Nutzung
+  stand im Kommentar. `m_scale` trug trotz des Namens keine Skalierung (cal→J läuft über
+  `setScalingFactor()`/`setScaling()`, und der JSON-Key `"scaling"` ebenso) — gespeicherte Projekte
+  sind unberührt.
 
 ### 2b. GUI-Verifikation gegen `master` — Vorsicht
 
@@ -88,41 +90,55 @@ Der Rendering-Pfad hat **keinen Harness** — der Pin-Test deckt nur den Core ab
 den Spalte-3-Vergleich ist die ehrliche Baseline **`bugfix/thermo-nmr-chart-fixes`** (der eingefrorene
 Ausgangspunkt), nicht `master`.
 
-### 3. Dein Arbeitsbaum (uncommitted, unangetastet gelassen)
+### 3. Arbeitsbaum — erledigt (2026-07-17)
 
-```
- M CMakeLists.txt          <- ich habe NUR `-static` entfernt (auf deine Freigabe)
- M misc/SupraFit.desktop
- M src/ui/widgets/preparewidget.cpp
-```
+Alle vier Änderungen waren Rauschen oder Regression und wurden verworfen. Insbesondere fügte
+`CMakeLists.txt` die globale `-static-libgcc -static-libstdc++`-Zeile wieder ein, die der
+`master`-Tip `2fbb176d` gerade erst durch die `if(NOT APPLE)`-Variante ersetzt hatte — sie hätte den
+macOS-Fix zunichte gemacht (AppleClang kennt die Flags nicht). Dazu Modus-Rauschen (755→644, ein
+rekursives `chmod`) in `misc/SupraFit.desktop` und 28 Eigen-Dateien, plus ein doppeltes Include.
 
-`-static` brach den GUI-Link gegen dein dynamisches Qt6
-(`attempted static link of dynamic object libQt6Qml.so`). `-static-libgcc -static-libstdc++` sind
-geblieben. **Falls du portable Binaries brauchst:** `-static` ist dafür der falsche Hebel, solange Qt
-shared gelinkt wird — das ist noch offen.
+**Offen bleibt:** portable Binaries. `-static` ist der falsche Hebel, solange Qt shared gelinkt wird
+(`attempted static link of dynamic object libQt6Qml.so`); `-static-libgcc -static-libstdc++` gelten
+weiterhin für alles außer Apple.
 
-### 4. Nebenbefund, nicht angefasst
+### 4. Nebenbefund — erledigt (2026-07-17)
 
-`test_pipeline` **linkt nicht** (`DataFactory::`-Symbole fehlen im Target). Vorbestehend, unabhängig
-von dieser Arbeit, gegen den Basis-Commit verifiziert.
+`test_pipeline` linkt (`0bd0da3b`): `CLIENT_SOURCES` kompilierte `suprafit_cli.cpp` mit, aber nicht
+`data_factory.cpp`, das nur das `suprafit_cli`-Target baut. Die 18/35 verbleibenden Fehlschläge sind
+die in `src/tests/CLAUDE.md` dokumentierten veralteten CLI-Erwartungen, nicht der Link.
 
 ---
 
 ## Als Nächstes
 
-Track A (C0–C11) ist **fertig**. Was bleibt:
+Track A (C0–C11) ist **fertig**, C12 ebenso. Was bleibt:
 
 1. **GUI manuell gegenprüfen** (Abschnitt „Deine Aufgaben" oben) — der Rendering-Pfad hat keinen
-   Harness. Das ist die Voraussetzung für den Merge.
-2. **F5** ggf. kippen und **geparkte Feature-Blöcke** ggf. löschen (beides oben).
-3. **C12** (unten) — Präzisions-Fix, eigener Review.
-4. **Track B** (unten) — libpeakpick-Mathe, eigener Branch, ändert Zahlen.
+   Harness. Das ist die Voraussetzung für den Merge. **Nach C12 laufen lassen**, das den Import-Pfad
+   angefasst hat.
+2. **F5** ggf. kippen (oben).
+3. **Track B** (unten) — libpeakpick-Mathe, eigener Branch, ändert Zahlen.
 
-### C12 *(zurückgestellt, eigener Review)* — `ImportData`: DataTable direkt übergeben
+### C12 — erledigt (`32c682da`)
 
-`importdata.cpp:563-595` und `:597-629` sind Fast-Duplikate. Der `Content()`-String-Hop schickt jede
-Wärme durch `QString::number(double)` → **6 signifikante Stellen** und parst zurück. Direkte Übergabe
-behält volle Präzision — **ändert damit Zahlen** (letzte Stellen), deshalb separat.
+`Thermogram::ResultTable()` reicht die DataTable des Processors durch, statt sie über
+`QString::number(double)` (Qt-Default: 6 signifikante Stellen) und zurück durch `FileHandler` zu
+schicken. Der Core hatte den präzisen Weg längst — `ItcProcessor::resultTable()`, den
+`FileHandler::ReadITC()` seit jeher nutzt: **die CLI las volle Präzision, nur die GUI rundete**.
+`resultTable()` und `ResultRows()` lesen dieselben `m_inject`/`m_net_heat` mit demselben Padding, der
+Inhalt ist also identisch — nur nicht mehr gekappt. `Content()` hatte keinen weiteren Aufrufer und
+ist weg.
+
+Beide `ImportThermogram`-Überladungen waren ab `exec()` zeilengleich und unterschieden sich nur im
+Dialog-Setup; der gemeinsame Teil ist jetzt `RunThermogram()`. Damit entfallen auch der `FileHandler`,
+den beide anlegten und nie freigaben, und eine `DataClass`, die `ConvertTable()` für niemanden baute.
+
+**Für Prüfung 3 (Spalte 3 gegen die Baseline):** die Zahlen zeigen jetzt *mehr* Stellen — das ist die
+gewollte Änderung, kein Fehler.
+
+**Ist-Zustand-Notiz, nicht mitgefixt:** `importdata.cpp:566` `if (m_filename.isEmpty())` — alle vier
+Aufrufer übergeben `m_filename`; ist es gesetzt, wird `setExperimentFile()` **nie** gerufen.
 
 ---
 

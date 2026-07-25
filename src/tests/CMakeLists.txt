@@ -42,6 +42,7 @@ endif(UNIX)
 set(CLIENT_SOURCES
     ../client/suprafit_cli.cpp
     ../client/analysis_reporter.cpp
+    ../client/data_factory.cpp
     ../client/ml_export.cpp
     ../client/ml_pipeline_manager.cpp
 )
