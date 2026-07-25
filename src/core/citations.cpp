@@ -36,6 +36,10 @@ static const QVector<Reference>& registry()
             QStringLiteral("D. O. Soloviev, C. A. Hunter, Musketeer: a software tool for the analysis "
                            "of titration data, Chem. Sci. 2024, 15, 15299-15310."),
             QStringLiteral("10.1039/d4sc03354j") },
+        { QStringLiteral("equilibrist"),
+            QStringLiteral("E. Masson, Equilibrist: A Browser-Based Platform for Fitting Equilibrium "
+                           "and Rate Constants from Optical and NMR Data, J. Chem. Inf. Model. 2026."),
+            QStringLiteral("10.1021/acs.jcim.6c01004") },
     };
     return refs;
 }

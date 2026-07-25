@@ -209,13 +209,14 @@ If the Monte Carlo simulation and Resampling plans were helpfull:
 
 ### Methods and references
 
-Equilibrium concentrations for an arbitrary set of reactions — including self-aggregation, such as a host dimerisation preceding complex formation — are obtained by minimising a convex potential in logarithmic concentration space. SupraFit took that approach from:
+Equilibrium concentrations for an arbitrary set of reactions — including self-aggregation, such as a host dimerisation preceding complex formation — are obtained by minimising a convex potential in logarithmic concentration space. Two programs that treat titration data this way were the inspiration for SupraFit's solver, and both deserve the credit:
 
 - Daniil O. Soloviev and Christopher A. Hunter, *Musketeer: a software tool for the analysis of titration data*, Chem. Sci., 2024, **15**, 15299–15310. DOI [10.1039/d4sc03354j](https://doi.org/10.1039/d4sc03354j)
+- Eric Masson, *Equilibrist: A Browser-Based Platform for Fitting Equilibrium and Rate Constants from Optical and NMR Data*, J. Chem. Inf. Model., 2026. DOI [10.1021/acs.jcim.6c01004](https://doi.org/10.1021/acs.jcim.6c01004)
 
-The solver defaults to a damped Newton step with the analytic Hessian; the quasi-Newton (BFGS) variant remains selectable. Both reach the mass balance to 1e-12, which the solver's test pins.
+SupraFit's own solver defaults to a damped Newton step with the analytic Hessian; the quasi-Newton (BFGS) variant remains selectable. Both reach the mass balance to 1e-12, which the solver's test pins.
 
-Models are told which references apply to them at runtime: a model whose equilibrium is solved this way names both this work and SupraFit in its model information.
+A model whose equilibrium is solved this way names both works, alongside SupraFit, in its model information — so the citation appears where the method was actually used.
 
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
