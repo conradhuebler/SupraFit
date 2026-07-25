@@ -48,6 +48,10 @@ Latest snapshots (not more than 5) of the current development can be found via t
 - The current master branch contains the thermogram import routed through the core, developed in the **refactor/thermo-gui-routing** branch. The import dialog now shows the full precision that the command line has always read, so its volume and heat columns display more digits than before. The last binaries without this change are [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
 - The current master branch contains a Python interface (`import suprafit`), developed in the **feature/python-interface** branch. It is not part of the binaries above and has to be built with `-DSUPRAFIT_PYBIND=ON`; see [python/README.md](https://github.com/conradhuebler/SupraFit/blob/master/python/README.md).
 
+- The current master branch contains a reworked engine for scripted models and a corrected BC50 calculation, developed in the **feature/scripted-model-engine** branch. The last binaries without these changes are [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
+
+**Results that change with this version.** BC50 for the reaction-defined models (`nmr_any`, `uvvis_any`, `fl_any`, `itc_any`) was calculated from the 1:1 formula regardless of the reaction system that was loaded, and is now derived from the model's own stoichiometry. Grid-search output shows BC50 for the remaining ITC models and over the correct interval — the previous code collapsed that interval to a single point. The 2:1/1:1 models solve the cubic mass balance in closed form, which the previous solver did not satisfy exactly, so refitting such a model can land on slightly different constants. Values stored in a project file are not rewritten until you refit. To reproduce earlier numbers, use [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
+
 A fit that stops without moving off its start value is no longer reported as converged, and a fit that reaches the optimum exactly now is. This changes the flag shown next to a result, not the result itself.
 
 ## Usage
