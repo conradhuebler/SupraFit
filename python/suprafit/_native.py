@@ -1,0 +1,134 @@
+"""Thin Python wrappers over the native `suprafit._core` module's low-level surface.
+
+These need the compiled pybind11 module (`cmake -DSUPRAFIT_PYBIND=ON`); without it they raise a
+clear NotImplementedError. The heavy-weight, backend-transparent path is `Project` +
+`set_backend("native")`; the helpers here expose the interactive verbs and data generation directly.
+Claude Generated.
+"""
+
+from __future__ import annotations
+
+from . import _models
+
+# ITC system-parameter indices (AbstractItcModel::CellVolume=1 … Temperature=4). Friendly names map
+# to these so callers don't hard-code integers. Claude Generated.
+SYSTEM_PARAMETERS = {
+    "cell_volume": 1,
+    "cell_concentration": 2,
+    "syringe_concentration": 3,
+    "temperature": 4,
+}
+
+
+def _require_core():
+    try:
+        import suprafit._core as _core
+        return _core
+    except ImportError as e:
+        raise NotImplementedError(
+            "This needs the native module suprafit._core, which is not built. Build it with "
+            "`cmake -DSUPRAFIT_PYBIND=ON` (see roadmap/python_interface.md Phase 2)."
+        ) from e
+
+
+def resolve_system_parameters(system_parameters):
+    """Map a friendly-name/int-keyed system-parameter dict to {int index: float value}.
+    Returns {} for a falsy input. Claude Generated."""
+    if not system_parameters:
+        return {}
+    resolved = {}
+    for key, value in system_parameters.items():
+        index = SYSTEM_PARAMETERS.get(key, key) if isinstance(key, str) else int(key)
+        resolved[int(index)] = float(value)
+    return resolved
+
+
+_INDEX_TO_SYSTEM_NAME = {v: k for k, v in SYSTEM_PARAMETERS.items()}
+
+
+def read_itc(path):
+    """Read a raw .itc thermogram file into arrays + system parameters (via ItcProcessor).
+
+    Returns a dict with `independent` (per-injection volumes, NumPy Nx1), `dependent` (net heats,
+    NumPy Nx1), and `system_parameters` (the file's metadata: cell volume + temperature, keyed by
+    friendly name). The .itc file rarely carries the sample concentrations, so add
+    `cell_concentration`/`syringe_concentration` before fitting, then pass the whole dict to
+    `native_model("itc_1_1", indep, dep, system_parameters=...)` or `Project.from_arrays(...,
+    system_parameters=...)`. Requires the native module. Claude Generated."""
+    import json
+    import numpy as np
+    data = json.loads(_require_core().read_itc(str(path)))
+    system_parameters = {}
+    for key, value in (data.get("system_parameters") or {}).items():
+        try:
+            name = _INDEX_TO_SYSTEM_NAME.get(int(key), int(key))
+        except (ValueError, TypeError):
+            system_parameters[key] = value
+            continue
+        try:
+            system_parameters[name] = float(value)
+        except (ValueError, TypeError):
+            system_parameters[name] = value
+    return {
+        "independent": np.asarray(data["independent"], dtype=float),
+        "dependent": np.asarray(data["dependent"], dtype=float),
+        "system_parameters": system_parameters,
+    }
+
+
+def generate_independent(equations: str, datapoints: int):
+    """Generate an independent data table (rows x variables) from the CLI equation generator.
+
+    `equations` is pipe-separated, one expression per variable, with `X` the 1-based row index,
+    e.g. `generate_independent("0.001|(X-1)*1e-4", 20)`. Returns a NumPy array. Claude Generated."""
+    return _require_core().generate_independent(str(equations), int(datapoints))
+
+
+def generate_dependent(model, independent, global_params, local_params, noise_std=0.0, seed=0):
+    """Generate a dependent data table from a model at known parameters (+ optional Gaussian noise).
+
+    Deterministic ground-truth generation: you supply the parameters, so the exact values that made
+    the data are known (ideal for supervised ML / fit validation). `model` is a snake_case name or
+    integer id; `global_params` is 1D (one per global parameter); `local_params` is 2D
+    (series x local-parameters-per-series, and defines the number of series). Draw random parameters
+    in NumPy and pass them here for reproducible random datasets. Returns a NumPy array of the
+    dependent signal. Claude Generated."""
+    import numpy as np
+    core = _require_core()
+    mid = _models.model_id(model)
+    return core.generate_dependent(
+        mid,
+        np.ascontiguousarray(independent, dtype=float),
+        np.ascontiguousarray(global_params, dtype=float).ravel(),
+        np.ascontiguousarray(local_params, dtype=float),
+        float(noise_std),
+        int(seed),
+    )
+
+
+def native_model(model, independent, dependent, system_parameters=None):
+    """Create a live in-process model handle (native backend) for interactive use.
+
+    `model` is a snake_case name (e.g. "nmr_1_1", "itc_1_1") or an integer id; `independent`/
+    `dependent` are array-likes. For ITC models pass `system_parameters` as a dict of the experiment
+    setup, keyed by friendly name (`cell_volume`, `cell_concentration`, `syringe_concentration`,
+    `temperature` — concentrations in mmol/L, volume in µL, temperature in K) or by integer index;
+    they are set and loaded before the model is returned.
+
+    The returned object exposes `set_global(value, index)`, `set_local(value, series, param)`,
+    `set_system_parameter(index, value)`, `load_system_parameters()`, `initial_guess()`,
+    `calculate()`, `fit()`, and getters `sse()`, `aic()`, `aicc()`, `converged()`,
+    `global_parameters()`, `local_parameters()`, `model_signal()`, `export_json()`. Requires NumPy.
+    Claude Generated."""
+    import numpy as np
+    core = _require_core()
+    mid = _models.model_id(model)
+    m = core.Model(mid,
+                   np.ascontiguousarray(independent, dtype=float),
+                   np.ascontiguousarray(dependent, dtype=float))
+    if system_parameters:
+        for key, value in system_parameters.items():
+            index = SYSTEM_PARAMETERS.get(key, key) if isinstance(key, str) else int(key)
+            m.set_system_parameter(int(index), float(value))
+        m.load_system_parameters()
+    return m

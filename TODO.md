@@ -114,6 +114,42 @@
 
 ---
 
+## SupraFit 3.0 Beta
+
+### ITC thermogram — GUI verification still outstanding
+The thermogram dialog was routed through the core `ItcProcessor` and merged without these checks: the
+rendering path has no test harness, and the core pin test (`testAbsoluteIntegralsPinned`) covers only
+the integrals. Compare against `bugfix/thermo-nmr-chart-fixes`, the frozen starting point — not
+against `master`, which did not have the processor.
+
+- [ ] Load an `.itc` experiment: column 0 shows the file's injection volumes.
+- [ ] Load an experiment, then a dilution: column 0 and the four concentration fields stay unchanged.
+- [ ] Column 3 against the baseline, with and without dilution. It now shows *more* digits — the GUI
+      used to round to 6 significant digits while the CLI always read full precision. Expected.
+- [ ] Clear the dilution field: column 3 falls back to the experiment values. **This did not happen
+      before — deliberate change, confirm it is wanted.**
+- [ ] Import a comment-only file via "Import Row": warning instead of a crash.
+- [ ] `.dh` and `.dat` export: byte-identical before and after.
+- [ ] Dilution series in the chart: appears only with a dilution loaded, "Show Dilution" works.
+- [ ] **Decide F5:** `Raw()` used to write the dilution file path unconditionally, so with
+      `StoreFileName` off the dilution kept a path while the experiment did not. Both are symmetric
+      now (no path written in that mode). Revertible if the asymmetry was wanted.
+
+### ITC thermogram — libpeakpick maths ("Track B", own branch, changes numbers)
+- [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.
+- [ ] **B1 `Peak.end` convention** — SupraFit builds the range inclusive, libpeakpick reads it exclusive; the core of the integration discrepancy.
+- [ ] **B2 Undefined behaviour → defined** (`spectrum.h:170-176`, `:198-204`: the `i >= size() && i < 0` guard is never true).
+- [ ] **B3 Number-changing corrections, one commit each with the measured delta** (`baseline.h:484`: `|| gradient - 1` is always true).
+- [ ] **B4 Hygiene** — `spectrum` rule-of-zero (a user destructor plus copy operators suppress moves, so every copy is deep).
+- [ ] Deferred with a FIXME in the code: `nxlinregress.h:56` uses `initial[i]` where `initial[j]` is meant.
+- Guard for all of the above: `testAbsoluteIntegralsPinned` pins the 20 unscaled integrals at 1e-9 (the OpenMP reduction scatters in the last bit, ~1e-16). A moved number needs a reason, not a new expectation.
+
+### itc_any
+- [ ] **`itc_any` fits run away from a correctly scaled seed** — recorded on 2026-07-17, separate from
+      the seeding fix and not caused by it.
+
+---
+
 ## Completed Tasks
 
 ### ✅ ProjectManager Integration (January 2025)
