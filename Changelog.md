@@ -1,6 +1,11 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
+- BC50 for the reaction-defined models is derived from the model's stoichiometry instead of the 1:1 formula
+- BC50 in grid-search output for all ITC models, over the correct interval
+- the 2:1/1:1 models solve the cubic mass balance in closed form
+- reworked engine for scripted models: the equation is compiled once, supports per-series parameters, and can call the equilibrium solver and the cubic and quadratic roots directly
+- the scripted-model dialog derives the parameter declaration from the equation
 - Python interface (`import suprafit`), off by default, built with `-DSUPRAFIT_PYBIND=ON`
 - thermogram import shows the full precision of the core instead of six significant digits
 - a fit stuck on its start value is no longer reported as converged
