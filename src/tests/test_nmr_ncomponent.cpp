@@ -122,10 +122,12 @@ private slots:
         model->setGlobalParameter(3.5, 1); // lg beta(AC)
         model->Calculate();
 
-        // runtime citation: a BFGS-driven model must ask to cite Musketeer alongside SupraFit
+        // runtime citation: a solver-driven model must ask to cite both source programs alongside SupraFit
         QVERIFY(model->CitationKeys().contains("musketeer"));
+        QVERIFY(model->CitationKeys().contains("equilibrist"));
         const QString cite = model->CitationBlock();
         QVERIFY(cite.contains("Musketeer"));
+        QVERIFY(cite.contains("Equilibrist"));
         QVERIFY(cite.contains("SupraFit"));
 
         for (int i = 1; i < N; ++i) {

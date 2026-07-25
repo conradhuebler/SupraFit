@@ -155,12 +155,13 @@ public:
 
     virtual QString ModelInfo() const override;
 
-    // Adds the Musketeer citation once speciation ran through the BFGS engine. Claude Generated.
+    // Names the two programs whose approach the speciation solver follows, once it actually ran.
+    // Claude Generated.
     inline QStringList CitationKeys() const override
     {
         QStringList keys;
         if (m_uses_bfgs)
-            keys << QStringLiteral("musketeer");
+            keys << QStringLiteral("musketeer") << QStringLiteral("equilibrist");
         return keys;
     }
 
