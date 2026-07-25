@@ -45,6 +45,7 @@ class QTableWidget;
 class QTabWidget;
 
 class ChartView;
+class DataTable;
 class ItcProcessor;
 class LineSeries;
 class ScatterSeries;
@@ -58,7 +59,13 @@ public:
     Thermogram();
     virtual ~Thermogram();
 
-    QString Content() const;
+    /*! \brief The (injection volume, net heat) result as a fresh DataTable - the caller owns it.
+     *
+     * Hands the processor's table straight over instead of routing the heats through a formatted
+     * string, which capped them at six significant digits. This is the same table
+     * FileHandler::ReadITC() imports, so the GUI and the CLI now read identical numbers.
+     * Claude Generated */
+    DataTable* ResultTable() const;
     inline QJsonObject SystemParamter() const { return m_systemparameter; }
     inline bool ParameterUsed() const { return m_ParameterUsed; }
 
@@ -126,13 +133,11 @@ private:
     QVector<QVector<qreal>> ResultRows() const;
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
-    QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data, *m_import_row;
+    QPushButton *m_exp_button, *m_dil_button, *m_export_data, *m_import_row;
     QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume, *m_showDilution, *m_uniformInject;
-    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
-    QComboBox* m_scale;
+    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QLabel* m_message;
     QTabWidget* m_mainwidget;
-    QDoubleSpinBox* m_freq;
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
     ItcProcessor* m_processor; //!< owns the two handlers + injection volumes + exp-minus-dilution join

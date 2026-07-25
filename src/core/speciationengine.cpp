@@ -51,6 +51,13 @@ Eigen::VectorXi SpeciationEngine::SpeciesStoichiometry(int j) const
     return Eigen::VectorXi();
 }
 
+double SpeciationEngine::GuessLgBeta(int j, double logcref) const
+{
+    const Eigen::VectorXi stoich = SpeciesStoichiometry(j);
+    const int order = stoich.size() ? stoich.sum() : 2;
+    return std::max(1.0, (order - 1) * (-logcref));
+}
+
 void SpeciationEngine::setStabilityConstants(const std::vector<double>& beta)
 {
     m_solver.setStabilityConstants(beta);

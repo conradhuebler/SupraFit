@@ -156,6 +156,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-07-17: ✅ **Thermogram import hands over the DataTable** — `Thermogram::ResultTable()` passes `ItcProcessor::resultTable()` straight to `ImportData` instead of rendering `Content()` through `QString::number` (6 significant digits) and parsing it back with `FileHandler`; the CLI already read that table via `ReadITC()`, so GUI and CLI now agree. Both `ImportThermogram` overloads were identical from `exec()` on and share `RunThermogram()`; the leaked `FileHandler` is gone with them. `Content()` removed (no other caller).
+- 2026-07-17: ✅ **Thermogram parked blocks removed** — `m_freq`, `m_scale`, `m_exp_base`, `m_dil_base`, `m_refit` were declared and compiled but only ever used inside comments. `m_scale` carried no scaling despite the name (cal→J goes through `setScalingFactor()`/`setScaling()`, as does the `"scaling"` JSON key), so stored projects are unaffected.
 - 2026-07-16: ✅ **Thermogram dialog routed through core `ItcProcessor`** — the dialog renders the processor's (volume, net heat) result instead of recomputing the join; the processor owns the injection volumes, the shared cal→J factor and the exp−dilution gate. `UpdateTable()` is a pure renderer over `ResultRows()`; `Content()`/`Raw()` go through `resultTable()`/`toJson()`. "Force inject" is now an explicit "Uniform volume" checkbox; both scaling combos are coupled; clearing the dilution really stops the subtraction. **GUI paths need manual operator validation** (see `SESSION_HANDOFF_THERMO.md`).
 - 2026-07-14: ✅ **Settings single source of truth** — `settingsregistry.{h,cpp}` (`SupraFitSettings::registry()`) holds every app setting (key, default, kind, group, label, tooltip, range, dependsOn). `SupraFitGui::ReadSettings/WriteSettings` derive persistence+defaults from it (the 49-entry `m_properties` list and the ~145-line default if-chain are gone); `ConfigDialog` is generated from it (tabs per group, `dependsOn` enable-chains, `Custom` kind for the hand-built directory section). New setting = one table row instead of four edits.
 - 2026-07-14: ✅ **Thermogram per-injection volume editable** — column 0 of the import dialog table (`thermogram.cpp`) accepts manual edits (guarded by `m_updating_table`; heat columns read-only). Now persisted through `ItcProcessor::setInjectionVolume` (see 2026-07-16). `ThermogramWidget` scaling relabelled "cal → J" with a tooltip (leaving it at 1 for cal data is why results match calorie tools).
@@ -187,7 +189,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
   SupraFitGui`) sees all projects and reacts to the other window's loads. Recommended fix: make
   `ProjectManager` instantiable and give each `SupraFitGui` its own instance (keep `instance()` for
   CLI/tests), threading a `ProjectManager*` through `ProjectTree`/`MainWindow`/`ModelDataHolder` (they
-  hard-code `instance()` at `mainwindow.cpp:138`, `modeldataholder.cpp:485,788,880,1354`). Keep app-level
+  hard-code `instance()` at `mainwindow.cpp:138`, `modeldataholder.cpp:538,857,949,1423`). Keep app-level
   `qApp` properties (threads, settings) shared. See `TECHNICAL_DEBT.md` D9.
 
 ### User Experience Priorities
@@ -221,7 +223,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
     signatures are tagged `// REFACTOR(D3-…)` (`grep -rn "REFACTOR(D3" src/client`).
 - if loading simulation files using DataGenerator, give comprehensive information and execute datageneration and open generated project file
 - add widget to generate and control simulation input files
-- ✅ **thermogram analysis moved to core** (2026-07-16) — `ItcProcessor` owns the ITC state + net-heat computation; the dialog renders it. Remaining: hand the `DataTable` to `ImportData` directly instead of the string hop (C12, precision), and the libpeakpick math cleanup (Track B, changes numbers) — both in `SESSION_HANDOFF_THERMO.md`.
+- ✅ **thermogram analysis moved to core** (2026-07-16) — `ItcProcessor` owns the ITC state + net-heat computation; the dialog renders it. C12 (DataTable handed over instead of the string hop) done 2026-07-17. Remaining: the libpeakpick math cleanup (Track B, changes numbers) — see `SESSION_HANDOFF_THERMO.md`.
 - projecttree- logik sollte mit core/**Project Analysis Migration** synchronisiert werden
 ### Vision
 <!-- Add long-term architectural goals here -->

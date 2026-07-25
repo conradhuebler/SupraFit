@@ -560,6 +560,36 @@ void ImportData::setData(const DataTable* model)
     WriteData(model, 2);
 }
 
+bool ImportData::RunThermogram(Thermogram* thermogram)
+{
+    if (thermogram->exec() != QDialog::Accepted) {
+        delete thermogram;
+        QDialog::reject();
+        return false;
+    }
+
+    if (thermogram->ParameterUsed())
+        m_systemparameter = thermogram->SystemParamter();
+
+    // The dialog's own (volume, net heat) table, taken over as-is. It used to arrive as a formatted
+    // string that FileHandler parsed back, which capped every heat at six significant digits.
+    // accept() deletes whatever model the view holds, so this table needs no extra owner.
+    // Claude Generated
+    DataTable* model = thermogram->ResultTable();
+    m_table->setModel(model);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        auto list = m_table->selectionModel()->selectedColumns();
+        m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+    });
+    NoChanged();
+    m_raw = thermogram->Raw();
+    m_type = DataClassPrivate::Thermogram;
+    m_title = thermogram->ProjectName();
+    delete thermogram;
+    model->setEditable(true);
+    return true;
+}
+
 bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
@@ -569,29 +599,7 @@ bool ImportData::ImportThermogram(const QString& filename)
     }
     thermogram->show();
 
-    if (thermogram->exec() == QDialog::Accepted) {
-        if (thermogram->ParameterUsed())
-            m_systemparameter = thermogram->SystemParamter();
-        FileHandler* handler = new FileHandler(this);
-        handler->setFileContent(thermogram->Content());
-        DataTable* model = handler->getData();
-        m_table->setModel(model);
-        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
-            auto list = m_table->selectionModel()->selectedColumns();
-            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
-        });
-        NoChanged();
-        m_raw = thermogram->Raw();
-        m_type = DataClassPrivate::Thermogram;
-        m_title = thermogram->ProjectName();
-        delete thermogram;
-        model->setEditable(true);
-        return true;
-    } else {
-        delete thermogram;
-        QDialog::reject();
-    }
-    return false;
+    return RunThermogram(thermogram);
 }
 
 bool ImportData::ImportThermogram()
@@ -603,29 +611,7 @@ bool ImportData::ImportThermogram()
     thermogram->setRaw(m_raw);
     thermogram->setSystemParameter(m_systemparameter);
 
-    if (thermogram->exec() == QDialog::Accepted) {
-        if (thermogram->ParameterUsed())
-            m_systemparameter = thermogram->SystemParamter();
-        FileHandler* handler = new FileHandler(this);
-        handler->setFileContent(thermogram->Content());
-        DataTable* model = handler->getData();
-        m_table->setModel(model);
-        connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
-            auto list = m_table->selectionModel()->selectedColumns();
-            m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
-        });
-        NoChanged();
-        m_raw = thermogram->Raw();
-        m_type = DataClassPrivate::Thermogram;
-        m_title = thermogram->ProjectName();
-        delete thermogram;
-        model->setEditable(true);
-        return true;
-    } else {
-        delete thermogram;
-        QDialog::reject();
-    }
-    return false;
+    return RunThermogram(thermogram);
 }
 
 bool ImportData::ImportSpectra(const QString& filename)
