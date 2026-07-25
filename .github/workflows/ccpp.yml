@@ -3,7 +3,11 @@ name: Build
 on:
   push:
     branches: [ master, "feature/**" ] # master: build + publish nightly; feature/*: build only
+    # Documentation-only changes cannot affect the binaries, so they do not rebuild three platforms.
+    # Note the consequence: a commit touching *only* markdown does not refresh the nightly release.
+    paths-ignore: [ '**.md' ]
   pull_request: # build only (no release) for all PR targets
+    paths-ignore: [ '**.md' ]
   workflow_dispatch:
 
 # The default GITHUB_TOKEN is read-only since 2023; publishing a release needs write.

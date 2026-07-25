@@ -42,13 +42,11 @@ The content of the dmg file has to be copied to the place where other programs a
 ### Nightly Build
 Latest snapshots (not more than 5) of the current development can be found via the preleases. There are some new features and bugs included.
 
-- Custom models are work in progress and not yet well documented. For the start, please have a look at [here](https://github.com/conradhuebler/SupraFit/blob/master/docs/ScriptedModels.md) (Qt 6)
-- The current master branch contains a snapshot of an improved  thermogram handling, that was developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511). (Qt 5)
-- The current master branch contains a snaphsot of a spectra import interface.  The latest commit without the new branch is [b5af8cd](https://github.com/conradhuebler/SupraFit/commit/b5af8cd9e8c29792c15b893aee8bcffa8a19dd8d). (Qt 5)
+- Models can be defined by writing the equation yourself instead of picking a built-in one — see [docs/ScriptedModels.md](https://github.com/conradhuebler/SupraFit/blob/master/docs/ScriptedModels.md). The equation is compiled once, may use per-series parameters, and can call the equilibrium solver and the cubic and quadratic roots directly.
+- Binding models are no longer limited to fixed stoichiometries: an equilibrium is entered as free-text reaction equations (`A + B <=> AB`, `2 A <=> A2`, `A + AB <=> A2B`) and solved for arbitrary components. The `nmr_any`, `uvvis_any`, `fl_any` and `itc_any` models are built on it.
 - The current master branch contains the thermogram import routed through the core, developed in the **refactor/thermo-gui-routing** branch. The import dialog now shows the full precision that the command line has always read, so its volume and heat columns display more digits than before. The last binaries without this change are [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
-- The current master branch contains a Python interface (`import suprafit`), developed in the **feature/python-interface** branch. It is not part of the binaries above and has to be built with `-DSUPRAFIT_PYBIND=ON`; see [python/README.md](https://github.com/conradhuebler/SupraFit/blob/master/python/README.md).
-
 - The current master branch contains a reworked engine for scripted models and a corrected BC50 calculation, developed in the **feature/scripted-model-engine** branch. The last binaries without these changes are [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
+- The current master branch contains a Python interface (`import suprafit`), developed in the **feature/python-interface** branch. It is not part of the binaries above and has to be built with `-DSUPRAFIT_PYBIND=ON`; see [python/README.md](https://github.com/conradhuebler/SupraFit/blob/master/python/README.md).
 
 **Results that change with this version.** BC50 for the reaction-defined models (`nmr_any`, `uvvis_any`, `fl_any`, `itc_any`) was calculated from the 1:1 formula regardless of the reaction system that was loaded, and is now derived from the model's own stoichiometry. Grid-search output shows BC50 for the remaining ITC models and over the correct interval — the previous code collapsed that interval to a single point. The 2:1/1:1 models solve the cubic mass balance in closed form, which the previous solver did not satisfy exactly, so refitting such a model can land on slightly different constants. Values stored in a project file are not rewritten until you refit. To reproduce earlier numbers, use [2.5.139](https://github.com/conradhuebler/SupraFit/releases/tag/2.5.139).
 
@@ -211,9 +209,13 @@ If the Monte Carlo simulation and Resampling plans were helpfull:
 
 ### Methods and references
 
-The general BFGS equilibrium speciation solver (arbitrary stoichiometry including self-aggregation, e.g. host dimerisation preceding complex formation) implements the method of:
+Equilibrium concentrations for an arbitrary set of reactions — including self-aggregation, such as a host dimerisation preceding complex formation — are obtained by minimising a convex potential in logarithmic concentration space. SupraFit took that approach from:
 
 - Daniil O. Soloviev and Christopher A. Hunter, *Musketeer: a software tool for the analysis of titration data*, Chem. Sci., 2024, **15**, 15299–15310. DOI [10.1039/d4sc03354j](https://doi.org/10.1039/d4sc03354j)
+
+The solver defaults to a damped Newton step with the analytic Hessian; the quasi-Newton (BFGS) variant remains selectable. Both reach the mass balance to 1e-12, which the solver's test pins.
+
+Models are told which references apply to them at runtime: a model whose equilibrium is solved this way names both this work and SupraFit in its model information.
 
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
