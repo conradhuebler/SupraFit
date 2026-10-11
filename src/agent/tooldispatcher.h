@@ -52,7 +52,17 @@ public:
     ToolResult dispatch(const QString& name, const QJsonObject& args);
 
     /// How many calls this dispatcher has run (audit/diagnostics).
+    /// Does NOT count refusals recorded via recordRefusal() -- those never ran.
     quint64 callCount() const { return m_callCount; }
+
+    /// Record a refusal (unknown tool, approval denied, malformed arguments)
+    /// without running any handler. Same audit signal as a real call, so the
+    /// trail shows what a model ATTEMPTED, not only what ran. The dispatcher is
+    /// not thread-confined for this: it just emits on the calling thread.
+    void recordRefusal(const QString& name, const QJsonObject& args)
+    {
+        emit callRecorded(name, args, false, 0, callOrigin());
+    }
 
     /// Who is making the calls on this thread: "assistant", "script", or empty for
     /// the operator's own use. Thread-local, so the agent loop and the GUI thread

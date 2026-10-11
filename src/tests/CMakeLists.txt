@@ -1191,4 +1191,18 @@ if(USE_LLM)
         fmt::fmt-header-only
     )
     add_test(NAME LlmClientTest COMMAND test_llmclient)
+
+    # LlmSession agent loop against the same stub (answer sequences drive the
+    # send -> dispatch -> result-back loop through the real client).
+    add_executable(test_llmsession
+        test_llmsession.cpp
+    )
+    target_link_libraries(test_llmsession
+        Qt6::Core
+        Qt6::Test
+        Qt6::Network
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME LlmSessionTest COMMAND test_llmsession)
 endif()

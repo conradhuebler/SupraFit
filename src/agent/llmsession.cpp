@@ -10,6 +10,7 @@
 #include "toolregistry.h"
 
 #include <QJsonDocument>
+#include <QMetaObject>
 #include <QSet>
 #include <QThread>
 
@@ -111,6 +112,10 @@ void LlmSession::ask(const QString& userMessage)
 {
     if (m_busy)
         return;
+    // A fresh turn starts with a clean interrupt flag -- cancel() sets it, and a
+    // new ask() must not inherit it (endTurn() no longer clears it, see there).
+    if (m_dispatcher)
+        m_dispatcher->clearInterrupt();
     if (!m_messages.isEmpty() || m_systemPrompt.isEmpty())
         m_messages = QJsonArray();  // fresh turn keeps only the system prompt
     if (!m_systemPrompt.isEmpty())
@@ -137,8 +142,15 @@ void LlmSession::cancel()
 
 void LlmSession::endTurn()
 {
-    if (m_dispatcher)
-        m_dispatcher->clearInterrupt();
+    // BUGFIX (found by everyDispatchedToolIsAudited + 4-tool iteration-cap test,
+    // 2026-10-11): cancel() used to clearInterrupt() here, so a cancelled session
+    // could be re-asked and the NEXT turn would inherit a cleared flag -- fine.
+    // But the real defect was the inverse: runToolCalls checked m_busy, which
+    // cancel() had already cleared via endTurn(), so the loop broke mid-round and
+    // left the remaining calls UNANSWERED -- a dangling tool_call in the history
+    // makes the next request invalid. The interrupt flag is now the single source
+    // of truth for cancellation, and endTurn() does NOT clear it; ask() clears it
+    // at the start of a fresh turn.
     setBusy(false);
     emit finished();
 }
@@ -205,7 +217,7 @@ void LlmSession::onClientFinished(const QJsonObject& assistantMessage)
     }
 
     runToolCalls(toolCalls);
-    if (m_busy)
+    if (m_busy && !m_dispatcher->isInterrupted())
         sendRound();
 }
 
@@ -228,8 +240,13 @@ void LlmSession::declineRemainingCalls(const QJsonArray& toolCalls, const QStrin
 void LlmSession::runToolCalls(const QJsonArray& toolCalls)
 {
     for (const QJsonValue& value : toolCalls) {
-        if (!m_busy)
-            break;  // cancelled mid-round: decline the rest so the history stays valid
+        if (m_dispatcher && m_dispatcher->isInterrupted()) {
+            // Cancelled mid-round: answer the remaining calls with a refusal so the
+            // history stays valid -- the protocol requires a tool result for every
+            // tool_call it contains.
+            declineRemainingCalls(QJsonArray{ value }, tr("cancelled by the user"));
+            continue;
+        }
         const QJsonObject call = value.toObject();
         const QString callId = call.value(QStringLiteral("id")).toString();
         const QJsonObject function = call.value(QStringLiteral("function")).toObject();
@@ -237,13 +254,57 @@ void LlmSession::runToolCalls(const QJsonArray& toolCalls)
 
         // Ollama sends arguments as a JSON *string*; OpenAI sends an object. Accept
         // both and parse exactly once, here.
+        //
+        // BUGFIX (found by unparseableArgumentsNeverReachHandler, 2026-10-11): the
+        // string branch silently produced an EMPTY object on malformed JSON
+        // (QJsonDocument::fromJson of "{not json" fails and .object() is empty),
+        // so the handler ran with empty args -- a tool that takes no required
+        // parameters then ran anyway, and a model sending garbage was never told.
+        // Malformed or non-object arguments are now refused before the handler runs.
         QJsonObject args;
+        QString argsError;
         const QJsonValue rawArgs = function.value(QStringLiteral("arguments"));
         if (rawArgs.isString()) {
-            const QJsonDocument doc = QJsonDocument::fromJson(rawArgs.toString().toUtf8());
-            args = doc.object();
+            const QString text = rawArgs.toString();
+            if (text.trimmed().isEmpty()) {
+                // Empty arguments string is fine: same as {}.
+            } else {
+                QJsonParseError parseError;
+                const QJsonDocument doc = QJsonDocument::fromJson(text.toUtf8(), &parseError);
+                if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+                    argsError = tr("arguments are not a JSON object (%1)").arg(parseError.errorString());
+                } else {
+                    args = doc.object();
+                }
+            }
         } else if (rawArgs.isObject()) {
             args = rawArgs.toObject();
+        } else if (!rawArgs.isUndefined()) {
+            argsError = QStringLiteral("arguments must be a JSON object or a JSON string");
+        }
+
+        if (!argsError.isEmpty()) {
+            const ToolResult failure = ToolResult::failure(argsError);
+            m_messages.append([&] {
+                QJsonObject toolMessage;
+                toolMessage.insert(QStringLiteral("role"), QStringLiteral("tool"));
+                toolMessage.insert(QStringLiteral("tool_call_id"), callId);
+                toolMessage.insert(QStringLiteral("name"), name);
+                toolMessage.insert(QStringLiteral("content"), argsError);
+                return toolMessage;
+            }());
+            emit toolRefused(name, argsError);
+            // Same audit path as every other refusal (see the refusal branch
+            // below): a malformed-args call is an ATTEMPT the audit must show.
+            if (m_dispatcher && QThread::currentThread() != m_dispatcher->thread())
+                QMetaObject::invokeMethod(m_dispatcher,
+                    [dispatcher = m_dispatcher, name, args] {
+                        dispatcher->recordRefusal(name, args);
+                    },
+                    Qt::QueuedConnection);
+            else if (m_dispatcher)
+                m_dispatcher->recordRefusal(name, args);
+            continue;
         }
 
         emit toolStarted(name, args);
@@ -263,6 +324,30 @@ void LlmSession::runToolCalls(const QJsonArray& toolCalls)
         if (!refusal.isEmpty()) {
             result = ToolResult::failure(refusal);
             emit toolRefused(name, refusal);
+            // A refusal is an answer too: the model is told and can carry on
+            // differently. It flows into the SAME tool-message path below as a
+            // real result, so the history stays protocol-valid either way.
+            //
+            // BUGFIX (found by everyDispatchedToolIsAudited, 2026-10-11):
+            // unknown-tool and refused calls used to bypass the dispatcher
+            // entirely, so the audit trail never saw them -- a model repeatedly
+            // naming a nonexistent tool left no trace. Refusals are now recorded
+            // through the dispatcher's own audit signal.
+            //
+            // recordRefusal is a plain member, not a slot, so it can be invoked
+            // directly. When the session runs on a worker thread we still want the
+            // audit emission on the dispatcher's (GUI) thread, where
+            // DirectConnection receivers expect it; otherwise call it directly.
+            // Callers that assert on the audit must pump the event loop after the
+            // turn so the queued invocation lands.
+            if (m_dispatcher && QThread::currentThread() != m_dispatcher->thread())
+                QMetaObject::invokeMethod(m_dispatcher,
+                    [dispatcher = m_dispatcher, name, args] {
+                        dispatcher->recordRefusal(name, args);
+                    },
+                    Qt::QueuedConnection);
+            else if (m_dispatcher)
+                m_dispatcher->recordRefusal(name, args);
         } else {
             result = m_dispatcher ? m_dispatcher->dispatch(name, args)
                                  : m_registry->invoke(name, args);

@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0+1+2 done, Phase 3 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0+1+2+3 done, Phase 4 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -134,7 +134,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 | **0** | `USE_LLM`-Option, `Qt6::Network`, `agent`-Lib anlegen | ✅ **DONE 2026-10-11** — Build grün mit ON und OFF, ctest identisch zum Baseline |
 | **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) | ✅ **DONE 2026-10-11** — `test_toolregistry` 21/21, `test_tooldispatcher` 10/10 |
 | **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | ✅ **DONE 2026-10-11** — `test_llmclient` 18/18 gegen `QTcpServer`-Stub, kein Netz; 4 Bugs gefixt (siehe AIChangelog) |
-| **3** | `LlmSession` Agent-Loop + Freigabepolitik | `test_llmsession` grün gegen Stub |
+| **3** | `LlmSession` Agent-Loop + Freigabepolitik | ✅ **DONE 2026-10-12** — `test_llmsession` 17/17 gegen Stub; 3 Bugs gefixt (siehe AIChangelog) |
 | **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | headless gegen echtes Projekt-JSON |
 | **5** | Compute-Tools: `fit_model`, `fit_models`, `compare_models_aic`, `run_postfit_analysis`, `calculate_bc50` | ctest + Operator-Check |
 | **6** | CLI-Integration: `suprafit_cli --agent "Frage"` headless | Operator-Check |
@@ -173,10 +173,22 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   doppeltes readAll). **moc-Trap dokumentiert** (siehe `test_llmclient.cpp`):
   Qt-6.11-moc verliert die Klasse bei Raw-Strings mit `\"` oder mehrzeiligem
   Raw-String mit `//` — Payloads mit Escapes als plain string concatenation.
-- **Phase 3 (2 days).** `llmsession`: Gesprächsverlauf, Katalog im OpenAI-Format,
-  Schleife *senden → Tool ausführen → Ergebnis zurück*, Freigabepolitik über
-  `ToolEffect` (ohne Rückfrage-Haken ablehnen, nicht durchwinken),
-  Iterationslimit + finaler tool-loser Abschluss, Kappung der Tool-Ergebnisse.
+- **Phase 3 (2 days).** ✅ **DONE 2026-10-12.** `llmsession`: Gesprächsverlauf,
+  Katalog im OpenAI-Format (gefiltert durch `available`), Schleife *senden → Tool
+  ausführen → Ergebnis zurück*, Freigabepolitik über `ToolEffect` +
+  `ToolAutonomy` (ohne Rückfrage-Haken ablehnen, nicht durchwinken;
+  `InProgram` lässt Compute ohne Frage laufen), Iterationslimit + finaler
+  tool-loser Abschluss (jeder `tool_call` in der History wird beantwortet),
+  Kappung der Tool-Ergebnisse.
+  Test gegen Stub mit Antwort-Folge durch den ECHTEN `LlmClient` (kein Fake —
+  die Naht client↔session ist der Punkt). **3 Bugs gefunden und gefixt:**
+  (1) malformed `arguments` lieferte still leeres Objekt → Handler lief trotzdem;
+  jetzt refused vor Dispatch mit Meldung + `tool_call_id` in History.
+  (2) `endTurn()` clearte `requestInterrupt()` → Flag-Leak zwischen Turns;
+  jetzt `ask()` clearet bei frischem Turn, `runToolCalls` prüft den Flag.
+  (3) unknown-tool/refused/malformed bypasten den Dispatcher → Audit unsichtbar;
+  jetzt `ToolDispatcher::recordRefusal()` zeichnet Refusals im selben
+  `callRecorded`-Signal — Audit zeigt Attempts, nicht nur Erfolge.
 - **Phase 4 (2 days).** Fünf Read-Tools gegen `ProjectManager::instance()`.
   `describe_model_catalog` liefert die Modell-ID-Tabelle aus
   `MODEL_ID_REFERENCE.md`/`SupraFit::Model` — das spart dem Modell, 40 IDs raten
