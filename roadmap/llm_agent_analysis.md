@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** ADD (proposal) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0 done, Phase 1 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -131,8 +131,8 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 
 | Phase | Inhalt | Fertig, wenn |
 |---|---|---|
-| **0** | `USE_LLM`-Option, `Qt6::Network`, `agent`-Lib anlegen | Build grün mit ON und OFF |
-| **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) | `test_toolregistry`, `test_tooldispatcher` grün |
+| **0** | `USE_LLM`-Option, `Qt6::Network`, `agent`-Lib anlegen | ✅ **DONE 2026-10-11** — Build grün mit ON und OFF, ctest identisch zum Baseline |
+| **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) — **Skeleton gelandet, Tests fehlen** | `test_toolregistry`, `test_tooldispatcher` grün |
 | **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | `test_llmclient` grün gegen `QTcpServer`-Stub, kein Netz |
 | **3** | `LlmSession` Agent-Loop + Freigabepolitik | `test_llmsession` grün gegen Stub |
 | **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | headless gegen echtes Projekt-JSON |
@@ -142,13 +142,17 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 
 ### Phase-Details
 
-- **Phase 0 (0.5 day).** `option(USE_LLM ... ON)` nach Qurcuma-Vorbild
-  (`CMakeLists.txt:79`); `find_package(Qt6 6.5 COMPONENTS Network)`;
-  `add_library(agent ...)` mit Core+Network; `-DUSE_LLM=OFF` baut wie bisher.
+- **Phase 0 (0.5 day).** ✅ **DONE 2026-10-11.** `option(USE_LLM ... ON)`;
+  `find_package(Qt6 6.5 COMPONENTS Network)`; `add_library(agent ...)` mit
+  Core+Network, gelinkt in `suprafit`/`suprafit_cli` nur bei ON;
+  `#cmakedefine USE_LLM` in `global_config.h.in`. Skeleton-Quellen angelegt:
+  `tool`, `toolregistry`, `tooldispatcher`, `llmconfig`, `llmclient`, `llmsession`
+  (compiliert, noch keine registrierten Tools, noch keine agent-Tests).
 - **Phase 1 (2-3 days).** `tool.h` (Werttypen, keine Registry), `toolregistry`
   (Katalog, Schema-Validierung: type/required/enum/min/max, **unbekannte Schlüssel
   ablehnen**), `tooldispatcher` (GUI-Marshalling mit `QSemaphore`-Timeout, Audit).
-  Alles QtCore-only. Tests: `test_toolregistry`, `test_tooldispatcher`.
+  Alles QtCore-only. ⚙️ **Skeleton implementiert 2026-10-11** (Phase 0 commit);
+  noch offen: `test_toolregistry`, `test_tooldispatcher`, `catalogueBytes()`-Test.
 - **Phase 2 (1-2 days).** `llmconfig` (Profile aus `~/.config/suprafit/llm.json`,
   niemals QSettings, Key nur als ENV-Name), `llmclient` (`POST /v1/chat/completions`,
   Tool-Calls in beide Richtungen, SSE-Streaming, Abbruch, Klartext-Fehler).

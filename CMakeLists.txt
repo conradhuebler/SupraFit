@@ -78,6 +78,12 @@ option (_Python
 option (SUPRAFIT_PYBIND
     "Build the in-process pybind11 Python module (suprafit._core, Phase 2)" OFF)
 
+# LLM agent layer (roadmap/llm_agent_analysis.md, Phase 0): tool registry +
+# OpenAI-compatible LLM client against local Ollama or hosted endpoints.
+# Needs Qt6::Network; -DUSE_LLM=OFF builds exactly as before. Claude Generated.
+option(USE_LLM
+    "Enable LLM agent support: OpenAI-compatible endpoints (needs Qt6::Network)" ON)
+
 option (_Models
 	"Enable custom models" ON)
 
@@ -189,6 +195,15 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 # Find Qt6 Core and Qml (required for CLI and GUI - DataGenerator needs QJSEngine)
 find_package(Qt6 6.5 COMPONENTS Core Qml REQUIRED)
+
+# Qt6::Network only for the LLM agent layer (USE_LLM); absent otherwise, so a
+# -DUSE_LLM=OFF build pulls in nothing new. Claude Generated.
+if(USE_LLM)
+    find_package(Qt6 6.5 COMPONENTS Network REQUIRED)
+    message(STATUS "Qt6 Network found - building LLM agent layer (USE_LLM=ON)")
+else()
+    message(STATUS "USE_LLM=OFF - LLM agent layer disabled, no Qt6::Network required")
+endif()
 
 # Find GUI components (optional - only for suprafit GUI)
 find_package(Qt6 6.5 COMPONENTS Widgets Charts QUIET)
@@ -600,13 +615,42 @@ set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 17)
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
+# LLM agent layer (roadmap/llm_agent_analysis.md, Phase 0): tool registry +
+# OpenAI-compatible LLM client.QtCore-only sources stay GUI-free and headless
+# testable; Qt6::Network is pulled in here. The library carries the USE_LLM
+# compile definition so consumers can guard agent-specific code.
+# Claude Generated.
+if(USE_LLM)
+    set(agent_SRC
+        src/agent/tool.cpp
+        src/agent/toolregistry.cpp
+        src/agent/tooldispatcher.cpp
+        src/agent/llmconfig.cpp
+        src/agent/llmclient.cpp
+        src/agent/llmsession.cpp
+    )
+    add_library(agent ${agent_SRC})
+    target_link_libraries(agent Qt::Core Qt::Network models core fmt::fmt-header-only)
+    target_compile_definitions(agent PRIVATE USE_LLM)
+    if(USE_PCH)
+        target_precompile_headers(agent PRIVATE src/pch.h)
+    endif()
+    set_property(TARGET agent PROPERTY CXX_STANDARD 17)
+endif()
+
 # Link GUI executable only if built
 if(BUILD_GUI)
     target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
+    if(USE_LLM)
+        target_link_libraries(suprafit agent)
+    endif()
 endif()
 
 # CLI executable - always built (needs Core + Qml for DataGenerator)
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
+if(USE_LLM)
+    target_link_libraries(suprafit_cli agent)
+endif()
 
 # ML CLI executable with Neural Network tutorials (Claude Generated - 2025)
 if(ML_NEURAL_NETWORKS)

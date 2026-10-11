@@ -118,7 +118,7 @@
 
 Roadmap: [roadmap/llm_agent_analysis.md](roadmap/llm_agent_analysis.md) · Branch: `feature/llm-agent-analysis` · Vorlage: qurcuma `WP-llm-tool-layer.md` + curcuma `TOOL_API_WP.md`
 
-- [ ] **Phase 0** — `USE_LLM`-Option + `Qt6::Network` + `agent`-Lib anlegen (Build grün ON und OFF)
+- [x] **Phase 0** — ✅ DONE 2026-10-11: `USE_LLM`-Option (default ON) + `Qt6::Network` + `libagent` mit 6 Quellen (`tool`, `toolregistry`, `tooldispatcher`, `llmconfig`, `llmclient`, `llmsession`), `suprafit_cli`/`suprafit` linken `agent` bei ON. Verifiziert: frischer Configure+Build mit `-DUSE_LLM=ON` und `-DUSE_LLM=OFF` beide grün (rc=0, `suprafit_cli` + `suprafit` gelinkt); ctest 28/45 passed in beiden Builds identisch (17 pre-existing failures, `NeuralNetworkTest` flaky — rerun passed). Skeleton compiles; noch keine Tools registriert, keine Tests für agent/*.
 - [ ] **Phase 1** — Tool-Kontrakt + Registry + Dispatcher (`src/agent/`, QtCore-only, headless testbar): `test_toolregistry`, `test_tooldispatcher`
 - [ ] **Phase 2** — `LlmConfig` (Profile aus `~/.config/suprafit/llm.json`, Key nur aus ENV) + `LlmClient` (OpenAI-kompatibel, SSE): `test_llmclient` gegen `QTcpServer`-Stub
 - [ ] **Phase 3** — `LlmSession` Agent-Loop + Freigabepolitik über `ToolEffect`: `test_llmsession` gegen Stub

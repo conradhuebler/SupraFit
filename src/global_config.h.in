@@ -17,3 +17,4 @@
 #cmakedefine _Python
 #cmakedefine _Models
 #cmakedefine Use_Duktape
+#cmakedefine USE_LLM
