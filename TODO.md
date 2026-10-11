@@ -114,6 +114,23 @@
 
 ---
 
+## LLM Agent Analysis (agentische Auswertung)
+
+Roadmap: [roadmap/llm_agent_analysis.md](roadmap/llm_agent_analysis.md) · Branch: `feature/llm-agent-analysis` · Vorlage: qurcuma `WP-llm-tool-layer.md` + curcuma `TOOL_API_WP.md`
+
+- [ ] **Phase 0** — `USE_LLM`-Option + `Qt6::Network` + `agent`-Lib anlegen (Build grün ON und OFF)
+- [ ] **Phase 1** — Tool-Kontrakt + Registry + Dispatcher (`src/agent/`, QtCore-only, headless testbar): `test_toolregistry`, `test_tooldispatcher`
+- [ ] **Phase 2** — `LlmConfig` (Profile aus `~/.config/suprafit/llm.json`, Key nur aus ENV) + `LlmClient` (OpenAI-kompatibel, SSE): `test_llmclient` gegen `QTcpServer`-Stub
+- [ ] **Phase 3** — `LlmSession` Agent-Loop + Freigabepolitik über `ToolEffect`: `test_llmsession` gegen Stub
+- [ ] **Phase 4** — Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` (headless gegen ProjectManager)
+- [ ] **Phase 5** — Compute-Tools: `fit_model`, `fit_models`, `compare_models_aic`, `run_postfit_analysis`, `calculate_bc50`
+- [ ] **Phase 6** — CLI: `suprafit_cli --agent "Frage"` headless gegen Ollama
+- [ ] **Phase 7** — GUI Chat-Dock (später, eigene Phase)
+- [ ] **Entscheidung:** Testmodell lokal — `ornith-1.5:9b` (tools-capable) oder `gpt-oss:20b`; Qurcuma hat nur gegen cloud-Modell gemessen, lokales Tool-Calling ist modellabhängig
+- [ ] **Entscheidung:** Freigabepolitik für CLI-Modus — Vorschlag `InProgram` (Compute ohne Rückfrage, FileWrite fragt)
+
+---
+
 ## SupraFit 3.0 Beta
 
 ### Fit results and reference data

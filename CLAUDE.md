@@ -74,6 +74,23 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - **ADDED**: Basically implemented
 - **TESTED**: Works (by operator feedback)
 - **APPROVED**: Move to changelog, remove from CLAUDE.md
+- **AI status labels** (curcuma convention, adopted): 🤖 AI-generated / ⚙️ machine-tested / 👁️ human-reviewed — AI never assigns ✅ TESTED or ✅ APPROVED itself; only the operator does
+
+### Where Things Go (curcuma convention, adopted)
+One home per kind of information; copies drift apart.
+
+| Kind | Home |
+|---|---|
+| Rules, invariants, layout of a directory | the `CLAUDE.md` of that directory |
+| Open code tasks and defects | `TODO.md`, open items only, at most 3 lines each |
+| Work packages / roadmaps | `roadmap/<topic>.md` (one WP document per feature area, like `roadmap/python_interface.md`) |
+| Bug report, measurement, campaign | one dated document in `docs/` plus one index line in `AIChangelog.md` |
+| History | git log and the `AIChangelog.md` index |
+
+- No dated status sections, "Completed" lists or fix narratives in a CLAUDE.md; the changelog line is the record.
+- Closing a task is one change: remove its TODO entry, add the changelog line.
+- `AIChangelog.md` is the index (one line per fact, newest first); long entries live in `docs/` and are linked.
+- Roadmap docs live in `roadmap/`, not in the repository root and not in `docs/outdated/`.
 
 ## Documentation
 
@@ -82,12 +99,17 @@ SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statis
 - [Model ID Reference](./src/core/models/MODEL_ID_REFERENCE.md)
 - [ML Integration Plan](./ml_integration_plan/README.md)
 - [CLI Usage Examples](./src/client/usage_example.md)
+- [Roadmap: LLM Agent Analysis](./roadmap/llm_agent_analysis.md) — agentische Auswertung über OpenAI-kompatible Endpunkte (Ollama), Qurcuma-Vorbild
+- [Roadmap: Python Interface](./roadmap/python_interface.md)
+- [Roadmap: Joint Solver](./roadmap/joint_solver.md)
+- [Roadmap: ScriptModel Performance](./roadmap/scriptmodel_performance.md)
 
 ## Key Components
 
 ### Core Libraries
 - **libcore.a**: Core functionality (capabilities/, core/) with ProjectManager integration
 - **libmodels.a**: Data models and analysis models
+- **libagent** (planned, `USE_LLM`): Tool-Registry + LLM-Client + Agent-Loop (`src/agent/`), see [roadmap/llm_agent_analysis.md](./roadmap/llm_agent_analysis.md)
 - **suprafit_cli**: Command-line interface with unified ProjectManager
 - **suprafit**: GUI application with completed ProjectManager integration
 
@@ -103,7 +125,7 @@ src/
 ```
 
 ## Dependencies
-- **Qt6**: Core, Test, Qml modules
+- **Qt6**: Core, Test, Qml modules (+ **Network** behind `USE_LLM` for the agent layer)
 - **Eigen**: Matrix operations
 - **fmt**: Modern C++ formatting
 - **ChaiScript**: Scripting support
@@ -158,6 +180,8 @@ src/
 - **Commit message format**: Start with action verb (Fix, Add, Improve, Refactor), follow with brief description
 - **Include Co-Author info**: All commits include Claude contribution notes with proper attribution
 - **Test artifacts stay local**: Build outputs and temporary test files are ignored by .gitignore
+- **Branch names**: `feature/<topic>` for new capabilities, `fix/<topic>` for bug fixes; `<topic>` is 2-4 lowercase ASCII words in kebab-case (e.g. `feature/llm-agent-analysis`, `fix/bmt-dir-collision`)
+- **One work package = one buildable commit**; build green after each step (curcuma branch discipline, adopted from `TOOL_API_WP.md`)
 
 ### Build and Test Commands
 ```bash
