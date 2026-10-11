@@ -52,10 +52,8 @@ void NonLinearFitThread::run()
     m_running = true;
     m_steps = 0;
     m_converged = false;
-    //quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     if (!m_model->isSimulation())
         NonLinearFit();
-    //quint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     m_running = false;
 }
@@ -84,29 +82,33 @@ void NonLinearFitThread::setParameter(const QJsonObject& json)
 int NonLinearFitThread::NonLinearFit()
 {
     QList<int> locked = m_model->LockedParameters();
-    QVector<qreal> parameter = m_model->OptimizeParameters();
+    // CollectOptimizationParameters() is called unconditionally so the model's optimisation vector
+    // (and thus Parameter()/degrees-of-freedom for AIC etc.) is populated even in VarPro mode, where
+    // the solver drives only the global subset itself.
+    QVector<qreal> parameter = m_model->CollectOptimizationParameters();
     if (parameter.isEmpty())
         return 0;
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
-    //int iter = LeastSquaresRookfighter(m_model, parameter);
-    int iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
+
+    // Opt-in solver selection: VarPro (variable projection) for models that support it, otherwise the
+    // classic full-vector Levenberg-Marquardt. Selectable via the "FitSolver" optimizer-config key so
+    // the two can be benchmarked. Claude Generated.
+    const QString solver = m_model->getOptimizerConfig()["FitSolver"].toString();
+    int iter;
+    if ((solver == QLatin1String("VarPro") || solver == QLatin1String("VarProAnalytic")) && m_model->SupportsVarPro())
+        iter = VarProFit(m_model, m_history.sse, m_history.parameter);
+    else
+        iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
-    m_converged = (iter < m_model.data()->getOptimizerConfig()["MaxLevMarInter"].toInt());
+    // NonlinearFit() set the model's converged flag from the real stop criteria; mirror it
+    // here instead of recomputing the (misleading) iter < MaxIter proxy.
+    m_converged = m_model->isConverged();
 
     return iter;
-}
-
-void NonLinearFitThread::Print(const QString& message)
-{
-#ifdef _DEBUG
-//    qDebug() << message;
-#else
-    Q_UNUSED(message)
-#endif
 }
 
 Minimizer::Minimizer(bool exchange_statistics, QObject* parent)

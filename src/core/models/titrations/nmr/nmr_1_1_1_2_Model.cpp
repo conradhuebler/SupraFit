@@ -119,7 +119,7 @@ void nmr_ItoI_ItoII_Model::InitialGuess_Private()
     Calculate();
 }
 
-void nmr_ItoI_ItoII_Model::OptimizeParameters_Private()
+void nmr_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -138,37 +138,55 @@ void nmr_ItoI_ItoII_Model::OptimizeParameters_Private()
         addLocalParameter(2);
 }
 
-void nmr_ItoI_ItoII_Model::CalculateVariables()
+void nmr_ItoI_ItoII_Model::FillDesign()
 {
-    qreal K11 = qPow(10, GlobalParameter(0));
-    qreal K12 = qPow(10, GlobalParameter(1));
-
-    // for (int i = 0; i < DataPoints(); ++i) {
+    if (m_design.rows() != DataPoints() || m_design.cols() != 3)
+        m_design.resize(DataPoints(), 3);
+    const qreal K11 = qPow(10, GlobalParameter(0));
+    const qreal K12 = qPow(10, GlobalParameter(1));
+    // Hoisted out of the loop: this used to be built twice PER DATA POINT, i.e. two heap allocations
+    // per point on every residual evaluation of the fit. Claude Generated.
+    const QList<qreal> constants = QList<qreal>() << K11 << K12;
     for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-
-        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
-        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
+        // Only the guest cubic is solved numerically (MinCubicRoot is a Newton search, and it runs
+        // three of them — one per root). The free host then follows from its own mass balance,
+        // H0 = [H](1 + K11[G] + K11K12[G]^2) — exactly the relation the guest cubic was derived from.
+        // This halves the root finding and, unlike two independently converged Newton solves, makes
+        // host and guest mass-balance consistent by construction. Claude Generated.
+        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, constants);
+        qreal host = host_0 / (1.0 + K11 * guest + K11 * K12 * guest * guest);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
-
-        Vector vector(5);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
-        vector(3) = complex_11;
-        vector(4) = complex_12;
-
-        if (!m_fast)
+        m_design(i, 0) = host / host_0; // free-host shift coefficient
+        m_design(i, 1) = complex_11 / host_0; // AB shift coefficient
+        m_design(i, 2) = complex_12 / host_0; // AB2 shift coefficient
+        if (!m_fast) {
+            Vector vector(5);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest;
+            vector(3) = complex_11;
+            vector(4) = complex_12;
             SetConcentration(i, vector);
-
-        qreal value = 0;
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host / host_0 * LocalTable()->data(j, 0) + complex_11 / host_0 * LocalTable()->data(j, 1) + complex_12 / host_0 * LocalTable()->data(j, 2);
-            SetValue(i, j, value);
         }
     }
+}
+
+void nmr_ItoI_ItoII_Model::CalculateVariables()
+{
+    FillDesign();
+    for (int i = DataBegin(); i < DataEnd(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2));
+}
+
+void nmr_ItoI_ItoII_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
@@ -194,10 +212,7 @@ QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> nmr_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<nmr_ItoI_ItoII_Model> model = QSharedPointer<nmr_ItoI_ItoII_Model>(new nmr_ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
@@ -209,13 +224,6 @@ QString nmr_ItoI_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString nmr_ItoI_ItoII_Model::ModelInfo() const
-{
-    QString result = AbstractNMRModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString nmr_ItoI_ItoII_Model::AdditionalOutput() const
 {
@@ -240,40 +248,25 @@ QString nmr_ItoI_ItoII_Model::AdditionalOutput() const
 
         diff = host_0 - complex;
         // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        std::cout << host << " "
-                  << " " << guest_0 - complex << " " << complex << std::endl;
         //std::cout << integral.transpose() << std::endl;
     }
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
     */
     return result;
 }
 
-QString nmr_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem nmr_ItoI_ItoII_Model::BC50System() const
 {
-
-    QString result = AbstractNMRModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
-QString nmr_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractNMRModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
-}
 
 #include "nmr_1_1_1_2_Model.moc"

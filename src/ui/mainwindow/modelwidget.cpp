@@ -18,6 +18,7 @@
  */
 
 #include <charts.h>
+#include "src/core/models/scriptmodel.h" // ScriptModel class (was transitive via models.h)
 
 #include "src/global.h"
 #include "src/version.h"
@@ -50,6 +51,7 @@
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelchart.h"
+#include "src/ui/widgets/dynamicmodelwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
@@ -78,6 +80,7 @@
 #include <QtCore/QtMath>
 
 #include <QtGui/QAction>
+#include <QtGui/QActionGroup>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -97,6 +100,8 @@
 
 #include <iostream>
 #include <random>
+
+#include "src/core/phasetiming.h"
 
 #include "modelwidget.h"
 
@@ -153,6 +158,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
+    // Claude Generated - Debug Messages for successful model loading
+    if (model) {
+        qDebug() << "✅ ModelWidget: Model successfully loaded -" 
+                 << "Name:" << model->Name()
+                 << "ID:" << model->SFModel()
+                 << "UUID:" << model->UUID()
+                 << "Parameters:" << model->GlobalParameterSize() << "global," << model->LocalParameterSize() << "local";
+    } else {
+        qDebug() << "❌ ModelWidget: Null model passed to constructor";
+    }
     m_splitter = new QSplitter(this);
     m_splitter->setObjectName("modelSplitter");
     m_splitter->setOrientation(Qt::Vertical);
@@ -278,10 +293,69 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, &QAction::triggered, this, &ModelWidget::FastConfidence);
 
+    /* Fit-solver selection (LevMar vs. VarPro), appended to the Fit menu. The choice is written into the
+       model's optimizer config ("FitSolver") and thus propagates to the statistical post-processing,
+       whose fold re-fits inherit the key via Clone(). VarPro is only honoured by models with
+       SupportsVarPro() (nmr_any / uvvis_any); it is greyed out otherwise. Claude Generated. */
+    QAction* solver_levmar = new QAction(tr("LevMar (classic)"), this);
+    solver_levmar->setCheckable(true);
+    solver_levmar->setData(QStringLiteral("LevMar"));
+    QAction* solver_varpro = new QAction(tr("VarPro (projection)"), this);
+    solver_varpro->setCheckable(true);
+    solver_varpro->setData(QStringLiteral("VarPro"));
+    QActionGroup* solver_group = new QActionGroup(this);
+    solver_group->setExclusive(true);
+    solver_group->addAction(solver_levmar);
+    solver_group->addAction(solver_varpro);
+    m_solver_levmar = solver_levmar;
+    m_solver_varpro = solver_varpro;
+    connect(solver_levmar, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+    connect(solver_varpro, &QAction::triggered, this, [this]() {
+        SetFitSolver(QStringLiteral("VarPro"));
+        GlobalMinimize(); /* selecting a solver immediately (re)fits with it — Claude Generated */
+    });
+
+    /* Speciation-solver selection (LevMar/Newton vs. legacy BFGS) for the reaction-driven *_any models.
+       Writes the "SpeciationSolver" optimizer-config key, which AbstractTitrationModel/itc_any push into
+       their embedded SpeciationEngine on setOptimizerConfig(); inherited by MC/CV/RA via Clone(). Only
+       enabled for models with UsesSpeciationEngine() (the fixed models use closed-form roots). CG. */
+    QAction* spec_levmar = new QAction(tr("LevMar / Newton (default)"), this);
+    spec_levmar->setCheckable(true);
+    spec_levmar->setData(QStringLiteral("LevMar"));
+    QAction* spec_bfgs = new QAction(tr("BFGS (legacy)"), this);
+    spec_bfgs->setCheckable(true);
+    spec_bfgs->setData(QStringLiteral("BFGS"));
+    QActionGroup* spec_group = new QActionGroup(this);
+    spec_group->setExclusive(true);
+    spec_group->addAction(spec_levmar);
+    spec_group->addAction(spec_bfgs);
+    m_speciation_levmar = spec_levmar;
+    m_speciation_bfgs = spec_bfgs;
+    connect(spec_levmar, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("LevMar"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+    connect(spec_bfgs, &QAction::triggered, this, [this]() {
+        SetSpeciationSolver(QStringLiteral("BFGS"));
+        GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
+    });
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
+    menu->addSeparator();
+    menu->addAction(solver_levmar);
+    menu->addAction(solver_varpro);
+    QMenu* spec_menu = menu->addMenu(tr("Speciation solver"));
+    spec_menu->setToolTip(tr("Equilibrium-concentration solver used by the reaction-driven models."));
+    spec_menu->addAction(spec_levmar);
+    spec_menu->addAction(spec_bfgs);
+    m_speciation_menu = spec_menu;
+    connect(menu, &QMenu::aboutToShow, this, &ModelWidget::UpdateSolverMenu);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
@@ -360,6 +434,28 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         head->addWidget(m_readonly);
 
     m_sign_layout->addLayout(head);
+#ifdef DEBUG_ON
+    // Diagnostic for scripted models: these values decide whether the per-series parameter widgets
+    // (shift editors + optimise checkboxes) are built at all. Claude Generated.
+    if (m_model->SFModel() == SupraFit::ScriptModel) {
+        QString active, checked;
+        for (int s = 0; s < m_model->SeriesCount(); ++s)
+            active += m_model->ActiveSignals(s) ? QStringLiteral("1") : QStringLiteral("0");
+        for (int s = 0; s < m_model->LocalTable()->rowCount(); ++s)
+            for (int p = 0; p < m_model->LocalTable()->columnCount(); ++p)
+                checked += m_model->LocalTable()->isChecked(s, p) ? QStringLiteral("1") : QStringLiteral("0");
+        qDebug().noquote() << QString("[ScriptModel] SupportSeries=%1 LocalParameterSize=%2 GlobalParameterSize=%3 SeriesCount=%4 ChartSeries=%5 optParams=%6 activeSignals=%7 localChecked=%8")
+                                  .arg(m_model->SupportSeries())
+                                  .arg(m_model->LocalParameterSize())
+                                  .arg(m_model->GlobalParameterSize())
+                                  .arg(m_model->SeriesCount())
+                                  .arg(m_charts.signal_wrapper ? m_charts.signal_wrapper->SeriesSize() : -1)
+                                  .arg(m_model->CollectOptimizationParameters().size())
+                                  .arg(active)
+                                  .arg(checked);
+    }
+#endif
+
     if (m_model->SupportSeries()) {
         if (m_model->LocalParameterSize()) {
             for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
@@ -425,6 +521,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
+    // Scalable table view for models with many species (additive: the classic view is unchanged).
+    if (m_model->UseDynamicParameterWidget())
+        model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
 
     m_splitter->addWidget(model_tab);
 
@@ -506,6 +605,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        // Phase timing starts at the click, not inside the job: the table generation that precedes
+        // the first worker thread is part of what the user waits for. Claude Generated.
+        PhaseTiming::Begin(QString("%1 on %2")
+                               .arg(SupraFit::Method2Name(AccessCI(job, "Method").toInt()))
+                               .arg(m_model->Name()));
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
@@ -517,6 +621,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         }
 
         QApplication::restoreOverrideCursor();
+        // The chart is on screen now — this is the end of what the user perceives as "running".
+        PhaseTiming::Mark(QStringLiteral("render results widget + chart"));
+        PhaseTiming::End();
     });
 
     //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
@@ -532,14 +639,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         QTimer::singleShot(10, this, &ModelWidget::recalculate);
     }
 */
-    //    for (int i = 0; i < m_splitter->count(); ++i)
-    //        m_splitter->setCollapsible(i, false);
-
-    QString model_ident = QString("model %1").arg(m_model->SFModel());
+    // No pane may collapse to nothing: the per-series parameter pane (the shift editors) is the last
+    // one added and would otherwise silently vanish. Claude Generated.
+    for (int i = 0; i < m_splitter->count(); ++i)
+        m_splitter->setCollapsible(i, false);
 
     QSettings settings;
     settings.beginGroup("model");
-    m_splitter->restoreState(settings.value(model_ident).toByteArray());
+    m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
     settings.endGroup();
     emit m_model->Recalculated();
 }
@@ -567,6 +674,11 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
     update->setIcon(Icon("dialog-ok-apply"));
     QScrollArea* scrollArea = new QScrollArea;
     PrepareWidget* widget = new PrepareWidget(m_model->getModelDefinitionBlock(), false, this);
+    // Same live guidance as the creation dialog: which identifiers the equation may use for the
+    // current reaction system, and which globals are the stability constants. Claude Generated.
+    widget->AddScriptGuidance();
+    if (ScriptModel* script = qobject_cast<ScriptModel*>(m_model.data()))
+        widget->setEquilibriumMode(script->UsesSpeciation());
     QSignalBlocker block(widget);
     QProgressBar* bar = new QProgressBar;
     connect(m_script_timer, &QTimer::timeout, this, [this, widget, bar]() {
@@ -713,12 +825,22 @@ void ModelWidget::setKeys(const QString& str)
     }
 }
 
+QString ModelWidget::SplitterSettingsKey() const
+{
+    /* The saved splitter geometry must be keyed by the pane COUNT as well, not just the model id: a
+     * scripted model has a different number of panes depending on whether it declares local
+     * parameters (the per-series parameter pane is only added when LocalParameterSize() > 0). All
+     * scripted models shared the key "model 100", so a state saved for a 2-pane layout was restored
+     * into a 3-pane one and QSplitter gave the extra pane height 0 — the per-series shift editors
+     * disappeared entirely even though the model was fully defined. Claude Generated. */
+    return QString("model %1 panes %2").arg(m_model->SFModel()).arg(m_splitter->count());
+}
+
 void ModelWidget::SplitterResized()
 {
-    QString model_ident = QString("model %1").arg(m_model->SFModel());
     QSettings settings;
     settings.beginGroup("model");
-    settings.setValue(model_ident, m_splitter->saveState());
+    settings.setValue(SplitterSettingsKey(), m_splitter->saveState());
     settings.endGroup();
 }
 
@@ -841,6 +963,48 @@ void ModelWidget::GlobalMinimize()
     MinimizeModel(config);
 }
 
+void ModelWidget::SetFitSolver(const QString& solver)
+{
+    /* Write the FitSolver choice into the model's optimizer config. Persisted with the model and
+       inherited by every statistical re-fit via Clone(), so MC/CV/RA use the same solver. Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["FitSolver"] = solver;
+    m_model->setOptimizerConfig(config);
+}
+
+void ModelWidget::SetSpeciationSolver(const QString& method)
+{
+    /* Write the speciation-solver choice into the model's optimizer config. The model's
+       setOptimizerConfig() override pushes it into the embedded SpeciationEngine; MC/CV/RA inherit the
+       key via Clone(). Claude Generated. */
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["SpeciationSolver"] = method;
+    m_model->setOptimizerConfig(config);
+}
+
+void ModelWidget::UpdateSolverMenu()
+{
+    /* Refresh check marks and the VarPro enable state when the menu opens, so the display never
+       lags behind a config changed elsewhere (e.g. OptimizerSettings) or a freshly loaded model. */
+    const QString solver = m_model->getOptimizerConfig().value("FitSolver").toString(QStringLiteral("LevMar"));
+    const bool varpro = m_model->SupportsVarPro();
+    m_solver_varpro->setEnabled(varpro);
+    m_solver_varpro->setToolTip(varpro ? QString() : tr("Only available for nmr_any / uvvis_any models."));
+    const bool use_varpro = (varpro && solver == QLatin1String("VarPro"));
+    m_solver_levmar->setChecked(!use_varpro);
+    m_solver_varpro->setChecked(use_varpro);
+
+    /* Speciation solver: only meaningful for the reaction-driven models that use the SpeciationEngine. */
+    const bool uses_engine = m_model->UsesSpeciationEngine();
+    m_speciation_menu->setEnabled(uses_engine);
+    m_speciation_menu->setToolTip(uses_engine ? tr("Equilibrium-concentration solver used by the reaction-driven models.")
+                                              : tr("Only the reaction-driven models (nmr_any / uvvis_any / fl_any / itc_any) use a speciation solver."));
+    const QString spec = m_model->getOptimizerConfig().value("SpeciationSolver").toString(QStringLiteral("LevMar"));
+    const bool use_bfgs = (spec == QLatin1String("BFGS"));
+    m_speciation_bfgs->setChecked(use_bfgs);
+    m_speciation_levmar->setChecked(!use_bfgs);
+}
+
 void ModelWidget::MinimizeModel(const QJsonObject& config)
 {
     Waiter wait;
@@ -859,7 +1023,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
 
     OptimisationHistory history = m_minimizer->History();
     int series = 0;
-    for (int i = 0; i < m_model->OptimizeParameters().size(); ++i) {
+    for (int i = 0; i < m_model->CollectOptimizationParameters().size(); ++i) {
         auto pair = m_model->IndexParameters(i);
         if (pair.second == 0) {
             history.names << m_model->GlobalParameterName(pair.first);
@@ -877,8 +1041,28 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json, false);
-    m_model->OptimizeParameters();
+    m_model->CollectOptimizationParameters();
     Repaint();
+
+    // Claude Generated: Clean replacement for timer hack - immediate state application
+    // Apply current state immediately after Repaint() to ensure LineSeries remain visible
+    if (m_charts.data_wrapper) {
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: m_charts.data_wrapper valid:" << m_charts.data_wrapper.data()
+                 << "about to call applyStateToSeries()";
+#endif
+        m_charts.data_wrapper->applyStateToSeries();
+        qDebug() << "✅ DEBUG MinimizeModel: Applied immediate applyStateToSeries() after fitting";
+#ifdef DEBUG_ON
+        qDebug() << "🔍 DEBUG MinimizeModel: applyStateToSeries() call completed";
+#endif
+    }
+#ifdef DEBUG_ON
+    else {
+        qDebug() << "⚠️  WARNING MinimizeModel: m_charts.data_wrapper is null";
+    }
+#endif
+
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
     else

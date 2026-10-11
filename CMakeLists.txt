@@ -26,6 +26,18 @@ option (BENCHMARK_LEVEL
 
 option (DEBUG_ON
     "Enable Debugging Output" OFF)
+
+# Bind DEBUG_ON to a compile definition so the many #ifdef DEBUG_ON guards take
+# effect when enabled - the option was previously defined but never wired, which
+# left all debug guards inert regardless of the setting (D7). Claude Generated
+if(DEBUG_ON)
+    add_compile_definitions(DEBUG_ON)
+else()
+    # Compile out every qDebug() call in normal (non-debug) builds so the ~150 ad-hoc
+    # qDebug traces stop flooding CLI/GUI output. qWarning()/qInfo() are unaffected. This
+    # applies the "qDebug only under DEBUG_ON" rule globally without editing each call (D7).
+    add_compile_definitions(QT_NO_DEBUG_OUTPUT)
+endif()
     
 option (experimental
     "Include experimental functions" OFF)
@@ -62,6 +74,9 @@ option (_Theme
 
 option (_Python
     "Enable python interface" OFF)
+
+option (SUPRAFIT_PYBIND
+    "Build the in-process pybind11 Python module (suprafit._core, Phase 2)" OFF)
 
 option (_Models
 	"Enable custom models" ON)
@@ -138,6 +153,14 @@ if(USE_AVX2)
 
 endif()
 
+if(MINGW)
+    # MinGW/COFF objects are capped at 65535 sections; heavy template
+    # instantiation (ChaiScript/duktape via scriptmodel.cpp) overflows this
+    # and fails with "file too big". -Wa,-mbig-obj selects the extended COFF
+    # object format that lifts the limit. Claude Generated
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+endif()
+
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/exprtk.hpp)
   file(DOWNLOAD https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp ${PROJECT_SOURCE_DIR}/external/exprtk.hpp
        TIMEOUT 60  # seconds
@@ -164,13 +187,44 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt6 6.5 COMPONENTS Core Widgets Charts Qml)
+# Find Qt6 Core and Qml (required for CLI and GUI - DataGenerator needs QJSEngine)
+find_package(Qt6 6.5 COMPONENTS Core Qml REQUIRED)
+
+# Find GUI components (optional - only for suprafit GUI)
+find_package(Qt6 6.5 COMPONENTS Widgets Charts QUIET)
+if(Qt6Widgets_FOUND AND Qt6Charts_FOUND)
+    set(BUILD_GUI ON)
+    message(STATUS "Qt6 GUI components (Widgets, Charts) found - building GUI application")
+else()
+    set(BUILD_GUI OFF)
+    message(STATUS "Qt6 GUI components not found - building CLI only (DataGenerator needs Qml for QJSEngine)")
+endif()
 
 if(_Python)
     find_package(PythonLibs)
     if( NOT PythonLibs_FOUND)
         message(FATAL_ERROR "Python is not found on your system. Please rerun cmake with disabled Python support!")
     endif()
+endif()
+
+# Phase 2 in-process binding: pybind11 brings its own modern find_package(Python3 Development.Module)
+# and provides pybind11_add_module. Kept separate from the legacy _Python demo wiring above. core
+# and models stay STATIC (their mutual CreateModel cycle is only legal for static libs) but must be
+# position-independent to link into the SHARED _core module, so we build the whole tree PIC.
+# Claude Generated.
+if(SUPRAFIT_PYBIND)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    # pybind11's find_package(Python ...) uses an internal cache variable literally named `_Python`,
+    # which collides with this project's `_Python` OPTION and would clobber it to a truthy string
+    # (wrongly forcing SHARED core/models + the embedded-CPython path). Save the option value and
+    # restore it (as a normal variable that shadows the polluted cache entry for the rest of this
+    # file). Claude Generated.
+    set(_suprafit_python_option "${_Python}")
+    add_subdirectory(${PROJECT_SOURCE_DIR}/external/pybind11 EXCLUDE_FROM_ALL)
+    # Keep pybind11's own `_Python` bookkeeping ("Python") to hand back to pybind11_add_module later,
+    # but restore the project option value for the SHARED-guard / configure_file logic in between.
+    set(_pybind11_python_kind "${_Python}")
+    set(_Python "${_suprafit_python_option}")
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/fmt EXCLUDE_FROM_ALL)
@@ -203,6 +257,7 @@ set(core_SRC
     src/core/libmath.cpp
     src/core/minimizer.cpp
     src/core/optimizer/eigen_levenberg.cpp
+    src/core/optimizer/varpro_levenberg.cpp
     src/capabilities/datagenerator.cpp
     src/capabilities/resampleanalyse.cpp
     src/capabilities/abstractsearchclass.cpp
@@ -211,13 +266,27 @@ set(core_SRC
     src/capabilities/globalsearch.cpp
     src/capabilities/weakenedgridsearch.cpp
     src/capabilities/jobmanager.cpp
+    src/capabilities/mlfeatureextractor.cpp
     src/core/analyse.cpp
+    src/core/analyse_format.cpp
+    src/core/bc50.cpp
+    src/core/analysis_manager.cpp
+    src/core/jsonutils.cpp
+    src/core/projectmanager.cpp
     src/core/jsonhandler.cpp
     src/core/filehandler.cpp
     src/core/toolset.cpp
+    src/core/toolset_io.cpp
+    src/core/toolset_print.cpp
+    src/core/toolset_statistics.cpp
     src/core/thermogramhandler.cpp
+    src/core/itcprocessor.cpp
     src/core/spectrahandler.cpp
     src/core/concentrationalpolynomial.cpp
+    src/core/concentrationsolver.cpp
+    src/core/reactionparser.cpp
+    src/core/speciationengine.cpp
+    src/core/citations.cpp
     src/global.cpp
 )
 
@@ -230,22 +299,62 @@ ENDIF(_Python)
 if(_Python)
     add_library(core SHARED ${core_SRC})
 else()
+    # SUPRAFIT_PYBIND keeps core STATIC (the core<->models cycle is only allowed for static libs)
+    # but position-independent (set globally below) so it links into the SHARED _core module.
     add_library(core ${core_SRC}
         src/core/models/exprtkinterpreter.h src/core/models/exprtkinterpreter.cpp)
 endif()
 
 target_link_libraries(core Qt::Core Qt::Qml)
+# core TUs (analysis_manager.cpp, projectmanager.cpp) call fmt::print; link the header-only fmt so
+# FMT_HEADER_ONLY is defined when compiling them. Without this, those objects emit an external
+# reference to the non-inline fmt::vprint that nothing links, and a clean build only succeeds by
+# accident (stale objects / a weak symbol pulled from the executable's own TUs). Claude Generated.
+target_link_libraries(core fmt::fmt-header-only)
+# core calls CreateModel() (defined in models) and models use core utilities — declare the cyclic
+# static-library dependency so CMake repeats the archives on every link line (Claude Generated, R5).
+target_link_libraries(core models)
 
 # Pre-compiled Headers for core library (Claude Generated)
 if(USE_PCH)
     target_precompile_headers(core PRIVATE src/pch.h)
 endif()
 
+# Neural Network ML Library (Claude Generated - 2025)
+option(ML_NEURAL_NETWORKS "Enable Neural Network ML Library" ON)
+
+if(ML_NEURAL_NETWORKS)
+    set(ml_SRC
+        src/ml/activation_functions.cpp
+        src/ml/neural_layer.cpp
+        src/ml/neural_network.cpp
+        src/ml/loss_functions.cpp
+        src/ml/optimizer.cpp
+        src/ml/tutorial/tutorial_manager.cpp
+        src/ml/tutorial/examples/xor_tutorial.cpp
+        src/ml/tutorial/examples/nmr_model_selection_tutorial.cpp
+        src/ml/tutorial/examples/training_tutorial.cpp
+    )
+    
+    add_library(ml ${ml_SRC})
+    target_link_libraries(ml Qt::Core fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML library (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml PRIVATE src/pch.h)
+    endif()
+    
+    # Add ML library to core dependencies
+    target_link_libraries(core ml)
+endif()
+
 #add_subdirectory(src/core/models/misc)
 set(models_SRC
     src/core/models/dataclass.cpp
     src/core/models/datatable.cpp
+    src/core/models/models.cpp
     src/core/models/AbstractModel.cpp
+    src/core/models/AbstractModel_serialize.cpp
     src/core/models/titrations/AbstractItcModel.cpp
     src/core/models/titrations/AbstractTitrationModel.cpp
     src/core/models/titrations/AbstractNMRModel.cpp
@@ -265,6 +374,7 @@ set(models_SRC
 
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
+    src/core/units.cpp
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
     src/core/models/photophysics/decayrates.cpp
@@ -276,6 +386,7 @@ set(models_SRC
     src/core/models/titrations/fluorescence/fl_1_1_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_1_2_Model.cpp
     src/core/models/titrations/fluorescence/fl_2_1_1_1_Model.cpp
+    src/core/models/titrations/fluorescence/fl_any_Model.cpp
 
     src/core/models/titrations/itc/blank.cpp
     src/core/models/titrations/itc/itc_1_1_Model.cpp
@@ -316,6 +427,7 @@ else()
 endif()
 
 target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES} Qt::Qml)
+target_link_libraries(models core) # cyclic with core (CreateModel) — see note at core
 
 # Pre-compiled Headers for models library (Claude Generated)
 if(USE_PCH)
@@ -326,86 +438,109 @@ IF(Use_Duktape)
     target_link_libraries(models duke)
 ENDIF()
 
-add_subdirectory(src/ui)
+# Only build UI if GUI components are available
+if(BUILD_GUI)
+    add_subdirectory(src/ui)
+else()
+    message(STATUS "Skipping GUI module - Qt6 Widgets/Charts not available")
+endif()
 
-set(suprafit_SRC
-    src/ui/instance.h
-    src/ui/main.cpp
-)
-qt_add_resources(suprafit_SRC files.qrc)
+# GUI executable - only if GUI components available
+if(BUILD_GUI)
+    set(suprafit_SRC
+        src/ui/instance.h
+        src/ui/main.cpp
+    )
+    qt_add_resources(suprafit_SRC files.qrc)
 
-if(noto_font)
-    qt_add_resources(suprafit_SRC fonts.qrc)
-endif(noto_font)
+    if(noto_font)
+        qt_add_resources(suprafit_SRC fonts.qrc)
+    endif(noto_font)
+endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
 
+# Enable CTest integration for unified 'make test' command (Claude Generated - 2025-09-04)
+enable_testing()
 
-# generate proper GUI program on specified platform
-if(WIN32) # Check if we are on Windows
-    add_executable(suprafit ${suprafit_SRC} suprafit.rc)
-    
-    # Pre-compiled Headers for GUI Windows (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
+# Include test configuration from tests subdirectory
+include(CTest)
 
-        if(MSVC) # Check if we are using the Visual Studio compiler
-            set_target_properties(suprafit PROPERTIES
-                        WIN32_EXECUTABLE YES
-                        LINK_FLAGS "/ENTRY:mainCRTStartup"
-                )
-            #set_property(TARGET suprafit PROPERTY
-            #MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-        elseif(CMAKE_COMPILER_IS_GNUCXX)
-                         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
-        else()
-                message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
-        endif(MSVC)
-        set(target_dir "bin/win")
+# Generate proper GUI program on specified platform - only if BUILD_GUI is ON
+if(BUILD_GUI)
+    if(WIN32) # Check if we are on Windows
+        add_executable(suprafit ${suprafit_SRC} suprafit.rc)
+        
+        # Pre-compiled Headers for GUI Windows (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+
+            if(MSVC) # Check if we are using the Visual Studio compiler
+                set_target_properties(suprafit PROPERTIES
+                            WIN32_EXECUTABLE YES
+                            LINK_FLAGS "/ENTRY:mainCRTStartup"
+                    )
+                #set_property(TARGET suprafit PROPERTY
+                #MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+            elseif(CMAKE_COMPILER_IS_GNUCXX)
+                             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
+            else()
+                    message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
+            endif(MSVC)
+            set(target_dir "bin/win")
+            set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
+    elseif(APPLE)
+
+        set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
+        set_source_files_properties(${SupraFit_icon} PROPERTIES
+              MACOSX_PACKAGE_LOCATION "Resources")
+        set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
+
+        set(target_dir "bin/macOS")
+        add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
+        
+        # Pre-compiled Headers for GUI macOS (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+        set(target_dir "bin/linux")
+
+        add_executable(suprafit ${suprafit_SRC})
+        
+        # Pre-compiled Headers for GUI (Claude Generated)
+        if(USE_PCH)
+            target_precompile_headers(suprafit PRIVATE src/pch.h)
+        endif()
+        
         set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-elseif(APPLE)
+    else()
+            message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
+    endif(WIN32)
 
-    set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
-    set_source_files_properties(${SupraFit_icon} PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-    set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
-
-    set(target_dir "bin/macOS")
-    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
-    
-    # Pre-compiled Headers for GUI macOS (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
-
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-    set(target_dir "bin/linux")
-
-    add_executable(suprafit ${suprafit_SRC})
-    
-    # Pre-compiled Headers for GUI (Claude Generated)
-    if(USE_PCH)
-        target_precompile_headers(suprafit PRIVATE src/pch.h)
-    endif()
-    
     set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-
+    # Statically link the GCC/MinGW runtime for portable Linux/Windows binaries.
+    # AppleClang (macOS) does not support these flags and errors out on them.
+    if(NOT APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+    endif()
 else()
-        message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
-endif(WIN32)
-
-set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+    message(STATUS "Skipping GUI executable - GUI components not available")
+endif(BUILD_GUI)
 
 
 
 set(suprafit_cli_SRCS
                 src/client/suprafit_cli.cpp
-                src/client/analyser.cpp
-                src/client/simulator.cpp
+                src/client/analysis_reporter.cpp
+                src/client/data_factory.cpp
+                src/client/ml_export.cpp
                 src/client/ml_pipeline_manager.cpp
                 src/client/main.cpp
           )
@@ -438,16 +573,54 @@ IF(_Python)
 ENDIF()
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 17)
-set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+
+# Phase 2: the in-process Python module `suprafit._core`. core+models (and their deps) are linked
+# in statically, so the module is self-contained apart from Qt/system libs. Built straight into the
+# python/ package directory so the editable install imports it without a copy step. Claude Generated.
+if(SUPRAFIT_PYBIND)
+    # Hand pybind11 back its own `_Python` bookkeeping value (see the add_subdirectory block above),
+    # which pybind11_add_module needs to detect the FindPython version.
+    set(_Python "${_pybind11_python_kind}")
+    pybind11_add_module(suprafit_pycore src/python/bindings/module.cpp)
+    target_link_libraries(suprafit_pycore PRIVATE core models)
+    set_target_properties(suprafit_pycore PROPERTIES
+        OUTPUT_NAME _core
+        CXX_STANDARD 17
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/python/suprafit)
+    # Restore the project option value so the legacy `if(_Python)` install/demo blocks below stay off.
+    set(_Python "${_suprafit_python_option}")
+endif()
+
+if(BUILD_GUI)
+    set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+endif()
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 17)
 
 
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+# Link GUI executable only if built
+if(BUILD_GUI)
+    target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
+endif()
+
+# CLI executable - always built (needs Core + Qml for DataGenerator)
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
+
+# ML CLI executable with Neural Network tutorials (Claude Generated - 2025)
+if(ML_NEURAL_NETWORKS)
+    add_executable(ml_cli_main
+        src/client/ml_cli_main.cpp
+    )
+    
+    target_link_libraries(ml_cli_main Qt::Core models core ml fmt::fmt-header-only)
+    
+    # Pre-compiled Headers for ML CLI (Claude Generated)
+    if(USE_PCH)
+        target_precompile_headers(ml_cli_main PRIVATE src/pch.h)
+    endif()
+endif()
 
 if(testing)
     enable_testing()
@@ -464,14 +637,18 @@ endif(testing)
 
 
 if(UNIX)
-    target_link_libraries(suprafit pthread dl)
+    if(BUILD_GUI)
+        target_link_libraries(suprafit pthread dl)
+    endif()
     target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
 # Do platform specific post target stuff
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-    install(TARGETS suprafit RUNTIME DESTINATION bin)
+    if(BUILD_GUI)
+        install(TARGETS suprafit RUNTIME DESTINATION bin)
+    endif()
     install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     install(TARGETS models LIBRARY DESTINATION lib)
     install(TARGETS core LIBRARY DESTINATION lib)

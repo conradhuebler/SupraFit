@@ -70,7 +70,7 @@ void itc_ItoI_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_ItoI_Model::OptimizeParameters_Private()
+void itc_ItoI_Model::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addLocalParameter(0);
@@ -86,7 +86,7 @@ void itc_ItoI_Model::OptimizeParameters_Private()
 
 void itc_ItoI_Model::CalculateVariables()
 {
-    //    qDebug() << "from within" << OptimizeParameters();
+    //    qDebug() << "from within" << CollectOptimizationParameters();
     QString more_info = QString("Inject\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
     QString dil = getOption(Dilution);
 
@@ -146,10 +146,7 @@ void itc_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel> itc_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->setConcentrations(ConcentrationTable());
     return std::move(model);
 }
@@ -191,48 +188,19 @@ QString itc_ItoI_Model::AdditionalOutput() const
     return result;
 }
 
-QString itc_ItoI_Model::ModelInfo() const
+BC50::ModelSystem itc_ItoI_Model::BC50System() const
 {
-    QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    /*
-    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-    result += "<p>Reaction: A + B &#8652; AB</p>";
-    result += Statistic::MonteCarlo2Thermo(0, getT(), QJsonObject());*/
-
-    return result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 1);
+    sys.stoich << 1, 1;
+    sys.lgBeta = { GlobalParameter(0) };
+    return sys;
 }
 
 QString itc_ItoI_Model::ParameterComment(int parameter) const
 {
     Q_UNUSED(parameter)
     return QString("Reaction: A + B &#8652; AB");
-}
-
-QString itc_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractItcModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
-    return bc + result;
-}
-
-QString itc_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractItcModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
-    return bc + result;
 }
 
 #include "itc_1_1_Model.moc"

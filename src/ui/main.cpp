@@ -61,7 +61,9 @@ void bt_handler(int sig)
 int main(int argc, char** argv)
 {
 #ifndef _WIN32
-#if __GNUC__
+#if __GNUC__ && !defined(__SANITIZE_ADDRESS__)
+    // Under AddressSanitizer, leave SIGSEGV/SIGABRT to ASan so it can print the faulting access and
+    // the allocation/free stacks; our own bt_handler would otherwise swallow the crash. Claude Generated.
     signal(SIGSEGV, bt_handler);
     signal(SIGABRT, bt_handler);
 #endif
@@ -84,7 +86,7 @@ int main(int argc, char** argv)
 
     const QStringList args = parser.positionalArguments();
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Debug output enabled, good fun!";
 #endif
 

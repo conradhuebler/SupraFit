@@ -39,6 +39,7 @@
 typedef Eigen::VectorXd Vector;
 
 class DataClass;
+class AbstractModel;
 
 class SystemParameter {
 public:
@@ -121,7 +122,6 @@ public:
     QStringList m_names;
 
     int m_maxsize;
-    int m_ref_counter = 1;
     int m_simulate_dependent = 1;
     int m_begin_data = 0, m_end_data = 0;
     QPointer<DataTable> m_dependent_model, m_independent_model, m_dependent_raw_model, m_independent_raw_model;
@@ -133,6 +133,9 @@ public:
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
     QVector<QPointer<DataClass>> m_children;
+
+    // Claude Generated - Pointer-based storage for models with same ModelUUID
+    QMap<void*, QSharedPointer<AbstractModel>> m_stored_models_by_pointer;
 
     QString m_title, m_uuid, m_content, m_root_dir;
     void check();
@@ -157,7 +160,15 @@ public:
 #pragma message("is it ok to have size and datapoints both beeing dependent data dependent")
     virtual inline int Size() const { return DataPoints(); }
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
-    virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
+    virtual inline int DataPoints() const { 
+        // Claude Generated - Fix to handle cases where only one table is set
+        if (d->m_dependent_model && d->m_dependent_model->rowCount() > 0)
+            return d->m_dependent_model->rowCount();
+        else if (d->m_independent_model && d->m_independent_model->rowCount() > 0)
+            return d->m_independent_model->rowCount();
+        else
+            return 0;
+    }
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_datatype; }
     inline void setType(DataClassPrivate::DataType type) { d->m_datatype = type; }
@@ -190,6 +201,8 @@ public:
     inline void setIndependentRawTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_independent_raw_model && d->m_independent_raw_model != table)
+            delete d->m_independent_raw_model; // free the table this replaces (owned by the private)
         d->m_independent_raw_model = table;
         d->m_independent_raw_model->setCheckable(false);
         d->m_independent_model->ImportTable(table->ExportTable(false));
@@ -201,6 +214,8 @@ public:
     inline void setIndependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_independent_model && d->m_independent_model != table)
+            delete d->m_independent_model; // free the table this replaces (owned by the private)
         d->m_independent_model = table;
         d->m_independent_model->setCheckable(false);
     }
@@ -212,6 +227,8 @@ public:
     inline void setDependentRawTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_dependent_raw_model && d->m_dependent_raw_model != table)
+            delete d->m_dependent_raw_model; // free the table this replaces (owned by the private)
         d->m_dependent_raw_model = table;
         d->m_dependent_raw_model->setCheckable(true);
 
@@ -228,6 +245,8 @@ public:
     inline void setDependentTable(DataTable* table)
     {
 #pragma message("have a look at here, while restructureing stuff")
+        if (d->m_dependent_model && d->m_dependent_model != table)
+            delete d->m_dependent_model; // free the table this replaces (owned by the private)
         d->m_dependent_model = table;
         d->m_dependent_model->setCheckable(true);
 
@@ -246,6 +265,9 @@ public:
     }
 
     inline void setSimulateDependent(int dependent) { d->m_simulate_dependent = dependent; }
+    //! (Claude Generated) Read accessor for the simulated-dependent column count, so
+    //! subclasses no longer need to reach into d->m_simulate_dependent directly (D5a).
+    inline int SimulateDependent() const { return d->m_simulate_dependent; }
 
     void UpdateCheckedState();
     void ReReadCheckedState(int row, bool state);
@@ -373,6 +395,17 @@ public:
 
     virtual inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
 
+    /*! \brief Add a model as child to this DataClass - Claude Generated for ProjectManager integration
+     */
+    void addModel(QSharedPointer<AbstractModel> model);
+
+    /*! \brief (Claude Generated) Owning shared pointer for the child model at index i, or a null
+     * pointer if that child is not a model tracked in the ownership map (m_stored_models_by_pointer).
+     *
+     * Lets callers hand out real shared ownership instead of an aliasing no-op-deleter QSharedPointer
+     * (which does not participate in refcounting and dangles if the project is destroyed first). */
+    QSharedPointer<AbstractModel> SharedModel(int i) const;
+
     /*! \brief Define the x axis label for charts
      */
     virtual QString XLabel() const { return QString("X"); }
@@ -401,6 +434,16 @@ private:
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;
     void AddChildren(QPointer<DataClass> children);
+
+    /*! \brief (Claude Generated) Replace the dependent model with a fresh empty
+     * DataTable of the given size (D5a).
+     *
+     * Deliberately a bare (re)allocation — unlike setDependentTable() it does NOT
+     * call setCheckable()/DependentModelOverride(); it exists so model simulation
+     * import stops assigning d->m_dependent_model directly (sealing the last
+     * AbstractModel-into-DataClass-internals leak). Behaviour-identical to the
+     * former inline `d->m_dependent_model = new DataTable(rows, cols, this)`. */
+    inline void ResetDependentModel(int rows, int cols) { d->m_dependent_model = new DataTable(rows, cols, this); }
 
 signals:
     void RowAdded();

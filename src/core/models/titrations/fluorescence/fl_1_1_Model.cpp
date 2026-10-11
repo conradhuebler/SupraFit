@@ -82,12 +82,13 @@ void fl_ItoI_Model::InitialGuess_Private()
         auto IF = (DependentModel()->lastRow()(i) / DependentModel()->firstRow()(i) - 1) * DependentModel()->firstRow()(i) * factor;
         LocalTable()->data(i, 3) = IF;
     }
-    QSharedPointer<AbstractModel> test = Clone();
-    (*GlobalTable())[0] = BisectParameter(test, 0, 2, 10, 1e-5, 100);
+    // Seed lg K via the shared GuessK/NewtonRoot heuristic (range kept at [2,10]);
+    // GuessK clones internally, so no explicit test clone is needed here.
+    (*GlobalTable())[0] = GuessK(0, 2, 10);
     Calculate();
 }
 
-void fl_ItoI_Model::OptimizeParameters_Private()
+void fl_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString host = getOption(Host);
     QString guest = getOption(Guest);
@@ -178,20 +179,10 @@ QVector<qreal> fl_ItoI_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> fl_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
-QString fl_ItoI_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    return result;
-}
 
 QString fl_ItoI_Model::AdditionalOutput() const
 {
@@ -223,7 +214,6 @@ QString fl_ItoI_Model::AdditionalOutput() const
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
 }
 
 QString fl_ItoI_Model::ParameterComment(int parameter) const
@@ -232,26 +222,16 @@ QString fl_ItoI_Model::ParameterComment(int parameter) const
     return QString("Reaction: A + B &#8652; AB");
 }
 
-QString fl_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem fl_ItoI_Model::BC50System() const
 {
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 1);
+    sys.stoich << 1, 1;
+    sys.lgBeta = { GlobalParameter(0) };
+    return sys;
 }
 
-QString fl_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
-    return bc + result;
-}
 
 #include "fl_1_1_Model.moc"

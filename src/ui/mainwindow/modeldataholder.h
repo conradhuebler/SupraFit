@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/datawidget.h"
@@ -99,6 +100,11 @@ public:
 
     const QAction* lastAction() const { return m_last_action; }
     int Model() const { return m_model_choosen; }
+    /** @brief Reaction preset chosen from the Add-model submenu (empty for a plain model). CG. */
+    QString PresetReactions() const { return m_preset_reactions; }
+    /** @brief Tell the bar how many independent columns the current data has, so the scripted-model
+     * preset menu can grey out presets that need more inputs than are available. Claude Generated. */
+    void setIndependentCount(int n) { m_independent_count = n; }
 
 private:
     QWidget* m_buttons;
@@ -107,11 +113,16 @@ private:
 
     QAction* m_last_action;
     int m_model_choosen = 404;
+    QString m_preset_reactions; ///< reactions for a preset submenu entry; cleared for plain adds
+    int m_independent_count = 0; ///< independent columns of the current data set (preset input-awareness)
+    QVector<QPair<QPointer<QAction>, int>> m_script_preset_actions; ///< (preset action, required inputs)
 private slots:
     void PrepareAddModel();
 
 signals:
     void NewModel();
+    /** @brief Create a scripted model pre-filled from ScriptModel::Presets()[index]. Claude Generated. */
+    void NewModelFromPreset(int index);
     void AddModel();
     void AddScriptModel(const QString& model);
     void CloseAll();
@@ -131,6 +142,7 @@ public:
     ~ModelDataHolder();
 
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper);
+    void setDataWeakRef(QWeakPointer<DataClass> weakData, QSharedPointer<ChartWrapper> wrapper); // Claude Generated: WeakPointer method
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
 
     void setSettings(const QJsonObject& config);
@@ -158,6 +170,53 @@ public:
     QString Compare() const;
 
     inline QPointer<ModelWidget> RecentModel() { return m_last_modelwidget; }
+
+    // Claude Generated - ProjectManager Integration Methods
+    /**
+     * @brief Set data from ProjectManager using project ID
+     * @param projectId UUID of project in ProjectManager
+     * @param wrapper Chart wrapper for visualization
+     * @return Success status of operation
+     */
+    bool setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
+    
+    /**
+     * @brief Get current project ID if managed by ProjectManager
+     * @return Project ID string, empty if not managed by ProjectManager
+     */
+    QString getCurrentProjectId() const;
+    
+    // Claude Generated - ProjectManager integration for creating ModelWidgets from loaded models
+    void createModelWidgetFromModel(QSharedPointer<AbstractModel> model);
+    
+    /**
+     * @brief Synchronize ModelDataHolder with ProjectManager models
+     * Creates ModelWidgets for all models in the current project
+     */
+    void syncModelsWithProjectManager();
+    
+    /**
+     * @brief Find tab index for model with given UUID
+     * @param modelUUID UUID of the model to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByUUID(const QString& modelUUID) const;
+
+    /**
+     * @brief Find tab index for model with given model pointer (Claude Generated)
+     * @param modelPointer Pointer to the model instance to find
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByPointer(void* modelPointer) const;
+    
+    /**
+     * @brief Find tab index for model with given child index (Claude Generated)
+     * @param modelPointer Pointer to the model instance
+     * @param childIndex Child index in the project  
+     * @return Tab index of the model, or -1 if not found
+     */
+    int findModelTabByChildIndex(void* modelPointer, int childIndex) const;
+    
 public slots:
     /*
      * Add a new model to the workspace
@@ -193,7 +252,7 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     QPointer<CompareDialog> m_compare_dialog;
     QVector<QPointer<ModelWidget>> m_model_widgets;
-    void AddModel(int model);
+    void AddModel(int model, const QString& presetReactions = QString());
     void ActiveBatch();
 
     QJsonObject m_config;
@@ -202,15 +261,27 @@ private:
 
     void Json2Model(const QJsonObject& object);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
+    
     void SplitData();
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
 
     QPointer<ModelWidget> m_last_modelwidget;
+    
+    // Claude Generated - ProjectManager Integration Members
+    QString m_currentProjectId;
 private slots:
     void NewModel();
+    void NewModelFromPreset(int index); // Claude Generated
     void AddModel();
     void AddScriptModel(const QString& str);
+
+private:
+    /*! \brief Open the "Define Model" dialog for a new ScriptModel, its widgets pre-filled from
+     * @p presetBlock (empty -> the blank getInputBlock() template). Claude Generated. */
+    void NewScriptModelDialog(const QVector<QJsonObject>& presetBlock);
+
+private slots:
 
     void SetProjectTabName();
     void RunJobs(const QJsonObject& job);

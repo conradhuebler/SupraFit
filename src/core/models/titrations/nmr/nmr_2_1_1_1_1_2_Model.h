@@ -49,7 +49,7 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::nmr_IItoI_ItoI_ItoII; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
@@ -89,13 +89,9 @@ public:
         return i;
     }
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
-
+    BC50::ModelSystem BC50System() const override;
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
     virtual QString AdditionalOutput() const override;

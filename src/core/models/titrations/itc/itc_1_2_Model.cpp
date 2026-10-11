@@ -121,7 +121,7 @@ void itc_ItoII_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_ItoII_Model::OptimizeParameters_Private()
+void itc_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     addGlobalParameter(0);
@@ -228,10 +228,7 @@ void itc_ItoII_Model::CalculateVariables()
 QSharedPointer<AbstractModel> itc_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->setConcentrations(ConcentrationTable());
     return std::move(model);
 }
@@ -283,34 +280,13 @@ QString itc_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString itc_ItoII_Model::ModelInfo() const
+BC50::ModelSystem itc_ItoII_Model::BC50System() const
 {
-    QString result = AbstractItcModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    /*
-    const QJsonObject& object = QJsonObject();
-
-    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-    result += "<p>Reaction: A + B &#8652; AB</p>";
-    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
-    result += "<p>Reaction: AB + B &#8652; AB<sub>2</sub></p>";
-    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
-    */
-    return result;
-}
-
-QString itc_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractItcModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
 #include "itc_1_2_Model.moc"

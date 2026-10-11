@@ -17,11 +17,13 @@
  *
  */
 
+#include "src/core/bc50.h"
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/core/models/dataclass.h"
 
@@ -94,7 +96,7 @@ void AbstractTitrationModel::UpdateParameter()
     m_T = getSystemParameter(Temperature).Double();
     m_plotMode = getSystemParameter(PlotMode).getString();
     m_HostAssignment = m_HostAssignmentList.indexOf(getSystemParameter(HostGuestAssignment).getString());
-    UpdateChart("concentration", m_plotMode, "c [mol/L]");
+    UpdateChart("concentration", m_plotMode, Units::concentrationAxis());
 }
 
 void AbstractTitrationModel::DeclareOptions()
@@ -136,7 +138,7 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     QStringList names = m_concentrations->header();
     names.removeFirst();
     addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
-    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
+    UpdateChart("Concentration Chart", m_plotMode, Units::concentrationAxis());
 }
 
 MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
@@ -192,6 +194,10 @@ QString AbstractTitrationModel::ModelInfo() const
         result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
+    result += CitationBlock();
+
+    const BC50::ModelSystem sys = BC50System();
+    result += BC50::Format_FromSpeciation(sys.stoich, sys.lgBeta);
     return result;
 }
 
@@ -242,7 +248,8 @@ QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object, boo
 
     result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::MonteCarlo2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
@@ -262,7 +269,8 @@ QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, boo
 
     result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::GridSearch2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 /*
@@ -273,21 +281,133 @@ QVector<QJsonObject> AbstractTitrationModel::PostGridSearch(const QList<QJsonObj
 
 qreal AbstractTitrationModel::InitialGuestConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff")
-    return d->m_independent_model->data(i, !m_HostAssignment);
+    return IndependentModel()->data(i, !m_HostAssignment);
 }
 
 qreal AbstractTitrationModel::InitialHostConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff")
-    return d->m_independent_model->data(i, m_HostAssignment);
+    return IndependentModel()->data(i, m_HostAssignment);
+}
+
+qreal AbstractTitrationModel::InitialConcentration(int i, int component) const
+{
+    // Two-component systems keep the classic host/guest column assignment; an N-component reaction
+    // system maps component index straight to the independent column (order = first appearance). CG.
+    if (m_component_count <= 2)
+        return (component == 0) ? InitialHostConcentration(i) : InitialGuestConcentration(i);
+    return IndependentModel()->data(i, component);
+}
+
+bool AbstractTitrationModel::BuildSpeciationFromReactions()
+{
+    m_reaction_component_mismatch = 0;
+    const QString text = m_defined_model.value("Reactions")["value"].toString().trimmed();
+    if (text.isEmpty())
+        return false;
+    if (!m_speciation.setReactions(text))
+        return false; // parse error: caller keeps the legacy MaxA/MaxB grid
+
+    // The data must provide one concentration column per component; a mismatch would make
+    // PrepareParameter throw. Record it and fall back to the legacy grid rather than crashing; the
+    // GUI reports the mismatch to the user (see ModelDataHolder::AddModel). Claude Generated.
+    const int nComp = m_speciation.ComponentCount();
+    if (nComp < 1 || (IndependentModel() && nComp != IndependentModel()->columnCount())) {
+        m_reaction_component_mismatch = nComp;
+        return false;
+    }
+
+    m_component_names = m_speciation.ComponentNames();
+    m_component_count = nComp;
+    m_speciation.setMaxIter(1000);
+    m_speciation.setConvergeThreshold(1e-12);
+    ApplySpeciationMethod();
+    UpdateComponentHeaders();
+    return true;
+}
+
+void AbstractTitrationModel::ApplySpeciationMethod()
+{
+    m_speciation.setMethod(ConcentrationSolver::MethodFromString(
+        getOptimizerConfig()[QStringLiteral("SpeciationSolver")].toString()));
+}
+
+void AbstractTitrationModel::setOptimizerConfig(const QJsonObject& config)
+{
+    AbstractModel::setOptimizerConfig(config);
+    ApplySpeciationMethod();
+}
+
+void AbstractTitrationModel::UpdateComponentHeaders()
+{
+    for (int c = 0; c < m_component_names.size(); ++c)
+        IndependentModel()->setHeaderData(c, Qt::Horizontal, m_component_names[c], Qt::DisplayRole);
+}
+
+void AbstractTitrationModel::SolveLinearMasked(const Eigen::MatrixXd& design)
+{
+    const int nLinear = static_cast<int>(design.cols());
+    const int series = SeriesCount();
+    if (nLinear == 0 || series == 0)
+        return;
+
+    const Eigen::MatrixXd Y = DependentModel()->Table(); // DataPoints × series
+    const Eigen::MatrixXd current = LocalParameter()->Table(); // SeriesCount × nLinear (kept for inactive)
+    Eigen::MatrixXd L(nLinear, series); // solved locals per series (column j)
+
+    auto keepCurrent = [&](int j) {
+        for (int p = 0; p < nLinear; ++p)
+            L(p, j) = (j < current.rows() && p < current.cols()) ? current(j, p) : 0.0;
+    };
+
+    for (int j = 0; j < series; ++j) {
+        if (!ActiveSignals(j)) {
+            keepCurrent(j);
+            continue;
+        }
+        // Gather the active rows of this series (same mask the residual uses in SetValue).
+        std::vector<int> rows;
+        rows.reserve(DataEnd() - DataBegin());
+        for (int i = DataBegin(); i < DataEnd(); ++i)
+            if (DependentModel()->isChecked(i, j))
+                rows.push_back(i);
+        if (rows.empty()) {
+            keepCurrent(j);
+            continue;
+        }
+        Eigen::MatrixXd Dm(static_cast<int>(rows.size()), nLinear);
+        Eigen::VectorXd ym(static_cast<int>(rows.size()));
+        for (int r = 0; r < static_cast<int>(rows.size()); ++r) {
+            Dm.row(r) = design.row(rows[r]);
+            ym(r) = Y(rows[r], j);
+        }
+        // colPivHouseholderQr handles over- and (rank-deficient) under-determined systems gracefully.
+        L.col(j) = Dm.colPivHouseholderQr().solve(ym);
+    }
+    LocalParameter()->setTable(L.transpose());
+}
+
+double AbstractTitrationModel::GuessLgBeta(int speciesIndex) const
+{
+    // c_ref = geometric mean of the per-component maximum total concentration in the data.
+    double logsum = 0.0;
+    int nc = 0;
+    for (int c = 0; c < m_component_count; ++c) {
+        double maxTotal = 0.0;
+        for (int i = DataBegin(); i < DataEnd(); ++i)
+            maxTotal = std::max(maxTotal, InitialConcentration(i, c));
+        if (maxTotal > 0.0) {
+            logsum += std::log10(maxTotal);
+            ++nc;
+        }
+    }
+    const double logcref = nc ? logsum / nc : -3.0; // fallback ~1e-3
+    return m_speciation.GuessLgBeta(speciesIndex, logcref);
 }
 
 qreal AbstractTitrationModel::GuessK(int index, double min, double max)
 {
     QSharedPointer<AbstractModel> test = Clone();
     qreal K = NewtonRoot(test, index, min, max);
-    // qDebug() << K << BisectParameter(test, index, min, max);
     return K;
 }
 

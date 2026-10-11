@@ -48,7 +48,7 @@ public:
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
@@ -110,13 +110,11 @@ public:
         return i;
     }
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
     virtual QString AdditionalOutput() const override;
 
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

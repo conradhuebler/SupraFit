@@ -30,6 +30,8 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QObject>
 
+#include "src/core/phasetiming.h"
+
 #include "jobmanager.h"
 
 JobManager::JobManager(QObject* parent)
@@ -120,8 +122,11 @@ void JobManager::RunJobs()
         emit m_model->Info()->Message(final_message);
         emit Message(final_message);
 
+        // NOTE: finished() hides the progress dialog, but the two calls below still run — so from
+        // here on the user gets no feedback at all. Timed separately for exactly that reason. CG.
         emit finished(start, m_jobs.size(), t1 - t0);
         int index = m_model->UpdateStatistic(result);
+        PhaseTiming::Mark(QStringLiteral("store statistic in model (after progress hidden)"));
         emit ShowResult(method, index);
         if (m_interrupt)
             break;

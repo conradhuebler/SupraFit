@@ -71,7 +71,7 @@ void MonoMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-void MonoMolecularModel::OptimizeParameters_Private()
+void MonoMolecularModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);
@@ -97,10 +97,7 @@ void MonoMolecularModel::CalculateVariables()
 QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
 {
     QSharedPointer<MonoMolecularModel> model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }

@@ -64,7 +64,7 @@ void itc_n_ItoI_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-void itc_n_ItoI_Model::OptimizeParameters_Private()
+void itc_n_ItoI_Model::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
 
@@ -125,10 +125,7 @@ void itc_n_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel> itc_n_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_n_ItoI_Model>(new itc_n_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->setConcentrations(ConcentrationTable());
     return std::move(model);
 }

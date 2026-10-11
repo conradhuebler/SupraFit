@@ -109,8 +109,44 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
-    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals(m_no));
-    connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
+
+    // Claude Generated: Reactive binding to ChartWrapper state management
+    // Initialize checkbox state from ChartWrapper instead of hardcoded default
+    if (m_charts.data_wrapper) {
+        bool initialVisible = m_charts.data_wrapper->isSeriesVisible(m_no);
+        m_include->setChecked(initialVisible);
+    } else {
+        m_include->setChecked(true); // Fallback to visible
+    }
+
+    // === REACTIVE BINDING - NO MORE TIMERS ===
+
+    // ChartWrapper → UI: Automatic checkbox updates
+    if (m_charts.data_wrapper) {
+        connect(m_charts.data_wrapper.data(), &ChartWrapper::seriesVisibilityChanged,
+            this, [this](int index, bool visible) {
+                if (index == m_no) {
+                    // Block signals to prevent recursion
+                    m_include->blockSignals(true);
+                    m_include->setChecked(visible);
+                    m_include->blockSignals(false);
+
+                    // Update local series visibility to match
+                    DisableSignal(visible ? 1 : 0);
+                }
+            });
+    }
+
+    // UI → ChartWrapper: Immediate state updates
+    connect(m_include, &QCheckBox::toggled, this, [this](bool checked) {
+        if (m_charts.data_wrapper) {
+            m_charts.data_wrapper->setSeriesVisible(m_no, checked);
+        } else {
+            // Fallback to old behavior if no ChartWrapper
+            toggleActive();
+        }
+    });
+
     tools->addWidget(m_include);
 
     m_signal_series = qobject_cast<LineSeries*>(m_charts.signal_wrapper->Series(m_no));
@@ -141,8 +177,10 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         }
     });
 
-    m_error_series->setVisible(m_model.toStrongRef().data()->ActiveSignals(m_no));
-    m_signal_series->setVisible(m_model.toStrongRef().data()->ActiveSignals(m_no));
+    // Claude Generated: Removed direct setVisible() calls - now handled by reactive ChartWrapper binding
+    // Visibility is now managed by ChartWrapper state and reactive signals
+    // m_error_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    // m_signal_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     m_show = new HoverCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
@@ -213,8 +251,12 @@ void ModelElement::toggleActive()
 void ModelElement::DisableSignal(int state)
 {
     m_show->setChecked(state);
-    m_error_series->setVisible(state != 0);
-    m_signal_series->setVisible(state != 0);
+    // Pass a bool so overload resolution picks LineSeries::showLine(bool). The showLine(int) overload
+    // treats its argument as a Qt::CheckState and only shows on == Qt::Checked (2); the load path calls
+    // this with a plain 0/1, so showLine(1) was hiding the fit + error line-series until the user
+    // manually toggled (a real stateChanged delivers 2). Claude Generated.
+    m_error_series->showLine(state != 0);
+    m_signal_series->showLine(state != 0);
     for (int i = 0; i < m_constants.size(); ++i) {
         m_constants[i]->setEnabled(m_include->isChecked());
     }
@@ -286,16 +328,23 @@ void ModelElement::chooseColor()
 
 void ModelElement::ToggleSeries(int i)
 {
-    m_signal_series->setVisible(i);
-    m_error_series->setVisible(i);
+    // Claude Generated: Use ChartWrapper state management instead of direct setVisible() calls
+    if (m_charts.data_wrapper) {
+        m_charts.data_wrapper->setSeriesVisible(m_no, i != 0);
+    }
+    // Update local state to match
     m_show->setChecked(i);
 }
 
 void ModelElement::togglePlot()
 {
     m_show->setChecked(true);
-    m_error_series->setVisible(true);
-    m_signal_series->setVisible(true);
+
+    // Claude Generated: Use ChartWrapper state management instead of direct setVisible() calls
+    if (m_charts.data_wrapper) {
+        m_charts.data_wrapper->setSeriesVisible(m_no, true);
+    }
+
     if (m_toggle->isChecked())
         m_charts.data_wrapper->showSeries(m_no);
     else

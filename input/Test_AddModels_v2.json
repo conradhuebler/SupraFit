@@ -35,7 +35,7 @@
         "nmr_1_1": {
             "ID": 1,
             "Options": {
-                "FastMode": true,
+                "FastMode": false,
                 "Convergency": 1e-7
             },
             "PostFitAnalysis": {
@@ -52,7 +52,7 @@
         "nmr_1_2": {
             "ID": 2,
             "Options": {
-                "FastMode": true
+                "FastMode": false
             }
         }
     },

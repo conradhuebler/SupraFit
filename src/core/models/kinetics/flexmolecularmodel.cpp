@@ -69,7 +69,7 @@ void FlexMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-void FlexMolecularModel::OptimizeParameters_Private()
+void FlexMolecularModel::CollectOptimizationParameters_Private()
 {
     addGlobalParameter(0);
     addGlobalParameter(1);
@@ -99,10 +99,7 @@ void FlexMolecularModel::CalculateVariables()
 QSharedPointer<AbstractModel> FlexMolecularModel::Clone(bool statistics)
 {
     QSharedPointer<FlexMolecularModel> model = QSharedPointer<FlexMolecularModel>(new FlexMolecularModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->UpdateParameter();
     return model;
 }

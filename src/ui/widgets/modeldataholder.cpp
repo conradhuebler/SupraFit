@@ -19,6 +19,7 @@
  */
 
 #include "src/global_config.h"
+#include "src/core/models/scriptmodel.h" // ScriptModel class (was transitive via models.h)
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
@@ -275,6 +276,14 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 {
     Charts charts = m_charts->addModel(t);
     ModelWidget* modelwidget = new ModelWidget(t, charts);
+
+    // Claude Generated: Reparent ChartWrappers to ModelWidget for proper cleanup
+    if (charts.signal_wrapper) {
+        charts.signal_wrapper->setParent(modelwidget);
+    }
+    if (charts.error_wrapper) {
+        charts.error_wrapper->setParent(modelwidget);
+    }
 
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));

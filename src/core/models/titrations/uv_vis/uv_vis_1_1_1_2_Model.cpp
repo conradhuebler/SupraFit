@@ -120,7 +120,7 @@ void uv_vis_ItoI_ItoII_Model::InitialGuess_Private()
     Calculate();
 }
 
-void uv_vis_ItoI_ItoII_Model::OptimizeParameters_Private()
+void uv_vis_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -143,38 +143,51 @@ void uv_vis_ItoI_ItoII_Model::OptimizeParameters_Private()
         addLocalParameter(3);
 }
 
-void uv_vis_ItoI_ItoII_Model::CalculateVariables()
+void uv_vis_ItoI_ItoII_Model::FillDesign()
 {
-    auto hostguest = getHostGuestPair();
-
-    qreal K11 = qPow(10, GlobalParameter(0));
-    qreal K12 = qPow(10, GlobalParameter(1));
-
+    if (m_design.rows() != DataPoints() || m_design.cols() != 4)
+        m_design.resize(DataPoints(), 4);
+    const auto hostguest = getHostGuestPair();
+    const double hf = hostguest.first ? 1.0 : 0.0;
+    const double gf = hostguest.second ? 1.0 : 0.0;
+    const qreal K11 = qPow(10, GlobalParameter(0));
+    const qreal K12 = qPow(10, GlobalParameter(1));
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-
         qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
-
-        Vector vector(5);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest;
-        vector(3) = complex_11;
-        vector(4) = complex_12;
-
-        if (!m_fast)
+        m_design(i, 0) = host * hf; // eps_A
+        m_design(i, 1) = guest * gf; // eps_B
+        m_design(i, 2) = complex_11; // eps_AB
+        m_design(i, 3) = complex_12; // eps_AB2
+        if (!m_fast) {
+            Vector vector(5);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest;
+            vector(3) = complex_11;
+            vector(4) = complex_12;
             SetConcentration(i, vector);
-
-        qreal value = 0;
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(j, 0) * hostguest.first + guest * LocalTable()->data(j, 1) * hostguest.second + complex_11 * LocalTable()->data(j, 2) + complex_12 * LocalTable()->data(j, 3);
-            SetValue(i, j, value);
         }
     }
+}
+
+void uv_vis_ItoI_ItoII_Model::CalculateVariables()
+{
+    FillDesign();
+    for (int i = 0; i < DataPoints(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2) + m_design(i, 3) * LocalTable()->data(j, 3));
+}
+
+void uv_vis_ItoI_ItoII_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> uv_vis_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
@@ -202,10 +215,7 @@ QVector<qreal> uv_vis_ItoI_ItoII_Model::DeCompose(int datapoint, int series) con
 QSharedPointer<AbstractModel> uv_vis_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<uv_vis_ItoI_ItoII_Model> model = QSharedPointer<uv_vis_ItoI_ItoII_Model>(new uv_vis_ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
@@ -217,13 +227,6 @@ QString uv_vis_ItoI_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString uv_vis_ItoI_ItoII_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString uv_vis_ItoI_ItoII_Model::AdditionalOutput() const
 {
@@ -248,40 +251,25 @@ QString uv_vis_ItoI_ItoII_Model::AdditionalOutput() const
 
         diff = host_0 - complex;
         // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        std::cout << host << " "
-                  << " " << guest_0 - complex << " " << complex << std::endl;
         //std::cout << integral.transpose() << std::endl;
     }
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
     */
     return result;
 }
 
-QString uv_vis_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem uv_vis_ItoI_ItoII_Model::BC50System() const
 {
-
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
-QString uv_vis_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
-}
 
 #include "uv_vis_1_1_1_2_Model.moc"

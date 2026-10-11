@@ -30,8 +30,6 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
 
-#include <iostream>
-
 #include "src/core/libmath.h"
 typedef QList<qreal> Variables;
 
@@ -62,18 +60,17 @@ struct Functor {
 struct MyFunctor : Functor<double> {
     inline MyFunctor(int inputs, int values)
         : Functor(inputs, values)
-        , no_parameter(inputs)
-        , no_points(values)
     {
     }
-    inline ~MyFunctor() {}
+    // Residual: set the full parameter vector on the model, recompute, and return the per-point
+    // absolute errors plus the (global-only) penalty. inputs()/values() come from the Functor base
+    // (m_inputs/m_values), so no duplicate size members are kept here.
     inline int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
     {
         QVector<qreal> param(inputs());
         for (int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
         model.data()->setParameter(param);
-        // model.data()->UpdateLinear();
 
         model.data()->Calculate();
 
@@ -84,16 +81,7 @@ struct MyFunctor : Functor<double> {
 
         return 0;
     }
-    int no_parameter;
-    int no_points;
-    int m_potenz;
-    Variables ModelSignals;
     QSharedPointer<AbstractModel> model;
-    int inputs() const { return no_parameter; }
-    int values() const { return no_points; }
-};
-
-struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 };
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& sse, QVector<QVector<double>>& parameter_history)
@@ -119,10 +107,10 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     Eigen::VectorXd parameter(param.size());
     for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
+    const Eigen::VectorXd parameter_initial = parameter; // reference point for the "never moved" test below
 
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
-    functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor>> lm(numDiff);
     int iter = 0;
@@ -134,23 +122,29 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
     lm.parameters.gtol = config["LevMar_Gtol"].toDouble(); // tolerance for the norm of the gradient of the error vector
     lm.parameters.epsfcn = config["LevMar_epsfcn"].toDouble(); //error precision
 
-    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+    // The LevMar status return is intentionally not used for the stop decision: this loop drives the
+    // steps manually and stops on its own SSE-change / parameter-norm criteria (ErrorConvergence /
+    // DeltaParameter) below. This manual driving is a workaround for the unsupported-module
+    // Eigen::LevenbergMarquardt (its status/stopping semantics are unreliable); the opt-in VarPro
+    // solver owns its own stop logic and does not need this. Claude Generated (documentation).
+    lm.minimizeInit(parameter);
     qreal error_0 = 0;
     qreal error_2 = 1;
     qreal norm = 1;
     QVector<qreal> globalConstants;
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
-        globalConstants = model.toStrongRef()->OptimizeParameters();
+        globalConstants = model.toStrongRef()->CollectOptimizationParameters();
         error_0 = model.toStrongRef()->SSE();
         sse << error_0;
         parameter_history << globalConstants;
-#pragma message("this used to be not here before restructuring")
+        // Re-apply the locked-parameter mask each iteration: CollectOptimizationParameters()
+        // above rebuilds the parameter list and clears it, so it must be restored before the step.
         model.toStrongRef()->setLockedParameter(locked);
-        status = lm.minimizeOneStep(parameter);
+        lm.minimizeOneStep(parameter);
         error_2 = model.toStrongRef()->SSE();
 
-        auto constants = model.toStrongRef()->OptimizeParameters();
+        auto constants = model.toStrongRef()->CollectOptimizationParameters();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
             norm += qAbs(globalConstants[i] - constants[i]);
@@ -158,6 +152,20 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVect
 
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
-    model.toStrongRef()->setConverged(iter < MaxIter);
+    // Converged := the loop's actual stop criteria are met (SSE change below ErrorConvergence
+    // AND parameter step below DeltaParameter), NOT merely "iter < MaxIter". The old proxy
+    // falsely reported a fit that reached the minimum exactly at the iteration limit as
+    // not-converged (see the diagnostics behind the InitialGuess root-cause).
+    //
+    // Both criteria are also trivially satisfied by a solver that never left its start value - a
+    // stall then reports success at whatever SSE the start happened to have. The gradient tells the
+    // two apart: lm.gnorm is MINPACK's scaled gradient (a cosine, hence dimensionless), ~0 at a
+    // stationary point and O(1) at a point the solver merely failed to leave. It is therefore
+    // required only where nothing moved; a fit that did move keeps the criteria above unchanged.
+    const bool settled = (qAbs(error_0 - error_2) <= ErrorConvergence) && (norm <= DeltaParameter);
+    const bool moved = (parameter - parameter_initial).cwiseAbs().sum() > DeltaParameter;
+    const bool stationary = lm.gnorm <= config["LevMar_Gtol"].toDouble();
+    const bool converged = settled && (moved || stationary);
+    model.toStrongRef()->setConverged(converged);
     return iter;
 }

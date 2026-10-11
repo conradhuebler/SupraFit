@@ -142,6 +142,9 @@ Vector DataTable::lastRow()
 
 void DataTable::Debug(const QString& str) const
 {
+    // Debug-only table dump. std::cout (not fmt/qDebug) because Eigen matrices only stream to
+    // std::ostream; guarded by DEBUG_ON so it never emits in normal builds.
+#ifdef DEBUG_ON
     std::cout << str.toStdString() << std::endl;
     std::cout << "Table Content" << std::endl;
     std::cout << "Rows: " << m_table.rows() << " Cols: " << m_table.cols() << std::endl;
@@ -150,6 +153,9 @@ void DataTable::Debug(const QString& str) const
     std::cout << "Checked Table" << std::endl;
     std::cout << "Rows: " << m_table.rows() << " Cols: " << m_table.cols() << std::endl;
     std::cout << m_checked_table << std::endl;
+#else
+    Q_UNUSED(str)
+#endif
 }
 
 Qt::ItemFlags DataTable::flags(const QModelIndex& index) const
@@ -295,10 +301,13 @@ void DataTable::CheckRow(int row, bool check)
 
 int DataTable::isRowChecked(int row) const
 {
-    int check = 0;
-    for (int i = 0; i < columnCount(); ++i)
-        check += m_checked_table(row, i);
-    return check;
+    // Claude Generated - Fix to return 1/0 instead of sum of all columns
+    // Check if any column in the row is checked (typically they should all be the same)
+    for (int i = 0; i < columnCount(); ++i) {
+        if (m_checked_table(row, i))
+            return 1;  // Return 1 if any column is checked
+    }
+    return 0;  // Return 0 if no columns are checked
 }
 
 int DataTable::EnabledRows() const
@@ -332,7 +341,7 @@ void DataTable::PrintCheckedRows() const
         int check = 0;
         for (int j = 0; j < columnCount(); ++j)
             check += m_checked_table(i, j);
-        std::cout << "Row " << i << " checked: " << check << std::endl;
+        qDebug() << "Row" << i << "checked:" << check;
     }
 }
 

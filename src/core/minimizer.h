@@ -76,9 +76,6 @@ signals:
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
     void finished(int msecs);
-
-private slots:
-    void Print(const QString& message);
 };
 
 class Minimizer : public QObject {

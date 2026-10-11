@@ -1,105 +1,130 @@
 # SupraFit Development Guide
 
 ## Project Overview
-SupraFit is a C++/Qt framework for supramolecular chemistry analysis. It provides a nice User Interface and statistical post-processing, like Monte Carlo simulation and Resampling Plans. It will now be extended wich Machine Learning functionals for improved Model Suggestion for complex supramolecular systems. 
+SupraFit is a C++/Qt framework for supramolecular chemistry analysis with statistical post-processing and Machine Learning integration.
+
+## General Instructions
+
+- Each source code dir has a CLAUDE.md with basic information of the code and logic
+- **Keep CLAUDE.md files FOCUSED and CONCISE** - ONE clear idea per bullet, max 1-2 lines
+  - ❌ DON'T: Multi-paragraph explanations, code examples, historical details
+  - ✅ DO: Brief statements with links to detailed docs if needed
+  - ✅ DO: "✅ **Feature name** - Brief description" for completed items
+- Remove completed/resolved items after 2-3 updates (move to git history)
+- Tasks corresponding to code must be placed in the correct CLAUDE.md file
+- Each CLAUDE.md has a variable part (short-term info, bugs) and preserved part (permanent knowledge)
+- **Instructions blocks** contain operator-defined future tasks and visions for code development
+- Only include information important for ALL subdirectories in main CLAUDE.md
+- Preserve new knowledge from conversations but keep it brief
+- Always suggest improvements to existing code
+- **Keep entries concise and focused to save tokens**
+- **Keep git commits concise and focused**
+- **Rule of thumb**: If a CLAUDE.md section exceeds 20 lines, consider if it's better placed elsewhere
 
 ## Build System
-- **Main Build**: Use `/build/debug` or `/build/release` directories for out-of-source builds
+- **Build**: Use `/build/debug` or `/build/release` for out-of-source builds
 - **CMake**: `cmake .. && make -j4`
-- **Tests**: `make run_tests` or individual test executables
+- **Tests**: `make test`
 
-## General instructions
+## Development Standards
 
-- Each source code dir has a CLAUDE.md with basic informations of the code, the corresponding knowledge and logic in the directory 
-- If a file is not present or outdated, create or update it
-- Task corresponding to code have to be placed in the correct CLAUDE.md file
-- Each CLAUDE.md may contain a variable part, where short-term information, bugs etc things are stored. Obsolete information have to be removed
-- Each CLAUDE.md has a preserved part, which should no be edited by CLAUDE, only created if not present
-- Each CLAUDE.md may contain an **instructions block** filled by the operator/programmer and from CLAUDE if approved with future tasks and visions that must be considered during code development
-- Each CLAUDE.md file content should be important for ALL subdirectories
-- If new knowledge is obtained from Claude Code Conversation preserve it in the CLAUDE.md files
-- Always give improvments to existing code
+### Educational-First Design
+- Clear, direct access to computational chemistry implementations
+- Minimal abstraction layers that obscure scientific content
+- Algorithm transparency with mathematical/physical implementations easily locatable
+- Function/variable names reflecting scientific meaning
+
+### Implementation Rules
+- **Keep development context out of user-facing text.** Tooltips, labels, dialogs and console output
+  should state what the setting or result *is*; rationale, history, commit and test references
+  usually fit better in code comments, CLAUDE.md or the changelog. If such context seems genuinely
+  useful to the user, ask before adding it. (See also `~/.claude/CLAUDE.md`.)
+- **Quote numbers from a spread, not a single sample.** Accuracy, error and performance figures vary
+  with the parameters — measure across representative cases and quote the worst case, and pin it
+  with a test where possible.
+- Mark new functions as "Claude Generated"
+- Document functions (doxygen ready) with scientific context
+- Document existing undocumented functions if appearing regularly (briefly and doxygen ready)
+- Remove TODO Hashtags and text if done and approved
+- Use modern Qt6 patterns, avoid deprecated functions
+- Comprehensive error handling and logging
+- Debug output: `qDebug()` within `#ifdef DEBUG_ON #endif`
+- Console output: Use `fmt`, avoid `std::cout`
+- **Always check instructions blocks** in relevant CLAUDE.md files
+- Reformulate and clarify task and vision entries if not already marked as CLAUDE formatted
+- In case of compiler warning for deprecated functions, replace the old function call with the new one
+- Implement timing analysis for complex functions
+- Keep track of significant improvements in AIChangelog.md, one line per fact
+- **Complex Architecture Documentation**: Factory patterns, dispatchers, and multi-step workflows require comprehensive inline documentation
+- Maintain backward compatibility where possible
+
+### Copyright and File Headers
+- **Copyright ownership**: All copyright remains with Conrad Hübler as the project owner
+- **Year updates**: Always update copyright year to current year when modifying files
+- **Claude contributions**: Mark Claude-generated code sections but copyright stays with Conrad
+- **Format**: `Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>`
+- **AI acknowledgment**: Add Claude contribution notes in code comments, not copyright headers
+
+### Important Notes
+- nullptr-checks are good things, however if there is a crash, prevent the crash by checks doesn't solve the origin of the nullptr
+
+### Workflow States
+- **ADD**: Features to be added
+- **WIP**: Currently being worked on  
+- **ADDED**: Basically implemented
+- **TESTED**: Works (by operator feedback)
+- **APPROVED**: Move to changelog, remove from CLAUDE.md
+
+## Documentation
+
+- [JSON Data Structure and I/O Functions](./JSON_datastruture.md)
+- [Statistical Post-Processing Configuration](./src/capabilities/STATISTICAL_POSTPROCESSING.md)
+- [Model ID Reference](./src/core/models/MODEL_ID_REFERENCE.md)
+- [ML Integration Plan](./ml_integration_plan/README.md)
+- [CLI Usage Examples](./src/client/usage_example.md)
+
 ## Key Components
 
 ### Core Libraries
-- **libcore.a**: Core functionality (capabilities/, core/)
+- **libcore.a**: Core functionality (capabilities/, core/) with ProjectManager integration
 - **libmodels.a**: Data models and analysis models
-- **suprafit_cli**: Command-line interface for batch processing
-- **suprafit**: GUI application
+- **suprafit_cli**: Command-line interface with unified ProjectManager
+- **suprafit**: GUI application with completed ProjectManager integration
 
-### Data Processing Pipeline
-- **DataClass**: Project container with metadata and system parameters
-- **DataTable**: Core data structure using Eigen::MatrixXd
-
-### Client Applications
-- **src/client/suprafit_cli.cpp**: CLI with data generation and analysis
-- **src/ui/**: GUI components
-
-
-### Key Functions
-- **GenerateData()**: Creates training datasets using mathematical models
-- **GenerateInputData()**: Equation-based data generation with DataGenerator
-- **AnalyzeFile()**: Comprehensive file analysis without task execution
-- **GenerateDataOnly()**: Simple load/save verification
-
-## Common Commands
-
-### Building
-```bash
-cd /home/conrad/src/SupraFit/build/debug
-cmake .. && make -j4
-```
-
-### Testing
-```bash
-# Run all tests
-make run_tests
-
-# Individual tests
-./src/tests/test_simple
-./src/tests/test_datatable
-./src/tests/test_pipeline
-```
-
-## External Dependencies
-- **Qt6**: Core, Test, Qml modules
-- **Eigen**: Matrix operations (via libpeakpick)
-- **fmt**: Modern C++ formatting
-- **ChaiScript**: Scripting support
-- **CxxThreadPool**: Parallel processing
 
 ## File Structure
 ```
 src/
-├── capabilities/    # Core capabilities (DataGenerator, JobManager, etc.)
-├── client/         # CLI and ML pipeline management
-├── core/           # Core functionality and file handlers
+├── capabilities/    # DataGenerator, JobManager
+├── client/         # CLI and ML pipeline
+├── core/           # Core functionality
 ├── tests/          # Test suite
 └── ui/             # GUI components
-
-external/           # Third-party libraries
-input/             # Sample configurations and test data
 ```
 
-## Project Status
+## Dependencies
+- **Qt6**: Core, Test, Qml modules
+- **Eigen**: Matrix operations
+- **fmt**: Modern C++ formatting
+- **ChaiScript**: Scripting support
 
-### ✅ Recent Achievements
-- **Statistical Analysis JSON API**: Complete migration from string-based to JSON-based statistical methods in `src/core/analyse.cpp`
-- **ML Pipeline Integration**: High-performance data generation and statistical analysis for machine learning workflows
-- **Percentile-based Confidence Intervals**: Monte Carlo analysis using percentile method (2.5%/97.5% quantiles) for accurate uncertainty quantification
-- **Performance Optimizations**: DataGenerator optimized for productive ML pipeline use with batch processing and debug reduction
-- **Architecture Compliance**: Fixed DataClass inheritance issues and made system compatible with SupraFit's core architecture
-- **Documentation**: Comprehensive CLAUDE.md files in all src/ subdirectories with complete ML pipeline capabilities documentation
+## CLAUDE.md Organization
+- Each `src/` subdirectory has detailed CLAUDE.md documentation
+- **Keep entries concise and focused to save tokens**
+- **Preserved Section**: Permanent documentation (don't edit)
+- **Variable Section**: Short-term information (update regularly)
+- **Instructions Block**: Operator-defined future tasks and visions
 
-### 🧪 Current Test Status
+### Documentation Update Rules
+- **Replace debugging details with architecture decisions** when issues are resolved
+- **Remove unnecessary pointer addresses and crash investigation specifics**
+- **Focus on architectural clarity** rather than technical debugging information
+- **Document the "why" behind design decisions** for future reference
+- **Eliminate redundant information** that doesn't add architectural value
+- **Prioritize clean, maintainable documentation** over verbose troubleshooting history
 
-## Development Guidelines
 
-### Code Organization
-- Each `src/` subdirectory contains detailed CLAUDE.md documentation
-- Variable sections updated regularly with short-term information
-- Preserved sections contain permanent knowledge and patterns
-- Instructions blocks contain operator-defined future tasks and visions
+## Build & Git Management
 
 ### Implementation Standards
 - Mark new functions as "Claude Generated" for traceability
@@ -115,30 +140,39 @@ input/             # Sample configurations and test data
 - **Always check and consider instructions blocks** in relevant CLAUDE.md files before implementing 
 - reformulate and clarify task and vision entries if not alredy marked as CLAUDE formatted
 - in case of compiler warning for deprecated suprafit functions, replace the old function call with the new one
+### Build Directories
+- **`debug/`** - Development build: full debug symbols, no optimizations, slower runtime
+  - Use: Testing features, debugging crashes, development workflow
+  - Build: `cmake --build debug 2>&1 | tail -20` for quick status
+  - Executable: `./debug/bin/linux/suprafit` (GUI) or `./debug/bin/linux/suprafit_cli` (CLI)
 
-### Add(ed)/Tested/Approved
-- For Task/Features/Function use numeric identifieres (1,2,3,...) to organise the task/features/functions across the documents DURING development
-### Workflow
-- Features to be added have to be marked as ADD
-- If the feature/function/task is being worked on, mark it as WIP
-- If the feature/function/task is basically implemented, mark it as ADDED
-- Summarize several functions to features/task
-- If it works (by operator feedback), mark it as TESTED 
-- Ask regulary if the TESTED feature is approved, if yes: it to the changelog (summarised) and remove from claude.md  
+- **`release/`** - Optimized build: stripped symbols, O3 optimizations, fast runtime
+  - Use: Performance testing, final deployment, production runs
+  - Build: `cmake --build release 2>&1 | tail -20`
+  - Executable: `./release/bin/linux/suprafit` (GUI) or `./release/bin/linux/suprafit_cli` (CLI)
 
-### CLAUDE.md Structure Template
-```markdown
-# Directory Name - Brief Description
+### Git Best Practices
+- **Only commit source files**: Use `git add <file>` for specific files, never `git add -A` without review
+- **Review before committing**: Always check `git diff` and `git status` to avoid accidental commits
+- **Build before commit**: Ensure `make -j4` succeeds and no compiler warnings/errors exist
+- **Commit message format**: Start with action verb (Fix, Add, Improve, Refactor), follow with brief description
+- **Include Co-Author info**: All commits include Claude contribution notes with proper attribution
+- **Test artifacts stay local**: Build outputs and temporary test files are ignored by .gitignore
 
-## [Preserved Section - Permanent Documentation]
+### Build and Test Commands
+```bash
+# Build debug version
+cd /home/conrad/src/SupraFit/debug && make -j4 2>&1 | tail -20
 
-## [Variable Section - Short-term Information]
+# Build release version
+cd /home/conrad/src/SupraFit/release && make -j4
 
-## [Instructions Block - Operator-Defined Tasks]
-### Future Tasks
-- Task 1: Description
-- Task 2: Description
+# Run all tests
+make test
 
-### Vision
-- Long-term goals and architectural directions
+# Run specific test
+./bin/linux/test_integration
+
+# Check build status
+make --build debug 2>&1 | tail -20
 ```

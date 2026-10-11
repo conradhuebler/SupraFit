@@ -152,7 +152,10 @@ protected:
     void virtual DeclareOptions() override;
     QPointer<DataTable> m_c0, m_concentrations;
     inline void Concentration() { CalculateConcentrations(); }
-    double m_V, m_cell_concentration, m_syringe_concentration, m_T;
+    // Defaults so accessors (getT/getV/…) and the "!m_V"-style unset guards never
+    // read uninitialised memory before LoadSystemParameter runs. 0 keeps the guard
+    // semantics (0 = not yet set); m_T = 298 K matches the NMR/Titration default.
+    double m_V = 0, m_cell_concentration = 0, m_syringe_concentration = 0, m_T = 298;
     bool m_reservior = true;
     QString m_plotMode;
     QStringList m_plotmode;

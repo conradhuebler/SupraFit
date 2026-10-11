@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,10 @@
 #pragma once
 
 #include "src/ui/guitools/mime.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
+#include "src/core/projectmanager.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
@@ -132,6 +134,7 @@ public:
     explicit SupraFitGui();
     virtual ~SupraFitGui() override;
 
+    [[deprecated("Use ProjectManager to load and create projects")]]
     bool SetData(const QJsonObject& object, const QString& file, const QString& path);
     virtual QSize sizeHint() const override { return QSize(400, 300); }
 
@@ -167,6 +170,8 @@ private:
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
+    // Claude Generated - ProjectManager integration: UUID to MainWindow mapping
+    QHash<QString, QPointer<MainWindow>> m_project_windows;
     bool m_hasData;
     QAction *m_new_window, *m_new_table, *m_spectra, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
@@ -178,54 +183,6 @@ private:
 
     QFile m_file;
     virtual void closeEvent(QCloseEvent* event) override;
-    const QStringList m_properties = QStringList() << "threads"
-                                                   << "chartanimation"
-                                                   << "workingdir"
-                                                   << "dirlevel"
-                                                   << "auto_confidence"
-                                                   << "lastdir"
-                                                   << "p_value"
-                                                   << "charttheme"
-                                                   << "ask_on_exit"
-                                                   << "tooltips"
-                                                   << "recent"
-                                                   << "markerSize"
-                                                   << "lineWidth"
-                                                   << "transparentChart"
-                                                   << "cropedChart"
-                                                   << "noGrid"
-                                                   << "empAxis"
-                                                   << "xSize"
-                                                   << "ySize"
-                                                   << "chartScaling"
-                                                   << "FastConfidenceScaling"
-                                                   << "FastConfidenceSteps"
-                                                   << "ColorFullSearch"
-                                                   << "series_confidence"
-                                                   << "auto_thermo_dialog"
-                                                   << "calibration_start"
-                                                   << "calibration_heat"
-                                                   << "thermogram_guidelines"
-                                                   << "advanced_ui"
-                                                   << "MetaSeries"
-                                                   << "UnsafeCopy"
-                                                   << "EntropyBins"
-                                                   << "OverwriteBins"
-                                                   << "InitialiseRandom"
-                                                   << "StoreRawData"
-                                                   << "StoreFileName"
-                                                   << "StoreAbsolutePath"
-                                                   << "StoreFileHash"
-                                                   << "FindFileRecursive"
-                                                   << "ModelParameterColums"
-                                                   << "LastSpectraType"
-                                                   << "MarkerPointFeedback"
-                                                   << "PointFeedback"
-                                                   << "ModuloPointFeedback"
-                                                   << "FullShannon"
-                                                   << "lastSize"
-                                                   << "ScriptTimeout"
-                                                   << "MaxSeriesPoints";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;
@@ -234,7 +191,7 @@ private:
     QWidget *m_project_holder, *m_recentWidget;
     QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
-    QVector<QPointer<MainWindow>> m_project_list;
+    // Claude Generated - REMOVED: QVector<QPointer<MainWindow>> m_project_list; - replaced by m_project_windows UUID-based mapping
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
     QStackedWidget* m_stack_widget;
@@ -282,6 +239,18 @@ private slots:
     void ExportAllPlain();
     void ExportAllSupraFit();
     void AddScatter();
+    
+    // Claude Generated - ProjectManager Integration Slots
+    void onProjectLoaded(const QString& projectId, const QString& filePath);
+    void onProjectSaved(const QString& projectId, const QString& filePath);
+    void onModelAdded(const QString& projectId, const QString& modelId);
+    void onProjectManagerError(const QString& operation, const QString& errorMessage);
+    void onProjectAdded(const QString& projectId, const QString& projectTitle);
+    void onCurrentProjectChanged(const QString& projectId);
+    void onProjectDataUpdated(const QString& projectId);
+
+private:
+    // Claude Generated - Removed updateDataListFromProjectManager() function declaration - no longer needed
 
 protected:
     virtual bool eventFilter(QObject* obj, QEvent* ev) override;

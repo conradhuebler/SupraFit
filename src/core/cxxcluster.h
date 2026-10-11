@@ -47,6 +47,8 @@ public:
 
     inline void PrintMatrix(const CxxClusterMatrix& matrix)
     {
+        // Debug-only cluster dump, guarded so it never emits in normal builds (D7).
+#ifdef DEBUG_ON
         for (const auto& row : matrix) {
             std::cout << "[ ";
             for (auto i : row.first)
@@ -59,6 +61,9 @@ public:
                 std::cout << d << " ";
             std::cout << "}\n";
         }
+#else
+        (void)matrix;
+#endif
     }
     void Run(const CxxClusterMatrix& matrix)
     {

@@ -122,7 +122,7 @@ void fl_ItoI_ItoII_Model::InitialGuess_Private()
     Calculate();
 }
 
-void fl_ItoI_ItoII_Model::OptimizeParameters_Private()
+void fl_ItoI_ItoII_Model::CollectOptimizationParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -212,10 +212,7 @@ QVector<qreal> fl_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> fl_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<fl_ItoI_ItoII_Model> model = QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
@@ -227,13 +224,6 @@ QString fl_ItoI_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
-QString fl_ItoI_ItoII_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString fl_ItoI_ItoII_Model::AdditionalOutput() const
 {
@@ -258,40 +248,25 @@ QString fl_ItoI_ItoII_Model::AdditionalOutput() const
 
         diff = host_0 - complex;
         // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        std::cout << host << " "
-                  << " " << guest_0 - complex << " " << complex << std::endl;
         //std::cout << integral.transpose() << std::endl;
     }
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
     */
     return result;
 }
 
-QString fl_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem fl_ItoI_ItoII_Model::BC50System() const
 {
-
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 1, 1, 2;
+    sys.lgBeta = { GlobalParameter(0), GlobalParameter(0) + GlobalParameter(1) };
+    return sys;
 }
 
-QString fl_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1_2(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
-}
 
 #include "fl_1_1_1_2_Model.moc"

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/bc50.h"
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
@@ -190,6 +191,14 @@ qreal AbstractItcModel::GuessFx()
             y << DependentModel()->data(i);
         }
         QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
+        /* With too few points left, no way of splitting the data into three segments has points in
+         * all of them, and the regression comes back empty - first() would then read from an empty
+         * map, and the intersections below index regressions[0..2]. Report the guess as failed, the
+         * same way a missing cell/syringe concentration does above. Claude Generated */
+        if (result.isEmpty() || result.first().regressions.size() < 3) {
+            m_guess_failed = true;
+            return 1;
+        }
         PeakPick::MultiRegression regression = result.first();
 
         qreal x1 = 0, x2 = 0;
@@ -370,6 +379,9 @@ QString AbstractItcModel::ModelInfo() const
         result += Thermo::FormatThermo(GlobalParameter(i), getT(), LocalParameter(i, 0));
     }
 
+    const BC50::ModelSystem sys = BC50System();
+    result += BC50::Format_FromSpeciation(sys.stoich, sys.lgBeta);
+
     return result;
 }
 
@@ -438,7 +450,8 @@ QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::MonteCarlo2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 QString AbstractItcModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
@@ -458,7 +471,8 @@ QString AbstractItcModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::GridSearch2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 /*

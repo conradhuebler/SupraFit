@@ -1,0 +1,290 @@
+/*
+ * SupraFit - closed-form vs. Newton cubic root solver
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The analytic (Cardano / trigonometric) cubic solver must return an actual root — verified by
+ * substituting it back — and, on the cubics the 1:1/1:2 titration model generates, it must agree with
+ * the historical Newton search. The Newton path is deliberately NOT asserted to be a root everywhere:
+ * it has known defects (its third "root" iterates on the derivative). Claude Generated.
+ */
+
+#include <algorithm>
+#include <cmath>
+
+#include <QtCore/QRandomGenerator>
+#include <QtTest/QtTest>
+
+#include "src/core/libmath.h"
+
+class TestCubicSolver : public QObject {
+    Q_OBJECT
+
+private:
+    static double f(double a, double b, double c, double d, double x)
+    {
+        return ((a * x + b) * x + c) * x + d;
+    }
+
+    /*! \brief Coefficients of the guest cubic of the 1:1/1:2 model (see equil.h, ItoI_ItoII). */
+    static void guestCubic(double H0, double G0, double K11, double K12,
+        double& a, double& b, double& c, double& d)
+    {
+        a = K11 * K12;
+        b = K11 * (2.0 * K12 * H0 - K12 * G0 + 1.0);
+        c = K11 * (H0 - G0) + 1.0;
+        d = -G0;
+    }
+
+private slots:
+    void cleanup() { CubicSolver::setMethod(CubicSolver::Method::Analytic); }
+
+    // The returned value must actually satisfy the cubic, across both discriminant branches.
+    void testAnalyticIsARoot()
+    {
+        struct Case {
+            double a, b, c, d;
+        };
+        const Case cases[] = {
+            { 1.0, -6.0, 11.0, -6.0 }, // roots 1, 2, 3 (three real)
+            { 1.0, 0.0, 0.0, -8.0 }, // root 2 (one real)
+            { 2.0, -4.0, -22.0, 24.0 }, // roots 1, -3, 4
+            { 1.0, 0.0, -15.0, -4.0 }, // roots 4, -2±sqrt(3)
+            { 1.0, 3.0, 3.0, 1.0 }, // triple root -1
+        };
+        for (const Case& k : cases) {
+            const double x = AnalyticCubicRoot(k.a, k.b, k.c, k.d);
+            const double residual = f(k.a, k.b, k.c, k.d, x);
+            QVERIFY2(std::abs(residual) < 1e-8,
+                qPrintable(QString("cubic (%1,%2,%3,%4): x=%5 residual=%6")
+                               .arg(k.a).arg(k.b).arg(k.c).arg(k.d).arg(x).arg(residual)));
+        }
+    }
+
+    // On the cubics a real 1:1/1:2 titration produces, analytic and Newton must agree, and the root
+    // must be a physically valid free guest concentration (0 <= [G] <= G0).
+    void testAgreesOnTitrationCubics()
+    {
+        const double H0 = 1e-3;
+        for (double lgK11 : { 2.0, 4.0, 6.0 }) {
+            for (double lgK12 : { 1.0, 3.0, 5.0, 7.0, 9.0 }) {
+                const double K11 = std::pow(10.0, lgK11);
+                const double K12 = std::pow(10.0, lgK12);
+                for (int i = 0; i <= 20; ++i) {
+                    const double G0 = 3e-3 * i / 20.0;
+                    double a, b, c, d;
+                    guestCubic(H0, G0, K11, K12, a, b, c, d);
+
+                    CubicSolver::setMethod(CubicSolver::Method::Analytic);
+                    const double analytic = MinCubicRoot(a, b, c, d);
+                    CubicSolver::setMethod(CubicSolver::Method::Newton);
+                    const double newton = MinCubicRoot(a, b, c, d);
+
+                    // At G0 = 0 the root is exactly 0 and d = 0, so a RELATIVE residual criterion is
+                    // meaningless there (any numerical epsilon is itself the dominant term). That point
+                    // is covered by the bracket and Newton-agreement checks below.
+                    if (G0 > 0) {
+                        const double terms = std::max({ std::abs(a * analytic * analytic * analytic),
+                            std::abs(b * analytic * analytic), std::abs(c * analytic), std::abs(d) });
+                        QVERIFY2(std::abs(f(a, b, c, d, analytic)) < 1e-9 * terms,
+                            qPrintable(QString("analytic not a root at lgK11=%1 lgK12=%2 G0=%3 (x=%4)")
+                                           .arg(lgK11).arg(lgK12).arg(G0).arg(analytic)));
+                    }
+                    QVERIFY2(analytic >= -1e-15 && analytic <= G0 + 1e-12,
+                        qPrintable(QString("free guest %1 outside [0, %2]").arg(analytic).arg(G0)));
+                    // The Newton path stops at |f(x)| < 1e-8 ABSOLUTE, so at small concentrations its
+                    // root is only good to ~1e-8 — e.g. at G0 = 0 it returns ~3e-9 where the exact
+                    // answer (and the analytic solver) is 0. Compare within that limit, not tighter.
+                    QVERIFY2(std::abs(analytic - newton) < 1e-8 + 1e-6 * G0,
+                        qPrintable(QString("analytic %1 != newton %2 (lgK11=%3 lgK12=%4 G0=%5)")
+                                       .arg(analytic).arg(newton).arg(lgK11).arg(lgK12).arg(G0)));
+                }
+            }
+        }
+    }
+
+    /* Randomised sweep over both cubic families that share MinCubicRoot (1:1/1:2 guest cubic and
+     * 2:1/1:1 host cubic), across the full range of constants and concentrations a titration can
+     * produce. Both variants are compared against a high-precision bracketed reference, so a
+     * disagreement also says WHICH one is wrong. Seeded, so any failure is reproducible. CG. */
+    void testRandomisedAgreementWithReference()
+    {
+        QRandomGenerator rng(20260719u);
+        auto uni = [&rng](double lo, double hi) { return lo + (hi - lo) * rng.generateDouble(); };
+
+        // High-precision root of the cubic inside [0, upper] (the physically valid window).
+        auto reference = [](double a, double b, double c, double d, double upper, bool& ok) {
+            long double lo = 0.0L, hi = static_cast<long double>(upper);
+            auto P = [&](long double x) { return ((a * x + b) * x + c) * x + d; };
+            long double flo = P(lo), fhi = P(hi);
+            int guard = 0;
+            while (flo * fhi > 0.0L && guard++ < 60) { // widen if the root sits outside
+                hi *= 2.0L;
+                fhi = P(hi);
+            }
+            ok = (flo * fhi <= 0.0L);
+            if (!ok)
+                return 0.0;
+            for (int i = 0; i < 300; ++i) {
+                const long double mid = 0.5L * (lo + hi);
+                ((P(mid) * flo) <= 0.0L ? hi : lo) = mid;
+            }
+            return static_cast<double>(0.5L * (lo + hi));
+        };
+
+        int samples = 0, skipped = 0, newtonOutliers = 0;
+        double maxAnalyticRel = 0.0, maxNewtonRel = 0.0;
+
+        for (int n = 0; n < 4000; ++n) {
+            const double lgA = uni(0.0, 9.0); // lg of the first constant
+            const double lgB = uni(0.0, 9.0); // lg of the second
+            const double K1 = std::pow(10.0, lgA), K2 = std::pow(10.0, lgB);
+            const double H0 = std::pow(10.0, uni(-6.0, -1.0));
+            const double G0 = H0 * uni(0.0, 5.0);
+
+            // Both families have the same shape with the roles of the two totals swapped; see equil.h.
+            const bool guestFamily = (n % 2 == 0);
+            const double self = guestFamily ? G0 : H0; // total whose free concentration we solve for
+            const double other = guestFamily ? H0 : G0;
+            const double a = K1 * K2;
+            const double b = K1 * (2.0 * K2 * other - K2 * self + 1.0);
+            const double c = K1 * (other - self) + 1.0;
+            const double d = -self;
+
+            bool ok = false;
+            const double ref = reference(a, b, c, d, std::max(self, 1e-30), ok);
+            if (!ok || self <= 0.0) {
+                ++skipped;
+                continue;
+            }
+
+            CubicSolver::setMethod(CubicSolver::Method::Analytic);
+            const double analytic = MinCubicRoot(a, b, c, d);
+            CubicSolver::setMethod(CubicSolver::Method::Newton);
+            const double newton = MinCubicRoot(a, b, c, d);
+
+            const double scale = std::max(ref, 1e-12);
+            maxAnalyticRel = std::max(maxAnalyticRel, std::abs(analytic - ref) / scale);
+            const double newtonRel = std::abs(newton - ref) / scale;
+            maxNewtonRel = std::max(maxNewtonRel, newtonRel);
+            if (newtonRel > 1e-4)
+                ++newtonOutliers;
+
+            QVERIFY2(std::abs(analytic - ref) <= 1e-6 * scale,
+                qPrintable(QString("analytic %1 != reference %2 (lgK1=%3 lgK2=%4 H0=%5 G0=%6)")
+                               .arg(analytic).arg(ref).arg(lgA).arg(lgB).arg(H0).arg(G0)));
+            ++samples;
+        }
+
+        qInfo().noquote() << QString("  %1 samples (%2 skipped) | max rel. error: analytic %3, Newton %4"
+                                     " | Newton off by >1e-4 in %5 cases")
+                                 .arg(samples).arg(skipped)
+                                 .arg(maxAnalyticRel, 0, 'g', 3).arg(maxNewtonRel, 0, 'g', 3)
+                                 .arg(newtonOutliers);
+        QVERIFY2(samples > 3000, "too few usable samples — the generator is not exercising the solver");
+    }
+
+    /* Diagnosis of the VarPro divergence on nmr_IItoI_ItoI: a fit varies the constants continuously,
+     * so the returned free concentration must be a SMOOTH function of them and stay inside its
+     * physical window [0, H0]. A jump between roots makes the finite-difference Jacobian meaningless,
+     * which is fatal for VarPro because it has only the global directions to work with. CG. */
+    void testHostBranchIsPhysicalAndSmooth()
+    {
+        const double H0 = 1e-3; // A0 of test_varpro
+        const double G0 = 3e-3 * 8.0 / 15.0; // a mid-titration point
+        const double K11 = std::pow(10.0, 4.2);
+
+        for (int m = 0; m < 2; ++m) {
+            CubicSolver::setMethod(m == 0 ? CubicSolver::Method::Newton : CubicSolver::Method::Analytic);
+            const char* name = (m == 0) ? "Newton  " : "Analytic";
+
+            double previous = -1.0, maxJump = 0.0;
+            int outside = 0, n = 0;
+            for (double lgK21 = -1.0; lgK21 <= 6.001; lgK21 += 0.05, ++n) {
+                const double K21 = std::pow(10.0, lgK21);
+                const double a = K11 * K21;
+                const double b = K11 * (2 * K21 * G0 - K21 * H0 + 1);
+                const double c = K11 * (G0 - H0) + 1;
+                const double host = MinCubicRoot(a, b, c, -H0);
+
+                if (host < -1e-12 || host > H0 * (1.0 + 1e-9))
+                    ++outside;
+                if (previous >= 0.0)
+                    maxJump = std::max(maxJump, std::abs(host - previous) / H0);
+                previous = host;
+            }
+            qInfo().noquote() << QString("  %1: %2 of %3 samples outside [0, H0], largest step %4 x H0")
+                                     .arg(name).arg(outside).arg(n).arg(maxJump, 0, 'g', 3);
+            // Only the candidate for the default is asserted; the legacy path is known to be defective
+            // and is reported for comparison rather than pinned.
+            if (m == 1) {
+                QVERIFY2(outside == 0,
+                    qPrintable(QString("analytic leaves the physical window in %1 samples").arg(outside)));
+                QVERIFY2(maxJump < 0.2,
+                    qPrintable(QString("analytic jumps by %1 x H0 between neighbouring constants").arg(maxJump)));
+            }
+        }
+    }
+
+    /* The decisive physical check for the 2:1/1:1 model (nmr_IItoI_ItoI): the model derives the free
+     * guest algebraically from the free host, so the GUEST balance holds by construction and the cubic
+     * alone has to satisfy the HOST balance
+     *     H0 = [H] + K11[H][G] + 2 K11 K21 [H]^2 [G].
+     * Whichever solver satisfies it is returning the physical root. Claude Generated. */
+    void testHostMassBalance()
+    {
+        const double H0 = 1e-3;
+        double worst[2] = { 0.0, 0.0 };
+        int violations[2] = { 0, 0 };
+
+        for (int m = 0; m < 2; ++m) {
+            CubicSolver::setMethod(m == 0 ? CubicSolver::Method::Newton : CubicSolver::Method::Analytic);
+            for (double lgK21 = 0.0; lgK21 <= 6.001; lgK21 += 0.25) {
+                for (double lgK11 = 2.0; lgK11 <= 6.001; lgK11 += 0.5) {
+                    const double K21 = std::pow(10.0, lgK21), K11 = std::pow(10.0, lgK11);
+                    for (int i = 1; i <= 15; ++i) {
+                        const double G0 = 3e-3 * i / 15.0;
+                        // exactly the coefficients equil.h IItoI_ItoI uses
+                        const double host = MinCubicRoot(K11 * K21,
+                            K11 * (2 * K21 * G0 - K21 * H0 + 1),
+                            K11 * (G0 - H0) + 1, -H0);
+                        const double guest = G0 / (K11 * host + K11 * K21 * host * host + 1);
+                        const double c11 = K11 * host * guest;
+                        const double c21 = K11 * K21 * host * host * guest;
+                        const double rel = std::abs(H0 - (host + c11 + 2.0 * c21)) / H0;
+                        worst[m] = std::max(worst[m], rel);
+                        if (rel > 1e-6)
+                            ++violations[m];
+                    }
+                }
+            }
+        }
+        qInfo().noquote() << QString("  host mass balance | Newton: worst %1, %2 violations"
+                                     " | Analytic: worst %3, %4 violations")
+                                 .arg(worst[0], 0, 'g', 3).arg(violations[0])
+                                 .arg(worst[1], 0, 'g', 3).arg(violations[1]);
+        QVERIFY2(worst[1] < 1e-9,
+            qPrintable(QString("analytic violates the host mass balance by %1").arg(worst[1])));
+    }
+
+    // The accurate closed-form path is the default; Newton remains selectable for reproduction.
+    void testDefaultsToAnalytic()
+    {
+        QVERIFY(CubicSolver::method() == CubicSolver::Method::Analytic);
+    }
+};
+
+QTEST_MAIN(TestCubicSolver)
+#include "test_cubicsolver.moc"

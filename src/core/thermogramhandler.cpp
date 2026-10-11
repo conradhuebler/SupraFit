@@ -20,6 +20,7 @@
 #include <Eigen/Dense>
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
@@ -37,9 +38,6 @@ static int baseline_step_size = 50;
 
 ThermogramHandler::ThermogramHandler()
 {
-    connect(this, &ThermogramHandler::ThermogramChanged, this, []() {
-        qDebug() << "sent";
-    });
 }
 
 void ThermogramHandler::Initialise()
@@ -53,7 +51,7 @@ void ThermogramHandler::Initialise()
     }
 
     if (m_spectrum.size() == 0) {
-        std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
+        qWarning() << "No Thermogram found. ThermogramHandler is not initialised!";
         return;
     } else {
         m_thermogram_series.resize(m_spectrum.x().size());
@@ -79,7 +77,7 @@ void ThermogramHandler::Initialise()
         } else if (m_spectrum.size() && m_peak_list.size() && m_peak_rules.size()) {
             UpdatePeaks();
         } else {
-            std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is initalised but not ready. No automatic stuff here!" << std::endl;
+            qWarning() << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is initalised but not ready. No automatic stuff here!";
             emit ThermogramInitialised();
             return;
         }
@@ -90,7 +88,7 @@ void ThermogramHandler::Initialise()
     FitBaseLine();
 
     m_initialised = true;
-    std::cout << "ThermogramHandler initialised!" << std::endl;
+    qWarning() << "ThermogramHandler initialised!";
     emit ThermogramInitialised();
 }
 
@@ -166,7 +164,9 @@ void ThermogramHandler::UpdateParameter(const QJsonObject& parameter)
     if (parameter.contains("PeakDuration"))
         m_PeakDuration = parameter["PeakDuration"].toDouble();
 
-    if (parameter.contains("MaxIteration"))
+    if (parameter.contains("Iterations")) // canonical key (matches getThermogramParameter)
+        m_iterations = parameter["Iterations"].toInt();
+    else if (parameter.contains("MaxIteration")) // legacy key, kept for backward compatibility
         m_iterations = parameter["MaxIteration"].toInt();
 
     if (parameter.contains("PeakRuleList"))
@@ -282,7 +282,7 @@ void ThermogramHandler::IntegrateThermogram()
 {
 
     if (!m_initialised) {
-        std::cout << "ThermogramHandler is not initialised, sorry for that." << std::endl;
+        qWarning() << "ThermogramHandler is not initialised, sorry for that.";
         return;
     }
     CalibrateSystem();
@@ -327,9 +327,12 @@ void ThermogramHandler::IntegrateThermogram()
 
 void ThermogramHandler::ApplyScaling()
 {
+    // Scaled heat = raw · calibration ratio · cal->J factor, minus the manual constant offset.
+    // The constant-offset subtraction restores the behaviour of the retired ThermogramWidget::
+    // ApplyCalibration() (which subtracted m_const_offset from each calibrated integral). Claude Generated
     double scaling = m_calibration_ratio * m_scaling_factor;
     for (int i = 0; i < m_integrals_raw.size(); ++i) {
-        m_integrals_scaled[i] = m_integrals_raw[i] * scaling;
+        m_integrals_scaled[i] = m_integrals_raw[i] * scaling - m_constant_offset;
     }
 
     emit CalibrationChanged();
@@ -466,7 +469,6 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
     fit["AverageDirection"] = m_averaged;
     fit["IntegrationScheme"] = m_current_integration_scheme;
     fit["PeakCount"] = m_peak_list.size();
-    fit["CalibrationHeat"] = m_CalibrationHeat;
 
     fit["PeakRuleList"] = ToolSet::Points2String(m_peak_rules);
 
@@ -477,7 +479,7 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
 
     // fit["integration_range"] = m_integration_range->currentText();
     fit["IntegrationRangeThreshold"] = m_integration_range_threshold;
-    fit["Iterations"] = m_last_iteration_max;
+    fit["Iterations"] = m_iterations; // the max-iterations setting, so it round-trips with UpdateParameter
 
     if (qApp->instance()->property("StoreRawData").toBool()) {
         QJsonObject thermo;

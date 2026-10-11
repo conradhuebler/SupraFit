@@ -38,6 +38,31 @@ long double MinQuadraticRoot(long double a, long double b, long double c);
 long double MaxQuadraticRoot(long double a, long double b, long double c);
 
 QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
+
+/**
+ * @brief Selectable implementations behind MinCubicRoot(). Claude Generated.
+ *
+ * @c Analytic is the DEFAULT: the closed-form (Cardano / trigonometric) solution used as a seed and
+ * refined by a safeguarded Newton inside a guaranteed bracket. It returns the smallest non-negative
+ * root — the physically meaningful one for a free concentration. @c Newton is the legacy
+ * three-search implementation, kept so old results can be reproduced on demand.
+ *
+ * The two do NOT agree in every case, by design — the Newton path has known defects (its third root
+ * iterates on the derivative instead of the function, so it is not a root at all, and two branches of
+ * its root selection are unreachable). Opt in per run, compare, then decide.
+ */
+namespace CubicSolver {
+enum class Method {
+    Newton, ///< legacy three-Newton search (inaccurate in parts of the parameter space)
+    Analytic ///< closed form + safeguarded refinement (default)
+};
+void setMethod(Method method);
+Method method();
+}
+
+/*! \brief Closed-form real root of a x^3 + b x^2 + c x + d, smallest non-negative one. CG. */
+qreal AnalyticCubicRoot(qreal a, qreal b, qreal c, qreal d);
+
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
 PeakPick::LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);
@@ -49,7 +74,6 @@ std::vector<qreal> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<
 qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
 qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
 
-qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end, double epsilon = 1e-4, int maxiter = 30);
 double NewtonRoot(QWeakPointer<AbstractModel> model, int index, qreal min, qreal max, double epsilon = 1e-4, int maxiter = 30);
 
 double LowerLogFermi(double x, double x0, double k, double beta);
@@ -63,4 +87,9 @@ qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& rmsd, QVector<QVector<double>>& parameter);
-int LeastSquaresRookfighter(QWeakPointer<AbstractModel> model, QVector<qreal>& param, QVector<double>& rmsd, QVector<QVector<double>>& parameter);
+
+/*! \brief Opt-in variable-projection (VarPro) fit: a self-contained damped Levenberg-Marquardt over
+ * only the non-linear global parameters; the linear local parameters are projected out by masked
+ * least-squares (AbstractModel::ProjectLinearParameters()) at each residual evaluation. For models
+ * with SupportsVarPro(); selected via the "FitSolver" optimizer-config key. Claude Generated. */
+int VarProFit(QWeakPointer<AbstractModel> model, QVector<double>& rmsd, QVector<QVector<double>>& parameter);

@@ -38,6 +38,7 @@
 #include "fluorescence/fl_1_1_Model.h"
 #include "fluorescence/fl_2_1_1_1_1_2_Model.h"
 #include "fluorescence/fl_2_1_1_1_Model.h"
+#include "fluorescence/fl_any_Model.h"
 
 /* NMR */
 #include "nmr/nmr_1_1_1_2_Model.h"

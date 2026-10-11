@@ -26,8 +26,11 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
+#include <iostream>
 
 #include "src/core/models/models.h"
+#include "src/core/projectmanager.h"
+#include "src/core/analysis_manager.h"
 
 // Forward declaration to avoid multiple includes
 class JobManager;
@@ -41,9 +44,9 @@ public:
 
     void setControlJson(const QJsonObject& control);
     QJsonObject getControlJson() const { return m_main; }
+    void setShowPostProcessingDetails(bool show) { m_show_post_processing_details = show; }
 
     void ParseMain();
-    void ParsePrepare();
 
     bool LoadFile();
     bool SaveFile();
@@ -66,12 +69,16 @@ public:
         m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
-    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_toplevel; }
+    QVector<QJsonObject> Data() const { return SupraFit::ProjectManager::instance().getAllProjectsAsJson(); }
 
     void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
     void OpenFile();
 
+    // REFACTOR(D3-TaskRunner): Work / PerformeJobs / CheckStopFile are the CLI's job-execution
+    // orchestration over JobManager. Extract to a shared TaskController when touched — the GUI
+    // (metamodelwidget / modeldataholder) drives JobManager directly with parallel logic, so this
+    // is the natural point to unify CLI+GUI job execution. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     void Work();
 
     QJsonObject PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
@@ -84,33 +91,54 @@ public:
     inline bool CheckDataOnly() const { return m_data_only; }
     inline bool CheckGenerateInputData() const { return m_generate_input_data; }
 
-    void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
+    void setDataVector(const QVector<QJsonObject>& data_vector)
+    {
+        // Store in legacy m_data_vector for compatibility
+        m_data_vector = data_vector;
 
+        // Also add all projects to ProjectManager
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        projectManager.clearAllProjects(); // Clear existing projects first
+
+        for (const QJsonObject& projectData : data_vector) {
+            projectManager.createProjectFromJson(projectData, "CLI Generated Project");
+        }
+    }
+
+    // REFACTOR(D3-DataFactory): these GenerateData* orchestrators + generateDependentDataTable
+    // (below) are the m_*-coupled remainder of the DataFactory extraction — they need a config
+    // bundle passed to DataFactory (not a verbatim lift). generateDependentDataTable also writes
+    // m_modelContent/m_mlRawData → return a small result struct. When touched, finish moving them
+    // into DataFactory; the GUI generatedatadialog wraps DataGenerator itself and should share
+    // DataFactory here too. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     QVector<QJsonObject> GenerateData();
     QVector<QJsonObject> GenerateDataOnly();
     QVector<QJsonObject> GenerateInputData();
     
     void AnalyzeFile();
+    
+    // AnalysisManager integration - Claude Generated
+    void displayAnalysisResults(const QJsonObject& results);
 
-    // Enhanced analysis methods for read-only mode - Claude Generated
-    void analyzeGenerateDataConfig(const QJsonObject& generateDataConfig);
-    void validateGenerateDataConfig(const QJsonObject& config);
+    // Config analysis, model-statistics reporting and parameter extraction moved to
+    // AnalysisReporter (D3) - Claude Generated
 
     // Enhanced methods using DataGenerator - Claude Generated
     QVector<QJsonObject> GenerateDataWithDataGenerator();
-    bool validateDataGeneratorConfig(const QJsonObject& config) const;
     
     // New modular JSON structure support - Claude Generated
     QVector<QJsonObject> GenerateDataWithModularStructure();
     bool parseModularStructure(const QJsonObject& control);
-    QJsonObject generateIndependentDataTable(const QJsonObject& independentConfig);
     QJsonObject generateDependentDataTable(const QJsonObject& dependentConfig, const QJsonObject& independentTableJson);
-    QJsonObject loadDataTableFromFile(const QJsonObject& fileConfig);
     QPointer<DataClass> generateIndependentData(const QJsonObject& independentConfig);
     QPointer<DataClass> generateDependentData(const QJsonObject& dependentConfig, QPointer<DataClass> independentData);
     QPointer<DataClass> loadDataFromFile(const QJsonObject& fileConfig);
-    QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent);
     
+    // REFACTOR(D3-MlPipeline): ProcessMLPipeline / FitModelsToData / EvaluateModelFit /
+    // ExtractMLFeatures / runPostFitAnalysis are the CLI ML-pipeline cluster. FitModelsToData
+    // duplicates AnalysisManager::fitModelsToData (the core, now really-fitting one) — extract to a
+    // MlPipeline class that drives AnalysisManager, and drop the CLI-side duplicate. The GUI has no
+    // ML pipeline but shares the fit/statistics substrate. See TECHNICAL_DEBT §D3 (GUI-overlap map).
     // ML Pipeline integration - Claude Generated
     /**
      * @brief Complete ML pipeline: data generation → model fitting → evaluation
@@ -150,6 +178,8 @@ public:
      */
     QJsonObject runPostFitAnalysis(QSharedPointer<AbstractModel> model, const QJsonObject& analysisConfig);
 
+    // ML training data export moved to MlExport (D3) - Claude Generated
+
     inline QString Extension() const { return m_extension; }
     inline QString OutFile() const { return m_outfile; }
 signals:
@@ -160,6 +190,18 @@ public slots:
 protected:
     QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
+
+    /**
+     * @brief Bereinigt ein Projekt-JSON-Objekt für ML-spezifische Ausgabe
+     * @param project Das ursprüngliche Projekt-Objekt
+     * @return Bereinigtes QJsonObject, oder leeres Objekt wenn keine methods vorhanden
+     *
+     * Entfernt Rohdaten (independent/dependent) und komprimiert statistische
+     * Methoden-Ergebnisse mittels extractCompactMLFeatures().
+     *
+     * Claude Generated - 2025-10-17
+     */
+    QJsonObject cleanProjectForML(const QJsonObject& project) const;
 
     QString m_infile = QString();
     QString m_outfile = QString(), m_extension = ".suprafit";
@@ -176,21 +218,29 @@ protected:
     /* Modular structure support - Claude Generated */
     QJsonObject m_independent, m_dependent;
     bool m_use_modular_structure = false;
+    bool m_show_post_processing_details = false;
 
     /* Stored data structure */
     QJsonObject m_data_json;
 
+    // m_toplevel/m_data removed - project state is read directly from ProjectManager.
+    // m_data_vector retained for CLI multi-project export. - Claude Generated
     QVector<QJsonObject> m_data_vector;
-
-    /* Json to be written to a file */
-    QJsonObject m_toplevel;
-
-    QPointer<DataClass> m_data;
 
     // JobManager for statistical analysis - Claude Generated
     JobManager* m_jobmanager;
+    
+    // AnalysisManager for centralized analysis - Claude Generated
+    AnalysisManager* m_analysisManager;
 
     QString m_modelContent; // Store enhanced content from model generation - Claude Generated
+    QJsonObject m_mlRawData; // Store ML RawData from model generation - Claude Generated
+    
+    // ML Training Data Export Configuration - Claude Generated
+    bool m_exportMLTraining = false;
+    bool m_autoExportML = false;
+    QString m_mlOutputFile = "";
+    QString m_mlBatchDirectory = "";
 
     int m_independent_rows = 2, m_start_point = 0, m_series = 0;
     bool m_guess = false, m_fit = false;

@@ -74,7 +74,7 @@ void Blank::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 /*
-QVector<qreal> Blank::OptimizeParameters_Private()
+QVector<qreal> Blank::CollectOptimizationParameters_Private()
 {
     addLocalParameter(0);
     addLocalParameter(1);
@@ -101,10 +101,7 @@ void Blank::CalculateVariables()
 QSharedPointer<AbstractModel> Blank::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<Blank>(new Blank(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     model.data()->setConcentrations(ConcentrationTable());
     return std::move(model);
 }

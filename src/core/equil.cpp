@@ -106,7 +106,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
         if (a < a0)
             return a;
         else {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
         //  std::cout << "a: " << a << " a0 " << a0 << std::endl;
 #endif
             return MinQuadraticRoot(x1, x2, x3);
@@ -121,7 +121,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
         if (b < b0)
             return b;
         else {
-#ifdef _DEBUG
+#ifdef DEBUG_ON
         //   std::cout << "b: " << b << " b0: " << b0 << std::endl;
 #endif
             return MinQuadraticRoot(x1, x2, x3);
@@ -146,7 +146,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
         if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * a * a * b) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * a * b * b) < epsilon && qAbs(K11 * a_1 * b_1 - K11 * a * b) < epsilon)
             break;
     }
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 /*
     std::cout << std::endl
               << std::endl;

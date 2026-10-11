@@ -95,7 +95,7 @@ void SearchBatch::optimise()
         return;
     }
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "started!";
 #endif
     m_thread->setModel(m_model, false);
@@ -103,7 +103,7 @@ void SearchBatch::optimise()
     m_model->ImportModel(m_thread->ConvergedParameter());
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
 }

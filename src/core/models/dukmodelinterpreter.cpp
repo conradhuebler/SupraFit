@@ -80,7 +80,9 @@ void DuktapeModelInterpreter::Initialise()
 
 void DuktapeModelInterpreter::Update()
 {
-    std::cout << m_global_parameter << std::endl;
+#ifdef DEBUG_ON
+    std::cout << m_global_parameter << std::endl; // Eigen dump, debug-only
+#endif
     for (int i = 0; i < m_global_names.size(); ++i) {
         std::string s = m_global_names[i].append(" = ").append(std::to_string(m_global_parameter(0, i)));
         const char x = ',';
@@ -123,7 +125,6 @@ const char* DuktapeModelInterpreter::Evaluate(const char* c)
 
 double DuktapeModelInterpreter::Evaluate(int i, int j)
 {
-    std::cout << "lala" << std::endl;
     return 0.0;
 }
 

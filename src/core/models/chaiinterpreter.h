@@ -30,6 +30,11 @@
 
 typedef Eigen::MatrixXd Matrix;
 
+/*! \brief The ChaiScript math extras module (sqrt/pow/exp/...). The vendored extras header defines
+ * bootstrap() OUT OF LINE, so it may be included by exactly one translation unit — this accessor is
+ * that single point, shared by every ChaiScript-based engine. Claude Generated. */
+chaiscript::ModulePtr SupraFitChaiMathModule();
+
 class ChaiInterpreter {
 public:
     ChaiInterpreter();

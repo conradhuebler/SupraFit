@@ -91,10 +91,7 @@ void ArrheniusFit::CalculateVariables()
 QSharedPointer<AbstractModel> ArrheniusFit::Clone(bool statistics)
 {
     QSharedPointer<ArrheniusFit> model = QSharedPointer<ArrheniusFit>(new ArrheniusFit(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

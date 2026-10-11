@@ -183,7 +183,7 @@ QVector<qreal> fl_IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 
-void fl_IItoI_ItoI_Model::OptimizeParameters_Private()
+void fl_IItoI_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -209,10 +209,7 @@ void fl_IItoI_ItoI_Model::OptimizeParameters_Private()
 QSharedPointer<AbstractModel> fl_IItoI_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<fl_IItoI_ItoI_Model> model = QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
@@ -224,13 +221,6 @@ QString fl_IItoI_ItoI_Model::ParameterComment(int parameter) const
         return QString("Reaction: A + B &#8652; AB");
 }
 
-QString fl_IItoI_ItoI_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::IItoI::Format_BC50(GlobalParameter(0), GlobalParameter(1));
-
-    return result;
-}
 
 QString fl_IItoI_ItoI_Model::AdditionalOutput() const
 {
@@ -274,34 +264,21 @@ QString fl_IItoI_ItoI_Model::AdditionalOutput() const
     integral(2) /= end;
     integral(3) /= end;
 
-    std::cout << integral.transpose() << std::endl;
 
     result += QString("A2B integ  ... %1\n\n").arg(integral(2));
     */
     return result;
 }
 
-QString fl_IItoI_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+BC50::ModelSystem fl_IItoI_ItoI_Model::BC50System() const
 {
-
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 2);
+    sys.stoich << 1, 2, 1, 1;
+    sys.lgBeta = { GlobalParameter(1), GlobalParameter(1) + GlobalParameter(0) };
+    return sys;
 }
 
-QString fl_IItoI_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
 
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
-    return bc + result;
-}
 #include "fl_2_1_1_1_Model.moc"

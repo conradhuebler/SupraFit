@@ -45,6 +45,8 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
 
+#include "src/core/phasetiming.h"
+
 #include "resultswidget.h"
 
 ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper)
@@ -53,15 +55,17 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
     m_model = model;
 
     QJsonObject controller = m_data["controller"].toObject();
-    QJsonObject temp = model->ExportModel(false, false);
-    for (int i = 0; i < controller["raw"].toObject().size(); ++i) {
-        temp["data"] = controller["raw"].toObject()[QString::number(i)];
-        m_models << controller["raw"].toObject()[QString::number(i)].toObject();
-    }
+    const QJsonObject raw = controller["raw"].toObject();
+    for (int i = 0; i < raw.size(); ++i)
+        m_models << raw[QString::number(i)].toObject();
+    PhaseTiming::Mark(QStringLiteral("  results: copy %1 raw MC models / %2 parameter blocks")
+                          .arg(m_models.size())
+                          .arg(qMax(0, m_data.count() - 1)));
     m_wrapper = wrapper;
     m_dialog = new ModalDialog;
     m_text = QString("");
     setUi();
+    PhaseTiming::Mark(QStringLiteral("  results: build charts + widget"));
     resize(600, 400);
 }
 
@@ -344,9 +348,12 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
         text += Print::TextFromStatistic(data);
     } else {
         text += Print::TextFromStatistic(controller["raw"].toObject());
+        PhaseTiming::Mark(QStringLiteral("    confidence: TextFromStatistic(raw) -> %1 chars").arg(text.size()));
         text += m_model.toStrongRef().data()->AnalyseStatistic(m_data, false);
+        PhaseTiming::Mark(QStringLiteral("    confidence: AnalyseStatistic -> %1 chars total").arg(text.size()));
     }
     m_confidence_label->setText(text);
+    PhaseTiming::Mark(QStringLiteral("    confidence: QLabel::setText (rich text)"));
     m_model.toStrongRef().data()->UpdateStatistic(m_data);
 }
 

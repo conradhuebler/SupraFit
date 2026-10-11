@@ -33,6 +33,7 @@
 class QValidator;
 class QSpinBox;
 class QCheckBox;
+class QComboBox;
 class QTabWidget;
 class ScientificBox;
 
@@ -51,6 +52,7 @@ private:
 
     QJsonObject m_config;
     QTabWidget* m_tabwidget;
+    QComboBox* m_solver; /* FitSolver selection: "LevMar" (classic) | "VarPro" (variable projection). Claude Generated. */
     QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter, *m_levmar_maxfev;
     QCheckBox* m_skip_corrupt_concentrations;
     ScientificBox *m_concen_convergency, *m_constant_convergence, *m_error_convergence;

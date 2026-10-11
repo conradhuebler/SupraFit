@@ -42,11 +42,20 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::nmr_ItoI_ItoII; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
+
+    // VarPro only when all shifts are free and independent (default cooperativity "full" + free host
+    // shift). Coupled cooperativities / fixed shifts are a TODO (see task: VarPro for coupled
+    // cooperativities + fixed parameters) and fall back to the classic solver. Claude Generated.
+    bool SupportsVarPro() const override
+    {
+        return getOption(Cooperativity) == QLatin1String("full") && getOption(Host) == QLatin1String("no");
+    }
+    void ProjectLinearParameters() override;
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -81,13 +90,9 @@ public:
             return i + 2;
     }
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
-
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
@@ -97,4 +102,10 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the free-host, AB and AB2 mole-fraction columns of the observed host,
+     * shared by the signal and the VarPro projection. Claude Generated. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include "src/ui/widgets/optimizerwidget.h"
 
+#include <QtCore/QHash>
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QDialog>
@@ -30,6 +31,8 @@ class QRadioButton;
 class QTabWidget;
 class QDialogButtonBox;
 class QComboBox;
+class QPushButton;
+class QVBoxLayout;
 class ScientificBox;
 
 class OptimizerDialog : public QDialog {
@@ -59,30 +62,26 @@ public:
     virtual void accept() override;
 
 private:
+    void setUi();
+    void createOptimTab();
+    /*! \brief Build one settings tab from the registry (all entries whose group == \p group). Claude Generated */
+    QWidget* buildTab(const QString& group);
+    /*! \brief Hand-built directory-behaviour section (radios + working-dir picker), inserted where the
+     *  Custom "dirlevel"/"workingdir" registry entries appear. Claude Generated */
+    void buildDirectorySection(QVBoxLayout* layout);
+
+    // Directory behaviour — hand-built Custom widgets
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
-    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins, *m_ModuloPointFeedback, *m_ScriptTimout, *m_MaxSeriesPoints;
-    QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling, *m_MarkerPointFeedbackSize;
-    QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins, *m_initialise_random;
     QLineEdit* m_working;
     QPushButton* m_select_working;
+
+    QHash<QString, QWidget*> m_widgets; //!< registry key -> generated widget (for read-back in accept())
+
     QTabWidget* m_mainwidget;
     QDialogButtonBox* m_buttons;
-    QComboBox* m_charttheme;
-    QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence, *m_RemoveGrid, *m_EmphAxis, *m_auto_thermo_dialog, *m_thermogram_guideline;
-    /* Save Settings Gui Elements */
-    QCheckBox *m_StoreRawData, *m_StoreFileName, *m_StoreAbsolutePath, *m_StoreFileHash, *m_FindFileRecursive, *m_PointFeedback, *m_MarkerPointFeedback, *m_FullShannon;
-
-    void setUi();
-    void createGeneralTab();
-    void createChartTab();
-    void createStandardCalTab();
-    void createOptimTab();
-    void createSaveTab();
-
     QJsonObject m_opt_config;
     OptimizerWidget* m_opt_widget;
     int m_dirlevel;
-    QString m_logfile, m_working_string;
 
 private slots:
     void SelectWorkingDir();

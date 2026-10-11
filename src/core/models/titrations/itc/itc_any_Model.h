@@ -26,9 +26,7 @@
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/titrations/AbstractItcModel.h"
-//#include "src/core/concentrationalpolynomial.h"
-
-class ConcentrationalPolynomial;
+#include "src/core/speciationengine.h"
 
 class itc_any_Model : public AbstractItcModel {
     Q_OBJECT
@@ -41,13 +39,20 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::itc_any; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return m_global_parametersize; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
     bool DefineModel() override;
+
+    /*! \brief itc_any always computes its species through the embedded SpeciationEngine, so it honours
+     * the "SpeciationSolver" key (LevMar/Newton vs. legacy BFGS) and enables the GUI switch. CG. */
+    bool UsesSpeciationEngine() const override { return m_speciation.isValid(); }
+
+    /*! \brief Store the optimizer config and push the "SpeciationSolver" method into m_speciation. CG. */
+    void setOptimizerConfig(const QJsonObject& config) override;
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -84,9 +89,15 @@ public:
     QString ParameterComment(int parameter) const override;
 
     QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-    QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+    // itc_any always drives speciation through the solver, so both its references always apply.
+    // Claude Generated.
+    inline QStringList CitationKeys() const override
+    {
+        return QStringList() << QStringLiteral("musketeer") << QStringLiteral("equilibrist");
+    }
+    inline bool UseDynamicParameterWidget() const override { return true; }
     inline virtual bool DemandInput() const { return true; }
 
     static QSharedPointer<AbstractModel> CreateModel(QPointer<DataClass> data)
@@ -95,12 +106,17 @@ public:
     }
 
 private:
-    inline int Index(int a, int b) const { return (a - 1) * m_maxB + (b - 1); }
+    /*! \brief Seed for lg beta of species \a speciesIndex, scaled to this titration's concentrations.
+     *
+     * The ITC counterpart of AbstractTitrationModel::GuessLgBeta - itc_any sits on the AbstractItcModel
+     * branch and so does not inherit it. Both share the formula via SpeciationEngine::GuessLgBeta and
+     * differ only in where the totals come from: here the cell/syringe protocol via m_c0.
+     * Claude Generated */
+    double GuessLgBeta(int speciesIndex) const;
 
     int m_global_parametersize = 0;
-    int m_maxA = 0, m_maxB = 0;
     QStringList m_global_names, m_species_names, m_local_names;
-    QVector<ConcentrationalPolynomial*> m_solvers;
+    SpeciationEngine m_speciation; ///< reaction system + BFGS solver (host + guest totals)
 
 protected:
     virtual void CalculateVariables() override;

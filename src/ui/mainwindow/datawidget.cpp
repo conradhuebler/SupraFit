@@ -50,6 +50,7 @@
 
 DataWidget::DataWidget()
     : m_system_parameter_loaded(false)
+    , dialog(nullptr) // Claude Generated: Initialize dialog pointer to nullptr for lazy initialization
 {
     m_widget = new QWidget;
     m_layout = new QGridLayout;
@@ -168,9 +169,22 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_data = dataclass;
     m_wrapper = wrapper;
 
+#ifdef DEBUG_ON
+    // Claude Generated: Debug output to track ChartWrapper population timing
+    auto strongWrapper = wrapper.toStrongRef();
+    if (strongWrapper) {
+        qDebug() << "📊 DataWidget::setData: ChartWrapper received with" << strongWrapper->SeriesSize() << "series";
+    } else {
+        qDebug() << "❌ DataWidget::setData: ChartWrapper is null!";
+    }
+#endif
+
     m_shift_begin->setDisabled(false);
 
-    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    // Claude Generated: Removed immediate dialog creation - now using lazy initialization
+    // This fixes the timing issue where dialog was created with empty ChartWrapper
+    // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+
     m_data.toStrongRef().data()->IndependentModel()->setSelectable(false);
     m_concentrations->setModel(m_data.toStrongRef().data()->IndependentModel());
 
@@ -198,14 +212,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.toStrongRef().data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.toStrongRef().data()->SeriesCount()));
 
-    // why was this here?
-    // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-    // dialog->UpdatePlots();
-
     QVBoxLayout* vlayout = new QVBoxLayout;
     for (int i = 0; i < m_wrapper.toStrongRef().data()->SeriesSize(); ++i) {
         QPointer<SignalElement> el = new SignalElement(m_data, m_wrapper, i, this);
-        connect(m_wrapper.toStrongRef().data()->Series(i), &QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
+        // Claude Generated: Removed direct dialog connection - will be established in getRegressionDialog()
+        // connect(m_wrapper.toStrongRef().data()->Series(i), &QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         connect(m_hide_points, &QPushButton::clicked, el, &SignalElement::HideSeries);
         vlayout->addWidget(el);
         if (m_data.toStrongRef().data()->Type() == DataClassPrivate::DataType::Simulation)
@@ -377,19 +388,67 @@ void DataWidget::ShowContextMenu(const QPoint& pos)
     emit recalculate();
 }
 
+// Claude Generated: Helper method for lazy dialog initialization
+RegressionAnalysisDialog* DataWidget::getRegressionDialog()
+{
+    if (!dialog) {
+        // Check that wrapper has data before creating dialog
+        auto wrapper = m_wrapper.toStrongRef();
+        if (wrapper && wrapper->SeriesSize() > 0) {
+#ifdef DEBUG_ON
+            qDebug() << "🎯 DataWidget::getRegressionDialog: Creating RegressionAnalysisDialog with ChartWrapper containing" << wrapper->SeriesSize() << "series";
+#endif
+            dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+
+            // Establish the series visibility connections that were removed from setData()
+            for (int i = 0; i < wrapper->SeriesSize(); ++i) {
+                if (wrapper->Series(i)) {
+                    connect(wrapper->Series(i), &QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
+                }
+            }
+        } else {
+#ifdef DEBUG_ON
+            qDebug() << "❌ DataWidget::getRegressionDialog: Cannot create dialog - ChartWrapper is empty or null";
+#endif
+        }
+    }
+    return dialog;
+}
+
 void DataWidget::HidePoint()
 {
-    m_wrapper.toStrongRef().data()->stopAnimiation();
-    m_wrapper.toStrongRef().data()->UpdateModel();
-    m_wrapper.toStrongRef().data()->restartAnimation();
-    dialog->UpdatePlots();
+    // Claude Generated: Add null pointer safety checks to prevent crashes
+    // This fixes crash #2: ChartWrapper::stopAnimiation (this=0x0)
+    auto wrapper = m_wrapper.toStrongRef();
+    if (!wrapper || !wrapper.data()) {
+        qWarning() << "DataWidget::HidePoint: ChartWrapper is null, skipping operations";
+        return;
+    }
+
+    wrapper.data()->stopAnimiation();
+    wrapper.data()->UpdateModel();
+    wrapper.data()->restartAnimation();
+
+    // Claude Generated: Use lazy initialization for dialog
+    auto regressionDialog = getRegressionDialog();
+    if (regressionDialog) {
+        regressionDialog->UpdatePlots();
+    }
 }
 
 
 void DataWidget::LinearAnalysis()
 {
-    dialog->show();
-    dialog->UpdatePlots();
+    // Claude Generated: Use lazy initialization for dialog
+    auto regressionDialog = getRegressionDialog();
+    if (regressionDialog) {
+        regressionDialog->show();
+        regressionDialog->UpdatePlots();
+    } else {
+#ifdef DEBUG_ON
+        qDebug() << "❌ DataWidget::LinearAnalysis: Cannot open regression dialog - ChartWrapper not ready";
+#endif
+    }
 }
 
 #include "datawidget.moc"

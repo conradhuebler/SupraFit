@@ -65,7 +65,7 @@ void uv_vis_ItoI_Model::InitialGuess_Private()
     Calculate();
 }
 
-void uv_vis_ItoI_Model::OptimizeParameters_Private()
+void uv_vis_ItoI_Model::CollectOptimizationParameters_Private()
 {
     QString host = getOption(Host);
     QString guest = getOption(Guest);
@@ -80,31 +80,49 @@ void uv_vis_ItoI_Model::OptimizeParameters_Private()
     addLocalParameter(2);
 }
 
-void uv_vis_ItoI_Model::CalculateVariables()
+void uv_vis_ItoI_Model::FillDesign()
 {
-    auto hostguest = getHostGuestPair();
-    qreal value = 0;
+    if (m_design.rows() != DataPoints() || m_design.cols() != 3)
+        m_design.resize(DataPoints(), 3);
+    const auto hostguest = getHostGuestPair();
+    const double hf = hostguest.first ? 1.0 : 0.0; // free host absorbs?
+    const double gf = hostguest.second ? 1.0 : 0.0; // free guest absorbs?
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;
         qreal guest = guest_0 - complex;
-
-        Vector vector(4);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
-
-        if (!m_fast)
+        m_design(i, 0) = host * hf; // free-host extinction column (eps_A)
+        m_design(i, 1) = guest * gf; // free-guest extinction column (eps_B)
+        m_design(i, 2) = complex; // complex extinction column (eps_AB)
+        if (!m_fast) {
+            Vector vector(4);
+            vector(0) = i + 1;
+            vector(1) = host;
+            vector(2) = guest_0 - complex;
+            vector(3) = complex;
             SetConcentration(i, vector);
-
-        for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(j, 0) * hostguest.first + guest * LocalTable()->data(j, 1) * hostguest.second + complex * LocalTable()->data(j, 2);
-            SetValue(i, j, value);
         }
     }
+}
+
+void uv_vis_ItoI_Model::CalculateVariables()
+{
+    FillDesign();
+    // Beer-Lambert absorbance = sum of concentration*extinction over the absorbing species. Same math
+    // as before, expressed through the shared design matrix (the host/guest columns already carry the
+    // "silent component" 0/1 multipliers).
+    for (int i = 0; i < DataPoints(); ++i)
+        for (int j = 0; j < SeriesCount(); ++j)
+            SetValue(i, j,
+                m_design(i, 0) * LocalTable()->data(j, 0) + m_design(i, 1) * LocalTable()->data(j, 1) + m_design(i, 2) * LocalTable()->data(j, 2));
+}
+
+void uv_vis_ItoI_Model::ProjectLinearParameters()
+{
+    FillDesign();
+    SolveLinearMasked(m_design);
 }
 
 QVector<qreal> uv_vis_ItoI_Model::DeCompose(int datapoint, int series) const
@@ -129,20 +147,10 @@ QVector<qreal> uv_vis_ItoI_Model::DeCompose(int datapoint, int series) const
 QSharedPointer<AbstractModel> uv_vis_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<uv_vis_ItoI_Model>(new uv_vis_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 
-QString uv_vis_ItoI_Model::ModelInfo() const
-{
-    QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
-
-    return result;
-}
 
 QString uv_vis_ItoI_Model::AdditionalOutput() const
 {
@@ -174,7 +182,6 @@ QString uv_vis_ItoI_Model::AdditionalOutput() const
     integral(0) /= end;
     integral(1) /= end;
     integral(2) /= end;
-    std::cout << integral.transpose() << std::endl;
 }
 
 QString uv_vis_ItoI_Model::ParameterComment(int parameter) const
@@ -183,26 +190,16 @@ QString uv_vis_ItoI_Model::ParameterComment(int parameter) const
     return QString("Reaction: A + B &#8652; AB");
 }
 
-QString uv_vis_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+
+
+BC50::ModelSystem uv_vis_ItoI_Model::BC50System() const
 {
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
-    return bc + result;
+    BC50::ModelSystem sys;
+    sys.stoich.resize(2, 1);
+    sys.stoich << 1, 1;
+    sys.lgBeta = { GlobalParameter(0) };
+    return sys;
 }
 
-QString uv_vis_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
-{
-    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
-
-    if (!forceAll)
-        return result;
-
-    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
-    return bc + result;
-}
 
 #include "uv_vis_1_1_Model.moc"

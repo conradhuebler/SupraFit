@@ -389,6 +389,7 @@ bool DataGenerator::EvaluateWithModel(int modelId, QPointer<DataClass> dataClass
         QString enhancedContent = createEnhancedContent(dataClass, originalContent, config, model);
         dataClass->setContent(enhancedContent);
     }
+    
 
     return true;
 }
@@ -542,6 +543,7 @@ QString DataGenerator::createEnhancedContent(QPointer<DataClass> dataClass, cons
     
     return content;
 }
+
 
 // Qt slots for JavaScript integration - Claude Generated
 double DataGenerator::generateControlledRandom(const QString& parameterName)

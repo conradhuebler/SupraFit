@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,18 +86,24 @@ public:
 
     inline double Frequency() const { return m_frequency; }
 
-    void LoadDefaultThermogram();
 
     void addOptionalSeries(const QList<QPointF>& series, const QString& name);
-
-signals:
-    void IntegrationChanged();
-    void CalibrationChanged(double value);
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
     void UpdatePeaks();
     void UpdateBaseLine();
+
+    /*! \brief Show `factor` in the cal->J combo without pushing it anywhere.
+     *
+     * The factor is owned by the ItcProcessor - experiment and dilution must share it - so this
+     * widget is only a view on it. Blocks the combo's own signal, so syncing the two widgets cannot
+     * feed back. Claude Generated */
+    void setScalingFactor(qreal factor);
+
+signals:
+    //! The user picked a new cal->J factor; the owner (ItcProcessor) decides what to do. Claude Generated
+    void ScalingFactorChanged(qreal factor);
 
 private:
     void LoadDefault();
@@ -108,7 +114,6 @@ private:
     void UpdateSeries();
     void ApplyParameter();
 
-    void ApplyCalibration();
     void ResetGuideLabel();
 
     void setGuideText(const QString& str);

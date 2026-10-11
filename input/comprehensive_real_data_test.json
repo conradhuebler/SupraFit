@@ -1,0 +1,223 @@
+{
+    "Main": {
+        "OutFile": "comprehensive_test",
+        "UseModularStructure": true,
+        "ProcessMLPipeline": true,
+        "FitModels": true,
+        "PostFitAnalysis": true
+    },
+    "Independent": {
+        "Source": "file",
+        "File": {
+            "Path": "input/1_1_1_2_001.dat",
+            "StartRow": 0,
+            "StartCol": 0,
+            "Rows": 20,
+            "Cols": 2
+        }
+    },
+    "Dependent": {
+        "Source": "file",
+        "File": {
+            "Path": "input/1_1_1_2_001.dat",
+            "StartRow": 0,
+            "StartCol": 2,
+            "Rows": 20,
+            "Cols": 7
+        }
+    },
+    "AddModels": {
+        "nmr_1_1": {
+            "ID": 1,
+            "Options": {
+                "FastMode": false,
+                "Convergency": 1e-8
+            },
+            "PostFitAnalysis": {
+                "enabled": true,
+                "methods": [
+                    {
+                        "Method": 1,
+                        "MaxSteps": 1000,
+                        "VarianceSource": 2,
+                        "RandomSeed": 12345
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 1,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 2,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 3,
+                        "X": 3,
+                        "MaxSteps": 30,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 6,
+                        "ReductionRuntype": 3
+                    }
+                ]
+            }
+        },
+        "nmr_1_1_1_2": {
+            "ID": 3,
+            "Options": {
+                "FastMode": false,
+                "Convergency": 1e-8
+            },
+            "PostFitAnalysis": {
+                "enabled": true,
+                "methods": [
+                    {
+                        "Method": 1,
+                        "MaxSteps": 1000,
+                        "VarianceSource": 2,
+                        "RandomSeed": 12345
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 1,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 2,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 3,
+                        "X": 3,
+                        "MaxSteps": 30,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 6,
+                        "ReductionRuntype": 3
+                    }
+                ]
+            }
+        },
+        "nmr_2_1_1_1": {
+            "ID": 2,
+            "Options": {
+                "FastMode": false,
+                "Convergency": 1e-8
+            },
+            "PostFitAnalysis": {
+                "enabled": true,
+                "methods": [
+                    {
+                        "Method": 1,
+                        "MaxSteps": 1000,
+                        "VarianceSource": 2,
+                        "RandomSeed": 12345
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 1,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 2,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 3,
+                        "X": 3,
+                        "MaxSteps": 30,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 6,
+                        "ReductionRuntype": 3
+                    }
+                ]
+            }
+        },
+        "nmr_2_1_1_1_1_2": {
+            "ID": 4,
+            "Options": {
+                "FastMode": false,
+                "Convergency": 1e-8
+            },
+            "PostFitAnalysis": {
+                "enabled": true,
+                "methods": [
+                    {
+                        "Method": 1,
+                        "MaxSteps": 1000,
+                        "VarianceSource": 2,
+                        "RandomSeed": 12345
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 1,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 2,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 2,
+                        "CXO": 3,
+                        "X": 3,
+                        "MaxSteps": 30,
+                        "Algorithm": 2
+                    },
+                    {
+                        "Method": 6,
+                        "ReductionRuntype": 3
+                    }
+                ]
+            }
+        }
+    },
+    "PostFitAnalysis": {
+        "enabled": true,
+        "methods": [
+            {
+                "Method": 1,
+                "MaxSteps": 2000,
+                "VarianceSource": 2,
+                "RandomSeed": 12345,
+                "EntropyBins": 50
+            },
+            {
+                "Method": 2,
+                "CXO": 1,
+                "Algorithm": 2
+            },
+            {
+                "Method": 2,
+                "CXO": 2,
+                "Algorithm": 2
+            },
+            {
+                "Method": 2,
+                "CXO": 3,
+                "X": 3,
+                "MaxSteps": 30,
+                "Algorithm": 2
+            },
+            {
+                "Method": 6,
+                "ReductionRuntype": 3
+            },
+            {
+                "Method": 3
+            }
+        ]
+    }
+}

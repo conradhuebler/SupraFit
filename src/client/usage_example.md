@@ -63,34 +63,25 @@ suprafit_cli -i data_file.suprafit
 
 ### 4. Single Pipeline Execution
 
+⚠️ **OBSOLETE - These C++ APIs are no longer available. Use CLI instead.**
+
 ```cpp
-#include "ml_pipeline_manager.h"
-#include "src/core/jsonhandler.h"
-
-// Create pipeline manager
-MLPipelineManager pipeline;
-
-// Load configuration
-QJsonObject config = JsonHandler::LoadFile("input/ml_pipeline_step1_generate.json");
-pipeline.runSinglePipeline("input/ml_pipeline_step1_generate.json");
+// DEPRECATED: MLPipelineManager and related classes have been removed
+// REASON: CLI-based execution via ProcessMLPipeline is more flexible
+// MIGRATION: Use suprafit_cli with JSON configuration files instead
 ```
 
 ### 2. Batch Processing
 
+⚠️ **PLANNED FEATURE - Not yet implemented**
+
+The following batch processing capability is planned for future implementation:
+
 ```cpp
-// Load batch configuration
-QJsonObject batchConfig = JsonHandler::LoadFile("input/ml_pipeline_batch_config.json");
-pipeline.setBatchConfig(batchConfig);
-
-// Set pipeline steps
-QStringList steps = {
-    "input/ml_pipeline_step1_generate.json",
-    "input/ml_pipeline_step2_analyze.json"
-};
-pipeline.setPipelineSteps(steps);
-
-// Run batch pipeline
-pipeline.runBatchPipeline();
+// PLANNED: Batch processing will be supported via:
+// - Multiple Repeat iterations in Main section
+// - Parallel execution with Threads configuration
+// STATUS: Use sequential JSON processing with CLI as workaround
 ```
 
 ## Command Line Usage
@@ -113,6 +104,22 @@ suprafit_cli -i input_file.dat -o output_file.json
 suprafit_cli -i test_data.suprafit
 ```
 
+### ML Pipeline Execution
+
+To run the ML pipeline, you need to add the `ProcessMLPipeline` key to the `Main` section of your input JSON file and set it to `true`.
+
+```json
+{
+  "Main": {
+    "ProcessMLPipeline": true,
+    ...
+  },
+  ...
+}
+```
+
+This will trigger the ML pipeline workflow in `suprafit_cli`.
+
 ### Generate Training Data
 
 ```bash
@@ -128,7 +135,9 @@ suprafit_cli --batch-config input/ml_pipeline_batch_config.json
 
 ### Output Structure
 
-The pipeline generates structured JSON files suitable for ML training:
+⚠️ **PLANNED FEATURE - Rich ML Features Not Yet Fully Implemented**
+
+The ML pipeline currently generates basic multi-project JSON files with fitted models and statistical analysis results. The following rich feature extraction format is planned for future implementation:
 
 ```json
 {
@@ -175,6 +184,8 @@ The pipeline generates structured JSON files suitable for ML training:
   ]
 }
 ```
+
+**Current Implementation**: The `-0-ml.json` output file contains the basic multi-project structure with fitted models and their statistical analysis results. Full feature extraction and flattening will be enhanced in future releases.
 
 ## Configuration Examples
 
@@ -500,3 +511,56 @@ The pipeline now correctly:
 - Provides comprehensive file analysis
 - Supports mathematical data generation
 - Uses clean, professional output formatting
+
+## General equilibria with self-aggregation (BFGS speciation solver)
+
+The flexible NMR model (`nmr_any`, model id 34) now supports **self-aggregation** of the host in
+addition to the classic mixed A_aB_b complexes. Free/equilibrium concentrations are computed by a
+general **BFGS speciation solver** (`src/core/concentrationsolver.h`) that works for arbitrary
+stoichiometry — a homo-dimer A₂ is simply a species with stoichiometry (2,0).
+
+### Defining the model
+
+The model definition (the "Define Model" block / `DefineModel` JSON) takes a single `Reactions`
+string: one reaction equation per line in arrow syntax, each defining a species as its formation
+from the free components (so the constant is the cumulative lg β).
+
+| Reactions line   | Species | Constant        |
+|------------------|---------|-----------------|
+| `A + B <=> AB`   | AB      | lg β(AB)        |
+| `2 A + B <=> A2B`| A₂B     | lg β(A₂B)       |
+| `2 A <=> A2`     | A₂      | lg β(A₂)        |
+| `A + C <=> AC`   | AC      | lg β(AC)        |
+
+Components are discovered in first-appearance order; species order follows the order of the reaction
+lines. The data must provide one independent concentration column per component (`itc_any` is the
+exception — host/guest totals come from the injection protocol). A "Concentration solver" option
+selects **BFGS** (default, general) or **Polynomial** (`EqnConc_2x`, 2-component grids only).
+
+### Example: complex formation with preceding dimerisation
+
+Host A dimerises and only the **monomer** binds the guest:
+
+```
+A + B <=> AB     (1:1 binding,       lg β(AB))
+2 A <=> A2       (self-aggregation,  lg β(A₂))
+```
+
+→ species `{AB, A₂}` (no A₂B). A large `lg β(A₂)` shifts the host into the dimer, which must
+dissociate before it can bind B.
+
+Runnable end-to-end verification lives in the test suite:
+
+```bash
+cd debug && ctest -R "BFGSSolverTest|NmrSelfAggregationTest" --output-on-failure
+```
+
+`test_concentrationsolver` checks the solver against the analytic 1:1 root, a closed-form homo-dimerisation
+and the grid `EqnConc_2x`; `test_nmr_selfaggregation` verifies the `nmr_any` grid path and the
+{AB, A₂} mass balance / dimer formation.
+
+### Reference
+
+The speciation method follows Daniil O. Soloviev and Christopher A. Hunter, *Musketeer: a software
+tool for the analysis of titration data*, Chem. Sci., 2024, **15**, 15299–15310,
+DOI [10.1039/d4sc03354j](https://doi.org/10.1039/d4sc03354j).

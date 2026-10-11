@@ -21,6 +21,8 @@
 
 #include "src/global.h"
 
+#include "src/core/bc50system.h"
+
 #include <Eigen/Dense>
 
 #include <QtCore/QDebug>
@@ -30,6 +32,7 @@
 #include <QtCore/QtMath>
 
 #include "dataclass.h"
+#include "model_statistics_store.h"
 
 struct ModelOption {
     QStringList values;
@@ -117,10 +120,13 @@ public:
      *  Reimplement this function and provide the correspondig enum in global.h */
     virtual SupraFit::Model SFModel() const override = 0;
 
-    /*! \brief set the OptimizationType to type and returns the Parameters
-     * 
-     */
-    QVector<qreal> OptimizeParameters();
+    /*! \brief Build the list of parameters to optimise and return their current values.
+     *
+     * NOTE: this does NOT run a fit — it (re)collects the global + local parameters into the
+     * internal optimisation vector (m_opt_para) and returns their current values. The actual
+     * minimisation is driven by Minimizer::Minimize() / NonLinearFitThread. Formerly named
+     * OptimizeParameters(), which misleadingly suggested it optimises. */
+    QVector<qreal> CollectOptimizationParameters();
 
     /*! \brief Set a json object to define some user definable stuff
      *
@@ -137,10 +143,9 @@ public:
      */
     virtual bool DefineModel() { return true; }
 
-    /*! \brief returns the Parameters used in optimisation
-     *
-     */
-    inline QVector<qreal> OptimizeParameters() const { return m_parameter; }
+    /*! \brief const overload: returns the cached optimisation-parameter values (m_parameter)
+     * without rebuilding the list. */
+    inline QVector<qreal> CollectOptimizationParameters() const { return m_parameter; }
 
     /*! \brief returns a pair of int
      *  first - index of parameter
@@ -288,6 +293,36 @@ public:
     {
     }
 
+    /*! \brief Whether this model supports the opt-in variable-projection (VarPro) fit solver, i.e. its
+     * observable is linear in the local parameters given the global (non-linear) parameters, so the
+     * locals can be projected out by linear least-squares. Default false → the classic full-vector
+     * Levenberg-Marquardt is used. Claude Generated. */
+    virtual bool SupportsVarPro() const { return false; }
+
+    /*! \brief Whether this model computes its equilibrium concentrations through the embedded
+     * SpeciationEngine (the reaction-driven *_any models) rather than a closed-form expression. Only
+     * these honour the "SpeciationSolver" optimizer-config key (LevMar/Newton vs. legacy BFGS); it gates
+     * the GUI switch. Default false. Claude Generated. */
+    virtual bool UsesSpeciationEngine() const { return false; }
+
+    /*! \brief VarPro projection step: given the current global parameters, solve the linear local
+     * parameters by (masked) least-squares and write them into LocalTable(). Called by the VarPro
+     * solver before each residual evaluation. Default no-op (only meaningful for SupportsVarPro()
+     * models). Claude Generated. */
+    virtual void ProjectLinearParameters() {}
+
+    /*! \brief Analytic VarPro outer Jacobian: fill @p jacobian with d(residual)/d(log10 β) at the
+     * current (already projected) linear locals, rows in getCalculatedAbsoluteErrors() order and columns
+     * in the order of the enabled global-parameter indices @p globalIndices. Returns false (default) if
+     * the model has no analytic Jacobian, so the VarPro solver finite-differences instead. Only meaningful
+     * for SupportsVarPro() models whose speciation uses the exact-Hessian Newton method. Claude Generated. */
+    virtual bool AnalyticVarProJacobian(const std::vector<int>& globalIndices, Eigen::MatrixXd& jacobian)
+    {
+        Q_UNUSED(globalIndices)
+        Q_UNUSED(jacobian)
+        return false;
+    }
+
     virtual inline int Color(int i) const { return i; }
 
 
@@ -342,17 +377,17 @@ public:
 
     int UpdateStatistic(const QJsonObject& object);
 
-    int getReductionStatisticResults() const { return m_reduction.size(); }
+    int getReductionStatisticResults() const { return m_stats.size(SupraFit::Method::Reduction); }
 
-    QJsonObject getFastConfidence() const { return m_fast_confidence; }
+    QJsonObject getFastConfidence() const { return m_stats.fastConfidence(); }
 
-    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
+    int getMoCoStatisticResult() const { return m_stats.size(SupraFit::Method::ModelComparison); }
 
-    int getWGStatisticResult() const { return m_wg_statistics.size(); }
+    int getWGStatisticResult() const { return m_stats.size(SupraFit::Method::WeakenedGridSearch); }
 
-    int getMCStatisticResult() const { return m_mc_statistics.size(); }
+    int getMCStatisticResult() const { return m_stats.size(SupraFit::Method::MonteCarlo); }
 
-    int getCVStatisticResult() const { return m_cv_statistics.size(); }
+    int getCVStatisticResult() const { return m_stats.size(SupraFit::Method::CrossValidation); }
 
     inline void setGlobalRandom(const QVector<QPair<qreal, qreal>>& random_global)
     {
@@ -545,7 +580,9 @@ public:
     inline DataTable* LocalTable() const { return m_local_parameter; }
 
     inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
-    inline void setOptimizerConfig(const QJsonObject& config)
+    /*! \brief Store the optimizer config. Virtual so models embedding a SpeciationEngine can push the
+     * "SpeciationSolver" method to their solver whenever the config changes. Claude Generated. */
+    virtual void setOptimizerConfig(const QJsonObject& config)
     {
         m_opt_config = config;
     }
@@ -582,6 +619,20 @@ public:
     /*! \brief return i global parameter
      */
     virtual inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
+
+    /*! \brief All global parameters as a plain vector.
+     *
+     * For the reaction-defined `*_any` models these are the cumulative lg beta, one per species,
+     * in the column order of the speciation stoichiometry matrix — which is what the BC50
+     * dispatcher expects. Claude Generated (2026). */
+    inline QVector<qreal> GlobalParameterVector() const
+    {
+        QVector<qreal> values;
+        values.reserve(GlobalParameterSize());
+        for (int i = 0; i < GlobalParameterSize(); ++i)
+            values << GlobalParameter(i);
+        return values;
+    }
 
     /*! \brief return the table of local parameter values, overloaded function
      */
@@ -697,6 +748,28 @@ public:
      * (or optimisation) - If there are demanding task, they should NOT go here */
     inline virtual QString ModelInfo() const { return QString(); }
 
+    /*! \brief The model's binding system for the BC50 machinery, or an empty descriptor.
+     *
+     * The single entry point through which every titration model tells the shared BC50 code what
+     * system it is (stoichiometry + cumulative lg beta per species). The titration base classes use
+     * it to append the BC50 block to ModelInfo / the post-processing reports, so there is one BC50
+     * code path instead of a hand-picked formula call per stoichiometry. Default: no BC50.
+     * Claude Generated (2026). */
+    virtual BC50::ModelSystem BC50System() const { return {}; }
+
+    /*! \brief Method-specific literature keys this model used beyond the base SupraFit citation
+     * (see the Citation namespace). Default: none. A model that routes speciation through the BFGS
+     * solver adds "musketeer". Claude Generated. */
+    inline virtual QStringList CitationKeys() const { return QStringList(); }
+
+    /*! \brief HTML "Please cite" block for this model (SupraFit + any method-specific citations from
+     * CitationKeys()); empty when no method-specific method was used. Claude Generated. */
+    QString CitationBlock() const;
+
+    /*! \brief Offer the scalable table-based parameter view (DynamicModelWidget) in the GUI. Default
+     * false (classic per-parameter widgets); the *_any models with many species opt in. CG. */
+    inline virtual bool UseDynamicParameterWidget() const { return false; }
+
     /*! \brief Implement AdditionalOutput() const for more optional calculation done on top of
      * the current model parameter, demaninding task (if any) should go here.
      * The output will be printed out in an extra dialog in the gui */
@@ -726,11 +799,11 @@ public:
 
     inline void RemoveOption(int key) { private_d->m_model_options.remove(key); }
 
-    inline void addSearchResult(const QJsonObject& search) { m_search_results << search; }
+    inline void addSearchResult(const QJsonObject& search) { m_stats.append(SupraFit::Method::GlobalSearch, search); }
 
-    inline int SearchSize() const { return m_search_results.size(); }
+    inline int SearchSize() const { return m_stats.size(SupraFit::Method::GlobalSearch); }
 
-    inline QJsonObject Search(int i) { return m_search_results[i]; }
+    inline QJsonObject Search(int i) { return m_stats.get(SupraFit::Method::GlobalSearch, i); }
 
     QString RandomInput(double indep, double dep) const;
 
@@ -854,6 +927,21 @@ private:
     QList<double> m_results_list, m_absolute_errors_list, m_squared_errors_list;
 
 protected:
+    /*! \brief Copy this model's state (data+parameters, active signals, locked parameters,
+     * optimizer config) into a freshly constructed \a clone. The shared tail of every model's
+     * Clone() (Claude Generated 2026, R4); subclasses only construct the concrete instance and
+     * append any model-specific step (e.g. setConcentrations, UpdateParameter). */
+    void finishClone(const QSharedPointer<AbstractModel>& clone, bool statistics);
+
+    /*! \brief Prepend the model-specific BC50 line to a post-processing report when detailed output
+     * is requested (Claude Generated 2026, R4). Behaviour-preserving factoring of the repeated
+     * per-model AnalyseMonteCarlo/AnalyseGridSearch tail (compute base analysis, then if forceAll
+     * prepend the BC50 string). */
+    QString prependBC50(const QString& analysis, bool forceAll, const QString& bc50) const
+    {
+        return forceAll ? bc50 + analysis : analysis;
+    }
+
     /*
      * This function handles the optimization flags, which get passed by
      * @param OptimizationType type
@@ -861,7 +949,7 @@ protected:
      * @return QVector<qreal>
      * 
      */
-    virtual void OptimizeParameters_Private();
+    virtual void CollectOptimizationParameters_Private();
 
     /* 
      * @param int i, int j and qreal value
@@ -900,14 +988,7 @@ protected:
     QVector<qreal> m_parameter, m_variance_series, m_mean_series;
     QVector<int> m_used_series;
 
-    QList<QJsonObject> m_mc_statistics;
-    QList<QJsonObject> m_cv_statistics;
-    QList<QJsonObject> m_wg_statistics;
-    QList<QJsonObject> m_moco_statistics;
-    QList<QJsonObject> m_search_results;
-    QList<QJsonObject> m_reduction;
-
-    QJsonObject m_fast_confidence;
+    ModelStatisticsStore m_stats; // post-processing results store (Claude Generated 2026, R2)
 
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
     int m_used_variables;

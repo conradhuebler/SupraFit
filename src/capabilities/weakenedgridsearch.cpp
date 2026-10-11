@@ -65,7 +65,7 @@ void WGSearchThread::run()
     m_ModelError = m_model.data()->SSE();
 
     QList<QPointF> series;
-    QVector<double> parameter = m_model.data()->OptimizeParameters();
+    QVector<double> parameter = m_model.data()->CollectOptimizationParameters();
     m_result["value"] = parameter[m_index];
     Calculate();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
@@ -78,7 +78,7 @@ void WGSearchThread::Calculate()
 
     QList<int> locked = m_model->LockedParameters();
 
-    QVector<qreal> param = m_model->OptimizeParameters();
+    QVector<qreal> param = m_model->CollectOptimizationParameters();
 
     locked[m_index] = 0;
 
@@ -188,7 +188,7 @@ bool WeakenedGridSearch::Run()
 
     int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
 
-    QVector<double> parameter = m_model.data()->OptimizeParameters();
+    QVector<double> parameter = m_model.data()->CollectOptimizationParameters();
 
     m_model.data()->Calculate();
     QList<QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>>> threads;

@@ -21,6 +21,7 @@
 #include "src/global_config.h"
 
 #include "src/core/models/datatable.h"
+#include "src/core/models/AbstractModel.h"
 #include "src/core/toolset.h"
 
 #include <Eigen/Dense>
@@ -93,8 +94,14 @@ DataClassPrivate::DataClassPrivate(int type)
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     : QSharedData(other)
-    , m_info(other.m_info)
+    , m_info(new DataClassPrivateObject) // own signal hub; must NOT share other's (~DataClassPrivate deletes it)
 {
+    // m_info is owned per-instance (the destructor deletes it), so a copy must create its own object.
+    // Sharing other.m_info made every copy alias the source's DataClassPrivateObject; when the copy was
+    // destroyed it deleted the source's m_info (a QPointer, so it silently went null), and a later
+    // `emit Info()->...` on the source then dereferenced null. This bit the Monte Carlo path, where
+    // Override*Table()->d.detach() deep-copies the project's DataClassPrivate per worker clone and the
+    // clones are destroyed after the run — nulling the live project's m_info. Claude Generated.
     m_systemObject = other.m_systemObject;
     m_uuid = other.m_uuid;
 
@@ -115,13 +122,12 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_begin_data = other.m_begin_data;
     m_end_data = other.m_end_data;
 
-    m_ref_counter++;
-
+    // QSharedData handles reference counting automatically
     // InitialiseCalculationModel();
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
-    : m_info(other->m_info)
+    : m_info(new DataClassPrivateObject) // own signal hub; see the reference copy ctor above. Claude Generated.
 {
     m_systemObject = other->m_systemObject;
     m_uuid = other->m_uuid;
@@ -143,35 +149,36 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_begin_data = other->m_begin_data;
     m_end_data = other->m_end_data;
 
-    m_ref_counter++;
+    // QSharedData handles reference counting automatically
 }
 
 DataClassPrivate::~DataClassPrivate()
 {
-    --m_ref_counter;
-    if (m_ref_counter < 1) {
-        if (m_independent_model)
-            delete m_independent_model;
-        if (m_dependent_model)
-            delete m_dependent_model;
-        if (m_info)
-            delete m_info;
-#ifdef _DEBUG
-        std::cout << "got away with it ..." << this << std::endl;
-#endif
-    }
-#ifdef _DEBUG
-    else
-        std::cout << "still someone having data: " << m_ref_counter << this << std::endl;
+    // QSharedData handles reference counting automatically
+    if (m_independent_model)
+        delete m_independent_model;
+    if (m_dependent_model)
+        delete m_dependent_model;
+    // The raw tables are owned by the private just like the models above (every ctor/copy-ctor allocates
+    // them with `new`), but were never freed -> a leak on every DataClass, and one per detach() copy in
+    // the Monte Carlo path. QPointer guards a table already deleted elsewhere. Claude Generated.
+    if (m_independent_raw_model)
+        delete m_independent_raw_model;
+    if (m_dependent_raw_model)
+        delete m_dependent_raw_model;
+    if (m_info)
+        delete m_info;
+#ifdef DEBUG_ON
+    qDebug() << "DataClassPrivate destroyed: " << this;
 #endif
 }
 
 
 void DataClassPrivate::check()
 {
-    std::cout << "Check of data " << std::endl;
-    std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount() << std::endl;
-    std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount() << std::endl;
+    qDebug() << "Check of data ";
+    qDebug() << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount();
+    qDebug() << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount();
 }
 
 DataClass::DataClass(QObject* parent)
@@ -225,6 +232,8 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
+    // Claude Generated - Properly clean up model storage containers to prevent exit crash
+    d->m_stored_models_by_pointer.clear();
 }
 
 void DataClass::NewUUID()
@@ -263,6 +272,8 @@ const QJsonObject DataClass::ExportData() const
     // json["independent_calculation"] = d->m_independent_calculation_model->ExportTable(true);
     // json["dependent_calculation"] = d->m_dependent_caclulation_model->ExportTable(true);
 
+    // Claude Generated - Fix system parameter export by syncing before export
+    const_cast<DataClass*>(this)->WriteSystemParameter();
     json["system"] = d->m_systemObject;
     json["DataType"] = d->m_datatype;
     json["SupraFit"] = qint_version;
@@ -271,6 +282,7 @@ const QJsonObject DataClass::ExportData() const
     json["uuid"] = d->m_uuid;
     json["git_commit"] = git_commit_hash;
     json["content"] = d->m_content;
+    json["root_dir"] = d->m_root_dir; // Claude Generated - Fix missing RootDir export
     json["timestamp"] = QDateTime::currentMSecsSinceEpoch();
     json["xaxis"] = m_plot_x;
     json["begin_data"] = DataBegin();
@@ -291,6 +303,8 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 
     d->m_systemObject = topjson["system"].toObject();
 
+    // Claude Generated - Load system parameters after importing JSON
+    LoadSystemParameter();
 
     d->m_independent_model->ImportTable(topjson["independent"].toObject());
     d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
@@ -316,8 +330,18 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     d->m_simulate_dependent = topjson["simulate_dependent"].toInt();
     d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
     d->m_raw_data = topjson["raw"].toObject();
+    
+    // Claude Generated - Preserve additional keys like "statistics" in raw data
+    QStringList preserveKeys = {"statistics", "analysis", "results", "metadata"};
+    for (const QString& key : preserveKeys) {
+        if (topjson.contains(key)) {
+            d->m_raw_data[key] = topjson[key];
+        }
+    }
+    
     d->m_title = topjson["title"].toString();
     d->m_content = topjson["content"].toString();
+    d->m_root_dir = topjson["root_dir"].toString(); // Claude Generated - Fix missing RootDir import
     m_plot_x = topjson["xaxis"].toBool();
 
     setDataBegin(topjson["begin_data"].toInt());
@@ -440,10 +464,23 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
 
 void DataClass::LoadSystemParameter()
 {
-    for (int index : getSystemParameterList()) {
-        if (d->m_systemObject[QString::number(index)].toString().isEmpty())
-            continue;
-        setSystemParameterValue(index, d->m_systemObject[QString::number(index)].toVariant());
+    // Claude Generated - Fix to iterate over JSON keys instead of existing parameters
+    for (auto it = d->m_systemObject.begin(); it != d->m_systemObject.end(); ++it) {
+        bool ok;
+        int index = it.key().toInt(&ok);
+        if (!ok) continue;
+        
+        if (it.value().toString().isEmpty()) continue;
+        
+        // Create parameter if it doesn't exist (this happens after import)
+        if (!d->m_system_parameter.contains(index)) {
+            // We need parameter type info, but we don't have it in JSON
+            // Default to Scalar type for imported parameters
+            addSystemParameter(index, QString("ImportedParam%1").arg(index), 
+                              QString("Imported parameter %1").arg(index), 
+                              SystemParameter::Scalar);
+        }
+        setSystemParameterValue(index, it.value().toVariant());
     }
 
     emit Info()->SystemParameterLoaded();
@@ -577,10 +614,38 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
 
 void DataClass::AddChildren(QPointer<DataClass> data)
 {
+    // Avoid registering the same child twice: an AbstractModel self-registers in its
+    // constructor through the shared DataClassPrivate, and addModel() adds it again -
+    // this previously produced duplicate model_X entries on load. - Claude Generated
+    if (d->m_children.contains(data))
+        return;
     d->m_children << data;
-    connect(data, &DataClass::Deleted, this, [this, data]() {
-        d->m_children.removeAll(data);
-#ifdef _DEBUG
+    // Claude Generated - Safe child removal using raw pointer comparison
+    DataClass* rawPtrForSignal = data.data();
+    connect(data, &DataClass::Deleted, this, [this, rawPtrForSignal]() {
+        // Claude Generated - Check if model is explicitly stored before removing
+        // Only remove from children if it's not in our stored models collection
+        bool isStoredModel = false;
+        AbstractModel* model = dynamic_cast<AbstractModel*>(rawPtrForSignal);
+        if (model && d->m_stored_models_by_pointer.contains(static_cast<void*>(model))) {
+            isStoredModel = true;
+        }
+        
+        if (!isStoredModel) {
+            // qDebug() << "🔍 DEBUG AddChildren: Removing child from m_children due to Deleted signal";
+            // Safe removal using iterator to avoid QPointer issues during destruction
+            auto it = d->m_children.begin();
+            while (it != d->m_children.end()) {
+                if (it->data() == rawPtrForSignal) {
+                    it = d->m_children.erase(it);
+                    break;
+                } else {
+                    ++it;
+                }
+            }
+        }
+        
+#ifdef DEBUG_ON
         qDebug() << d->m_children.size();
 #endif
     });
@@ -663,9 +728,16 @@ void DataClass::UpdateCheckedState()
     d->m_independent_model->setCheckedAll(false);
     d->m_dependent_model->setCheckedAll(false);
 
-    for (int i = DataBegin(); i < DataEnd(); ++i) {
-        d->m_independent_model->CheckRow(i, true);
-        d->m_dependent_model->CheckRow(i, true);
+    // Claude Generated - Add bounds checking to prevent segfault
+    int actualDataEnd = qMin(DataEnd(), DataPoints()); // Don't exceed actual table size
+    
+    for (int i = DataBegin(); i < actualDataEnd; ++i) {
+        if (i >= 0 && i < d->m_independent_model->rowCount()) {
+            d->m_independent_model->CheckRow(i, true);
+        }
+        if (i >= 0 && i < d->m_dependent_model->rowCount()) {
+            d->m_dependent_model->CheckRow(i, true);
+        }
     }
 }
 
@@ -684,4 +756,32 @@ void DataClass::ReReadCheckedState(int row, bool state)
     d->m_begin_data = first;
     d->m_end_data = last;
     emit DataRangedChanged();
+}
+
+void DataClass::addModel(QSharedPointer<AbstractModel> model)
+{
+    // Claude Generated for ProjectManager integration
+    if (!model)
+        return;
+
+    // CRITICAL FIX: Store the QSharedPointer to maintain object lifetime - Claude Generated
+    // Changed to pointer-based storage to handle multiple models with same ModelUUID
+    void* modelPtr = model.data();
+    if (!d->m_stored_models_by_pointer.contains(modelPtr)) {
+        d->m_stored_models_by_pointer[modelPtr] = model;
+    }
+
+    AddChildren(static_cast<DataClass*>(model.data()));
+}
+
+QSharedPointer<AbstractModel> DataClass::SharedModel(int i) const
+{
+    if (i < 0 || i >= d->m_children.size())
+        return QSharedPointer<AbstractModel>();
+    AbstractModel* model = dynamic_cast<AbstractModel*>(d->m_children[i].data());
+    if (!model)
+        return QSharedPointer<AbstractModel>();
+    // QMap::value returns a null QSharedPointer if the child was never registered via addModel()
+    // (e.g. a ctor self-registered child) - the caller then falls back to a non-owning handle.
+    return d->m_stored_models_by_pointer.value(static_cast<void*>(model));
 }

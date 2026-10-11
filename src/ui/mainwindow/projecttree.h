@@ -20,6 +20,7 @@
 #pragma once
 
 #include "src/core/models/dataclass.h"
+#include "src/core/projectmanager.h"
 
 #include "src/ui/guitools/mime.h"
 
@@ -112,6 +113,13 @@ private:
     QString m_instance;
     QModelIndex m_active_index;
     int m_active_row = -1;
+    
+    // Claude Generated - ProjectManager Integration Helper
+    /**
+     * @brief Get unified project list from ProjectManager or fallback to m_data_list
+     * @return Vector of weak pointers to DataClass objects
+     */
+    QVector<QWeakPointer<DataClass>> getUnifiedProjectList() const;
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);

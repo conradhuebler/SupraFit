@@ -162,10 +162,7 @@ qreal BETModel::PrintOutIndependent(int i) const
 QSharedPointer<AbstractModel> BETModel::Clone(bool statistics)
 {
     QSharedPointer<BETModel> model = QSharedPointer<BETModel>(new BETModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel(statistics));
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParameters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    finishClone(model, statistics);
     return model;
 }
 

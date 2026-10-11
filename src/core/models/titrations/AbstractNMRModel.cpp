@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,13 @@
  *
  */
 
+#include "src/core/bc50.h"
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/core/models/dataclass.h"
 
@@ -60,7 +62,6 @@ AbstractNMRModel::AbstractNMRModel(AbstractNMRModel* other)
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     m_ylabel = "&delta; /ppm";
-    m_T = other->m_T;
     m_HostAssignment = other->m_HostAssignment;
     connect(this, &AbstractModel::Recalculated, this, [this]() {
         emit this->ChartUpdated("Concentration Chart");
@@ -70,36 +71,11 @@ AbstractNMRModel::AbstractNMRModel(AbstractNMRModel* other)
 AbstractNMRModel::~AbstractNMRModel()
 {
 }
-/*
-void AbstractNMRModel::DeclareSystemParameter()
-{
-    const QString sub_char = QChar(0x2080);
 
-    addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
-    setSystemParameterValue(Temperature, 298);
-
-    addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    m_plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
-                               << QString("[G%1]").arg(sub_char)
-                               << "Number";
-    setSystemParameterList(PlotMode, m_plotmode);
-    setSystemParameterValue(PlotMode, m_plotmode[0]);
-
-    addSystemParameter(HostGuestAssignment, "Host Assignment", "Assign host concentration to", SystemParameter::List);
-    m_HostAssignmentList = QStringList() << "First column" << "Second column";
-    setSystemParameterList(HostGuestAssignment, m_HostAssignmentList);
-    setSystemParameterValue(HostGuestAssignment, m_HostAssignmentList[0]);
-}
-*/
-/*
-void AbstractNMRModel::UpdateParameter()
-{
-    m_T = getSystemParameter(Temperature).Double();
-    m_plotMode = getSystemParameter(PlotMode).getString();
-    m_HostAssignment = m_HostAssignmentList.indexOf(getSystemParameter(HostGuestAssignment).getString());
-    UpdateChart("concentration", m_plotMode, "c [mol/L]");
-}
-*/
+// Note: system parameters (Temperature, PlotMode, HostGuestAssignment) and the
+// UpdateParameter() slot that refreshes m_T/m_plotMode are inherited from
+// AbstractTitrationModel; NMR models deliberately do not override them so that a
+// changed Temperature system parameter propagates into getT() (and thus ΔG).
 void AbstractNMRModel::DeclareOptions()
 {
     QStringList host = QStringList() << "yes"
@@ -139,7 +115,7 @@ void AbstractNMRModel::SetConcentration(int i, const Vector& equilibrium)
     QStringList names = m_concentrations->header();
     names.removeFirst();
     addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
-    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
+    UpdateChart("Concentration Chart", m_plotMode, Units::concentrationAxis());
 }
 
 MassResults AbstractNMRModel::MassBalance(qreal A, qreal B)
@@ -195,6 +171,9 @@ QString AbstractNMRModel::ModelInfo() const
         result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
+    const BC50::ModelSystem sys = BC50System();
+    result += BC50::Format_FromSpeciation(sys.stoich, sys.lgBeta);
+
     return result;
 }
 
@@ -244,7 +223,8 @@ QString AbstractNMRModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::MonteCarlo2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
@@ -263,19 +243,18 @@ QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 
     result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
-    return result;
+    const BC50::ModelSystem sys = BC50System();
+    return prependBC50(result, forceAll, Statistic::GridSearch2BC50_Speciation(sys.stoich, sys.lgBeta, object));
 }
 
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(i, !m_HostAssignment);
+    return IndependentModel()->data(i, !m_HostAssignment);
 }
 
 qreal AbstractNMRModel::InitialHostConcentration(int i) const
 {
-#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
-    return d->m_independent_model->data(i, m_HostAssignment);
+    return IndependentModel()->data(i, m_HostAssignment);
 }
 
 qreal AbstractNMRModel::GuessK(int index)

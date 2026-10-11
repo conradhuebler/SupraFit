@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@
 #include <iostream>
 #include <random>
 
+#include "src/core/phasetiming.h"
+
 #include "montecarlostatistics.h"
 
 MonteCarloThread::MonteCarloThread()
@@ -69,7 +71,7 @@ void MonteCarloThread::run()
         return;
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "started!";
 #endif
     /*
@@ -81,7 +83,7 @@ void MonteCarloThread::run()
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);*/
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "started!";
 #endif
     m_fit_thread->setModel(m_model, false);
@@ -99,7 +101,7 @@ void MonteCarloThread::run()
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
 
-#ifdef _DEBUG
+#ifdef DEBUG_ON
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
 }
@@ -186,14 +188,20 @@ MonteCarloStatistics::~MonteCarloStatistics()
 bool MonteCarloStatistics::Run()
 {
     m_models.clear();
+    // Runs on the CALLING thread and allocates ~3 DataTables per step before the first worker starts,
+    // so it is wall time the progress bar never covers. Claude Generated.
     QVector<QPointer<MonteCarloBatch>> threads = GenerateData();
+    PhaseTiming::Mark(QStringLiteral("generate resampled data tables (single-threaded)"));
+
     while (m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
 
     m_multicore_time = QDateTime::currentMSecsSinceEpoch() - m_t0;
     // QCoreApplication::processEvents();
+    PhaseTiming::Mark(QStringLiteral("fit all resampled sets (threaded, progress bar)"));
 
     Collect(threads);
+    PhaseTiming::Mark(QStringLiteral("collect results + free data tables"));
     if (m_models.size() == 0)
         return false;
 
@@ -231,13 +239,21 @@ bool MonteCarloStatistics::Run()
         data["y"] = ToolSet::DoubleVec2String(y);
         m_results[i] = data;
     }
+    PhaseTiming::Mark(QStringLiteral("evaluate parameters (histograms, confidence)"));
 
     return true;
 }
 
 QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
-    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    // Claude Generated: Support configurable RandomSeed for reproducibility
+    qint64 seed;
+    if (m_controller.contains("RandomSeed")) {
+        seed = m_controller["RandomSeed"].toVariant().toLongLong();
+    } else {
+        seed = QDateTime::currentMSecsSinceEpoch();
+    }
+    qDebug() << m_controller << seed;
     rng.seed(seed);
     m_model->setFast(false);
     m_model->Calculate();
@@ -268,36 +284,56 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         else if (m_controller["VarianceSource"].toString() == "bootstrap")
             bootstrap = true;
     }
+    
+    // Claude Generated - Fix invalid negative or zero standard deviation
+    if (sigma <= 0.0) {
+        qDebug() << "Warning: Invalid sigma value" << sigma << "- using default 0.01";
+        sigma = 0.01;  // Use small positive default
+    }
+    qDebug() << "Using sigma:" << sigma;
     Phi = std::normal_distribution<double>(0, sigma);
 
     m_controller["Variance"] = sigma;
     int MaxSteps = m_controller["MaxSteps"].toInt();
 
     int maxthreads = qApp->instance()->property("threads").toInt();
+    if (maxthreads < 1)
+        maxthreads = 1; // property unset (e.g. headless/test context) -> avoid an integer div-by-zero. CG
     int blocksize = MaxSteps / maxthreads / 20;
     if (blocksize < 1)
         blocksize = 1;
 
     m_threadpool->setMaxThreadCount(maxthreads);
-
+    qDebug() << "Using" << maxthreads << "threads with blocksize" << blocksize;
     m_table = new DataTable(m_model->ModelTable());
     m_ptr_table << m_table;
     QVector<QPointer<MonteCarloBatch>> threads;
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorVector();
-    Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
-
+    
+    // Claude Generated - Fix invalid uniform_int_distribution range when vector is empty
+    if (vector.isEmpty()) {
+        qDebug() << "Warning: ErrorVector is empty - creating minimal distribution range";
+        Uni = std::uniform_int_distribution<int>(0, 0);  // Single point distribution
+    } else {
+        Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
+    }
+    qDebug() << "Using uniform distribution from 0 to" << vector.size() - 1;
     bool original = m_controller["OriginalData"].toBool();
 
     QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());
 
     QVector<std::normal_distribution<double>> indep_phi;
     for (int i = 0; i < indep_variance.size(); ++i) {
+        if (indep_variance[i] <= 0.0) {
+            continue;
+        }
+        qDebug() << "Independent variance for column" << i << ":" << indep_variance[i];
         std::normal_distribution<double> phi = std::normal_distribution<double>(0, indep_variance[i]);
         indep_phi << phi;
     }
     int thread_count = 1;
-#ifdef _DEBUG
+#ifdef DEBUG_ON
     qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
     QHash<int, Pair> block;

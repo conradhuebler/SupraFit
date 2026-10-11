@@ -38,11 +38,17 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::uv_vis_ItoI; }
 
-    virtual void OptimizeParameters_Private() override;
+    virtual void CollectOptimizationParameters_Private() override;
     inline int GlobalParameterSize() const override { return 1; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
+
+    // Beer-Lambert absorbance is linear in the extinction coefficients, so VarPro can project them.
+    // A silent host/guest just zeroes its design column (guest*0), so projecting it yields eps=0
+    // harmlessly - no gating needed here (user-locked locals remain a TODO). Claude Generated.
+    bool SupportsVarPro() const override { return true; }
+    void ProjectLinearParameters() override;
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -69,12 +75,9 @@ public:
     }
     virtual QString ParameterComment(int parameter) const override;
 
-    virtual QString ModelInfo() const override;
+    BC50::ModelSystem BC50System() const override;
 
     virtual QString AdditionalOutput() const override;
-
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
@@ -82,4 +85,10 @@ public:
 
 protected:
     virtual void CalculateVariables() override;
+
+private:
+    /*! \brief Fill m_design with the free-host, free-guest and complex extinction columns (silent
+     * components carry a 0 multiplier), shared by the signal and the VarPro projection. CG. */
+    void FillDesign();
+    Eigen::MatrixXd m_design;
 };

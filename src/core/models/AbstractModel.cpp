@@ -20,6 +20,7 @@
 #include "dataclass.h"
 
 #include "src/core/libmath.h"
+#include "src/core/citations.h"
 #include "src/core/toolset.h"
 #include "src/global.h"
 #include "src/version.h"
@@ -215,6 +216,16 @@ void AbstractModel::DefineModel(const QJsonObject &model)
 }
 */
 
+QString AbstractModel::CitationBlock() const
+{
+    const QStringList method = CitationKeys();
+    if (method.isEmpty())
+        return QString();
+    QStringList keys;
+    keys << QStringLiteral("suprafit") << method;
+    return Citation::FormatHtml(keys);
+}
+
 void AbstractModel::PrepareParameter(int global, int local)
 {
     if (SFModel() != SupraFit::MetaModel) {
@@ -279,7 +290,7 @@ AbstractModel::~AbstractModel()
     qDeleteAll(m_model_charts);
 
 #ifdef DEBUG_ON
-    std::cout << "Model to be deleted" << std::endl;
+    qDebug() << "Model to be deleted";
 #endif
 }
 
@@ -300,11 +311,11 @@ void AbstractModel::InitialiseRandom()
     emit Recalculated();
 }
 
-QVector<qreal> AbstractModel::OptimizeParameters()
+QVector<qreal> AbstractModel::CollectOptimizationParameters()
 {
     clearOptParameter();
 
-    OptimizeParameters_Private();
+    CollectOptimizationParameters_Private();
 
     QVector<qreal> variables;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -326,7 +337,7 @@ QVector<qreal> AbstractModel::OptimizeParameters()
     return variables;
 }
 
-void AbstractModel::OptimizeParameters_Private()
+void AbstractModel::CollectOptimizationParameters_Private()
 {
     for (int i = 0; i < GlobalParameterSize(); ++i)
         addGlobalParameter(i);
@@ -772,202 +783,31 @@ void AbstractModel::addLocalParameter(int i)
 
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
-    int index;
-    int match = 0;
-    bool duplicate = false;
-
-    QJsonObject controller = object["controller"].toObject();
-    switch (AccessCI(controller, "Method").toInt()) {
-    case SupraFit::Method::WeakenedGridSearch:
-
-        duplicate = false;
-        for (int i = 0; i < m_wg_statistics.size(); ++i) {
-            QJsonObject control = m_wg_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_wg_statistics[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_wg_statistics << object;
-        index = m_wg_statistics.lastIndexOf(object);
-        break;
-
-    case SupraFit::Method::ModelComparison:
-
-        duplicate = false;
-        for (int i = 0; i < m_moco_statistics.size(); ++i) {
-            QJsonObject control = m_moco_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_moco_statistics[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_moco_statistics << object;
-        index = m_moco_statistics.lastIndexOf(object);
-
-        break;
-
-    case SupraFit::Method::FastConfidence:
-        m_fast_confidence = object;
-        ParseFastConfidence(object);
-        index = 0;
-        break;
-
-    case SupraFit::Method::Reduction:
-        index = match;
-        for (int i = 0; i < m_reduction.size(); ++i) {
-            int RunType = m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt();
-            if (RunType == object["controller"].toObject()["ReductionRuntype"].toInt()) {
-                m_reduction[i] = object;
-                index = i;
-                match++;
-            }
-        }
-
-        if (match == 0)
-            m_reduction << object;
-
-        break;
-
-    case SupraFit::Method::GlobalSearch:
-
-        duplicate = false;
-        for (int i = 0; i < m_search_results.size(); ++i) {
-            QJsonObject control = m_search_results[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_search_results[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_search_results << object;
-        index = m_search_results.lastIndexOf(object);
-
-        break;
-
-    case SupraFit::Method::MonteCarlo:
-
-        duplicate = false;
-        for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            QJsonObject control = m_mc_statistics[i]["controller"].toObject();
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_mc_statistics[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_mc_statistics << object;
-        index = m_mc_statistics.lastIndexOf(object);
-        break;
-
-    case SupraFit::Method::CrossValidation:
-        duplicate = false;
-        for (int i = 0; i < m_cv_statistics.size(); ++i) {
-            QJsonObject control = m_cv_statistics[i]["controller"].toObject();
-
-            if (qFuzzyCompare(controller["timestamp"].toDouble(), control["timestamp"].toDouble())) {
-                duplicate = true;
-                m_cv_statistics[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_cv_statistics << object;
-        index = m_cv_statistics.lastIndexOf(object);
-        break;
-    }
+    const int method = AccessCI(object["controller"].toObject(), "Method").toInt();
+    bool fastConfidenceStored = false;
+    const int index = m_stats.update(static_cast<SupraFit::Method>(method), object, fastConfidenceStored);
+    if (fastConfidenceStored)
+        ParseFastConfidence(m_stats.fastConfidence()); // CRITICAL: Must parse FastConfidence data
     emit StatisticChanged();
     return index;
 }
 
 QJsonObject AbstractModel::getStatistic(SupraFit::Method type, int index) const
 {
-    switch (type) {
-    case SupraFit::Method::WeakenedGridSearch:
-        if (index < m_wg_statistics.size())
-            return m_wg_statistics[index];
-        break;
-
-    case SupraFit::Method::ModelComparison:
-        if (index < m_moco_statistics.size())
-            return m_moco_statistics[index];
-        break;
-
-    case SupraFit::Method::FastConfidence:
-        return m_fast_confidence;
-        break;
-
-    case SupraFit::Method::Reduction:
-        if (index < m_reduction.size())
-            return m_reduction[index];
-        break;
-
-    case SupraFit::Method::MonteCarlo:
-        if (index < m_mc_statistics.size())
-            return m_mc_statistics[index];
-        break;
-
-    case SupraFit::Method::CrossValidation:
-        if (index < m_cv_statistics.size())
-            return m_cv_statistics[index];
-        break;
-
-    case SupraFit::Method::GlobalSearch:
-        if (index < m_search_results.size())
-            return m_search_results[index];
-        break;
-    }
-    return QJsonObject();
+    return m_stats.get(type, index);
 }
 
 bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 {
-    switch (type) {
-    case SupraFit::Method::WeakenedGridSearch:
-        if (index < m_wg_statistics.size())
-            m_wg_statistics.takeAt(index);
-        else
-            return false;
-        break;
+    return m_stats.remove(type, index);
+}
 
-    case SupraFit::Method::ModelComparison:
-        if (index < m_moco_statistics.size())
-            m_moco_statistics.takeAt(index);
-        else
-            return false;
-        break;
-
-    case SupraFit::Method::FastConfidence:
-        m_fast_confidence = QJsonObject();
-        break;
-
-    case SupraFit::Method::Reduction:
-        if (index < m_reduction.size())
-            m_reduction.takeAt(index);
-        break;
-
-    case SupraFit::Method::MonteCarlo:
-        if (index < m_mc_statistics.size())
-            m_mc_statistics.takeAt(index);
-        else
-            return false;
-        break;
-    case SupraFit::Method::CrossValidation:
-        if (index < m_cv_statistics.size())
-            m_cv_statistics.takeAt(index);
-        else
-            return false;
-        break;
-
-    case SupraFit::Method::GlobalSearch:
-        if (index < m_search_results.size())
-            m_search_results.takeAt(index);
-        else
-            return false;
-        break;
-    }
-    return true;
+void AbstractModel::finishClone(const QSharedPointer<AbstractModel>& clone, bool statistics)
+{
+    clone->ImportModel(ExportModel(statistics));
+    clone->setActiveSignals(ActiveSignals());
+    clone->setLockedParameter(LockedParameters());
+    clone->setOptimizerConfig(getOptimizerConfig());
 }
 
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)
@@ -1053,125 +893,6 @@ QString AbstractModel::Local2Text() const
     return text;
 }
 
-QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
-{
-    QJsonObject json, toplevel;
-    QJsonObject optionObject;
-
-    json["globalParameter"] = GlobalTable()->ExportTable(true, private_d->m_enabled_global);
-    QJsonObject statisticObject;
-    QString help = "Please consider to \n(1) - Save the entry to a seperate file (via right click) and \n(2 - a) Remove the corresponding entry from the Results List or\n(2 - b) Drop the raw data for this result!";
-    if (statistics) {
-        int counter = 0;
-
-        QJsonValueRef ref = statisticObject[QString::number(counter)] = m_fast_confidence;
-        if (ref.isUndefined()) {
-            qWarning() << "Critical warning, statistic data are to large to be stored in file";
-            emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %1 in model %2 from data %3. %4").arg(SupraFit::Method::FastConfidence).arg(Name()).arg(ProjectTitle()).arg(help));
-            statisticObject.remove(QString::number(counter));
-        }
-
-        counter++;
-
-        auto SaveStatistic = [this, help](QJsonObject& statisticObject, const QList<QJsonObject>& data, int& counter) {
-            for (int i = 0; i < data.size(); ++i) {
-                QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
-                if (ref.isNull()) {
-                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(SupraFit::Method2Name(AccessCI(data[i]["controller"].toObject(), "Method").toInt())).arg(Name()).arg(ProjectTitle()).arg(help));
-                    statisticObject.remove(QString::number(counter));
-                }
-                counter++;
-            }
-        };
-
-        SaveStatistic(statisticObject, m_mc_statistics, counter);
-        SaveStatistic(statisticObject, m_cv_statistics, counter);
-        SaveStatistic(statisticObject, m_moco_statistics, counter);
-        SaveStatistic(statisticObject, m_wg_statistics, counter);
-        SaveStatistic(statisticObject, m_wg_statistics, counter);
-        SaveStatistic(statisticObject, m_search_results, counter);
-        SaveStatistic(statisticObject, m_reduction, counter);
-
-        json["methods"] = statisticObject;
-    }
-
-    QJsonObject globalBoundaries;
-    for (int i = 0; i < m_global_boundaries.size(); ++i) {
-        globalBoundaries[QString::number(i)] = ToolSet::DoubleVec2String(Boundary2Vector((m_global_boundaries[i])));
-    }
-    json["globalBoundaries"] = globalBoundaries;
-
-    json["localParameter"] = LocalTable()->ExportTable(true, private_d->m_enabled_local);
-
-    QJsonObject localBoundaries;
-    for (int j = 0; j < m_local_parameter->columnCount() && j < m_local_boundaries.size(); ++j) {
-        for (int i = 0; i < m_local_parameter->rowCount() && i < m_local_boundaries[j].size(); ++i) {
-            localBoundaries[QString::number(i) + "+" + QString::number(j)] = ToolSet::DoubleVec2String(Boundary2Vector(m_local_boundaries[j][i]));
-        }
-    }
-    json["localBoundaries"] = localBoundaries;
-
-    json["locked"] = ToolSet::IntVec2String(private_d->m_locked_parameters.toVector());
-    for (int index : getAllOptions())
-        optionObject[QString::number(index)] = getOption(index);
-
-    QJsonObject resultObject;
-    if (m_locked_model || locked) {
-        for (int i = 0; i < DataPoints(); ++i) {
-            resultObject[QString::number(i)] = ToolSet::DoubleList2String(ModelTable()->Row(i));
-        }
-    }
-    json["active_series"] = ToolSet::IntVec2String(m_active_signals.toVector());
-
-    toplevel["data"] = json;
-    toplevel["AppliedSeries"] = m_AppliedSeries;
-    toplevel["options"] = optionObject;
-    toplevel["model"] = SFModel();
-    toplevel["SupraFit"] = qint_version;
-    toplevel["SSE"] = m_sum_squares;
-    toplevel["SAE"] = m_sum_absolute;
-    toplevel["mean_error"] = m_mean;
-    toplevel["variance"] = m_variance;
-    toplevel["standard_error"] = m_stderror;
-    toplevel["converged"] = m_converged;
-    toplevel["valid"] = !isCorrupt();
-    toplevel["name"] = m_name;
-    QJsonObject definiton;
-    for (const QString& key : m_defined_model.keys()) {
-        definiton[key] = m_defined_model[key];
-    }
-
-    toplevel["ModelDefinition"] = definiton;
-    if (m_locked_model || locked) {
-#ifdef DEBUG_ON
-//         qDebug() << "Writing calculated data to json file";
-#endif
-        toplevel["locked_model"] = true;
-        toplevel["result"] = resultObject;
-    }
-
-    return toplevel;
-}
-
-QJsonObject AbstractModel::ExportStatistic(SupraFit::Method type, int index)
-{
-    QJsonObject blob = getStatistic(type, index);
-
-    if (blob.isEmpty())
-        return QJsonObject();
-    QJsonObject toplevel;
-    toplevel["data"] = ExportData();
-    QJsonObject model = ExportModel(false, false);
-    QJsonObject datablob = model["data"].toObject();
-    QJsonObject statisticObject;
-    statisticObject[QString::number(type) + ":0"] = blob;
-    datablob["methods"] = statisticObject;
-    model["data"] = datablob;
-    toplevel["model_0"] = model;
-
-    return toplevel;
-}
-
 bool AbstractModel::DropRawData(SupraFit::Method type, int index)
 {
     QJsonObject blob = getStatistic(type, index);
@@ -1207,365 +928,9 @@ void AbstractModel::setOptions(const QJsonObject& options)
         setOption(index, options[QString::number(index)].toString());
 }
 
-bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
-{
-#ifdef DEBUG_ON
-// quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#endif
-
-    QJsonObject json = topjson["data"].toObject();
-
-    if (topjson.contains("ModelDefinition")) {
-        QJsonObject model = topjson["ModelDefinition"].toObject();
-        for (const QString& key : model.keys()) {
-            m_defined_model.insert(key, model[key].toObject());
-        }
-        DefineModel(m_model_definition);
-    }
-
-    int copy_model = topjson["model"].toInt();
-    bool unsafe_copy = qApp->instance()->property("UnsafeCopy").toBool();
-
-    if (copy_model != SFModel()) {
-        if (!unsafe_copy) {
-            emit Info()->Message(QString("The two models don't fit. Unsafe copy is disabled on purpose. If you really want to do that, change the configuration in the Settings Dialog."));
-            return false;
-        } else {
-            emit Info()->Message(QString("The two models don't fit. Unsafe copy is enabled. Good Luck. - Statistical data will be ignored."));
-            override = false;
-        }
-    }
-
-    QList<int> active_signals;
-
-    GlobalTable()->ImportTable(json["globalParameter"].toObject());
-
-    setOptions(topjson["options"].toObject());
-
-    QStringList keys;
-    QJsonObject statisticObject;
-
-    keys = json["methods"].toObject().keys();
-    statisticObject = json["methods"].toObject();
-
-    if (override) {
-        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
-
-        if (!m_fast_confidence.isEmpty())
-            ParseFastConfidence(m_fast_confidence);
-
-        for (const QString& str : qAsConst(keys)) {
-            QJsonObject object = statisticObject[str].toObject();
-            QJsonObject controller = object["controller"].toObject();
-            if (controller.isEmpty())
-                continue;
-
-            UpdateStatistic(object);
-        }
-    }
-    private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
-
-    active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
-    LocalTable()->ImportTable(json["localParameter"].toObject());
-
-    if (isSimulation()) {
-        d->m_dependent_model = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
-        m_model_signal = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
-        m_model_error = new DataTable(IndependentModel()->rowCount(), d->m_simulate_dependent, this);
-    }
-    if (json.contains("globalBoundaries")) {
-        QJsonObject globalBoundaries = json["globalBoundaries"].toObject();
-        for (int i = 0; i < m_global_boundaries.size(); ++i) {
-            m_global_boundaries[i] = Vector2Boundary(ToolSet::String2DoubleVec(globalBoundaries[QString::number(i)].toString()));
-        }
-    }
-    if (json.contains("localBoundaries")) {
-        QJsonObject localBoundaries = json["localBoundaries"].toObject();
-        for (int j = 0; j < m_local_parameter->columnCount() && j < m_local_boundaries.size(); ++j) {
-            for (int i = 0; i < m_local_parameter->rowCount() && i < m_local_boundaries[j].size(); ++i) {
-                m_local_boundaries[j][i] = Vector2Boundary(ToolSet::String2DoubleVec(localBoundaries[QString::number(i) + "+" + QString::number(j)].toString()));
-            }
-        }
-    }
-    setActiveSignals(active_signals);
-
-    if (topjson.contains("locked_model")) {
-#ifdef DEBUG_ON
-//         qDebug() << "Loaded calculated data from json file";
-#endif
-        m_locked_model = true;
-        QJsonObject resultObject = topjson["result"].toObject();
-        QStringList keys = resultObject.keys();
-
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(
-            keys.begin(),
-            keys.end(),
-            [&collator](const QString& key1, const QString& key2) {
-                return collator.compare(key1, key2) < 0;
-            });
-        for (const QString& str : qAsConst(keys)) {
-            QVector<qreal> concentrationsVector, signalVector;
-            concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
-            int row = str.toInt();
-            if (ModelTable()->columnCount() == concentrationsVector.size())
-                ModelTable()->setRow(concentrationsVector, row);
-        }
-    }
-#ifdef DEBUG_ON
-    //  quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    //  qDebug() << "model imported within" << t1 - t0 << " msecs";
-#endif
-
-    m_sum_squares = topjson["SSE"].toInt();
-    m_sum_absolute = topjson["SAE"].toInt();
-    m_mean = topjson["mean_error"].toInt();
-    m_variance = topjson["variance"].toInt();
-    m_stderror = topjson["standard_error"].toInt();
-    m_converged = topjson["converged"].toBool();
-    m_AppliedSeries = topjson["AppliedSeries"].toInt(0);
-
-    // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
-    if (topjson.contains("name") && !unsafe_copy)
-        m_name = topjson["name"].toString();
-
-    /* Copy system parameter */
-    QJsonObject systemparameter = json["system"].toObject();
-#ifndef DEBUG_ON
-//    qDebug() << topjson["system"].toObject() << json["system"].toObject();
-#endif
-    for (int i = 0; i < SystemParameterCount(); ++i) {
-    }
-    emit ParameterChanged();
-
-    if (SFModel() != SupraFit::MetaModel)
-        Calculate();
-
-#ifdef DEBUG_ON
-    // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-    // qDebug() << "calculation took " << t2 - t1 << " msecs";
-#endif
-    return true;
-}
-
-bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
-{
-#ifdef DEBUG_ON
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#endif
-    if (topjson[Name()].isNull()) {
-        emit Info()->Warning("Sorry, this file doesn't contain any " + Name() + " model.");
-        qWarning() << "file doesn't contain any " + Name();
-        return false;
-    }
-    int fileversion = topjson["SupraFit"].toInt();
-
-    if (fileversion >= 2002 && fileversion <= qint_version)
-      return ImportModel(topjson, override);
-
-    if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {
-        if (fileversion >= qint_version) {
-            emit Info()->Warning("Sorry, I suppose I do not support this data. " + Name());
-            qWarning() << "No old data, but models dont fit, sorry";
-            return false;
-        }
-        emit Info()->Message("Models don't fit! But that seems to be ok, because it is an old SupraFit file.");
-    }
-
-    if (fileversion > qint_version) {
-        emit Info()->Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion));
-        qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2. Get the most recent version from <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a>").arg(qint_version).arg(fileversion);
-        return false;
-    }
-
-    QJsonObject json = topjson["data"].toObject();
-
-    QList<int> active_signals;
-    QList<qreal> constants;
-    QJsonObject globalParameter, optionObject;
-
-    if (fileversion < 1602) {
-        if (json.contains("globalParameter"))
-            globalParameter = json["globalParameter"].toObject();
-        else if (json.contains("constants"))
-            globalParameter = json["constants"].toObject();
-        else {
-            qWarning() << "No global parameter found!";
-        }
-        for (int i = 0; i < GlobalParameterSize(); ++i) {
-            (*GlobalTable())[i] = globalParameter[QString::number(i)].toString().toDouble();
-        }
-    } else
-        GlobalTable()->ImportTable(json["globalParameter"].toObject());
-
-    setOptions(topjson["options"].toObject());
-
-    QStringList keys;
-    QJsonObject statisticObject;
-
-    if (fileversion < 1607) {
-        keys = json["statistics"].toObject().keys();
-        statisticObject = json["statistics"].toObject();
-    } else {
-        keys = json["methods"].toObject().keys();
-        statisticObject = json["methods"].toObject();
-    }
-    if (keys.size() > 9) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(
-            keys.begin(),
-            keys.end(),
-            [&collator](const QString& key1, const QString& key2) {
-                return collator.compare(key1, key2) < 0;
-            });
-    }
-
-    if (override) {
-
-        if (fileversion < 1600) {
-            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject());
-            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject());
-            // m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
-            m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
-        }
-        if (fileversion < 1608) {
-            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::Reduction)].toObject());
-            //m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
-        }
-        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
-        //m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
-
-        if (!m_fast_confidence.isEmpty())
-            ParseFastConfidence(m_fast_confidence);
-
-        if (fileversion >= 1608) {
-            for (const QString& str : qAsConst(keys)) {
-                QJsonObject object = statisticObject[str].toObject();
-                QJsonObject controller = object["controller"].toObject();
-                if (controller.isEmpty())
-                    continue;
-
-                UpdateStatistic(object);
-            }
-        }
-    }
-
-    if (fileversion >= 1601) {
-        private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
-    }
-    if (fileversion < 1601) {
-        if (json.contains("localParameter")) {
-            /*
-         * Here goes (legacy) SupraFit 2 data handling
-        */
-            if (LocalParameterSize()) {
-                QJsonObject localParameter = json["localParameter"].toObject();
-                for (int i = 0; i < SeriesCount(); ++i) {
-                    QVector<qreal> localVector;
-                    if (!localParameter[QString::number(i)].isNull()) {
-                        localVector = ToolSet::String2DoubleVec(localParameter[QString::number(i)].toString());
-                        active_signals << 1;
-                    } else {
-                        localVector = QVector<qreal>(LocalParameterSize(), 0);
-                        active_signals << 0;
-                    }
-                    LocalTable()->setRow(localVector, i);
-                }
-            }
-        } else if (json.contains("pureShift")) {
-            /*
-             * This is SupraFit 1 legacy data handling
-             */
-            for (int i = 0; i < SeriesCount(); ++i) {
-                QVector<qreal> localSeries;
-                QJsonObject pureShiftObject = json["pureShift"].toObject();
-
-                localSeries << pureShiftObject[QString::number(i)].toString().toDouble();
-
-                if (!pureShiftObject[QString::number(i)].isNull())
-                    active_signals << 1;
-                else
-                    active_signals << 0;
-
-                for (int j = 0; j < GlobalParameterSize(); ++j) {
-                    QJsonObject object = json["shift_" + QString::number(j)].toObject();
-                    localSeries << object[QString::number(i)].toString().toDouble();
-                }
-                LocalTable()->setRow(localSeries, i);
-            }
-        }
-
-    } else {
-        active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
-        LocalTable()->ImportTable(json["localParameter"].toObject());
-    }
-    setActiveSignals(active_signals);
-
-    if (topjson.contains("locked_model")) {
-#ifdef DEBUG_ON
-//         qDebug() << "Loaded calculated data from json file";
-#endif
-        m_locked_model = true;
-        QJsonObject resultObject = topjson["result"].toObject();
-        QStringList keys = resultObject.keys();
-
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(
-            keys.begin(),
-            keys.end(),
-            [&collator](const QString& key1, const QString& key2) {
-                return collator.compare(key1, key2) < 0;
-            });
-        for (const QString& str : qAsConst(keys)) {
-            QVector<qreal> concentrationsVector, signalVector;
-            concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
-            int row = str.toInt();
-            if (ModelTable()->columnCount() == concentrationsVector.size())
-                ModelTable()->setRow(concentrationsVector, row);
-        }
-    }
-#ifdef DEBUG_ON
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "model imported within" << t1 - t0 << " msecs";
-#endif
-
-    m_sum_squares = topjson["SSE"].toInt();
-    m_sum_absolute = topjson["SAE"].toInt();
-    m_mean = topjson["mean_error"].toInt();
-    m_variance = topjson["variance"].toInt();
-    m_stderror = topjson["standard_error"].toInt();
-    m_converged = topjson["converged"].toBool();
-    // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
-    if (topjson.contains("name"))
-        m_name = topjson["name"].toString();
-    /*
-        if (d->m_independent_model->columnCount() != d->m_scaling.size())
-            for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-                d->m_scaling << 1;
-    */
-    if (SFModel() != SupraFit::MetaModel)
-        Calculate();
-
-#ifdef DEBUG_ON
-    quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "calculation took " << t2 - t1 << " msecs";
-#endif
-    return true;
-}
-
 void AbstractModel::clearStatistic()
 {
-    m_mc_statistics.clear();
-    m_cv_statistics.clear();
-    m_wg_statistics.clear();
-    m_moco_statistics.clear();
-    m_search_results.clear();
-    m_reduction.clear();
-
-    m_fast_confidence = QJsonObject();
+    m_stats.clear();
 }
 
 void AbstractModel::setOption(int index, const QString& value)
@@ -1573,7 +938,7 @@ void AbstractModel::setOption(int index, const QString& value)
     if (!private_d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
         return;
     private_d->m_model_options[index].value = value;
-    OptimizeParameters();
+    CollectOptimizationParameters();
     emit OptionChanged(index, value);
 }
 
@@ -1615,11 +980,7 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_active_signals = other.m_active_signals;
     private_d = other.private_d;
 
-    m_mc_statistics = other.m_mc_statistics;
-    m_wg_statistics = other.m_wg_statistics;
-    m_moco_statistics = other.m_moco_statistics;
-    m_reduction = other.m_reduction;
-    m_fast_confidence = other.m_fast_confidence;
+    m_stats.copyStatisticsFrom(other.m_stats);
 
     m_sum_absolute = other.m_sum_absolute;
     m_sum_squares = other.m_sum_squares;
@@ -1645,11 +1006,7 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_active_signals = other->m_active_signals;
     private_d = other->private_d;
 
-    m_mc_statistics = other->m_mc_statistics;
-    m_wg_statistics = other->m_wg_statistics;
-    m_moco_statistics = other->m_moco_statistics;
-    m_reduction = other->m_reduction;
-    m_fast_confidence = other->m_fast_confidence;
+    m_stats.copyStatisticsFrom(other->m_stats);
 
     m_sum_absolute = other->m_sum_absolute;
     m_sum_squares = other->m_sum_squares;

@@ -1,0 +1,358 @@
+# SupraFit – Technische Schuldanalyse
+
+**Stand:** 2026-07-02 · **Codebasis:** ~96.550 LOC, 316 `.cpp/.h` unter `src/`
+**Methode:** 3 Codebase-Sweeps (Hygiene, Architektur, Code-Qualität) + Faktenabgleich
+gegen den aktuellen Code (Marker-Counts, `wc -l`, `git status`, `git submodule`).
+Dieses Dokument ist die **Single Source of Truth** für technische Schuld und löst die
+älteren Root-MDs ab (siehe [Abgelöste Dokumente](#abgeloeste-dokumente)).
+
+> Zweck: (1) verifiziertes Schuld-**Inventar** mit Severity, (2) **Backlog** dessen,
+> was einen tieferen, eigenständigen Blick braucht, (3) **Quick Wins** zur Hygiene,
+> (4) **Bearbeitungsstand** bereits umgesetzter Fixes (§0) und **Deep-Dives** (§5).
+
+**Severity:** 🔴 Hoch (Risiko/blockiert Fortschritt) · 🟡 Mittel · 🟢 Niedrig (Hygiene)
+
+---
+
+## 0. Bearbeitungsstand — Branch `cleanup/cli-quick-wins` (2026-07-02)
+
+Umgesetzt (Commits auf dem Branch, noch **nicht** auf `master` gemerged):
+
+| Commit | Inhalt |
+|---|---|
+| `7f3d213d` | CLI-Cleanup: Debug-`std::cout` raus; tote Command-Pattern-Schicht (`cli_command_parser`/`dispatcher`, `main_refactored.cpp`) entfernt (B1/B5/B6/B8) |
+| `52b95406` | Docs auf Command-Pattern-Entfernung synchronisiert (`client`/`tests` CLAUDE.md, `REFACTORING_CLI.md`) |
+| `0995a221` | Core-Quick-Wins: tote `m_stored_models`-UUID-Map + 10 ungeschützte Debug-Traces in `dataclass.cpp` raus |
+| `685438d1` | **D2**: alle 12 MIGRATION POINTs auf ProjectManager-API migriert |
+| `cab3cd6a` | **Bug-Fix**: `saveProjectAsJson()` serialisiert Modelle → `-x` + Model-Tabelle funktionieren wieder |
+| `c23e25c7` | **Bug-Fix**: doppelte Model-Children beim Laden (COW-geteiltes `d` + Doppel-Add) |
+| `29792f97` | Legacy-Member `m_toplevel`/`m_data` vollständig entfernt |
+| `f3fee6f6` | Hygiene: `.gitignore` erweitert, 72 MB Output-Artefakte + Mode-Drift-Submodule bereinigt |
+| `693d7ce4` | **D6** runtergestuft (CuteChart/libpeakpick = eigene Forks, kein Risiko) |
+| `f830f417` | **D3**: `AnalysisReporter` extrahiert (ModelStatistics + 7 Reporting-Funktionen) |
+| `fde7efa0` | **D3**: `MlExport` extrahiert (ML-Trainingsdaten-Export) |
+| `ff816e5f` | **D4** (Struct): `ModelStatistics` in `core/model_statistics.h` konsolidiert (Duplikat weg) |
+| `505299d0` | **D1**: Baseline vermessen (11/26), Doku korrigiert; `test_projectmanager` Compile-Fixes |
+| `928fa1d8` | **D7**: `DEBUG_ON` an Compile-Definition gebunden · **D8**: 4 abgelöste Root-MDs entfernt |
+| _(uncommitted)_ | **God-Object-Split**: `core/analyse.cpp` → Compute-TU + `analyse_format.cpp` (Format-TU); Fassade `analyse.h` unverändert, verbatim-Move, Golden-`-x`-Diff identisch |
+
+Erledigt: **D2** (voll), **D6** (entschärft), **D4-Struct**, **D7** (DEBUG_ON), **D8** (Root-MDs),
+Teile von **C**, **D1** (Baseline) und **D3** (2 Klassen raus, −805 LOC). Details in §5.
+
+---
+
+## 1. Schuld-Inventar
+
+### A. Repo-Hygiene 🟢
+| Befund | Beleg | Aufwand |
+|---|---|---|
+| 38 untracked Artefakte im Tree (CLI-Outputs `*-0.json`/`*-0.suprafit`, kaputte Endungen `*.json-0suprafit`) | `git status` (44 Änderungen, 38 `??`) | S |
+| Große **untracked** Datenartefakte im Root (nicht committet, aber im Arbeitsbaum) | `best_fit_comparison-0.json` ≈23 MB, `simple_results-0.json` ≈2,4 MB | S |
+| Scratch-Quellen + kompiliertes Binary im Root | `debug_xor`, `debug_xor.cpp`, `test_ml_simple.cpp`, `test_training_simple.cpp` | S |
+| Tool-/Test-Caches im Tree | `.cache/` ≈11 MB (clangd), `Testing/`, `test_comprehensive_results/` | S |
+| Loses vendored Header statt Submodul/Unterordner | `external/exprtk.hpp` ≈1,6 MB | S |
+| `.gitignore`-Lücken für all das Obige | `.gitignore` | S |
+
+> Hinweis: `src/tests/build/` ist **korrekt gitignored** – kein Debt (frühere Notiz „committet" war falsch).
+
+### B. Submodul-Status 🟢 (kein Datenverlust-Risiko — eigene Forks)
+| Befund | Beleg | Severity |
+|---|---|---|
+| Lokale Edits in **eigenen Forks** (`github.com/conradhuebler/*`) — **gewollt/verwaltet**, nicht durch Upstream-Update gefährdet (Klarstellung Conrad, 2026-07-03) | `external/CuteChart` (`src/series.{h,cpp}`), `external/libpeakpick` (`mathhelper.h`) | 🟢 |
+| Gitlink **ohne** `.gitmodules`-Eintrag (9 Einträge, aber 10 Gitlinks) | `external/least-squares-cpp` = `160000`-Gitlink im Index; `submodule foreach` bricht ab | 🟡 |
+| ✅ Mode-/Script-Drift zurückgesetzt (Hygiene-Runde) | `external/ChaiScript`, `external/duktape`, `external/fmt` | ✅ |
+
+### C. Stehengebliebene ProjectManager-Migration 🔴
+| Befund | Beleg | Severity |
+|---|---|---|
+| ✅ **12 MIGRATION POINTs — erledigt** (`685438d1`): auf `getCurrentProject()`/`getProjectAsJson()` migriert; die vermuteten „fehlenden PM-APIs" waren über die vorhandene API abbildbar | `src/client/suprafit_cli.cpp` | ✅ |
+| Phase 2 (`TaskController`) und Phase 3 (`DataFactory`) **existieren nicht** – CLI/GUI duplizieren Job-Execution + Data-Generation | Roadmap-Ziele, keine Dateien vorhanden | 🔴 |
+| ✅ **`m_data`/`m_toplevel` entfernt** (`29792f97`); nur noch `m_data_vector` (Multi-Project-Export) übrig | `suprafit_cli.{h,cpp}` | 🟢 |
+| ✅ **`ModelStatistics`-Duplikat aufgelöst** (`ff816e5f`, `core/model_statistics.h`); Analyse-**Logik** noch parallel → `AnalysisManager`-Migration unvollständig (D4) | `analysis_manager.{h,cpp}`, `analysis_reporter.cpp` | 🟡 |
+| `JsonHandler::` in **20 Dateien** direkt aufgerufen trotz ProjectManager | `rg -l "JsonHandler::" src` = 20 | 🟡 |
+
+### D. God-Objects / Struktur 🟡
+| Datei | LOC | Rolle |
+|---|---|---|
+| `src/client/suprafit_cli.cpp` | 3.727 | größte Datei + höchste Marker-Dichte; Migrationsziel |
+| `src/ui/mainwindow/suprafitgui.cpp` | 2.553 | GUI-Controller/God-Object |
+| `src/core/models/AbstractModel.cpp` | 1.767 | Basis aller Modelle (R1+R2: Statistik-Store extrahiert, 2067→1767) |
+| `src/core/analyse.cpp` | 1.906 | gesamte Statistik-API (Compute + Formatierung gemischt) |
+| `src/core/toolset.cpp` | 1.407 | Grab-Bag-Utilities |
+| `src/core/projectmanager.cpp` | 1.133 | Migrations-Kern |
+| `src/core/analysis_manager.cpp` | 1.007 | überlappt CLI-Analyse-Code |
+
+- **`AbstractModel : public DataClass`** – jedes Modell *ist* ein voller Datencontainer (starke Basiskopplung).
+- **`DataClass`** – 73 Includes, zwei parallele Model-Storage-Maps (per UUID + per Pointer), live Debt-Marker `dataclass.h:206/217/228/244/404` (`#pragma message`, „will be removed").
+
+### E. Code-Qualität vs. CLAUDE.md-Regeln 🟡
+| Befund | Zahl / Beleg |
+|---|---|
+| `qDebug()` überwiegend **ungeschützt** (Regel: nur in `#ifdef DEBUG_ON`) | 825 gesamt; `suprafitgui.cpp` ≈133 / 1 Guard |
+| ✅ **`DEBUG_ON` jetzt an Compile-Definition gebunden** (D7) — Guards greifen bei `-DDEBUG_ON=ON` | `CMakeLists.txt` `if(DEBUG_ON) add_compile_definitions(DEBUG_ON)` |
+| `std::cout` in Produktionscode (Regel: `fmt` statt `std::cout`) | 363 (client 200, core 152, capabilities 7, ui 4; tests 0) |
+| Dead Files auf Disk, nicht im Build | `client/main_refactored.cpp`, `ui/guitools/chartwrapper_legacy.*`, `ui/widgets/modeldataholder.cpp` |
+| Nicht in CMake registrierte Tests | `tests/test_projectmanager.cpp`, `tests/test_neural_network_training.cpp` |
+| Marker gesamt | TODO 14, FIXME 9, HACK 0, „Claude Generated" 632 |
+
+### F. Build / Test / Sicherheit 🔴/🟡
+| Befund | Beleg | Severity |
+|---|---|---|
+| **`exprtk.hpp`-Download zur Configure-Zeit mit auskommentiertem Hash-Check** (Supply-Chain-Risiko) | `CMakeLists.txt:141-144` (`#EXPECTED_HASH …`) | 🔴 |
+| **Test-Gesundheit schwach** – Migration ohne grünes Sicherheitsnetz | `src/tests/CLAUDE.md`: 9/23 (39 %), `test_dataclass` Timeout | 🔴 |
+| Stale Qt5-Fragmente / kaputter `testing`-Block (referenziert nonexistente Targets) | `test/CMakeLists.txt`, `CMakeLists.txt:533-539` | 🟡 |
+| GUI unterdrückt Deprecated-Warnungen (inkonsistent zum Core) | `-Wno-deprecated-declarations` in `src/ui/CMakeLists.txt` | 🟢 |
+| Keine Sanitizer, kein globales `-Werror` (nur `-Werror=return-type`) | `CMakeLists.txt` | 🟢 |
+
+### ✅ Kein Debt (Positiv)
+Qt6-Deprecated-APIs praktisch eliminiert (0 `QRegExp`/`foreach`/`QLinkedList`) · Core nutzt
+`QSharedPointer` idiomatisch · CTest sauber registriert (27 Tests) · keine `#if 0`-Graveyards ·
+`src/tests/build/` korrekt gitignored.
+
+---
+
+## 2. Backlog – „tiefer zu analysieren"
+
+Reihenfolge = empfohlene Priorität. Jeder Punkt braucht eine eigene, tiefere Analyse
+(nicht mit einem mechanischen Fix erledigt).
+
+- **D1 – Test-Sicherheitsnetz zuerst** 🔴 *(Baseline 2026-07-03 vermessen)*
+  **Ist-Stand (ctest): 11/26 grün (42 %)**, nicht 9/23. Zwei Korrekturen zur alten Doku:
+  ✅ `test_dataclass` läuft **durch** (30s-Timeout reproduziert nicht mehr); `NeuralNetworkTest`
+  besteht standalone (12/0, ctest-Fail ist Working-Dir-Artefakt). Die 15 roten Tests sind
+  überwiegend **CLI-Tests** (rufen `suprafit_cli`-Binary auf, prüfen Ausgabe) mit **veralteten
+  Erwartungen** — pre-existing API/Output-Mismatch, keine Build-Fehler.
+  ⬜ Die 2 unregistrierten Tests sind **rewrite-level bit-rotted** (gegen alte APIs geschrieben,
+  nie kompiliert): `test_projectmanager.cpp` (kompiliert+linkt jetzt nach Fixes, aber die
+  Test-Daten passen nicht mehr zu `validateProjectJson`), `test_neural_network_training.cpp`
+  (ML-API-Drift). Registrierung = Test-Neuschreibung, kein Wiring.
+  *Nächster Schritt:* CLI-Test-Erwartungen an das aktuelle CLI-Verhalten anpassen (pro Test).
+  *Dateien:* `src/tests/`, `src/tests/CMakeLists.txt`, `src/tests/CLAUDE.md`.
+
+- **D2 – ProjectManager-API-Lücken** ✅ **ERLEDIGT** (`685438d1`, `cab3cd6a`, `c23e25c7`, `29792f97`)
+  Statt neuer Fassaden-Methoden ließen sich alle 12 MIGRATION POINTs über die **vorhandene**
+  PM-API (`getCurrentProject()` für DataClass, `getProjectAsJson()` für JSON) lösen. Dabei zwei
+  vorbestehende Bugs gefixt: `saveProjectAsJson()` verwarf Modelle; Modelle wurden beim Laden
+  doppelt als Children eingetragen. Legacy-Member `m_toplevel`/`m_data` anschließend entfernt.
+
+- **D3 – `suprafit_cli.cpp`-Zerlegung** 🟡 *(in Arbeit — 3654 → 2585 LOC)*
+  Command-Pattern-Ballast entfernt (`7f3d213d`); drei stateless Helfer ausgelagert:
+  `AnalysisReporter` (`f830f417`), `MlExport` (`fde7efa0`) und **`DataFactory`** (2026-07-06):
+  die 4 puren Daten-Tabellen-Builder (`validateDataGeneratorConfig`/`generateIndependentDataTable`/
+  `loadDataTableFromFile`/`applyNoise`, −256 LOC) sind jetzt statische `DataFactory`-Methoden;
+  die `GenerateData*`-Orchestratoren delegieren. Golden-Diff (deterministischer ML-Pipeline-Lauf):
+  generierte+gefittete Daten **byte-identisch**. ⬜ Verbleibend: die member-gekoppelten Reste
+  (`generateDependentDataTable` schreibt `m_modelContent`/`m_mlRawData`; die `GenerateData*`-
+  Orchestratoren; `TaskRunner` = Work/PerformeJobs; `MlPipeline`) — brauchen State-Passing-Design.
+  Dabei gefunden: **ML-Export ist vorbestehend kaputt** (speichert Trainings-JSON via
+  `createProjectFromJson`, das Nicht-Projekt-JSON ablehnt). Siehe §5.1.
+
+  **In-Code-Marker (2026-07-06):** die verbleibenden Cluster sind in `suprafit_cli.h` mit
+  `// REFACTOR(D3-<Cluster>)` gekennzeichnet — `grep -rn "REFACTOR(D3"` findet die Baustellen.
+  Konvention: *wer eine markierte Signatur anfasst, geht die dort notierte Extraktion gleich mit an.*
+
+  **GUI-Overlap-Map** *(welcher GUI-Refactor-Schritt welche Extraktion mitplant)* — die GUI teilt
+  bereits `JobManager`/`DataGenerator`/`ProjectManager`/`CreateModel`, **dupliziert** aber Job-
+  Orchestrierung und Ergebnis-Anzeige:
+
+  | D3-Cluster (CLI) | GUI-Gegenstück (teilt Logik) | mitplanen beim GUI-Schritt |
+  |---|---|---|
+  | **TaskRunner** (`Work`/`PerformeJobs`) | `metamodelwidget`/`modeldataholder` fahren `JobManager` **direkt** (parallele Orchestrierung) | Refactor der Fit-/Statistik-UI → **gemeinsamer `TaskController`** über `JobManager` (der bestehende Vision-Wunsch); CLI+GUI nutzen ihn |
+  | **MlPipeline** (`FitModelsToData` u.a.) | GUI hat keine ML-Pipeline, teilt aber Fit-/Statistik-Substrat (`Minimizer`, `AnalysisManager`) | wenn Fit-/Ergebnis-Layer angefasst → `FitModelsToData`-Duplikat gegen `AnalysisManager::fitModelsToData` auflösen |
+  | **Analyse-Anzeige** (`AnalysisManager`/`AnalysisReporter`) | GUI-Results-Widgets zeigen Statistik **eigenständig** (nutzen `AnalysisManager` **nicht**) | Refactor der Ergebnis-/Analyse-Anzeige → GUI konsumiert `AnalysisManager::extractModelStatistics` (eine Quelle) |
+  | **DataFactory**-Orchestratoren | `generatedatadialog` wrappt `DataGenerator` selbst | Refactor des Datengenerierungs-Dialogs → über `DataFactory` routen |
+
+  *Kurz:* Der große GUI-Refactor ist der natürliche Hebel, um CLI/GUI-Duplikate (Jobs, Analyse-
+  Anzeige, Datengenerierung) an **eine** geteilte Schicht zu ziehen, statt sie separat zu
+  dekomponieren. Reihenfolge-Empfehlung: `TaskController` zuerst (größter geteilter Nutzen).
+
+- **D4 – `AnalysisManager`-Konsolidierung** 🟢 *(Struct + Logik erledigt)*
+  ✅ **Struct**: `ModelStatistics` in `src/core/model_statistics.h` konsolidiert (`ff816e5f`).
+  ✅ **Logik (Operator-Entscheidung: AnalysisManager autoritativ)**: Die doppelte
+  `extractModelStatistics` (identisch in `AnalysisManager` **und** `AnalysisReporter`) auf **eine**
+  autoritative Kern-Implementierung reduziert — `AnalysisManager::extractModelStatistics` ist jetzt
+  public und wird von `displayAnalysisResults` aufgerufen; `AnalysisReporter` **rendert nur noch**
+  (`displayModelStatisticsTable`/`displayPostProcessingDetails`), sein Duplikat-Extraktor ist gelöscht.
+  Golden-Diff der CLI-Ausgabe (`--show-post-processing`) **inhaltlich identisch** (nur Zeitstempel).
+  ✅ **Fit-Pfad**: `fitModelsToData`/`fitSingleModel` fittet jetzt echt (`Minimizer::Minimize()` statt
+  nur `Calculate()`), per ML-Pipeline-Lauf verifiziert. **D4 komplett.**
+
+- **D5 – `AbstractModel : DataClass`-Vererbung** 🟡
+  - ✅ **D5a (erledigt)**: Encapsulation-Leak versiegelt — kein `d->`-Direktzugriff auf Basis-Interna
+    mehr aus Modellen (via `SimulateDependent()`/`ResetDependentModel()`, s. §5.2). Die „zwei parallelen
+    Storage-Maps" waren bereits Geschichte (UUID-Map in `0995a221` entfernt; nur noch
+    `m_stored_models_by_pointer`).
+  - ⏸️ **D5b (bewusst vertagt, 2026-07-05)**: Ist „Model *ist* Datencontainer" die richtige Beziehung? Der
+    Wechsel Vererbung→Komposition (`AbstractModel` *hat* ein `DataClass`) ist ein **großer Umbau**:
+    jeder `DataClass`-API-Konsument, der ein Modell als Datencontainer behandelt (Projekt-Tree,
+    `ExportData`/`Size`/`SeriesCount`, GUI), müsste angefasst werden. Bewusst als Entscheidung offen —
+    nicht reflexartig umlegen. Nutzen für einen Wissenschafts-Codebase fraglich, Risiko hoch.
+
+- **D6 – Submodul-Konsistenz** ✅ *(erledigt)*
+  CuteChart/libpeakpick sind Conrads eigene Forks; die Edits sind gewollt. Der verwaiste
+  Gitlink `external/least-squares-cpp` (im Index, aber **ohne** `.gitmodules`-Eintrag — Rest des
+  toten `LeastSquaresRookfighter`-Experiments, von keinem Build/Include genutzt) ist entfernt
+  (`git rm --cached`). Jetzt 9 Gitlinks = 9 `.gitmodules`-Einträge; er hatte das CI-`checkout
+  --recurse-submodules` zum Scheitern gebracht.
+
+- **D7 – Logging-/DEBUG_ON-Strategie** 🟢 *(Spam-Flut beseitigt)*
+  ✅ **`DEBUG_ON` an Compile-Definition gebunden** (`if(DEBUG_ON) add_compile_definitions(DEBUG_ON)`).
+  ✅ **Debug-Flut abgeschaltet** (2026-07-05): (1) `QT_NO_DEBUG_OUTPUT` wird gesetzt, wenn `DEBUG_ON`
+  aus ist → **alle ~150 `qDebug()`** werden im Normal-Build wegkompiliert (eine CMake-Zeile, null
+  Source-Edits; `qWarning`/`qInfo` unberührt). (2) Neues `SFDebugPrint(...)`-Makro (`global.h`):
+  `fmt::print` unter `DEBUG_ON`, sonst no-op — die 67 `fmt::print("… DEBUG …")`-Traces (projectmanager/
+  analysis_manager/suprafit_cli) laufen jetzt darüber. **Verifiziert**: ML-Pipeline-Lauf 137→81 Zeilen,
+  0 `Debug:`-/`DEBUG`-Zeilen. ✅ **Falsches Debug-Makro korrigiert**: 25 `#ifdef _DEBUG`-Direktiven
+  (falsches Makro, nie kompiliert) → `#ifdef DEBUG_ON` in 12 Dateien; per **DEBUG_ON-Build verifiziert**
+  (reaktivierte Blöcke kompilieren, kein Bit-Rot; DEBUG_ON-Referenz-Test grün). ✅ **`std::cout`-Reste
+  bereinigt**: forgotten per-Datenpunkt-Debug-Dumps (`std::cout << host`, `<< integral.transpose()`,
+  „lala") gelöscht; einfache Debug-Zeilen → `qDebug` (auto-silenced), ThermogramHandler-Diagnosen →
+  `qWarning` (sichtbar); Eigen-Matrix-Dumps (kein `fmt`/`qDebug`-Formatter) in `#ifdef DEBUG_ON`
+  gekapselt (`DataTable::Debug`, `cxxcluster::PrintMatrix`, `DuktapeModelInterpreter::Update`). **Kein
+  ungeguardetes always-on `std::cout` mehr im Core.** **D7 & §5.2 komplett.**
+
+- **D8 – Doc-Konsolidierung** 🟢 *(Root-Sprawl erledigt)*
+  ✅ Die 4 abgelösten Root-MDs entfernt (Inhalt in diesem Dokument konsolidiert). ⬜ Verbleibend:
+  `docs/outdated/`-Graveyard (~18 tracked Dateien) — eigener Aufräum-Commit.
+
+- **D9 – Fenster-agnostischer Projektspeicher** 🟡 *(GUI-Regression der Jan-2025-ProjectManager-Konsolidierung)*
+  `SupraFit::ProjectManager` ist ein **prozessweites Singleton**; jedes zweite Fenster (`NewWindow()` →
+  `new SupraFitGui`) zeigt dieselben Projekte. Zwei Hälften: (1) der Baum liest global —
+  `ProjectTree::getUnifiedProjectList()` (`projecttree.cpp:31`) → `instance().getLoadedProjectIds()`,
+  ohne Fenster-Filter; (2) Signal-Fan-out — jeder `SupraFitGui`-Ktor verbindet sich mit denselben
+  Singleton-Signalen (`suprafitgui.cpp:175`), also reagieren beide Fenster auf jeden Load. *Empfehlung
+  (Rang 1):* `ProjectManager` instanzierbar machen, jedes `SupraFitGui` bekommt eine eigene Instanz
+  (`instance()` bleibt für CLI/Tests); Manager-Pointer durch `ProjectTree`/`MainWindow`/`ModelDataHolder`
+  reichen (die hardcoden `instance()`: `mainwindow.cpp:138`, `modeldataholder.cpp:538,857,949,1423`).
+  App-weite `qApp`-Properties (threads, Settings) bleiben geteilt. Rang 2: Singleton behalten, Projekte
+  Owner-Window-tagged filtern. Rang 3 (Stopgap): Baum wieder aus per-Fenster `m_data_list` — behebt nur
+  die Dopplung, nicht den Signal-Fan-out. Full analysis: `SESSION_HANDOFF.md`.
+
+---
+
+## 3. Quick Wins (Hygiene, geringes Risiko)
+
+Kein tiefer Blick nötig – kann als eigener Aufräum-Commit laufen:
+
+1. `.gitignore` erweitern: `.cache/`, `Testing/`, `test_comprehensive_results/`,
+   CLI-Output-Muster (`*-0.json`, `*-0.suprafit`, `*.json-0suprafit`, `*suprafit`),
+   Root-Scratch (`test_*.cpp`, `debug_*`).
+2. Scratch-Dateien/Binaries entfernen: `debug_xor`, `debug_xor.cpp`, `test_ml_simple.cpp`,
+   `test_training_simple.cpp`.
+3. Große untracked Datenartefakte aus dem Arbeitsbaum verschieben/löschen
+   (`best_fit_comparison-0.json` ≈23 MB, `simple_results-0.json`, `examples/ml_pipeline/*`-Outputs, `input/*`-Outputs).
+4. Mode-only-Submodule zurücksetzen (`git submodule foreach git checkout .` für
+   ChaiScript/duktape/fmt – **nicht** CuteChart/libpeakpick, siehe D6).
+5. `external/exprtk.hpp` in Unterordner verschieben oder als Submodul führen.
+
+---
+
+## <a id="abgeloeste-dokumente"></a>4. Abgelöste Dokumente
+
+✅ **Erledigt (D8):** Die folgenden untracked Root-MDs waren durch dieses Dokument abgelöst
+(Relevantes übernommen) und wurden **entfernt**:
+
+- ~~`ARCHITECTURE_CONSOLIDATION_ROADMAP.md`~~
+- ~~`MIGRATION_POINT_ANALYSIS.md`~~
+- ~~`MIGRATION_POINT_SUMMARY.md`~~
+- ~~`PROJECTMANAGER_ANALYSIS_INDEX.md`~~
+
+---
+
+## 5. Deep-Dives
+
+Code-verifizierte Detailanalysen. Status: ✅ erledigt · ⬜ offen.
+
+### 5.1 CLI (`src/client/`)
+
+- ✅ **Command-Pattern war tote Fracht**: `cli_command_parser`/`cli_command_dispatcher` wurden
+  kompiliert, aber nie ins gebaute `main.cpp` verdrahtet (das nutzt direkt `QCommandLineParser`);
+  `main_refactored.cpp` war gar nicht im Build. Alles entfernt (`7f3d213d`).
+- ✅ **Ungeschützte DEBUG-`std::cout`** in `setInFile`/`LoadFile` (Emoji-Traces auf stdout bei
+  jedem Aufruf) — entfernt.
+- ✅ **12 MIGRATION POINTs** (Legacy `m_toplevel`/`m_data`-Reads) → ProjectManager-API (`685438d1`);
+  Member entfernt (`29792f97`).
+- ✅ **`-x` / Model-Tabelle waren leer**, weil `getProjectAsJson()` keine Modelle enthielt
+  (`saveProjectAsJson`-Bug) — gefixt (`cab3cd6a`).
+- ⬜ **`SupraFitCli` bleibt God-Klasse** (~3,6k LOC, ~8 Rollen) → D3 (DataFactory / TaskRunner /
+  AnalysisReporter / MlPipeline / MlExport).
+- ✅ **`ModelStatistics`-Duplikat** (Struct `ff816e5f` + Extraktions-Logik D4) aufgelöst.
+- ⬜ **`m_data_vector`** noch als Legacy-State übrig (Multi-Project-Export).
+- ⬜ Zweiter Entry-Point `ml_cli_main.cpp` + Stray-Test `client/test_ml_pipeline.cpp`.
+
+### 5.2 Core (`src/core/`)
+
+- ✅ **`saveProjectAsJson()` verwarf Modelle** (`{"data": …}` ohne `model_X`) → nun via
+  `DataClass::ExportChildren()` vollständig (`cab3cd6a`).
+- ✅ **Model-Duplikation beim Laden**: `AbstractModel : DataClass(project)` teilt `d` (COW,
+  `dataclass.cpp:208` `d = other->d`); Ctor-`AddChildren(this)` + `addModel()` trugen das Modell
+  doppelt ein → Dedup-Guard in `AddChildren` (`c23e25c7`).
+- ✅ **Tote `m_stored_models`-UUID-Map** in `DataClass` entfernt (`0995a221`).
+- ✅ **ProjectManager-Ownership-Smell behoben**: `getModel`/`getProjectModels` gaben `QSharedPointer`
+  mit No-op-Deleter zurück (Aliasing, dangling-Risiko). Neue `DataClass::SharedModel(int)` liefert den
+  *echten* Owning-Pointer aus `m_stored_models_by_pointer` (refcount-korrekt); ProjectManager gibt den
+  zurück, No-op-Alias nur noch als Fallback für nicht via `addModel()` registrierte Orphan-Children.
+  Referenz-Test grün (lädt alle Modelle über `getProjectModels`).
+- ✅ **`AnalysisManager`-Extraktion konsolidiert** (D4): der doppelte `extractModelStatistics` ist weg,
+  `AnalysisManager::extractModelStatistics` ist die einzige (public) autoritative Extraktion,
+  `AnalysisReporter` rendert nur noch. CLI-Golden-Diff identisch.
+- ✅ **D5a – Encapsulation-Leak versiegelt**: die letzten *live* `d->`-Zugriffe in AbstractModel
+  (nach dem Serialize-Split nur noch `d->m_dependent_model`-Zuweisung + `d->m_simulate_dependent`-Read
+  im `isSimulation()`-Zweig von `ImportModel`) laufen jetzt über neue DataClass-Accessoren
+  `SimulateDependent()` + protected `ResetDependentModel(rows, cols)` (bare Realloc, verhaltensgleich).
+  Kein Modell-Subclass greift mehr direkt in `d->`-Interna; einzig ein *auskommentierter* Legacy-Block
+  in `LegacyImportModel` nennt noch `d->m_scaling`. Referenz-Test grün. **Offen bleibt nur D5b.**
+- ✅ **`analyse.cpp`-Split (2026)**: Compute (JSON, `Calculate*Metrics`/`Extract*`) und String/HTML-
+  Formatierung (`Compare*`/`AnalyseReductionAnalysis`/`FormatStatisticsString`) in getrennte TUs
+  (`analyse.cpp` 1124 + `analyse_format.cpp` 838); Fassade `analyse.h` + `namespace StatisticTool`
+  unverändert, verbatim-Move (Golden-`-x`-Diff inhaltlich identisch).
+  ✅ **`toolset.cpp`-Split (2026)**: File-I/O (`Load*File`/`ExportResults`/`FindFile`) → `toolset_io.cpp`,
+  `Print`-Namespace (`Html2Tex`/`TextFrom*`/`printDouble`/`printConcentration`) → `toolset_print.cpp`;
+  `toolset.cpp` 1407→827 (Konvertierung/Math/Statistik/Thermo). Fassade `toolset.h` + Namespaces
+  unverändert (68 Includer unberührt); **Referenz-Test grün** (Wissenschaft unverändert). ✅ Statistik-
+  Cluster (`BoxWhiskerPlot`/`Entropy`/`Confidence`/Modell-Parameter-Statistik) → `toolset_statistics.cpp`
+  (`19ca3920`), `toolset.cpp` 827→386.
+  ✅ **`bc50.h`** de-inlined (`bc50.cpp`, s. §0).
+- ✅ **Immer-an Debug im Core beseitigt** (D7): `QT_NO_DEBUG_OUTPUT` (Nicht-DEBUG-Build) schaltet alle
+  `qDebug()` ab, `SFDebugPrint`-Makro gated die `fmt`-DEBUG-Traces; CLI-Ausgabe verifiziert sauber.
+- ✅ **`InitialGuess()`-„Nicht-Konvergenz" war ein Messartefakt (widerlegt, 2026-07-05)**: Die frühere
+  🔴-Notiz („landet nicht im Referenz-Minimum, SSE ~1.2, lg K ~2.5") entstand, weil die Konvergenz mit
+  `model->OptimizeParameters()` **gemessen** wurde — **diese Methode fittet aber nicht**: sie baut nur
+  die Parameterliste `m_opt_para` neu auf (`AbstractModel.cpp:303`). Der *echte* Optimierer
+  (`Minimizer::Minimize()` → `NonLinearFitThread`) konvergiert vom `InitialGuess()`-Start **sehr wohl**
+  ins Referenz-Minimum: über alle 4 kanonischen NMR-Datensätze reproduziert er SSE **und** lg K exakt
+  (verifiziert, `conv=1`). Nur **fehlspezifizierte** Modelle (falsche Stöchiometrie auf einen Datensatz
+  gefittet) landen in anderen/unphysikalischen Minima (z.B. `lg K=-1.0` — degenerierter Escape) — das
+  ist die **Paper-Aussage** „falsches Modell → schlecht konditioniert", kein Solver-Defekt. *Beleg:*
+  Minimizer-Diagnose über alle Fixtures; `test_reference_projects::referenceFit` Check (2) fährt jetzt
+  den echten Minimizer.
+- ✅ **Footgun behoben: `OptimizeParameters()` → `CollectOptimizationParameters()`** — die Methode
+  optimiert nichts, sondern registriert nur die zu optimierenden Parameter (genau das verursachte das
+  obige Fehl-Finding). Projektweit umbenannt (69 Dateien, inkl. `_Private`-Helfer), beide Overloads
+  doxygen-dokumentiert; voller GUI+CLI+Test-Build grün. Teil des Optimierer-Aufräum-Passes (A/B).
+- ✅ **`AnalysisManager` fittet jetzt echt** (D4 abgeschlossen): `fitSingleModel` fuhr nur `InitialGuess()`
+  + `Calculate()` (Vorwärtsmodell, `// TODO: NonLinearFitThread`). Ersetzt durch echten LevMar-Fit
+  (`Minimizer::setModel` + `Minimize()`, derselbe Pfad wie GUI/MonteCarlo). Verifiziert per ML-Pipeline-
+  Lauf: gefittetes 1:1-Modell konvergiert (`✅ Conv`, SSE→0, `lg K` recovered den wahren Generierungs-
+  Wert), Post-Processing (MC/CV) läuft auf dem *gefitteten* Modell. Die ML-Pipeline erzeugt damit echte
+  Trainingsdaten statt Initial-Guess-Artefakte.
+- ✅ **`getT()` uninitialisiert für NMR/Titration-Modelle** (behoben): `Abstract{NMR,Titration}Model::m_T`
+  hatte keinen Ctor-Default und wurde nur durch das (nicht immer laufende) System-Parameter-Update
+  gesetzt → der Thermo-Header druckte physikalisch unmögliche T (`e-33`…`e-144` K, build-abhängiger
+  Garbage). Fix: Default-Member-Initializer `double m_T = 298;` in beiden Headern (System-Parameter
+  überschreibt weiterhin). Beim R4-Golden-Diff gefunden. ✅ `AbstractItcModel::m_T`/`m_V`/
+  `m_cell_concentration`/`m_syringe_concentration` analog abgesichert: Default-Member-Initializer
+  (`m_T = 298`, Rest `0` — hält die `!m_V`-„unset"-Guard-Semantik); Referenz-Test grün.
+- 🟢 **CV/RA nicht reproduzierbar auf schlecht bestimmten Richtungen** (Ursache jetzt geklärt): für gut
+  bestimmte Parameter reproduziert der Code die Paper-Referenz **exakt** (88 Parameter), aber für
+  schlecht bestimmte Richtungen (breite Resample-Verteilung, z.B. `lg K₂₁` in falschen Modellen)
+  weichen die Resample-Fits run-to-run ab. Die Diagnose oben zeigt: **kein Solver-Instabilitäts-Bug**,
+  sondern **schlecht konditionierte fehlspezifizierte Modelle** mit mehreren nahezu entarteten Minima —
+  genau die Paper-Aussage „falsche Modelle → divergierende Statistik". Der Test überspringt daher
+  schlecht bestimmte Parameter (relStd > 0.5 %) statt sie zu erzwingen; der `referenceResampleCVRA`-
+  Slot ist an der Toleranzgrenze **gelegentlich flaky** (dokumentiert). *Beleg:*
+  `test_reference_projects.cpp::referenceResampleCVRA` + Minimizer-Diagnose.
+
+> **Verifikation dieser Session:** `suprafit_cli` baut sauber; `-l`/`-x`/`--show-post-processing`
+> auf einem Model-Projekt liefern korrekte Struktur, Modelle (einfach, nicht doppelt),
+> Datendimensionen und System-Parameter.

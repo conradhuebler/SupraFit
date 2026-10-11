@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,35 @@
 
 #include <QtCore/QJsonObject>
 
+#include "src/core/units.h"
+
 #include "statistic.h"
 
 namespace Statistic {
+
+/*! \brief Extract the fitted global-parameter vector of every raw Monte-Carlo model in one pass.
+ *
+ * The BC50/thermodynamics post-processing needs one parameter set per resampled model. Resolving
+ * object["controller"]["raw"] inside the per-model loop (as the code did before) re-converts the
+ * complete raw block - potentially thousands of full model exports - on every iteration, which
+ * turned the confidence text of a 2000-step Monte-Carlo run into seconds of GUI freeze.
+ * Claude Generated (2026, MC results-widget performance fix).
+ */
+static QVector<QVector<qreal>> RawGlobalParameters(const QJsonObject& object)
+{
+    const QJsonObject raw = object["controller"].toObject()["raw"].toObject();
+    const QStringList keys = raw.keys();
+
+    QVector<QVector<qreal>> parameters;
+    parameters.reserve(keys.size());
+    for (const QString& key : keys) {
+        QJsonObject model = raw[key].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = raw[key].toObject();
+        parameters << ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString());
+    }
+    return parameters;
+}
 
 QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool heat)
 {
@@ -67,6 +93,12 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGu = dGu - dG;
     qreal conf_dGl = dG - dGl;
 
+    // Claude Generated: unit-aware formatting (SI kJ/mol, J·mol⁻¹·K⁻¹ or calorie-based) so ITC
+    // results can be compared with e.g. NanoAnalyze; see Thermo::CurrentEnergyUnit().
+    const Units::EnergyUnit unit = Units::currentEnergy();
+    auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
+    auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
+
     result += "<table>";
     result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K), 3) + "";
 
@@ -80,28 +112,27 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + fmtE(dG) + "";
     if (!object.isEmpty())
-        result += " (+" + Print::printDouble(conf_dGu / 1000, 3) + "/-" + Print::printDouble(conf_dGl / 1000, 3) + ")";
-    result += "</td><td>kJ/mol</td></tr>";
+        result += " (+" + fmtE(conf_dGu) + "/-" + fmtE(conf_dGl) + ")";
+    result += "</td><td>" + unit.energyLabel + "</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGl)).arg(fmtE(dGu)).arg(unit.energyLabel);
 
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
     if (heat) {
 
-        QStringList models = object["controller"].toObject()["raw"].toObject().keys();
+        const QJsonObject raw = object["controller"].toObject()["raw"].toObject();
+        const QStringList models = raw.keys();
         QList<qreal> s;
 
         for (int i = 0; i < models.size(); ++i) {
 
-            QJsonObject model;
-
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+            QJsonObject model = raw[models[i]].toObject()["data"].toObject();
             if (model.isEmpty())
-                model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+                model = raw[models[i]].toObject();
 
             qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
             QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
@@ -119,191 +150,82 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
         qreal conf_dSu = conf.upper - dS;
         qreal conf_dSl = dS - conf.lower;
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + fmtE(H) + "";
 
         if (!object.isEmpty())
-            result += "(" + Print::printDouble(conf_dH11u / 1000.0, 3) + "/-" + Print::printDouble(conf_dH11l / 1000.0, 3) + ")";
-        result += "</td><td>kJ/mol</td></tr>";
+            result += "(" + fmtE(conf_dH11u) + "/-" + fmtE(conf_dH11l) + ")";
+        result += "</td><td>" + unit.energyLabel + "</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11l / 1000.0, 3)).arg(Print::printDouble(dH11u / 1000.0, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11l)).arg(fmtE(dH11u)).arg(unit.energyLabel);
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + fmtS(dS) + "";
         if (!object.isEmpty())
-            result += "(+" + Print::printDouble(conf_dSu, 3) + "/-" + Print::printDouble(conf_dSl, 3) + ")";
-        result += "</td><td>J/(molK)</td></tr>";
+            result += "(+" + fmtS(conf_dSu) + "/-" + fmtS(conf_dSl) + ")";
+        result += "</td><td>" + unit.entropyLabel + "</td></tr>";
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(conf.lower, 3)).arg(Print::printDouble(conf.upper, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtS(conf.lower)).arg(fmtS(conf.upper)).arg(unit.entropyLabel);
+
+        // -TΔS (entropy term of ΔG = ΔH − TΔS) in energy units, matching the NanoAnalyze
+        // convention. Range mirrors ΔS scaled by −T (bounds swap because of the sign).
+        result += "<tr><td><b>Entropy Term -T&Delta;S</b></td><td>" + fmtE(-T * dS) + "</td><td>" + unit.energyLabel + "</td></tr>";
+        if (!object.isEmpty())
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(-T * conf.upper)).arg(fmtE(-T * conf.lower)).arg(unit.energyLabel);
     }
     result += "</table>";
 
     return result;
 }
 
-QString MonteCarlo2BC50_1(const qreal logK11, const QJsonObject& object)
+QString MonteCarlo2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object)
 {
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
+    const qreal nominal = BC50::FromSpeciation(stoich, lgBeta);
+    if (nominal < 0)
+        return QString(); // no BC50 defined for this reaction system
+
+    const qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
 
     QList<qreal> s;
-
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        s << BC50::ItoI::BC50(logK11) * 1e6;
+    for (const QVector<qreal>& global : RawGlobalParameters(object)) {
+        const qreal value = BC50::FromSpeciation(stoich, global);
+        if (value > 0)
+            s << value * 1e6;
     }
+    if (s.isEmpty())
+        return QString();
+
     std::sort(s.begin(), s.end());
-
-    SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    qreal BC50 = BC50::ItoI::BC50(logK11) * 1e6;
-
-    qreal conf_dSl = conf.upper - BC50;
-    qreal conf_dSu = BC50 - conf.lower;
+    const SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
+    const qreal BC50 = nominal * 1e6;
 
     QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
+    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf.upper - BC50).arg(BC50 - conf.lower).arg(QChar(956));
     result += QString("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));
-
     return result;
 }
 
-QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object)
+QString GridSearch2BC50_Speciation(const Eigen::MatrixXi& stoich, const QVector<qreal>& lgBeta, const QJsonObject& object)
 {
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    QList<qreal> s, s_sf;
-    qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
+    const qreal nominal = BC50::FromSpeciation(stoich, lgBeta);
+    if (nominal < 0)
+        return QString();
 
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-
-        s << BC50::ItoII::BC50(logK11, logK12) * 1e6;
-        //     s_sf << BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
+    const qreal BC50 = nominal * 1e6;
+    qreal lower = BC50, upper = BC50;
+    for (const QVector<qreal>& global : RawGlobalParameters(object)) {
+        const qreal value = BC50::FromSpeciation(stoich, global);
+        if (value <= 0)
+            continue;
+        lower = qMin(value * 1e6, lower);
+        upper = qMax(value * 1e6, upper);
     }
 
-    std::sort(s.begin(), s.end());
-    std::sort(s_sf.begin(), s_sf.end());
-
-    SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    // SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
-
-    qreal BC50 = BC50::ItoII::BC50(logK11, logK12) * 1e6;
-    //   qreal BC50_sf = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
-
-    qreal conf_dSl = conf.upper - BC50;
-    qreal conf_dSu = BC50 - conf.lower;
-
-    //   qreal conf_dSl_sf = conf_sf.upper - BC50_sf;
-    //   qreal conf_dSu_sf = BC50_sf - conf_sf.lower;
-
     QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));
-
-    //  result += QString("<p>BC50 (SF) %1 [+%2,-%3] %4M ... ").arg(BC50_sf).arg(conf_dSl_sf).arg(conf_dSu_sf).arg(QChar(956));
-    //  result += QString("[%1 - %2] %3M</p>").arg(conf_sf.lower).arg(conf_sf.upper).arg(QChar(956));
-
-    return result;
-}
-
-QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object)
-{
-    QString result;
-    QList<qreal> s;
-
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
-
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-
-        s << BC50::IItoI::BC50(logK21, logK11) * 1e6;
-    }
-
-    std::sort(s.begin(), s.end());
-
-    SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    qreal BC50 = BC50::IItoI::BC50(logK21, logK11) * 1e6;
-
-    qreal conf_dSl = conf.upper - BC50;
-    qreal conf_dSu = BC50 - conf.lower;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));
-
-    return result;
-}
-
-QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object)
-{
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    QList<qreal> s, s_sf;
-    qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
-
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-        qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];
-
-        s << BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-        //s_sf << BC50::IItoII::BC50_SF(logK21, logK11, logK12) * 1e6;
-    }
-
-    std::sort(s.begin(), s.end());
-    std::sort(s_sf.begin(), s_sf.end());
-
-    SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    // SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
-
-    qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-    //  qreal BC50_sf = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
-
-    qreal conf_dSl = conf.upper - BC50;
-    qreal conf_dSu = BC50 - conf.lower;
-
-    //  qreal conf_dSl_sf = conf_sf.upper - BC50_sf;
-    //  qreal conf_dSu_sf = BC50_sf - conf_sf.lower;
-
-    QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));
-
-    //  result += QString("<p>BC50 (SF) %1 [+%2,-%3] %4M ... ").arg(BC50_sf).arg(conf_dSl_sf).arg(conf_dSu_sf).arg(QChar(956));
-    //  result += QString("[%1 - %2] %3M</p>").arg(conf_sf.lower).arg(conf_sf.upper).arg(QChar(956));
+    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(upper - BC50).arg(BC50 - lower).arg(QChar(956));
+    result += QString("[%1 - %2] %3M</p>").arg(lower).arg(upper).arg(QChar(956));
     return result;
 }
 
@@ -390,6 +312,11 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGu = dGu - dG;
     qreal conf_dGl = dG - dGl;
 
+    // Claude Generated: unit-aware formatting (see MonteCarlo2Thermo / Thermo::CurrentEnergyUnit()).
+    const Units::EnergyUnit unit = Units::currentEnergy();
+    auto fmtE = [&](qreal joule, int prec = 3) { return Print::printDouble(joule / unit.energyDivisor, prec); };
+    auto fmtS = [&](qreal jPerK, int prec = 3) { return Print::printDouble(jPerK / unit.entropyDivisor, prec); };
+
     result += "<table>";
     result += QString("<tr><td><b>Complexation Constant K</b></td><td> %1 ").arg(Print::printDouble(qPow(10, K), 3));
 
@@ -408,51 +335,56 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "  ";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + fmtE(dG) + "  ";
     if (!object.isEmpty())
-        result += " (+" + Print::printDouble(conf_dGu / 1000.0, 3) + "/-" + Print::printDouble(conf_dGl / 1000.0, 3) + ")</td>";
-    result += "<td>kJ/mol</td></tr>";
+        result += " (+" + fmtE(conf_dGu) + "/-" + fmtE(conf_dGl) + ")</td>";
+    result += "<td>" + unit.energyLabel + "</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGl)).arg(fmtE(dGu)).arg(unit.energyLabel);
 
     if (models.size()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "";
-        result += " (+" + Print::printDouble((dGu_gs - dG) / 1000.0, 3) + "/-" + Print::printDouble((dG - dGl_gs) / 1000.0, 3) + ")</td>";
-        result += "<td> kJ/mol</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGu_gs / 1000.0, 3)).arg(Print::printDouble(dGl_gs / 1000.0, 3));
+        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + fmtE(dG) + "";
+        result += " (+" + fmtE(dGu_gs - dG) + "/-" + fmtE(dG - dGl_gs) + ")</td>";
+        result += "<td> " + unit.energyLabel + "</td></tr>";
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dGu_gs)).arg(fmtE(dGl_gs)).arg(unit.energyLabel);
     }
     result += "<tr><td></td></tr>";
     result += "<tr><td></td></tr>";
 
     if (heat) {
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "  ";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + fmtE(H) + "  ";
 
         if (!object.isEmpty())
-            result += "(" + Print::printDouble((dH11u - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l) / 1000.0, 3) + ")</td>";
-        result += "<td>kJ/mol</td></tr>";
+            result += "(" + fmtE(dH11u - H) + "/-" + fmtE(H - dH11l) + ")</td>";
+        result += "<td>" + unit.energyLabel + "</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg( Print::printDouble(dH11l / 1000.0, 3)).arg( Print::printDouble(dH11u / 1000.0, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11l)).arg(fmtE(dH11u)).arg(unit.energyLabel);
 
         if (models.size()) {
             result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
-            result += " (+" + Print::printDouble((dH11u_gs - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l_gs) / 1000.0, 3) + ")</td>";
-            result += "<td> kJ/mol</td></tr>";
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11u_gs / 1000.0, 3)).arg(Print::printDouble(dH11l_gs / 1000.0, 3));
+            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + fmtE(H) + "";
+            result += " (+" + fmtE(dH11u_gs - H) + "/-" + fmtE(H - dH11l_gs) + ")</td>";
+            result += "<td> " + unit.energyLabel + "</td></tr>";
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(dH11u_gs)).arg(fmtE(dH11l_gs)).arg(unit.energyLabel);
         }
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + fmtS(dS) + "";
         if (!object.isEmpty())
-            result += " (+" + Print::printDouble(dSu_gs - dS, 3) + "/-" + Print::printDouble(dS - dSl_gs, 3) + ")</td>";
-        result += "<td>J/(molK)</td></tr>";
+            result += " (+" + fmtS(dSu_gs - dS) + "/-" + fmtS(dS - dSl_gs) + ")</td>";
+        result += "<td>" + unit.entropyLabel + "</td></tr>";
         if (models.size())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(dSl_gs, 3)).arg(Print::printDouble(dSu_gs, 3));
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtS(dSl_gs)).arg(fmtS(dSu_gs)).arg(unit.entropyLabel);
+
+        // -TΔS (entropy term of ΔG = ΔH − TΔS) in energy units, matching the NanoAnalyze convention.
+        result += "<tr><td><b>Entropy Term -T&Delta;S</b></td><td>" + fmtE(-T * dS) + "</td><td>" + unit.energyLabel + "</td></tr>";
+        if (models.size())
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>%3</td></tr>").arg(fmtE(-T * dSu_gs)).arg(fmtE(-T * dSl_gs)).arg(unit.energyLabel);
     }
     result += "</table>";
 
@@ -513,177 +445,6 @@ QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, i
     data["x"] = ToolSet::DoubleList2String(x);
     data["y"] = ToolSet::DoubleList2String(y);
     result["data"] = data;*/
-    return result;
-}
-
-QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object)
-{
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-
-    qreal BC50 = BC50::ItoI::BC50(logK11) * 1e6;
-    qreal BC50l = BC50::ItoI::BC50(logK11) * 1e6;
-    qreal BC50u = BC50::ItoI::BC50(logK11) * 1e6;
-
-    for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal BC50 = BC50::ItoI::BC50(logK11) * 1e6;
-        BC50l = qMin(BC50, BC50l);
-        BC50u = qMin(BC50, BC50u);
-    }
-
-    qreal conf_dSl = BC50u - BC50;
-    qreal conf_dSu = BC50 - BC50l;
-
-    QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(BC50l).arg(BC50u).arg(QChar(956));
-
-    return result;
-}
-
-QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object)
-{
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-
-    qreal BC50 = BC50::ItoII::BC50(logK11, logK12) * 1e6;
-    qreal BC50u = BC50::ItoII::BC50(logK11, logK12) * 1e6;
-    qreal BC50l = BC50::ItoII::BC50(logK11, logK12) * 1e6;
-
-    /*
-    qreal BC50_sf = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
-    qreal BC50_sf_u = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
-    qreal BC50_sf_l = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
-*/
-    for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-
-        qreal BC50 = BC50::ItoII::BC50(logK11, logK12) * 1e6;
-        //qreal BC50_sf = BC50::ItoI_ItoII_BC50_SF(logK11, logK12) * 1e6;
-
-        BC50l = qMin(BC50, BC50l);
-        BC50u = qMin(BC50, BC50u);
-
-        //BC50_sf_l = qMin(BC50_sf, BC50_sf_l);
-        //BC50_sf_u = qMin(BC50_sf, BC50_sf_u);
-    }
-
-    qreal conf_dSl = BC50u - BC50;
-    qreal conf_dSu = BC50 - BC50l;
-
-    //qreal conf_dSl_sf = BC50_sf_u - BC50_sf;
-    //qreal conf_dSu_sf = BC50_sf - BC50_sf_l;
-
-    QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(BC50l).arg(BC50u).arg(QChar(956));
-
-    //result += QString("<p>BC50 (SF) %1 [+%2,-%3] %4M ... ").arg(BC50_sf).arg(conf_dSl_sf).arg(conf_dSu_sf).arg(QChar(956));
-    //result += QString("[%1 - %2] %3M</p>").arg(BC50_sf_l).arg(BC50_sf_u).arg(QChar(956));
-
-    return result;
-}
-
-QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object)
-{
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-
-    QString result;
-
-    qreal BC50 = BC50::IItoI::BC50(logK21, logK11) * 1e6;
-    qreal BC50u = BC50::IItoI::BC50(logK21, logK11) * 1e6;
-    qreal BC50l = BC50::IItoI::BC50(logK21, logK11) * 1e6;
-
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-
-        qreal BC50 = BC50::IItoI::BC50(logK21, logK11) * 1e6;
-
-        BC50l = qMin(BC50, BC50l);
-        BC50u = qMin(BC50, BC50u);
-    }
-
-    qreal conf_dSl = BC50u - BC50;
-    qreal conf_dSu = BC50 - BC50l;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(BC50l).arg(BC50u).arg(QChar(956));
-
-    return result;
-}
-
-QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object)
-{
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    QList<qreal> s, s_sf;
-
-    qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-    qreal BC50u = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-    qreal BC50l = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-    /*
-    qreal BC50_sf = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
-    qreal BC50_sf_u = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
-    qreal BC50_sf_l = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
-
-  */
-    for (int i = 0; i < models.size(); ++i) {
-
-        QJsonObject model;
-
-        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
-        if (model.isEmpty())
-            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-
-        qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
-        qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
-        qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];
-
-        qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
-        //qreal BC50_sf = BC50::IItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
-
-        BC50l = qMin(BC50, BC50l);
-        BC50u = qMin(BC50, BC50u);
-
-        //BC50_sf_l = qMin(BC50_sf, BC50_sf_l);
-        //BC50_sf_u = qMin(BC50_sf, BC50_sf_u);
-    }
-
-    qreal conf_dSl = BC50u - BC50;
-    qreal conf_dSu = BC50 - BC50l;
-
-    //qreal conf_dSl_sf = BC50_sf_u - BC50_sf;
-    //qreal conf_dSu_sf = BC50_sf - BC50_sf_l;
-
-    QString result;
-
-    result += QString("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSl).arg(conf_dSu).arg(QChar(956));
-    result += QString("[%1 - %2] %3M</p>").arg(BC50l).arg(BC50u).arg(QChar(956));
-
-    //result += QString("<p>BC50 (SF) %1 [+%2,-%3] %4M ... ").arg(BC50_sf).arg(conf_dSl_sf).arg(conf_dSu_sf).arg(QChar(956));
-    //result += QString("[%1 - %2] %3M</p>").arg(BC50_sf_l).arg(BC50_sf_u).arg(QChar(956));
-
     return result;
 }
 

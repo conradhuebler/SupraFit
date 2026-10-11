@@ -19,6 +19,7 @@
 
 #pragma once
 #include "src/core/minimizer.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 
 #include "src/ui/guitools/chartwrapper.h"
 

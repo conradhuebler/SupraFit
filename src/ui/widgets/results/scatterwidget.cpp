@@ -21,6 +21,7 @@
 
 #include "src/core/models/AbstractModel.h"
 
+#include "src/core/phasetiming.h"
 #include "src/core/toolset.h"
 
 #include "src/ui/instance.h"
@@ -96,7 +97,9 @@ void ScatterWidget::setData(const QList<QJsonObject>& models, const QSharedPoint
 {
     m_models = models;
     m_model = model->Clone(false);
+    PhaseTiming::Mark(QStringLiteral("      scatter: Clone(false)"));
     setUi();
+    PhaseTiming::Mark(QStringLiteral("      scatter: build chart + parameter boxes"));
 }
 
 void ScatterWidget::setUi()

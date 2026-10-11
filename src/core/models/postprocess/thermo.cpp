@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include "src/core/models/models.h"
 #include "src/core/toolset.h"
+#include "src/core/units.h"
 
 #include "src/global.h"
 
@@ -30,6 +31,7 @@ namespace Thermo{
 
 QString FormatThermo(qreal K, qreal T, qreal H)
 {
+    const Units::EnergyUnit unit = Units::currentEnergy();
     QString result;
     qreal dG = ToolSet::K2G(K, T);
     qreal dS = ToolSet::GHE(dG, H, T);
@@ -37,16 +39,20 @@ QString FormatThermo(qreal K, qreal T, qreal H)
     result += "<table>";
     result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
     result += "<td> M</td></tr>";
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "</td>";
-    result += "<td>kJ/mol</td></tr>";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / unit.energyDivisor, 3) + "</td>";
+    result += "<td>" + unit.energyLabel + "</td></tr>";
 
     if (H != 0.0) {
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
-        result += "<td>kJ/mol</td></tr>";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / unit.energyDivisor) + "</td>";
+        result += "<td>" + unit.energyLabel + "</td></tr>";
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS) + "</td>";
-        result += "<td>J/(molK)</td></tr>";
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS / unit.entropyDivisor) + "</td>";
+        result += "<td>" + unit.entropyLabel + "</td></tr>";
 
+        // -TΔS (entropy term of ΔG = ΔH − TΔS); matches the NanoAnalyze convention where the
+        // entropy contribution is reported as −TΔS, resolving the apparent entropy sign mismatch.
+        result += "<tr><td><b>Entropy Term -T&Delta;S</b></td><td>" + Print::printDouble(-T * dS / unit.energyDivisor) + "</td>";
+        result += "<td>" + unit.energyLabel + "</td></tr>";
     }
 
     result += "</table>";

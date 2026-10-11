@@ -20,6 +20,7 @@
 #pragma once
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
