@@ -1205,4 +1205,25 @@ if(USE_LLM)
         fmt::fmt-header-only
     )
     add_test(NAME LlmSessionTest COMMAND test_llmsession)
+
+    # Phase-4 read tools against a real reference project (no GUI, no net).
+    # Links models+core like the bc50 tests do (cyclic core<->models via
+    # --start-group), plus agent for the tool registry.
+    add_executable(test_tools_project
+        test_tools_project.cpp
+    )
+    target_compile_definitions(test_tools_project PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_link_libraries(test_tools_project
+        Qt6::Core
+        Qt6::Test
+        Qt6::Qml
+        -Wl,--start-group models core agent models core -Wl,--end-group
+        fmt::fmt-header-only
+        ${CMAKE_THREAD_LIBS_INIT}
+    )
+    if(UNIX)
+        target_link_libraries(test_tools_project pthread dl)
+    endif()
+    add_test(NAME ToolsProjectTest COMMAND test_tools_project)
 endif()

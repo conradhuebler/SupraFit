@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0+1+2+3 done, Phase 4 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0+1+2+3+4 done, Phase 5 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -135,7 +135,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 | **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) | ✅ **DONE 2026-10-11** — `test_toolregistry` 21/21, `test_tooldispatcher` 10/10 |
 | **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | ✅ **DONE 2026-10-11** — `test_llmclient` 18/18 gegen `QTcpServer`-Stub, kein Netz; 4 Bugs gefixt (siehe AIChangelog) |
 | **3** | `LlmSession` Agent-Loop + Freigabepolitik | ✅ **DONE 2026-10-12** — `test_llmsession` 17/17 gegen Stub; 3 Bugs gefixt (siehe AIChangelog) |
-| **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | headless gegen echtes Projekt-JSON |
+| **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | ✅ **DONE 2026-10-12** — `test_tools_project` 12/12 gegen `simulated_1_1.json`; erste echte SupraFit-Tools |
 | **5** | Compute-Tools: `fit_model`, `fit_models`, `compare_models_aic`, `run_postfit_analysis`, `calculate_bc50` | ctest + Operator-Check |
 | **6** | CLI-Integration: `suprafit_cli --agent "Frage"` headless | Operator-Check |
 | **7** | GUI: Chat-Dock (später, eigene Phase) | — |
@@ -189,10 +189,17 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   (3) unknown-tool/refused/malformed bypasten den Dispatcher → Audit unsichtbar;
   jetzt `ToolDispatcher::recordRefusal()` zeichnet Refusals im selben
   `callRecorded`-Signal — Audit zeigt Attempts, nicht nur Erfolge.
-- **Phase 4 (2 days).** Fünf Read-Tools gegen `ProjectManager::instance()`.
-  `describe_model_catalog` liefert die Modell-ID-Tabelle aus
-  `MODEL_ID_REFERENCE.md`/`SupraFit::Model` — das spart dem Modell, 40 IDs raten
-  zu müssen.
+- **Phase 4 (2 days).** ✅ **DONE 2026-10-12.** Fünf Read-Tools in
+  `src/agent/tools_project.{h,cpp}` gegen `ProjectManager::instance()`:
+  `list_projects`, `get_project_info` (Daten-Dimensionen + Modelle),
+  `list_models`, `get_model_fit` (SSE/AIC/AICc/R²/konvergiert),
+  `describe_model_catalog` (21 Modell-IDs mit Name+Technik, Quelle
+  `MODEL_ID_REFERENCE.md` — spart dem Modell, 40 IDs raten zu müssen).
+  Alle `Read`-Effect, `Any`-Affinity (ProjectManager ist thread-safe) →
+  headless testbar wie der CLI. `modelSummary()` deliberately ohne Roh-Parameter
+  (die wären riesig im Kontext; `get_model_parameters` kommt in Phase 5).
+  Test gegen echtes Referenzprojekt `simulated_1_1.json` (4 Modelle, 20×2/20×7,
+  R²>0.9, ids 1/3/2/4, konvergiert) — kein GUI, kein Netz.
 - **Phase 5 (3-4 days).** Compute-Tools. `fit_model` ist `Effect::Compute` —
   **immer mit Freigabe**. `compare_models_aic` und `run_postfit_analysis` sind
   `Read` (lesen nur Fit-Ergebnisse) bzw. `Compute` (starten Statistik-Jobs).
