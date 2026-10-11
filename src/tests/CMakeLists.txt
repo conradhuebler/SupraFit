@@ -1150,3 +1150,31 @@ if(UNIX)
 endif()
 
 add_test(NAME BC50ModelDispatchTest COMMAND test_bc50_model_dispatch)
+
+# LLM agent layer tests (roadmap/llm_agent_analysis.md, Phase 1) - headless, no net.
+# The registry and dispatcher are QtCore-only; they link the agent library directly
+# and stay OUT of TEST_COMMON_LIBS so a -DUSE_LLM=OFF build skips them entirely.
+# Claude Generated 2026.
+if(USE_LLM)
+    add_executable(test_toolregistry
+        test_toolregistry.cpp
+    )
+    target_link_libraries(test_toolregistry
+        Qt6::Core
+        Qt6::Test
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME ToolRegistryTest COMMAND test_toolregistry)
+
+    add_executable(test_tooldispatcher
+        test_tooldispatcher.cpp
+    )
+    target_link_libraries(test_tooldispatcher
+        Qt6::Core
+        Qt6::Test
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME ToolDispatcherTest COMMAND test_tooldispatcher)
+endif()

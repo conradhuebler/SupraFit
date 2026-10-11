@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0 done, Phase 1 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0+1 done, Phase 2 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -132,7 +132,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 | Phase | Inhalt | Fertig, wenn |
 |---|---|---|
 | **0** | `USE_LLM`-Option, `Qt6::Network`, `agent`-Lib anlegen | ✅ **DONE 2026-10-11** — Build grün mit ON und OFF, ctest identisch zum Baseline |
-| **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) — **Skeleton gelandet, Tests fehlen** | `test_toolregistry`, `test_tooldispatcher` grün |
+| **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) | ✅ **DONE 2026-10-11** — `test_toolregistry` 21/21, `test_tooldispatcher` 10/10 |
 | **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | `test_llmclient` grün gegen `QTcpServer`-Stub, kein Netz |
 | **3** | `LlmSession` Agent-Loop + Freigabepolitik | `test_llmsession` grün gegen Stub |
 | **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | headless gegen echtes Projekt-JSON |
@@ -148,11 +148,17 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   `#cmakedefine USE_LLM` in `global_config.h.in`. Skeleton-Quellen angelegt:
   `tool`, `toolregistry`, `tooldispatcher`, `llmconfig`, `llmclient`, `llmsession`
   (compiliert, noch keine registrierten Tools, noch keine agent-Tests).
-- **Phase 1 (2-3 days).** `tool.h` (Werttypen, keine Registry), `toolregistry`
+- **Phase 1 (2-3 days).** ✅ **DONE 2026-10-11.** `tool.h` (Werttypen), `toolregistry`
   (Katalog, Schema-Validierung: type/required/enum/min/max, **unbekannte Schlüssel
-  ablehnen**), `tooldispatcher` (GUI-Marshalling mit `QSemaphore`-Timeout, Audit).
-  Alles QtCore-only. ⚙️ **Skeleton implementiert 2026-10-11** (Phase 0 commit);
-  noch offen: `test_toolregistry`, `test_tooldispatcher`, `catalogueBytes()`-Test.
+  ablehnen**), `tooldispatcher` (GUI-Marshalling mit `QSemaphore`-Timeout in
+  50-ms-Polling-Slices, Interrupt-Flag, Audit-Signal, thread-lokale Origin).
+  Alles QtCore-only, headless getestet: `test_toolregistry` (21 checks),
+  `test_tooldispatcher` (10 checks) — beide grün und hinter `if(USE_LLM)` in
+  `src/tests/CMakeLists.txt` registriert.
+  **Gefundener Bug:** `requestInterrupt()` wurde während eines marshalled Waits
+  nicht beachtet (einzelnes `tryAcquire` mit vollem Timeout blockierte bis zum
+  Ablauf) — jetzt 50-ms-Polling gegen die Deadline, Interrupt wird innerhalb von
+  50 ms erkannt.
 - **Phase 2 (1-2 days).** `llmconfig` (Profile aus `~/.config/suprafit/llm.json`,
   niemals QSettings, Key nur als ENV-Name), `llmclient` (`POST /v1/chat/completions`,
   Tool-Calls in beide Richtungen, SSE-Streaming, Abbruch, Klartext-Fehler).

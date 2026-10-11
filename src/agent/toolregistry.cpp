@@ -139,8 +139,10 @@ ToolResult ToolRegistry::invoke(const QString& name, const QJsonObject& args) co
 bool ToolRegistry::isValidSchema(const QJsonObject& schema, QString* error)
 {
     QString localError;
-    auto fail = [&](const QString& msg) {
+    auto fail = [&](const QString& msg) -> bool {
         localError = msg;
+        if (error)
+            *error = msg;
         return false;
     };
 

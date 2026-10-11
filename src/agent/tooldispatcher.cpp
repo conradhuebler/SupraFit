@@ -46,13 +46,18 @@ ToolResult ToolDispatcher::dispatch(const QString& name, const QJsonObject& args
         return ToolResult::failure(QStringLiteral("no tool registry configured"));
 
     ToolSpec spec;
-    if (!m_registry->tool(name, spec))
-        return ToolResult::failure(QStringLiteral("unknown tool '%1'").arg(name));
+    if (!m_registry->tool(name, spec)) {
+        // Even a miss is a call: count it and record it, so the audit trail shows
+        // the model naming tools that do not exist (a model-quality signal).
+        ++m_callCount;
+        const ToolResult miss = ToolResult::failure(QStringLiteral("unknown tool '%1'").arg(name));
+        emit callRecorded(name, args, false, 0, callOrigin());
+        return miss;
+    }
 
     QElapsedTimer timer;
     timer.start();
     ToolResult result;
-    bool marshalled = false;
 
     if (spec.affinity == ToolAffinity::Any || QThread::currentThread() == thread()) {
         // Direct call: Any-affinity tools run on the caller's thread, and a Gui
@@ -60,7 +65,6 @@ ToolResult ToolDispatcher::dispatch(const QString& name, const QJsonObject& args
         result = m_registry->invoke(name, args);
     } else {
         // Marshall onto this object's (GUI) thread and wait with a timeout.
-        marshalled = true;
         struct SharedState {
             QSemaphore semaphore;
             ToolResult result;
@@ -76,12 +80,57 @@ ToolResult ToolDispatcher::dispatch(const QString& name, const QJsonObject& args
             },
             Qt::QueuedConnection);
 
-        const bool finished = m_timeoutMs > 0
-            ? state->semaphore.tryAcquire(1, m_timeoutMs)
-            : (state->semaphore.acquire(1), true);
-        if (finished && state->done) {
-            result = state->result;
+        // Wait for the marshalled handler with a deadline. The caller's thread
+        // must be able to observe an interrupt while it blocks, so we poll the
+        // semaphore in 50 ms slices against the deadline instead of a single
+        // tryAcquire with the full timeout.
+        //
+        // BUGFIX (found by test_tooldispatcher, 2026-10-11): the first version
+        // waited with tryAcquire(1, m_timeoutMs) and then derived `finished`
+        // from state->done alone. On a timeout the handler keeps running on the
+        // GUI thread, and when the test's processEvents loop then delivered it,
+        // the handler finished and released the semaphore -- but the wait had
+        // already returned a timeout failure... which was correct. The actual
+        // defect the test exposed: the single tryAcquire blocked the caller for
+        // the FULL timeout even when m_interrupted was set, because the interrupt
+        // check only ran after tryAcquire returned. An operator pressing Stop
+        // during a long marshalled call would not be heard until the timeout
+        // expired. Polling in 50 ms slices fixes that: interrupt is observed within
+        // 50 ms, and the deadline is still honoured.
+        const qint64 deadline = timer.elapsed() + qMax(0, m_timeoutMs);
+        bool acquired = false;
+        bool interrupted = false;
+        if (m_timeoutMs > 0) {
+            while (!(acquired = state->semaphore.tryAcquire(1, 50))) {
+                if (m_interrupted.load()) {
+                    interrupted = true;
+                    break;
+                }
+                if (timer.elapsed() >= deadline)
+                    break;  // timed out
+            }
         } else {
+            state->semaphore.acquire(1);
+            acquired = true;
+        }
+
+        // A timeout is a failed ToolResult, not a hang. The handler may still
+        // complete later; its result is then dropped (state is shared_ptr, so the
+        // memory stays valid), but the call still counts and is still recorded.
+        //
+        // Race note: the handler sets done=true BEFORE releasing the semaphore,
+        // so `acquired && state->done` is safe. On a timeout the semaphore is NOT
+        // consumed; if the handler finishes later, its release sits in the
+        // semaphore and the shared_ptr keeps the state alive until the lambda's
+        // captured copy is destroyed on the GUI thread.
+        if (acquired && state->done) {
+            result = state->result;
+        } else if (interrupted) {
+            result = ToolResult::failure(
+                QStringLiteral("tool '%1' was interrupted").arg(name));
+        } else {
+            // Timed out, or acquired without done visible (should not happen given
+            // the release order, but treat as timeout rather than crash).
             result = ToolResult::failure(
                 QStringLiteral("tool '%1' timed out after %2 ms on the GUI thread").arg(name).arg(m_timeoutMs));
         }
