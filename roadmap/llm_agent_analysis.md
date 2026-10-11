@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0+1 done, Phase 2 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0+1+2 done, Phase 3 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -133,7 +133,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 |---|---|---|
 | **0** | `USE_LLM`-Option, `Qt6::Network`, `agent`-Lib anlegen | ✅ **DONE 2026-10-11** — Build grün mit ON und OFF, ctest identisch zum Baseline |
 | **1** | Tool-Kontrakt + Registry + Dispatcher (QtCore-only, headless) | ✅ **DONE 2026-10-11** — `test_toolregistry` 21/21, `test_tooldispatcher` 10/10 |
-| **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | `test_llmclient` grün gegen `QTcpServer`-Stub, kein Netz |
+| **2** | `LlmConfig` + `LlmClient` (OpenAI-kompatibel, SSE) | ✅ **DONE 2026-10-11** — `test_llmclient` 18/18 gegen `QTcpServer`-Stub, kein Netz; 4 Bugs gefixt (siehe AIChangelog) |
 | **3** | `LlmSession` Agent-Loop + Freigabepolitik | `test_llmsession` grün gegen Stub |
 | **4** | Read-Tools: `list_projects`, `get_project_info`, `list_models`, `get_model_fit`, `describe_model_catalog` | headless gegen echtes Projekt-JSON |
 | **5** | Compute-Tools: `fit_model`, `fit_models`, `compare_models_aic`, `run_postfit_analysis`, `calculate_bc50` | ctest + Operator-Check |
@@ -159,11 +159,20 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   nicht beachtet (einzelnes `tryAcquire` mit vollem Timeout blockierte bis zum
   Ablauf) — jetzt 50-ms-Polling gegen die Deadline, Interrupt wird innerhalb von
   50 ms erkannt.
-- **Phase 2 (1-2 days).** `llmconfig` (Profile aus `~/.config/suprafit/llm.json`,
-  niemals QSettings, Key nur als ENV-Name), `llmclient` (`POST /v1/chat/completions`,
+- **Phase 2 (1-2 days).** ✅ **DONE 2026-10-11.** `llmconfig` (Profile aus
+  `~/.config/suprafit/llm.json`, niemals QSettings, Key nur als ENV-Name,
+  **Key im File/profile refused**, unvollständige Profile refused,
+  Example-Datei ist parsebares JSON), `llmclient` (`POST /v1/chat/completions`,
   Tool-Calls in beide Richtungen, SSE-Streaming, Abbruch, Klartext-Fehler).
-  Test gegen `QTcpServer`-Stub: Anfrageform, `Authorization` nur bei gesetztem
-  Schlüssel, `tool_calls`-Antwort, HTTP-Fehler, kaputtes JSON.
+  Test gegen `QTcpServer`-Stub (`src/tests/test_stubserver.h`, kein Netz):
+  Anfrageform, `Authorization` nur bei gesetztem Schlüssel,
+  `tool_calls`-Antwort, Endpoint-Error bevorzugt vor HTTP-Status,
+  HTTP-Error mit Slice, kaputtes JSON, leeres `choices`, SSE-Zerlegung,
+  fragmentierter Tool-Call joined by index, reasoning nicht zurückgesendet.
+  **4 Bugs gefunden und gefixt** (Config-Key/vollständige Profile/Example-JSON/
+  doppeltes readAll). **moc-Trap dokumentiert** (siehe `test_llmclient.cpp`):
+  Qt-6.11-moc verliert die Klasse bei Raw-Strings mit `\"` oder mehrzeiligem
+  Raw-String mit `//` — Payloads mit Escapes als plain string concatenation.
 - **Phase 3 (2 days).** `llmsession`: Gesprächsverlauf, Katalog im OpenAI-Format,
   Schleife *senden → Tool ausführen → Ergebnis zurück*, Freigabepolitik über
   `ToolEffect` (ohne Rückfrage-Haken ablehnen, nicht durchwinken),

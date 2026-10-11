@@ -66,6 +66,15 @@ bool LlmConfig::loadFromJson(const QByteArray& json, QString* error)
     const QJsonArray profiles = root.value(QStringLiteral("profiles")).toArray();
     for (const QJsonValue& v : profiles) {
         const QJsonObject p = v.toObject();
+        // A key written into a PROFILE is the same leak as at the top level:
+        // refuse with a message, not silently.
+        if (p.contains(QStringLiteral("api_key")) || p.contains(QStringLiteral("apikey"))) {
+            if (error)
+                *error = QStringLiteral("profile '%1' must not contain a key; name the environment variable instead (api_key_env)")
+                             .arg(p.value(QStringLiteral("name")).toString());
+            m_profiles.clear();
+            return false;
+        }
         LlmProfile profile;
         profile.name = p.value(QStringLiteral("name")).toString();
         profile.baseUrl = p.value(QStringLiteral("base_url")).toString();
@@ -76,8 +85,18 @@ bool LlmConfig::loadFromJson(const QByteArray& json, QString* error)
         profile.reasoningField = p.value(QStringLiteral("reasoning_field")).toString(profile.reasoningField);
         profile.maxToolIterations = p.value(QStringLiteral("max_tool_iterations")).toInt(profile.maxToolIterations);
         profile.requestTimeoutMs = p.value(QStringLiteral("request_timeout_ms")).toInt(profile.requestTimeoutMs);
-        if (profile.isValid())
-            m_profiles.append(profile);
+        if (!profile.isValid()) {
+            // An incomplete profile is refused and says what is missing -- a typo
+            // in base_url otherwise produces a first run that fails for no reason.
+            if (error)
+                *error = QStringLiteral("profile '%1' is incomplete: %2")
+                             .arg(profile.name.isEmpty() ? QStringLiteral("(no name)") : profile.name,
+                                 profile.name.isEmpty() ? QStringLiteral("name is empty")
+                                                        : QStringLiteral("base_url is empty"));
+            m_profiles.clear();
+            return false;
+        }
+        m_profiles.append(profile);
     }
 
     if (m_active.isEmpty() && !m_profiles.isEmpty())
@@ -101,10 +120,17 @@ bool LlmConfig::writeExampleIfMissing(const QString& path, QString* error)
         return false;
     }
 
-    const QByteArray example = R"({
-  // One entry per endpoint. The file never holds a key: a profile names the
-  // ENVIRONMENT VARIABLE the key comes from, so this file can be shared or
-  // committed without leaking anything. A local endpoint needs no key at all.
+    // Parseable JSON with the guidance in "_note" keys: comments are NOT valid
+    // JSON, and an example file that cannot load is a worse first experience
+    // than one that can (bug found by configWritesExampleIfMissing, 2026-10-11).
+    const QByteArray example = R"JSON({
+  "_note": [
+    "One entry per endpoint. This file never holds a key: a profile names the",
+    "ENVIRONMENT VARIABLE the key comes from, so this file can be shared or",
+    "committed to a repo without leaking anything. A local endpoint usually",
+    "needs no key at all. The model may stay empty -- the client then asks the",
+    "endpoint (GET /v1/models) and the user picks."
+  ],
   "active_profile": "local",
   "profiles": [
     {
@@ -117,8 +143,7 @@ bool LlmConfig::writeExampleIfMissing(const QString& path, QString* error)
       "request_timeout_ms": 120000
     }
   ]
-}
-)";
+})JSON";
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         if (error)

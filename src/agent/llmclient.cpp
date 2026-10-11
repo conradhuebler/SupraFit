@@ -145,8 +145,33 @@ void LlmClient::handleReply()
     if (reply->error() == QNetworkReply::OperationCanceledError)
         return;  // cancel(): no failed() for a deliberate abort
 
+    const QByteArray httpPayload = reply->readAll();
+
     if (reply->error() != QNetworkReply::NoError) {
-        emit failed(QStringLiteral("endpoint error: %1").arg(reply->errorString()));
+        // Prefer an error the ENDPOINT itself bothered to write -- {"error":{"message":...}}
+        // arrives over an HTTP failure status in every implementation tried
+        // (Ollama, OpenAI, and their proxies). A proxy's HTML error page is not
+        // parseable JSON; then say the status and quote a slice of what came
+        // back, so the cause is visible instead of an opaque code.
+        //
+        // BUGFIX (found by endpointErrorMessageIsPreferred, 2026-10-11): the
+        // payload here was read with a SECOND readAll() -- empty, because
+        // readAll() was already consumed into httpPayload above. Now httpPayload
+        // is used, which was read exactly once.
+        const QByteArray payload = httpPayload;
+        const QJsonDocument doc = QJsonDocument::fromJson(payload);
+        QString message;
+        if (doc.isObject() && doc.object().contains(QStringLiteral("error")))
+            message = doc.object().value(QStringLiteral("error")).toObject()
+                          .value(QStringLiteral("message")).toString();
+        if (message.isEmpty()) {
+            const QString slice = QString::fromStdString(payload.left(200).toStdString());
+            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            message = QStringLiteral("HTTP %1: %2").arg(status).arg(reply->errorString());
+            if (!slice.isEmpty())
+                message += QStringLiteral(" [%1]").arg(slice);
+        }
+        emit failed(message);
         return;
     }
 
@@ -158,7 +183,7 @@ void LlmClient::handleReply()
         return;
     }
 
-    const QByteArray payload = reply->readAll();
+    const QByteArray payload = httpPayload;  // already read above; do not readAll twice
     QJsonParseError parseError;
     const QJsonDocument doc = QJsonDocument::fromJson(payload, &parseError);
     if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {

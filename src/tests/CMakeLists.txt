@@ -1177,4 +1177,18 @@ if(USE_LLM)
         fmt::fmt-header-only
     )
     add_test(NAME ToolDispatcherTest COMMAND test_tooldispatcher)
+
+    # LlmConfig + LlmClient against a QTcpServer stub; no network in ctest.
+    # Qt6::Network is needed on both sides (client + stub server).
+    add_executable(test_llmclient
+        test_llmclient.cpp
+    )
+    target_link_libraries(test_llmclient
+        Qt6::Core
+        Qt6::Test
+        Qt6::Network
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME LlmClientTest COMMAND test_llmclient)
 endif()
