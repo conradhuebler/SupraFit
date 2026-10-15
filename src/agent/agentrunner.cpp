@@ -32,7 +32,9 @@ QString agentSystemPrompt()
         "is loaded. Prefer the stored fits (get_model_fit, compare_models_aic) before "
         "fitting again. When a project has no models yet, create them with add_model "
         "(ids from describe_model_catalog) and then fit them. When no catalogue model fits "
-        "the chemistry, write your own with define_script_model (equation, parameter names) and fit it. Compare models by AIC, mention SSE and whether the fit converged, "
+        "the chemistry, write your own with define_script_model (equation, parameter names) and fit it. "
+        "To test mixed stoichiometries or self-aggregation, describe the species as reactions with "
+        "add_reaction_model, fit every candidate and let the AIC decide. Compare models by AIC, mention SSE and whether the fit converged, "
         "and say plainly when a result is missing or a tool refused. "
         "Answer concisely in the language of the question.");
 }

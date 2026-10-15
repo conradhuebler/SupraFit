@@ -161,8 +161,8 @@ private slots:
 
         const int n = registerAnalysisTools(m_registry, &SupraFit::ProjectManager::instance())
                     + registerProjectTools(m_registry, &SupraFit::ProjectManager::instance());
-        QCOMPARE(n, 12);  // 7 analysis + 5 project
-        for (const char* name : { "add_model", "define_script_model", "fit_model", "fit_models", "compare_models_aic",
+        QCOMPARE(n, 13);  // 8 analysis + 5 project
+        for (const char* name : { "add_model", "add_reaction_model", "define_script_model", "fit_model", "fit_models", "compare_models_aic",
                                   "run_postfit_analysis", "calculate_bc50",
                                   "list_projects", "get_project_info", "list_models",
                                   "get_model_fit", "describe_model_catalog" })
@@ -175,6 +175,7 @@ private slots:
         const QHash<QString, ToolEffect> expected = {
             { QStringLiteral("add_model"), ToolEffect::Mutate },
             { QStringLiteral("define_script_model"), ToolEffect::Mutate },
+            { QStringLiteral("add_reaction_model"), ToolEffect::Mutate },
             { QStringLiteral("fit_model"), ToolEffect::Compute },
             { QStringLiteral("fit_models"), ToolEffect::Compute },
             { QStringLiteral("run_postfit_analysis"), ToolEffect::Compute },
@@ -276,6 +277,34 @@ private slots:
         QVERIFY(!call(QStringLiteral("a*(X1+")).ok);               // does not parse
         QVERIFY(!call(QStringLiteral("a*unknown_name + X1")).ok);  // undefined symbol
         QCOMPARE(SupraFit::ProjectManager::instance().getProjectModels(pid).size(), 0);
+    }
+
+    void addReactionModelFitsMixedStoichiometry()
+    {
+        const QString pid = makeFreshProject();
+        QVERIFY(!pid.isEmpty());
+        auto add = [&](const QString& reactions, int modelId = 34) {
+            return m_registry.invoke(QStringLiteral("add_reaction_model"),
+                QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_id"), modelId },
+                             { QStringLiteral("reactions"), reactions } });
+        };
+        // 1:1 + 1:2 on host/guest data -- the catalogue's 1:1/1:2 NMR model written as reactions
+        const ToolResult mixed = add(QStringLiteral("H + G <=> HG\nH + 2 G <=> HG2"));
+        QVERIFY2(mixed.ok, qPrintable(mixed.error));
+        QCOMPARE(mixed.data.value(QStringLiteral("species")).toArray().size(), 2);
+        QCOMPARE(mixed.data.value(QStringLiteral("global_parameters")).toInt(), 2);
+        const ToolResult fit = m_registry.invoke(QStringLiteral("fit_models"),
+            QJsonObject{ { QStringLiteral("project_id"), pid } });
+        QVERIFY2(fit.ok, qPrintable(fit.error));
+        const double sse = fit.data.value(QStringLiteral("fitted")).toArray().first().toObject()
+                               .value(QStringLiteral("sse")).toDouble();
+        QVERIFY2(std::isfinite(sse) && sse > 0.0 && sse < 1.0, qPrintable(QString::number(sse)));
+
+        QVERIFY(!add(QStringLiteral("H + G <=> ")).ok);                      // does not parse
+        const ToolResult three = add(QStringLiteral("A + B <=> AB\nA + C <=> AC"));
+        QVERIFY(!three.ok);                                                  // 3 components, 2 columns
+        QVERIFY2(three.error.contains(QStringLiteral("component")), qPrintable(three.error));
+        QVERIFY(!add(QStringLiteral("H + G <=> HG"), 5).ok);                 // unsupported model id
     }
 
     void addModelRefusesWhenNothingCanBeAdded()

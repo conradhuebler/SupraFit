@@ -26,6 +26,8 @@
 #include "src/core/models/models.h"
 #include "src/core/models/scriptingengine.h"
 #include "src/core/models/scriptmodel.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h"
+#include "src/core/reactionparser.h"
 #include "src/core/minimizer.h"
 #include "src/core/projectmanager.h"
 
@@ -356,6 +358,95 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
             out.insert(QStringLiteral("local_parameters_per_series"), nLocal);
             out.insert(QStringLiteral("sse_with_start_values"), model->SSE());
             return ToolResult::success(out, QStringLiteral("defined script model '%1'").arg(model->Name()));
+        };
+        if (registry.add(spec))
+            ++registered;
+    }
+
+    // --- add_reaction_model: mixed stoichiometry from reaction equations (Mutate) ---
+    {
+        ToolSpec spec;
+        spec.name = QStringLiteral("add_reaction_model");
+        spec.description = QStringLiteral(
+            "Add a titration model whose species are defined by reaction equations -- the way to test any "
+            "mixed stoichiometry (1:1, 1:2, 2:1, 2:2, self-aggregation, three components ...). One reaction per "
+            "line, complex formed from the free components: 'H + G <=> HG', 'H + 2 G <=> HG2', '2 H + G <=> H2G', "
+            "'2 G <=> G2'. Components are numbered in order of first appearance and map to the project's "
+            "independent concentration columns (X1, X2, ...), so the number of components must equal the number "
+            "of those columns. Each reaction gets its own global parameter lg(beta), in order of the species. "
+            "model_id: 34 = NMR (nmr_any), 35 = UV/Vis (uvvis_any), 36 = fluorescence (fl_any), 17 = ITC (itc_any, two components). "
+            "The model starts unfitted: run fit_models afterwards and compare candidate stoichiometries with compare_models_aic.");
+        spec.category = QStringLiteral("analysis");
+        QJsonObject props;
+        props.insert(QStringLiteral("project_id"), stringProp(QStringLiteral("Project UUID from list_projects")));
+        props.insert(QStringLiteral("model_id"), intProp(QStringLiteral("34 NMR, 35 UV/Vis, 36 fluorescence, 17 ITC"), 0));
+        props.insert(QStringLiteral("reactions"), stringProp(QStringLiteral("Reaction equations, one per line (or separated by ';')")));
+        spec.paramSchema = objectSchema(props, { QStringLiteral("project_id"), QStringLiteral("model_id"),
+                                                 QStringLiteral("reactions") });
+        spec.effect = ToolEffect::Mutate;
+        spec.affinity = ToolAffinity::Any;
+        spec.available = [pm]() { return pm && pm->getProjectCount() > 0; };
+        spec.handler = [pm](const QJsonObject& args) -> ToolResult {
+            if (!pm)
+                return ToolResult::failure(QStringLiteral("no ProjectManager available"));
+            const QString projectId = args.value(QStringLiteral("project_id")).toString();
+            const QSharedPointer<DataClass> data = pm->getProjectData(projectId);
+            if (!data)
+                return ToolResult::failure(QStringLiteral("unknown project_id '%1'").arg(projectId));
+            const int modelId = args.value(QStringLiteral("model_id")).toInt(-1);
+            if (modelId != 34 && modelId != 35 && modelId != 36 && modelId != 17)
+                return ToolResult::failure(QStringLiteral("model_id must be 34 (NMR), 35 (UV/Vis), 36 (fluorescence) or 17 (ITC)"));
+            QString reactions = args.value(QStringLiteral("reactions")).toString();
+            reactions.replace(QLatin1Char(';'), QLatin1Char('\n'));
+
+            const ReactionSystem system = ReactionParser::Parse(reactions);
+            if (!system.valid) {
+                QStringList problems;
+                for (const ReactionDiagnostic& d : system.diagnostics)
+                    if (!d.ok)
+                        problems << QStringLiteral("line %1: %2").arg(d.line).arg(d.message);
+                return ToolResult::failure(QStringLiteral("the reactions do not parse (%1)")
+                        .arg(problems.isEmpty() ? QStringLiteral("no complex formed") : problems.join(QStringLiteral("; "))));
+            }
+            if (modelId != 17 && system.components.size() != data->IndependentVariableSize())
+                return ToolResult::failure(QStringLiteral(
+                    "the reactions define %1 component(s) (%2) but the data set has %3 independent concentration column(s)")
+                        .arg(system.components.size()).arg(system.components.join(QStringLiteral(", ")))
+                        .arg(data->IndependentVariableSize()));
+
+            QSharedPointer<AbstractModel> model = CreateModel(modelId, QPointer<DataClass>(data.data()));
+            if (!model)
+                return ToolResult::failure(QStringLiteral("model %1 cannot be created on this data set").arg(modelId));
+            QJsonObject reactionField;
+            reactionField.insert(QStringLiteral("name"), QStringLiteral("Reactions"));
+            reactionField.insert(QStringLiteral("type"), 6);
+            reactionField.insert(QStringLiteral("value"), reactions);
+            QHash<QString, QJsonObject> elements;
+            elements.insert(QStringLiteral("Reactions"), reactionField);
+            model->setModelDefinition(elements);
+            model->DefineModel(QJsonObject());
+            auto* titration = qobject_cast<AbstractTitrationModel*>(model.data());
+            if (!model->Complete() || (titration && titration->ReactionComponentMismatch() > 0))
+                return ToolResult::failure(QStringLiteral("the model could not be defined from these reactions on this data set"));
+
+            model->InitialGuess();
+            model->Calculate();
+            if (!std::isfinite(model->SSE()))
+                return ToolResult::failure(QStringLiteral("the model does not evaluate to finite numbers on this data"));
+
+            data->addModel(model);
+            pm->addModelToProject(model, projectId);
+            QJsonArray species;
+            for (const ReactionSpecies& sp : system.species)
+                species.append(sp.label);
+            QJsonObject out;
+            out.insert(QStringLiteral("project_id"), projectId);
+            out.insert(QStringLiteral("model_index"), pm->getProjectModels(projectId).size() - 1);
+            out.insert(QStringLiteral("name"), model->Name());
+            out.insert(QStringLiteral("components"), QJsonArray::fromStringList(system.components));
+            out.insert(QStringLiteral("species"), species);
+            out.insert(QStringLiteral("global_parameters"), model->GlobalParameterSize());
+            return ToolResult::success(out, QStringLiteral("added '%1' with %2 species").arg(model->Name()).arg(system.species.size()));
         };
         if (registry.add(spec))
             ++registered;
