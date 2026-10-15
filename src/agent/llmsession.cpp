@@ -60,6 +60,16 @@ void LlmSession::reset()
 {
     m_messages = QJsonArray();
     m_iteration = 0;
+    m_continueNext = false;
+}
+
+void LlmSession::setConversation(const QJsonArray& messages)
+{
+    if (m_busy)
+        return;
+    m_messages = messages;
+    m_iteration = 0;
+    m_continueNext = !messages.isEmpty();
 }
 
 void LlmSession::setBusy(bool busy)
@@ -116,10 +126,17 @@ void LlmSession::ask(const QString& userMessage)
     // new ask() must not inherit it (endTurn() no longer clears it, see there).
     if (m_dispatcher)
         m_dispatcher->clearInterrupt();
-    if (!m_messages.isEmpty() || m_systemPrompt.isEmpty())
-        m_messages = QJsonArray();  // fresh turn keeps only the system prompt
-    if (!m_systemPrompt.isEmpty())
+    const bool continueConversation = (m_keepHistory || m_continueNext) && !m_messages.isEmpty();
+    m_continueNext = false;
+    if (!continueConversation) {
+        if (!m_messages.isEmpty() || m_systemPrompt.isEmpty())
+            m_messages = QJsonArray();  // fresh turn keeps only the system prompt
+        if (!m_systemPrompt.isEmpty())
+            m_messages.prepend(message(QStringLiteral("system"), m_systemPrompt));
+    } else if (!m_systemPrompt.isEmpty()
+        && m_messages.first().toObject().value(QStringLiteral("role")).toString() != QStringLiteral("system")) {
         m_messages.prepend(message(QStringLiteral("system"), m_systemPrompt));
+    }
     m_messages.append(message(QStringLiteral("user"), userMessage));
     m_iteration = 0;
     m_finalRound = false;

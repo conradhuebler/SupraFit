@@ -1206,6 +1206,19 @@ if(USE_LLM)
     )
     add_test(NAME LlmSessionTest COMMAND test_llmsession)
 
+    # Chat log of the agent dock: JSON/Markdown export+import, history store, input
+    # history (GUI-free, no net). Claude Generated (UI redesign WP9).
+    add_executable(test_chatlog
+        test_chatlog.cpp
+    )
+    target_link_libraries(test_chatlog
+        Qt6::Core
+        Qt6::Test
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME ChatLogTest COMMAND test_chatlog)
+
     # Phase-4 read tools against a real reference project (no GUI, no net).
     # Links models+core like the bc50 tests do (cyclic core<->models via
     # --start-group), plus agent for the tool registry.

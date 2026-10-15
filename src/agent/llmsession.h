@@ -65,6 +65,16 @@ public:
     bool isBusy() const { return m_busy; }
     QJsonArray conversation() const { return m_messages; }
 
+    /// Keep the conversation across ask() calls, so a follow-up question sees the
+    /// earlier turns (a chat). Off by default: every ask() starts fresh with the
+    /// system prompt only. Claude Generated.
+    void setKeepHistory(bool keep) { m_keepHistory = keep; }
+    bool keepHistory() const { return m_keepHistory; }
+    /// Replace the conversation, e.g. with one restored from a saved chat. The
+    /// next ask() continues it (even without keepHistory); a missing system prompt
+    /// is put in front. Ignored while busy. Claude Generated.
+    void setConversation(const QJsonArray& messages);
+
 signals:
     void assistantMessage(const QString& text);
     /// Pieces of the answer and of the model's reasoning as they arrive. Only
@@ -104,4 +114,6 @@ private:
     bool m_finalRound = false;
     int m_maxToolResultChars = 8000;
     bool m_busy = false;
+    bool m_keepHistory = false;
+    bool m_continueNext = false;  ///< set by setConversation(): the next ask() appends
 };

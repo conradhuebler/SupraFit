@@ -19,6 +19,7 @@ Vorlage: qurcuma `docs/WP-llm-tool-layer.md` + curcuma `docs/TOOL_API_WP.md`.
 | `llmclient.h/.cpp` | OpenAI-kompatibel, SSE-Streaming, Tool-Calls | QtCore + QtNetwork |
 | `llmsession.h/.cpp` | Agent-Loop: senden → Tool ausführen → Ergebnis zurück | QtCore + QtNetwork |
 | `tools_*.cpp` | Konkrete Werkzeuge (projekt, models, analysis, io) | gemischt |
+| `chatlog.h/.cpp` | Sichtbarer Chat als Daten: Einträge, JSON/Markdown-Export+Import, Verlauf (`<AppData>/chats`, Kappe 50), Eingabe-Historie | QtCore only |
 
 **Prinzip:** Registry, Dispatcher und Schema-Prüfung sind GUI-frei und headless
 testbar (ctest gegen `QTcpServer`-Stub, kein Netz in ctest). Erste Tools laufen
@@ -51,4 +52,4 @@ gegen `ProjectManager::instance()` — wie der CLI.
 ## Tests
 
 Headless, kein Netz: `test_toolregistry`, `test_tooldispatcher`, `test_llmclient`
-(gegen `QTcpServer`-Stub), `test_llmsession` (Stub mit Antwort-Folge).
+(gegen `QTcpServer`-Stub), `test_llmsession` (Stub mit Antwort-Folge), `test_chatlog`.

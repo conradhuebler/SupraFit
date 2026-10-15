@@ -181,6 +181,101 @@ private slots:
         QCOMPARE(sent.value(QStringLiteral("messages")).toArray().size(), 2);
     }
 
+    // --- conversation kept across turns / restored (Claude Generated) -------
+
+    void keepHistoryContinuesConversation()
+    {
+        StubServer server;
+        QVERIFY(server.isListening());
+        LlmProfile profile;
+        profile.name = QStringLiteral("stub");
+        profile.baseUrl = server.baseUrl();
+        profile.model = QStringLiteral("test-model");
+        profile.stream = false;
+
+        LlmClient client;
+        client.setProfile(profile);
+        LlmSession session(&client, &m_registry, &m_dispatcher);
+        session.setSystemPrompt(QStringLiteral("You are a test."));
+        session.setKeepHistory(true);
+
+        QString answer, error;
+        server.reply(200, textResponse("first"));
+        runTurn(session, QStringLiteral("one"), answer, error);
+        server.reply(200, textResponse("second"));
+        runTurn(session, QStringLiteral("two"), answer, error);
+        QCOMPARE(answer, QStringLiteral("second"));
+        QCOMPARE(server.requests.size(), 2);
+        // system, user one, assistant first, user two
+        const QJsonArray sent = QJsonDocument::fromJson(server.requests.at(1)).object().value(QStringLiteral("messages")).toArray();
+        QCOMPARE(sent.size(), 4);
+        QCOMPARE(sent.at(0).toObject().value(QStringLiteral("role")).toString(), QStringLiteral("system"));
+        QCOMPARE(sent.at(1).toObject().value(QStringLiteral("content")).toString(), QStringLiteral("one"));
+        QCOMPARE(sent.at(2).toObject().value(QStringLiteral("role")).toString(), QStringLiteral("assistant"));
+        QCOMPARE(sent.at(3).toObject().value(QStringLiteral("content")).toString(), QStringLiteral("two"));
+    }
+
+    void withoutKeepHistoryEveryTurnStartsFresh()
+    {
+        StubServer server;
+        QVERIFY(server.isListening());
+        LlmProfile profile;
+        profile.name = QStringLiteral("stub");
+        profile.baseUrl = server.baseUrl();
+        profile.model = QStringLiteral("test-model");
+        profile.stream = false;
+
+        LlmClient client;
+        client.setProfile(profile);
+        LlmSession session(&client, &m_registry, &m_dispatcher);
+        session.setSystemPrompt(QStringLiteral("You are a test."));
+
+        QString answer, error;
+        server.reply(200, textResponse("first"));
+        runTurn(session, QStringLiteral("one"), answer, error);
+        server.reply(200, textResponse("second"));
+        runTurn(session, QStringLiteral("two"), answer, error);
+        const QJsonArray sent = QJsonDocument::fromJson(server.requests.at(1)).object().value(QStringLiteral("messages")).toArray();
+        QCOMPARE(sent.size(), 2);
+    }
+
+    void setConversationIsContinued()
+    {
+        StubServer server;
+        QVERIFY(server.isListening());
+        LlmProfile profile;
+        profile.name = QStringLiteral("stub");
+        profile.baseUrl = server.baseUrl();
+        profile.model = QStringLiteral("test-model");
+        profile.stream = false;
+
+        LlmClient client;
+        client.setProfile(profile);
+        LlmSession session(&client, &m_registry, &m_dispatcher);
+        session.setSystemPrompt(QStringLiteral("You are a test."));
+
+        // restored without the system prompt: it is put back in front
+        QJsonArray restored;
+        restored.append(QJsonObject{ { QStringLiteral("role"), QStringLiteral("user") }, { QStringLiteral("content"), QStringLiteral("earlier") } });
+        restored.append(QJsonObject{ { QStringLiteral("role"), QStringLiteral("assistant") }, { QStringLiteral("content"), QStringLiteral("earlier answer") } });
+        session.setConversation(restored);
+        QCOMPARE(session.conversation(), restored);
+
+        QString answer, error;
+        server.reply(200, textResponse("continued"));
+        runTurn(session, QStringLiteral("again"), answer, error);
+        QCOMPARE(answer, QStringLiteral("continued"));
+        const QJsonArray sent = QJsonDocument::fromJson(server.requests.first()).object().value(QStringLiteral("messages")).toArray();
+        QCOMPARE(sent.size(), 4);
+        QCOMPARE(sent.at(0).toObject().value(QStringLiteral("role")).toString(), QStringLiteral("system"));
+        QCOMPARE(sent.at(1).toObject().value(QStringLiteral("content")).toString(), QStringLiteral("earlier"));
+        QCOMPARE(sent.at(3).toObject().value(QStringLiteral("content")).toString(), QStringLiteral("again"));
+
+        // reset() forgets it again
+        session.reset();
+        QVERIFY(session.conversation().isEmpty());
+    }
+
     // --- a Read tool: runs unattended, result goes back ----------------------
 
     void readToolRunsUnattended()
