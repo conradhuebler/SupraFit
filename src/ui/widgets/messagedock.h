@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2019 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@ public slots:
     void Info(const QString& str);
 
 private:
+    enum class Level { Message, Warning, Info };
+    void Append(const QString& str, Level level);
+
     QTextEdit* m_message;
     QPushButton* m_clear;
     QMutex m_mutex;

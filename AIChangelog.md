@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-10-15: **UI redesign WP2: the log moved from the full-width bottom dock into the left column under the project list (vertical splitter, size and visibility persisted); toggle renamed "Log" (F4) with the unread/error icon colours unchanged; entries show the time only, wrap, and use palette-dependent level colours.**
 - 2026-10-15: **UI redesign WP1: one compact toolbar row — New/Open/Save as drop-down buttons, the former two-row "Workspace" button block as Data/Model/Evaluation menus acting on the project on screen (Model → Experiment → stoichiometry), Log/Agent toggles and a SupraFit menu (Settings, Info, Quit); shortcuts kept by registering all actions on the window. Save is now enabled after a project load. See roadmap/ui_redesign.md.**
 - 2026-10-15: **Fix: models added from outside the GUI (the agent via ProjectManager) now get their ModelWidget: `SupraFitGui::onModelAdded` looked the model up with `getModel()`, which compares the project UUID shared by all models with the signal's ModelUUID and never matched; it now finds the model by ModelUUID and `ModelDataHolder::ensureModelWidget()` skips models already shown. Verified offscreen: add_model + fit_models by the dock show two tabs with fitted parameters.**
 - 2026-10-15: **Fix: `LlmClient::listModels()` requested `<host>/models` instead of `<base_url>/models` (`/v1/models`), so the dock's model selector stayed empty; now pinned by the request line in `test_llmclient`.**

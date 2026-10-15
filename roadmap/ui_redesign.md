@@ -61,3 +61,4 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 
 - WP0 design note + mockup: 🤖 committed
 - WP1 toolbar/menus: 🤖 ⚙️ build + offscreen render (`docs/ui_redesign/wp1_*.png`); clicks/shortcuts not exercised headless
+- WP2 Projects + Log column: 🤖 ⚙️ build + offscreen render (`wp2_*.png`); unread indicator and F4 not exercised headless

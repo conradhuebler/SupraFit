@@ -101,10 +101,11 @@ SupraFitGui::SupraFitGui()
     m_message_dock = new QDockWidget;
     m_messages_widget = new MessageDock;
     m_message_dock->setWidget(m_messages_widget);
-    m_message_dock->setAllowedAreas(Qt::BottomDockWidgetArea);
     m_message_dock->setTitleBarWidget(m_messages_widget->TitleBarWidget());
-    m_message_dock->setObjectName(tr("message_dock"));
-    addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
+    // The log is a panel in the left column under the project list (not a main-window dock area);
+    // the new object name keeps restoreState() of older window states from re-docking it at the bottom.
+    m_message_dock->setObjectName("log_panel");
+    m_message_dock->setFeatures(QDockWidget::DockWidgetClosable);
 
 #ifdef USE_LLM
     // Claude Generated: LLM agent dock, hidden until toggled (F5)
@@ -260,7 +261,6 @@ SupraFitGui::SupraFitGui()
     m_project_holder = new QWidget;
     m_project_holder->setObjectName("project_list");
     m_project_holder->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_project_holder->setMaximumWidth(400);
 
     m_export_plain = new QToolButton;
     m_export_plain->setAutoRaise(true);
@@ -326,9 +326,19 @@ SupraFitGui::SupraFitGui()
     layout->addWidget(m_project_view, 2, 0, 1, 2);
     m_project_holder->setLayout(layout);
 
+    // Left column: project list on top, log underneath (operator mockup). Claude Generated.
+    m_left_splitter = new QSplitter(Qt::Vertical);
+    m_left_splitter->setObjectName("left_splitter");
+    m_left_splitter->addWidget(m_project_holder);
+    m_left_splitter->addWidget(m_message_dock);
+    m_left_splitter->setStretchFactor(0, 3);
+    m_left_splitter->setStretchFactor(1, 1);
+    m_left_splitter->setChildrenCollapsible(false);
+    m_left_splitter->setMaximumWidth(400);
+
     m_mainsplitter = new QSplitter(Qt::Horizontal);
     m_mainsplitter->setObjectName(tr("project_splitter"));
-    m_mainsplitter->addWidget(m_project_holder);
+    m_mainsplitter->addWidget(m_left_splitter);
     m_mainsplitter->addWidget(m_stack_widget);
 
     setCentralWidget(m_mainsplitter);
@@ -360,35 +370,35 @@ SupraFitGui::SupraFitGui()
 
     m_message_dock_action = m_message_dock->toggleViewAction();
     m_message_dock_action->setIcon(QIcon(":/icons/help-hint.png"));
-    m_message_dock_action->setToolTip(tr("No unread messages"));
-    m_message_dock_action->setText(tr("Toggle Message"));
+    m_message_dock_action->setToolTip(tr("Show or hide the log (F4); no unread messages"));
+    m_message_dock_action->setText(tr("Log"));
     m_message_dock_action->setShortcut(QKeySequence(tr("F4")));
 
     connect(m_messages_widget, &MessageDock::Presence, this, [this]() {
         if (m_message_dock->isHidden() && !m_alert) {
             m_message_dock_action->setIcon(QIcon(":/icons/help-hint-green.png"));
-            m_message_dock_action->setToolTip(tr("There are unread messages. But that is ok."));
+            m_message_dock_action->setToolTip(tr("Log (F4): unread messages"));
         }
     });
 
     connect(m_messages_widget, &MessageDock::UiInfo, this, [this]() {
         if (m_message_dock->isHidden() && !m_alert) {
             m_message_dock_action->setIcon(QIcon(":/icons/help-hint-blue.png"));
-            m_message_dock_action->setToolTip(tr("There are unread user interface messagess. But that is ok."));
+            m_message_dock_action->setToolTip(tr("Log (F4): unread user interface messages"));
         }
     });
 
     connect(m_messages_widget, &MessageDock::Attention, this, [this]() {
         if (m_message_dock->isHidden()) {
             m_message_dock_action->setIcon(QIcon(":/icons/help-hint-red.png"));
-            m_message_dock_action->setToolTip(tr("There are unread ERRORs. Please don't not ignore them."));
+            m_message_dock_action->setToolTip(tr("Log (F4): unread errors"));
             m_alert = true;
         }
     });
 
     connect(m_message_dock_action, &QAction::toggled, this, [this]() {
         m_message_dock_action->setIcon(QIcon(":/icons/help-hint.png"));
-        m_message_dock_action->setToolTip(tr("No unread messages"));
+        m_message_dock_action->setToolTip(tr("Show or hide the log (F4); no unread messages"));
         m_alert = false;
     });
 
@@ -1386,6 +1396,9 @@ void SupraFitGui::ReadGeometry()
     _settings.beginGroup("window");
     restoreGeometry(_settings.value("geometry").toByteArray());
     restoreState(_settings.value("state").toByteArray());
+    if (!m_left_splitter->restoreState(_settings.value("left_splitter").toByteArray()))
+        m_left_splitter->setSizes({ 600, 250 }); // first start: log takes about a third of the column
+    m_message_dock->setVisible(_settings.value("log_visible", true).toBool());
     _settings.endGroup();
 }
 
@@ -1403,6 +1416,8 @@ void SupraFitGui::WriteSettings(bool ignore_window_state)
         _settings.beginGroup("window");
         _settings.setValue("geometry", saveGeometry());
         _settings.setValue("state", saveState());
+        _settings.setValue("left_splitter", m_left_splitter->saveState());
+        _settings.setValue("log_visible", !m_message_dock->isHidden());
         _settings.endGroup();
     }
 }
@@ -1416,8 +1431,9 @@ void SupraFitGui::FirstStart()
 {
     QString info;
     info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramolecular NMR titrations and ITC experiments.< /p>";
-    info += "<p>The SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
-    info += "<p>Hitting <strong>F4</strong> or the light bulb button in the upper part toggles a message box in the part below the mainwindows.</p>";
+    info += "<p>The SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> and the <strong>Log</strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> on the right hand side.</li></p>";
+    info += "<p>The <strong>Data</strong>, <strong>Model</strong> and <strong>Evaluation</strong> menus in the toolbar act on the project shown in the workspace.</p>";
+    info += "<p>Hitting <strong>F4</strong> or the <strong>Log</strong> button in the toolbar shows or hides the log below the project list.</p>";
     info += "<p>Sometimes critical information are printed out there. If there are unread critical messages, the light bulb glows red.</p>";
     info += "<p>Uncritical information are indicated by a green light blub.</p>";
     info += "<p><strong>All</strong> tooltips can globally disabled in the config dialog.</p>";

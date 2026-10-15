@@ -203,7 +203,7 @@ private:
     QStackedWidget* m_stack_widget;
     QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
-    QSplitter *m_mainsplitter, *m_blank_widget;
+    QSplitter *m_mainsplitter, *m_blank_widget, *m_left_splitter;
     QVector<QJsonObject> m_cached_meta;
     QLineEdit* m_filename_line;
 
