@@ -186,6 +186,20 @@ private slots:
         QVERIFY(config.profile(QStringLiteral("local"), local));
         QCOMPARE(local.baseUrl, QStringLiteral("http://localhost:11434/v1"));
 
+        // The hosted profile is there, names its key variable and never holds a key.
+        LlmProfile hosted;
+        QVERIFY(config.profile(QStringLiteral("openai"), hosted));
+        QCOMPARE(hosted.baseUrl, QStringLiteral("https://api.openai.com/v1"));
+        QCOMPARE(hosted.apiKeyEnv, QStringLiteral("OPENAI_API_KEY"));
+        QVERIFY(!LlmConfig::isLocalEndpoint(hosted));
+        QVERIFY(LlmConfig::isLocalEndpoint(local));
+        qunsetenv("OPENAI_API_KEY");
+        QVERIFY(LlmConfig::missingKeyMessage(hosted).contains(QStringLiteral("OPENAI_API_KEY")));
+        QVERIFY(LlmConfig::missingKeyMessage(local).isEmpty());  // a local profile needs no key
+        qputenv("OPENAI_API_KEY", "sk-test");
+        QVERIFY(LlmConfig::missingKeyMessage(hosted).isEmpty());
+        qunsetenv("OPENAI_API_KEY");
+
         // Second call must not overwrite an existing file: append a marker line
         // and verify it survives a writeExampleIfMissing call.
         QFile f(path);

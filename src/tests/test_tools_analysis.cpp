@@ -169,6 +169,21 @@ private slots:
             QVERIFY2(m_registry.contains(QString::fromLatin1(name)), name);
     }
 
+    void everyArrayParameterDeclaresItsItems()
+    {
+        // OpenAI rejects a function schema with an array that has no items.
+        for (const QString& name : m_registry.names()) {
+            ToolSpec spec;
+            QVERIFY(m_registry.tool(name, spec));
+            const QJsonObject props = spec.paramSchema.value(QStringLiteral("properties")).toObject();
+            for (auto it = props.begin(); it != props.end(); ++it) {
+                const QJsonObject prop = it.value().toObject();
+                if (prop.value(QStringLiteral("type")).toString() == QStringLiteral("array"))
+                    QVERIFY2(prop.contains(QStringLiteral("items")), qPrintable(name + "." + it.key()));
+            }
+        }
+    }
+
     void effectClassesAreCorrect()
     {
         // Compute tools need approval at Ask/InProgram; Read tools never do.

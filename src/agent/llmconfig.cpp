@@ -14,6 +14,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcessEnvironment>
+#include <QUrl>
 #include <QStandardPaths>
 
 QString LlmProfile::chatCompletionsUrl() const
@@ -129,7 +130,10 @@ bool LlmConfig::writeExampleIfMissing(const QString& path, QString* error)
     "ENVIRONMENT VARIABLE the key comes from, so this file can be shared or",
     "committed to a repo without leaking anything. A local endpoint usually",
     "needs no key at all. The model may stay empty -- the client then asks the",
-    "endpoint (GET /v1/models) and the user picks."
+    "endpoint (GET /v1/models) and the user picks.",
+    "The openai profile sends the conversation, including project data the agent",
+    "reads, to api.openai.com. Set reasoning_field to reasoning_effort only for",
+    "models that accept it (o-series, gpt-5); leave it empty otherwise."
   ],
   "active_profile": "local",
   "profiles": [
@@ -141,6 +145,16 @@ bool LlmConfig::writeExampleIfMissing(const QString& path, QString* error)
       "reasoning_field": "think",
       "max_tool_iterations": 50,
       "request_timeout_ms": 120000
+    },
+    {
+      "name": "openai",
+      "base_url": "https://api.openai.com/v1",
+      "model": "",
+      "api_key_env": "OPENAI_API_KEY",
+      "stream": true,
+      "reasoning_field": "",
+      "max_tool_iterations": 50,
+      "request_timeout_ms": 180000
     }
   ]
 })JSON";
@@ -174,6 +188,20 @@ bool LlmConfig::activeProfile(LlmProfile& out) const
         return true;
     }
     return false;
+}
+
+QString LlmConfig::missingKeyMessage(const LlmProfile& profile)
+{
+    if (profile.apiKeyEnv.isEmpty() || !apiKeyFor(profile).isEmpty())
+        return QString();
+    return QStringLiteral("profile '%1' needs the API key in the environment variable %2, which is not set")
+        .arg(profile.name, profile.apiKeyEnv);
+}
+
+bool LlmConfig::isLocalEndpoint(const LlmProfile& profile)
+{
+    const QString host = QUrl(profile.baseUrl).host();
+    return host == QLatin1String("localhost") || host == QLatin1String("127.0.0.1") || host == QLatin1String("::1");
 }
 
 QString LlmConfig::apiKeyFor(const LlmProfile& profile)

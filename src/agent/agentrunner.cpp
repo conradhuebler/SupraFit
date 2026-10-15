@@ -63,6 +63,15 @@ int runAgent(const AgentRunOptions& options)
         return 1;
     }
 
+    const QString keyProblem = LlmConfig::missingKeyMessage(profile);
+    if (!keyProblem.isEmpty()) {
+        fmt::print(stderr, "{}\n", keyProblem.toStdString());
+        return 1;
+    }
+    if (!LlmConfig::isLocalEndpoint(profile))
+        fmt::print(stderr, "[agent] remote endpoint {}: the conversation and the project data the agent reads are sent there\n",
+            profile.baseUrl.toStdString());
+
     ToolRegistry registry;
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());

@@ -68,7 +68,9 @@ QJsonObject intProp(const QString& description, int minimum = 0)
 
 QJsonObject stringArrayProp(const QString& description)
 {
+    // OpenAI rejects an array schema without items, so state it.
     return QJsonObject{ { QStringLiteral("type"), QStringLiteral("array") },
+        { QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("string") } } },
         { QStringLiteral("description"), description } };
 }
 

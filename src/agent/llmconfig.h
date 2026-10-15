@@ -72,6 +72,13 @@ public:
     /// unset or the profile names none (a local endpoint usually needs no key).
     static QString apiKeyFor(const LlmProfile& profile);
 
+    /// Non-empty when the profile names a key variable that is not set in the environment: better to
+    /// say so than to send the request without credentials and report a bare 401. Claude Generated.
+    static QString missingKeyMessage(const LlmProfile& profile);
+
+    /// True for an endpoint on this machine (localhost, 127.0.0.1, ::1): the project data stays here.
+    static bool isLocalEndpoint(const LlmProfile& profile);
+
 private:
     QVector<LlmProfile> m_profiles;
     QString m_active;

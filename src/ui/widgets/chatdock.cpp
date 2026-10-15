@@ -173,6 +173,15 @@ bool ChatDock::prepareClient()
                        .arg(tr("LLM config unusable: %1").arg(error).toHtmlEscaped()));
         return false;
     }
+    const QString keyProblem = LlmConfig::missingKeyMessage(profile);
+    if (!keyProblem.isEmpty()) {
+        appendLine(QStringLiteral("<b style='color:red'>%1</b>").arg(keyProblem.toHtmlEscaped()));
+        return false;
+    }
+    if (!LlmConfig::isLocalEndpoint(profile))
+        appendLine(QStringLiteral("<i style='color:orange'>%1</i>")
+                       .arg(tr("Remote endpoint %1: the conversation and the project data the agent reads are sent there.")
+                                .arg(profile.baseUrl).toHtmlEscaped()));
     m_client->setProfile(profile);
     m_client->setApiKey(LlmConfig::apiKeyFor(profile));
     if (!m_model->currentText().trimmed().isEmpty())
