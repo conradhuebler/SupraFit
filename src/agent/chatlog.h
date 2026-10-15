@@ -58,6 +58,7 @@ public:
     /// Text of the last entry of @p kind (empty if there is none).
     QString lastText(ChatEntry::Kind kind) const;
     ChatEntry* lastEntry() { return m_entries.isEmpty() ? nullptr : &m_entries.last(); }
+    ChatEntry* entry(int index) { return index >= 0 && index < m_entries.size() ? &m_entries[index] : nullptr; }
 
     /// LlmSession::conversation() of this chat, kept so a reopened chat can go on.
     QJsonArray conversation() const { return m_conversation; }

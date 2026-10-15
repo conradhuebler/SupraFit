@@ -59,6 +59,7 @@ the pre-redesign state is captured in `docs/ui_redesign/before_*.png`.
 - **WP7** Model pane after operator feedback: name header, one fit row with status chip, parameter grid,
   metrics with the fit results, simulated-data exports in a tab, compact data-series rows; Edit Data as toggle.
 - **WP8** Refinements: fit-results form, Fit button right, list+stack instead of tabs, card rows, grip splitter handles.
+- **WP9** Agent chat: bubbles with Markdown, tool lines, growing input with history, saved chats with History menu, enlarge, export/import (core: `src/agent/chatlog`).
 - **WP6** Small screens: usable at 1366x768 (ideally 1024x600): no large fixed minimum sizes, scroll
   areas for tall content, compact toolbar mode, no forced horizontal scrollbar.
 
@@ -74,4 +75,5 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 - WP4–WP6 polish, appearance, small screens: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, offscreen renders light/dark at 1920, 1600, 1366x768, 1024x600 (`light_*`, `dark_*`, `small_*`); live switching via the dialog not clicked headless
 - WP7 model pane + Edit Data toggle: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, offscreen renders light/dark 1920 and 1366x768, with and without series (`wp7_*.png`, before: `wp7_before_*`); Edit Data triggered programmatically (log line + data tab), no real clicks
 - WP8 refinements: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, renders light/dark at 1920 and 1366x768 with and without series (`wp8_*.png`); page switching, splitter dragging and page persistence not clicked headless
+- WP9 agent chat: 🤖 ⚙️ build, `ctest -R 'Tool|Llm|Chat'` (7/7), renders light/dark 1920 and 1366x768, enlarged state, History menu (`wp9_*.png`), one live Ollama round trip; key handling, clicks, file dialogs and the approval dialog not exercised headless
 - Open: CuteChart's flat "Tools" button has black text (unreadable on dark charts; fix in CuteChart); chart export in dark mode carries light axis labels (exporter keeps the on-screen colours); dark PNG icons (copy, logo curve) low-contrast on dark; at 1024x600 the agent dock does not fit beside the workspace (float or hide it)
