@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -160,13 +160,13 @@ void ImportData::setUi()
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
     m_thermogram = new QPushButton(tr("Import as Thermogram"));
-    m_thermogram->setStyleSheet("background-color: #77d740;");
+    m_thermogram->setStyleSheet("background-color: #77d740; color: black;");
     connect(m_thermogram, &QPushButton::clicked, this, [this]() {
         ImportThermogram(m_filename);
     });
 
     m_spectra = new QPushButton(tr("Import as Spectras"));
-    m_spectra->setStyleSheet("background-color: #77d740;");
+    m_spectra->setStyleSheet("background-color: #77d740; color: black;");
     connect(m_spectra, &QPushButton::clicked, this, [this]() {
         ImportSpectra(m_filename);
     });

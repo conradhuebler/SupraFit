@@ -170,7 +170,8 @@ private:
 
     QPointer<QWidget> m_global_parameter, m_model_parameter, m_model_options,
         m_system_parameter, m_chai_widget, m_chai_execute;
-    virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
+    // small enough for 1024x600 screens; the panes inside scroll or wrap (UI redesign WP6)
+    virtual QSize minimumSizeHint() const override { return QSize(420, 320); }
 
     QVector<OptimisationHistory> m_optimisationhistory;
 

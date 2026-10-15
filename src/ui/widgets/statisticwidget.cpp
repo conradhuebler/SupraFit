@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,13 +37,7 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
 
     QVBoxLayout* m_layout = new QVBoxLayout;
     m_overview = new TextWidget;
-    QPalette p = m_overview->palette();
-
-    p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);
-    p.setColor(QPalette::Inactive, QPalette::Base, Qt::lightGray);
-    p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
-    p.setColor(QPalette::Inactive, QPalette::Window, Qt::black);
-    m_overview->setPalette(p);
+    m_overview->setBackgroundRole(QPalette::AlternateBase); // follows the light/dark palette
     m_layout->addWidget(m_overview);
 
     connect(m_model.toStrongRef().data(), SIGNAL(StatisticChanged()), this, SLOT(Update()));

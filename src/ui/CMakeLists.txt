@@ -83,6 +83,7 @@ set(SFGui_SRC
                 mainwindow/projecttree.cpp
                 mainwindow/suprafitgui.cpp
                 settingsregistry.cpp
+                guitools/appearance.cpp
     )
 
 if(USE_LLM)

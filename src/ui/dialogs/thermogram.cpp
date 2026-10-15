@@ -375,7 +375,7 @@ void Thermogram::setExperimentFile(QString filename)
 {
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
-        m_exp_file->setStyleSheet("background-color: " + excluded());
+        m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
         qDebug() << "no thermogram found";
         return;
     }
@@ -401,18 +401,18 @@ void Thermogram::setExperimentFile(QString filename)
                 m_injct->setText(QString::number(inject.last()));
         } catch (int error) {
             if (error == 404) {
-                m_exp_file->setStyleSheet("background-color: " + excluded());
+                m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
                 qDebug() << "file no found";
                 return;
             }
             if (error == 101) {
-                m_exp_file->setStyleSheet("background-color: " + excluded());
+                m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
                 qDebug() << "no thermogram found";
                 return;
             }
         }
         m_exp_file->setText(filename);
-        m_exp_file->setStyleSheet("background-color: " + included());
+        m_exp_file->setStyleSheet("background-color: " + included() + " color: black;");
         m_experiment->setFileType(ThermogramWidget::FileType::ITC);
         m_experiment_thermogram->setThermogram(original);
         m_experiment_thermogram->setPeakList(m_exp_peaks);
@@ -578,7 +578,7 @@ void Thermogram::setDilutionFile(QString filename)
 
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
-        m_exp_file->setStyleSheet("background-color: " + excluded());
+        m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
         qDebug() << "no thermogram found";
         m_processor->setDilutionEnabled(false); // nothing loaded: nothing to subtract
         return;
@@ -598,18 +598,18 @@ void Thermogram::setDilutionFile(QString filename)
         } catch (int error) {
             m_processor->setDilutionEnabled(false); // the load failed: do not subtract a stale one
             if (error == 404) {
-                m_dil_file->setStyleSheet("background-color: " + excluded());
+                m_dil_file->setStyleSheet("background-color: " + excluded() + " color: black;");
                 qDebug() << "file no found";
                 return;
             }
             if (error == 101) {
-                m_dil_file->setStyleSheet("background-color: " + excluded());
+                m_dil_file->setStyleSheet("background-color: " + excluded() + " color: black;");
                 qDebug() << "no thermogram found";
                 return;
             }
         }
         m_dil_file->setText(filename);
-        m_dil_file->setStyleSheet("background-color: " + included());
+        m_dil_file->setStyleSheet("background-color: " + included() + " color: black;");
         m_dilution->setFileType(ThermogramWidget::FileType::ITC);
         m_dilution_thermogram->setThermogram(original);
         m_dilution_thermogram->setPeakList(m_dil_peaks); // was m_exp_peaks (copy-paste bug): dilution must use its own peaks

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 
+#include "src/ui/guitools/appearance.h"
+
 #include "modelelement.h"
 
 ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget* parent)
@@ -80,11 +82,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check, no]() {
             if (this->m_model.toStrongRef().data() && widget) {
                 if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
-                    constant->setStyleSheet("background-color: " + included());
+                    constant->setStyleSheet("background-color: " + included() + " color: black;");
                     check->setEnabled(true);
                     check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(no, i));
                 } else {
-                    constant->setStyleSheet("background-color: " + excluded());
+                    constant->setStyleSheet("background-color: " + excluded() + " color: black;");
                     check->setEnabled(false);
                 }
             }
@@ -296,14 +298,8 @@ void ModelElement::ChangeColor(const QColor& color)
 {
     m_signal_series->setColor(color);
     m_error_series->setColor(color);
-    int lightness = color.lightness();
-
-    if (lightness < 50)
-        setStyleSheet("color:lightGray;");
-    else
-        setStyleSheet("color:darkRed;");
-
-    setStyleSheet("background-color:" + color.name() + ";");
+    // series colour as background, text in black or white, whichever stays readable on it
+    setStyleSheet("background-color:" + color.name() + "; color:" + Appearance::ContrastText(color).name() + ";");
 
     m_color = color;
     emit ColorChanged(m_color);

@@ -168,6 +168,7 @@ private:
     void AddScatter(const QJsonObject& data);
 
     void SetupToolBar();
+    void ApplyToolBarStyle();
 
     QToolBar* m_main_toolbar;
     QToolButton *m_data_button, *m_model_button, *m_evaluation_button;

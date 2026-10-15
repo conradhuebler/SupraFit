@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,12 +57,12 @@ DataWidget::DataWidget()
 
     m_linear = new QPushButton(tr("Regression"));
     m_linear->setToolTip(tr("Perform advanced linear regression"));
-    m_linear->setStyleSheet("background-color: #77d740;");
+    m_linear->setStyleSheet("background-color: #77d740; color: black;");
     connect(m_linear, &QPushButton::clicked, this, &DataWidget::LinearAnalysis);
 
     m_hide_points = new QPushButton(tr("Hide Datapoints"));
     m_hide_points->setToolTip(tr("Hide Data points, but keep series visible. Useful to just simulate curves without being disturbed by Data Points."));
-    m_hide_points->setStyleSheet("background-color: #77d740;");
+    m_hide_points->setStyleSheet("background-color: #77d740; color: black;");
 
     m_plot_x = new QCheckBox(tr("Plot X Values"));
     m_plot_x->setToolTip(tr("Plot first column as x variable."));

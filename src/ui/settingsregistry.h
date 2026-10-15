@@ -46,6 +46,7 @@ enum class Kind {
     Int, //!< QSpinBox
     Double, //!< QDoubleSpinBox
     String, //!< QLineEdit
+    Choice, //!< QComboBox over SettingDef::choices; the stored value is the index
     Custom //!< hand-built in the dialog (e.g. directory-mode radios); registry still owns key/default/persistence
 };
 
@@ -63,6 +64,7 @@ struct SettingDef {
     double step = 0.0; //!< Double single step (0 => Qt default)
     int decimals = -1; //!< Double decimals (-1 => Qt default)
     QString suffix; //!< Int/Double suffix (e.g. "%")
+    QStringList choices; //!< Choice: entries of the combo box (stored value = index)
     QString dependsOn; //!< key of a Bool setting; this widget is enabled only while that one is checked
     bool inDialog = true; //!< false => no auto-generated widget (persisted-only or hand-built)
     bool persisted = true; //!< false => lives only for the session, never written to QSettings

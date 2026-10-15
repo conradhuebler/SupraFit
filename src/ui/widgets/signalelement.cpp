@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+
+#include "src/ui/guitools/appearance.h"
 
 #include "signalelement.h"
 
@@ -114,7 +116,7 @@ SignalElement::~SignalElement()
 
 void SignalElement::ColorChanged(const QColor& color)
 {
-    setStyleSheet("background-color:" + color.name() + ";");
+    setStyleSheet("background-color:" + color.name() + "; color:" + Appearance::ContrastText(color).name() + ";");
     m_color = color;
 }
 

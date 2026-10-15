@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2022 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -342,10 +342,10 @@ void ParameterDialog::Recalculate()
     m_combined->setVisible(m_lower_limit->isChecked() && m_upper_limit->isChecked());
 
     if (m_minimum_edit->value() <= m_value_edit->value() && m_value_edit->value() <= m_maximum_edit->value()) {
-        m_value_edit->setStyleSheet("background-color: " + included());
+        m_value_edit->setStyleSheet("background-color: " + included() + " color: black;");
         m_adopt_and_accept->hide();
     } else {
-        m_value_edit->setStyleSheet("background-color: " + excluded());
+        m_value_edit->setStyleSheet("background-color: " + excluded() + " color: black;");
         m_adopt_and_accept->show();
     }
     // m_chart->formatAxis();

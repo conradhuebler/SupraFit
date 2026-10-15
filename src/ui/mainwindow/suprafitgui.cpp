@@ -39,6 +39,8 @@
 #include "src/ui/dialogs/importdata.h"
 #include "src/ui/dialogs/spectraimport.h"
 
+#include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
@@ -97,6 +99,8 @@ SupraFitGui::SupraFitGui()
     m_instance = new Instance;
     Instance::setInstance(m_instance);
     ReadSettings();
+    Appearance::Install();
+    Appearance::Apply(qApp->instance()->property("appearance").toInt());
 
     m_message_dock = new QDockWidget;
     m_messages_widget = new MessageDock;
@@ -310,7 +314,7 @@ SupraFitGui::SupraFitGui()
     m_close_all->setDefaultAction(close_action);
     connect(close_action, &QAction::triggered, this, &SupraFitGui::CloseProjects);
 
-    QHBoxLayout* tools = new QHBoxLayout;
+    FlowLayout* tools = new FlowLayout; // wraps in a narrow left column
     tools->addWidget(m_export_plain);
     tools->addWidget(m_export_suprafit);
     if (qApp->instance()->property("advanced_ui").toBool()) {
@@ -452,18 +456,9 @@ SupraFitGui::SupraFitGui()
 
 
     setActionEnabled(false);
-    setStyleSheet("QSplitter::handle:vertical {"
-                  "background: qlineargradient(x1:0, y1:0, x2:1, y2:1;"
-                  "stop:0 #eee, stop:1 #ccc);"
-                  "border: 1px solid #777;"
-                  "height: 1px;"
-                  "margin-top: 2px;"
-                  "margin-bottom: 2px;"
-                  "border-radius: 4px;"
-                  "}"
-                  "QDockWidget {"
-                  "border: 1px solid #777;"
-                  "background: qlineargradient(x1:0, y1:0, x2:1, y2:1;}");
+    // No window-wide style sheet: colours come from the application palette (Appearance), so light
+    // and dark mode both work. (The former splitter/dock style sheet was malformed and hard-coded grey.)
+    ApplyToolBarStyle();
 
     QStatusBar* statusbar = new QStatusBar;
     QLabel* version = new QLabel(tr("SupraFit %1").arg(git_tag));
@@ -694,7 +689,7 @@ void SupraFitGui::SetupToolBar()
 #ifdef USE_LLM
     QAction* chatAction = m_chat_dock->toggleViewAction();
     chatAction->setText(tr("Agent"));
-    chatAction->setIcon(Icon("help-hint"));
+    chatAction->setIcon(Icon("applications-education-science"));
     chatAction->setToolTip(tr("Show or hide the analysis agent (F5)"));
     chatAction->setShortcut(QKeySequence(tr("F5")));
     m_main_toolbar->addAction(chatAction);
@@ -718,6 +713,18 @@ void SupraFitGui::SetupToolBar()
 
     connect(m_stack_widget, &QStackedWidget::currentChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
     UpdateWorkspaceMenus();
+}
+
+/*! \brief Apply the "toolbar_style" setting (icon and text, icon only, text only) to the main toolbar
+ * and the buttons above the project list; icon-only saves space on small screens. Claude Generated. */
+void SupraFitGui::ApplyToolBarStyle()
+{
+    const int style = qApp->instance()->property("toolbar_style").toInt();
+    const Qt::ToolButtonStyle main = style == 1 ? Qt::ToolButtonIconOnly : (style == 2 ? Qt::ToolButtonTextOnly : Qt::ToolButtonTextBesideIcon);
+    const Qt::ToolButtonStyle list = style == 1 ? Qt::ToolButtonIconOnly : (style == 2 ? Qt::ToolButtonTextOnly : Qt::ToolButtonTextUnderIcon);
+    m_main_toolbar->setToolButtonStyle(main);
+    for (QToolButton* button : { m_export_plain, m_export_suprafit, static_cast<QToolButton*>(m_add_scatter), m_close_all })
+        button->setToolButtonStyle(list);
 }
 
 /*! \brief Point the Data/Model/Evaluation toolbar buttons at the workspace menus of the project on
@@ -1362,6 +1369,8 @@ void SupraFitGui::SettingsDialog()
     if (dialog.exec() == QDialog::Accepted) {
         m_opt_config = dialog.Config();
         //m_model_dataholder->setSettings(m_opt_config);
+        Appearance::Apply(qApp->instance()->property("appearance").toInt());
+        ApplyToolBarStyle();
         WriteSettings();
         emit Instance::GlobalInstance()->ConfigurationChanged();
     }

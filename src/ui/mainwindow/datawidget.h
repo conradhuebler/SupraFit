@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,8 @@ public:
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
     void setEditable(bool editable);
-    virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
+    // small enough for 1024x600 screens; the panes inside scroll or wrap (UI redesign WP6)
+    virtual QSize minimumSizeHint() const override { return QSize(420, 320); }
 
 private:
     void UpdateRanges();

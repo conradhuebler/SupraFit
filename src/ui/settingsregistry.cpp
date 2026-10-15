@@ -29,6 +29,7 @@ static const QString gGeneral = QObject::tr("General Settings");
 static const QString gSave = QObject::tr("File Save Settings");
 static const QString gCalc = QObject::tr("Standard Calculation");
 static const QString gChart = QObject::tr("Chart Settings");
+static const QString gAppearance = QObject::tr("Appearance");
 
 namespace {
     /*! \brief Small fluent builder so the table below reads one setting per line. Claude Generated */
@@ -48,6 +49,7 @@ namespace {
         Def& step(double s) { d.step = s; return *this; }
         Def& decimals(int n) { d.decimals = n; return *this; }
         Def& suffix(const QString& s) { d.suffix = s; return *this; }
+        Def& choices(const QStringList& c) { d.choices = c; return *this; }
         Def& dependsOn(const QString& k) { d.dependsOn = k; return *this; }
         Def& custom() { d.kind = Kind::Custom; return *this; }
         Def& hidden() { d.inDialog = false; return *this; } // persisted, but no auto widget
@@ -79,6 +81,10 @@ const QVector<SettingDef>& registry()
         v << Def("UnsafeCopy", false, Kind::Bool).group(gGeneral).label(QObject::tr("Unsafe Copy of Models")).tip(QObject::tr("If this is enabled, on can copy the model parameter of any model into another via Drag 'n' Drop. If disabled, only Models of the same type are compatible. - Please, don't enable without purpose. SupraFit may behave inappropriately and crash ...."));
         v << Def("ask_on_exit", true, Kind::Bool).group(gGeneral).label(QObject::tr("Confirm quit of SupraFit")).tip(QObject::tr("Confirm quit of SupraFit"));
         v << Def("save_on_exit", true, Kind::Bool).session().hidden(); // widget currently not shown; not persisted (legacy behaviour)
+
+        // ---- Appearance (applied at once, no restart) ----
+        v << Def("appearance", 0, Kind::Choice).group(gAppearance).label(QObject::tr("Colour scheme:")).choices({ QObject::tr("System"), QObject::tr("Light"), QObject::tr("Dark") }).tip(QObject::tr("Colours of windows, tables and charts: follow the system, or always light or dark."));
+        v << Def("toolbar_style", 0, Kind::Choice).group(gAppearance).label(QObject::tr("Toolbar buttons:")).choices({ QObject::tr("Icon and text"), QObject::tr("Icon only"), QObject::tr("Text only") }).tip(QObject::tr("How the buttons of the main toolbar and the project list are shown; \"Icon only\" saves space on small screens."));
 
         // ---- File Save Settings ----
         v << Def("StoreRawData", true, Kind::Bool).group(gSave).label(QObject::tr("Store raw data (thermograms etc) in SupraFit Project files.")).tip(QObject::tr("Store the original data within the SupraFit project. This may increase the file size and impact the save/write performance negativly or even crash the file for Qt < 5.15 due to the json bug."));

@@ -127,7 +127,7 @@ public:
         qreal pd = p * 360;
         qreal rd = 360 - pd;
         QPainter p(this);
-        p.fillRect(rect(), Qt::white);
+        p.fillRect(rect(), palette().color(QPalette::Base));
         p.translate(4, 4);
         p.setRenderHint(QPainter::Antialiasing);
         QPainterPath path, path2;
@@ -140,7 +140,7 @@ public:
         p.strokePath(path, pen);
         path2.moveTo(100, 0);
         pen2.setWidth(8);
-        pen2.setColor(QColor("#d7d7d7"));
+        pen2.setColor(palette().color(QPalette::Mid));
         pen2.setCapStyle(Qt::FlatCap);
         pen2.setDashPattern(QVector<qreal>{ 0.5, 1.105 });
         path2.arcTo(QRectF(0, 0, 200, 200), 90, rd);
@@ -249,12 +249,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             [i, constant, this, check]() {
                 if (this->m_model && constant) {
                     if (this->m_model->GlobalEnabled(i)) {
-                        constant->setStyleSheet("background-color: " + included());
+                        constant->setStyleSheet("background-color: " + included() + " color: black;");
                         check->setEnabled(true);
                         check->setChecked(m_model->GlobalTable()->isChecked(0, i));
                     } else {
                         check->setEnabled(false);
-                        constant->setStyleSheet("background-color: " + excluded());
+                        constant->setStyleSheet("background-color: " + excluded() + " color: black;");
                     }
                 }
             });
@@ -887,8 +887,12 @@ void ModelWidget::UpdateSeriesOrientation()
     if (!m_series_splitter || m_series_splitter->count() < 2)
         return;
     const Qt::Orientation orientation = width() >= 900 ? Qt::Horizontal : Qt::Vertical;
-    if (m_series_splitter->orientation() != orientation)
+    if (m_series_splitter->orientation() != orientation) {
         m_series_splitter->setOrientation(orientation);
+        // share the space evenly after a switch, the old sizes belong to the other direction
+        const int total = orientation == Qt::Horizontal ? m_series_splitter->width() : m_series_splitter->height();
+        m_series_splitter->setSizes({ total / 2, total - total / 2 });
+    }
 }
 
 void ModelWidget::resizeEvent(QResizeEvent* event)
@@ -909,7 +913,7 @@ void ModelWidget::SplitterResized()
 void ModelWidget::resizeButtons()
 {
     m_minimize_all->setMaximumSize(70, 30);
-    m_minimize_all->setStyleSheet("background-color: #77d740;");
+    m_minimize_all->setStyleSheet("background-color: #77d740; color: black;");
 }
 
 void ModelWidget::setParameter()

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,11 +61,11 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
                             box->setValue(m_model.toStrongRef().data()->LocalParameter(i, 0));
                         }
                     if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
-                        box->setStyleSheet("background-color: " + included());
+                        box->setStyleSheet("background-color: " + included() + " color: black;");
                         check->setEnabled(true);
                         check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(0, i));
                     } else {
-                        box->setStyleSheet("background-color: " + excluded());
+                        box->setStyleSheet("background-color: " + excluded() + " color: black;");
                         check->setEnabled(false);
                     }
                 }

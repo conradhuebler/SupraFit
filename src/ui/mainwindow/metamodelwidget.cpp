@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2023 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,18 +83,18 @@ void MetaModelWidget::setUi()
 
     m_calculate = new QPushButton(tr("Calculate"));
     layout->addWidget(m_calculate, 1, 0);
-    m_calculate->setStyleSheet("background-color: #77d740;");
+    m_calculate->setStyleSheet("background-color: #77d740; color: black;");
 
     m_minimize = new QPushButton(tr("Minimize"));
     layout->addWidget(m_minimize, 1, 1);
-    m_minimize->setStyleSheet("background-color: #77d740;");
+    m_minimize->setStyleSheet("background-color: #77d740; color: black;");
     layout->addWidget(new QLabel(tr("Connection Strategy for Parameters:")), 1, 2);
     m_history = new QPushButton(tr("Optimisation History"));
     layout->addWidget(m_history, 1, 2);
-    m_history->setStyleSheet("background-color: #77d740;");
+    m_history->setStyleSheet("background-color: #77d740; color: black;");
 
     m_type = new QComboBox;
-    m_type->setStyleSheet("background-color: #77d740;");
+    m_type->setStyleSheet("background-color: #77d740; color: black;");
     m_type->addItems(QStringList() << "None"
                                    << "All"
                                    << "Custom");

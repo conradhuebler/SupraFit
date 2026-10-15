@@ -66,3 +66,5 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 - WP1 toolbar/menus: 🤖 ⚙️ build + offscreen render (`docs/ui_redesign/wp1_*.png`); clicks/shortcuts not exercised headless
 - WP2 Projects + Log column: 🤖 ⚙️ build + offscreen render (`wp2_*.png`); unread indicator and F4 not exercised headless
 - WP3 model tab: 🤖 ⚙️ build + offscreen render (`wp3_after_*.png`); fitting, scan, statistic and dialogs not exercised headless
+- WP4–WP6 polish, appearance, small screens: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, offscreen renders light/dark at 1920, 1600, 1366x768, 1024x600 (`light_*`, `dark_*`, `small_*`); live switching via the dialog not clicked headless
+- Open: CuteChart's flat "Tools" button has black text (unreadable on dark charts; fix in CuteChart); chart export in dark mode carries light axis labels (exporter keeps the on-screen colours); dark PNG icons (copy, logo curve) low-contrast on dark; at 1024x600 the agent dock does not fit beside the workspace (float or hide it)

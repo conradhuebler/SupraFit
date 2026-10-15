@@ -192,6 +192,18 @@ QWidget* ConfigDialog::buildTab(const QString& group)
             h->addWidget(box);
             layout->addLayout(h);
             m_widgets.insert(d.key, box);
+        } else if (d.kind == SupraFitSettings::Kind::Choice) {
+            QComboBox* box = new QComboBox;
+            box->addItems(d.choices);
+            box->setCurrentIndex(qBound(0, value.toInt(), int(d.choices.size()) - 1));
+            if (!d.tooltip.isEmpty())
+                box->setToolTip(d.tooltip);
+            QHBoxLayout* h = new QHBoxLayout;
+            h->addWidget(new QLabel(d.label));
+            h->addWidget(box);
+            h->addStretch();
+            layout->addLayout(h);
+            m_widgets.insert(d.key, box);
         } else if (d.kind == SupraFitSettings::Kind::String) {
             QLineEdit* edit = new QLineEdit(value.toString());
             edit->setClearButtonEnabled(true);
@@ -281,6 +293,8 @@ void ConfigDialog::accept()
             app->setProperty(qPrintable(d.key), box->value());
         else if (QDoubleSpinBox* box = qobject_cast<QDoubleSpinBox*>(w))
             app->setProperty(qPrintable(d.key), box->value());
+        else if (QComboBox* box = qobject_cast<QComboBox*>(w))
+            app->setProperty(qPrintable(d.key), box->currentIndex());
         else if (QLineEdit* edit = qobject_cast<QLineEdit*>(w))
             app->setProperty(qPrintable(d.key), edit->text());
     }
