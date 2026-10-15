@@ -37,6 +37,9 @@
 #include "src/global_infos.h"
 #include "src/version.h"
 
+#ifdef USE_LLM
+#include "src/agent/agentrunner.h"
+#endif
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QDateTime>
@@ -869,6 +872,18 @@ int main(int argc, char** argv)
         "Specific model index to extract (use with --extract-parameters)", "model_index");
     parser.addOption(extractModel);
 
+#ifdef USE_LLM
+    // Claude Generated: agentic analysis against an OpenAI-compatible endpoint
+    QCommandLineOption agentQuestion("agent", "Ask the LLM agent a question about the loaded projects (-i)", "question");
+    parser.addOption(agentQuestion);
+    QCommandLineOption agentProfile("profile", "LLM profile from the config (default: active profile)", "name");
+    parser.addOption(agentProfile);
+    QCommandLineOption agentConfig("llm-config", "LLM config file (default: ~/.config/suprafit/llm.json)", "file");
+    parser.addOption(agentConfig);
+    QCommandLineOption agentReasoning("agent-reasoning", "Print the model's reasoning to stderr");
+    parser.addOption(agentReasoning);
+#endif
+
     parser.process(app);
 
     // Show version info
@@ -947,6 +962,28 @@ int main(int argc, char** argv)
         std::cout << "ML Pipeline batch processing completed!" << std::endl;
         return 0;
     }
+
+#ifdef USE_LLM
+    if (parser.isSet("agent")) {
+        // Load every -i/positional file into the ProjectManager, then hand over.
+        QStringList files = inputFiles;
+        files << parser.positionalArguments();
+        for (const QString& f : files) {
+            SupraFitCli cli;
+            cli.setInFile(f);
+            if (!cli.LoadFile()) {
+                std::cout << "ERROR: Could not load " << f.toStdString() << std::endl;
+                return 1;
+            }
+        }
+        AgentRunOptions opt;
+        opt.question = parser.value("agent");
+        opt.profileName = parser.value("profile");
+        opt.configPath = parser.value("llm-config");
+        opt.showReasoning = parser.isSet("agent-reasoning");
+        return runAgent(opt);
+    }
+#endif
 
     // Show help if no arguments
     if (inputFile.isEmpty() && parser.positionalArguments().isEmpty()) {

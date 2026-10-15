@@ -630,6 +630,7 @@ if(USE_LLM)
         src/agent/llmsession.cpp
         src/agent/tools_project.cpp
         src/agent/tools_analysis.cpp
+        src/agent/agentrunner.cpp
     )
     add_library(agent ${agent_SRC})
     target_link_libraries(agent Qt::Core Qt::Network models core fmt::fmt-header-only)
