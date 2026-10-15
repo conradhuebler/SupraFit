@@ -39,6 +39,9 @@ the pre-redesign state is captured in `docs/ui_redesign/before_*.png`.
   the pink hierarchy; they go into Model/Evaluation where they belong by meaning.
 - A4: Log stays a toggleable panel (F4) with the unread indicator on its toggle action; it is a
   vertical split under the project tree, not a free dock.
+- A6: The arrow from "Fit model" to tab "1" means the fit controls become the first tab beside
+  Model Options (2) and System Parameter (3); the small yellow box under the tabs is the action row.
+  In narrow workspaces (< 900 px) the data series move below the tabs instead of beside them.
 - A5: No QMenuBar (would add a row); all actions with shortcuts are registered on the window so the
   shortcuts work although the actions sit in drop-down menus.
 
@@ -62,3 +65,4 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 - WP0 design note + mockup: 🤖 committed
 - WP1 toolbar/menus: 🤖 ⚙️ build + offscreen render (`docs/ui_redesign/wp1_*.png`); clicks/shortcuts not exercised headless
 - WP2 Projects + Log column: 🤖 ⚙️ build + offscreen render (`wp2_*.png`); unread indicator and F4 not exercised headless
+- WP3 model tab: 🤖 ⚙️ build + offscreen render (`wp3_after_*.png`); fitting, scan, statistic and dialogs not exercised headless

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
+
+#include "src/ui/guitools/flowlayout.h"
 
 #include "modelactions.h"
 
@@ -59,7 +61,9 @@ void ModelActions::setUi()
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
 
-    QHBoxLayout* h_layout = new QHBoxLayout;
+    // Both button rows wrap when the pane is narrow (FlowLayout). Claude Generated (layout).
+    layout->setContentsMargins(0, 4, 0, 0);
+    FlowLayout* h_layout = new FlowLayout;
     h_layout->addWidget(m_advanced);
     h_layout->addWidget(m_statistics);
     h_layout->addWidget(m_plots);
@@ -67,22 +71,19 @@ void ModelActions::setUi()
     h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_restore);
     h_layout->addWidget(m_charts);
-    h_layout->addStretch();
     h_layout->addWidget(m_toggle);
-    h_layout->setAlignment(Qt::AlignLeft);
     layout->addLayout(h_layout);
 
     m_second = new QWidget;
     layout->addWidget(m_second);
 
-    h_layout = new QHBoxLayout;
+    h_layout = new FlowLayout;
+    h_layout->setContentsMargins(0, 0, 0, 0);
     h_layout->addWidget(m_minimize_single);
     h_layout->addWidget(m_save);
     h_layout->addWidget(m_import);
     h_layout->addWidget(m_export);
     h_layout->addWidget(m_optim_config);
-    h_layout->addStretch();
-    h_layout->setAlignment(Qt::AlignLeft);
     m_second->setLayout(h_layout);
 
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(ToggleMore()));

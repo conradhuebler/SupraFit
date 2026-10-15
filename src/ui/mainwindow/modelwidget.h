@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -151,7 +151,9 @@ private:
     QVBoxLayout* m_sign_layout;
     QLineEdit* m_model_name;
     QWidget* m_model_widget;
-    QSplitter* m_splitter;
+    QSplitter* m_splitter; ///< vertical: model tabs + data series | fit results
+    QSplitter* m_series_splitter = nullptr; ///< model tabs + actions | data series (beside or below)
+    void UpdateSeriesOrientation();
     StatisticWidget* m_statistic_widget;
     ModalDialog *m_dialogs, *m_charts_dialogs;
     ResultsDialog* m_results;
@@ -171,6 +173,9 @@ private:
     virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
 
     QVector<OptimisationHistory> m_optimisationhistory;
+
+protected:
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
     void Repaint();

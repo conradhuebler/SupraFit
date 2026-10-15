@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
+
+#include "src/ui/guitools/flowlayout.h"
 
 #include "exportsimulationwidget.h"
 
@@ -190,7 +192,7 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     m_variance->setDecimals(5);
     m_variance->setValue(1e-3);
 
-    QHBoxLayout* hlayout = new QHBoxLayout;
+    FlowLayout* hlayout = new FlowLayout; // wraps in narrow panes
     hlayout->addWidget(m_include_deactivated);
     hlayout->addWidget(m_ideal);
     hlayout->addWidget(m_mc_std);

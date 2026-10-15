@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -360,19 +360,20 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_minimize_all->setMenu(menu);
 
 
+    // Fit controls first (which parameters, Fit button), the goodness-of-fit labels and simulated
+    // data exports underneath; the export row wraps in narrow panes. Claude Generated (layout).
+    m_global_box->setToolTip(tr("Optimise the global parameters (stability constants)"));
+    m_local_box->setToolTip(tr("Optimise the local parameters (signals of the pure species)"));
+    m_minimize_all->setToolTip(tr("Fit the model to the data; the arrow offers fit variants and solvers"));
     QGridLayout* fit_layout = new QGridLayout;
-    fit_layout->addWidget(new ExportSimulationWidget(m_model, this), 0, 0);
-    fit_layout->addWidget(m_global_box, 0, 1);
-    fit_layout->addWidget(m_local_box, 0, 2);
+    fit_layout->addWidget(m_global_box, 0, 0);
+    fit_layout->addWidget(m_local_box, 0, 1);
+    fit_layout->setColumnStretch(2, 1);
     if (m_model->Type() != DataClassPrivate::Simulation)
         fit_layout->addWidget(m_minimize_all, 0, 3);
+    fit_layout->addWidget(new ExportSimulationWidget(m_model, this), 1, 0, 1, 4);
 
-    QGroupBox* fitbox = new QGroupBox;
-    fitbox->setTitle(tr("Fit model"));
-    fitbox->setAlignment(Qt::AlignHCenter);
-    fitbox->setLayout(fit_layout),
-
-        m_layout->addWidget(fitbox);
+    m_layout->addLayout(fit_layout);
     m_layout->addLayout(const_layout);
 
 
@@ -404,10 +405,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     }
 
     m_layout->addLayout(name_layout);
+    m_layout->addStretch();
 
+    // Page "Fit model": fit controls, global parameters and the model name. It is the first tab of
+    // the model tab widget, next to the model options and system parameters. Claude Generated.
     QWidget* widget = new QWidget;
     widget->setLayout(m_layout);
-    m_splitter->addWidget(widget);
+    QScrollArea* fit_page = new QScrollArea;
+    fit_page->setWidgetResizable(true);
+    fit_page->setFrameShape(QFrame::NoFrame);
+    fit_page->setWidget(widget);
 
     m_model_options_widget = new OptionsWidget(m_model);
     //m_layout->addWidget(m_model_options_widget);
@@ -514,6 +521,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_model_parameter = area;
 
     QTabWidget* model_tab = new QTabWidget;
+    model_tab->setDocumentMode(true);
+    model_tab->addTab(fit_page, tr("Fit model"));
 
     if (m_model->OptionsCount())
         model_tab->addTab(m_model_options, "Model Options");
@@ -524,11 +533,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // Scalable table view for models with many species (additive: the classic view is unchanged).
     if (m_model->UseDynamicParameterWidget())
         model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
-
-    m_splitter->addWidget(model_tab);
-
-    if (m_model->LocalParameterSize())
-        m_splitter->addWidget(m_model_parameter);
 
     m_actions = new ModelActions;
 
@@ -554,15 +558,52 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     resizeButtons();
 
-    //m_splitter->addWidget(m_statistic_widget);
+    /* Layout (operator mockup): the model tabs (fit, options, system parameters, …) with the action
+     * buttons underneath on the left, the data series (per-series parameters) on the right, and the
+     * fit results across the bottom. Both splitters are user-adjustable and stored per model type.
+     * Claude Generated. */
+    QWidget* left = new QWidget;
+    QVBoxLayout* left_layout = new QVBoxLayout;
+    left_layout->setContentsMargins(0, 0, 0, 0);
+    left_layout->addWidget(model_tab);
+    left_layout->addWidget(m_actions);
+    left->setLayout(left_layout);
+
+    m_series_splitter = new QSplitter(Qt::Horizontal);
+    m_series_splitter->setObjectName("modelSeriesSplitter");
+    m_series_splitter->addWidget(left);
+    left->setMinimumWidth(320);
+    if (m_model->LocalParameterSize()) {
+        QGroupBox* series_box = new QGroupBox(tr("Data series"));
+        series_box->setToolTip(tr("Local parameters of each data series, their inclusion in the fit and their appearance in the charts"));
+        QVBoxLayout* series_layout = new QVBoxLayout;
+        series_layout->setContentsMargins(4, 4, 4, 4);
+        series_layout->addWidget(m_model_parameter);
+        series_box->setLayout(series_layout);
+        m_series_splitter->addWidget(series_box);
+        m_series_splitter->setStretchFactor(0, 4);
+        m_series_splitter->setStretchFactor(1, 5);
+    }
+    m_splitter->addWidget(m_series_splitter);
+
+    QGroupBox* results_box = new QGroupBox(tr("Fit results"));
+    results_box->setToolTip(tr("Goodness of fit and statistics of the current model"));
+    QVBoxLayout* results_layout = new QVBoxLayout;
+    results_layout->setContentsMargins(4, 4, 4, 4);
+    results_layout->addWidget(m_statistic_widget);
+    results_box->setLayout(results_layout);
+    results_box->setHidden(m_model->isSimulation());
+    m_splitter->addWidget(results_box);
+    m_splitter->setStretchFactor(0, 3);
+    m_splitter->setStretchFactor(1, 1);
+
     m_statistic_widget->setHidden(m_model->isSimulation());
 
     connect(m_splitter, &QSplitter::splitterMoved, this, &ModelWidget::SplitterResized);
+    connect(m_series_splitter, &QSplitter::splitterMoved, this, &ModelWidget::SplitterResized);
     QVBoxLayout* vlayout = new QVBoxLayout;
+    vlayout->setContentsMargins(4, 4, 4, 4);
     vlayout->addWidget(m_splitter);
-    vlayout->addWidget(m_actions);
-    vlayout->addWidget(m_statistic_widget);
-    m_statistic_widget->setMaximumHeight(200);
 
     setLayout(vlayout);
     m_last_model = m_model->ExportModel(true, true);
@@ -641,12 +682,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 */
     // No pane may collapse to nothing: the per-series parameter pane (the shift editors) is the last
     // one added and would otherwise silently vanish. Claude Generated.
-    for (int i = 0; i < m_splitter->count(); ++i)
-        m_splitter->setCollapsible(i, false);
+    for (QSplitter* splitter : { m_splitter, m_series_splitter })
+        for (int i = 0; i < splitter->count(); ++i)
+            splitter->setCollapsible(i, false);
 
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
+    m_series_splitter->restoreState(settings.value(SplitterSettingsKey() + " series").toByteArray());
     settings.endGroup();
     emit m_model->Recalculated();
 }
@@ -833,7 +876,25 @@ QString ModelWidget::SplitterSettingsKey() const
      * scripted models shared the key "model 100", so a state saved for a 2-pane layout was restored
      * into a 3-pane one and QSplitter gave the extra pane height 0 — the per-series shift editors
      * disappeared entirely even though the model was fully defined. Claude Generated. */
-    return QString("model %1 panes %2").arg(m_model->SFModel()).arg(m_splitter->count());
+    // "layout 2": tabs | data series over fit results (2026 redesign); older states do not fit it.
+    return QString("layout 2 model %1 panes %2").arg(m_model->SFModel()).arg(m_series_splitter->count());
+}
+
+/*! \brief Put the data series beside the model tabs when there is room, otherwise below them, so
+ * the model tab stays usable in narrow workspaces (small screens, open agent dock). Claude Generated. */
+void ModelWidget::UpdateSeriesOrientation()
+{
+    if (!m_series_splitter || m_series_splitter->count() < 2)
+        return;
+    const Qt::Orientation orientation = width() >= 900 ? Qt::Horizontal : Qt::Vertical;
+    if (m_series_splitter->orientation() != orientation)
+        m_series_splitter->setOrientation(orientation);
+}
+
+void ModelWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    UpdateSeriesOrientation();
 }
 
 void ModelWidget::SplitterResized()
@@ -841,6 +902,7 @@ void ModelWidget::SplitterResized()
     QSettings settings;
     settings.beginGroup("model");
     settings.setValue(SplitterSettingsKey(), m_splitter->saveState());
+    settings.setValue(SplitterSettingsKey() + " series", m_series_splitter->saveState());
     settings.endGroup();
 }
 
