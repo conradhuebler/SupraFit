@@ -1226,4 +1226,24 @@ if(USE_LLM)
         target_link_libraries(test_tools_project pthread dl)
     endif()
     add_test(NAME ToolsProjectTest COMMAND test_tools_project)
+
+    # Phase-5 compute tools: fit, compare, post-process, BC50 (no GUI, no net).
+    # Same cyclic link group as the Phase-4 test.
+    add_executable(test_tools_analysis
+        test_tools_analysis.cpp
+    )
+    target_compile_definitions(test_tools_analysis PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_link_libraries(test_tools_analysis
+        Qt6::Core
+        Qt6::Test
+        Qt6::Qml
+        -Wl,--start-group models core agent models core -Wl,--end-group
+        fmt::fmt-header-only
+        ${CMAKE_THREAD_LIBS_INIT}
+    )
+    if(UNIX)
+        target_link_libraries(test_tools_analysis pthread dl)
+    endif()
+    add_test(NAME ToolsAnalysisTest COMMAND test_tools_analysis)
 endif()

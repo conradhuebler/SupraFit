@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0+1+2+3+4 done, Phase 5 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0–5 done, Phase 6 next) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -200,7 +200,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   (die wären riesig im Kontext; `get_model_parameters` kommt in Phase 5).
   Test gegen echtes Referenzprojekt `simulated_1_1.json` (4 Modelle, 20×2/20×7,
   R²>0.9, ids 1/3/2/4, konvergiert) — kein GUI, kein Netz.
-- **Phase 5 (3-4 days).** Compute-Tools. `fit_model` ist `Effect::Compute` —
+- **Phase 5 (3-4 days).** ✅ **DONE 2026-10-15** (`tools_analysis.{h,cpp}`, `test_tools_analysis` 10/10). Compute-Tools. `fit_model` ist `Effect::Compute` —
   **immer mit Freigabe**. `compare_models_aic` und `run_postfit_analysis` sind
   `Read` (lesen nur Fit-Ergebnisse) bzw. `Compute` (starten Statistik-Jobs).
   `calculate_bc50` ist `Read` (rechnet aus vorhandenen Parametern).
