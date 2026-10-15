@@ -232,8 +232,11 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
-    // Claude Generated - Properly clean up model storage containers to prevent exit crash
-    d->m_stored_models_by_pointer.clear();
+    // Claude Generated - Properly clean up model storage containers to prevent exit crash.
+    // d is shared with every model and clone of this data set: a clone (e.g. the optimiser's) must
+    // not clear the store, or the project loses the owning pointers of all its models.
+    if (d && d->ref.loadRelaxed() <= 1)
+        d->m_stored_models_by_pointer.clear();
 }
 
 void DataClass::NewUUID()
