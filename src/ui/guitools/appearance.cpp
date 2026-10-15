@@ -25,6 +25,7 @@
 #include <QtGui/QStyleHints>
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QStyle>
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QAbstractAxis>
@@ -98,6 +99,19 @@ void RestyleAllCharts()
     }
 }
 
+/*! \brief Polishes every widget again after a palette change. A widget that carries a style sheet (or sits
+ * below one) keeps the palette it resolved at creation time and ignores later application palettes, which
+ * left whole workspaces light after switching to the dark scheme. Claude Generated. */
+void RepolishAllWidgets()
+{
+    for (QWidget* widget : QApplication::allWidgets()) {
+        QStyle* style = widget->style();
+        style->unpolish(widget);
+        style->polish(widget);
+        widget->update();
+    }
+}
+
 /*! \brief Restyles chart views when they are shown, so charts created after Apply() (new projects,
  * dialogs) match the palette as well. */
 class ChartStyler : public QObject {
@@ -138,6 +152,7 @@ void Apply(int mode)
     else
         QApplication::setPalette(g_system_palette);
     // let the palette change propagate before the charts read it
+    QTimer::singleShot(0, qApp, &RepolishAllWidgets);
     QTimer::singleShot(0, qApp, &RestyleAllCharts);
 }
 
