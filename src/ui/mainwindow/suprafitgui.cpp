@@ -2375,14 +2375,15 @@ void SupraFitGui::onModelAdded(const QString& projectId, const QString& modelId)
     if (m_project_windows.contains(projectId)) {
         MainWindow* window = m_project_windows[projectId];
         
-        // Get the specific model using new ProjectManager API
-        auto model = SupraFit::ProjectManager::instance().getModel(projectId, modelId);
-        if (model) {
-            qDebug() << "SupraFitGui::onModelAdded: Found model" << model->Name() << ", creating widget";
-            // Use ModelDataHolder to create ModelWidget immediately
-            window->getModelDataHolder()->createModelWidgetFromModel(model);
-        } else {
-            qWarning() << "SupraFitGui::onModelAdded: Could not retrieve model" << modelId << "from ProjectManager";
+        // The signal carries the model's ModelUUID; getModel() compares the children's project UUID,
+        // which every model of a project shares, so it never found the model. Look it up by ModelUUID,
+        // and let the holder skip models it already shows (GUI-created ones). Claude Generated.
+        const auto models = SupraFit::ProjectManager::instance().getProjectModels(projectId);
+        for (const auto& model : models) {
+            if (model && model->ModelUUID() == modelId) {
+                window->getModelDataHolder()->ensureModelWidget(model);
+                break;
+            }
         }
     } else {
         qWarning() << "SupraFitGui::onModelAdded: Still no MainWindow found for project" << projectId << "after creation attempt";

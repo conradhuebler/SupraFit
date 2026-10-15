@@ -1080,6 +1080,13 @@ void ModelDataHolder::createModelWidgetFromModel(QSharedPointer<AbstractModel> m
     }
 }
 
+void ModelDataHolder::ensureModelWidget(QSharedPointer<AbstractModel> model)
+{
+    if (!model || findModelTabByUUID(model->ModelUUID()) != -1)
+        return;
+    createModelWidgetFromModel(model);
+}
+
 void ModelDataHolder::syncModelsWithProjectManager()
 {
     // Claude Generated - Synchronize ModelDataHolder with ProjectManager models

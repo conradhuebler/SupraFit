@@ -194,6 +194,10 @@ public:
      * Creates ModelWidgets for all models in the current project
      */
     void syncModelsWithProjectManager();
+
+    /*! \brief Create the widget for a model added from outside the GUI (e.g. by the LLM agent through
+     * the ProjectManager), unless this holder already shows it. Claude Generated. */
+    void ensureModelWidget(QSharedPointer<AbstractModel> model);
     
     /**
      * @brief Find tab index for model with given UUID
