@@ -127,6 +127,7 @@ Roadmap: [roadmap/llm_agent_analysis.md](roadmap/llm_agent_analysis.md) · Branc
 - [x] **Phase 6** — ✅ DONE 2026-10-15 (🤖/⚙️, Live-Lauf 👁️ ausstehend): `suprafit_cli -i <proj.json> --agent "Frage" [--profile n] [--llm-config f] [--agent-reasoning]`, `src/agent/agentrunner.{h,cpp}`, Freigabe `InProgram`. Config: `QStandardPaths` (`~/.config/Conrad Huebler/SupraFit/llm.json`), `model` muss gesetzt sein. Live gegen `ornith-1.5:9b`: 3 Tools, 11 s.
 - [x] **Phase 7** — 🤖/⚙️ (baut, GUI startet offscreen; Chat im Dock noch NICHT interaktiv getestet 👁️ offen): `src/ui/widgets/chatdock.{h,cpp}`, F5-Toggle in der System-Toolbar, Profil-/Autonomie-Auswahl, Rückfrage-Dialog für nicht freigegebene Tools. Offen: Stop während Fit, Streaming-Anzeige, Reasoning-Anzeige.
 - [x] `add_model` (Mutate; `model_ids`-Array, lehnt Modelle mit `DemandInput()` ab) + `items` im Schema-Validator, 2026-10-15 🤖/⚙️
+- [x] `define_script_model` (Mutate): LLM schreibt ein Modell per ExprTk-Gleichung (global/local names, Guess; Parser-Fehler gehen als Klartext zurück; lokale Startwerte default aus Datenbereich), 2026-10-15 🤖/⚙️ — Live-Lauf gegen glm-5.2 👁️ ausstehend
 - [ ] **Bug (pre-existing):** `FileImportReferenceTest` SEGFAULT im frischen Build — relativer Pfad `../input/1_1_1_2_001.dat` fehlt, null DataTable wird dereferenziert.
 - [ ] **Phase 6** — CLI: `suprafit_cli --agent "Frage"` headless gegen Ollama
 - [ ] **Phase 7** — GUI Chat-Dock (später, eigene Phase)

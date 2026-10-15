@@ -24,7 +24,12 @@
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/models/scriptingengine.h"
+#include "src/core/models/scriptmodel.h"
 #include "src/core/projectmanager.h"
+
+#include <algorithm>
+#include <cmath>
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -163,6 +168,146 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 return ToolResult::failure(QStringLiteral("no model could be added: %1")
                         .arg(QString::fromUtf8(QJsonDocument(added).toJson(QJsonDocument::Compact))));
             return ToolResult::success(out, QStringLiteral("added %1 of %2 model(s)").arg(ok).arg(ids.size()));
+        };
+        if (registry.add(spec))
+            ++registered;
+    }
+
+    // --- define_script_model: let the model write its own model (Mutate) ----------
+    {
+        ToolSpec spec;
+        spec.name = QStringLiteral("define_script_model");
+        spec.description = QStringLiteral(
+            "Define a NEW model from an equation and add it to a project (unfitted; run fit_models afterwards). "
+            "Equation language is ExprTk: statements end with ';', 'var k := pow(10, lgK);' declares a "
+            "temporary, the LAST statement is the returned value (the modelled signal of one data point). "
+            "Available: the independent columns X1..Xn (n = input columns of the project), every name in "
+            "global_names (fitted once for the whole data set) and local_names (fitted separately per data series), "
+            "and functions such as pow, exp, log, sqrt, abs, min, max, sin, cos. Example 1:1 NMR shift with "
+            "host X1, guest X2: 'var K := pow(10, lgK); var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2)); "
+            "((X1 - AB)*dHost + AB*dAB)/X1' with global_names 'lgK', local_names 'dHost|dAB', print_x 'X2/X1', "
+            "global_guess '[2;6]'. Fit binding constants on a log10 scale. An equation that does not evaluate is refused.");
+        spec.category = QStringLiteral("analysis");
+        QJsonObject props;
+        props.insert(QStringLiteral("project_id"), stringProp(QStringLiteral("Project UUID from list_projects")));
+        props.insert(QStringLiteral("name"), stringProp(QStringLiteral("Display name of the model")));
+        props.insert(QStringLiteral("equation"), stringProp(QStringLiteral("ExprTk equation, statements separated by ';' or newlines")));
+        props.insert(QStringLiteral("global_names"), stringProp(QStringLiteral("Global parameter names, '|'-separated, e.g. 'lgK11|lgK12'")));
+        props.insert(QStringLiteral("local_names"), stringProp(QStringLiteral("Optional per-series parameter names, '|'-separated, e.g. 'dHost|dAB'")));
+        props.insert(QStringLiteral("global_guess"), stringProp(QStringLiteral("Optional start ranges, '|'-separated '[min;max]' per global parameter, e.g. '[2;6]'")));
+        props.insert(QStringLiteral("local_guess"), stringProp(QStringLiteral(
+            "Optional start ranges for the per-series parameters, '|'-separated '[min;max]'. Default: the range of the measured data")));
+        props.insert(QStringLiteral("print_x"), stringProp(QStringLiteral("Optional x axis expression for charts, default X1, e.g. 'X2/X1'")));
+        spec.paramSchema = objectSchema(props, { QStringLiteral("project_id"), QStringLiteral("name"),
+                                                 QStringLiteral("equation"), QStringLiteral("global_names") });
+        spec.effect = ToolEffect::Mutate;
+        spec.affinity = ToolAffinity::Any;
+        spec.available = [pm]() { return pm && pm->getProjectCount() > 0; };
+        spec.handler = [pm](const QJsonObject& args) -> ToolResult {
+            if (!pm)
+                return ToolResult::failure(QStringLiteral("no ProjectManager available"));
+            const QString projectId = args.value(QStringLiteral("project_id")).toString();
+            const QSharedPointer<DataClass> data = pm->getProjectData(projectId);
+            if (!data)
+                return ToolResult::failure(QStringLiteral("unknown project_id '%1'").arg(projectId));
+            const QString equation = args.value(QStringLiteral("equation")).toString().trimmed();
+            const QString globalNames = args.value(QStringLiteral("global_names")).toString().trimmed();
+            const QString localNames = args.value(QStringLiteral("local_names")).toString().trimmed();
+            if (equation.isEmpty() || globalNames.isEmpty())
+                return ToolResult::failure(QStringLiteral("equation and global_names must not be empty"));
+            const int nGlobal = globalNames.split(QLatin1Char('|')).size();
+            const int nLocal = localNames.isEmpty() ? 0 : localNames.split(QLatin1Char('|')).size();
+
+            auto withValue = [](QJsonObject descriptor, const QJsonValue& value) {
+                descriptor.insert(QStringLiteral("value"), value);
+                return descriptor;
+            };
+            QJsonObject lines;  // the multi-line editor format: zero-padded line number -> text
+            const QStringList eqLines = equation.split(QLatin1Char('\n'));
+            for (int i = 0; i < eqLines.size(); ++i)
+                lines.insert(QStringLiteral("%1").arg(i, 3, 10, QLatin1Char('0')), eqLines.at(i));
+            const QString printX = args.value(QStringLiteral("print_x")).toString().trimmed();
+            const QString guess = args.value(QStringLiteral("global_guess")).toString().trimmed();
+
+            // Compile the equation first: the parser's own message tells the model what to fix,
+            // where a bad equation inside a ScriptModel only shows up as an all-zero fit.
+            {
+                QStringList variables;
+                for (int k = 1; k <= data->IndependentVariableSize(); ++k)
+                    variables << QStringLiteral("X%1").arg(k);
+                variables << globalNames.split(QLatin1Char('|'));
+                if (nLocal > 0)
+                    variables << localNames.split(QLatin1Char('|'));
+                std::unique_ptr<ScriptingEngine> engine = MakeScriptingEngine(ScriptBackend::ExprTk);
+                if (!engine || !engine->prepare(equation, variables))
+                    return ToolResult::failure(QStringLiteral("the equation does not compile: %1 (variables: %2)")
+                            .arg(engine ? engine->lastError() : QStringLiteral("no engine"), variables.join(QStringLiteral(", "))));
+            }
+
+            QHash<QString, QJsonObject> def;
+            auto put = [&def](const QJsonObject& descriptor) { def.insert(descriptor.value(QStringLiteral("name")).toString(), descriptor); };
+            put(withValue(ModelName_Json, args.value(QStringLiteral("name")).toString()));
+            put(withValue(InputSize_Json, data->IndependentVariableSize()));
+            put(withValue(GlobalParameterSize_Json, nGlobal));
+            put(withValue(GlobalParameterNames_Json, globalNames));
+            put(withValue(LocalParameterSize_Json, nLocal));
+            if (nLocal > 0)
+                put(withValue(LocalParameterNames_Json, localNames));
+            put(withValue(PrintX_Json, printX.isEmpty() ? QStringLiteral("X1") : printX));
+            put(withValue(Engine_Json, QStringLiteral("ExprTk")));
+            put(withValue(Equation_Json, lines));
+            if (!guess.isEmpty())
+                put(withValue(GlobalParameterGuess_Json, guess));
+            if (nLocal > 0) {
+                // A per-series parameter (shift, extinction coefficient, ...) lives on the scale of the
+                // measured signal; starting at 0 leaves the optimiser nowhere to go. Default: the data range.
+                QString localGuess = args.value(QStringLiteral("local_guess")).toString().trimmed();
+                if (localGuess.isEmpty()) {
+                    const DataTable* y = data->DependentModel();
+                    double lo = 0, hi = 0;
+                    bool first = true;
+                    for (int r = 0; y && r < y->rowCount(); ++r)
+                        for (int c = 0; c < y->columnCount(); ++c) {
+                            const double v = y->data(r, c);
+                            if (!std::isfinite(v))
+                                continue;
+                            lo = first ? v : std::min(lo, v);
+                            hi = first ? v : std::max(hi, v);
+                            first = false;
+                        }
+                    const QString one = QStringLiteral("[%1;%2]").arg(lo, 0, 'g', 8).arg(hi, 0, 'g', 8);
+                    QStringList all;
+                    for (int i = 0; i < nLocal; ++i)
+                        all << one;
+                    localGuess = all.join(QLatin1Char('|'));
+                }
+                put(withValue(LocalParameterGuess_Json, localGuess));
+            }
+
+            QSharedPointer<AbstractModel> model = CreateModel(SupraFit::ScriptModel, QPointer<DataClass>(data.data()));
+            if (!model)
+                return ToolResult::failure(QStringLiteral("could not create a script model on this data"));
+            model->setModelDefinition(def);
+            if (!model->DefineModel(QJsonObject()) || !model->Complete())
+                return ToolResult::failure(QStringLiteral("the definition is incomplete or the equation does not parse"));
+
+            // Dry run before anything is attached: the equation must evaluate to finite numbers.
+            model->InitialGuess();
+            model->Calculate();
+            if (!std::isfinite(model->SSE()))
+                return ToolResult::failure(QStringLiteral(
+                    "the equation does not evaluate to finite numbers on this data (check names, X1..Xn and brackets)"));
+
+            data->addModel(model);
+            pm->addModelToProject(model, projectId);
+            QJsonObject out;
+            out.insert(QStringLiteral("project_id"), projectId);
+            out.insert(QStringLiteral("model_index"), pm->getProjectModels(projectId).size() - 1);
+            out.insert(QStringLiteral("name"), model->Name());
+            out.insert(QStringLiteral("global_parameters"), nGlobal);
+            out.insert(QStringLiteral("local_parameters_per_series"), nLocal);
+            out.insert(QStringLiteral("sse_with_start_values"), model->SSE());
+            return ToolResult::success(out, QStringLiteral("defined script model '%1'").arg(model->Name()));
         };
         if (registry.add(spec))
             ++registered;

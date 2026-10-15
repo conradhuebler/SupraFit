@@ -178,8 +178,8 @@ private slots:
 
         const int n = registerAnalysisTools(m_registry, &SupraFit::ProjectManager::instance())
                     + registerProjectTools(m_registry, &SupraFit::ProjectManager::instance());
-        QCOMPARE(n, 11);  // 6 analysis + 5 project
-        for (const char* name : { "add_model", "fit_model", "fit_models", "compare_models_aic",
+        QCOMPARE(n, 12);  // 7 analysis + 5 project
+        for (const char* name : { "add_model", "define_script_model", "fit_model", "fit_models", "compare_models_aic",
                                   "run_postfit_analysis", "calculate_bc50",
                                   "list_projects", "get_project_info", "list_models",
                                   "get_model_fit", "describe_model_catalog" })
@@ -191,6 +191,7 @@ private slots:
         // Compute tools need approval at Ask/InProgram; Read tools never do.
         const QHash<QString, ToolEffect> expected = {
             { QStringLiteral("add_model"), ToolEffect::Mutate },
+            { QStringLiteral("define_script_model"), ToolEffect::Mutate },
             { QStringLiteral("fit_model"), ToolEffect::Compute },
             { QStringLiteral("fit_models"), ToolEffect::Compute },
             { QStringLiteral("run_postfit_analysis"), ToolEffect::Compute },
@@ -246,6 +247,48 @@ private slots:
             QJsonObject{ { QStringLiteral("project_id"), pid } });
         QVERIFY2(fit.ok, qPrintable(fit.error));
         QCOMPARE(fit.data.value(QStringLiteral("count")).toInt(), 2);
+    }
+
+    void defineScriptModelAddsAFittableModel()
+    {
+        const QString pid = makeFreshProject();
+        QVERIFY(!pid.isEmpty());
+        const ToolResult def = m_registry.invoke(QStringLiteral("define_script_model"),
+            QJsonObject{ { QStringLiteral("project_id"), pid },
+                { QStringLiteral("name"), QStringLiteral("agent 1:1 NMR") },
+                { QStringLiteral("equation"), QStringLiteral(
+                    "var K := pow(10, lgK);\n"
+                    "var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2));\n"
+                    "((X1 - AB)*dHost + AB*dAB)/X1") },
+                { QStringLiteral("global_names"), QStringLiteral("lgK") },
+                { QStringLiteral("local_names"), QStringLiteral("dHost|dAB") },
+                { QStringLiteral("global_guess"), QStringLiteral("[2;6]") },
+                { QStringLiteral("print_x"), QStringLiteral("X2/X1") } });
+        QVERIFY2(def.ok, qPrintable(def.error));
+        QCOMPARE(def.data.value(QStringLiteral("model_index")).toInt(), 0);
+        const ToolResult fit = m_registry.invoke(QStringLiteral("fit_model"),
+            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 } });
+        QVERIFY2(fit.ok, qPrintable(fit.error));
+        const double sse = fit.data.value(QStringLiteral("sse")).toDouble();
+        QVERIFY2(std::isfinite(sse) && sse > 0.0, qPrintable(QString::number(sse)));
+        // Same chemistry as the catalogue 1:1 NMR model (SSE ~0.0127): with start values taken from
+        // the data range the scripted model must land in the same neighbourhood, not at SSE ~1e3.
+        QVERIFY2(sse < 1.0, qPrintable(QStringLiteral("scripted 1:1 NMR SSE %1").arg(sse)));
+    }
+
+    void defineScriptModelRefusesBrokenEquations()
+    {
+        const QString pid = makeFreshProject();
+        auto call = [&](const QString& equation) {
+            return m_registry.invoke(QStringLiteral("define_script_model"),
+                QJsonObject{ { QStringLiteral("project_id"), pid },
+                    { QStringLiteral("name"), QStringLiteral("broken") },
+                    { QStringLiteral("equation"), equation },
+                    { QStringLiteral("global_names"), QStringLiteral("a") } });
+        };
+        QVERIFY(!call(QStringLiteral("a*(X1+")).ok);               // does not parse
+        QVERIFY(!call(QStringLiteral("a*unknown_name + X1")).ok);  // undefined symbol
+        QCOMPARE(SupraFit::ProjectManager::instance().getProjectModels(pid).size(), 0);
     }
 
     void addModelRefusesWhenNothingCanBeAdded()
