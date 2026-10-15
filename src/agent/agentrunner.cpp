@@ -63,6 +63,8 @@ int runAgent(const AgentRunOptions& options)
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());
     ToolDispatcher dispatcher(&registry);
+    fmt::print(stderr, "[agent] profile {} model {} | tool catalogue {} bytes\n",
+        profile.name.toStdString(), profile.model.toStdString(), registry.catalogueBytes());
 
     LlmClient client;
     client.setProfile(profile);
