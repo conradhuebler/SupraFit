@@ -280,3 +280,11 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 - Katalog-Größe in Bytes nach jeder Tool-Erweiterung (`catalogueBytes()`).
 - Runden-Anzahl für das Leitszenario pro Modell.
 - Passt das Modell die AIC-Ranking korrekt an den Operator weiter?
+
+**Messergebnisse (2026-10-15, Ollama-Cloud-Modelle, Referenzprojekt `simulated_1_1.json`, je 3 Läufe, Frage: „Fitte alle Modelle neu und vergleiche per AIC; nenne AIC und SSE"):**
+- Katalog: 10 Tools, **5310 Bytes** (`catalogueBytes()`).
+- `gpt-oss:120b-cloud`: 2 Tool-Aufrufe (`list_projects`, `fit_models`), 3–4 s; ließ `compare_models_aic` aus und las AIC/SSE aus dem `fit_models`-Ergebnis.
+- `glm-5.2:cloud`: 3–4 Aufrufe, 11–15 s. `kimi-k2.7-code:cloud`: 3–4 Aufrufe, 8–13 s.
+- Alle Läufe: Ranking und Zahlen identisch mit den gespeicherten Fits (1:1 mit AIC −115,22 / SSE 0,01271 am besten; 2:1/1:1/1:2 nicht konvergiert korrekt gemeldet). Worst case: 4 Aufrufe, 15 s, keine Tool-Fehler.
+- `deepseek-v4-flash:cloud`, `qwen3-coder-next:cloud`: HTTP 410 (Endpunkt abgeschaltet), nicht messbar.
+- Lokale Modelle (`ornith-1.5:9b`: 3 Aufrufe/11 s, nur 1 Lauf mit anderer Frage; `gpt-oss:20b`, `lfm2.5-thinking`) nicht gemessen (GPU frei halten).
