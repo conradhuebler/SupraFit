@@ -22,7 +22,10 @@
 
 #include "src/ui/widgets/textwidget.h"
 
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
@@ -35,14 +38,83 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
     , m_model(model)
 {
 
-    QVBoxLayout* m_layout = new QVBoxLayout;
+    /* Overview as a label/value form that uses the available width (1-3 column pairs), followed by the
+     * model-specific text and the fast-confidence results. One scroll area around everything, so a
+     * scroll bar only appears when the content is taller than the pane. Claude Generated (UI WP8). */
+    QWidget* content = new QWidget;
+    QVBoxLayout* content_layout = new QVBoxLayout;
+    content_layout->setContentsMargins(6, 6, 6, 6);
+    m_grid = new QGridLayout;
+    m_grid->setHorizontalSpacing(18);
+    m_grid->setVerticalSpacing(6);
+    content_layout->addLayout(m_grid);
+
+    const QStringList names = { tr("Model type"), tr("Parameters fitted"), tr("Points used"), tr("Degrees of freedom"),
+        tr("SAE (sum of absolute errors)"), tr("Error threshold (F-test)"), tr("R<sup>2</sup>"), tr("F value"),
+        tr("Mean error"), tr("Variance of the error"), tr("Standard error"), tr("&chi;<sup>2</sup>") };
+    QFont value_font = font();
+    value_font.setPointSizeF(value_font.pointSizeF() * 1.08);
+    value_font.setBold(true);
+    for (const QString& name : names) {
+        QLabel* label = new QLabel(name);
+        label->setForegroundRole(QPalette::PlaceholderText);
+        QLabel* value = new QLabel;
+        value->setFont(value_font);
+        value->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        m_rows << qMakePair(label, value);
+    }
+
     m_overview = new TextWidget;
-    m_overview->setBackgroundRole(QPalette::AlternateBase); // follows the light/dark palette
-    m_layout->addWidget(m_overview);
+    m_overview->setFrameShape(QFrame::NoFrame);
+    m_overview->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_overview->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_overview->viewport()->setAutoFillBackground(false);
+    content_layout->addWidget(m_overview);
+    content_layout->addStretch();
+    content->setLayout(content_layout);
+
+    QScrollArea* area = new QScrollArea;
+    area->setWidgetResizable(true);
+    area->setFrameShape(QFrame::NoFrame);
+    area->setWidget(content);
+
+    QVBoxLayout* m_layout = new QVBoxLayout;
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->addWidget(area);
 
     connect(m_model.toStrongRef().data(), SIGNAL(StatisticChanged()), this, SLOT(Update()));
     setLayout(m_layout);
+    ArrangeRows();
     Update();
+}
+
+void StatisticWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    ArrangeRows();
+    // the text block follows its content height; the outer scroll area scrolls if needed
+    m_overview->document()->setTextWidth(m_overview->viewport()->width());
+    m_overview->setFixedHeight(int(m_overview->document()->size().height()) + 8);
+}
+
+void StatisticWidget::ArrangeRows()
+{
+    const int columns = width() >= 900 ? 3 : (width() >= 560 ? 2 : 1);
+    if (columns == m_columns)
+        return;
+    m_columns = columns;
+    for (const auto& row : std::as_const(m_rows)) {
+        m_grid->removeWidget(row.first);
+        m_grid->removeWidget(row.second);
+    }
+    const int per_column = (m_rows.size() + columns - 1) / columns;
+    for (int i = 0; i < m_rows.size(); ++i) {
+        const int c = i / per_column, r = i % per_column;
+        m_grid->addWidget(m_rows[i].first, r, 2 * c);
+        m_grid->addWidget(m_rows[i].second, r, 2 * c + 1);
+    }
+    for (int c = 0; c < 6; ++c)
+        m_grid->setColumnStretch(c, (c % 2 == 1 && c / 2 < columns) ? 1 : 0);
 }
 
 StatisticWidget::~StatisticWidget()
@@ -96,8 +168,26 @@ void StatisticWidget::Update()
         moco += "</table>\n";
         overview += moco;
     }
-    m_overview->setText(m_short + overview);
     m_statistics = overview;
+
+    auto model = m_model.toStrongRef();
+    const double p = qApp->instance()->property("p_value").toDouble();
+    const QStringList values = { Model2Name(model->SFModel()) + " (" + QString::number(model->SFModel()) + ")",
+        Print::printDouble(model->Parameter()), Print::printDouble(model->Points()),
+        Print::printDouble(model->Points() - model->Parameter()), Print::printDouble(model->SAE()),
+        Print::printDouble(model->ErrorfTestThreshold(p)), Print::printDouble(model->RSquared()),
+        Print::printDouble(model->finv(p)), Print::printDouble(model->MeanError()),
+        Print::printDouble(model->Variance()), Print::printDouble(model->StdError()),
+        Print::printDouble(model->ChiSquared()) };
+    for (int i = 0; i < m_rows.size() && i < values.size(); ++i)
+        m_rows[i].second->setText(values[i]);
+
+    // model-specific text and fast-confidence results below the form (the form holds the numbers)
+    const QString extra = model->ModelInfo() + overview;
+    m_overview->setText(extra);
+    m_overview->setHidden(extra.trimmed().isEmpty());
+    m_overview->document()->setTextWidth(m_overview->viewport()->width());
+    m_overview->setFixedHeight(int(m_overview->document()->size().height()) + 8);
 }
 
 #include "statisticwidget.moc"

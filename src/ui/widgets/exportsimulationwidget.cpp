@@ -163,8 +163,12 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     // Goodness-of-fit read-outs: a separate widget, the model widget shows it with the fit results.
     m_metrics = new QWidget(this);
     QHBoxLayout* metrics = new QHBoxLayout;
-    metrics->setContentsMargins(0, 0, 0, 0);
+    metrics->setContentsMargins(6, 2, 6, 2);
+    metrics->setSpacing(24);
+    QFont headline = font();
+    headline.setPointSizeF(headline.pointSizeF() * 1.15);
     for (ClickLabel* label : { m_sse, m_std, m_sey }) {
+        label->setFont(headline);
         label->setToolTip(tr("Click to copy the value"));
         label->setCursor(Qt::PointingHandCursor);
         metrics->addWidget(label);

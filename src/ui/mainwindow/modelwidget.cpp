@@ -43,6 +43,8 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/flowlayout.h"
+#include "src/ui/guitools/gripsplitter.h"
+#include "src/ui/guitools/sectionstack.h"
 #include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
@@ -168,7 +170,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     } else {
         qDebug() << "❌ ModelWidget: Null model passed to constructor";
     }
-    m_splitter = new QSplitter(this);
+    m_splitter = new GripSplitter(Qt::Vertical, this);
     m_splitter->setObjectName("modelSplitter");
     m_splitter->setOrientation(Qt::Vertical);
 
@@ -423,15 +425,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_readonly = new QCheckBox(tr("Read Only"));
     m_readonly->setToolTip(tr("Lock the local parameters of all data series against editing"));
 
-    FlowLayout* fit_row = new FlowLayout(-1, 10, 4); // wraps in narrow panes instead of clipping
-    fit_row->addWidget(m_global_box);
-    fit_row->addWidget(m_local_box);
-    if (m_model->Type() != DataClassPrivate::Simulation)
-        fit_row->addWidget(m_minimize_all);
+    // Fit row: the options and the status flow on the left (and wrap when narrow), the Fit button
+    // keeps its place at the right end of the first line.
+    QWidget* fit_options = new QWidget;
+    FlowLayout* fit_flow = new FlowLayout(0, 12, 4);
+    fit_flow->addWidget(m_global_box);
+    fit_flow->addWidget(m_local_box);
     if (!m_model->isSimulation())
-        fit_row->addWidget(m_converged_label);
+        fit_flow->addWidget(m_converged_label);
     if (!m_val_readonly && !m_model->isSimulation() && m_model->LocalParameterSize())
-        fit_row->addWidget(m_readonly);
+        fit_flow->addWidget(m_readonly);
+    fit_options->setLayout(fit_flow);
+    QHBoxLayout* fit_row = new QHBoxLayout;
+    fit_row->addWidget(fit_options, 1);
+    if (m_model->Type() != DataClassPrivate::Simulation)
+        fit_row->addWidget(m_minimize_all, 0, Qt::AlignTop | Qt::AlignRight);
 
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->addLayout(name_layout);
@@ -530,30 +538,32 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     area->setWidget(scroll);
     m_model_parameter = area;
 
-    QTabWidget* model_tab = new QTabWidget;
-    model_tab->setDocumentMode(true);
+    // Model pages (options, system parameters, definition, table, simulated data) behind a slim list
+    // on the left instead of a tab bar: no extra row of height. Claude Generated (UI redesign WP8).
+    SectionStack* model_tab = new SectionStack;
 
     if (m_model->OptionsCount())
-        model_tab->addTab(m_model_options, "Model Options");
+        model_tab->addPage(m_model_options, tr("Model Options"));
     if (m_model->SystemParameterCount())
         AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
     // Scalable table view for models with many species (additive: the classic view is unchanged).
     if (m_model->UseDynamicParameterWidget())
-        model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
+        model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"));
 
     // Simulated data sets from this model (drag an entry onto the project list).
     {
         QWidget* page = new QWidget;
         QVBoxLayout* page_layout = new QVBoxLayout;
+        page_layout->setContentsMargins(0, 0, 0, 0);
         QLabel* hint = new QLabel(tr("Drag an entry onto the project list to create a data set simulated from this model."));
         hint->setWordWrap(true);
         page_layout->addWidget(hint);
         page_layout->addWidget(m_simulation_export);
         page_layout->addStretch();
         page->setLayout(page_layout);
-        model_tab->addTab(page, tr("Simulated Data"));
+        model_tab->addPage(page, tr("Simulated Data"));
     }
 
     m_actions = new ModelActions;
@@ -588,7 +598,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QWidget* header = new QWidget;
     header->setLayout(m_layout);
 
-    m_series_splitter = new QSplitter(Qt::Horizontal);
+    m_series_splitter = new GripSplitter(Qt::Horizontal);
     m_series_splitter->setObjectName("modelSeriesSplitter");
     m_series_splitter->addWidget(model_tab);
     model_tab->setMinimumWidth(300);
@@ -611,11 +621,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     results_layout->setContentsMargins(4, 4, 4, 4);
     results_layout->addWidget(m_simulation_export->MetricsWidget());
     results_layout->addWidget(m_statistic_widget);
-    m_statistic_widget->setMinimumHeight(110);
+    m_statistic_widget->setMinimumHeight(140);
     results_box->setLayout(results_layout);
     results_box->setHidden(m_model->isSimulation());
     m_splitter->addWidget(results_box);
-    m_splitter->setStretchFactor(0, m_model->LocalParameterSize() ? 3 : 1);
+    m_splitter->setStretchFactor(0, m_model->LocalParameterSize() ? 2 : 1);
     m_splitter->setStretchFactor(1, 1);
 
     m_statistic_widget->setHidden(m_model->isSimulation());
@@ -712,7 +722,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
     m_series_splitter->restoreState(settings.value(SplitterSettingsKey() + " series").toByteArray());
+    model_tab->setCurrentIndex(settings.value(QString("model %1 page").arg(m_model->SFModel()), 0).toInt());
     settings.endGroup();
+    const int model_type = m_model->SFModel();
+    model_tab->onPageChanged([model_type](int index) {
+        QSettings settings;
+        settings.beginGroup("model");
+        settings.setValue(QString("model %1 page").arg(model_type), index);
+        settings.endGroup();
+    });
     emit m_model->Recalculated();
 }
 
@@ -733,7 +751,7 @@ ModelWidget::~ModelWidget()
     delete m_model.data();
 }
 
-void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
+void ModelWidget::AddScriptModelTab(SectionStack* model_tab)
 {
     QPushButton* update = new QPushButton;
     update->setIcon(Icon("dialog-ok-apply"));
@@ -770,7 +788,6 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
 
     scrollArea->setWidget(widget);
 
-    model_tab->addTab(scrollArea, "Model Definition");
     QPushButton* save = new QPushButton;
     save->setToolTip(tr("Click here to export the current model definition!"));
     connect(save, &QPushButton::clicked, this, [this]() {
@@ -802,27 +819,27 @@ void ModelWidget::AddScriptModelTab(QTabWidget* model_tab)
         emit DuplicateScriptModel(json);
     });
 
-    auto tabbar = model_tab->tabBar();
-    tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, bar);
-    tabbar->setTabText(model_tab->count() - 1, "");
+    update->setToolTip(tr("Apply the model definition now"));
 
+    // page header tools: delayed-update progress, apply, save and duplicate
     QWidget* buttonBar = new QWidget;
     QHBoxLayout* buttonLayout = new QHBoxLayout;
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
     buttonBar->setLayout(buttonLayout);
+    buttonLayout->addWidget(bar);
     buttonLayout->addWidget(update);
     buttonLayout->addWidget(save);
     buttonLayout->addWidget(duplicate);
 
-    tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, buttonBar);
-
-    bar->setFormat("Model Definition");
+    bar->setFormat(tr("Update pending"));
     bar->setValue(0);
     bar->setMaximum(qApp->instance()->property("ScriptTimeout").toInt());
-    bar->setMinimumWidth(150);
-    model_tab->setStyleSheet("QTabBar::tab { height: 35px; width: 250px; }");
+    bar->setMinimumWidth(120);
+    bar->setToolTip(tr("Time until the edited definition is applied"));
+    model_tab->addPage(scrollArea, tr("Model Definition"), buttonBar);
 }
 
-void ModelWidget::AddSystemParameterTab(QTabWidget* model_tab)
+void ModelWidget::AddSystemParameterTab(SectionStack* model_tab)
 {
     if (m_model->getSystemParameterList().size() == 0)
         return;
@@ -844,10 +861,13 @@ void ModelWidget::AddSystemParameterTab(QTabWidget* model_tab)
     });
     m_system_parameter = new SPOverview(m_model.data(), m_val_readonly);
 
-    model_tab->addTab(m_system_parameter, "System Parameter");
-    auto tabbar = model_tab->tabBar();
-    tabbar->setTabButton(model_tab->count() - 1, QTabBar::RightSide, save);
-    tabbar->setTabButton(model_tab->count() - 1, QTabBar::LeftSide, load);
+    QWidget* tools = new QWidget;
+    QHBoxLayout* tools_layout = new QHBoxLayout;
+    tools_layout->setContentsMargins(0, 0, 0, 0);
+    tools_layout->addWidget(load);
+    tools_layout->addWidget(save);
+    tools->setLayout(tools_layout);
+    model_tab->addPage(m_system_parameter, tr("System Parameter"), tools);
 
     connect(load, &QPushButton::clicked, this, [this]() {
         QString str = QFileDialog::getOpenFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
@@ -898,8 +918,8 @@ QString ModelWidget::SplitterSettingsKey() const
      * scripted models shared the key "model 100", so a state saved for a 2-pane layout was restored
      * into a 3-pane one and QSplitter gave the extra pane height 0 — the per-series shift editors
      * disappeared entirely even though the model was fully defined. Claude Generated. */
-    // "layout 3": header, tabs | data series over fit results (2026 redesign); older states do not fit it.
-    return QString("layout 3 model %1 panes %2").arg(m_model->SFModel()).arg(m_series_splitter->count());
+    // "layout 4": header, tabs | data series over fit results (2026 redesign); older states do not fit it.
+    return QString("layout 4 model %1 panes %2").arg(m_model->SFModel()).arg(m_series_splitter->count());
 }
 
 /*! \brief Put the data series beside the model tabs when there is room, otherwise below them, so
@@ -936,7 +956,8 @@ void ModelWidget::SplitterResized()
 
 void ModelWidget::resizeButtons()
 {
-    m_minimize_all->setMaximumSize(70, 30);
+    m_minimize_all->setMinimumWidth(90);
+    m_minimize_all->setMaximumSize(120, 32);
     m_minimize_all->setStyleSheet("background-color: #77d740; color: black;");
 }
 

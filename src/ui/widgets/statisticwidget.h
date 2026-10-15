@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,9 @@
 #include "src/ui/widgets/textwidget.h"
 
 class AbstractModel;
+class QGridLayout;
 class QLabel;
+class QScrollArea;
 class QPushButton;
 class TextWidget;
 struct StatisticResult;
@@ -42,7 +44,16 @@ public:
 public slots:
     void Update();
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
+    /*! \brief Place the label/value pairs in 1-3 column pairs, depending on the width. CG */
+    void ArrangeRows();
+    QGridLayout* m_grid = nullptr;
+    QVector<QPair<QLabel*, QLabel*>> m_rows; ///< name and value label of each overview line
+    int m_columns = 0;
+
     QWeakPointer<AbstractModel> m_model;
     QPushButton* m_show;
     QWidget* m_subwidget;

@@ -67,6 +67,7 @@ class ResultsDialog;
 class SpinBox;
 class StatisticWidget;
 class ExportSimulationWidget;
+class SectionStack;
 class StatisticDialog;
 class SystemParameterWidget;
 
@@ -112,8 +113,8 @@ public slots:
     void HideAllWindows();
 
 private:
-    void AddScriptModelTab(QTabWidget* model_tab);
-    void AddSystemParameterTab(QTabWidget* model_tab);
+    void AddScriptModelTab(SectionStack* model_tab);
+    void AddSystemParameterTab(SectionStack* model_tab);
     /*! \brief QSettings key for the splitter geometry — includes the pane count, because a model's
      * pane layout varies (e.g. scripted models only get the per-series parameter pane when they
      * declare local parameters). Claude Generated. */

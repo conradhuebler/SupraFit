@@ -59,12 +59,18 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     , m_no(no)
     , m_charts(charts)
 {
-    /* Compact row (UI redesign WP7): one flow of [Include, name, parameter cells, SAE, display
-     * toggles] that wraps to a second line in narrow panes, instead of two stacked blocks. Each
-     * parameter cell is "label spin box checkbox" on one line. Claude Generated. */
-    FlowLayout* layout = new FlowLayout(-1, 8, 2);
-    layout->setContentsMargins(6, 4, 6, 4);
-    FlowLayout* shifts = layout;
+    /* Card layout (UI redesign WP8), three lines:
+     *   Include, series name ......................... SAE
+     *   parameter cells "label spin box checkbox" (equal fixed width, so they line up across cards;
+     *   they wrap in narrow panes)
+     *   Show in Plot, Show in Legend, Color, Single Plot
+     * Claude Generated. */
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->setContentsMargins(10, 6, 10, 6);
+    layout->setSpacing(4);
+    QHBoxLayout* head = new QHBoxLayout;
+    FlowLayout* shifts = new FlowLayout(0, 12, 4);
+    QHBoxLayout* tools = new QHBoxLayout;
     QList<QWidget*> parameter_cells;
     for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
         QPointer<QWidget> widget = new QWidget;
@@ -104,6 +110,10 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         check->setToolTip(tr("Optimise this parameter in the fit"));
 
         QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.toStrongRef().data()->LocalParameterName(i)));
+        label->setFixedWidth(48);
+        label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        constant->setFixedWidth(110);
+        widget->setFixedWidth(48 + 110 + 26 + 6);
         vlayout->addWidget(label);
         vlayout->addWidget(constant);
         vlayout->addWidget(check);
@@ -112,7 +122,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     }
 
     m_error = new QLabel;
-    FlowLayout* tools = layout;
+    m_error->setToolTip(tr("Sum of absolute errors of this data series"));
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
@@ -154,7 +164,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         }
     });
 
-    tools->addWidget(m_include);
+    head->addWidget(m_include);
 
     m_signal_series = qobject_cast<LineSeries*>(m_charts.signal_wrapper->Series(m_no));
     m_error_series = qobject_cast<LineSeries*>(m_charts.error_wrapper->Series(m_no));
@@ -163,10 +173,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_name->setClearButtonEnabled(true);
     m_name->setFixedWidth(130);
     m_name->setToolTip(tr("Name of the data series in the charts"));
-    tools->addWidget(m_name);
+    head->addWidget(m_name);
+    head->addStretch();
+    head->addWidget(m_error);
     for (QWidget* cell : parameter_cells)
         shifts->addWidget(cell);
-    shifts->addWidget(m_error);
     connect(m_name, &QLineEdit::textChanged, this, [this]() {
         if (this->m_name && this->m_signal_series) {
             if (this->m_name->text() != this->m_signal_series->name()) {
@@ -224,6 +235,10 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_toggle->setMaximumSize(90, 30);
     tools->addWidget(m_toggle);
     m_toggle->setToolTip(tr("Show only this data series in the charts"));
+    tools->addStretch();
+    layout->addLayout(head);
+    layout->addLayout(shifts);
+    layout->addLayout(tools);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     // setMaximumHeight(110);
     // setMinimumHeight(110);
@@ -308,8 +323,13 @@ void ModelElement::ChangeColor(const QColor& color)
 {
     m_signal_series->setColor(color);
     m_error_series->setColor(color);
-    // series colour as background, text in black or white, whichever stays readable on it
-    setStyleSheet("background-color:" + color.name() + "; color:" + Appearance::ContrastText(color).name() + ";");
+    // Card in the series colour with rounded corners; text in black or white, whichever is readable.
+    // An ancestor carries a style sheet, so the colours have to come from a style sheet as well
+    // (palette changes are ignored below style sheets).
+    const QString text = Appearance::ContrastText(color).name();
+    setStyleSheet(QString("ModelElement { background-color: %1; border: none; border-radius: 6px; }"
+                          "QLabel, QCheckBox, QPushButton, QLineEdit { background-color: %1; color: %2; }")
+                      .arg(color.name(), text));
 
     m_color = color;
     emit ColorChanged(m_color);
