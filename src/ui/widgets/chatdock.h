@@ -38,10 +38,10 @@ private:
     void appendLine(const QString& html);
     void insertAnswer(const QString& text);
 
-    QComboBox *m_profile, *m_autonomy;
+    QComboBox *m_profile, *m_model, *m_autonomy;
     QTextBrowser* m_transcript;
     QLineEdit* m_input;
-    QPushButton *m_send, *m_stop;
+    QPushButton *m_send, *m_stop, *m_refresh;
     QLabel* m_status;
 
     ToolRegistry* m_registry;

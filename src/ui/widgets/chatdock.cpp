@@ -33,6 +33,11 @@ ChatDock::ChatDock(QWidget* parent)
 
     m_profile = new QComboBox;
     m_profile->setToolTip(tr("LLM endpoint profile (llm.json)"));
+    m_model = new QComboBox;
+    m_model->setEditable(true);
+    m_model->setToolTip(tr("Model served by the endpoint (empty = profile default)"));
+    m_refresh = new QPushButton(tr("Models"));
+    m_refresh->setToolTip(tr("Ask the endpoint which models it offers"));
     m_autonomy = new QComboBox;
     m_autonomy->addItem(tr("Ask for fits"), int(ToolAutonomy::Ask));
     m_autonomy->addItem(tr("Run in program"), int(ToolAutonomy::InProgram));
@@ -53,12 +58,16 @@ ChatDock::ChatDock(QWidget* parent)
     auto* top = new QHBoxLayout;
     top->addWidget(m_profile, 1);
     top->addWidget(m_autonomy);
+    auto* modelRow = new QHBoxLayout;
+    modelRow->addWidget(m_model, 1);
+    modelRow->addWidget(m_refresh);
     auto* bottom = new QHBoxLayout;
     bottom->addWidget(m_input, 1);
     bottom->addWidget(m_send);
     bottom->addWidget(m_stop);
     auto* layout = new QVBoxLayout;
     layout->addLayout(top);
+    layout->addLayout(modelRow);
     layout->addWidget(m_transcript, 1);
     layout->addLayout(bottom);
     layout->addWidget(m_status);
@@ -107,6 +116,23 @@ ChatDock::ChatDock(QWidget* parent)
     });
     connect(m_session, &LlmSession::finished, this, [this] { setRunning(false); });
 
+    connect(m_client, &LlmClient::modelsListed, this, [this](const QStringList& models) {
+        const QString keep = m_model->currentText();
+        m_model->clear();
+        m_model->addItems(models);
+        m_model->setCurrentText(keep);
+        m_status->setText(models.isEmpty() ? tr("The endpoint offers no model list") : tr("%1 models").arg(models.size()));
+    });
+    connect(m_refresh, &QPushButton::clicked, this, [this] {
+        if (prepareClient())
+            m_client->listModels();
+    });
+    connect(m_profile, &QComboBox::currentTextChanged, this, [this](const QString&) {
+        LlmConfig config;
+        LlmProfile p;
+        if (config.load(LlmConfig::defaultPath()) && config.profile(m_profile->currentText(), p))
+            m_model->setCurrentText(p.model);
+    });
     connect(m_send, &QPushButton::clicked, this, &ChatDock::send);
     connect(m_input, &QLineEdit::returnPressed, this, &ChatDock::send);
     connect(m_stop, &QPushButton::clicked, this, &ChatDock::stop);
@@ -149,6 +175,8 @@ bool ChatDock::prepareClient()
     }
     m_client->setProfile(profile);
     m_client->setApiKey(LlmConfig::apiKeyFor(profile));
+    if (!m_model->currentText().trimmed().isEmpty())
+        m_client->setModel(m_model->currentText().trimmed());
     m_session->setMaxIterations(profile.maxToolIterations);
     m_session->setAutonomy(ToolAutonomy(m_autonomy->currentData().toInt()));
     return true;
