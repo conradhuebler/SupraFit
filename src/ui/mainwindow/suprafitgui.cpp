@@ -18,6 +18,10 @@
  */
 
 #include "src/global.h"
+#include "src/global_config.h"
+#ifdef USE_LLM
+#include "src/ui/widgets/chatdock.h"
+#endif
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/global_infos.h"
 #include "src/version.h"
@@ -101,6 +105,13 @@ SupraFitGui::SupraFitGui()
     m_message_dock->setTitleBarWidget(m_messages_widget->TitleBarWidget());
     m_message_dock->setObjectName(tr("message_dock"));
     addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
+
+#ifdef USE_LLM
+    // Claude Generated: LLM agent dock, hidden until toggled (F5)
+    m_chat_dock = new ChatDock(this);
+    addDockWidget(Qt::RightDockWidgetArea, m_chat_dock);
+    m_chat_dock->hide();
+#endif
 
     m_splash = new QSplashScreen(QPixmap(":/misc/logo_small.png"));
 
@@ -442,6 +453,12 @@ SupraFitGui::SupraFitGui()
     m_system_toolbar->setObjectName(tr("system_toolbar"));
     //m_system_toolbar->addAction(m_project_action);
     m_system_toolbar->addAction(m_message_dock_action);
+#ifdef USE_LLM
+    QAction* chatAction = m_chat_dock->toggleViewAction();
+    chatAction->setText(tr("Agent"));
+    chatAction->setShortcut(QKeySequence(tr("F5")));
+    m_system_toolbar->addAction(chatAction);
+#endif
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_about);

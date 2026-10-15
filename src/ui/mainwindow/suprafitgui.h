@@ -53,6 +53,7 @@ class QSystemTrayIcon;
 
 class DataClass;
 class ChartWidget;
+class ChatDock;
 class MessageDock;
 class Instance;
 class MainWindow;
@@ -185,6 +186,7 @@ private:
     virtual void closeEvent(QCloseEvent* event) override;
 
     QDockWidget* m_message_dock;
+    ChatDock* m_chat_dock = nullptr;  // only with USE_LLM
     MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

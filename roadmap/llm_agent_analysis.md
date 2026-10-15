@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Agentische Auswertung — LLM-gesteuerte Analyse in SupraFit
 
-**Status:** WIP (Phase 0–6 done, Phase 7 later) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
+**Status:** WIP (Phase 0–7 done (Phase 7 awaits operator test)) · **Owner:** Conrad Hübler · **Author note:** Claude Generated
 **Branch:** `feature/llm-agent-analysis` · **Vorlage:** qurcuma `feature/llm-tools` (`docs/WP-llm-tool-layer.md`) + curcuma `llm-core` (`docs/TOOL_API_WP.md`)
 
 ## Context
@@ -207,7 +207,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 - **Phase 6 (1-2 days).** ✅ **DONE 2026-10-15** (`agentrunner`). `suprafit_cli --agent "Frage" [--profile local]`:
   headless, ohne GUI, gegen Ollama. Systemprompt + Freigabe = `InProgram`
   (alles im Prozess bleibt ohne Rückfrage, FileWrite fragt).
-- **Phase 7 (später).** Chat-Dock in der GUI, analog qurcuma `ChatDock`.
+- **Phase 7.** ✅ ADDED 2026-10-15 (`chatdock`, nicht interaktiv getestet). Chat-Dock in der GUI, analog qurcuma `ChatDock`.
 
 ## Erste Tool-Liste (MVP)
 
