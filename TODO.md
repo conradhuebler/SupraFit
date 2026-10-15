@@ -16,6 +16,11 @@
 
 ---
 
+## UI Redesign (supersedes Phases 1–3 below)
+- [ ] Main window redesign from the operator's mockup (toolbar menus, Projects+Log column, model tab, dark mode, small screens) — WIP on `feature/ui-redesign`, see [roadmap/ui_redesign.md](roadmap/ui_redesign.md)
+
+---
+
 ## Phase 1: UI Toolbar & Menu Refactoring (High Priority)
 **Reference**: `docs/UI_IMPROVEMENT_PLAN.md` (Phase 1)
 **Impact**: High usability improvement, moderate complexity
