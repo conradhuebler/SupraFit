@@ -26,11 +26,13 @@
 #include "src/core/models/models.h"
 #include "src/core/models/scriptingengine.h"
 #include "src/core/models/scriptmodel.h"
+#include "src/core/minimizer.h"
 #include "src/core/projectmanager.h"
 
 #include <algorithm>
 #include <cmath>
 
+#include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -66,6 +68,26 @@ QJsonObject stringArrayProp(const QString& description)
 {
     return QJsonObject{ { QStringLiteral("type"), QStringLiteral("array") },
         { QStringLiteral("description"), description } };
+}
+
+/// Optimise @p model with the same Minimizer the GUI and the statistics use. Calculate() alone
+/// only re-evaluates the model at its CURRENT parameters -- it does not fit. Claude Generated.
+bool runFit(const QSharedPointer<AbstractModel>& model)
+{
+    // Same sequence as AnalysisManager/Minimizer::Minimize(): the optimiser works on a clone and the
+    // optimum is imported back. Minimize() itself is not used because it reports through the model's
+    // Info() object, which a headless model need not have. Claude Generated.
+    model->setFast(false);
+    NonLinearFitThread thread(false);
+    thread.setModel(model);
+    thread.start();
+    while (thread.Running())
+        QCoreApplication::processEvents();
+    const bool converged = thread.Converged();
+    const QJsonObject best = converged ? thread.ConvergedParameter() : thread.BestIntermediateParameter();
+    model->ImportModel(best);
+    model->CalculateStatistics(true);
+    return converged;
 }
 
 QJsonObject fitToJson(const QSharedPointer<AbstractModel>& model)
@@ -153,6 +175,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 } else if (!model->Complete()) {
                     entry.insert(QStringLiteral("error"), QStringLiteral("model could not be set up on this data"));
                 } else {
+                    model->InitialGuess();  // a start value to fit from
                     data->addModel(model);
                     pm->addModelToProject(model, projectId);
                     entry.insert(QStringLiteral("model_index"), pm->getProjectModels(projectId).size() - 1);
@@ -226,6 +249,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
             const QStringList eqLines = equation.split(QLatin1Char('\n'));
             for (int i = 0; i < eqLines.size(); ++i)
                 lines.insert(QStringLiteral("%1").arg(i, 3, 10, QLatin1Char('0')), eqLines.at(i));
+            const QString localGuessGiven = args.value(QStringLiteral("local_guess")).toString().trimmed();
             const QString printX = args.value(QStringLiteral("print_x")).toString().trimmed();
             const QString guess = args.value(QStringLiteral("global_guess")).toString().trimmed();
 
@@ -293,6 +317,30 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
 
             // Dry run before anything is attached: the equation must evaluate to finite numbers.
             model->InitialGuess();
+            // Deterministic, sensible start (InitialGuess may draw random values from the ranges, which
+            // leaves a multi-series scripted model in a poor basin): globals at the middle of their
+            // range, per-series parameters spread from the series' first to its last measured value
+            // (free host ... saturated complex for a titration).
+            {
+                const QStringList ranges = guess.split(QLatin1Char('|'));
+                for (int g = 0; g < nGlobal && g < ranges.size(); ++g) {
+                    QString r = ranges.at(g);
+                    r.remove(QLatin1Char('[')).remove(QLatin1Char(']'));
+                    const QStringList mm = r.split(QLatin1Char(';'));
+                    if (mm.size() == 2)
+                        (*model->GlobalTable())[g] = 0.5 * (mm.at(0).toDouble() + mm.at(1).toDouble());
+                }
+                const DataTable* y = data->DependentModel();
+                if (nLocal > 0 && y && y->rowCount() > 1 && localGuessGiven.isEmpty()) {
+                    for (int j = 0; j < y->columnCount() && j < model->SeriesCount(); ++j) {
+                        const double first = y->data(0, j), last = y->data(y->rowCount() - 1, j);
+                        for (int l = 0; l < nLocal; ++l) {
+                            const double f = nLocal > 1 ? double(l) / (nLocal - 1) : 0.0;
+                            model->LocalTable()->data(j, l) = first + f * (last - first);
+                        }
+                    }
+                }
+            }
             model->Calculate();
             if (!std::isfinite(model->SSE()))
                 return ToolResult::failure(QStringLiteral(
@@ -318,7 +366,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
         ToolSpec spec;
         spec.name = QStringLiteral("fit_model");
         spec.description = QStringLiteral(
-            "Fit (optimize the parameters of) one existing model in a project. "
+            "Fit (optimize the parameters of) one existing model in a project, starting from its current parameters. "
             "This CHANGES the model's parameters and statistics -- it is a Compute "
             "tool and the approval policy applies. Identify the model by its index "
             "within the project (from list_models). Returns the fit result.");
@@ -344,7 +392,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
             if (!model)
                 return ToolResult::failure(QStringLiteral("model %1 is null").arg(index));
 
-            model->Calculate();  // the fit; mutates the model in place
+            runFit(model);  // the optimisation proper; mutates the model in place
 
             QJsonObject result = fitToJson(model);
             result.insert(QStringLiteral("model_index"), index);
@@ -380,7 +428,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 return ToolResult::failure(QStringLiteral("no ProjectManager available"));
             const QString projectId = args.value(QStringLiteral("project_id")).toString();
             const QVector<QSharedPointer<AbstractModel>> models = pm->getProjectModels(projectId);
-            if (models.isEmpty())
+                    if (models.isEmpty())
                 return ToolResult::failure(QStringLiteral("project '%1' has no models").arg(projectId));
 
             // Optional subset via model_indices (strings, as the schema is JSON).
@@ -406,7 +454,7 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 const QSharedPointer<AbstractModel> model = models.at(idx);
                 if (!model)
                     continue;
-                model->Calculate();
+                runFit(model);
                 QJsonObject r = fitToJson(model);
                 r.insert(QStringLiteral("model_index"), idx);
                 r.insert(QStringLiteral("parameters"), globalParametersToJson(model));

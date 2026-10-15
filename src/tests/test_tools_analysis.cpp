@@ -35,6 +35,9 @@
  * Claude Generated (2026). */
 
 #include <QtTest/QtTest>
+#include <QScopeGuard>
+#include <QTemporaryDir>
+#include <QUuid>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QHash>
@@ -73,79 +76,57 @@ private:
     QString loadReferenceProject()
     {
         const QString path = sourceDir() + QStringLiteral("/data/samples/reference/simulated_1_1.json");
+        const QStringList before = SupraFit::ProjectManager::instance().getLoadedProjectIds();
         if (!SupraFit::ProjectManager::instance().loadProject(path))
             return QString();
-        const QStringList ids = SupraFit::ProjectManager::instance().getLoadedProjectIds();
-        return ids.isEmpty() ? QString() : ids.last();
+        for (const QString& id : SupraFit::ProjectManager::instance().getLoadedProjectIds())
+            if (!before.contains(id))
+                return id;
+        return QString();
     }
 
-    /// Build a fresh in-memory project with the reference data but NO models, so a
-    /// fit has something real to work on and the test does not disturb the stored
-    /// reference project. Returns the registered project UUID, or empty on failure.
-    ///
-    /// The DataClass must be configured BEFORE CreateModel: independent + dependent
-    /// tables, Table data type, dependent series count (the pattern from
-    /// test_bc50_model_dispatch.cpp:56-62). CreateModel passes a raw DataClass* into
-    /// the model factory, which needs those tables to size its parameters.
+    /// A fresh project: the reference data loaded from a copy of the reference file with
+    /// the stored models removed and a new uuid, so it goes through exactly the loader the
+    /// CLI and GUI use. (A DataClass assembled by hand in code did not fit: the optimiser
+    /// returned SSE 0 on it.) Returns the registered project UUID, or empty on failure.
     QString makeFreshProject()
     {
-        const QString path = sourceDir() + QStringLiteral("/data/samples/reference/simulated_1_1.json");
-        QFile f(path);
+        QFile f(sourceDir() + QStringLiteral("/data/samples/reference/simulated_1_1.json"));
         if (!f.open(QIODevice::ReadOnly))
             return QString();
-        const QJsonObject stored = QJsonDocument::fromJson(f.readAll()).object();
+        QJsonObject stored = QJsonDocument::fromJson(f.readAll()).object();
+        for (const QString& key : stored.keys())
+            if (key.startsWith(QStringLiteral("model_")))
+                stored.remove(key);
+        QJsonObject data = stored.value(QStringLiteral("data")).toObject();
+        data.insert(QStringLiteral("uuid"), QUuid::createUuid().toString());
+        stored.insert(QStringLiteral("data"), data);
 
-        // Build the DataClass from the reference data DIRECTLY (Eigen matrices),
-        // mirroring test_bc50_model_dispatch.cpp: the stored JSON nests tables under
-        // data.independent / data.dependent as {rows, cols, data: {"row": "c0 c1.."}}.
-        const QJsonObject indJson = stored.value(QStringLiteral("data")).toObject()
-                                        .value(QStringLiteral("independent")).toObject();
-        const QJsonObject depJson = stored.value(QStringLiteral("data")).toObject()
-                                        .value(QStringLiteral("dependent")).toObject();
-        const int indRows = indJson.value(QStringLiteral("rows")).toInt();
-        const int indCols = indJson.value(QStringLiteral("cols")).toInt();
-        const int depRows = depJson.value(QStringLiteral("rows")).toInt();
-        const int depCols = depJson.value(QStringLiteral("cols")).toInt();
-        if (indRows <= 0 || indCols <= 0 || depRows <= 0 || depCols <= 0)
+        static QTemporaryDir dir;
+        static int counter = 0;
+        const QString path = dir.filePath(QStringLiteral("fresh_%1.json").arg(++counter));
+        QFile out(path);
+        if (!out.open(QIODevice::WriteOnly))
             return QString();
-
-        DataTable* indep = new DataTable(indRows, indCols, nullptr);
-        DataTable* dep = new DataTable(depRows, depCols, nullptr);
-        const QJsonObject indData = indJson.value(QStringLiteral("data")).toObject();
-        const QJsonObject depData = depJson.value(QStringLiteral("data")).toObject();
-        for (auto it = indData.begin(); it != indData.end(); ++it) {
-            const int r = it.key().toInt();
-            const QStringList cells = it.value().toString().split(QLatin1Char(' '), Qt::SkipEmptyParts);
-            for (int c = 0; c < cells.size() && c < indCols; ++c)
-                indep->data(r, c) = cells.at(c).toDouble();
-        }
-        for (auto it = depData.begin(); it != depData.end(); ++it) {
-            const int r = it.key().toInt();
-            const QStringList cells = it.value().toString().split(QLatin1Char(' '), Qt::SkipEmptyParts);
-            for (int c = 0; c < cells.size() && c < depCols; ++c)
-                dep->data(r, c) = cells.at(c).toDouble();
-        }
-
-        auto data = QSharedPointer<DataClass>::create();
-        data->setIndependentTable(indep);
-        data->setDataType(DataClassPrivate::Table);
-        data->setSimulateDependent(depCols);
-        data->setDependentTable(dep);
-        // A fresh DataClass has no UUID yet; assign one so registerExistingProject
-        // (which refuses an empty UUID) accepts it.
-        data->NewUUID();
-        if (!SupraFit::ProjectManager::instance().registerExistingProject(data))
+        out.write(QJsonDocument(stored).toJson());
+        out.close();
+        const QStringList before = SupraFit::ProjectManager::instance().getLoadedProjectIds();
+        if (!SupraFit::ProjectManager::instance().loadProject(path))
             return QString();
-        return data->UUID();
+        for (const QString& id : SupraFit::ProjectManager::instance().getLoadedProjectIds())
+            if (!before.contains(id))
+                return id;
+        return QString();
     }
 
-    /// Create a model on a configured project, mirroring the working pattern from
-    /// test_bc50_model_dispatch.cpp: set the tables + type + series count first.
     QSharedPointer<AbstractModel> makeModel(int modelId, const QSharedPointer<DataClass>& data)
     {
         // CreateModel takes a RAW DataClass*; the model reads the tables through it.
         const QPointer<DataClass> raw(data.data());
-        return CreateModel(modelId, raw);
+        QSharedPointer<AbstractModel> model = CreateModel(modelId, raw);
+        if (model)
+            model->InitialGuess();  // what the GUI does when it adds a model
+        return model;
     }
 
     /// Register a bare DataClass (no models) and return its UUID, or empty.
@@ -173,6 +154,8 @@ private:
 private slots:
     void initTestCase()
     {
+        // The optimiser sizes its worker pool from this application property (the CLI and GUI set it).
+        qApp->setProperty("threads", 4);
         m_fittedProjectId = loadReferenceProject();
         QVERIFY2(!m_fittedProjectId.isEmpty(), "reference project did not load");
 
@@ -251,23 +234,27 @@ private slots:
 
     void defineScriptModelAddsAFittableModel()
     {
+        // The CLI runs with random initialisation inside the guess ranges; so must this test.
+        const QVariant previousRandom = qApp->property("InitialiseRandom");
+        qApp->setProperty("InitialiseRandom", true);
+        const auto restore = qScopeGuard([&] { qApp->setProperty("InitialiseRandom", previousRandom); });
         const QString pid = makeFreshProject();
         QVERIFY(!pid.isEmpty());
         const ToolResult def = m_registry.invoke(QStringLiteral("define_script_model"),
             QJsonObject{ { QStringLiteral("project_id"), pid },
                 { QStringLiteral("name"), QStringLiteral("agent 1:1 NMR") },
                 { QStringLiteral("equation"), QStringLiteral(
-                    "var K := pow(10, lgK);\n"
-                    "var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2));\n"
+                    "var K := pow(10, lgK); "
+                    "var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2)); "
                     "((X1 - AB)*dHost + AB*dAB)/X1") },
                 { QStringLiteral("global_names"), QStringLiteral("lgK") },
                 { QStringLiteral("local_names"), QStringLiteral("dHost|dAB") },
                 { QStringLiteral("global_guess"), QStringLiteral("[2;6]") },
                 { QStringLiteral("print_x"), QStringLiteral("X2/X1") } });
         QVERIFY2(def.ok, qPrintable(def.error));
-        QCOMPARE(def.data.value(QStringLiteral("model_index")).toInt(), 0);
+        const int idx = def.data.value(QStringLiteral("model_index")).toInt();
         const ToolResult fit = m_registry.invoke(QStringLiteral("fit_model"),
-            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 } });
+            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), idx } });
         QVERIFY2(fit.ok, qPrintable(fit.error));
         const double sse = fit.data.value(QStringLiteral("sse")).toDouble();
         QVERIFY2(std::isfinite(sse) && sse > 0.0, qPrintable(QString::number(sse)));

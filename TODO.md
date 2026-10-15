@@ -128,6 +128,8 @@ Roadmap: [roadmap/llm_agent_analysis.md](roadmap/llm_agent_analysis.md) · Branc
 - [x] **Phase 7** — 🤖/⚙️ (baut, GUI startet offscreen; Chat im Dock noch NICHT interaktiv getestet 👁️ offen): `src/ui/widgets/chatdock.{h,cpp}`, F5-Toggle in der System-Toolbar, Profil-/Autonomie-Auswahl, Rückfrage-Dialog für nicht freigegebene Tools. Offen: Stop während Fit, Streaming-Anzeige, Reasoning-Anzeige.
 - [x] `add_model` (Mutate; `model_ids`-Array, lehnt Modelle mit `DemandInput()` ab) + `items` im Schema-Validator, 2026-10-15 🤖/⚙️
 - [x] `define_script_model` (Mutate): LLM schreibt ein Modell per ExprTk-Gleichung (global/local names, Guess; Parser-Fehler gehen als Klartext zurück; lokale Startwerte default aus Datenbereich), 2026-10-15 🤖/⚙️ — Live-Lauf gegen glm-5.2 👁️ ausstehend
+- [x] **fit_model/fit_models fitten jetzt wirklich** (vorher nur `Calculate()` = Neuberechnung mit gespeicherten Parametern; die Messwerte vom 2026-10-15 waren daher Lesewerte, kein Neufit) — Fit über `NonLinearFitThread`; Kern-Fix `DataClass::~DataClass` (Klon leerte geteilten Modellbesitz → Projekt nach dem 1. Fit ohne Modelle), 2026-10-15 🤖/⚙️
+- [ ] **Messungen wiederholen** mit echtem Neufit (`fit_models` zweimal in Folge, eigenes Modell) — LLM-Modell `define_script_model` reproduzierte das Katalog-1:1 exakt (lgK 2,896, SSE 0,01271)
 - [ ] **Bug (pre-existing):** `FileImportReferenceTest` SEGFAULT im frischen Build — relativer Pfad `../input/1_1_1_2_001.dat` fehlt, null DataTable wird dereferenziert.
 - [ ] **Phase 6** — CLI: `suprafit_cli --agent "Frage"` headless gegen Ollama
 - [ ] **Phase 7** — GUI Chat-Dock (später, eigene Phase)
