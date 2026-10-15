@@ -22,6 +22,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTextBrowser>
+#include <QTextCharFormat>
 #include <QTextCursor>
 #include <QVBoxLayout>
 
@@ -42,6 +43,8 @@ ChatDock::ChatDock(QWidget* parent)
     m_transcript->setOpenExternalLinks(false);
     m_input = new QLineEdit;
     m_input->setPlaceholderText(tr("Ask about the open projects..."));
+    m_input->setMinimumWidth(160);
+    setMinimumWidth(340);
     m_send = new QPushButton(tr("Send"));
     m_stop = new QPushButton(tr("Stop"));
     m_stop->setEnabled(false);
@@ -78,16 +81,13 @@ ChatDock::ChatDock(QWidget* parent)
 
     connect(m_session, &LlmSession::assistantChunk, this, [this](const QString& t) {
         m_streamed = true;
-        m_transcript->moveCursor(QTextCursor::End);
-        m_transcript->insertPlainText(t);
+        insertAnswer(t);
     });
     connect(m_session, &LlmSession::assistantMessage, this, [this](const QString& t) {
-        if (!m_streamed) {
-            m_transcript->moveCursor(QTextCursor::End);
-            m_transcript->insertPlainText(t);
-        }
+        if (!m_streamed)
+            insertAnswer(t);
         m_streamed = false;
-        appendLine(QString());
+        m_answerOpen = false;
     });
     connect(m_session, &LlmSession::toolStarted, this, [this](const QString& n, const QJsonObject& a) {
         appendLine(QStringLiteral("<i style='color:gray'>&#9881; %1 %2</i>")
@@ -184,4 +184,20 @@ void ChatDock::appendLine(const QString& html)
 {
     m_transcript->moveCursor(QTextCursor::End);
     m_transcript->append(html);
+    m_answerOpen = false;
+}
+
+// The answer gets its own block and the default character format, otherwise it
+// inherits the bold question or the grey tool line it follows.
+void ChatDock::insertAnswer(const QString& text)
+{
+    if (!m_answerOpen) {
+        m_transcript->append(QString());
+        m_answerOpen = true;
+    }
+    QTextCursor cursor = m_transcript->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(text, QTextCharFormat());
+    m_transcript->setTextCursor(cursor);
+    m_transcript->ensureCursorVisible();
 }

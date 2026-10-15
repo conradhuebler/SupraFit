@@ -36,6 +36,7 @@ private:
     bool prepareClient();
     void setRunning(bool running);
     void appendLine(const QString& html);
+    void insertAnswer(const QString& text);
 
     QComboBox *m_profile, *m_autonomy;
     QTextBrowser* m_transcript;
@@ -48,5 +49,5 @@ private:
     LlmClient* m_client;
     LlmSession* m_session;
     bool m_streamed = false;
-    bool m_atLineStart = true;
+    bool m_answerOpen = false;
 };
