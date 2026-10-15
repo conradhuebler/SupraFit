@@ -150,6 +150,7 @@ private:
     // QVector<QJsonObject> ProjectFromFiles(const QStringList& files);
 
     void LoadJson(const QJsonObject& str);
+    void ConnectProjectWindow(MainWindow* window);
     void setActionEnabled(bool enabled);
     void ReadSettings();
     void ReadGeometry();

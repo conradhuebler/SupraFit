@@ -776,6 +776,19 @@ void SupraFitGui::UpdateRecentList()
     }
 }
 
+/*! \brief Connects a project window to the log and to the signals that open new projects or edit spectra.
+ * Every window needs this, whichever way it was created (file, ProjectManager signal, split data set).
+ * Claude Generated. */
+void SupraFitGui::ConnectProjectWindow(MainWindow* window)
+{
+    if (!window)
+        return;
+    connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
+    connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
+    connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
+    connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
+}
+
 void SupraFitGui::LoadJson(const QJsonObject& str)
 {
     bool valid = true;
@@ -828,10 +841,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         m_cached_meta << object;
         return true;
     }
-    connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
-    connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
-    connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
-    connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
+    ConnectProjectWindow(window);
 
     // Claude Generated - Replace legacy SetData with ProjectManager
     QString projectId = SupraFit::ProjectManager::instance().loadProjectFromJson(object, file);
@@ -2396,6 +2406,7 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
         // Create new MainWindow instance
         // TODO Claude -> Make Maindow get DataClass instead of Jsons
         QPointer<MainWindow> window = new MainWindow(this);
+        ConnectProjectWindow(window);
         
         // Claude Generated - CRITICAL FIX: Use ProjectManager instead of legacy SetData
         // This was causing data duplication and legacy JSON conversion
@@ -2448,6 +2459,7 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
     
     // Create new MainWindow for this project
     MainWindow* window = new MainWindow;
+    ConnectProjectWindow(window);
     window->setObjectName(QString("mainwindow_%1").arg(projectId));
     
     // Create chart wrapper for visualization
