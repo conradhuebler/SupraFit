@@ -382,6 +382,8 @@ private slots:
         client.listModels();
         loop.exec();
 
+        // The listing is <base_url>/models -- once it was requested one level too high (404 on Ollama).
+        QVERIFY2(server.requestHeaders.startsWith("GET /v1/models "), server.requestHeaders.left(60).constData());
         QCOMPARE(got.size(), 3);
         got.sort();
         QCOMPARE(got, QStringList({ QStringLiteral("alpha:cloud"), QStringLiteral("mid:9b"), QStringLiteral("zeta:latest") }));

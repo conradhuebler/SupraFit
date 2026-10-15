@@ -95,9 +95,8 @@ void LlmClient::listModels()
     QString base = m_profile.baseUrl;
     while (base.endsWith(QLatin1Char('/')))
         base.chop(1);
-    // base_url ends in /v1; the listing lives at the parent.
-    const int v1 = base.lastIndexOf(QStringLiteral("/v1"));
-    const QString modelsUrl = (v1 > 0 ? base.left(v1) : base) + QStringLiteral("/models");
+    // OpenAI-compatible: the listing is GET <base_url>/models, i.e. .../v1/models (also on Ollama).
+    const QString modelsUrl = base + QStringLiteral("/models");
 
     QNetworkRequest modelsRequest{ QUrl(modelsUrl) };
     if (!m_apiKey.isEmpty())
