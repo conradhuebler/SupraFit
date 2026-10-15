@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
@@ -85,6 +86,12 @@ private:
     int m_height = 32;
 };
 
+/*! \brief Owner of a project's workspace actions (data, model and evaluation menus).
+ *
+ * The actions used to be a two-row button block above the model tabs; they are now three menus that
+ * the main window shows in its toolbar for the project currently on screen (Data, Model, Evaluation).
+ * The widget itself stays the (empty) title bar of the workspace dock, so it takes no space.
+ * Claude Generated (menu restructure). */
 class MDHDockTitleBar : public QWidget {
     Q_OBJECT
 
@@ -92,11 +99,19 @@ public:
     MDHDockTitleBar();
     // ~MDHDockTitleBar();
 
-    inline void setEnabled(bool enabled) { m_buttons->setEnabled(enabled); }
+    /** @brief Enable the workspace menus once a data set is attached. */
+    void setEnabled(bool enabled);
+    /** @brief True if this workspace offers its menus (data attached, not a meta model). */
+    bool ToolsAvailable() const { return m_enabled && !m_tools_hidden; }
 
     void EnableBatch(bool enabled);
     void addToMenu(int IndependetCount);
     void HideModelTools();
+
+    /** @brief Menus shown in the main toolbar for the current project. Claude Generated. */
+    QMenu* DataMenu() const { return m_data_menu; }
+    QMenu* ModelMenu() const { return m_model_menu; }
+    QMenu* EvaluationMenu() const { return m_evaluation_menu; }
 
     const QAction* lastAction() const { return m_last_action; }
     int Model() const { return m_model_choosen; }
@@ -107,11 +122,13 @@ public:
     void setIndependentCount(int n) { m_independent_count = n; }
 
 private:
-    QWidget* m_buttons;
-    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_uv_vis, m_add_fl, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse, m_add_script, m_define_model, m_split_data, m_save_table;
+    QPointer<QMenu> m_data_menu, m_model_menu, m_evaluation_menu;
+    QPointer<QMenu> m_nmr_menu, m_uv_vis_menu, m_fl_menu, m_itc_menu, m_kinetics_menu;
+    QPointer<QAction> m_edit_data, m_split_data, m_any_model, m_optimize, m_statistics, m_analyse, m_close_all;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_uv_vis_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model, m_calorimetry;
 
-    QAction* m_last_action;
+    QAction* m_last_action = nullptr;
+    bool m_enabled = false, m_tools_hidden = false;
     int m_model_choosen = 404;
     QString m_preset_reactions; ///< reactions for a preset submenu entry; cleared for plain adds
     int m_independent_count = 0; ///< independent columns of the current data set (preset input-awareness)
@@ -132,6 +149,8 @@ signals:
     void EditData();
     //   void SaveTable();
     void SplitData();
+    /** @brief Availability of the menus changed (enabled, hidden for meta models). Claude Generated. */
+    void ToolsChanged();
 };
 
 class ModelDataHolder : public QWidget {

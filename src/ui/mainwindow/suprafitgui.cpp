@@ -436,37 +436,7 @@ SupraFitGui::SupraFitGui()
     m_close = new QAction(Icon("application-exit"), tr("Quit"), this);
     connect(m_close, SIGNAL(triggered()), SLOT(close()));
 
-    m_main_toolbar = new QToolBar;
-    m_main_toolbar->setObjectName(tr("main_toolbar"));
-    m_main_toolbar->addAction(m_new_window);
-    m_main_toolbar->addSeparator();
-    m_main_toolbar->addAction(m_new_table);
-    m_main_toolbar->addAction(m_load);
-    m_main_toolbar->addAction(m_thermogram);
-    m_main_toolbar->addAction(m_spectra);
-    m_main_toolbar->addAction(m_save);
-    m_main_toolbar->addAction(m_save_as);
-    m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    addToolBar(m_main_toolbar);
-
-    m_system_toolbar = new QToolBar;
-    m_system_toolbar->setObjectName(tr("system_toolbar"));
-    //m_system_toolbar->addAction(m_project_action);
-    m_system_toolbar->addAction(m_message_dock_action);
-#ifdef USE_LLM
-    QAction* chatAction = m_chat_dock->toggleViewAction();
-    chatAction->setText(tr("Agent"));
-    chatAction->setShortcut(QKeySequence(tr("F5")));
-    m_system_toolbar->addAction(chatAction);
-#endif
-    m_system_toolbar->addSeparator();
-    m_system_toolbar->addAction(m_config);
-    m_system_toolbar->addAction(m_about);
-    m_system_toolbar->addAction(m_license);
-    m_system_toolbar->addAction(m_aboutqt);
-    m_system_toolbar->addAction(m_close);
-    m_system_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    addToolBar(m_system_toolbar);
+    SetupToolBar();
 
     m_project_tree_size = m_project_holder->width();
 
@@ -637,6 +607,130 @@ void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
     m_save_as->setEnabled(enabled);
+}
+
+/*! \brief Build the single main toolbar: file groups as drop-down buttons, the workspace menus
+ * (Data, Model, Evaluation) of the project on screen, the Log/Agent toggles and the application menu.
+ *
+ * Group buttons with a primary action (New Table, Open Project, Save Project) run it on click and offer
+ * the rest via the arrow; the others open their menu. Every action is also added to the window, so its
+ * shortcut works although the action sits inside a drop-down menu. Claude Generated. */
+void SupraFitGui::SetupToolBar()
+{
+    m_main_toolbar = new QToolBar(tr("Main toolbar"));
+    m_main_toolbar->setObjectName("main_toolbar");
+    m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_main_toolbar->setMovable(false);
+
+    // Buttons added as widgets do not follow the toolbar's button style by themselves.
+    auto followToolBar = [this](QToolButton* button) {
+        button->setToolButtonStyle(m_main_toolbar->toolButtonStyle());
+        button->setIconSize(m_main_toolbar->iconSize());
+        connect(m_main_toolbar, &QToolBar::toolButtonStyleChanged, button, &QToolButton::setToolButtonStyle);
+        connect(m_main_toolbar, &QToolBar::iconSizeChanged, button, &QToolButton::setIconSize);
+    };
+    auto groupButton = [this, followToolBar](QAction* primary, const QList<QAction*>& actions, const QString& tooltip) {
+        QToolButton* button = new QToolButton;
+        QMenu* menu = new QMenu(button);
+        menu->addActions(actions);
+        button->setDefaultAction(primary);
+        button->setMenu(menu);
+        button->setPopupMode(QToolButton::MenuButtonPopup);
+        button->setAutoRaise(true);
+        followToolBar(button);
+        if (!tooltip.isEmpty())
+            menu->menuAction()->setToolTip(tooltip);
+        addActions(actions);
+        return button;
+    };
+    auto menuButton = [followToolBar](const QIcon& icon, const QString& text, const QString& tooltip) {
+        QToolButton* button = new QToolButton;
+        button->setIcon(icon);
+        button->setText(text);
+        button->setToolTip(tooltip);
+        button->setPopupMode(QToolButton::InstantPopup);
+        button->setAutoRaise(true);
+        followToolBar(button);
+        return button;
+    };
+
+    m_new_window->setToolTip(tr("Open a new, empty SupraFit window"));
+    m_new_table->setToolTip(tr("Create a new project from an empty data table"));
+    m_load->setToolTip(tr("Open a SupraFit project or a data table"));
+    m_thermogram->setToolTip(tr("Import raw ITC thermograms"));
+    m_spectra->setToolTip(tr("Import a directory of spectra"));
+    m_save->setToolTip(tr("Save all open projects"));
+    m_save_as->setToolTip(tr("Save all open projects to a new file"));
+    m_config->setToolTip(tr("Program settings"));
+
+    m_main_toolbar->addWidget(groupButton(m_new_table, { m_new_table, m_new_window }, QString()));
+    m_main_toolbar->addWidget(groupButton(m_load, { m_load, m_thermogram, m_spectra }, QString()));
+    m_main_toolbar->addWidget(groupButton(m_save, { m_save, m_save_as }, QString()));
+    m_main_toolbar->addSeparator();
+
+    m_data_button = menuButton(Icon("kspread"), tr("Data"), tr("Edit or split the data of the current project"));
+    m_model_button = menuButton(Icon("list-add"), tr("Model"), tr("Add a model to the current project"));
+    m_evaluation_button = menuButton(Icon("fork"), tr("Evaluation"), tr("Optimise, analyse and compare the models of the current project"));
+    m_main_toolbar->addWidget(m_data_button);
+    m_main_toolbar->addWidget(m_model_button);
+    m_main_toolbar->addWidget(m_evaluation_button);
+
+    QWidget* spacer = new QWidget;
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_main_toolbar->addWidget(spacer);
+
+    m_main_toolbar->addAction(m_message_dock_action);
+    addAction(m_message_dock_action);
+#ifdef USE_LLM
+    QAction* chatAction = m_chat_dock->toggleViewAction();
+    chatAction->setText(tr("Agent"));
+    chatAction->setIcon(Icon("help-hint"));
+    chatAction->setToolTip(tr("Show or hide the analysis agent (F5)"));
+    chatAction->setShortcut(QKeySequence(tr("F5")));
+    m_main_toolbar->addAction(chatAction);
+    addAction(chatAction);
+#endif
+
+    QToolButton* app = menuButton(QIcon(":/misc/SupraFit.png"), tr("SupraFit"), tr("Settings, program information and quit"));
+    QMenu* appMenu = new QMenu(app);
+    appMenu->addAction(m_config);
+    appMenu->addSeparator();
+    appMenu->addAction(m_about);
+    appMenu->addAction(m_license);
+    appMenu->addAction(m_aboutqt);
+    appMenu->addSeparator();
+    appMenu->addAction(m_close);
+    app->setMenu(appMenu);
+    addActions({ m_config, m_about, m_license, m_aboutqt, m_close });
+    m_main_toolbar->addWidget(app);
+
+    addToolBar(m_main_toolbar);
+
+    connect(m_stack_widget, &QStackedWidget::currentChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
+    UpdateWorkspaceMenus();
+}
+
+/*! \brief Point the Data/Model/Evaluation toolbar buttons at the workspace menus of the project on
+ * screen; disable them on the start page and for meta models. Claude Generated. */
+void SupraFitGui::UpdateWorkspaceMenus()
+{
+    MainWindow* window = qobject_cast<MainWindow*>(m_stack_widget->currentWidget());
+    MDHDockTitleBar* bar = window && window->getModelDataHolder() ? window->getModelDataHolder()->TitleBarWidget() : nullptr;
+    if (bar && !m_connected_bars.contains(bar)) {
+        m_connected_bars << bar;
+        connect(bar, &MDHDockTitleBar::ToolsChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
+        connect(bar, &QObject::destroyed, this, [this, bar]() { m_connected_bars.removeAll(bar); });
+    }
+    const bool available = bar && bar->ToolsAvailable();
+    const QList<QPair<QToolButton*, QMenu*>> buttons = {
+        { m_data_button, available ? bar->DataMenu() : nullptr },
+        { m_model_button, available ? bar->ModelMenu() : nullptr },
+        { m_evaluation_button, available ? bar->EvaluationMenu() : nullptr }
+    };
+    for (const auto& entry : buttons) {
+        entry.first->setMenu(entry.second);
+        entry.first->setEnabled(entry.second != nullptr);
+    }
 }
 
 void SupraFitGui::UpdateRecentList()
@@ -2290,7 +2384,8 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
         // Add to stack widget and show
         m_stack_widget->addWidget(window);
         m_stack_widget->setCurrentWidget(window);
-        
+        setActionEnabled(true); // a project is open: Save/Save As become available
+
         qDebug() << "onProjectLoaded: MainWindow created and activated for project" << projectId;
     } else {
         qWarning() << "onProjectLoaded: Failed to get project data for ID" << projectId;
@@ -2345,7 +2440,8 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
     
     // Switch to the newly added project window
     m_stack_widget->setCurrentIndex(index);
-    
+    setActionEnabled(true); // a project is open: Save/Save As become available
+
     qDebug() << "SupraFitGui::onProjectAdded: Successfully created MainWindow for project" << projectId;
     
     // Claude Generated - CRITICAL FIX: Synchronize any models that were created before MainWindow existed

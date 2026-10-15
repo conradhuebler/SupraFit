@@ -60,3 +60,4 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 ## Status
 
 - WP0 design note + mockup: 🤖 committed
+- WP1 toolbar/menus: 🤖 ⚙️ build + offscreen render (`docs/ui_redesign/wp1_*.png`); clicks/shortcuts not exercised headless

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -165,75 +165,45 @@ void TabWidget::setMetaTab(QPointer<MetaModelWidget> datawidget)
 
 MDHDockTitleBar::MDHDockTitleBar()
 {
-
-    m_buttons = new QWidget;
-    m_buttons->setEnabled(false);
-
-    /*
-    m_hide = new QPushButton;
-    m_hide->setFlat(true);
-    m_hide->setIcon(QIcon::fromTheme("tab-close"));
-    */
+    // The workspace actions live in three menus (Data, Model, Evaluation) that the main window puts
+    // into its toolbar for the project on screen; this widget is the empty title bar of the workspace
+    // dock. Claude Generated (menu restructure).
     QHBoxLayout* layout = new QHBoxLayout;
-    layout->addWidget(new QLabel("Workspace"));
-    layout->addWidget(m_buttons);
+    layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(layout);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
-    m_edit_data = new QPushButton(tr("Edit Data"));
-    m_edit_data->setFlat(true);
-    m_edit_data->setIcon(Icon("document-edit"));
-    connect(m_edit_data, &QPushButton::clicked, this, &MDHDockTitleBar::EditData);
+    /* Data menu */
+    m_data_menu = new QMenu(tr("Data"), this);
+    m_data_menu->setToolTipsVisible(true);
+    m_edit_data = m_data_menu->addAction(Icon("document-edit"), tr("Edit Data"));
+    m_edit_data->setToolTip(tr("Edit the data table of the current project"));
+    connect(m_edit_data, &QAction::triggered, this, &MDHDockTitleBar::EditData);
 
-    m_add_nmr = new QPushButton(tr("NMR Titratrion"));
-    m_add_nmr->setFlat(true);
-    m_add_nmr->setIcon(Icon("list-add"));
+    m_split_data = m_data_menu->addAction(Icon("split"), tr("Split Data Set"));
+    m_split_data->setToolTip(tr("Split the data set column-wise into separate projects"));
+    connect(m_split_data, &QAction::triggered, this, &MDHDockTitleBar::SplitData);
 
-    m_add_uv_vis = new QPushButton(tr("UV/VIS Titratrion"));
-    m_add_uv_vis->setFlat(true);
-    m_add_uv_vis->setIcon(Icon("list-add"));
-
-    m_add_fl = new QPushButton(tr("Fluorescence Titratrion"));
-    m_add_fl->setFlat(true);
-    m_add_fl->setIcon(Icon("list-add"));
-
-    m_add_itc = new QPushButton(tr("Calorimetry"));
-    m_add_itc->setFlat(true);
-    m_add_itc->setIcon(Icon("list-add"));
-
-    m_add_kinetics = new QPushButton(tr("Kinetics"));
-    m_add_kinetics->setFlat(true);
-    m_add_kinetics->setIcon(Icon("list-add"));
-
-    m_optimize = new QPushButton(tr("Optimise All"));
+    /* Evaluation menu */
+    m_evaluation_menu = new QMenu(tr("Evaluation"), this);
+    m_evaluation_menu->setToolTipsVisible(true);
+    m_optimize = m_evaluation_menu->addAction(Icon("go-down"), tr("Optimise All"));
     m_optimize->setToolTip(tr("Optimise all checked models"));
-    m_optimize->setFlat(true);
-    m_optimize->setIcon(Icon("go-down"));
-    connect(m_optimize, &QPushButton::clicked, this, &MDHDockTitleBar::OptimizeAll);
+    connect(m_optimize, &QAction::triggered, this, &MDHDockTitleBar::OptimizeAll);
 
-    m_statistics = new QPushButton(tr("Statistics"));
-    m_statistics->setToolTip(tr("Open Statistics Dialog for all models."));
-    m_statistics->setFlat(true);
-    m_statistics->setIcon(Icon("fork"));
-    connect(m_statistics, &QPushButton::clicked, this, &MDHDockTitleBar::ShowStatistics);
+    m_statistics = m_evaluation_menu->addAction(Icon("fork"), tr("Statistics"));
+    m_statistics->setToolTip(tr("Statistical post-processing (Monte Carlo, cross validation, …) for all models"));
+    connect(m_statistics, &QAction::triggered, this, &MDHDockTitleBar::ShowStatistics);
 
-    m_analyse = new QPushButton(tr("Analyse and Compare"));
-    m_analyse->setToolTip(tr("Open Compare Dialog to compare all models some of the statistical results like Monte Carlo, CrossValidation and Reduction Analysis."));
-    m_analyse->setFlat(true);
-    m_analyse->setIcon(Icon("help-hint"));
-    connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
+    m_analyse = m_evaluation_menu->addAction(Icon("help-hint"), tr("Analyse and Compare"));
+    m_analyse->setToolTip(tr("Compare the models by their statistical results (Monte Carlo, cross validation, reduction analysis, AIC)"));
+    connect(m_analyse, &QAction::triggered, this, &MDHDockTitleBar::Compare);
 
-    m_split_data = new QPushButton(tr("Split Data Set"));
-    m_split_data->setToolTip(tr("Split Data Set Column-Wise."));
-    m_split_data->setFlat(true);
-    m_split_data->setIcon(Icon("split"));
-    connect(m_split_data, &QPushButton::clicked, this, &MDHDockTitleBar::SplitData);
-
-    m_close_all = new QPushButton(tr("Remove All"));
-    m_close_all->setToolTip(tr("Remove all models from the current project."));
-    m_close_all->setFlat(true);
-    m_close_all->setIcon(Icon("trash-empty"));
+    m_evaluation_menu->addSeparator();
+    m_close_all = m_evaluation_menu->addAction(Icon("trash-empty"), tr("Remove All Models"));
+    m_close_all->setToolTip(tr("Remove all models from the current project"));
     m_close_all->setDisabled(true);
-    connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
-
+    connect(m_close_all, &QAction::triggered, this, &MDHDockTitleBar::CloseAll);
 
     auto addModel = [this](SupraFit::Model model) -> QAction* {
         QAction* action = new QAction(this);
@@ -344,23 +314,16 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_calorimetry << addModel(SupraFit::TianModel);
 #endif
 
-    m_add_script = new QPushButton(tr("Load Model file"));
-    m_add_script->setFlat(true);
-    m_add_script->setIcon(Icon("list-add"));
-
-    connect(m_add_script, &QPushButton::clicked, this, [this]() {
-        QString file = QFileDialog::getOpenFileName(this, tr("Custom Model"), getDir(), "*.json");
-        emit this->AddScriptModel(file);
-    });
-
-    m_define_model = new QPushButton(tr("New Model"));
-    m_define_model->setFlat(true);
-    m_define_model->setIcon(Icon("list-add"));
+    /* Model menu: scripted models, model files, then the experiment submenus (filled in addToMenu,
+     * because the available experiments depend on the number of independent columns). */
+    m_model_menu = new QMenu(tr("Model"), this);
+    m_model_menu->setToolTipsVisible(true);
 
     // A dropdown of predefined scripted models (Michaelis-Menten, Hill, …): the first entry opens the
     // usual blank definition dialog, each preset opens it pre-filled. Mirrors the reaction-preset
     // submenus of the *_any models. Claude Generated.
-    QMenu* scriptPresets = new QMenu(this);
+    QMenu* scriptPresets = m_model_menu->addMenu(Icon("list-add"), tr("New Model"));
+    scriptPresets->menuAction()->setToolTip(tr("Define a model by its equation, empty or from a predefined model"));
     QAction* customModel = scriptPresets->addAction(tr("Custom (empty)"));
     connect(customModel, &QAction::triggered, this, [this]() { emit this->NewModel(); });
     scriptPresets->addSection(tr("Predefined models"));
@@ -380,15 +343,34 @@ MDHDockTitleBar::MDHDockTitleBar()
         }
     });
     scriptPresets->setToolTipsVisible(true);
-    m_define_model->setMenu(scriptPresets);
 
-    m_any_model = new QPushButton(tr("Any Model"));
-    m_any_model->setFlat(true);
-    m_any_model->setIcon(QIcon(":/icons/list-add-blue.png"));
-    connect(m_any_model, &QPushButton::clicked, this, [this]() {
+    QAction* addScript = m_model_menu->addAction(Icon("document-open"), tr("Load Model File…"));
+    addScript->setToolTip(tr("Add a model stored in a model file (*.json)"));
+    connect(addScript, &QAction::triggered, this, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, tr("Custom Model"), getDir(), "*.json");
+        emit this->AddScriptModel(file);
+    });
+
+    m_model_menu->addSection(tr("Experiment"));
+    auto experimentMenu = [this](const QString& title) {
+        QMenu* menu = m_model_menu->addMenu(Icon("list-add"), title);
+        menu->setToolTipsVisible(true);
+        menu->menuAction()->setVisible(false); // shown by addToMenu when the data fits the experiment
+        return QPointer<QMenu>(menu);
+    };
+    m_nmr_menu = experimentMenu(tr("NMR Titration"));
+    m_uv_vis_menu = experimentMenu(tr("UV/Vis Titration"));
+    m_fl_menu = experimentMenu(tr("Fluorescence Titration"));
+    m_itc_menu = experimentMenu(tr("Calorimetry"));
+    m_kinetics_menu = experimentMenu(tr("Kinetics"));
+
+    m_model_menu->addSeparator();
+    m_any_model = m_model_menu->addAction(QIcon(":/icons/list-add-blue.png"), tr("Any Model…"));
+    m_any_model->setToolTip(tr("Add a model by its numeric model ID"));
+    connect(m_any_model, &QAction::triggered, this, [this]() {
         bool ok;
         int old = qApp->instance()->property("last_any").toInt();
-        int i = QInputDialog::getInt(this, tr("I want user input of static model ID"),
+        int i = QInputDialog::getInt(this, tr("Add model by ID"),
             tr("ID:"), old, 1, 404, 1, &ok);
         if (ok) {
             this->m_model_choosen = i;
@@ -396,86 +378,51 @@ MDHDockTitleBar::MDHDockTitleBar()
             emit this->AddModel();
         }
     });
-
-    QVBoxLayout* vlayout = new QVBoxLayout;
-
-    QHBoxLayout* buttons = new QHBoxLayout;
-    buttons->addWidget(m_define_model);
-    buttons->addWidget(m_add_script);
-    buttons->addWidget(m_add_nmr);
-    buttons->addWidget(m_add_uv_vis);
-    buttons->addWidget(m_add_fl);
-    buttons->addWidget(m_add_itc);
-    buttons->addWidget(m_add_kinetics);
-    buttons->addWidget(m_any_model);
-    buttons->addWidget(m_edit_data);
-
     m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool());
+}
 
-    vlayout->addLayout(buttons);
-
-    buttons = new QHBoxLayout;
-    buttons->addWidget(m_optimize);
-    buttons->addStretch();
-    buttons->addWidget(m_statistics);
-    buttons->addWidget(m_analyse);
-    buttons->addWidget(m_split_data);
-    buttons->addStretch();
-    buttons->addWidget(m_close_all);
-
-    vlayout->addLayout(buttons);
-
-    m_buttons->setLayout(vlayout);
-    //layout->addStretch();
-    //layout->addWidget(m_hide);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-
-    setLayout(layout);
+void MDHDockTitleBar::setEnabled(bool enabled)
+{
+    m_enabled = enabled;
+    emit ToolsChanged();
 }
 
 void MDHDockTitleBar::addToMenu(int IndependetCount)
 {
-
-    auto addMenu = [](const QVector<QPointer<QAction>>& list, QMenu* menu) {
-        for (const QPointer<QAction>& ptr : qAsConst(list))
-            menu->addAction(ptr);
+    // Fill the experiment submenus with the models (stoichiometries) that fit the data: one independent
+    // column means calorimetry/kinetics, two mean host/guest titrations (NMR, UV/Vis, fluorescence).
+    auto fill = [](QMenu* menu, const QVector<QPointer<QAction>>& list) {
+        for (const QPointer<QAction>& ptr : std::as_const(list))
+            if (ptr)
+                menu->addAction(ptr);
+        menu->menuAction()->setVisible(!menu->isEmpty());
     };
 
-    QMenu* menu = new QMenu(this);
-    if (IndependetCount == 1) {
-        addMenu(m_kinetcs_model, menu);
-        m_add_kinetics->setMenu(menu);
-        m_add_nmr->hide();
-        m_add_uv_vis->hide();
-        m_add_fl->hide();
-        menu = new QMenu;
-        QAction* action = menu->addSection(tr("Fixed Stoichiometry"));
-        addMenu(m_itc_fixed_model, menu);
-        m_add_itc->setMenu(menu);
-        action = menu->addSection(tr("Flexible Stoichiometry"));
-        addMenu(m_itc_flex_model, menu);
-        action = menu->addSection(tr("Thermokinetics"));
-        addMenu(m_calorimetry, menu);
-    } else if (IndependetCount == 2) {
-        addMenu(m_nmr_model, menu);
-        m_add_nmr->setMenu(menu);
-
-        menu = new QMenu;
-        addMenu(m_uv_vis_model, menu);
-        m_add_uv_vis->setMenu(menu);
-
-        menu = new QMenu;
-        addMenu(m_fl_model, menu);
-        m_add_fl->setMenu(menu);
-        m_add_kinetics->hide();
-        m_add_itc->hide();
+    for (QMenu* menu : { m_nmr_menu.data(), m_uv_vis_menu.data(), m_fl_menu.data(), m_itc_menu.data(), m_kinetics_menu.data() }) {
+        menu->clear();
+        menu->menuAction()->setVisible(false);
     }
-    menu = new QMenu(this);
+
+    if (IndependetCount == 1) {
+        fill(m_kinetics_menu, m_kinetcs_model);
+        m_itc_menu->addSection(tr("Fixed Stoichiometry"));
+        fill(m_itc_menu, m_itc_fixed_model);
+        m_itc_menu->addSection(tr("Flexible Stoichiometry"));
+        fill(m_itc_menu, m_itc_flex_model);
+        m_itc_menu->addSection(tr("Thermokinetics"));
+        fill(m_itc_menu, m_calorimetry);
+        m_itc_menu->menuAction()->setVisible(!(m_itc_fixed_model.isEmpty() && m_itc_flex_model.isEmpty() && m_calorimetry.isEmpty()));
+    } else if (IndependetCount == 2) {
+        fill(m_nmr_menu, m_nmr_model);
+        fill(m_uv_vis_menu, m_uv_vis_model);
+        fill(m_fl_menu, m_fl_model);
+    }
 }
 
 void MDHDockTitleBar::HideModelTools()
 {
-    m_buttons->hide();
+    m_tools_hidden = true;
+    emit ToolsChanged();
 }
 
 void MDHDockTitleBar::EnableBatch(bool enabled)

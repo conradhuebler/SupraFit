@@ -167,7 +167,11 @@ private:
 
     void AddScatter(const QJsonObject& data);
 
-    QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
+    void SetupToolBar();
+
+    QToolBar* m_main_toolbar;
+    QToolButton *m_data_button, *m_model_button, *m_evaluation_button;
+    QList<QObject*> m_connected_bars; ///< workspace title bars whose ToolsChanged is connected
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
@@ -210,6 +214,7 @@ private:
     LogoLabel* m_logolabel;
 
 private slots:
+    void UpdateWorkspaceMenus();
     void NewWindow();
     void NewTable();
     void OpenFile();
