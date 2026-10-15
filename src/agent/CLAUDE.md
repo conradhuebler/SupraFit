@@ -34,7 +34,7 @@ gegen `ProjectManager::instance()` — wie der CLI.
   Ask / InProgram / Full — Operator-Entscheidung pro Sitzung).
 - **`ToolAffinity::Gui`** — Dispatcher marshalts auf den GUI-Thread mit Timeout.
 - **Schema-Validierung ohne externe Bibliothek** (~80 Zeilen gegen `QJsonObject`):
-  type/required/enum/minimum/maximum, **unbekannte Schlüssel ablehnen**.
+  type/required/enum/minimum/maximum/items(skalar), **unbekannte Schlüssel ablehnen**.
 - **Kein API-Key in Konfig-Dateien** — Profil nennt nur den Namen der ENV-Variable.
 - **Katalog-Kosten messen**: `ToolRegistry::catalogueBytes()`; `available`-Prädikat
   filtert kontextabhängig; `truncated` + `maxToolResultChars` kappen Ergebnisse.

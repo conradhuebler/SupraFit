@@ -126,6 +126,7 @@ Roadmap: [roadmap/llm_agent_analysis.md](roadmap/llm_agent_analysis.md) · Branc
 - [x] **Phase 5** — ✅ DONE 2026-10-15 (🤖/⚙️): `src/agent/tools_analysis.{h,cpp}`: `fit_model`, `fit_models`, `run_postfit_analysis` (Compute), `compare_models_aic`, `calculate_bc50` (Read); `test_tools_analysis` 10/10. Bekannt: „nie gefittet“ nicht zuverlässig erkennbar (frisches Modell hat winziges SSE>0, Guard `SSE<=0` fängt nur degenerierte Fits).
 - [x] **Phase 6** — ✅ DONE 2026-10-15 (🤖/⚙️, Live-Lauf 👁️ ausstehend): `suprafit_cli -i <proj.json> --agent "Frage" [--profile n] [--llm-config f] [--agent-reasoning]`, `src/agent/agentrunner.{h,cpp}`, Freigabe `InProgram`. Config: `QStandardPaths` (`~/.config/Conrad Huebler/SupraFit/llm.json`), `model` muss gesetzt sein. Live gegen `ornith-1.5:9b`: 3 Tools, 11 s.
 - [x] **Phase 7** — 🤖/⚙️ (baut, GUI startet offscreen; Chat im Dock noch NICHT interaktiv getestet 👁️ offen): `src/ui/widgets/chatdock.{h,cpp}`, F5-Toggle in der System-Toolbar, Profil-/Autonomie-Auswahl, Rückfrage-Dialog für nicht freigegebene Tools. Offen: Stop während Fit, Streaming-Anzeige, Reasoning-Anzeige.
+- [x] `add_model` (Mutate; `model_ids`-Array, lehnt Modelle mit `DemandInput()` ab) + `items` im Schema-Validator, 2026-10-15 🤖/⚙️
 - [ ] **Bug (pre-existing):** `FileImportReferenceTest` SEGFAULT im frischen Build — relativer Pfad `../input/1_1_1_2_001.dat` fehlt, null DataTable wird dereferenziert.
 - [ ] **Phase 6** — CLI: `suprafit_cli --agent "Frage"` headless gegen Ollama
 - [ ] **Phase 7** — GUI Chat-Dock (später, eigene Phase)

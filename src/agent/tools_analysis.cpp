@@ -23,9 +23,11 @@
 #include "src/core/bc50system.h"
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"
 #include "src/core/projectmanager.h"
 
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 
 using SupraFit::ProjectManager;
@@ -97,6 +99,74 @@ QJsonArray globalParametersToJson(const QSharedPointer<AbstractModel>& model)
 int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
 {
     int registered = 0;
+
+    // --- add_model: create models on a project's data (Mutate) -------------------
+    {
+        ToolSpec spec;
+        spec.name = QStringLiteral("add_model");
+        spec.description = QStringLiteral(
+            "Create one or more models on a project's data. Model ids come from "
+            "describe_model_catalog (e.g. NMR: 1, 2, 3, 4). The new models start unfitted: "
+            "run fit_models afterwards. Models that need a hand-written definition "
+            "(reaction equations, scripts) are refused. Returns per id the new model_index or the reason it failed.");
+        spec.category = QStringLiteral("analysis");
+        QJsonObject idsProp;
+        idsProp.insert(QStringLiteral("type"), QStringLiteral("array"));
+        idsProp.insert(QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("integer") } });
+        idsProp.insert(QStringLiteral("description"), QStringLiteral("Model ids from describe_model_catalog"));
+        QJsonObject props;
+        props.insert(QStringLiteral("project_id"), stringProp(QStringLiteral("Project UUID from list_projects")));
+        props.insert(QStringLiteral("model_ids"), idsProp);
+        spec.paramSchema = objectSchema(props, { QStringLiteral("project_id"), QStringLiteral("model_ids") });
+        spec.effect = ToolEffect::Mutate;
+        spec.affinity = ToolAffinity::Any;
+        spec.available = [pm]() { return pm && pm->getProjectCount() > 0; };
+        spec.handler = [pm](const QJsonObject& args) -> ToolResult {
+            if (!pm)
+                return ToolResult::failure(QStringLiteral("no ProjectManager available"));
+            const QString projectId = args.value(QStringLiteral("project_id")).toString();
+            const QJsonArray ids = args.value(QStringLiteral("model_ids")).toArray();
+            if (ids.isEmpty())
+                return ToolResult::failure(QStringLiteral("model_ids is empty"));
+            const QSharedPointer<DataClass> data = pm->getProjectData(projectId);
+            if (!data)
+                return ToolResult::failure(QStringLiteral("unknown project_id '%1'").arg(projectId));
+
+            QJsonArray added;
+            int ok = 0;
+            for (const QJsonValue& v : ids) {
+                const int id = v.toInt(-1);
+                QJsonObject entry;
+                entry.insert(QStringLiteral("model_id"), id);
+                QSharedPointer<AbstractModel> model = CreateModel(id, QPointer<DataClass>(data.data()));
+                if (!model) {
+                    entry.insert(QStringLiteral("error"),
+                        QStringLiteral("unknown model id, or it does not fit this data set's number of input variables"));
+                } else if (model->DemandInput()) {
+                    entry.insert(QStringLiteral("error"),
+                        QStringLiteral("model needs a hand-written definition and cannot be added by the agent"));
+                } else if (!model->Complete()) {
+                    entry.insert(QStringLiteral("error"), QStringLiteral("model could not be set up on this data"));
+                } else {
+                    data->addModel(model);
+                    pm->addModelToProject(model, projectId);
+                    entry.insert(QStringLiteral("model_index"), pm->getProjectModels(projectId).size() - 1);
+                    entry.insert(QStringLiteral("name"), model->Name());
+                    ++ok;
+                }
+                added.append(entry);
+            }
+            QJsonObject out;
+            out.insert(QStringLiteral("project_id"), projectId);
+            out.insert(QStringLiteral("models"), added);
+            if (ok == 0)
+                return ToolResult::failure(QStringLiteral("no model could be added: %1")
+                        .arg(QString::fromUtf8(QJsonDocument(added).toJson(QJsonDocument::Compact))));
+            return ToolResult::success(out, QStringLiteral("added %1 of %2 model(s)").arg(ok).arg(ids.size()));
+        };
+        if (registry.add(spec))
+            ++registered;
+    }
 
     // --- fit_model: fit ONE existing model (Compute) ----------------------------
     {

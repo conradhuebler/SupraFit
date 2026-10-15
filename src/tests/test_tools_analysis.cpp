@@ -178,8 +178,8 @@ private slots:
 
         const int n = registerAnalysisTools(m_registry, &SupraFit::ProjectManager::instance())
                     + registerProjectTools(m_registry, &SupraFit::ProjectManager::instance());
-        QCOMPARE(n, 10);  // 5 analysis + 5 project
-        for (const char* name : { "fit_model", "fit_models", "compare_models_aic",
+        QCOMPARE(n, 11);  // 6 analysis + 5 project
+        for (const char* name : { "add_model", "fit_model", "fit_models", "compare_models_aic",
                                   "run_postfit_analysis", "calculate_bc50",
                                   "list_projects", "get_project_info", "list_models",
                                   "get_model_fit", "describe_model_catalog" })
@@ -190,6 +190,7 @@ private slots:
     {
         // Compute tools need approval at Ask/InProgram; Read tools never do.
         const QHash<QString, ToolEffect> expected = {
+            { QStringLiteral("add_model"), ToolEffect::Mutate },
             { QStringLiteral("fit_model"), ToolEffect::Compute },
             { QStringLiteral("fit_models"), ToolEffect::Compute },
             { QStringLiteral("run_postfit_analysis"), ToolEffect::Compute },
@@ -215,6 +216,50 @@ private slots:
             QVERIFY2(!needsApprovalAt(spec.effect, ToolAutonomy::InProgram), name);
             QVERIFY2(!needsApprovalAt(spec.effect, ToolAutonomy::Full), name);
         }
+    }
+
+    void addModelCreatesModelsAndReportsBadIds()
+    {
+        const QString pid = makeFreshProject();
+        QVERIFY2(!pid.isEmpty(), "fresh project did not register");
+        QCOMPARE(SupraFit::ProjectManager::instance().getProjectModels(pid).size(), 0);
+
+        // Mutate: asks at Ask, runs unasked at InProgram.
+        ToolSpec spec;
+        QVERIFY(m_registry.tool(QStringLiteral("add_model"), spec));
+        QVERIFY(needsApprovalAt(spec.effect, ToolAutonomy::Ask));
+        QVERIFY(!needsApprovalAt(spec.effect, ToolAutonomy::InProgram));
+
+        const ToolResult r = m_registry.invoke(QStringLiteral("add_model"),
+            QJsonObject{ { QStringLiteral("project_id"), pid },
+                         { QStringLiteral("model_ids"), QJsonArray{ 1, 3, 99999 } } });
+        QVERIFY2(r.ok, qPrintable(r.error));
+        const QJsonArray models = r.data.value(QStringLiteral("models")).toArray();
+        QCOMPARE(models.size(), 3);
+        QCOMPARE(models.at(0).toObject().value(QStringLiteral("model_index")).toInt(), 0);
+        QCOMPARE(models.at(1).toObject().value(QStringLiteral("model_index")).toInt(), 1);
+        QVERIFY(models.at(2).toObject().contains(QStringLiteral("error")));
+        QCOMPARE(SupraFit::ProjectManager::instance().getProjectModels(pid).size(), 2);
+
+        // The new models are fittable straight away.
+        const ToolResult fit = m_registry.invoke(QStringLiteral("fit_models"),
+            QJsonObject{ { QStringLiteral("project_id"), pid } });
+        QVERIFY2(fit.ok, qPrintable(fit.error));
+        QCOMPARE(fit.data.value(QStringLiteral("count")).toInt(), 2);
+    }
+
+    void addModelRefusesWhenNothingCanBeAdded()
+    {
+        const QString pid = makeFreshProject();
+        const ToolResult none = m_registry.invoke(QStringLiteral("add_model"),
+            QJsonObject{ { QStringLiteral("project_id"), pid },
+                         { QStringLiteral("model_ids"), QJsonArray{ 99999 } } });
+        QVERIFY(!none.ok);
+        const ToolResult unknown = m_registry.invoke(QStringLiteral("add_model"),
+            QJsonObject{ { QStringLiteral("project_id"), QStringLiteral("{nope}") },
+                         { QStringLiteral("model_ids"), QJsonArray{ 1 } } });
+        QVERIFY(!unknown.ok);
+        QVERIFY2(unknown.error.contains(QStringLiteral("unknown project_id")), qPrintable(unknown.error));
     }
 
     void compareModelsAicRanksTheStoredFits()

@@ -159,6 +159,15 @@ bool ToolRegistry::isValidSchema(const QJsonObject& schema, QString* error)
                 return fail(QStringLiteral("property '%1': enum must be a non-empty array").arg(it.key()));
         }
         const QString type = prop.value(QStringLiteral("type")).toString();
+        if (prop.contains(QStringLiteral("items"))) {
+            // items: {"type": <scalar>} -- enough to tell the model what an array holds.
+            const QString itemType = prop.value(QStringLiteral("items")).toObject().value(QStringLiteral("type")).toString();
+            if (type != QStringLiteral("array"))
+                return fail(QStringLiteral("property '%1': items is only valid for arrays").arg(it.key()));
+            if (itemType != QStringLiteral("string") && itemType != QStringLiteral("number")
+                && itemType != QStringLiteral("integer") && itemType != QStringLiteral("boolean"))
+                return fail(QStringLiteral("property '%1': items needs a scalar type").arg(it.key()));
+        }
         if (prop.contains(QStringLiteral("minimum")) && type != QStringLiteral("number") && type != QStringLiteral("integer"))
             return fail(QStringLiteral("property '%1': minimum is only valid for numbers").arg(it.key()));
         if (prop.contains(QStringLiteral("maximum")) && type != QStringLiteral("number") && type != QStringLiteral("integer"))
@@ -184,7 +193,7 @@ bool ToolRegistry::isValidSchema(const QJsonObject& schema, QString* error)
             return fail(QStringLiteral("unsupported schema key '%1'").arg(it.key()));
     }
     static const QSet<QString> allowedProp = { QStringLiteral("type"), QStringLiteral("description"),
-        QStringLiteral("enum"), QStringLiteral("minimum"), QStringLiteral("maximum") };
+        QStringLiteral("enum"), QStringLiteral("minimum"), QStringLiteral("maximum"), QStringLiteral("items") };
     for (auto it = properties.begin(); it != properties.end(); ++it) {
         const QJsonObject prop = it.value().toObject();
         for (auto pit = prop.begin(); pit != prop.end(); ++pit) {
@@ -232,6 +241,18 @@ ToolValidation ToolRegistry::validateAgainst(const QJsonObject& schema, const QJ
         if (!typeOk)
             return { false, QStringLiteral("parameter '%1' must be of type %2").arg(name, type) };
 
+        if (type == QStringLiteral("array") && prop.contains(QStringLiteral("items"))) {
+            const QString itemType = prop.value(QStringLiteral("items")).toObject().value(QStringLiteral("type")).toString();
+            for (const QJsonValue& element : value.toArray()) {
+                bool ok = false;
+                if (itemType == QStringLiteral("string"))       ok = element.isString();
+                else if (itemType == QStringLiteral("number"))  ok = element.isDouble();
+                else if (itemType == QStringLiteral("integer")) ok = element.isDouble() && element.toDouble() == std::floor(element.toDouble());
+                else if (itemType == QStringLiteral("boolean")) ok = element.isBool();
+                if (!ok)
+                    return { false, QStringLiteral("parameter '%1' must be an array of %2").arg(name, itemType) };
+            }
+        }
         if (prop.contains(QStringLiteral("enum"))) {
             const QJsonArray allowed = prop.value(QStringLiteral("enum")).toArray();
             bool found = false;

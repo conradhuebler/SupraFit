@@ -30,7 +30,8 @@ QString agentSystemPrompt()
         "You work ONLY through the tools offered to you; never invent project ids, "
         "model indices or numbers. Start with list_projects when you do not know what "
         "is loaded. Prefer the stored fits (get_model_fit, compare_models_aic) before "
-        "fitting again. Compare models by AIC, mention SSE and whether the fit converged, "
+        "fitting again. When a project has no models yet, create them with add_model "
+        "(ids from describe_model_catalog) and then fit them. Compare models by AIC, mention SSE and whether the fit converged, "
         "and say plainly when a result is missing or a tool refused. "
         "Answer concisely in the language of the question.");
 }

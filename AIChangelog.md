@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-10-15: **Agent tool `add_model` (Mutate): creates catalogue models on a project's data so the agent can fit a data set that has none; refuses models needing a hand-written definition; schema validator gained scalar `items` for arrays (tests: 12 analysis, 22 registry).**
 - 2026-10-15: **Agent measurements (cloud models via Ollama, 3 runs each): tool catalogue 5310 bytes / 10 tools; 2-4 tool calls and 3-15 s per run for gpt-oss:120b, glm-5.2, kimi-k2.7-code, all with ranking/AIC/SSE identical to the stored fits; `suprafit_cli --agent` prints profile, model and catalogue size to stderr. Details in roadmap/llm_agent_analysis.md.**
 - 2026-10-15: **Phase 7 of the LLM agent layer: `ChatDock` (`src/ui/widgets/chatdock.{h,cpp}`, behind USE_LLM) in the GUI — transcript, profile and autonomy selectors, confirmation dialog for tools needing approval, F5 toggle; same registry/session as the CLI. Builds and the GUI starts offscreen; interactive use not yet verified.**
 - 2026-10-15: **Phase 6 of the LLM agent layer: `suprafit_cli --agent "question"` (with `-i project.json`, `--profile`, `--llm-config`, `--agent-reasoning`) runs the agent headless via `src/agent/agentrunner`; autonomy InProgram, tool trace on stderr, answer on stdout. Live run against local Ollama `ornith-1.5:9b`: list_projects -> list_models -> compare_models_aic, correct ranking, 11 s.**

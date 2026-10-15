@@ -165,6 +165,31 @@ private slots:
         QVERIFY(v.error.contains(QStringLiteral("name")));
     }
 
+    void arrayItemsAreValidated()
+    {
+        ToolRegistry registry;
+        ToolSpec spec = makeSpec(QStringLiteral("arr"));
+        QJsonObject prop;
+        prop.insert(QStringLiteral("type"), QStringLiteral("array"));
+        prop.insert(QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("integer") } });
+        spec.paramSchema = QJsonObject{ { QStringLiteral("type"), QStringLiteral("object") },
+            { QStringLiteral("properties"), QJsonObject{ { QStringLiteral("ids"), prop } } } };
+        QVERIFY(registry.add(spec));
+        QVERIFY(registry.validate(QStringLiteral("arr"),
+            QJsonObject{ { QStringLiteral("ids"), QJsonArray{ 1, 2 } } }).ok);
+        const ToolValidation bad = registry.validate(QStringLiteral("arr"),
+            QJsonObject{ { QStringLiteral("ids"), QJsonArray{ 1, QStringLiteral("x") } } });
+        QVERIFY(!bad.ok);
+        QVERIFY(bad.error.contains(QStringLiteral("array of integer")));
+        // items on a non-array property is a malformed schema
+        ToolSpec wrong = makeSpec(QStringLiteral("arr2"));
+        wrong.paramSchema = QJsonObject{ { QStringLiteral("type"), QStringLiteral("object") },
+            { QStringLiteral("properties"), QJsonObject{ { QStringLiteral("x"),
+                QJsonObject{ { QStringLiteral("type"), QStringLiteral("string") },
+                             { QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("string") } } } } } } } };
+        QVERIFY(!registry.add(wrong));
+    }
+
     void validateRejectsUnknownKey()
     {
         ToolRegistry registry;
