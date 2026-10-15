@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,6 +93,9 @@ class ExportSimulationWidget : public QWidget {
     Q_OBJECT
 public:
     explicit ExportSimulationWidget(QWeakPointer<AbstractModel> model, QWidget* parent = nullptr);
+    /*! \brief SSE, sigma and SEy read-outs (click copies the value); placed with the fit results by
+     * the model widget. Owned by this widget until reparented. Claude Generated. */
+    QWidget* MetricsWidget() const { return m_metrics; }
 
 private:
     void UpdateVisibility();
@@ -100,6 +103,7 @@ private:
     QWeakPointer<AbstractModel> m_model;
 
     ClickLabel *m_sse, *m_std, *m_sey;
+    QWidget* m_metrics;
     DnDLabel *m_ideal, *m_mc_std, *m_mc_sey, *m_mc_user, *m_bs;
     QDoubleSpinBox* m_variance;
     QCheckBox* m_include_deactivated;

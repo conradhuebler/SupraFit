@@ -201,12 +201,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_global_box->setChecked(true);
 
     m_layout = new QVBoxLayout;
-    FlowLayout* const_layout = new FlowLayout;
+    // Global parameters as a grid that uses the full width: up to four per row, equal column widths.
+    QGridLayout* const_layout = new QGridLayout;
+    const int const_columns = qMax(1, qMin(4, m_model->GlobalParameterSize()));
+    for (int c = 0; c < const_columns; ++c)
+        const_layout->setColumnStretch(c, 1);
     for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
+        // name (rich text, e.g. lg K<sub>11</sub>) in front of the value, all in one framed row
         QGroupBox* group = new QGroupBox;
-        group->setAlignment(Qt::AlignHCenter);
-        group->setTitle(m_model->GlobalParameterName(i));
         QHBoxLayout* hlayout = new QHBoxLayout;
+        QLabel* name = new QLabel(QString("<html><b>%1</b></html>").arg(m_model->GlobalParameterName(i)));
+        hlayout->addWidget(name);
         QPointer<SpinBox> constant = new SpinBox;
         QPointer<QCheckBox> check = new QCheckBox;
         check->setChecked(true);
@@ -214,7 +219,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         constant->setDecimals(4);
 
         QPushButton *more_action = new QPushButton(tr("..."));
-        more_action->setMaximumWidth(20);
+        more_action->setMaximumWidth(24);
+        more_action->setToolTip(tr("Boundaries of %1 and root search").arg(m_model->GlobalParameterName(i)));
         connect(more_action, &QPushButton::clicked, this, [this, i](){
             ParameterBoundary boundary = m_model.data()->getGlobalBoundary(i);
             double value = m_model->GlobalParameter(i);
@@ -272,8 +278,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         hlayout->addWidget(more_action);
 
         check->setHidden(m_model.data()->isSimulation());
+        check->setToolTip(tr("Optimise %1 in the fit").arg(m_model->GlobalParameterName(i)));
+        hlayout->setContentsMargins(6, 2, 6, 4);
+        constant->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         group->setLayout(hlayout);
-        const_layout->addWidget(group);
+        const_layout->addWidget(group, i / const_columns, i % const_columns);
     }
 
     m_local_box = new QCheckBox(tr("Local Parameter"));
@@ -360,31 +369,34 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_minimize_all->setMenu(menu);
 
 
-    // Fit controls first (which parameters, Fit button), the goodness-of-fit labels and simulated
-    // data exports underneath; the export row wraps in narrow panes. Claude Generated (layout).
     m_global_box->setToolTip(tr("Optimise the global parameters (stability constants)"));
     m_local_box->setToolTip(tr("Optimise the local parameters (signals of the pure species)"));
     m_minimize_all->setToolTip(tr("Fit the model to the data; the arrow offers fit variants and solvers"));
-    QGridLayout* fit_layout = new QGridLayout;
-    fit_layout->addWidget(m_global_box, 0, 0);
-    fit_layout->addWidget(m_local_box, 0, 1);
-    fit_layout->setColumnStretch(2, 1);
-    if (m_model->Type() != DataClassPrivate::Simulation)
-        fit_layout->addWidget(m_minimize_all, 0, 3);
-    fit_layout->addWidget(new ExportSimulationWidget(m_model, this), 1, 0, 1, 4);
 
-    m_layout->addLayout(fit_layout);
-    m_layout->addLayout(const_layout);
-
-
-    QHBoxLayout* name_layout = new QHBoxLayout;
-    name_layout->addWidget(new QLabel(tr("<h4>Model Name</h4>")));
+    /* Header (model pane, top to bottom; Claude Generated, UI redesign WP7):
+     *   model name (large, centred, editable)
+     *   fit row: Global/Local checkboxes, Fit, convergence status, Read Only
+     *   global parameters (grid over the full width)
+     *   action buttons (Scan … Charts)
+     * Goodness-of-fit numbers live with the fit results, the simulated-data exports in their own tab. */
     m_model_name = new QLineEdit;
     m_model_name->setText(m_model->Name());
     m_model_name->setPlaceholderText(SupraFit::Method2Name(m_model->SFModel()));
     m_model_name->setClearButtonEnabled(true);
+    m_model_name->setAlignment(Qt::AlignCenter);
+    m_model_name->setFrame(false);
+    m_model_name->setToolTip(tr("Model name, shown in the tab, the charts and the results; click to edit"));
+    {
+        QFont font = m_model_name->font();
+        font.setPointSizeF(font.pointSizeF() * 1.35);
+        font.setBold(true);
+        m_model_name->setFont(font);
+    }
+    m_model_name->setBackgroundRole(QPalette::Window);
     connect(m_model_name, &QLineEdit::textChanged, m_model.data(), &AbstractModel::setName);
-    name_layout->addWidget(m_model_name);
+
+    QHBoxLayout* name_layout = new QHBoxLayout;
+    name_layout->addWidget(m_model_name, 1);
 
     if (!m_model->SupportSeries()) {
         m_legend = new QCheckBox;
@@ -398,23 +410,35 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         name_layout->addWidget(m_legend);
         QSpinBox* series = new QSpinBox;
         series->setRange(1, m_model->DependentModel()->rowCount());
+        series->setPrefix(tr("Series "));
+        series->setToolTip(tr("Data series the model is applied to"));
         name_layout->addWidget(series);
         connect(series, &QSpinBox::valueChanged, this, [this](int value) {
             m_model->setAppliedSeries(value - 1);
         });
     }
 
-    m_layout->addLayout(name_layout);
-    m_layout->addStretch();
+    m_converged_label = new QLabel;
+    m_converged_label->setToolTip(tr("State of the last optimisation"));
+    m_readonly = new QCheckBox(tr("Read Only"));
+    m_readonly->setToolTip(tr("Lock the local parameters of all data series against editing"));
 
-    // Page "Fit model": fit controls, global parameters and the model name. It is the first tab of
-    // the model tab widget, next to the model options and system parameters. Claude Generated.
-    QWidget* widget = new QWidget;
-    widget->setLayout(m_layout);
-    QScrollArea* fit_page = new QScrollArea;
-    fit_page->setWidgetResizable(true);
-    fit_page->setFrameShape(QFrame::NoFrame);
-    fit_page->setWidget(widget);
+    FlowLayout* fit_row = new FlowLayout(-1, 10, 4); // wraps in narrow panes instead of clipping
+    fit_row->addWidget(m_global_box);
+    fit_row->addWidget(m_local_box);
+    if (m_model->Type() != DataClassPrivate::Simulation)
+        fit_row->addWidget(m_minimize_all);
+    if (!m_model->isSimulation())
+        fit_row->addWidget(m_converged_label);
+    if (!m_val_readonly && !m_model->isSimulation() && m_model->LocalParameterSize())
+        fit_row->addWidget(m_readonly);
+
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->addLayout(name_layout);
+    m_layout->addLayout(fit_row);
+    m_layout->addLayout(const_layout);
+
+    m_simulation_export = new ExportSimulationWidget(m_model, this);
 
     m_model_options_widget = new OptionsWidget(m_model);
     //m_layout->addWidget(m_model_options_widget);
@@ -424,23 +448,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_model_options = m_model_options_widget;
 
-    m_layout = new QVBoxLayout;
-
     m_sign_layout = new QVBoxLayout;
 
     m_sign_layout->setAlignment(Qt::AlignTop);
-    m_converged_label = new QLabel;
-
-    m_readonly = new QCheckBox(tr("Read Only"));
-    QHBoxLayout* head = new QHBoxLayout;
-
-    if (!m_model->isSimulation())
-        head->addWidget(m_converged_label);
-
-    if (!m_val_readonly && !m_model->isSimulation())
-        head->addWidget(m_readonly);
-
-    m_sign_layout->addLayout(head);
+    m_sign_layout->setSpacing(4);
+    m_sign_layout->setContentsMargins(2, 2, 2, 2);
 #ifdef DEBUG_ON
     // Diagnostic for scripted models: these values decide whether the per-series parameter widgets
     // (shift editors + optimise checkboxes) are built at all. Claude Generated.
@@ -511,8 +523,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
             connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
     }
-    widget = new QWidget;
-
     QWidget* scroll = new QWidget;
     scroll->setLayout(m_sign_layout);
     QScrollArea* area = new QScrollArea;
@@ -522,7 +532,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     QTabWidget* model_tab = new QTabWidget;
     model_tab->setDocumentMode(true);
-    model_tab->addTab(fit_page, tr("Fit model"));
 
     if (m_model->OptionsCount())
         model_tab->addTab(m_model_options, "Model Options");
@@ -533,6 +542,19 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // Scalable table view for models with many species (additive: the classic view is unchanged).
     if (m_model->UseDynamicParameterWidget())
         model_tab->addTab(new DynamicModelWidget(m_model, this), "Parameter Table");
+
+    // Simulated data sets from this model (drag an entry onto the project list).
+    {
+        QWidget* page = new QWidget;
+        QVBoxLayout* page_layout = new QVBoxLayout;
+        QLabel* hint = new QLabel(tr("Drag an entry onto the project list to create a data set simulated from this model."));
+        hint->setWordWrap(true);
+        page_layout->addWidget(hint);
+        page_layout->addWidget(m_simulation_export);
+        page_layout->addStretch();
+        page->setLayout(page_layout);
+        model_tab->addTab(page, tr("Simulated Data"));
+    }
 
     m_actions = new ModelActions;
 
@@ -558,21 +580,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     resizeButtons();
 
-    /* Layout (operator mockup): the model tabs (fit, options, system parameters, …) with the action
-     * buttons underneath on the left, the data series (per-series parameters) on the right, and the
-     * fit results across the bottom. Both splitters are user-adjustable and stored per model type.
-     * Claude Generated. */
-    QWidget* left = new QWidget;
-    QVBoxLayout* left_layout = new QVBoxLayout;
-    left_layout->setContentsMargins(0, 0, 0, 0);
-    left_layout->addWidget(model_tab);
-    left_layout->addWidget(m_actions);
-    left->setLayout(left_layout);
+    /* Layout (operator mockup): header with name, fit row, global parameters and the action buttons on
+     * top; below it the model tabs (options, system parameters, simulated data, …) and the data series
+     * (beside each other when there is room), and the fit results across the bottom. Both splitters are
+     * user-adjustable and stored per model type. Claude Generated. */
+    m_layout->addWidget(m_actions);
+    QWidget* header = new QWidget;
+    header->setLayout(m_layout);
 
     m_series_splitter = new QSplitter(Qt::Horizontal);
     m_series_splitter->setObjectName("modelSeriesSplitter");
-    m_series_splitter->addWidget(left);
-    left->setMinimumWidth(320);
+    m_series_splitter->addWidget(model_tab);
+    model_tab->setMinimumWidth(300);
     if (m_model->LocalParameterSize()) {
         QGroupBox* series_box = new QGroupBox(tr("Data series"));
         series_box->setToolTip(tr("Local parameters of each data series, their inclusion in the fit and their appearance in the charts"));
@@ -581,8 +600,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         series_layout->addWidget(m_model_parameter);
         series_box->setLayout(series_layout);
         m_series_splitter->addWidget(series_box);
-        m_series_splitter->setStretchFactor(0, 4);
-        m_series_splitter->setStretchFactor(1, 5);
+        m_series_splitter->setStretchFactor(0, 2);
+        m_series_splitter->setStretchFactor(1, 3);
     }
     m_splitter->addWidget(m_series_splitter);
 
@@ -590,11 +609,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     results_box->setToolTip(tr("Goodness of fit and statistics of the current model"));
     QVBoxLayout* results_layout = new QVBoxLayout;
     results_layout->setContentsMargins(4, 4, 4, 4);
+    results_layout->addWidget(m_simulation_export->MetricsWidget());
     results_layout->addWidget(m_statistic_widget);
+    m_statistic_widget->setMinimumHeight(110);
     results_box->setLayout(results_layout);
     results_box->setHidden(m_model->isSimulation());
     m_splitter->addWidget(results_box);
-    m_splitter->setStretchFactor(0, 3);
+    m_splitter->setStretchFactor(0, m_model->LocalParameterSize() ? 3 : 1);
     m_splitter->setStretchFactor(1, 1);
 
     m_statistic_widget->setHidden(m_model->isSimulation());
@@ -603,7 +624,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_series_splitter, &QSplitter::splitterMoved, this, &ModelWidget::SplitterResized);
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->setContentsMargins(4, 4, 4, 4);
-    vlayout->addWidget(m_splitter);
+    vlayout->addWidget(header);
+    vlayout->addWidget(m_splitter, 1);
 
     setLayout(vlayout);
     m_last_model = m_model->ExportModel(true, true);
@@ -876,8 +898,8 @@ QString ModelWidget::SplitterSettingsKey() const
      * scripted models shared the key "model 100", so a state saved for a 2-pane layout was restored
      * into a 3-pane one and QSplitter gave the extra pane height 0 — the per-series shift editors
      * disappeared entirely even though the model was fully defined. Claude Generated. */
-    // "layout 2": tabs | data series over fit results (2026 redesign); older states do not fit it.
-    return QString("layout 2 model %1 panes %2").arg(m_model->SFModel()).arg(m_series_splitter->count());
+    // "layout 3": header, tabs | data series over fit results (2026 redesign); older states do not fit it.
+    return QString("layout 3 model %1 panes %2").arg(m_model->SFModel()).arg(m_series_splitter->count());
 }
 
 /*! \brief Put the data series beside the model tabs when there is room, otherwise below them, so
@@ -889,9 +911,11 @@ void ModelWidget::UpdateSeriesOrientation()
     const Qt::Orientation orientation = width() >= 900 ? Qt::Horizontal : Qt::Vertical;
     if (m_series_splitter->orientation() != orientation) {
         m_series_splitter->setOrientation(orientation);
-        // share the space evenly after a switch, the old sizes belong to the other direction
+        // the old sizes belong to the other direction: below each other the tabs get what they need
+        // (at most a third), beside each other the series get the larger share
         const int total = orientation == Qt::Horizontal ? m_series_splitter->width() : m_series_splitter->height();
-        m_series_splitter->setSizes({ total / 2, total - total / 2 });
+        const int first = orientation == Qt::Horizontal ? total * 2 / 5 : qMin(total / 3, m_series_splitter->widget(0)->minimumSizeHint().height() + 40);
+        m_series_splitter->setSizes({ first, total - first });
     }
 }
 
@@ -946,17 +970,23 @@ void ModelWidget::Repaint()
 
     QTimer::singleShot(1, m_statistic_widget, &StatisticWidget::Update);
 
-    QString converged;
-    if (!m_model->isConverged())
-        converged = "<font color =\'red\'>Optimisation did not converge.</font>\n";
-    else
-        converged = "Optimisation converged!";
-
-    QString corrupt;
-    if (m_model->isCorrupt())
-        corrupt = "<font color =\'red\'><strong>Model is corrupt, probably numerical errors in concentration calculation. Please don't rely on these results.</strong></font>\n";
-
-    m_converged_label->setText("<html><p>" + converged + "</p><p>" + corrupt + "</p></html>");
+    // Status chip next to the Fit button; the fixed colours carry the meaning in light and dark mode.
+    QString text, colour;
+    if (m_model->isCorrupt()) {
+        text = tr("Model corrupt");
+        colour = "#c62828";
+        m_converged_label->setToolTip(tr("Probably numerical errors in the concentration calculation; do not rely on these results."));
+    } else if (!m_model->isConverged()) {
+        text = tr("Not converged");
+        colour = "#e65100";
+        m_converged_label->setToolTip(tr("The last optimisation did not converge."));
+    } else {
+        text = tr("Converged");
+        colour = "#2e7d32";
+        m_converged_label->setToolTip(tr("The last optimisation converged."));
+    }
+    m_converged_label->setText(text);
+    m_converged_label->setStyleSheet(QString("QLabel { background: %1; color: white; border-radius: 9px; padding: 2px 10px; font-weight: bold; }").arg(colour));
 
     /* Model2Text();
     QTextDocument doc;

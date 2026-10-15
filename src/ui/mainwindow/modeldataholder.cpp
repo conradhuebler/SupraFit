@@ -75,6 +75,8 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
 
+#include <QtCore/QSignalBlocker>
+
 #include "modeldataholder.h"
 
 void ToolButton::ChangeColor(const QColor& color)
@@ -419,6 +421,19 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
     }
 }
 
+void MDHDockTitleBar::setEditDataToggles(bool toggles)
+{
+    m_edit_data->setCheckable(toggles);
+    m_edit_data->setToolTip(toggles ? tr("Make the data tables of the current project editable (checked) or read-only")
+                                    : tr("Edit the raw data of the current project in its import dialog"));
+}
+
+void MDHDockTitleBar::setEditDataChecked(bool checked)
+{
+    QSignalBlocker block(m_edit_data);
+    m_edit_data->setChecked(checked);
+}
+
 void MDHDockTitleBar::HideModelTools()
 {
     m_tools_hidden = true;
@@ -542,6 +557,10 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         auto dataRef = m_data.toStrongRef();
         if (dataRef && dataRef->IndependentModel()) {
             m_TitleBarWidget->addToMenu(dataRef->IndependentModel()->columnCount());
+            const bool dialog_edit = dataRef->ExportData()["SupraFit"].toInt() >= 1602
+                && (dataRef->DataType() == DataClassPrivate::Thermogram || dataRef->DataType() == DataClassPrivate::Spectrum);
+            m_TitleBarWidget->setEditDataToggles(!dialog_edit);
+            m_TitleBarWidget->setEditDataChecked(dataRef->DependentModel()->isEditable());
             m_TitleBarWidget->setIndependentCount(dataRef->IndependentModel()->columnCount());
             qDebug() << "✅ DEBUG setData: Successfully added menu with" << dataRef->IndependentModel()->columnCount() << "columns";
         } else {
@@ -1442,8 +1461,7 @@ void ModelDataHolder::EditData()
     int version = m_data.toStrongRef()->ExportData()["SupraFit"].toInt();
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-        m_data.toStrongRef()->IndependentModel()->setEditable(!m_data.toStrongRef()->IndependentModel()->isEditable());
-        m_data.toStrongRef()->DependentModel()->setEditable(!m_data.toStrongRef()->DependentModel()->isEditable());
+        ToggleTablesEditable();
     } else {
         if (m_data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
             ImportData dialog(m_data);
@@ -1465,10 +1483,27 @@ void ModelDataHolder::EditData()
                 SpectraEdited(dialog.InputTable(), dialog.ProjectData());
             }
         } else {
-            m_data.toStrongRef()->IndependentModel()->setEditable(!m_data.toStrongRef()->IndependentModel()->isEditable());
-            m_data.toStrongRef()->DependentModel()->setEditable(!m_data.toStrongRef()->DependentModel()->isEditable());
+            ToggleTablesEditable();
         }
     }
+}
+
+/*! \brief Switch both data tables between editable and read-only, show the data tab and report the
+ * new state in the log; the Edit Data action shows it as its checked state. Claude Generated. */
+void ModelDataHolder::ToggleTablesEditable()
+{
+    auto data = m_data.toStrongRef();
+    if (!data)
+        return;
+    const bool editable = !data->DependentModel()->isEditable();
+    data->IndependentModel()->setEditable(editable);
+    data->DependentModel()->setEditable(editable);
+    m_TitleBarWidget->setEditDataChecked(editable);
+    if (editable)
+        m_modelsWidget->setCurrentIndex(0); // the data tab holds the tables
+    emit Message(editable ? tr("Data tables of %1 are editable now.").arg(data->ProjectTitle())
+                          : tr("Data tables of %1 are read-only again.").arg(data->ProjectTitle()),
+        3);
 }
 
 void ModelDataHolder::setCurrentTab(int index)

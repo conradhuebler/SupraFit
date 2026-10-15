@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -100,6 +100,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_model_dataholder, &ModelDataHolder::ModelRemoved, this, &MainWindow::ModelsChanged);
     connect(m_model_dataholder, &ModelDataHolder::SpectraEdited, this, &MainWindow::SpectraEdited);
     connect(m_model_dataholder, &ModelDataHolder::AddProject, this, &MainWindow::AddProject);
+    connect(m_model_dataholder, &ModelDataHolder::Message, this, &MainWindow::Message);
+    connect(m_model_dataholder, &ModelDataHolder::Warning, this, &MainWindow::Warning);
 
     /*
     setStyleSheet("QSplitter::handle:vertical {"

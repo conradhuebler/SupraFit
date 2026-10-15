@@ -338,7 +338,9 @@ SupraFitGui::SupraFitGui()
     m_left_splitter->setStretchFactor(0, 3);
     m_left_splitter->setStretchFactor(1, 1);
     m_left_splitter->setChildrenCollapsible(false);
-    m_left_splitter->setMaximumWidth(400);
+    // keep the column narrow; the limit sits on the children, a limit on the splitter itself did not hold
+    m_project_holder->setMaximumWidth(400);
+    m_message_dock->setMaximumWidth(400);
 
     m_mainsplitter = new QSplitter(Qt::Horizontal);
     m_mainsplitter->setObjectName(tr("project_splitter"));

@@ -39,8 +39,9 @@ the pre-redesign state is captured in `docs/ui_redesign/before_*.png`.
   the pink hierarchy; they go into Model/Evaluation where they belong by meaning.
 - A4: Log stays a toggleable panel (F4) with the unread indicator on its toggle action; it is a
   vertical split under the project tree, not a free dock.
-- A6: The arrow from "Fit model" to tab "1" means the fit controls become the first tab beside
-  Model Options (2) and System Parameter (3); the small yellow box under the tabs is the action row.
+- A6: Section 1 "Fit model" is the always-visible header of the model pane (name, fit row with status, global
+  parameters, action buttons); tabs 2/3 (Model Options, System Parameter) sit below it next to the data series.
+  (WP3 had made the fit controls a tab; the operator's feedback on WP3 moved them back on top, WP7.)
   In narrow workspaces (< 900 px) the data series move below the tabs instead of beside them.
 - A5: No QMenuBar (would add a row); all actions with shortcuts are registered on the window so the
   shortcuts work although the actions sit in drop-down menus.
@@ -54,6 +55,8 @@ the pre-redesign state is captured in `docs/ui_redesign/before_*.png`.
   a control is, fix the malformed main-window stylesheet.
 - **WP5** Appearance setting `System / Light / Dark` (settings registry → ConfigDialog), applied at
   runtime via Fusion + `QPalette`; charts follow the theme (background, axes, labels, grid).
+- **WP7** Model pane after operator feedback: name header, one fit row with status chip, parameter grid,
+  metrics with the fit results, simulated-data exports in a tab, compact data-series rows; Edit Data as toggle.
 - **WP6** Small screens: usable at 1366x768 (ideally 1024x600): no large fixed minimum sizes, scroll
   areas for tall content, compact toolbar mode, no forced horizontal scrollbar.
 
@@ -67,4 +70,5 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 - WP2 Projects + Log column: 🤖 ⚙️ build + offscreen render (`wp2_*.png`); unread indicator and F4 not exercised headless
 - WP3 model tab: 🤖 ⚙️ build + offscreen render (`wp3_after_*.png`); fitting, scan, statistic and dialogs not exercised headless
 - WP4–WP6 polish, appearance, small screens: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, offscreen renders light/dark at 1920, 1600, 1366x768, 1024x600 (`light_*`, `dark_*`, `small_*`); live switching via the dialog not clicked headless
+- WP7 model pane + Edit Data toggle: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, offscreen renders light/dark 1920 and 1366x768, with and without series (`wp7_*.png`, before: `wp7_before_*`); Edit Data triggered programmatically (log line + data tab), no real clicks
 - Open: CuteChart's flat "Tools" button has black text (unreadable on dark charts; fix in CuteChart); chart export in dark mode carries light axis labels (exporter keeps the on-screen colours); dark PNG icons (copy, logo curve) low-contrast on dark; at 1024x600 the agent dock does not fit beside the workspace (float or hide it)

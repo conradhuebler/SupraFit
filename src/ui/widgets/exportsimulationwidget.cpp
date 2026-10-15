@@ -160,29 +160,36 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
         clipboard->setText((tr("%1").arg(Print::printDouble(m_model.toStrongRef().data()->SEy()))).simplified());
         m_sey->Clicked();
     });
-    if (!m_model.toStrongRef().data()->isSimulation()) {
-        layout->addWidget(m_sse, 0, 0);
-        layout->addWidget(m_std, 0, 1);
-        layout->addWidget(m_sey, 0, 2);
+    // Goodness-of-fit read-outs: a separate widget, the model widget shows it with the fit results.
+    m_metrics = new QWidget(this);
+    QHBoxLayout* metrics = new QHBoxLayout;
+    metrics->setContentsMargins(0, 0, 0, 0);
+    for (ClickLabel* label : { m_sse, m_std, m_sey }) {
+        label->setToolTip(tr("Click to copy the value"));
+        label->setCursor(Qt::PointingHandCursor);
+        metrics->addWidget(label);
     }
+    metrics->addStretch();
+    m_metrics->setLayout(metrics);
+    m_metrics->setHidden(m_model.toStrongRef().data()->isSimulation());
 
-    m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")), 0, m_model);
+    m_ideal = new DnDLabel(tr("Ideal model"), 0, m_model);
     m_ideal->setParent(this);
     connect(m_include_deactivated, &QCheckBox::stateChanged, m_ideal, &DnDLabel::setExportAll);
 
-    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")), 2, m_model);
+    m_mc_std = new DnDLabel(tr("MC with model σ<sub>fit</sub>"), 2, m_model);
     m_mc_std->setParent(this);
     connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_std, &DnDLabel::setExportAll);
 
-    m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")), 1, m_model);
+    m_mc_sey = new DnDLabel(tr("MC with model SE<sub>y</sub>"), 1, m_model);
     m_mc_sey->setParent(this);
     connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_sey, &DnDLabel::setExportAll);
 
-    m_bs = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC using BS</b>").arg(QString(":/icons/edit-copy.png")), 4, m_model);
+    m_bs = new DnDLabel(tr("Bootstrap (resampled errors)"), 4, m_model);
     m_bs->setParent(this);
     connect(m_include_deactivated, &QCheckBox::stateChanged, m_bs, &DnDLabel::setExportAll);
 
-    m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")), 3, m_model);
+    m_mc_user = new DnDLabel(tr("MC with user σ:"), 3, m_model);
     m_mc_user->setParent(this);
     connect(m_include_deactivated, &QCheckBox::stateChanged, m_mc_user, &DnDLabel::setExportAll);
 
@@ -192,6 +199,14 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     m_variance->setDecimals(5);
     m_variance->setValue(1e-3);
 
+    // The simulated-data entries are drag sources: style them as framed chips with a drag cursor.
+    for (DnDLabel* label : { m_ideal, m_mc_std, m_mc_sey, m_bs, m_mc_user }) {
+        label->setFrameShape(QFrame::StyledPanel);
+        label->setMargin(4);
+        label->setCursor(Qt::OpenHandCursor);
+        label->setToolTip(tr("Drag onto the project list to create a simulated data set"));
+    }
+    m_variance->setToolTip(tr("Standard deviation of the random error for \"MC with user σ\""));
     FlowLayout* hlayout = new FlowLayout; // wraps in narrow panes
     hlayout->addWidget(m_include_deactivated);
     hlayout->addWidget(m_ideal);
@@ -204,7 +219,8 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     m_bs->setHidden(m_model.toStrongRef().data()->isSimulation());
     hlayout->addWidget(m_mc_user);
     hlayout->addWidget(m_variance);
-    layout->addLayout(hlayout, 1, 0, 1, 3);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addLayout(hlayout, 0, 0, 1, 3);
 
     connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         m_mc_user->setStd(value);
@@ -213,9 +229,9 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     setLayout(layout);
 
     connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this]() {
-        m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SSE: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SSE())));
-        m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;%2: %3</b>").arg(QString(":/icons/edit-copy.png")).arg(Unicode_sigma).arg(Print::printDouble(m_model.toStrongRef().data()->StdDeviation())));
-        m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SEy())));
+        m_sse->setText(tr("<img src='%1' height='14'></img>&nbsp;<b>SSE: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SSE())));
+        m_std->setText(tr("<img src='%1' height='14'></img>&nbsp;<b>%2: %3</b>").arg(QString(":/icons/edit-copy.png")).arg(Unicode_sigma).arg(Print::printDouble(m_model.toStrongRef().data()->StdDeviation())));
+        m_sey->setText(tr("<img src='%1' height='14'></img>&nbsp;<b>SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SEy())));
     });
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ExportSimulationWidget::UpdateVisibility);
 

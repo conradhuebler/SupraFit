@@ -108,6 +108,11 @@ public:
     void addToMenu(int IndependetCount);
     void HideModelTools();
 
+    /** @brief Plain tables: "Edit Data" is a checkable toggle (checked = tables editable); thermograms
+     * and spectra open their import dialog instead. Claude Generated. */
+    void setEditDataToggles(bool toggles);
+    void setEditDataChecked(bool checked);
+
     /** @brief Menus shown in the main toolbar for the current project. Claude Generated. */
     QMenu* DataMenu() const { return m_data_menu; }
     QMenu* ModelMenu() const { return m_model_menu; }
@@ -217,6 +222,11 @@ public:
     /*! \brief Create the widget for a model added from outside the GUI (e.g. by the LLM agent through
      * the ProjectManager), unless this holder already shows it. Claude Generated. */
     void ensureModelWidget(QSharedPointer<AbstractModel> model);
+
+private:
+    void ToggleTablesEditable();
+
+public:
     
     /**
      * @brief Find tab index for model with given UUID

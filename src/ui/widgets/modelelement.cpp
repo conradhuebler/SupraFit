@@ -49,6 +49,7 @@
 #include <QtWidgets/QPushButton>
 
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/flowlayout.h"
 
 #include "modelelement.h"
 
@@ -58,11 +59,15 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     , m_no(no)
     , m_charts(charts)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
-    QHBoxLayout* shifts = new QHBoxLayout;
+    /* Compact row (UI redesign WP7): one flow of [Include, name, parameter cells, SAE, display
+     * toggles] that wraps to a second line in narrow panes, instead of two stacked blocks. Each
+     * parameter cell is "label spin box checkbox" on one line. Claude Generated. */
+    FlowLayout* layout = new FlowLayout(-1, 8, 2);
+    layout->setContentsMargins(6, 4, 6, 4);
+    FlowLayout* shifts = layout;
+    QList<QWidget*> parameter_cells;
     for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
         QPointer<QWidget> widget = new QWidget;
-        widget->setFixedWidth(150);
         QCheckBox* check = new QCheckBox;
         connect(check, &QCheckBox::stateChanged, check, [this, i, no](int state) {
             m_model.toStrongRef().data()->LocalTable()->setChecked(no, i, state);
@@ -91,23 +96,23 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
                 }
             }
         });
-        QGridLayout* vlayout = new QGridLayout;
+        QHBoxLayout* vlayout = new QHBoxLayout;
+        vlayout->setContentsMargins(0, 0, 0, 0);
+        vlayout->setSpacing(3);
         widget->setLayout(vlayout);
-        vlayout->addWidget(constant, 0, 0);
-        vlayout->addWidget(check, 0, 1);
         check->setHidden(m_model.toStrongRef().data()->isSimulation());
+        check->setToolTip(tr("Optimise this parameter in the fit"));
 
         QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.toStrongRef().data()->LocalParameterName(i)));
-        vlayout->addWidget(label, 1, 0, 1, 2);
-        shifts->addWidget(widget, 0);
+        vlayout->addWidget(label);
+        vlayout->addWidget(constant);
+        vlayout->addWidget(check);
+        parameter_cells << widget;
         m_labels << label;
     }
 
     m_error = new QLabel;
-    shifts->addStretch(150);
-    shifts->addWidget(m_error);
-    layout->addLayout(shifts);
-    QHBoxLayout* tools = new QHBoxLayout;
+    FlowLayout* tools = layout;
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
@@ -156,8 +161,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_name = new QLineEdit;
     m_name->setPlaceholderText(m_signal_series->name());
     m_name->setClearButtonEnabled(true);
-    m_name->setMaximumWidth(400);
+    m_name->setFixedWidth(130);
+    m_name->setToolTip(tr("Name of the data series in the charts"));
     tools->addWidget(m_name);
+    for (QWidget* cell : parameter_cells)
+        shifts->addWidget(cell);
+    shifts->addWidget(m_error);
     connect(m_name, &QLineEdit::textChanged, this, [this]() {
         if (this->m_name && this->m_signal_series) {
             if (this->m_name->text() != this->m_signal_series->name()) {
@@ -205,6 +214,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_plot->setText(tr("Color"));
     m_plot->setFlat(true);
     m_plot->setMaximumSize(70, 30);
+    m_plot->setToolTip(tr("Choose the colour of this data series"));
     tools->addWidget(m_plot);
     setLayout(layout);
 
@@ -213,8 +223,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_toggle->setCheckable(true);
     m_toggle->setMaximumSize(90, 30);
     tools->addWidget(m_toggle);
+    m_toggle->setToolTip(tr("Show only this data series in the charts"));
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
-    layout->addLayout(tools);
     // setMaximumHeight(110);
     // setMinimumHeight(110);
     ChangeColor(m_charts.data_wrapper->color(m_no));

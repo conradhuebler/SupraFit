@@ -66,6 +66,7 @@ class OptionsWidget;
 class ResultsDialog;
 class SpinBox;
 class StatisticWidget;
+class ExportSimulationWidget;
 class StatisticDialog;
 class SystemParameterWidget;
 
@@ -131,6 +132,7 @@ private:
     QAction *m_speciation_levmar, *m_speciation_bfgs; /* Fit-menu speciation-solver choice. Claude Generated. */
     QMenu* m_speciation_menu; /* submenu holding the speciation-solver choice; disabled off-engine. CG. */
     QCheckBox *m_readonly, *m_legend;
+    ExportSimulationWidget* m_simulation_export = nullptr; ///< simulated-data drag sources + goodness-of-fit labels
     QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
     QVBoxLayout* m_layout;
