@@ -18,7 +18,6 @@
 
 ## UI Redesign (supersedes Phases 1–3 below)
 - [ ] LLM presets: hosted providers (OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek) never contacted with a real key; OpenRouter/Mistral URLs only third-party-confirmed (`src/agent/llmpresets.cpp`)
-- [ ] Agent chat: the tools expose no fitted parameter values (a live run could not report lgK); add them to `get_model_fit`/`list_models` (src/agent/tools_analysis.cpp)
 - [ ] Main window redesign from the operator's mockup (toolbar menus, Projects+Log column, model tab, dark mode, small screens) — WIP on `feature/ui-redesign`, see [roadmap/ui_redesign.md](roadmap/ui_redesign.md)
 
 ---
