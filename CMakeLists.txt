@@ -630,6 +630,7 @@ if(USE_LLM)
         src/agent/llmsession.cpp
         src/agent/tools_project.cpp
         src/agent/tools_analysis.cpp
+        src/agent/tools_inspect.cpp
         src/agent/agentrunner.cpp
         src/agent/chatlog.cpp
         src/agent/llmpresets.cpp

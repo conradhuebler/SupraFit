@@ -197,7 +197,7 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   `MODEL_ID_REFERENCE.md` — spart dem Modell, 40 IDs raten zu müssen).
   Alle `Read`-Effect, `Any`-Affinity (ProjectManager ist thread-safe) →
   headless testbar wie der CLI. `modelSummary()` deliberately ohne Roh-Parameter
-  (die wären riesig im Kontext; `get_model_parameters` kommt in Phase 5).
+  (die wären riesig im Kontext; `get_model_parameters` kam mit `tools_inspect`, 2026-10-16).
   Test gegen echtes Referenzprojekt `simulated_1_1.json` (4 Modelle, 20×2/20×7,
   R²>0.9, ids 1/3/2/4, konvergiert) — kein GUI, kein Netz.
 - **Phase 5 (3-4 days).** ✅ **DONE 2026-10-15** (`tools_analysis.{h,cpp}`, `test_tools_analysis` 10/10). Compute-Tools. `fit_model` ist `Effect::Compute` —
@@ -300,3 +300,5 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
 - Alle Läufe: Ranking und Zahlen identisch mit den gespeicherten Fits (1:1 mit AIC −115,22 / SSE 0,01271 am besten; 2:1/1:1/1:2 nicht konvergiert korrekt gemeldet). Worst case: 4 Aufrufe, 15 s, keine Tool-Fehler.
 - `deepseek-v4-flash:cloud`, `qwen3-coder-next:cloud`: HTTP 410 (Endpunkt abgeschaltet), nicht messbar.
 - Lokale Modelle (`ornith-1.5:9b`: 3 Aufrufe/11 s, nur 1 Lauf mit anderer Frage; `gpt-oss:20b`, `lfm2.5-thinking`) nicht gemessen (GPU frei halten).
+
+**Inspect-Tools (2026-10-16, `src/agent/tools_inspect.{h,cpp}`):** `get_model_parameters` (globale Werte mit Namen, lokale je Serie), `get_model_statistics` (gespeicherte MC/WGS/CV/…-Läufe mit KI, Median, Stdabw.; nur die neuesten je Methode), `get_data_table` (Fenster + Spaltenbereiche, ausgeschlossene Punkte), `get_residuals` (RMS, Bias, größtes Residuum, Lag-1-Autokorrelation je Serie), `set_model_parameter` (Mutate). Katalog: 18 Tools. Live (glm-5.2): lgK mit KI und Residuenurteil korrekt aus den Tools.

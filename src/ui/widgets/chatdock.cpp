@@ -18,6 +18,7 @@
 #include "src/agent/tooldispatcher.h"
 #include "src/agent/toolregistry.h"
 #include "src/agent/tools_analysis.h"
+#include "src/agent/tools_inspect.h"
 #include "src/agent/tools_project.h"
 #include "src/core/projectmanager.h"
 #include "src/ui/dialogs/endpointdialog.h"
@@ -588,6 +589,7 @@ ChatDock::ChatDock(QWidget* parent)
     m_registry = new ToolRegistry;
     registerProjectTools(*m_registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(*m_registry, &SupraFit::ProjectManager::instance());
+    registerInspectTools(*m_registry, &SupraFit::ProjectManager::instance());
     m_dispatcher = new ToolDispatcher(m_registry, this);
     m_client = new LlmClient(this);
     m_session = new LlmSession(m_client, m_registry, m_dispatcher, this);

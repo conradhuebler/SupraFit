@@ -10,6 +10,7 @@
 #include "toolregistry.h"
 #include "tooldispatcher.h"
 #include "tools_analysis.h"
+#include "tools_inspect.h"
 #include "tools_project.h"
 
 #include "src/core/projectmanager.h"
@@ -35,7 +36,9 @@ QString agentSystemPrompt()
         "the chemistry, write your own with define_script_model (equation, parameter names) and fit it. "
         "To test mixed stoichiometries or self-aggregation, describe the species as reactions with "
         "add_reaction_model, fit every candidate and let the AIC decide. Compare models by AIC, mention SSE and whether the fit converged, "
-        "and say plainly when a result is missing or a tool refused. "
+        "and say plainly when a result is missing or a tool refused. Report parameter values "
+        "(get_model_parameters), confidence intervals from stored statistics (get_model_statistics) and judge "
+        "the quality of a fit with get_residuals; look at the data with get_data_table. "
         "Answer concisely in the language of the question.");
 }
 
@@ -146,6 +149,7 @@ int runAgent(const AgentRunOptions& options)
     ToolRegistry registry;
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());
+    registerInspectTools(registry, &SupraFit::ProjectManager::instance());
     ToolDispatcher dispatcher(&registry);
     LlmClient client;
     client.setProfile(profile);

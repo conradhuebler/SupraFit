@@ -1272,4 +1272,23 @@ if(USE_LLM)
         target_link_libraries(test_tools_analysis pthread dl)
     endif()
     add_test(NAME ToolsAnalysisTest COMMAND test_tools_analysis)
+
+    # Inspect tools: parameters, stored statistics, data tables, residuals, set value.
+    add_executable(test_tools_inspect
+        test_tools_inspect.cpp
+    )
+    target_compile_definitions(test_tools_inspect PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_link_libraries(test_tools_inspect
+        Qt6::Core
+        Qt6::Test
+        Qt6::Qml
+        -Wl,--start-group models core agent models core -Wl,--end-group
+        fmt::fmt-header-only
+        ${CMAKE_THREAD_LIBS_INIT}
+    )
+    if(UNIX)
+        target_link_libraries(test_tools_inspect pthread dl)
+    endif()
+    add_test(NAME ToolsInspectTest COMMAND test_tools_inspect)
 endif()
