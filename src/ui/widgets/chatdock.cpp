@@ -12,6 +12,7 @@
 #include "chatdock.h"
 
 #include "src/agent/agentrunner.h"
+#include "src/agent/chatrecorder.h"
 #include "src/agent/llmclient.h"
 #include "src/agent/llmconfig.h"
 #include "src/agent/llmsession.h"
@@ -21,6 +22,7 @@
 #include "src/agent/tools_inspect.h"
 #include "src/agent/tools_project.h"
 #include "src/core/projectmanager.h"
+#include "src/version.h"
 #include "src/ui/dialogs/endpointdialog.h"
 #include "src/ui/guitools/flowlayout.h"
 
@@ -41,11 +43,13 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSettings>
+#include <QSet>
 #include <QShortcut>
 #include <QStandardPaths>
 #include <QTextBrowser>
@@ -56,6 +60,7 @@
 #include <QVBoxLayout>
 
 #include <cmath>
+#include <algorithm>
 #include <functional>
 
 namespace {
@@ -71,17 +76,6 @@ QString compactJson(const QJsonObject& object, int limit = 120)
     QString text = QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
     if (text.size() > limit)
         text = text.left(limit - 3) + QStringLiteral("...");
-    return text;
-}
-
-QString resultSummary(const ToolResult& result)
-{
-    if (!result.ok)
-        return result.error;
-    QString text = result.text.isEmpty() ? compactJson(result.data, 300) : result.text;
-    text = text.simplified();
-    if (text.size() > 300)
-        text = text.left(297) + QStringLiteral("...");
     return text;
 }
 
@@ -139,6 +133,8 @@ public:
     {
         const QMargins m = layout()->contentsMargins();
         const int textWidth = width() - m.left() - m.right();
+        if (textWidth <= 0)
+            return;
         m_text->document()->setTextWidth(textWidth);
         const int text = int(std::ceil(m_text->document()->size().height())) + 2;
         m_text->setFixedHeight(text);
@@ -159,6 +155,15 @@ public:
     }
 
 protected:
+    /// The width is final only once the bubble is laid out: fit the height again then (a new
+    /// question showed only its first line otherwise).
+    void resizeEvent(QResizeEvent* event) override
+    {
+        QFrame::resizeEvent(event);
+        if (event->size().width() != event->oldSize().width())
+            fitHeight();
+    }
+
     void paintEvent(QPaintEvent*) override
     {
         QPainter painter(this);
@@ -406,7 +411,8 @@ private:
     void insert(QWidget* widget)
     {
         // never wider than the view: long lines wrap, elide or clip instead of scrolling sideways
-        widget->setSizePolicy(QSizePolicy::Ignored, widget->sizePolicy().verticalPolicy());
+        // and never taller than needed: spare height goes to the stretch above the first entry
+        widget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Maximum);
         m_layout->insertWidget(m_layout->count() - 1, widget);
     }
 
@@ -531,6 +537,9 @@ ChatDock::ChatDock(QWidget* parent)
     m_menu->addAction(tr("Import JSON…"), this, &ChatDock::importJson);
     m_menu->addSeparator();
     m_menu->addAction(tr("Copy last answer"), this, &ChatDock::copyLastAnswer);
+    QAction* removeChats = m_menu->addAction(tr("Remove chats from this project…"), this, &ChatDock::removeProjectChats);
+    removeChats->setToolTip(tr("Project files contain the agent conversations; remove them before sharing a project if needed"));
+    m_menu->setToolTipsVisible(true);
     m_menu->addAction(tr("Enlarge / restore"), this, &ChatDock::toggleMaximized);
     m_menuButton = new QToolButton;
     m_menuButton->setText(QStringLiteral("☰"));
@@ -595,12 +604,6 @@ ChatDock::ChatDock(QWidget* parent)
     m_session = new LlmSession(m_client, m_registry, m_dispatcher, this);
     m_session->setSystemPrompt(agentSystemPrompt());
     m_session->setKeepHistory(true); // a chat: follow-up questions see the earlier turns
-    m_session->setApprovalPolicy([this](const ToolSpec& spec, const QJsonObject& args) {
-        const QString text = tr("The agent wants to run '%1'.\n\n%2\n\nAllow?")
-                                 .arg(spec.name, QString::fromUtf8(QJsonDocument(args).toJson(QJsonDocument::Compact)));
-        return QMessageBox::question(this, tr("Agent"), text) == QMessageBox::Yes;
-    });
-
     m_streamTimer = new QTimer(this);
     m_streamTimer->setSingleShot(true);
     m_streamTimer->setInterval(90);
@@ -627,36 +630,31 @@ ChatDock::ChatDock(QWidget* parent)
             m_view->addMessage(m_log.append(ChatEntry::Kind::Assistant, t));
         }
     });
-    connect(m_session, &LlmSession::toolStarted, this, [this](const QString& n, const QJsonObject& a) {
-        if (m_streamOpen) { // text before a tool call closes that bubble
+    connect(m_session, &LlmSession::toolStarted, this, [this](const QString&, const QJsonObject&) {
+        if (m_streamOpen) { // text before a tool call closes that bubble (before the recorder adds the tool)
             m_streamTimer->stop();
             flushStream();
             m_streamOpen = false;
         }
-        m_log.appendTool(n, a, true, QString());
-        m_pendingTool = m_log.entries().size() - 1;
-        m_view->addTool(*m_log.lastEntry(), true);
     });
-    connect(m_session, &LlmSession::toolFinished, this, [this](const QString&, const ToolResult& r) {
-        if (ChatEntry* entry = m_log.entry(m_pendingTool)) {
-            entry->toolOk = r.ok;
-            entry->text = resultSummary(r);
+    // The audit trail (tool, arguments, effect, full result, duration, approval) is written by the
+    // same recorder as in suprafit_cli --agent; the view only follows it (WP11).
+    m_recorder = new ChatRecorder(m_session, m_registry, this);
+    m_recorder->setLog(&m_log);
+    m_recorder->onToolAdded = [this](int index) {
+        if (const ChatEntry* entry = m_log.entry(index))
+            m_view->addTool(*entry, entry->toolResult.isEmpty() && entry->approval.isEmpty());
+    };
+    m_recorder->onToolChanged = [this](int index) {
+        if (const ChatEntry* entry = m_log.entry(index))
             if (ToolLine* line = m_view->lastTool())
                 line->update(*entry, false);
-        }
-        m_pendingTool = -1;
-    });
-    connect(m_session, &LlmSession::toolRefused, this, [this](const QString& n, const QString& why) {
-        if (ChatEntry* entry = m_log.entry(m_pendingTool)) {
-            entry->toolOk = false;
-            entry->text = tr("refused: %1").arg(why);
-            if (ToolLine* line = m_view->lastTool())
-                line->update(*entry, false);
-            m_pendingTool = -1;
-        } else {
-            addNotice(tr("%1 refused: %2").arg(n, why), true);
-        }
-    });
+    };
+    m_session->setApprovalPolicy(m_recorder->wrapApproval([this](const ToolSpec& spec, const QJsonObject& args) {
+        const QString text = tr("The agent wants to run '%1'.\n\n%2\n\nAllow?")
+                                 .arg(spec.name, QString::fromUtf8(QJsonDocument(args).toJson(QJsonDocument::Compact)));
+        return QMessageBox::question(this, tr("Agent"), text) == QMessageBox::Yes;
+    }, QStringLiteral("user")));
     connect(m_session, &LlmSession::failed, this, [this](const QString& e) {
         addNotice(e, true);
         finishTurn();
@@ -727,6 +725,7 @@ ChatDock::ChatDock(QWidget* parent)
     });
 
     QSettings settings;
+    resetLog();
     m_inputHistory.setItems(settings.value(QStringLiteral("chat/input_history")).toStringList());
     {
         QMap<QString, QString> remembered;
@@ -884,6 +883,9 @@ bool ChatDock::prepareClient()
     m_session->setAutonomy(ToolAutonomy(m_autonomy->currentData().toInt()));
     m_log.setProfile(profile.name);
     m_log.setModel(m_client->model());
+    m_log.setEndpointHost(QUrl(profile.baseUrl).host());
+    m_log.setAutonomy(toolAutonomyName(ToolAutonomy(m_autonomy->currentData().toInt())));
+    m_recorder->setAutonomy(ToolAutonomy(m_autonomy->currentData().toInt()));
     return true;
 }
 
@@ -927,7 +929,6 @@ void ChatDock::finishTurn()
         flushStream();
         m_streamOpen = false;
     }
-    m_pendingTool = -1;
     setRunning(false);
     autosave();
 }
@@ -967,9 +968,27 @@ void ChatDock::autosave()
     if (m_log.isEmpty())
         return;
     m_log.setConversation(m_session->conversation());
+    m_log.touch();
+    // the project copy is the record (WP11); the AppData copy is a convenience for the History
+    if (!m_projectId.isEmpty() && storeInProjects()
+        && SupraFit::ProjectManager::instance().getLoadedProjectIds().contains(m_projectId))
+        ProjectChats::store(m_projectId, m_log);
     QString error;
     if (!m_store.save(m_log, &error))
         m_status->setText(tr("Chat not saved: %1").arg(error));
+}
+
+bool ChatDock::storeInProjects()
+{
+    return qApp->property("store_agent_chats").isValid() ? qApp->property("store_agent_chats").toBool() : true;
+}
+
+void ChatDock::resetLog()
+{
+    m_log = ChatLog();
+    m_log.setAppVersion(git_tag, git_commit_hash);
+    m_log.addProjectUuid(m_projectId);
+    m_recorder->setLog(&m_log);
 }
 
 void ChatDock::showLog(const ChatLog& log)
@@ -985,10 +1004,61 @@ void ChatDock::newChat()
     if (m_session->isBusy())
         m_session->cancel();
     finishTurn();
-    m_log = ChatLog();
+    resetLog();
     m_session->reset();
     m_view->clear();
+    if (m_projectId.isEmpty())
+        addNotice(tr("No project open: this chat is not stored in a project file."), false, false);
     m_status->setText(tr("New chat"));
+}
+
+void ChatDock::setProject(const QString& projectId)
+{
+    if (projectId == m_projectId && !m_log.isEmpty())
+        return;
+    if (m_session->isBusy()) // a running answer stays with its project; switching waits for it
+        return;
+    autosave();
+    m_log = ChatLog(); // stored above; must not be stored again into the next project
+    m_recorder->setLog(&m_log);
+    m_projectId = projectId;
+    // show the project's most recent chat, or start a new one in it
+    QStringList warnings;
+    const QVector<ChatLog> chats = projectId.isEmpty() ? QVector<ChatLog>() : ProjectChats::load(projectId, &warnings);
+    if (chats.isEmpty()) {
+        newChat();
+    } else {
+        const ChatLog* latest = &chats.first();
+        for (const ChatLog& chat : chats)
+            if (chat.updated() > latest->updated())
+                latest = &chat;
+        showChat(*latest, true);
+    }
+    for (const QString& warning : warnings)
+        addNotice(warning, true, false);
+    updateIdentity();
+}
+
+void ChatDock::showChat(const ChatLog& log, bool fromProject)
+{
+    if (m_session->isBusy())
+        m_session->cancel();
+    finishTurn();
+    m_log = log;
+    m_log.addProjectUuid(m_projectId);
+    m_recorder->setLog(&m_log);
+    m_session->reset();
+    m_session->setConversation(log.conversation());
+    showLog(m_log);
+    if (fromProject)
+        addNotice(tr("Chat of %1, stored with this project. The project state is the one saved with it; the conversation can be continued.")
+                      .arg(log.updated().toString(QStringLiteral("yyyy-MM-dd HH:mm"))),
+            false, false);
+    else
+        addNotice(tr("Chat of %1 restored from the history. It may belong to another project; ids mentioned above may refer to projects that are not open.")
+                      .arg(log.created().toString(QStringLiteral("yyyy-MM-dd HH:mm"))),
+            false, false);
+    m_view->scrollToEnd();
 }
 
 bool ChatDock::openChat(const QString& path, QString* error)
@@ -1001,38 +1071,63 @@ bool ChatDock::openChat(const QString& path, QString* error)
         addNotice(tr("Could not open the chat: %1").arg(why), true, false);
         return false;
     }
-    if (m_session->isBusy())
-        m_session->cancel();
-    finishTurn();
-    m_log = log;
-    m_session->reset();
-    m_session->setConversation(log.conversation());
-    showLog(m_log);
-    addNotice(tr("Chat of %1 restored. The project and model state of that session is not restored; ids mentioned above may refer to projects that are no longer open.")
-                  .arg(log.created().toString(QStringLiteral("yyyy-MM-dd HH:mm"))),
-        false, false);
-    m_view->scrollToEnd();
+    autosave();
+    showChat(log, false);
     return true;
+}
+
+void ChatDock::removeProjectChats()
+{
+    if (m_projectId.isEmpty())
+        return;
+    if (QMessageBox::question(this, tr("Remove chats"),
+            tr("Remove all agent chats from this project? They disappear from the project file when it is saved next time; copies stay in the History under \"Other chats\".")) != QMessageBox::Yes)
+        return;
+    ProjectChats::clear(m_projectId);
+    resetLog();
+    m_session->reset();
+    m_view->clear();
+    addNotice(tr("The chats of this project were removed (save the project to make it permanent)."), false, false);
 }
 
 void ChatDock::fillHistoryMenu()
 {
     m_historyMenu->clear();
-    const auto items = m_store.list();
-    if (items.isEmpty()) {
-        m_historyMenu->addAction(tr("No saved chats"))->setEnabled(false);
-        return;
+    QSet<QString> shown;
+    if (!m_projectId.isEmpty()) {
+        m_historyMenu->addSection(tr("This project"));
+        QVector<ChatLog> chats = ProjectChats::load(m_projectId);
+        std::sort(chats.begin(), chats.end(), [](const ChatLog& a, const ChatLog& b) { return a.updated() > b.updated(); });
+        if (chats.isEmpty())
+            m_historyMenu->addAction(tr("No chats stored in this project"))->setEnabled(false);
+        for (const ChatLog& chat : chats) {
+            shown.insert(chat.id());
+            const QString title = chat.title().isEmpty() ? tr("(no question)") : chat.title();
+            QAction* action = m_historyMenu->addAction(chat.updated().toString(QStringLiteral("yyyy-MM-dd HH:mm")) + QStringLiteral("  ") + title);
+            action->setToolTip(tr("%1 · %2, %n entries", "", chat.entries().size()).arg(chat.profile(), chat.model()));
+            const QString id = chat.id();
+            connect(action, &QAction::triggered, this, [this, id]() {
+                autosave();
+                for (const ChatLog& c : ProjectChats::load(m_projectId))
+                    if (c.id() == id)
+                        showChat(c, true);
+            });
+        }
     }
-    for (const auto& item : items) {
+    m_historyMenu->addSection(tr("Other chats"));
+    int others = 0;
+    for (const auto& item : m_store.list()) {
+        if (shown.contains(QFileInfo(item.path).completeBaseName()))
+            continue;
         const QString title = item.title.isEmpty() ? tr("(no question)") : item.title;
         QAction* action = m_historyMenu->addAction(item.created.toString(QStringLiteral("yyyy-MM-dd HH:mm")) + QStringLiteral("  ") + title);
         action->setToolTip(item.path);
         const QString path = item.path;
-        connect(action, &QAction::triggered, this, [this, path]() {
-            autosave();
-            openChat(path);
-        });
+        connect(action, &QAction::triggered, this, [this, path]() { openChat(path); });
+        ++others;
     }
+    if (others == 0)
+        m_historyMenu->addAction(tr("No other saved chats"))->setEnabled(false);
 }
 
 QString ChatDock::lastDirectory() const

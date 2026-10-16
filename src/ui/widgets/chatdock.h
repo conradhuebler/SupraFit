@@ -29,6 +29,7 @@ class QTimer;
 class QToolButton;
 
 class ChatInput;
+class ChatRecorder;
 class ChatView;
 class LlmClient;
 class LlmSession;
@@ -53,9 +54,14 @@ public:
     QMenu* historyMenu() const { return m_historyMenu; }
     bool isMaximized() const { return m_maximized; }
 
+    QString projectId() const { return m_projectId; }
+
 public slots:
     void toggleMaximized();
     void newChat();
+    /// Show the chats of project @p projectId (empty: no project, session-only chat). Claude Generated (WP11).
+    void setProject(const QString& projectId);
+    void removeProjectChats();
 
 private slots:
     void send();
@@ -76,6 +82,9 @@ private:
     void finishTurn();
     void autosave();
     void showLog(const ChatLog& log);
+    void showChat(const ChatLog& log, bool fromProject);
+    void resetLog();
+    static bool storeInProjects();
     QString lastDirectory() const;
     bool currentProfile(LlmProfile& profile) const;
     void listModelsForProfile();
@@ -96,6 +105,7 @@ private:
     ToolDispatcher* m_dispatcher;
     LlmClient* m_client;
     LlmSession* m_session;
+    ChatRecorder* m_recorder;
 
     ChatLog m_log;
     ChatHistoryStore m_store;
@@ -109,8 +119,8 @@ private:
     QTimer* m_streamTimer;
     QString m_streamText;
     bool m_streamOpen = false;
-    int m_pendingTool = -1; ///< index in m_log of the tool line waiting for its result
 
+    QString m_projectId; ///< project the current chat belongs to (empty: none)
     bool m_maximized = false;
     bool m_wasFloating = false;
     QRect m_previousGeometry;

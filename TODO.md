@@ -17,6 +17,7 @@
 ---
 
 ## UI Redesign (supersedes Phases 1–3 below)
+- [ ] Agent chats in projects: ChatLog drops unknown per-chat fields when a project chat is rewritten (blocks of newer versions survive only untouched); `ReferenceProjectsTest` fails 2 cases independent of WP11 (2:1 model SSE, CV mean)
 - [ ] LLM presets: hosted providers (OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek) never contacted with a real key; OpenRouter/Mistral URLs only third-party-confirmed (`src/agent/llmpresets.cpp`)
 - [ ] Main window redesign from the operator's mockup (toolbar menus, Projects+Log column, model tab, dark mode, small screens) — WIP on `feature/ui-redesign`, see [roadmap/ui_redesign.md](roadmap/ui_redesign.md)
 

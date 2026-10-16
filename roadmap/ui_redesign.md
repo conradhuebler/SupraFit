@@ -61,6 +61,7 @@ the pre-redesign state is captured in `docs/ui_redesign/before_*.png`.
 - **WP8** Refinements: fit-results form, Fit button right, list+stack instead of tabs, card rows, grip splitter handles.
 - **WP9** Agent chat: bubbles with Markdown, tool lines, growing input with history, saved chats with History menu, enlarge, export/import (core: `src/agent/chatlog`).
 - **WP10** Endpoints and models: presets, endpoint manager, reliable model selection per profile, CLI options (see roadmap/llm_agent_analysis.md, Phase 8).
+- **WP11** Agent chats in the project file with audit trail; dock bound to the project; CLI -o saves the conversation.
 - **WP6** Small screens: usable at 1366x768 (ideally 1024x600): no large fixed minimum sizes, scroll
   areas for tall content, compact toolbar mode, no forced horizontal scrollbar.
 
@@ -78,4 +79,5 @@ Verification per WP: build, offscreen render (`QT_QPA_PLATFORM=offscreen`, scree
 - WP8 refinements: 🤖 ⚙️ build, `ctest -R 'Tool|Llm'`, renders light/dark at 1920 and 1366x768 with and without series (`wp8_*.png`); page switching, splitter dragging and page persistence not clicked headless
 - WP9 agent chat: 🤖 ⚙️ build, `ctest -R 'Tool|Llm|Chat'` (7/7), renders light/dark 1920 and 1366x768, enlarged state, History menu (`wp9_*.png`), one live Ollama round trip; key handling, clicks, file dialogs and the approval dialog not exercised headless
 - WP10 endpoints/models: 🤖 ⚙️ build, `ctest -R 'Tool|Llm|Chat|Config|Preset'`, renders of the endpoint manager and the dock header (`wp10_*.png`), live listing/switching against local Ollama; dialogs and combo clicks not exercised headless, hosted providers never contacted
+- WP11 chats in projects: 🤖 ⚙️ build, `ctest -R 'Tool|Llm|Chat|Config|Preset|ProjectChats'`, CLI round trip with Ollama saved and reloaded, GUI continuation saved (`wp11_*.png`, docs/2026-10-16_agent_chat_in_project.md); close-with-unsaved-chats dialog and Settings toggle not clicked headless
 - Open: CuteChart's flat "Tools" button has black text (unreadable on dark charts; fix in CuteChart); chart export in dark mode carries light axis labels (exporter keeps the on-screen colours); dark PNG icons (copy, logo curve) low-contrast on dark; at 1024x600 the agent dock does not fit beside the workspace (float or hide it)

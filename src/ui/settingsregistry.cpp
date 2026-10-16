@@ -86,6 +86,9 @@ const QVector<SettingDef>& registry()
         v << Def("appearance", 0, Kind::Choice).group(gAppearance).label(QObject::tr("Colour scheme:")).choices({ QObject::tr("System"), QObject::tr("Light"), QObject::tr("Dark") }).tip(QObject::tr("Colours of windows, tables and charts: follow the system, or always light or dark."));
         v << Def("toolbar_style", 0, Kind::Choice).group(gAppearance).label(QObject::tr("Toolbar buttons:")).choices({ QObject::tr("Icon and text"), QObject::tr("Icon only"), QObject::tr("Text only") }).tip(QObject::tr("How the buttons of the main toolbar and the project list are shown; \"Icon only\" saves space on small screens."));
 
+        // ---- Agent ----
+        v << Def("store_agent_chats", true, Kind::Bool).group(gSave).label(QObject::tr("Store agent chats in project files")).tip(QObject::tr("The conversations with the analysis agent, including every tool call and its result, are saved inside the project file. A shared project file then contains them as well."));
+
         // ---- File Save Settings ----
         v << Def("StoreRawData", true, Kind::Bool).group(gSave).label(QObject::tr("Store raw data (thermograms etc) in SupraFit Project files.")).tip(QObject::tr("Store the original data within the SupraFit project. This may increase the file size and impact the save/write performance negativly or even crash the file for Qt < 5.15 due to the json bug."));
         v << Def("StoreFileName", true, Kind::Bool).group(gSave).label(QObject::tr("Store the filename, where the raw data were imported from, in SupraFit Project files."));

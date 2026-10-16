@@ -200,6 +200,10 @@ SupraFitGui::SupraFitGui()
     connect(&projectManager, &SupraFit::ProjectManager::projectAdded, this, &SupraFitGui::onProjectAdded, Qt::QueuedConnection);
     connect(&projectManager, &SupraFit::ProjectManager::currentProjectChanged, this, &SupraFitGui::onCurrentProjectChanged, Qt::QueuedConnection);
     connect(&projectManager, &SupraFit::ProjectManager::projectDataUpdated, this, &SupraFitGui::onProjectDataUpdated, Qt::QueuedConnection);
+    connect(&projectManager, &SupraFit::ProjectManager::projectAttachmentChanged, this, [this](const QString&, const QString& key) {
+        if (key == QLatin1String("agent_chats") && statusBar())
+            statusBar()->showMessage(tr("Agent chat changed: save the project to keep it in the project file"), 8000);
+    }, Qt::QueuedConnection);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -740,6 +744,11 @@ void SupraFitGui::UpdateWorkspaceMenus()
         connect(bar, &MDHDockTitleBar::ToolsChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
         connect(bar, &QObject::destroyed, this, [this, bar]() { m_connected_bars.removeAll(bar); });
     }
+#ifdef USE_LLM
+    // the agent chat follows the project on screen (its chats are stored in that project)
+    if (m_chat_dock)
+        m_chat_dock->setProject(window && !window->isMetaModel() ? window->UUID() : QString());
+#endif
     const bool available = bar && bar->ToolsAvailable();
     const QList<QPair<QToolButton*, QMenu*>> buttons = {
         { m_data_button, available ? bar->DataMenu() : nullptr },
@@ -1266,7 +1275,8 @@ void SupraFitGui::SaveProjectAction()
             QString projectId = managedProjectIds.first();
             qDebug() << "SaveProjectAction: Saving single project" << projectId << "to" << m_supr_file;
             
-            bool success = projectManager.saveProject(projectId, m_supr_file);
+            // (argument order: file, then project; they were swapped, so Save never wrote anything)
+            bool success = projectManager.saveProject(m_supr_file, projectId);
             if (success) {
                 qDebug() << "SaveProjectAction: ProjectManager successfully saved project";
                 setLastDir(m_supr_file);
@@ -1282,7 +1292,8 @@ void SupraFitGui::SaveProjectAction()
             
             for (int i = 0; i < managedProjectIds.size(); ++i) {
                 const QString& projectId = managedProjectIds[i];
-                QJsonObject projectData = projectManager.getProjectJson(projectId);
+                // the complete project (data, models, agent chats), as the loader expects it
+                QJsonObject projectData = projectManager.getProjectFileJson(projectId);
                 
                 if (!projectData.isEmpty()) {
                     json["project_" + QString::number(i)] = projectData;
@@ -1331,7 +1342,8 @@ void SupraFitGui::SaveAsProjectAction()
                 QString projectId = managedProjectIds.first();
                 qDebug() << "SaveAsProjectAction: Saving single project" << projectId << "to" << m_supr_file;
                 
-                bool success = projectManager.saveProject(projectId, m_supr_file);
+                // (argument order: file, then project; they were swapped, so Save never wrote anything)
+            bool success = projectManager.saveProject(m_supr_file, projectId);
                 if (success) {
                     qDebug() << "SaveAsProjectAction: ProjectManager successfully saved project";
                     setLastDir(str);
@@ -1347,7 +1359,8 @@ void SupraFitGui::SaveAsProjectAction()
                 
                 for (int i = 0; i < managedProjectIds.size(); ++i) {
                     const QString& projectId = managedProjectIds[i];
-                    QJsonObject projectData = projectManager.getProjectJson(projectId);
+                    // the complete project (data, models, agent chats), as the loader expects it
+                QJsonObject projectData = projectManager.getProjectFileJson(projectId);
                     
                     if (!projectData.isEmpty()) {
                         json["project_" + QString::number(i)] = projectData;
@@ -1463,6 +1476,18 @@ void SupraFitGui::FirstStart()
 
 void SupraFitGui::closeEvent(QCloseEvent* event)
 {
+    // Agent chats belong to the project file (WP11): offer to save projects whose chats changed.
+    if (!SupraFit::ProjectManager::instance().projectsWithUnsavedAttachments().isEmpty()) {
+        const auto answer = QMessageBox::question(this, tr("Unsaved agent chats"),
+            tr("The agent chats of the open project changed since it was saved. Save the project now?"),
+            QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
+        if (answer == QMessageBox::Cancel) {
+            event->ignore();
+            return;
+        }
+        if (answer == QMessageBox::Save)
+            SaveProjectAction();
+    }
     if (qApp->instance()->property("ask_on_exit").toBool()) {
         QCheckBox* checkbox = new QCheckBox;
         checkbox->setText(tr("Don't ask this again!"));
@@ -2396,6 +2421,10 @@ void SupraFitGui::LicenseInfo()
 // Claude Generated - ProjectManager Integration Slot Implementations
 void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& filePath)
 {
+    // Save writes back to the project file it came from (it asked for a name every time before)
+    const QString suffix = QFileInfo(filePath).suffix().toLower();
+    if (m_supr_file.isEmpty() && (suffix == QLatin1String("suprafit") || suffix == QLatin1String("json")) && QFileInfo::exists(filePath))
+        m_filename_line->setText(filePath); // sets m_supr_file and the window title
     Info(tr("Project loaded: %1 (ID: %2)").arg(filePath, projectId));
     
     // Claude Generated - Create MainWindow for loaded project

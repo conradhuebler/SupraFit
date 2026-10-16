@@ -220,6 +220,14 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   auf das Profil-Default zurück; dazu überschrieb ein späteres Item-Update den Text, und eine
   laufende Liste des alten Profils füllte die Auswahl des neuen. Profilpfad: `<AppConfig>/llm.json`
   (Linux `~/.config/Conrad Huebler/SupraFit/llm.json`).
+- **Phase 9 (Chats im Projekt, 2026-10-16).** 🤖 ⚙️ Der Chat gehört zum Projekt (Nachvollziehbarkeit):
+  `agent_chats` als Top-Level-Block der Projektdatei (ältere Versionen ignorieren ihn; der
+  `ProjectManager` reicht unbekannte Blöcke beim Speichern durch). ChatLog-Format 2 mit App-Version/
+  Commit, Endpoint-Host, Modell, Autonomie, Projekt-UUIDs und je Tool-Aufruf Effekt, vollem Ergebnis
+  (≤ 64 KB, markiert), Dauer und Freigabe (nicht nötig/genehmigt/abgelehnt, durch Nutzer/Policy).
+  `ChatRecorder` schreibt die Spur für Dock und CLI; `suprafit_cli --agent … -o datei` speichert das
+  Projekt samt Gespräch. Dock folgt dem Projekt-Tab, History mit „This project“/„Other chats“,
+  Einstellung „Store agent chats in project files“. Nachweis: `docs/2026-10-16_agent_chat_in_project.md`.
 
 ## Erste Tool-Liste (MVP)
 
