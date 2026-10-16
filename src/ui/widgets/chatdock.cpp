@@ -20,6 +20,7 @@
 #include "src/agent/tools_analysis.h"
 #include "src/agent/tools_project.h"
 #include "src/core/projectmanager.h"
+#include "src/ui/dialogs/endpointdialog.h"
 #include "src/ui/guitools/flowlayout.h"
 
 #include <QApplication>
@@ -34,6 +35,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMessageBox>
@@ -48,6 +50,7 @@
 #include <QTextBrowser>
 #include <QTextDocument>
 #include <QTimer>
+#include <QUrl>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -516,6 +519,8 @@ ChatDock::ChatDock(QWidget* parent)
     m_maxButton->setToolTip(tr("Enlarge the chat to a large window (Esc returns)"));
 
     m_menu = new QMenu(this);
+    m_menu->addAction(tr("Endpoints…"), this, &ChatDock::editEndpoints);
+    m_menu->addSeparator();
     m_menu->addAction(tr("New chat"), this, &ChatDock::newChat);
     m_historyMenu = m_menu->addMenu(tr("History"));
     connect(m_historyMenu, &QMenu::aboutToShow, this, &ChatDock::fillHistoryMenu);
@@ -566,7 +571,12 @@ ChatDock::ChatDock(QWidget* parent)
     bottom->addLayout(buttons);
     auto* layout = new QVBoxLayout;
     layout->setContentsMargins(6, 4, 6, 4);
+    m_identity = new QLabel;
+    m_identity->setForegroundRole(QPalette::PlaceholderText);
+    m_identity->setWordWrap(true);
+    m_identity->setToolTip(tr("Endpoint and model the next question goes to"));
     layout->addLayout(header);
+    layout->addWidget(m_identity);
     layout->addWidget(m_view, 1);
     layout->addLayout(bottom);
     layout->addWidget(m_status);
@@ -651,23 +661,55 @@ ChatDock::ChatDock(QWidget* parent)
     });
     connect(m_session, &LlmSession::finished, this, &ChatDock::finishTurn);
 
+    // ---- endpoint and model selection (WP10) ----
+    // Former bug ("only glm can be selected"): the model list was only filled after pressing
+    // "Models", and every profile change reset the field to the profile's default model, so the
+    // only entry ever offered was the profile's glm. Now each profile switch lists the models of
+    // that endpoint at once and shows the model last chosen for it (LlmModelSelection).
+    connect(m_client, &LlmClient::modelListFailed, this, [this](const QString& error) {
+        m_listError = error;
+    });
     connect(m_client, &LlmClient::modelsListed, this, [this](const QStringList& models) {
-        const QString keep = m_model->currentText();
+        m_listed = models;
+        const QString keep = m_model->currentText().trimmed();
+        m_model->blockSignals(true);
         m_model->clear();
-        m_model->addItems(models);
-        m_model->setCurrentText(keep);
-        m_status->setText(models.isEmpty() ? tr("The endpoint offers no model list") : tr("%1 models").arg(models.size()));
+        for (const QString& id : models)
+            m_model->addItem(id);
+        LlmProfile profile = m_client->profile();
+        const QString chosen = keep.isEmpty() ? m_selection.choose(profile, models) : keep;
+        // select the item itself: an edit text over another current item would be replaced as
+        // soon as that item changes (capability icons arrive later)
+        const int index = m_model->findText(chosen);
+        m_model->setCurrentIndex(index);
+        if (index < 0)
+            m_model->setEditText(chosen);
+        m_model->blockSignals(false);
+        applyModel(chosen, false);
+        if (!m_listError.isEmpty())
+            m_listStatus = tr("model list failed: %1").arg(m_listError);
+        else
+            m_listStatus = models.isEmpty() ? tr("no model list (type the model)") : tr("%n model(s)", "", models.size());
+        m_listError.clear();
+        updateIdentity();
+        m_client->queryCapabilities(models);
     });
-    connect(m_refresh, &QPushButton::clicked, this, [this] {
-        if (prepareClient())
-            m_client->listModels();
+    connect(m_client, &LlmClient::modelInfo, this, [this](const LlmModelInfo& info) {
+        m_infos.insert(info.id, info);
+        const int index = m_model->findText(info.id);
+        if (index >= 0 && info.detailsKnown) {
+            m_model->setItemIcon(index, toolIcon(info.supportsTools));
+            m_model->setItemData(index, info.supportsTools ? tr("supports tools") + (info.contextLength ? tr(", context %1 tokens").arg(info.contextLength) : QString())
+                                                           : tr("reports no tool support: the agent cannot work with it"),
+                Qt::ToolTipRole);
+        }
+        if (info.id == m_model->currentText().trimmed())
+            updateIdentity();
     });
-    connect(m_profile, &QComboBox::currentTextChanged, this, [this](const QString&) {
-        LlmConfig config;
-        LlmProfile p;
-        if (config.load(LlmConfig::defaultPath()) && config.profile(m_profile->currentText(), p))
-            m_model->setCurrentText(p.model);
-    });
+    connect(m_refresh, &QPushButton::clicked, this, [this] { listModelsForProfile(); });
+    connect(m_profile, &QComboBox::currentTextChanged, this, [this](const QString&) { listModelsForProfile(); });
+    connect(m_model, &QComboBox::activated, this, [this](int) { applyModel(m_model->currentText(), true); });
+    connect(m_model->lineEdit(), &QLineEdit::editingFinished, this, [this]() { applyModel(m_model->currentText(), true); });
     connect(m_send, &QPushButton::clicked, this, &ChatDock::send);
     connect(m_stop, &QPushButton::clicked, this, &ChatDock::stop);
     connect(m_maxButton, &QToolButton::clicked, this, &ChatDock::toggleMaximized);
@@ -684,6 +726,14 @@ ChatDock::ChatDock(QWidget* parent)
 
     QSettings settings;
     m_inputHistory.setItems(settings.value(QStringLiteral("chat/input_history")).toStringList());
+    {
+        QMap<QString, QString> remembered;
+        settings.beginGroup(QStringLiteral("chat/models"));
+        for (const QString& key : settings.childKeys())
+            remembered.insert(QUrl::fromPercentEncoding(key.toUtf8()), settings.value(key).toString());
+        settings.endGroup();
+        m_selection.setRemembered(remembered);
+    }
     reloadProfiles();
 }
 
@@ -706,10 +756,102 @@ void ChatDock::reloadProfiles()
                               .arg(error, LlmConfig::defaultPath()));
         return;
     }
-    for (const LlmProfile& p : config.profiles())
+    const QString keep = m_profile->property("keep").toString();
+    m_profile->blockSignals(true);
+    for (const LlmProfile& p : config.profiles()) {
         m_profile->addItem(p.name);
-    m_profile->setCurrentText(config.activeProfileName());
+        m_profile->setItemData(m_profile->count() - 1, LlmConfig::displayName(p) + QStringLiteral("\n") + p.baseUrl, Qt::ToolTipRole);
+    }
+    m_profile->setCurrentText(keep.isEmpty() || m_profile->findText(keep) < 0 ? config.activeProfileName() : keep);
+    m_profile->blockSignals(false);
     m_status->clear();
+    listModelsForProfile();
+}
+
+QIcon ChatDock::toolIcon(bool tools)
+{
+    QPixmap pixmap(12, 12);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(tools ? QColor(46, 160, 67) : QColor(150, 150, 150)); // green: tools, grey: none
+    painter.drawEllipse(QRectF(1, 1, 10, 10));
+    return QIcon(pixmap);
+}
+
+bool ChatDock::currentProfile(LlmProfile& profile) const
+{
+    LlmConfig config;
+    return config.load(LlmConfig::defaultPath()) && config.profile(m_profile->currentText(), profile);
+}
+
+void ChatDock::listModelsForProfile()
+{
+    LlmProfile profile;
+    if (!currentProfile(profile)) {
+        m_listStatus = tr("no usable profile");
+        updateIdentity();
+        return;
+    }
+    m_profile->setProperty("keep", profile.name);
+    m_client->setProfile(profile); // drops a model chosen for another profile
+    m_client->setApiKey(SessionKeys::effectiveKey(profile));
+    m_infos.clear();
+    m_listed.clear();
+    // the remembered (or default) model at once, so the field never shows the previous profile's
+    m_model->blockSignals(true);
+    m_model->clear();
+    m_model->setEditText(m_selection.choose(profile));
+    m_model->blockSignals(false);
+    m_listStatus = tr("loading models…");
+    updateIdentity();
+    if (!LlmConfig::missingKeyMessage(profile).isEmpty() && SessionKeys::key(profile.name).isEmpty()) {
+        m_listStatus = tr("key missing: set %1").arg(profile.apiKeyEnv);
+        updateIdentity();
+        return;
+    }
+    m_client->listModels();
+}
+
+void ChatDock::applyModel(const QString& model, bool remember)
+{
+    const QString id = model.trimmed();
+    m_client->setModel(id);
+    if (remember) {
+        m_selection.remember(m_client->profile().name, id);
+        QSettings settings;
+        settings.beginGroup(QStringLiteral("chat/models"));
+        const QString key = QString::fromUtf8(QUrl::toPercentEncoding(m_client->profile().name));
+        if (id.isEmpty())
+            settings.remove(key);
+        else
+            settings.setValue(key, id);
+        settings.endGroup();
+    }
+    updateIdentity();
+}
+
+void ChatDock::updateIdentity()
+{
+    const LlmProfile profile = m_client->profile();
+    const QString model = m_model->currentText().trimmed();
+    QString text = LlmConfig::displayName(profile) + QStringLiteral(" · ") + (model.isEmpty() ? tr("no model chosen") : model);
+    if (!m_listStatus.isEmpty())
+        text += QStringLiteral(" · ") + m_listStatus;
+    const auto info = m_infos.constFind(model);
+    if (info != m_infos.constEnd() && info->detailsKnown && !info->supportsTools)
+        text += QStringLiteral("\n") + tr("⚠ %1 reports no tool support; the agent needs tools to read the projects.").arg(model);
+    if (!LlmConfig::isLocalEndpoint(profile) && profile.isValid())
+        text += QStringLiteral("\n") + tr("Remote endpoint: questions and project data go to %1").arg(QUrl(profile.baseUrl).host());
+    m_identity->setText(text);
+}
+
+void ChatDock::editEndpoints()
+{
+    EndpointDialog dialog(LlmConfig::defaultPath(), this);
+    if (dialog.exec() == QDialog::Accepted)
+        reloadProfiles();
 }
 
 bool ChatDock::prepareClient()
@@ -722,7 +864,7 @@ bool ChatDock::prepareClient()
         return false;
     }
     const QString keyProblem = LlmConfig::missingKeyMessage(profile);
-    if (!keyProblem.isEmpty()) {
+    if (!keyProblem.isEmpty() && SessionKeys::key(profile.name).isEmpty()) {
         addNotice(keyProblem, true);
         return false;
     }
@@ -730,13 +872,16 @@ bool ChatDock::prepareClient()
         addNotice(tr("Remote endpoint %1: the conversation and the project data the agent reads are sent there.")
                       .arg(profile.baseUrl));
     m_client->setProfile(profile);
-    m_client->setApiKey(LlmConfig::apiKeyFor(profile));
-    if (!m_model->currentText().trimmed().isEmpty())
-        m_client->setModel(m_model->currentText().trimmed());
+    m_client->setApiKey(SessionKeys::effectiveKey(profile));
+    m_client->setModel(m_model->currentText().trimmed());
+    if (m_client->model().isEmpty()) {
+        addNotice(tr("No model chosen: pick one from the list or type its name."), true);
+        return false;
+    }
     m_session->setMaxIterations(profile.maxToolIterations);
     m_session->setAutonomy(ToolAutonomy(m_autonomy->currentData().toInt()));
     m_log.setProfile(profile.name);
-    m_log.setModel(m_model->currentText().trimmed().isEmpty() ? profile.model : m_model->currentText().trimmed());
+    m_log.setModel(m_client->model());
     return true;
 }
 

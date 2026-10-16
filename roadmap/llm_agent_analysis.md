@@ -208,6 +208,18 @@ Eine Phase = ein baubarer Commit, Build grün nach jedem Schritt.
   headless, ohne GUI, gegen Ollama. Systemprompt + Freigabe = `InProgram`
   (alles im Prozess bleibt ohne Rückfrage, FileWrite fragt).
 - **Phase 7.** ✅ ADDED 2026-10-15 (`chatdock`, nicht interaktiv getestet). Chat-Dock in der GUI, analog qurcuma `ChatDock`.
+- **Phase 8 (Endpunkte/Modelle, 2026-10-16).** 🤖 ⚙️ `llmpresets` (Ollama lokal als Default auf
+  **127.0.0.1** — `localhost` kann auf `::1` zeigen, wo z. B. ein ssh-Tunnel lauscht; dazu LM Studio,
+  llama.cpp, OpenAI, Anthropic- und Gemini-OpenAI-Kompatibilität, OpenRouter, Mistral, Groq, Together,
+  DeepSeek, Custom; unbestätigte URLs im Hinweis markiert). `LlmConfig::save()` schreibt `llm.json`
+  atomar, erhält unbekannte Schlüssel/`_note`, nie einen Key. Endpunkt-Manager (Agent-Menü → Endpoints…)
+  mit „Test connection“ und Session-Key nur im Speicher. Modellwahl: je Profil zuletzt gewähltes Modell,
+  sonst Default, sonst erstes gelistetes (`LlmModelSelection`); Liste lädt beim Profilwechsel,
+  Tool-Fähigkeit aus Ollamas `/api/show`. CLI: `--model`, `--list-profiles`, `--list-models`.
+  Ursache „nur glm wählbar“: Liste erst nach Klick auf „Models“, jeder Profilwechsel setzte das Feld
+  auf das Profil-Default zurück; dazu überschrieb ein späteres Item-Update den Text, und eine
+  laufende Liste des alten Profils füllte die Auswahl des neuen. Profilpfad: `<AppConfig>/llm.json`
+  (Linux `~/.config/Conrad Huebler/SupraFit/llm.json`).
 
 ## Erste Tool-Liste (MVP)
 

@@ -13,10 +13,13 @@
 #pragma once
 
 #include <QDockWidget>
+#include <QIcon>
+#include <QMap>
 #include <QRect>
 #include <QString>
 
 #include "src/agent/chatlog.h"
+#include "src/agent/llmconfig.h"
 
 class QComboBox;
 class QLabel;
@@ -63,6 +66,7 @@ private slots:
     void importJson();
     void copyLastAnswer();
     void fillHistoryMenu();
+    void editEndpoints();
 
 private:
     bool prepareClient();
@@ -73,13 +77,18 @@ private:
     void autosave();
     void showLog(const ChatLog& log);
     QString lastDirectory() const;
+    bool currentProfile(LlmProfile& profile) const;
+    void listModelsForProfile();
+    void applyModel(const QString& model, bool remember);
+    void updateIdentity();
+    static QIcon toolIcon(bool tools);
     void rememberDirectory(const QString& file);
 
     QComboBox *m_profile, *m_model, *m_autonomy;
     QPushButton *m_send, *m_stop, *m_refresh;
     QToolButton *m_menuButton, *m_maxButton;
     QMenu *m_menu, *m_historyMenu;
-    QLabel* m_status;
+    QLabel *m_status, *m_identity;
     ChatView* m_view;
     ChatInput* m_input;
 
@@ -91,6 +100,10 @@ private:
     ChatLog m_log;
     ChatHistoryStore m_store;
     InputHistory m_inputHistory;
+    LlmModelSelection m_selection;
+    QStringList m_listed;
+    QMap<QString, LlmModelInfo> m_infos;
+    QString m_listStatus, m_listError;
 
     // streaming: chunks are collected and shown at most every ~90 ms
     QTimer* m_streamTimer;

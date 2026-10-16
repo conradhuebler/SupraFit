@@ -217,6 +217,17 @@ private slots:
         closed.baseUrl = QStringLiteral("http://127.0.0.1:%1/v1").arg(port);
         Listing refused = listFrom(closed);
         QVERIFY2(refused.error.contains(QStringLiteral("refused"), Qt::CaseInsensitive), qPrintable(refused.error));
+
+        // a listing still in flight when the profile changes never reaches the new profile
+        server.reply(200, QByteArray("{\"data\":[{\"id\":\"old-model\"}]}"));
+        LlmClient client;
+        client.setProfile(profile);
+        int listed = 0;
+        QObject::connect(&client, &LlmClient::modelsListed, &client, [&listed](const QStringList&) { ++listed; });
+        client.listModels();
+        client.setProfile(closed);
+        QTest::qWait(300);
+        QCOMPARE(listed, 0);
     }
 
     void ollamaCapabilitiesAreParsed()

@@ -32,8 +32,15 @@ void LlmClient::setProfile(const LlmProfile& profile)
 {
     // A model override belongs to the profile it was chosen for (WP10: a stale override kept
     // sending the old model after a profile switch with an empty model field).
-    if (profile.name != m_profile.name || profile.baseUrl != m_profile.baseUrl)
+    if (profile.name != m_profile.name || profile.baseUrl != m_profile.baseUrl) {
         m_model.clear();
+        // a model list still on its way belongs to the old endpoint: drop it
+        if (m_listReply) {
+            QNetworkReply* old = m_listReply;
+            m_listReply = nullptr;
+            old->abort();
+        }
+    }
     m_profile = profile;
 }
 

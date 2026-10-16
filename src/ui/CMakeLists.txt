@@ -87,7 +87,7 @@ set(SFGui_SRC
     )
 
 if(USE_LLM)
-    list(APPEND SFGui_SRC widgets/chatdock.cpp)
+    list(APPEND SFGui_SRC widgets/chatdock.cpp dialogs/endpointdialog.cpp)
 endif()
 add_library(suprafit_gui ${SFGui_SRC})
 set_property(TARGET suprafit_gui PROPERTY CXX_STANDARD 14)
