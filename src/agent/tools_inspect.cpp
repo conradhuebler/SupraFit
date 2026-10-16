@@ -78,6 +78,49 @@ double rounded(double v)
 
 }  // namespace
 
+/// Per-parameter summary of one stored statistic run (value, confidence interval, median, stddev).
+/// @p samples receives the largest sample count found. Claude Generated.
+QJsonArray summariseStatisticParameters(const QJsonObject& body, int* samples)
+{
+    QJsonArray parameters;
+    QStringList keys = body.keys();
+    std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) { return a.toInt() < b.toInt(); });
+    for (const QString& key : keys) {
+        if (key == QLatin1String("controller"))
+            continue;
+        const QJsonObject e = body.value(key).toObject();
+        if (!e.contains(QStringLiteral("name")))
+            continue;
+        QJsonObject p;
+        p.insert(QStringLiteral("name"), e.value(QStringLiteral("name")));
+        p.insert(QStringLiteral("type"), e.value(QStringLiteral("type")));
+        p.insert(QStringLiteral("value"), e.value(QStringLiteral("value")));
+        const QJsonObject ci = e.value(QStringLiteral("confidence")).toObject();
+        if (!ci.isEmpty()) {
+            // some methods store the bounds the wrong way round; report them ordered
+            const double lo = ci.value(QStringLiteral("lower")).toDouble(), hi = ci.value(QStringLiteral("upper")).toDouble();
+            p.insert(QStringLiteral("ci_lower"), std::min(lo, hi));
+            p.insert(QStringLiteral("ci_upper"), std::max(lo, hi));
+            p.insert(QStringLiteral("ci_level"), ci.value(QStringLiteral("error")));
+        }
+        const QJsonObject box = e.value(QStringLiteral("boxplot")).toObject();
+        if (!box.isEmpty()) {
+            p.insert(QStringLiteral("median"), box.value(QStringLiteral("median")));
+            p.insert(QStringLiteral("stddev"), box.value(QStringLiteral("stddev")));
+            if (samples)
+                *samples = qMax(*samples, box.value(QStringLiteral("count")).toInt());
+        }
+        parameters.append(p);
+        if (parameters.size() >= 40)
+            break;  // keep the answer small; huge parameter lists are not useful in a chat
+    }
+    return parameters;
+}
+
+namespace {
+
+}  // namespace
+
 int registerInspectTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
 {
     int registered = 0;
@@ -200,36 +243,8 @@ int registerInspectTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 std::sort(runs.begin(), runs.end(), [](const Run& a, const Run& b) { return a.timestamp > b.timestamp; });
                 for (int k = 0; k < runs.size() && k < maxRuns; ++k) {
                     const Run& r = runs.at(k);
-                    QJsonArray parameters;
                     int samples = 0;
-                    QStringList keys = r.body.keys();
-                    std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) { return a.toInt() < b.toInt(); });
-                    for (const QString& key : keys) {
-                        if (key == QLatin1String("controller"))
-                            continue;
-                        const QJsonObject e = r.body.value(key).toObject();
-                        if (!e.contains(QStringLiteral("name")))
-                            continue;
-                        QJsonObject p;
-                        p.insert(QStringLiteral("name"), e.value(QStringLiteral("name")));
-                        p.insert(QStringLiteral("type"), e.value(QStringLiteral("type")));
-                        p.insert(QStringLiteral("value"), e.value(QStringLiteral("value")));
-                        const QJsonObject ci = e.value(QStringLiteral("confidence")).toObject();
-                        if (!ci.isEmpty()) {
-                            p.insert(QStringLiteral("ci_lower"), ci.value(QStringLiteral("lower")));
-                            p.insert(QStringLiteral("ci_upper"), ci.value(QStringLiteral("upper")));
-                            p.insert(QStringLiteral("ci_level"), ci.value(QStringLiteral("error")));
-                        }
-                        const QJsonObject box = e.value(QStringLiteral("boxplot")).toObject();
-                        if (!box.isEmpty()) {
-                            p.insert(QStringLiteral("median"), box.value(QStringLiteral("median")));
-                            p.insert(QStringLiteral("stddev"), box.value(QStringLiteral("stddev")));
-                            samples = qMax(samples, box.value(QStringLiteral("count")).toInt());
-                        }
-                        parameters.append(p);
-                        if (parameters.size() >= 40)
-                            break;  // keep the answer small; huge parameter lists are not useful in a chat
-                    }
+                    const QJsonArray parameters = summariseStatisticParameters(r.body, &samples);
                     QJsonObject entry;
                     entry.insert(QStringLiteral("method"), SupraFit::Method2Name(r.method));
                     entry.insert(QStringLiteral("method_id"), r.method);

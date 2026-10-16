@@ -387,6 +387,9 @@ public:
 
     int getMCStatisticResult() const { return m_stats.size(SupraFit::Method::MonteCarlo); }
 
+    /*! \brief Number of stored runs of any statistic method. Claude Generated */
+    int StatisticCount(SupraFit::Method type) const { return m_stats.size(type); }
+
     int getCVStatisticResult() const { return m_stats.size(SupraFit::Method::CrossValidation); }
 
     inline void setGlobalRandom(const QVector<QPair<qreal, qreal>>& random_global)

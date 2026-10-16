@@ -78,7 +78,7 @@ private slots:
         QVERIFY2(!m_project.isEmpty(), "reference project did not load");
         auto& pm = SupraFit::ProjectManager::instance();
         QCOMPARE(registerInspectTools(m_registry, &pm), 5);
-        registerAnalysisTools(m_registry, &pm);  // add_model, fit_models for the fresh-project test
+        registerAnalysisTools(m_registry, &pm);  // add_model, run_postfit_analysis
     }
 
     void effectsAreRightAndArraysDeclareItems()
@@ -219,6 +219,51 @@ private slots:
             QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 },
                          { QStringLiteral("scope"), QStringLiteral("local") }, { QStringLiteral("parameter"), QStringLiteral("0") },
                          { QStringLiteral("series"), 99 }, { QStringLiteral("value"), 1.0 } }).ok);
+    }
+
+
+    void postfitMonteCarloReallyRunsAndIsStored()
+    {
+        auto runs = [&]() {
+            return call(QStringLiteral("get_model_statistics"),
+                QJsonObject{ { QStringLiteral("project_id"), m_project }, { QStringLiteral("model_index"), 0 },
+                             { QStringLiteral("max_runs"), 100 } }).data.value(QStringLiteral("runs")).toArray().size();
+        };
+        const int before = runs();
+        const ToolResult r = call(QStringLiteral("run_postfit_analysis"),
+            QJsonObject{ { QStringLiteral("project_id"), m_project }, { QStringLiteral("model_index"), 0 },
+                         { QStringLiteral("method"), 1 }, { QStringLiteral("max_steps"), 60 } });
+        QVERIFY2(r.ok, qPrintable(r.error));
+        QCOMPARE(runs(), before + 1);  // the run is stored, not just reported
+        const QJsonArray params = r.data.value(QStringLiteral("parameters")).toArray();
+        QVERIFY(!params.isEmpty());
+        const QJsonObject lgK = params.first().toObject();
+        QVERIFY(lgK.contains(QStringLiteral("ci_lower")));
+        QVERIFY(lgK.value(QStringLiteral("ci_lower")).toDouble() < lgK.value(QStringLiteral("value")).toDouble());
+        QVERIFY(lgK.value(QStringLiteral("ci_upper")).toDouble() > lgK.value(QStringLiteral("value")).toDouble());
+        QVERIFY(r.data.value(QStringLiteral("samples")).toInt() <= 60);  // the 60 steps asked for, not an old stored run
+    }
+
+    void postfitCrossValidationAndFastConfidenceWork()
+    {
+        for (int method : { 4, 6 }) {
+            const ToolResult r = call(QStringLiteral("run_postfit_analysis"),
+                QJsonObject{ { QStringLiteral("project_id"), m_project }, { QStringLiteral("model_index"), 0 },
+                             { QStringLiteral("method"), method } });
+            QVERIFY2(r.ok, qPrintable(r.error));
+            QVERIFY(!r.data.value(QStringLiteral("parameters")).toArray().isEmpty());
+        }
+    }
+
+    void postfitRefusesMethodsThatNeedAConfiguration()
+    {
+        for (int method : { 2, 3, 5, 7 }) {
+            const ToolResult r = call(QStringLiteral("run_postfit_analysis"),
+                QJsonObject{ { QStringLiteral("project_id"), m_project }, { QStringLiteral("model_index"), 0 },
+                             { QStringLiteral("method"), method } });
+            QVERIFY2(!r.ok, qPrintable(QString::number(method)));
+            QVERIFY(r.error.contains(QStringLiteral("job configuration")));
+        }
     }
 
     void outOfRangeModelIsRefused()

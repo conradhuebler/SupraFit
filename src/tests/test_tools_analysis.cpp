@@ -441,10 +441,10 @@ private slots:
                          { QStringLiteral("method"), 1 },       // MonteCarlo
                          { QStringLiteral("max_steps"), 50 } });
         QVERIFY2(r.ok, qPrintable(r.error));
-        QVERIFY(r.data.contains(QStringLiteral("result")));
-        // The result must mention the method ran (the JobManager returns a block
-        // per job; we only assert presence + a sane method id echo).
-        QCOMPARE(r.data.value(QStringLiteral("method")).toInt(), 1);
+        // This test once only checked for a "result" key and so missed that nothing was computed:
+        // the run must come back with real parameter results.
+        QCOMPARE(r.data.value(QStringLiteral("method_id")).toInt(), 1);
+        QVERIFY(!r.data.value(QStringLiteral("parameters")).toArray().isEmpty());
     }
 
     void runPostfitAnalysisRejectsBadMethod()

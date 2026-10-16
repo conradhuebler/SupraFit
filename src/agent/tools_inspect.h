@@ -8,6 +8,9 @@
 
 #include <QPointer>
 
+#include <QJsonArray>
+#include <QJsonObject>
+
 class ToolRegistry;
 namespace SupraFit {
 class ProjectManager;
@@ -16,3 +19,7 @@ class ProjectManager;
 /// Registers get_model_parameters, get_model_statistics, get_data_table, get_residuals (all Read)
 /// and set_model_parameter (Mutate). Returns the number registered (5).
 int registerInspectTools(ToolRegistry& registry, QPointer<SupraFit::ProjectManager> pm);
+
+/// Per-parameter summary (value, confidence interval, median, standard deviation) of one stored
+/// statistic run; @p samples receives the largest sample count found.
+QJsonArray summariseStatisticParameters(const QJsonObject& body, int* samples = nullptr);
