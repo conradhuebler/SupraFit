@@ -23,3 +23,7 @@ int registerInspectTools(ToolRegistry& registry, QPointer<SupraFit::ProjectManag
 /// Per-parameter summary (value, confidence interval, median, standard deviation) of one stored
 /// statistic run; @p samples receives the largest sample count found.
 QJsonArray summariseStatisticParameters(const QJsonObject& body, int* samples = nullptr);
+
+/// Summary of a stored global-search run: per start point the start values, the final global
+/// parameters, the SSE and the converged flag, best SSE first (at most 20 entries).
+QJsonArray summariseGlobalSearch(const QJsonObject& run, int globalCount);

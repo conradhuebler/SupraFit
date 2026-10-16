@@ -17,6 +17,7 @@
 
 #include "toolregistry.h"
 #include "tools_inspect.h"
+#include "postfitjobs.h"
 
 #include "src/core/analyse.h"
 #include "src/capabilities/jobmanager.h"
@@ -640,13 +641,15 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
         ToolSpec spec;
         spec.name = QStringLiteral("run_postfit_analysis");
         spec.description = QStringLiteral(
-            "Run statistical post-processing on a FITTED model and return the parameter results: "
-            "method 1 = Monte Carlo (confidence intervals; max_steps = number of resampled fits, default 1000), "
-            "4 = cross-validation (spread of the parameters over left-out data), "
-            "6 = simplified model comparison (fast F-test based interval). The run is stored in the model, so "
-            "get_model_statistics lists it again. This STARTS a calculation (seconds to minutes) -- Compute tool, "
-            "approval applies. Reduction, weakened grid search, full model comparison and global search need a "
-            "configuration the agent cannot supply yet and are refused.");
+            "Run statistical post-processing on a FITTED model and return the results. The run is stored in the "
+            "model (get_model_statistics lists it again). method: 1 = Monte Carlo (confidence intervals; max_steps = "
+            "resampled fits, default 1000), 2 = weakened grid search (F-test confidence intervals per parameter; "
+            "confidence in %, max_steps default 2000), 3 = model comparison (F-test intervals from random steps; "
+            "max_steps default 2000), 4 = cross-validation (parameter spread over left-out data), 5 = reduction "
+            "analysis (stability of the parameters when data points are removed), 6 = simplified model comparison "
+            "(fast F-test interval), 7 = global search (grid of start values around the current parameters; "
+            "search_ranges optionally gives 'min;max;step' per global parameter, default value +/- 1 in steps of 0.5). "
+            "This STARTS a calculation (seconds to minutes) -- Compute tool, approval applies.");
         spec.category = QStringLiteral("analysis");
         QJsonObject props;
         props.insert(QStringLiteral("project_id"), stringProp(QStringLiteral("Project UUID from list_projects")));
@@ -658,6 +661,11 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
         methodProp.insert(QStringLiteral("description"), QStringLiteral("SupraFit::Method id: 1=MonteCarlo 2=WeakenedGridSearch 3=ModelComparison 4=CrossValidation 5=Reduction 6=FastConfidence 7=GlobalSearch"));
         props.insert(QStringLiteral("method"), methodProp);
         props.insert(QStringLiteral("max_steps"), intProp(QStringLiteral("Optional cap on the number of steps (default: the method's own default)"), 1));
+        props.insert(QStringLiteral("confidence"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("number") },
+            { QStringLiteral("description"), QStringLiteral("Confidence level in percent for methods 2 and 3 (default 95)") } });
+        props.insert(QStringLiteral("search_ranges"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("array") },
+            { QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("string") } } },
+            { QStringLiteral("description"), QStringLiteral("Method 7 only: one 'min;max;step' string per global parameter, in the order of get_model_parameters") } });
         props.insert(QStringLiteral("job_config"), QJsonObject{
             { QStringLiteral("type"), QStringLiteral("object") },
             { QStringLiteral("description"), QStringLiteral("Optional extra job config keys merged over the defaults (e.g. {\"VarianceSource\":2} for Monte Carlo)") } });
@@ -683,17 +691,24 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 return ToolResult::failure(
                     QStringLiteral("model %1 has no fit result (SSE=0); fit it first").arg(index));
 
-            if (method != SupraFit::Method::MonteCarlo && method != SupraFit::Method::CrossValidation
-                && method != SupraFit::Method::FastConfidence && !args.contains(QStringLiteral("job_config")))
-                return ToolResult::failure(QStringLiteral(
-                    "method %1 (%2) needs a job configuration the agent cannot build yet; use method 1 (Monte Carlo), "
-                    "4 (cross-validation) or 6 (simplified model comparison)").arg(method).arg(SupraFit::Method2Name(method)));
-
             // Build the job config: Method id + optional max_steps + caller extras.
             QJsonObject job;
-            job.insert(QStringLiteral("Method"), method);
-            if (args.contains(QStringLiteral("max_steps")))
-                job.insert(QStringLiteral("MaxSteps"), args.value(QStringLiteral("max_steps")).toInt());
+            if (method == SupraFit::Method::WeakenedGridSearch || method == SupraFit::Method::ModelComparison
+                || method == SupraFit::Method::Reduction || method == SupraFit::Method::GlobalSearch) {
+                // These need the configuration the statistics dialogs assemble; build it from their defaults.
+                PostfitJobOptions options;
+                options.steps = args.value(QStringLiteral("max_steps")).toInt(0);
+                options.confidence = args.value(QStringLiteral("confidence")).toDouble(95.0);
+                options.searchRanges = args.value(QStringLiteral("search_ranges")).toArray();
+                QString buildError;
+                job = buildPostfitJob(model, method, options, &buildError);
+                if (job.isEmpty())
+                    return ToolResult::failure(buildError);
+            } else {
+                job.insert(QStringLiteral("Method"), method);
+                if (args.contains(QStringLiteral("max_steps")))
+                    job.insert(QStringLiteral("MaxSteps"), args.value(QStringLiteral("max_steps")).toInt());
+            }
             const QJsonObject extra = args.value(QStringLiteral("job_config")).toObject();
             for (auto it = extra.begin(); it != extra.end(); ++it)
                 job.insert(it.key(), it.value());
@@ -728,22 +743,33 @@ int registerAnalysisTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
             out.insert(QStringLiteral("method_id"), method);
             out.insert(QStringLiteral("seconds"), ms / 1000.0);
             const int after = model->StatisticCount(static_cast<SupraFit::Method>(method));
-            if (storedIndex < 0 || after <= before)
+            if (storedIndex < 0)
                 return ToolResult::failure(QStringLiteral(
                     "the %1 run stored no result (the job may need more configuration or the model does not support this method)")
                         .arg(SupraFit::Method2Name(method)));
             const QJsonObject run = model->getStatistic(static_cast<SupraFit::Method>(method), storedIndex);
             int samples = 0;
-            const QJsonArray parameters = summariseStatisticParameters(run, &samples);
-            if (parameters.isEmpty())
-                return ToolResult::failure(QStringLiteral(
-                    "the %1 run produced no parameter results with the default configuration").arg(SupraFit::Method2Name(method)));
-            out.insert(QStringLiteral("parameters"), parameters);
+            if (method == SupraFit::Method::GlobalSearch) {
+                const QJsonArray results = summariseGlobalSearch(run, model->GlobalParameterSize());
+                if (results.isEmpty())
+                    return ToolResult::failure(QStringLiteral("the global search produced no fits"));
+                out.insert(QStringLiteral("search_results"), results);
+                out.insert(QStringLiteral("note"), QStringLiteral(
+                    "One entry per start point, best SSE first: start values, final global parameters, SSE, converged. "
+                    "Several different final values with similar SSE point to multiple minima."));
+            } else {
+                const QJsonArray parameters = summariseStatisticParameters(run, &samples);
+                if (parameters.isEmpty())
+                    return ToolResult::failure(QStringLiteral(
+                        "the %1 run produced no parameter results").arg(SupraFit::Method2Name(method)));
+                out.insert(QStringLiteral("parameters"), parameters);
+            }
             if (samples > 0)
                 out.insert(QStringLiteral("samples"), samples);
             out.insert(QStringLiteral("stored_run_index"), storedIndex);
-            out.insert(QStringLiteral("note"), QStringLiteral(
-                "The run is stored in the model; get_model_statistics lists it again."));
+            if (!out.contains(QStringLiteral("note")))
+                out.insert(QStringLiteral("note"), QStringLiteral(
+                    "The run is stored in the model; get_model_statistics lists it again."));
             return ToolResult::success(out);
         };
         if (registry.add(spec))

@@ -13,6 +13,7 @@
 #include <QMetaObject>
 #include <QSet>
 #include <QThread>
+#include <QTimer>
 
 namespace {
 
@@ -233,9 +234,16 @@ void LlmSession::onClientFinished(const QJsonObject& assistantMessage)
         return;
     }
 
-    runToolCalls(toolCalls);
-    if (m_busy && !m_dispatcher->isInterrupted())
-        sendRound();
+    // Run the tools from a fresh event, not from inside the network reply's finished handler: a tool
+    // may spin nested event loops (fits, statistics, searches), and doing that while the client is
+    // still unwinding the reply that delivered this message crashed intermittently in QNetworkReply.
+    QTimer::singleShot(0, this, [this, toolCalls]() {
+        if (!m_busy)  // cancelled or reset in between
+            return;
+        runToolCalls(toolCalls);
+        if (m_busy && !m_dispatcher->isInterrupted())
+            sendRound();
+    });
 }
 
 void LlmSession::declineRemainingCalls(const QJsonArray& toolCalls, const QString& reason)

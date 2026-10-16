@@ -121,6 +121,45 @@ namespace {
 
 }  // namespace
 
+QJsonArray summariseGlobalSearch(const QJsonObject& run, int globalCount)
+{
+    struct Entry {
+        double sse = 0;
+        QJsonObject json;
+    };
+    QVector<Entry> entries;
+    for (auto it = run.begin(); it != run.end(); ++it) {
+        if (it.key() == QLatin1String("controller"))
+            continue;
+        const QJsonObject e = it.value().toObject();
+        const QJsonObject model = e.value(QStringLiteral("model")).toObject();
+        if (model.isEmpty())
+            continue;
+        const QStringList initial = e.value(QStringLiteral("initial")).toString().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        QJsonArray start, finalValues;
+        for (int i = 0; i < globalCount && i < initial.size(); ++i)
+            start.append(initial.at(i).toDouble());
+        const QJsonObject table = model.value(QStringLiteral("data")).toObject().value(QStringLiteral("globalParameter")).toObject()
+                                      .value(QStringLiteral("data")).toObject();
+        // The global parameters are ONE table row, values separated by blanks ("3.38 2.44").
+        const QStringList row = table.value(QStringLiteral("0")).toString().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        for (int i = 0; i < globalCount; ++i)
+            finalValues.append(row.value(i).toDouble());
+        Entry entry;
+        entry.sse = model.value(QStringLiteral("SSE")).toDouble();
+        entry.json.insert(QStringLiteral("start"), start);
+        entry.json.insert(QStringLiteral("final_global_parameters"), finalValues);
+        entry.json.insert(QStringLiteral("sse"), entry.sse);
+        entry.json.insert(QStringLiteral("converged"), model.value(QStringLiteral("converged")).toBool());
+        entries.append(entry);
+    }
+    std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) { return a.sse < b.sse; });
+    QJsonArray out;
+    for (int i = 0; i < entries.size() && i < 20; ++i)
+        out.append(entries.at(i).json);
+    return out;
+}
+
 int registerInspectTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
 {
     int registered = 0;
