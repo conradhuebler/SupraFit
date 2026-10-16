@@ -78,7 +78,7 @@ private slots:
         m_project = load(refPath());
         QVERIFY2(!m_project.isEmpty(), "reference project did not load");
         auto& pm = SupraFit::ProjectManager::instance();
-        QCOMPARE(registerInspectTools(m_registry, &pm), 5);
+        QCOMPARE(registerInspectTools(m_registry, &pm), 7);
         registerAnalysisTools(m_registry, &pm);  // add_model, run_postfit_analysis
     }
 
@@ -334,6 +334,71 @@ private slots:
         QVERIFY(!gs(QJsonArray{ QStringLiteral("nonsense") }).ok);
         QVERIFY(!gs(QJsonArray{ QStringLiteral("3;2;0.5") }).ok);  // max < min
         QVERIFY(gs(QJsonArray{ QStringLiteral("2.5;3.5;0.5") }).ok);
+    }
+
+    void excludingASeriesChangesTheFitAndIsReversible()
+    {
+        const QString pid = freshProject();
+        QVERIFY(!pid.isEmpty());
+        QVERIFY(call(QStringLiteral("add_model"), QJsonObject{ { QStringLiteral("project_id"), pid },
+                       { QStringLiteral("model_ids"), QJsonArray{ 1 } } }).ok);
+        auto fit = [&]() {
+            const ToolResult r = call(QStringLiteral("fit_model"),
+                QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 } });
+            return r.ok ? r.data.value(QStringLiteral("sse")).toDouble() : -1.0;
+        };
+        auto setSeries = [&](int series, bool included) {
+            return call(QStringLiteral("set_series_included"),
+                QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 },
+                             { QStringLiteral("series"), series }, { QStringLiteral("included"), included } });
+        };
+        const double all = fit();
+        QVERIFY(all > 0);
+        const ToolResult off = setSeries(2, false);
+        QVERIFY2(off.ok, qPrintable(off.error));
+        QCOMPARE(off.data.value(QStringLiteral("series_in_fit")).toInt(), 6);
+        QCOMPARE(off.data.value(QStringLiteral("series_included")).toArray().at(2).toBool(), false);
+        const double without = fit();
+        QVERIFY(without > 0);
+        QVERIFY2(without < all, qPrintable(QString("SSE with all series %1, without series 2 %2").arg(all).arg(without)));
+        const ToolResult params = call(QStringLiteral("get_model_parameters"),
+            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("model_index"), 0 } });
+        QCOMPARE(params.data.value(QStringLiteral("local_parameters_per_series")).toArray().at(2).toObject().value(QStringLiteral("included")).toBool(), false);
+        QVERIFY(setSeries(2, true).ok);
+        QVERIFY(qAbs(fit() - all) < all * 0.05);  // back to (about) the full fit
+        QVERIFY(!setSeries(99, false).ok);
+        // the last series cannot be removed
+        for (int s = 0; s < 6; ++s)
+            QVERIFY(setSeries(s, false).ok);
+        QVERIFY(!setSeries(6, false).ok);
+    }
+
+    void excludingRowsIsProjectWideGuardedAndReversible()
+    {
+        const QString pid = freshProject();
+        QVERIFY(!pid.isEmpty());
+        QVERIFY(call(QStringLiteral("add_model"), QJsonObject{ { QStringLiteral("project_id"), pid },
+                       { QStringLiteral("model_ids"), QJsonArray{ 1, 3 } } }).ok);
+        auto rows = [&](const QJsonArray& r, bool included) {
+            return call(QStringLiteral("set_rows_included"),
+                QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("rows"), r }, { QStringLiteral("included"), included } });
+        };
+        const ToolResult off = rows(QJsonArray{ 0, 1 }, false);
+        QVERIFY2(off.ok, qPrintable(off.error));
+        QCOMPARE(off.data.value(QStringLiteral("rows_in_fit")).toInt(), 18);
+        QCOMPARE(off.data.value(QStringLiteral("models_recalculated")).toInt(), 2);
+        const ToolResult table = call(QStringLiteral("get_data_table"),
+            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("table"), QStringLiteral("dependent") },
+                         { QStringLiteral("max_rows"), 3 } });
+        QVERIFY(table.data.value(QStringLiteral("excluded_points")).toInt() > 0);
+        QVERIFY(table.data.value(QStringLiteral("rows")).toArray().first().toObject().contains(QStringLiteral("excluded_columns")));
+        QVERIFY(call(QStringLiteral("fit_models"), QJsonObject{ { QStringLiteral("project_id"), pid } }).ok);
+        QVERIFY(!rows(QJsonArray{ 99 }, false).ok);                               // out of range
+        QVERIFY(!rows(QJsonArray{ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }, false).ok);  // < 4 would remain
+        const ToolResult on = rows(QJsonArray{ 0, 1 }, true);
+        QVERIFY2(on.ok, qPrintable(on.error));
+        QCOMPARE(on.data.value(QStringLiteral("rows_in_fit")).toInt(), 20);
+        QVERIFY(on.data.value(QStringLiteral("excluded_rows")).toArray().isEmpty());
     }
 
     void outOfRangeModelIsRefused()

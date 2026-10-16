@@ -86,6 +86,9 @@ bool runFit(const QSharedPointer<AbstractModel>& model)
     // optimum is imported back. Minimize() itself is not used because it reports through the model's
     // Info() object, which a headless model need not have. Claude Generated.
     model->setFast(false);
+    // ImportModel() below switches every series back on ("visible by default"), which would silently
+    // undo set_series_included after the first fit; remember the selection and restore it.
+    const QList<int> activeSeries = model->ActiveSignals();
     NonLinearFitThread thread(false);
     thread.setModel(model);
     thread.start();
@@ -94,6 +97,8 @@ bool runFit(const QSharedPointer<AbstractModel>& model)
     const bool converged = thread.Converged();
     const QJsonObject best = converged ? thread.ConvergedParameter() : thread.BestIntermediateParameter();
     model->ImportModel(best);
+    model->setActiveSignals(activeSeries);
+    model->Calculate();  // SSE and statistics for the series that really take part
     model->CalculateStatistics(true);
     return converged;
 }

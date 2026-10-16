@@ -16,8 +16,8 @@ namespace SupraFit {
 class ProjectManager;
 }
 
-/// Registers get_model_parameters, get_model_statistics, get_data_table, get_residuals (all Read)
-/// and set_model_parameter (Mutate). Returns the number registered (5).
+/// Registers get_model_parameters, get_model_statistics, get_data_table, get_residuals (all Read) and
+/// set_model_parameter, set_series_included, set_rows_included (Mutate). Returns the number registered (7).
 int registerInspectTools(ToolRegistry& registry, QPointer<SupraFit::ProjectManager> pm);
 
 /// Per-parameter summary (value, confidence interval, median, standard deviation) of one stored

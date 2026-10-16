@@ -13,6 +13,7 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSet>
 #include <QStringList>
 
 #include <algorithm>
@@ -459,6 +460,7 @@ int registerInspectTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
                 QJsonObject s;
                 s.insert(QStringLiteral("series"), c);
                 s.insert(QStringLiteral("name"), seriesName(measured, c));
+                s.insert(QStringLiteral("included"), bool(model->ActiveSignals(c)));
                 s.insert(QStringLiteral("points"), res.size());
                 s.insert(QStringLiteral("rms"), std::sqrt(ss / res.size()));
                 s.insert(QStringLiteral("mean"), mean);
@@ -548,6 +550,142 @@ int registerInspectTools(ToolRegistry& registry, QPointer<ProjectManager> pm)
             out.insert(QStringLiteral("value_now"), local ? model->LocalParameter(parameter, args.value(QStringLiteral("series")).toInt())
                                                            : model->GlobalParameter(parameter));
             return ToolResult::success(out, QStringLiteral("parameter set, SSE now %1").arg(model->SSE(), 0, 'g', 6));
+        };
+        if (registry.add(spec))
+            ++registered;
+    }
+
+    // --- set_series_included -----------------------------------------------------
+    {
+        ToolSpec spec;
+        spec.name = QStringLiteral("set_series_included");
+        spec.description = QStringLiteral(
+            "Include or exclude ONE data series (a measured signal, i.e. a column of the dependent table) in the "
+            "fit of ONE model; the other models of the project are not touched. Use it to test whether a single "
+            "signal drives or disturbs a result: exclude it, run fit_model, compare get_model_parameters and the SSE, "
+            "then include it again. The model is recalculated but not fitted.");
+        spec.category = QStringLiteral("analysis");
+        QJsonObject props;
+        props.insert(QStringLiteral("project_id"), prop(QStringLiteral("string"), QStringLiteral("Project UUID from list_projects")));
+        props.insert(QStringLiteral("model_index"), intProp(QStringLiteral("Index of the model within the project (from list_models)")));
+        props.insert(QStringLiteral("series"), intProp(QStringLiteral("Series index (0-based, see get_model_parameters / get_data_table header)")));
+        props.insert(QStringLiteral("included"), prop(QStringLiteral("boolean"), QStringLiteral("true = take part in the fit, false = leave out")));
+        spec.paramSchema = objectSchema(props, { QStringLiteral("project_id"), QStringLiteral("model_index"),
+                                                 QStringLiteral("series"), QStringLiteral("included") });
+        spec.effect = ToolEffect::Mutate;
+        spec.affinity = ToolAffinity::Any;
+        spec.available = [pm]() { return pm && pm->getProjectCount() > 0; };
+        spec.handler = [pm](const QJsonObject& args) -> ToolResult {
+            QString error;
+            int index = 0;
+            const QSharedPointer<AbstractModel> model = findModel(pm, args, &error, &index);
+            if (!model)
+                return ToolResult::failure(error);
+            const int series = args.value(QStringLiteral("series")).toInt(-1);
+            const bool included = args.value(QStringLiteral("included")).toBool(true);
+            if (series < 0 || series >= model->SeriesCount())
+                return ToolResult::failure(QStringLiteral("series %1 out of range (0..%2)").arg(series).arg(model->SeriesCount() - 1));
+            QList<int> active = model->ActiveSignals();
+            while (active.size() < model->SeriesCount())
+                active.append(1);
+            active[series] = included ? 1 : 0;
+            int remaining = 0;
+            for (int v : active)
+                remaining += v ? 1 : 0;
+            if (remaining == 0)
+                return ToolResult::failure(QStringLiteral("at least one series has to stay in the fit"));
+            model->setActiveSignals(active);
+            model->Calculate();
+            QJsonArray states;
+            for (int s = 0; s < model->SeriesCount(); ++s)
+                states.append(bool(model->ActiveSignals(s)));
+            QJsonObject out;
+            out.insert(QStringLiteral("model_index"), index);
+            out.insert(QStringLiteral("series"), series);
+            out.insert(QStringLiteral("series_name"), seriesName(model->DependentModel(), series));
+            out.insert(QStringLiteral("included"), included);
+            out.insert(QStringLiteral("series_in_fit"), remaining);
+            out.insert(QStringLiteral("series_included"), states);
+            out.insert(QStringLiteral("sse_now"), rounded(model->SSE()));
+            out.insert(QStringLiteral("note"), QStringLiteral("Recalculated, not refitted: run fit_model to fit without this series."));
+            return ToolResult::success(out, QStringLiteral("series %1 %2").arg(series).arg(included ? QStringLiteral("included") : QStringLiteral("excluded")));
+        };
+        if (registry.add(spec))
+            ++registered;
+    }
+
+    // --- set_rows_included -------------------------------------------------------
+    {
+        ToolSpec spec;
+        spec.name = QStringLiteral("set_rows_included");
+        spec.description = QStringLiteral(
+            "Include or exclude whole DATA POINTS (rows of the data set, e.g. titration steps) for the fit. This "
+            "changes the PROJECT'S data selection and therefore applies to ALL models of the project. Use it to test "
+            "outliers or the influence of single points: exclude rows, run fit_models, compare, then include them "
+            "again. At least 4 rows have to stay. Models are recalculated but not fitted.");
+        spec.category = QStringLiteral("analysis");
+        QJsonObject props;
+        props.insert(QStringLiteral("project_id"), prop(QStringLiteral("string"), QStringLiteral("Project UUID from list_projects")));
+        QJsonObject rowsProp;
+        rowsProp.insert(QStringLiteral("type"), QStringLiteral("array"));
+        rowsProp.insert(QStringLiteral("items"), QJsonObject{ { QStringLiteral("type"), QStringLiteral("integer") } });
+        rowsProp.insert(QStringLiteral("description"), QStringLiteral("Row indices (0-based, see get_data_table)"));
+        props.insert(QStringLiteral("rows"), rowsProp);
+        props.insert(QStringLiteral("included"), prop(QStringLiteral("boolean"), QStringLiteral("true = take part in the fit, false = leave out")));
+        spec.paramSchema = objectSchema(props, { QStringLiteral("project_id"), QStringLiteral("rows"), QStringLiteral("included") });
+        spec.effect = ToolEffect::Mutate;
+        spec.affinity = ToolAffinity::Any;
+        spec.available = [pm]() { return pm && pm->getProjectCount() > 0; };
+        spec.handler = [pm](const QJsonObject& args) -> ToolResult {
+            if (!pm)
+                return ToolResult::failure(QStringLiteral("no ProjectManager available"));
+            const QString projectId = args.value(QStringLiteral("project_id")).toString();
+            const QSharedPointer<DataClass> data = pm->getProjectData(projectId);
+            if (!data)
+                return ToolResult::failure(QStringLiteral("unknown project_id '%1'").arg(projectId));
+            const QJsonArray rows = args.value(QStringLiteral("rows")).toArray();
+            const bool included = args.value(QStringLiteral("included")).toBool(true);
+            if (rows.isEmpty())
+                return ToolResult::failure(QStringLiteral("rows is empty"));
+            const int total = data->IndependentModel()->rowCount();
+            QSet<int> wanted;
+            for (const QJsonValue& v : rows) {
+                const int r = v.toInt(-1);
+                if (r < 0 || r >= total)
+                    return ToolResult::failure(QStringLiteral("row %1 out of range (0..%2)").arg(r).arg(total - 1));
+                wanted.insert(r);
+            }
+            int inUse = 0;
+            for (int r = 0; r < total; ++r)
+                if (data->IndependentModel()->isChecked(r) != 0)
+                    ++inUse;
+            int after = inUse;
+            for (int r : wanted) {
+                const bool now = data->IndependentModel()->isChecked(r) != 0;
+                if (!included && now)
+                    --after;
+                else if (included && !now)
+                    ++after;
+            }
+            if (after < 4)
+                return ToolResult::failure(QStringLiteral("only %1 row(s) would stay in the fit; at least 4 are needed").arg(after));
+            for (int r : wanted)
+                data->ReReadCheckedState(r, included);
+            const QVector<QSharedPointer<AbstractModel>> models = pm->getProjectModels(projectId);
+            for (const QSharedPointer<AbstractModel>& m : models)
+                if (m)
+                    m->Calculate();
+            QJsonArray excluded;
+            for (int r = 0; r < total; ++r)
+                if (data->IndependentModel()->isChecked(r) == 0)
+                    excluded.append(r);
+            QJsonObject out;
+            out.insert(QStringLiteral("rows_total"), total);
+            out.insert(QStringLiteral("rows_in_fit"), total - excluded.size());
+            out.insert(QStringLiteral("excluded_rows"), excluded);
+            out.insert(QStringLiteral("models_recalculated"), models.size());
+            out.insert(QStringLiteral("note"), QStringLiteral("Applies to all models of the project; recalculated, not refitted: run fit_models."));
+            return ToolResult::success(out, QStringLiteral("%1 row(s) %2").arg(wanted.size()).arg(included ? QStringLiteral("included") : QStringLiteral("excluded")));
         };
         if (registry.add(spec))
             ++registered;
