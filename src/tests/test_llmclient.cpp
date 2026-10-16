@@ -51,6 +51,7 @@
 #include <QtCore/QTimer>
 
 #include "src/agent/llmclient.h"
+#include "src/agent/llmpresets.h"
 #include "src/agent/llmconfig.h"
 
 #include "test_stubserver.h"
@@ -184,11 +185,12 @@ private slots:
         QVERIFY2(config.load(path, &error), qPrintable(error));
         LlmProfile local;
         QVERIFY(config.profile(QStringLiteral("local"), local));
-        QCOMPARE(local.baseUrl, QStringLiteral("http://localhost:11434/v1"));
+        // 127.0.0.1, not localhost: localhost may resolve to ::1, where another server can listen (WP10)
+        QCOMPARE(local.baseUrl, QStringLiteral("http://127.0.0.1:11434/v1"));
+        QCOMPARE(local.preset, QStringLiteral("ollama"));
 
-        // The hosted profile is there, names its key variable and never holds a key.
-        LlmProfile hosted;
-        QVERIFY(config.profile(QStringLiteral("openai"), hosted));
+        // Hosted endpoints come from the presets now; the OpenAI one names its key variable.
+        LlmProfile hosted = LlmPresets::find(QStringLiteral("openai"))->toProfile(QStringLiteral("openai"));
         QCOMPARE(hosted.baseUrl, QStringLiteral("https://api.openai.com/v1"));
         QCOMPARE(hosted.apiKeyEnv, QStringLiteral("OPENAI_API_KEY"));
         QVERIFY(!LlmConfig::isLocalEndpoint(hosted));

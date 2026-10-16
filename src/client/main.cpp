@@ -882,6 +882,12 @@ int main(int argc, char** argv)
     parser.addOption(agentConfig);
     QCommandLineOption agentReasoning("agent-reasoning", "Print the model's reasoning to stderr");
     parser.addOption(agentReasoning);
+    QCommandLineOption agentModel("model", "LLM model to use instead of the profile's (with --agent or --list-models)", "name");
+    parser.addOption(agentModel);
+    QCommandLineOption listProfiles("list-profiles", "List the LLM profiles of the config");
+    parser.addOption(listProfiles);
+    QCommandLineOption listModels("list-models", "List the models the selected LLM profile's endpoint offers (--profile)");
+    parser.addOption(listModels);
 #endif
 
     parser.process(app);
@@ -964,6 +970,14 @@ int main(int argc, char** argv)
     }
 
 #ifdef USE_LLM
+    if (parser.isSet("list-profiles"))
+        return listAgentProfiles(parser.value("llm-config"));
+    if (parser.isSet("list-models")) {
+        AgentRunOptions opt;
+        opt.profileName = parser.value("profile");
+        opt.configPath = parser.value("llm-config");
+        return listAgentModels(opt);
+    }
     if (parser.isSet("agent")) {
         // Load every -i/positional file into the ProjectManager, then hand over.
         QStringList files = inputFiles;
@@ -979,6 +993,7 @@ int main(int argc, char** argv)
         AgentRunOptions opt;
         opt.question = parser.value("agent");
         opt.profileName = parser.value("profile");
+        opt.model = parser.value("model");
         opt.configPath = parser.value("llm-config");
         opt.showReasoning = parser.isSet("agent-reasoning");
         return runAgent(opt);

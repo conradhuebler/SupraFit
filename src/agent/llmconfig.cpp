@@ -6,6 +6,7 @@
 // variable the key comes from.
 
 #include "llmconfig.h"
+#include "llmpresets.h"
 
 #include <QDir>
 #include <QFile>
@@ -14,6 +15,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcessEnvironment>
+#include <QSaveFile>
 #include <QUrl>
 #include <QStandardPaths>
 
@@ -63,6 +65,9 @@ bool LlmConfig::loadFromJson(const QByteArray& json, QString* error)
 
     m_profiles.clear();
     m_active = root.value(QStringLiteral("active_profile")).toString();
+    m_rootExtra = root;
+    m_rootExtra.remove(QStringLiteral("active_profile"));
+    m_rootExtra.remove(QStringLiteral("profiles"));
 
     const QJsonArray profiles = root.value(QStringLiteral("profiles")).toArray();
     for (const QJsonValue& v : profiles) {
@@ -86,6 +91,11 @@ bool LlmConfig::loadFromJson(const QByteArray& json, QString* error)
         profile.reasoningField = p.value(QStringLiteral("reasoning_field")).toString(profile.reasoningField);
         profile.maxToolIterations = p.value(QStringLiteral("max_tool_iterations")).toInt(profile.maxToolIterations);
         profile.requestTimeoutMs = p.value(QStringLiteral("request_timeout_ms")).toInt(profile.requestTimeoutMs);
+        profile.preset = p.value(QStringLiteral("preset")).toString();
+        profile.extra = p;
+        for (const char* known : { "name", "base_url", "model", "api_key_env", "supports_vision", "stream",
+                 "reasoning_field", "max_tool_iterations", "request_timeout_ms", "preset" })
+            profile.extra.remove(QString::fromLatin1(known));
         if (!profile.isValid()) {
             // An incomplete profile is refused and says what is missing -- a typo
             // in base_url otherwise produces a first run that fails for no reason.
@@ -124,48 +134,109 @@ bool LlmConfig::writeExampleIfMissing(const QString& path, QString* error)
     // Parseable JSON with the guidance in "_note" keys: comments are NOT valid
     // JSON, and an example file that cannot load is a worse first experience
     // than one that can (bug found by configWritesExampleIfMissing, 2026-10-11).
-    const QByteArray example = R"JSON({
-  "_note": [
-    "One entry per endpoint. This file never holds a key: a profile names the",
-    "ENVIRONMENT VARIABLE the key comes from, so this file can be shared or",
-    "committed to a repo without leaking anything. A local endpoint usually",
-    "needs no key at all. The model may stay empty -- the client then asks the",
-    "endpoint (GET /v1/models) and the user picks.",
-    "The openai profile sends the conversation, including project data the agent",
-    "reads, to api.openai.com. Set reasoning_field to reasoning_effort only for",
-    "models that accept it (o-series, gpt-5); leave it empty otherwise."
-  ],
-  "active_profile": "local",
-  "profiles": [
-    {
-      "name": "local",
-      "base_url": "http://localhost:11434/v1",
-      "model": "",
-      "stream": true,
-      "reasoning_field": "think",
-      "max_tool_iterations": 50,
-      "request_timeout_ms": 120000
-    },
-    {
-      "name": "openai",
-      "base_url": "https://api.openai.com/v1",
-      "model": "",
-      "api_key_env": "OPENAI_API_KEY",
-      "stream": true,
-      "reasoning_field": "",
-      "max_tool_iterations": 50,
-      "request_timeout_ms": 180000
+    // Since WP10 the example is the default configuration (Ollama preset on 127.0.0.1).
+    return defaultConfig().save(path, error);
+}
+
+LlmConfig LlmConfig::defaultConfig()
+{
+    LlmConfig config;
+    const LlmPreset* ollama = LlmPresets::find(LlmPresets::defaultId());
+    LlmProfile local = ollama->toProfile(QStringLiteral("local"));
+    config.m_profiles.append(local);
+    config.m_active = local.name;
+    QJsonArray note;
+    for (const char* line : {
+             "One entry per endpoint. This file never holds a key: a profile names the",
+             "ENVIRONMENT VARIABLE the key comes from, so this file can be shared or",
+             "committed to a repo without leaking anything. A local endpoint usually",
+             "needs no key at all. The model may stay empty -- the client then asks the",
+             "endpoint (GET <base_url>/models) and the user picks.",
+             "Ollama is addressed as 127.0.0.1, not localhost: localhost may resolve to ::1,",
+             "where another server (e.g. an ssh tunnel) can listen.",
+             "More providers: Agent dock menu > Endpoints... (presets for OpenAI, Gemini, ...)." })
+        note.append(QString::fromLatin1(line));
+    config.m_rootExtra.insert(QStringLiteral("_note"), note);
+    return config;
+}
+
+QByteArray LlmConfig::toJson() const
+{
+    QJsonObject root = m_rootExtra;
+    root.remove(QStringLiteral("api_key"));
+    root.remove(QStringLiteral("apikey"));
+    root.insert(QStringLiteral("active_profile"), m_active);
+    QJsonArray profiles;
+    for (const LlmProfile& p : m_profiles) {
+        QJsonObject o = p.extra;
+        o.remove(QStringLiteral("api_key")); // never, whatever came in
+        o.remove(QStringLiteral("apikey"));
+        o.insert(QStringLiteral("name"), p.name);
+        o.insert(QStringLiteral("base_url"), p.baseUrl);
+        o.insert(QStringLiteral("model"), p.model);
+        if (!p.apiKeyEnv.isEmpty())
+            o.insert(QStringLiteral("api_key_env"), p.apiKeyEnv);
+        if (p.supportsVision)
+            o.insert(QStringLiteral("supports_vision"), true);
+        o.insert(QStringLiteral("stream"), p.stream);
+        o.insert(QStringLiteral("reasoning_field"), p.reasoningField);
+        o.insert(QStringLiteral("max_tool_iterations"), p.maxToolIterations);
+        o.insert(QStringLiteral("request_timeout_ms"), p.requestTimeoutMs);
+        if (!p.preset.isEmpty())
+            o.insert(QStringLiteral("preset"), p.preset);
+        profiles.append(o);
     }
-  ]
-})JSON";
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    root.insert(QStringLiteral("profiles"), profiles);
+    return QJsonDocument(root).toJson(QJsonDocument::Indented);
+}
+
+bool LlmConfig::save(const QString& path, QString* error) const
+{
+    const QFileInfo info(path);
+    if (!QDir().mkpath(info.absolutePath())) {
+        if (error)
+            *error = QStringLiteral("cannot create directory %1").arg(info.absolutePath());
+        return false;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
         if (error)
             *error = QStringLiteral("cannot write %1: %2").arg(path, file.errorString());
         return false;
     }
-    file.write(example);
+    file.write(toJson());
+    if (!file.commit()) {
+        if (error)
+            *error = QStringLiteral("cannot write %1: %2").arg(path, file.errorString());
+        return false;
+    }
     return true;
+}
+
+QString LlmConfig::displayName(const LlmProfile& profile)
+{
+    const LlmPreset* preset = LlmPresets::find(profile.preset);
+    if (!preset || preset->name == profile.name || preset->id == QLatin1String("custom"))
+        return profile.name;
+    return QStringLiteral("%1 (%2)").arg(profile.name, preset->name);
+}
+
+void LlmModelSelection::remember(const QString& profileName, const QString& model)
+{
+    if (model.trimmed().isEmpty())
+        m_remembered.remove(profileName);
+    else
+        m_remembered.insert(profileName, model.trimmed());
+}
+
+QString LlmModelSelection::choose(const LlmProfile& profile, const QStringList& listed) const
+{
+    const QString remembered = m_remembered.value(profile.name);
+    if (!remembered.isEmpty())
+        return remembered;
+    if (!profile.model.isEmpty())
+        return profile.model;
+    return listed.isEmpty() ? QString() : listed.first();
 }
 
 bool LlmConfig::profile(const QString& name, LlmProfile& out) const

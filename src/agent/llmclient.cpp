@@ -9,6 +9,7 @@
 //  - a missing model is {"error":{"message":"model '...' not found"}}
 
 #include "llmclient.h"
+#include "llmpresets.h"
 
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
@@ -29,6 +30,10 @@ LlmClient::~LlmClient()
 
 void LlmClient::setProfile(const LlmProfile& profile)
 {
+    // A model override belongs to the profile it was chosen for (WP10: a stale override kept
+    // sending the old model after a profile switch with an empty model field).
+    if (profile.name != m_profile.name || profile.baseUrl != m_profile.baseUrl)
+        m_model.clear();
     m_profile = profile;
 }
 
@@ -101,6 +106,11 @@ void LlmClient::listModels()
     QNetworkRequest modelsRequest{ QUrl(modelsUrl) };
     if (!m_apiKey.isEmpty())
         modelsRequest.setRawHeader("Authorization", "Bearer " + m_apiKey.toUtf8());
+    if (m_listReply) {
+        QNetworkReply* old = m_listReply;
+        m_listReply = nullptr;
+        old->abort();
+    }
     m_listReply = m_network->get(modelsRequest);
     connect(m_listReply, &QNetworkReply::finished, this, &LlmClient::handleModelList);
 }
@@ -117,20 +127,106 @@ void LlmClient::cancel()
 
 void LlmClient::handleModelList()
 {
-    QNetworkReply* reply = m_listReply;
-    m_listReply = nullptr;
+    // Only the latest listing counts: an answer still on its way from the previous profile must
+    // not fill the model list of the new one (WP10).
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply)
         return;
     reply->deleteLater();
+    if (reply != m_listReply)
+        return;
+    m_listReply = nullptr;
 
     QStringList models;
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if (reply->error() == QNetworkReply::NoError) {
-        const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-        const QJsonArray data = doc.object().value(QStringLiteral("data")).toArray();
-        for (const QJsonValue& v : data)
-            models.append(v.toObject().value(QStringLiteral("id")).toString());
+        models = parseModelList(reply->readAll());
+    } else {
+        emit modelListFailed(describeFailure(status, reply->errorString(), m_profile));
     }
     emit modelsListed(models);
+}
+
+QStringList LlmClient::parseModelList(const QByteArray& body)
+{
+    QStringList models;
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    const QJsonArray data = doc.object().value(QStringLiteral("data")).toArray();
+    for (const QJsonValue& v : data) {
+        const QString id = v.toObject().value(QStringLiteral("id")).toString();
+        if (!id.isEmpty() && !models.contains(id)) // Ollama lists some models twice
+            models.append(id);
+    }
+    return models;
+}
+
+QString LlmClient::describeFailure(int httpStatus, const QString& networkError, const LlmProfile& profile)
+{
+    if (httpStatus == 401 || httpStatus == 403)
+        return profile.apiKeyEnv.isEmpty()
+            ? QStringLiteral("HTTP %1: the endpoint wants a key; enter the name of the environment variable that holds it").arg(httpStatus)
+            : QStringLiteral("HTTP %1: the key in %2 is missing, wrong or lacks access").arg(httpStatus).arg(profile.apiKeyEnv);
+    if (httpStatus == 404)
+        return QStringLiteral("HTTP 404: no model list at %1/models; the base URL is probably wrong (it usually ends in /v1)").arg(profile.baseUrl);
+    if (httpStatus >= 500)
+        return QStringLiteral("HTTP %1: the server reported an error").arg(httpStatus);
+    if (httpStatus > 0)
+        return QStringLiteral("HTTP %1: %2").arg(httpStatus).arg(networkError);
+    const QString lower = networkError.toLower();
+    if (lower.contains(QLatin1String("refused")))
+        return QStringLiteral("Connection refused: no server answers at %1; is it running?").arg(profile.baseUrl);
+    if (lower.contains(QLatin1String("host")) && lower.contains(QLatin1String("not found")))
+        return QStringLiteral("Host not found: check the address in %1").arg(profile.baseUrl);
+    if (lower.contains(QLatin1String("timed out")) || lower.contains(QLatin1String("timeout")))
+        return QStringLiteral("No answer from %1 in time").arg(profile.baseUrl);
+    return QStringLiteral("No connection to %1: %2").arg(profile.baseUrl, networkError);
+}
+
+void LlmClient::queryCapabilities(const QStringList& models)
+{
+    if (!LlmPresets::isOllama(m_profile))
+        return;
+    QString root = m_profile.baseUrl;
+    while (root.endsWith(QLatin1Char('/')))
+        root.chop(1);
+    if (root.endsWith(QLatin1String("/v1")))
+        root.chop(3);
+    for (const QString& id : models) {
+        QNetworkRequest request{ QUrl(root + QStringLiteral("/api/show")) };
+        request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+        QNetworkReply* reply = m_network->post(request, QJsonDocument(QJsonObject{ { QStringLiteral("model"), id } }).toJson(QJsonDocument::Compact));
+        connect(reply, &QNetworkReply::finished, this, [this, reply, id]() {
+            reply->deleteLater();
+            if (reply->error() != QNetworkReply::NoError)
+                return;
+            emit modelInfo(parseOllamaShow(id, QJsonDocument::fromJson(reply->readAll()).object()));
+        });
+    }
+}
+
+LlmModelInfo LlmClient::parseOllamaShow(const QString& id, const QJsonObject& show)
+{
+    LlmModelInfo info;
+    info.id = id;
+    const QJsonValue capabilities = show.value(QStringLiteral("capabilities"));
+    if (capabilities.isArray()) {
+        info.detailsKnown = true;
+        for (const QJsonValue& c : capabilities.toArray()) {
+            if (c.toString() == QLatin1String("tools"))
+                info.supportsTools = true;
+            if (c.toString() == QLatin1String("vision"))
+                info.supportsVision = true;
+        }
+    }
+    const QJsonObject modelInfo = show.value(QStringLiteral("model_info")).toObject();
+    for (auto it = modelInfo.begin(); it != modelInfo.end(); ++it) {
+        if (it.key().endsWith(QLatin1String(".context_length"))) {
+            info.contextLength = it.value().toInt();
+            info.detailsKnown = true;
+            break;
+        }
+    }
+    return info;
 }
 
 void LlmClient::handleReply()

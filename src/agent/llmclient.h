@@ -33,6 +33,8 @@ public:
     explicit LlmClient(QObject* parent = nullptr);
     ~LlmClient() override;
 
+    /// Switch the endpoint. Clears a session model override (setModel), so a model chosen for the
+    /// previous profile never leaks into the new one.
     void setProfile(const LlmProfile& profile);
     LlmProfile profile() const { return m_profile; }
 
@@ -48,8 +50,23 @@ public:
     /// profile's own, and if that is empty too a send() fails with a clear reason.
     void setModel(const QString& model);
 
+    QString model() const { return m_model.isEmpty() ? m_profile.model : m_model; }
+
     /// Ask the endpoint which models it serves (GET /v1/models). One request.
+    /// modelsListed() follows in any case; on a failure modelListFailed() before it.
     void listModels();
+
+    /// Ollama only (LlmPresets::isOllama): ask <root>/api/show for each of @p models and report
+    /// tool support and context length through modelInfo(). Other endpoints: nothing happens,
+    /// because they offer no such information. Claude Generated (WP10).
+    void queryCapabilities(const QStringList& models);
+
+    /// Parse Ollama's /api/show answer. Claude Generated.
+    static LlmModelInfo parseOllamaShow(const QString& id, const QJsonObject& show);
+    /// Model ids of an OpenAI /models answer, in order, without duplicates.
+    static QStringList parseModelList(const QByteArray& body);
+    /// Plain-words explanation of a failed request to @p profile (HTTP status 0 = no answer).
+    static QString describeFailure(int httpStatus, const QString& networkError, const LlmProfile& profile);
 
     /// Abort the request in flight. failed() is not emitted for a cancellation.
     void cancel();
@@ -63,6 +80,10 @@ signals:
     void failed(const QString& error);
     /// Answer to listModels(); empty when the endpoint offers no listing.
     void modelsListed(const QStringList& models);
+    /// listModels() failed; @p error says what to check. Claude Generated.
+    void modelListFailed(const QString& error);
+    /// Capability information for one model (queryCapabilities). Claude Generated.
+    void modelInfo(const LlmModelInfo& info);
 
     /// A piece of the answer, while streaming. The complete message still arrives
     /// through finished(), so a consumer may ignore these entirely.

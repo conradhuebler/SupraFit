@@ -1219,6 +1219,19 @@ if(USE_LLM)
     )
     add_test(NAME ChatLogTest COMMAND test_chatlog)
 
+    # Endpoint presets, llm.json round trip, model selection, model listing (stub). WP10.
+    add_executable(test_llmpresets
+        test_llmpresets.cpp
+    )
+    target_link_libraries(test_llmpresets
+        Qt6::Core
+        Qt6::Test
+        Qt6::Network
+        agent
+        fmt::fmt-header-only
+    )
+    add_test(NAME LlmConfigPresetTest COMMAND test_llmpresets)
+
     # Phase-4 read tools against a real reference project (no GUI, no net).
     # Links models+core like the bc50 tests do (cyclic core<->models via
     # --start-group), plus agent for the tool registry.

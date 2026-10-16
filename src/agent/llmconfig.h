@@ -11,8 +11,11 @@
 // attached to a bug report without leaking anything.
 #pragma once
 
+#include <QJsonObject>
+#include <QMap>
 #include <QMetaType>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 /// What an endpoint says about one of its models.
@@ -39,6 +42,8 @@ struct LlmProfile {
     QString reasoningField = QStringLiteral("reasoning_effort");
     int maxToolIterations = 50;   ///< stop an agent loop that will not converge
     int requestTimeoutMs = 120000;
+    QString preset;          ///< id of the preset the profile was made from (llmpresets.h); may be empty
+    QJsonObject extra;       ///< keys this version does not know, written back unchanged on save
 
     bool isValid() const { return !name.isEmpty() && !baseUrl.isEmpty(); }
     /// Full endpoint for a chat completion, with exactly one slash at the join.
@@ -61,6 +66,22 @@ public:
     /// @p path already exists.
     static bool writeExampleIfMissing(const QString& path, QString* error = nullptr);
 
+    /// The configuration a first start writes: one "local" profile from the Ollama preset
+    /// (127.0.0.1:11434) plus the explanatory _note. Claude Generated.
+    static LlmConfig defaultConfig();
+
+    /// Replace the profiles / the active profile (endpoint manager). Claude Generated.
+    void setProfiles(const QVector<LlmProfile>& profiles) { m_profiles = profiles; }
+    void setActiveProfileName(const QString& name) { m_active = name; }
+    /// The file content: known fields, unknown keys of the file and of each profile
+    /// preserved, never a key. Claude Generated.
+    QByteArray toJson() const;
+    /// Write toJson() atomically (temporary file + rename). Claude Generated.
+    bool save(const QString& path, QString* error = nullptr) const;
+
+    /// Display name of @p profile: the profile name, with the preset name when they differ.
+    static QString displayName(const LlmProfile& profile);
+
     QVector<LlmProfile> profiles() const { return m_profiles; }
     QString activeProfileName() const { return m_active; }
     bool profile(const QString& name, LlmProfile& out) const;
@@ -82,6 +103,26 @@ public:
 private:
     QVector<LlmProfile> m_profiles;
     QString m_active;
+    QJsonObject m_rootExtra; ///< unknown top-level keys (e.g. _note), preserved on save
+};
+
+/*! \brief Which model a profile uses, independent of any widget. Claude Generated (WP10).
+ *
+ * After a switch to a profile: the model last chosen for that profile, else the profile's default
+ * model, else the first one the endpoint listed. A choice sticks until the user changes it; the
+ * remembered models are stored by the caller (the dock keeps them in QSettings). */
+class LlmModelSelection {
+public:
+    void setRemembered(const QMap<QString, QString>& remembered) { m_remembered = remembered; }
+    QMap<QString, QString> remembered() const { return m_remembered; }
+    /// Remember @p model for @p profileName (empty forgets it).
+    void remember(const QString& profileName, const QString& model);
+    QString rememberedFor(const QString& profileName) const { return m_remembered.value(profileName); }
+    /// The model to use for @p profile given the models the endpoint @p listed (may be empty).
+    QString choose(const LlmProfile& profile, const QStringList& listed = QStringList()) const;
+
+private:
+    QMap<QString, QString> m_remembered;
 };
 
 // Claude Generated 2026 - Crosses from the client's thread to the GUI.

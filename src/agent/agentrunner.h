@@ -13,6 +13,7 @@
 struct AgentRunOptions {
     QString question;
     QString profileName;  ///< empty = the config's active profile
+    QString model;        ///< empty = the profile's model (suprafit_cli --model)
     QString configPath;   ///< empty = LlmConfig::defaultPath()
     ToolAutonomy autonomy = ToolAutonomy::InProgram;  ///< nothing in-process asks
     bool showReasoning = false;
@@ -25,3 +26,8 @@ QString agentSystemPrompt();
 /// Run the agent. Returns 0 on an answer, 1 on a configuration/transport error.
 /// Answer and tool trace go to stdout, errors to stderr.
 int runAgent(const AgentRunOptions& options);
+
+/// suprafit_cli --list-profiles: the profiles of the config, the active one marked. Claude Generated.
+int listAgentProfiles(const QString& configPath);
+/// suprafit_cli --list-models: ask the selected profile's endpoint for its models. Claude Generated.
+int listAgentModels(const AgentRunOptions& options);

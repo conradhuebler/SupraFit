@@ -39,6 +39,77 @@ QString agentSystemPrompt()
         "Answer concisely in the language of the question.");
 }
 
+namespace {
+bool loadProfile(const AgentRunOptions& options, LlmProfile& profile, QString& path)
+{
+    path = options.configPath.isEmpty() ? LlmConfig::defaultPath() : options.configPath;
+    LlmConfig config;
+    QString error;
+    if (!config.load(path, &error)) {
+        fmt::print(stderr, "Cannot read LLM config {}: {}\n", path.toStdString(), error.toStdString());
+        return false;
+    }
+    const bool found = options.profileName.isEmpty() ? config.activeProfile(profile) : config.profile(options.profileName, profile);
+    if (!found)
+        fmt::print(stderr, "LLM profile '{}' not found in {}\n",
+            options.profileName.isEmpty() ? "(active)" : options.profileName.toStdString(), path.toStdString());
+    return found;
+}
+} // namespace
+
+int listAgentProfiles(const QString& configPath)
+{
+    const QString path = configPath.isEmpty() ? LlmConfig::defaultPath() : configPath;
+    LlmConfig config;
+    QString error;
+    if (!config.load(path, &error)) {
+        fmt::print(stderr, "Cannot read LLM config {}: {}\n", path.toStdString(), error.toStdString());
+        return 1;
+    }
+    fmt::print("LLM profiles in {}:\n", path.toStdString());
+    for (const LlmProfile& p : config.profiles()) {
+        const bool active = p.name == config.activeProfileName();
+        fmt::print("{} {:<20} {:<45} model: {}{}\n", active ? "*" : " ", p.name.toStdString(), p.baseUrl.toStdString(),
+            p.model.isEmpty() ? "(endpoint lists)" : p.model.toStdString(),
+            p.apiKeyEnv.isEmpty() ? "" : (" | key from " + p.apiKeyEnv.toStdString() + (LlmConfig::apiKeyFor(p).isEmpty() ? " (not set)" : " (set)")));
+    }
+    return 0;
+}
+
+int listAgentModels(const AgentRunOptions& options)
+{
+    LlmProfile profile;
+    QString path;
+    if (!loadProfile(options, profile, path))
+        return 1;
+    const QString keyProblem = LlmConfig::missingKeyMessage(profile);
+    if (!keyProblem.isEmpty()) {
+        fmt::print(stderr, "{}\n", keyProblem.toStdString());
+        return 1;
+    }
+    LlmClient client;
+    client.setProfile(profile);
+    client.setApiKey(LlmConfig::apiKeyFor(profile));
+    QStringList models;
+    QString failure;
+    QEventLoop loop;
+    QObject::connect(&client, &LlmClient::modelListFailed, &loop, [&failure](const QString& e) { failure = e; });
+    QObject::connect(&client, &LlmClient::modelsListed, &loop, [&](const QStringList& m) {
+        models = m;
+        loop.quit();
+    });
+    client.listModels();
+    loop.exec();
+    if (!failure.isEmpty()) {
+        fmt::print(stderr, "{}\n", failure.toStdString());
+        return 1;
+    }
+    fmt::print("{} models at {} (profile {}):\n", models.size(), profile.baseUrl.toStdString(), profile.name.toStdString());
+    for (const QString& m : models)
+        fmt::print("  {}{}\n", m.toStdString(), m == profile.model ? "  (profile default)" : "");
+    return 0;
+}
+
 int runAgent(const AgentRunOptions& options)
 {
     const QString path = options.configPath.isEmpty() ? LlmConfig::defaultPath() : options.configPath;
@@ -76,12 +147,13 @@ int runAgent(const AgentRunOptions& options)
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());
     ToolDispatcher dispatcher(&registry);
-    fmt::print(stderr, "[agent] profile {} model {} | tool catalogue {} bytes\n",
-        profile.name.toStdString(), profile.model.toStdString(), registry.catalogueBytes());
-
     LlmClient client;
     client.setProfile(profile);
     client.setApiKey(LlmConfig::apiKeyFor(profile));
+    if (!options.model.isEmpty())
+        client.setModel(options.model);
+    fmt::print(stderr, "[agent] profile {} model {} | tool catalogue {} bytes\n",
+        profile.name.toStdString(), client.model().toStdString(), registry.catalogueBytes());
 
     LlmSession session(&client, &registry, &dispatcher);
     session.setAutonomy(options.autonomy);
