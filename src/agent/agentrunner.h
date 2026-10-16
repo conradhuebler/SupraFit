@@ -18,6 +18,8 @@ struct AgentRunOptions {
     ToolAutonomy autonomy = ToolAutonomy::InProgram;  ///< nothing in-process asks
     bool showReasoning = false;
     int maxIterations = 0;  ///< 0 = the profile's value
+    bool storeInProjects = true;  ///< record the run as a chat in the projects (save with -o)
+    QString appVersion, gitCommit;  ///< written into the chat record
 };
 
 /// System prompt for the SupraFit analysis agent. Claude Generated

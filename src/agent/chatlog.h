@@ -10,6 +10,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QTimeZone>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
@@ -30,13 +31,26 @@ struct ChatEntry {
     QString toolName;      ///< Tool only
     QJsonObject toolArgs;  ///< Tool only
     bool toolOk = true;    ///< Tool only
+    // audit trail of a tool call (format version 2; all optional)
+    QString toolEffect;    ///< read / display / mutate / compute / file_write / process
+    QString toolResult;    ///< full result (text or JSON), capped at MaxToolResultChars
+    bool toolTruncated = false;
+    qint64 toolDurationMs = -1; ///< -1 = not measured
+    QString approval;      ///< "", "not_required", "approved", "refused"
+    QString decidedBy;     ///< "user", "policy", "autonomy:<level>", "session"
 
     bool operator==(const ChatEntry& other) const;
 };
 
 class ChatLog {
 public:
-    static constexpr int FormatVersion = 1;
+    /// 1: entries + conversation; 2: audit fields (tool results, durations, approvals),
+    /// app version, endpoint host, autonomy, project uuids. Version 1 files still load.
+    static constexpr int FormatVersion = 2;
+    /// Cap for one stored tool result (characters); beyond it the text is cut and marked.
+    static constexpr int MaxToolResultChars = 65536;
+    /// Key of the conversations block in a project file.
+    static QString projectKey() { return QStringLiteral("agent_chats"); }
 
     ChatLog();
 
@@ -46,6 +60,31 @@ public:
     QString model() const { return m_model; }
     void setProfile(const QString& profile) { m_profile = profile; }
     void setModel(const QString& model) { m_model = model; }
+    QDateTime updated() const { return m_updated; }
+    void touch()
+    {
+        const QDateTime now = QDateTime::currentDateTime();
+        m_updated = QDateTime::fromMSecsSinceEpoch(now.toMSecsSinceEpoch(), now.timeZone());
+    }
+    QString appVersion() const { return m_appVersion; }
+    QString gitCommit() const { return m_gitCommit; }
+    void setAppVersion(const QString& version, const QString& commit)
+    {
+        m_appVersion = version;
+        m_gitCommit = commit;
+    }
+    /// Host of the endpoint (never a key or a full URL with credentials).
+    QString endpointHost() const { return m_endpointHost; }
+    void setEndpointHost(const QString& host) { m_endpointHost = host; }
+    QString autonomy() const { return m_autonomy; }
+    void setAutonomy(const QString& autonomy) { m_autonomy = autonomy; }
+    /// Uuids of the projects this chat belongs to or touched (first = where it started).
+    QStringList projectUuids() const { return m_projects; }
+    void addProjectUuid(const QString& uuid)
+    {
+        if (!uuid.isEmpty() && !m_projects.contains(uuid))
+            m_projects.append(uuid);
+    }
 
     const QVector<ChatEntry>& entries() const { return m_entries; }
     bool isEmpty() const { return m_entries.isEmpty(); }
@@ -79,10 +118,22 @@ public:
 
     static QString kindName(ChatEntry::Kind kind);
 
+    /// Cut @p text to MaxToolResultChars and append a marker; @p truncated reports it.
+    static QString capResult(const QString& text, bool* truncated);
+
+    /// The conversations block stored in a project file under projectKey().
+    static QJsonObject toProjectBlock(const QVector<ChatLog>& chats);
+    /// Read a block written by toProjectBlock(). Damaged chats are skipped with a line in
+    /// @p warnings; a newer block version is read as far as possible.
+    static QVector<ChatLog> fromProjectBlock(const QJsonValue& block, QStringList* warnings = nullptr);
+
 private:
     QString m_id;
     QDateTime m_created;
     QString m_profile, m_model;
+    QDateTime m_updated;
+    QString m_appVersion, m_gitCommit, m_endpointHost, m_autonomy;
+    QStringList m_projects;
     QVector<ChatEntry> m_entries;
     QJsonArray m_conversation;
 };

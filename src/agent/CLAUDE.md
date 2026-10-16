@@ -20,6 +20,7 @@ Vorlage: qurcuma `docs/WP-llm-tool-layer.md` + curcuma `docs/TOOL_API_WP.md`.
 | `llmsession.h/.cpp` | Agent-Loop: senden → Tool ausführen → Ergebnis zurück | QtCore + QtNetwork |
 | `tools_*.cpp` | Konkrete Werkzeuge (projekt, models, analysis, io) | gemischt |
 | `llmpresets.h/.cpp` | Anbieter-Presets (Ollama lokal zuerst, 127.0.0.1 statt localhost; LM Studio, llama.cpp, OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek, Custom) | QtCore only |
+| `chatrecorder.h/.cpp` | Audit-Spur einer Sitzung in den ChatLog (Tool, Argumente, Effekt, Ergebnis ≤64 KB, Dauer, Freigabe + wer); `ProjectChats` = Chats im Projekt (`agent_chats`) | QtCore + core |
 | `chatlog.h/.cpp` | Sichtbarer Chat als Daten: Einträge, JSON/Markdown-Export+Import, Verlauf (`<AppData>/chats`, Kappe 50), Eingabe-Historie | QtCore only |
 
 **Prinzip:** Registry, Dispatcher und Schema-Prüfung sind GUI-frei und headless
@@ -55,5 +56,6 @@ gegen `ProjectManager::instance()` — wie der CLI.
 Headless, kein Netz: `test_toolregistry`, `test_tooldispatcher`, `test_llmclient`
 (gegen `QTcpServer`-Stub), `test_llmsession` (Stub mit Antwort-Folge), `test_chatlog`, `test_llmpresets`.
 
+- Chats gehören ins Projekt: `ProjectChats::store()` → `ProjectManager`-Attachment `agent_chats`; die Kopie in `<AppData>/chats` ist nur Komfort.
 - `llm.json` wird über `LlmConfig::save()` geschrieben (atomar, unbekannte Schlüssel und `_note` bleiben, nie ein Key).
 - `LlmClient::setProfile()` verwirft einen Modell-Override eines anderen Profils; Listen-Antworten eines alten Profils werden verworfen.

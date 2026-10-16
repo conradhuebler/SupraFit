@@ -635,6 +635,7 @@ if(USE_LLM)
         src/agent/agentrunner.cpp
         src/agent/chatlog.cpp
         src/agent/llmpresets.cpp
+        src/agent/chatrecorder.cpp
     )
     add_library(agent ${agent_SRC})
     target_link_libraries(agent Qt::Core Qt::Network models core fmt::fmt-header-only)

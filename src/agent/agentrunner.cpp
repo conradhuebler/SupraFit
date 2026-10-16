@@ -4,6 +4,8 @@
 // Claude Generated 2026
 #include "agentrunner.h"
 
+#include "chatrecorder.h"
+
 #include "llmclient.h"
 #include "llmconfig.h"
 #include "llmsession.h"
@@ -18,6 +20,7 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QJsonDocument>
+#include <QUrl>
 
 #include <fmt/core.h>
 
@@ -163,11 +166,24 @@ int runAgent(const AgentRunOptions& options)
     session.setAutonomy(options.autonomy);
     session.setSystemPrompt(agentSystemPrompt());
     session.setMaxIterations(options.maxIterations > 0 ? options.maxIterations : profile.maxToolIterations);
+    // Audit trail (WP11): the run is recorded like a chat in the dock and stored in the
+    // projects it belongs to, so a saved project shows what the agent did.
+    ChatLog chat;
+    chat.setProfile(profile.name);
+    chat.setModel(client.model());
+    chat.setEndpointHost(QUrl(profile.baseUrl).host());
+    chat.setAutonomy(toolAutonomyName(options.autonomy));
+    chat.setAppVersion(options.appVersion, options.gitCommit);
+    const QString startProject = SupraFit::ProjectManager::instance().getCurrentProjectId();
+    chat.addProjectUuid(startProject);
+    ChatRecorder recorder(&session, &registry);
+    recorder.setLog(&chat);
+    recorder.setAutonomy(options.autonomy);
     // Below the chosen autonomy a tool asks; a headless run has nobody to ask.
-    session.setApprovalPolicy([](const ToolSpec& spec, const QJsonObject&) {
+    session.setApprovalPolicy(recorder.wrapApproval([](const ToolSpec& spec, const QJsonObject&) {
         fmt::print(stderr, "[refused] {} needs approval; raise the autonomy to allow it\n", spec.name.toStdString());
         return false;
-    });
+    }, QStringLiteral("policy")));
 
     int exitCode = 0;
     bool streamed = false;
@@ -194,16 +210,32 @@ int runAgent(const AgentRunOptions& options)
             fmt::print("{}", text.toStdString());
         streamed = false;
         fmt::print("\n");
+        if (!text.trimmed().isEmpty())
+            chat.append(ChatEntry::Kind::Assistant, text);
     });
     QObject::connect(&session, &LlmSession::failed, &loop, [&](const QString& e) {
         fmt::print(stderr, "\nAgent failed: {}\n", e.toStdString());
+        chat.append(ChatEntry::Kind::Notice, QStringLiteral("Agent failed: ") + e);
         exitCode = 1;
         loop.quit();
     });
     QObject::connect(&session, &LlmSession::finished, &loop, &QEventLoop::quit);
 
+    chat.append(ChatEntry::Kind::User, options.question);
     session.ask(options.question);
     if (session.isBusy())
         loop.exec();
+
+    chat.setConversation(session.conversation());
+    chat.touch();
+    if (options.storeInProjects) {
+        QStringList projects = chat.projectUuids();
+        if (projects.isEmpty())
+            projects = SupraFit::ProjectManager::instance().getLoadedProjectIds();
+        for (const QString& id : projects)
+            ProjectChats::store(id, chat);
+        if (!projects.isEmpty())
+            fmt::print(stderr, "\n[agent] conversation stored in {} project(s); save them (-o) to keep it\n", projects.size());
+    }
     return exitCode;
 }

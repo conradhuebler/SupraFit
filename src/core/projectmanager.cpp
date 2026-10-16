@@ -200,6 +200,7 @@ bool ProjectManager::saveProject(const QString& filePath, const QString& project
         }
 
         if (success) {
+            m_unsavedAttachments.remove(targetProjectId);
             emit projectSaved(targetProjectId, filePath);
 
 #ifdef DEBUG_ON
@@ -420,6 +421,65 @@ bool ProjectManager::addModelToProject(QSharedPointer<AbstractModel> model, cons
     }
 }
 
+QString ProjectManager::getCurrentProjectId() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_currentProjectId;
+}
+
+QJsonValue ProjectManager::projectAttachment(const QString& projectId, const QString& key) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    const auto it = m_attachments.constFind(projectId);
+    if (it == m_attachments.constEnd() || !it->contains(key))
+        return QJsonValue(QJsonValue::Undefined);
+    return it->value(key);
+}
+
+void ProjectManager::setProjectAttachment(const QString& projectId, const QString& key, const QJsonValue& value)
+{
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        QJsonObject& attachments = m_attachments[projectId];
+        if (value.isUndefined() || value.isNull()) {
+            if (!attachments.contains(key))
+                return;
+            attachments.remove(key);
+        } else {
+            if (attachments.value(key) == value)
+                return;
+            attachments.insert(key, value);
+        }
+        m_unsavedAttachments.insert(projectId);
+    }
+    emit projectAttachmentChanged(projectId, key);
+}
+
+bool ProjectManager::hasUnsavedAttachments(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_unsavedAttachments.contains(projectId);
+}
+
+QStringList ProjectManager::projectsWithUnsavedAttachments() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    QStringList ids;
+    for (const QString& id : m_unsavedAttachments)
+        if (m_projectHash.contains(id))
+            ids << id;
+    return ids;
+}
+
+QJsonObject ProjectManager::getProjectFileJson(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    const auto it = m_projectHash.constFind(projectId);
+    if (it == m_projectHash.constEnd())
+        return QJsonObject();
+    return saveProjectAsJson(it.value().toStrongRef());
+}
+
 bool ProjectManager::removeProject(const QString& projectId)
 {
     QMutexLocker locker(&m_projectsMutex);
@@ -452,6 +512,8 @@ bool ProjectManager::removeProject(const QString& projectId)
         }
     }
 
+    m_attachments.remove(projectId);
+    m_unsavedAttachments.remove(projectId);
     emit projectRemoved(projectId);
 
 #ifdef DEBUG_ON
@@ -797,7 +859,19 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
         }
 
         QString projectId = project->UUID();
-        
+
+        // Extra top-level blocks (e.g. "agent_chats") stay with the project, opaque to the core,
+        // and are written back on save. Claude Generated (WP11).
+        QJsonObject attachments;
+        if (jsonData.contains("data")) {
+            for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+                if (it.key() != QLatin1String("data") && !it.key().startsWith(QLatin1String("model_")))
+                    attachments.insert(it.key(), it.value());
+            }
+        }
+        m_attachments[projectId] = attachments;
+        m_unsavedAttachments.remove(projectId);
+
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
 #ifdef DEBUG_ON
@@ -978,6 +1052,12 @@ QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project)
         const QJsonObject models = project->ExportChildren();
         for (auto it = models.begin(); it != models.end(); ++it)
             wrappedProject[it.key()] = it.value();
+        // attachments (agent chats, blocks of newer versions) - Claude Generated (WP11)
+        const QJsonObject attachments = m_attachments.value(project->UUID());
+        for (auto it = attachments.begin(); it != attachments.end(); ++it) {
+            if (!wrappedProject.contains(it.key()))
+                wrappedProject[it.key()] = it.value();
+        }
         return wrappedProject;
     } catch (const std::exception& e) {
         // Log error without emit in const method

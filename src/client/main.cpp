@@ -996,7 +996,29 @@ int main(int argc, char** argv)
         opt.model = parser.value("model");
         opt.configPath = parser.value("llm-config");
         opt.showReasoning = parser.isSet("agent-reasoning");
-        return runAgent(opt);
+        opt.appVersion = git_tag;
+        opt.gitCommit = git_commit_hash;
+        const int agentExit = runAgent(opt);
+        // Save the project(s) with the recorded conversation (WP11): -o writes them, so a headless
+        // analysis keeps its audit trail.
+        if (!outputFile.isEmpty()) {
+            SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+            const QStringList ids = pm.getLoadedProjectIds();
+            for (int i = 0; i < ids.size(); ++i) {
+                QString target = outputFile;
+                if (ids.size() > 1) {
+                    const QFileInfo info(outputFile);
+                    target = info.path() + "/" + info.completeBaseName() + QString("_%1.").arg(i + 1) + info.suffix();
+                }
+                if (pm.saveProject(target, ids[i]))
+                    fmt::print(stderr, "[agent] project with the conversation saved to {}\n", target.toStdString());
+                else
+                    fmt::print(stderr, "[agent] could not save {}\n", target.toStdString());
+            }
+        } else {
+            fmt::print(stderr, "[agent] not saved: add -o <file> to keep the project with this conversation\n");
+        }
+        return agentExit;
     }
 #endif
 

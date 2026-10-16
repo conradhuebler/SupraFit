@@ -127,6 +127,46 @@ Statistical post-processing results organized by analysis method:
 - **`colors`** (array): Chart color configuration
 - **`keys`** (array): UI state information
 
+## Agent Chats (`agent_chats`, optional)
+
+A project may carry the conversations of the analysis agent next to `data` and `model_N`
+(single-project files and each `project_N` of a multi-project file). They record what the agent
+was asked, what it answered and every tool call it made, so an analysis stays traceable.
+Readers that do not know the key ignore it; SupraFit keeps unknown top-level blocks of a loaded
+project and writes them back on save.
+
+```json
+"agent_chats": {
+  "format": "suprafit-agent-chats",
+  "version": 1,
+  "chats": [
+    {
+      "format": "suprafit-chat", "version": 2,
+      "id": "uuid", "created": "ISO-8601", "updated": "ISO-8601",
+      "app_version": "git tag", "git_commit": "hash",
+      "profile": "local", "endpoint_host": "127.0.0.1", "model": "glm-5.2:cloud",
+      "autonomy": "ask | in-program | full",
+      "projects": ["{project uuid}"],
+      "entries": [
+        { "kind": "user | assistant | notice", "text": "...", "time": "ISO-8601" },
+        { "kind": "tool", "time": "ISO-8601", "tool": "fit_model", "args": {...}, "ok": true,
+          "text": "short summary", "effect": "read | display | mutate | compute | file_write | process",
+          "result": "full result, at most 65536 characters", "truncated": false, "duration_ms": 120,
+          "approval": "not_required | approved | refused", "decided_by": "user | policy | session | autonomy:<level>" }
+      ],
+      "conversation": [ OpenAI-style message list used to continue the chat ]
+    }
+  ]
+}
+```
+
+- **Never stored:** API keys or the values of key variables; only the profile name, endpoint host
+  and model name.
+- **Tolerance:** a damaged chat is skipped with a warning, the project still loads; a block of a
+  newer version is read as far as possible. Chat `version` 1 (without the audit fields) still loads.
+- **Privacy:** the conversation text is part of the project; a shared project file shares it.
+  The GUI setting "Store agent chats in project files" switches the storing off.
+
 ## Legacy Compatibility
 
 ### Backward Compatibility

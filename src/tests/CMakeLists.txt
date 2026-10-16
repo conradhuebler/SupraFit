@@ -1273,6 +1273,27 @@ if(USE_LLM)
     endif()
     add_test(NAME ToolsAnalysisTest COMMAND test_tools_analysis)
 
+    # Agent chats inside project files + the audit trail of a session (WP11): real reference
+    # project, local stub server, no net.
+    add_executable(test_projectchats
+        test_projectchats.cpp
+    )
+    target_compile_definitions(test_projectchats PRIVATE
+        SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_link_libraries(test_projectchats
+        Qt6::Core
+        Qt6::Test
+        Qt6::Qml
+        Qt6::Network
+        -Wl,--start-group models core agent models core -Wl,--end-group
+        fmt::fmt-header-only
+        ${CMAKE_THREAD_LIBS_INIT}
+    )
+    if(UNIX)
+        target_link_libraries(test_projectchats pthread dl)
+    endif()
+    add_test(NAME ProjectChatsTest COMMAND test_projectchats)
+
     # Inspect tools: parameters, stored statistics, data tables, residuals, set value.
     add_executable(test_tools_inspect
         test_tools_inspect.cpp

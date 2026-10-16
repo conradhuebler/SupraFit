@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <QtCore/QSet>
+
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
 
@@ -98,6 +100,22 @@ public:
      */
     bool saveAllProjects(const QString& filePath);
 
+    // === Project attachments (Claude Generated, UI redesign WP11) ===
+    // Extra top-level blocks of a project file next to "data" and "model_N", e.g. the agent
+    // conversations ("agent_chats"). The core keeps them opaque: whatever a loaded file carries
+    // there is written back on save, so newer blocks survive a round trip through this version.
+
+    /** @brief Attachment @p key of project @p projectId (undefined if absent). */
+    QJsonValue projectAttachment(const QString& projectId, const QString& key) const;
+    /** @brief Set (or, with an undefined/null value, remove) an attachment; marks it unsaved. */
+    void setProjectAttachment(const QString& projectId, const QString& key, const QJsonValue& value);
+    /** @brief True if an attachment of the project changed since the last load/save. */
+    bool hasUnsavedAttachments(const QString& projectId) const;
+    /** @brief Project ids with attachment changes not yet saved. */
+    QStringList projectsWithUnsavedAttachments() const;
+    /** @brief The complete file content of a project: data, models and attachments. */
+    QJsonObject getProjectFileJson(const QString& projectId) const;
+
     // === Project State Management ===
 
     /**
@@ -139,6 +157,8 @@ public:
      * @return List of project UUID strings
      */
     QStringList getLoadedProjectIds() const;
+    /** @brief UUID of the current project (empty if none). Claude Generated. */
+    QString getCurrentProjectId() const;
 
     /**
      * @brief Add model to specified project
@@ -298,6 +318,9 @@ signals:
      */
     void projectSaved(const QString& projectId, const QString& filePath);
 
+    /** @brief An attachment (e.g. the agent chats) of a project changed. Claude Generated. */
+    void projectAttachmentChanged(const QString& projectId, const QString& key);
+
     /**
      * @brief Emitted when new project is added to manager
      * @param projectId UUID of added project
@@ -376,6 +399,8 @@ private:
 
     // Thread safety and synchronization
     mutable QMutex m_projectsMutex; ///< Mutex for thread-safe access
+    QHash<QString, QJsonObject> m_attachments; ///< per project uuid: extra top-level file blocks
+    QSet<QString> m_unsavedAttachments;         ///< project uuids with attachment changes not saved
 
     // Singleton instance management
     static QMutex s_instanceMutex; ///< Singleton creation mutex

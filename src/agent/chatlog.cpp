@@ -71,12 +71,15 @@ void setError(QString* error, const QString& text)
 bool ChatEntry::operator==(const ChatEntry& other) const
 {
     return kind == other.kind && text == other.text && time == other.time && toolName == other.toolName
-        && toolArgs == other.toolArgs && toolOk == other.toolOk;
+        && toolArgs == other.toolArgs && toolOk == other.toolOk && toolEffect == other.toolEffect
+        && toolResult == other.toolResult && toolTruncated == other.toolTruncated
+        && toolDurationMs == other.toolDurationMs && approval == other.approval && decidedBy == other.decidedBy;
 }
 
 ChatLog::ChatLog()
     : m_id(QUuid::createUuid().toString(QUuid::WithoutBraces))
     , m_created(normalised(QDateTime::currentDateTime()))
+    , m_updated(m_created)
 {
 }
 
@@ -139,6 +142,18 @@ QJsonObject ChatLog::toJson() const
             e.insert(QStringLiteral("tool"), entry.toolName);
             e.insert(QStringLiteral("args"), entry.toolArgs);
             e.insert(QStringLiteral("ok"), entry.toolOk);
+            if (!entry.toolEffect.isEmpty())
+                e.insert(QStringLiteral("effect"), entry.toolEffect);
+            if (!entry.toolResult.isEmpty())
+                e.insert(QStringLiteral("result"), entry.toolResult);
+            if (entry.toolTruncated)
+                e.insert(QStringLiteral("truncated"), true);
+            if (entry.toolDurationMs >= 0)
+                e.insert(QStringLiteral("duration_ms"), double(entry.toolDurationMs));
+            if (!entry.approval.isEmpty())
+                e.insert(QStringLiteral("approval"), entry.approval);
+            if (!entry.decidedBy.isEmpty())
+                e.insert(QStringLiteral("decided_by"), entry.decidedBy);
         }
         entries.append(e);
     }
@@ -149,6 +164,17 @@ QJsonObject ChatLog::toJson() const
     object.insert(QStringLiteral("created"), timeString(m_created));
     object.insert(QStringLiteral("profile"), m_profile);
     object.insert(QStringLiteral("model"), m_model);
+    object.insert(QStringLiteral("updated"), timeString(m_updated));
+    if (!m_appVersion.isEmpty())
+        object.insert(QStringLiteral("app_version"), m_appVersion);
+    if (!m_gitCommit.isEmpty())
+        object.insert(QStringLiteral("git_commit"), m_gitCommit);
+    if (!m_endpointHost.isEmpty())
+        object.insert(QStringLiteral("endpoint_host"), m_endpointHost);
+    if (!m_autonomy.isEmpty())
+        object.insert(QStringLiteral("autonomy"), m_autonomy);
+    if (!m_projects.isEmpty())
+        object.insert(QStringLiteral("projects"), QJsonArray::fromStringList(m_projects));
     object.insert(QStringLiteral("entries"), entries);
     object.insert(QStringLiteral("conversation"), m_conversation);
     return object;
@@ -176,6 +202,15 @@ bool ChatLog::fromJson(const QJsonObject& object, ChatLog* log, QString* error)
     }
     result.m_profile = object.value(QStringLiteral("profile")).toString();
     result.m_model = object.value(QStringLiteral("model")).toString();
+    result.m_updated = parseTime(object.value(QStringLiteral("updated")).toString());
+    if (!result.m_updated.isValid())
+        result.m_updated = result.m_created; // version 1
+    result.m_appVersion = object.value(QStringLiteral("app_version")).toString();
+    result.m_gitCommit = object.value(QStringLiteral("git_commit")).toString();
+    result.m_endpointHost = object.value(QStringLiteral("endpoint_host")).toString();
+    result.m_autonomy = object.value(QStringLiteral("autonomy")).toString();
+    for (const QJsonValue& p : object.value(QStringLiteral("projects")).toArray())
+        result.m_projects.append(p.toString());
     const QJsonValue entries = object.value(QStringLiteral("entries"));
     if (!entries.isArray()) {
         setError(error, QObject::tr("The chat file has no entries"));
@@ -194,6 +229,12 @@ bool ChatLog::fromJson(const QJsonObject& object, ChatLog* log, QString* error)
             entry.toolName = e.value(QStringLiteral("tool")).toString();
             entry.toolArgs = e.value(QStringLiteral("args")).toObject();
             entry.toolOk = e.value(QStringLiteral("ok")).toBool(true);
+            entry.toolEffect = e.value(QStringLiteral("effect")).toString();
+            entry.toolResult = e.value(QStringLiteral("result")).toString();
+            entry.toolTruncated = e.value(QStringLiteral("truncated")).toBool(false);
+            entry.toolDurationMs = qint64(e.value(QStringLiteral("duration_ms")).toDouble(-1));
+            entry.approval = e.value(QStringLiteral("approval")).toString();
+            entry.decidedBy = e.value(QStringLiteral("decided_by")).toString();
         }
         result.m_entries.append(entry);
     }
@@ -227,6 +268,8 @@ QString ChatLog::toMarkdown() const
             const QString args = QString::fromUtf8(QJsonDocument(entry.toolArgs).toJson(QJsonDocument::Compact));
             md += QStringLiteral("> tool `") + entry.toolName + QStringLiteral("` ") + args
                 + (entry.toolOk ? QStringLiteral(" - ok") : QStringLiteral(" - failed"));
+            if (!entry.approval.isEmpty())
+                md += QStringLiteral(" [") + entry.approval + (entry.decidedBy.isEmpty() ? QString() : QStringLiteral(" by ") + entry.decidedBy) + QStringLiteral("]");
             if (!entry.text.isEmpty())
                 md += QStringLiteral(": ") + QString(entry.text).replace(QLatin1Char('\n'), QLatin1Char(' '));
             md += QStringLiteral(" (") + time + QStringLiteral(")\n\n");
@@ -274,7 +317,63 @@ bool ChatLog::load(const QString& path, ChatLog* log, QString* error)
 bool ChatLog::operator==(const ChatLog& other) const
 {
     return m_id == other.m_id && m_created == other.m_created && m_profile == other.m_profile
-        && m_model == other.m_model && m_entries == other.m_entries && m_conversation == other.m_conversation;
+        && m_model == other.m_model && m_updated == other.m_updated && m_appVersion == other.m_appVersion
+        && m_gitCommit == other.m_gitCommit && m_endpointHost == other.m_endpointHost
+        && m_autonomy == other.m_autonomy && m_projects == other.m_projects && m_entries == other.m_entries
+        && m_conversation == other.m_conversation;
+}
+
+QString ChatLog::capResult(const QString& text, bool* truncated)
+{
+    if (text.size() <= MaxToolResultChars) {
+        if (truncated)
+            *truncated = false;
+        return text;
+    }
+    if (truncated)
+        *truncated = true;
+    return text.left(MaxToolResultChars) + QStringLiteral("\n[truncated: %1 of %2 characters kept]").arg(MaxToolResultChars).arg(text.size());
+}
+
+QJsonObject ChatLog::toProjectBlock(const QVector<ChatLog>& chats)
+{
+    QJsonArray array;
+    for (const ChatLog& chat : chats)
+        array.append(chat.toJson());
+    QJsonObject block;
+    block.insert(QStringLiteral("format"), QStringLiteral("suprafit-agent-chats"));
+    block.insert(QStringLiteral("version"), 1);
+    block.insert(QStringLiteral("chats"), array);
+    return block;
+}
+
+QVector<ChatLog> ChatLog::fromProjectBlock(const QJsonValue& value, QStringList* warnings)
+{
+    QVector<ChatLog> chats;
+    auto warn = [warnings](const QString& text) {
+        if (warnings)
+            warnings->append(text);
+    };
+    if (value.isUndefined() || value.isNull())
+        return chats;
+    const QJsonObject block = value.toObject();
+    if (block.value(QStringLiteral("format")).toString() != QStringLiteral("suprafit-agent-chats")) {
+        warn(QObject::tr("The agent chats of this project are not readable (unknown format); they were skipped."));
+        return chats;
+    }
+    if (block.value(QStringLiteral("version")).toInt() > 1)
+        warn(QObject::tr("The agent chats were written by a newer SupraFit; reading what is readable."));
+    int index = 0;
+    for (const QJsonValue& chat : block.value(QStringLiteral("chats")).toArray()) {
+        ChatLog log;
+        QString error;
+        if (ChatLog::fromJson(chat.toObject(), &log, &error))
+            chats.append(log);
+        else
+            warn(QObject::tr("Agent chat %1 of this project was skipped: %2").arg(index + 1).arg(error));
+        ++index;
+    }
+    return chats;
 }
 
 // ---------------------------------------------------------------------------------------------
