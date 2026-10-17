@@ -1151,87 +1151,13 @@ endif()
 
 add_test(NAME BC50ModelDispatchTest COMMAND test_bc50_model_dispatch)
 
-# LLM agent layer tests (roadmap/llm_agent_analysis.md, Phase 1) - headless, no net.
-# The registry and dispatcher are QtCore-only; they link the agent library directly
-# and stay OUT of TEST_COMMON_LIBS so a -DUSE_LLM=OFF build skips them entirely.
+# LLM agent layer tests (roadmap/llm_agent_analysis.md) - headless, no net.
+# The generic ones (ToolRegistryTest, ToolDispatcherTest, LlmClientTest, LlmSessionTest, ChatLogTest,
+# LlmConfigPresetTest, ChatDockTest, ...) belong to the CuteChat library and are registered by its
+# CMakeLists (CUTECHAT_BUILD_TESTS); the SupraFit tools and the project storage are tested here.
+# They stay OUT of TEST_COMMON_LIBS so a -DUSE_LLM=OFF build skips them entirely.
 # Claude Generated 2026.
 if(USE_LLM)
-    add_executable(test_toolregistry
-        test_toolregistry.cpp
-    )
-    target_link_libraries(test_toolregistry
-        Qt6::Core
-        Qt6::Test
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME ToolRegistryTest COMMAND test_toolregistry)
-
-    add_executable(test_tooldispatcher
-        test_tooldispatcher.cpp
-    )
-    target_link_libraries(test_tooldispatcher
-        Qt6::Core
-        Qt6::Test
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME ToolDispatcherTest COMMAND test_tooldispatcher)
-
-    # LlmConfig + LlmClient against a QTcpServer stub; no network in ctest.
-    # Qt6::Network is needed on both sides (client + stub server).
-    add_executable(test_llmclient
-        test_llmclient.cpp
-    )
-    target_link_libraries(test_llmclient
-        Qt6::Core
-        Qt6::Test
-        Qt6::Network
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME LlmClientTest COMMAND test_llmclient)
-
-    # LlmSession agent loop against the same stub (answer sequences drive the
-    # send -> dispatch -> result-back loop through the real client).
-    add_executable(test_llmsession
-        test_llmsession.cpp
-    )
-    target_link_libraries(test_llmsession
-        Qt6::Core
-        Qt6::Test
-        Qt6::Network
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME LlmSessionTest COMMAND test_llmsession)
-
-    # Chat log of the agent dock: JSON/Markdown export+import, history store, input
-    # history (GUI-free, no net). Claude Generated (UI redesign WP9).
-    add_executable(test_chatlog
-        test_chatlog.cpp
-    )
-    target_link_libraries(test_chatlog
-        Qt6::Core
-        Qt6::Test
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME ChatLogTest COMMAND test_chatlog)
-
-    # Endpoint presets, llm.json round trip, model selection, model listing (stub). WP10.
-    add_executable(test_llmpresets
-        test_llmpresets.cpp
-    )
-    target_link_libraries(test_llmpresets
-        Qt6::Core
-        Qt6::Test
-        Qt6::Network
-        agent
-        fmt::fmt-header-only
-    )
-    add_test(NAME LlmConfigPresetTest COMMAND test_llmpresets)
-
     # Phase-4 read tools against a real reference project (no GUI, no net).
     # Links models+core like the bc50 tests do (cyclic core<->models via
     # --start-group), plus agent for the tool registry.

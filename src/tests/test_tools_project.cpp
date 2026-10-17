@@ -35,8 +35,8 @@
 #include <QtCore/QSet>
 #include <QtTest/QtTest>
 
-#include "src/agent/tool.h"
-#include "src/agent/toolregistry.h"
+#include <cutechat/tool.h>
+#include <cutechat/toolregistry.h>
 #include "src/agent/tools_project.h"
 #include "src/core/projectmanager.h"
 

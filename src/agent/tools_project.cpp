@@ -13,7 +13,7 @@
 
 #include "tools_project.h"
 
-#include "toolregistry.h"
+#include <cutechat/toolregistry.h>
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"

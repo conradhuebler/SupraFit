@@ -15,7 +15,7 @@
 
 #include "tools_analysis.h"
 
-#include "toolregistry.h"
+#include <cutechat/toolregistry.h>
 #include "tools_inspect.h"
 #include "postfitjobs.h"
 

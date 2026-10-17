@@ -16,12 +16,13 @@
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTimer>
 
-#include "src/agent/chatlog.h"
-#include "src/agent/chatrecorder.h"
-#include "src/agent/llmclient.h"
-#include "src/agent/llmsession.h"
-#include "src/agent/tooldispatcher.h"
-#include "src/agent/toolregistry.h"
+#include <cutechat/chatlog.h>
+#include <cutechat/chatrecorder.h>
+#include "src/agent/projectchats.h"
+#include <cutechat/llmclient.h>
+#include <cutechat/llmsession.h>
+#include <cutechat/tooldispatcher.h>
+#include <cutechat/toolregistry.h>
 #include "src/core/jsonhandler.h"
 #include "src/core/projectmanager.h"
 
@@ -44,7 +45,7 @@ class ProjectChatsTest : public QObject {
         chat.setEndpointHost(QStringLiteral("127.0.0.1"));
         chat.setAutonomy(QStringLiteral("ask"));
         chat.setAppVersion(QStringLiteral("2.x"), QStringLiteral("abc123"));
-        chat.addProjectUuid(projectId);
+        chat.addContextId(projectId);
         chat.append(ChatEntry::Kind::User, QStringLiteral("Fit the 1:1 model"));
         ChatEntry& tool = chat.appendTool(QStringLiteral("fit_model"), QJsonObject{ { QStringLiteral("project_id"), projectId } }, true, QStringLiteral("converged"));
         tool.toolEffect = QStringLiteral("compute");
@@ -76,6 +77,11 @@ class ProjectChatsTest : public QObject {
     }
 
 private slots:
+    void initTestCase()
+    {
+        ChatLog::setFormatPrefix(QStringLiteral("suprafit")); // SupraFit writes its own tags (projectchats.cpp)
+    }
+
     void auditFieldsRoundTripAndCap()
     {
         const ChatLog chat = auditedChat(QStringLiteral("{p}"));
@@ -84,15 +90,15 @@ private slots:
         QVERIFY(tool.toolResult.contains(QStringLiteral("[truncated:")));
         QVERIFY(tool.toolResult.size() < ChatLog::MaxToolResultChars + 100);
 
-        const QJsonObject block = ChatLog::toProjectBlock({ chat });
+        const QJsonObject block = ChatLog::toBlock({ chat });
         QStringList warnings;
-        const QVector<ChatLog> back = ChatLog::fromProjectBlock(block, &warnings);
+        const QVector<ChatLog> back = ChatLog::fromBlock(block, &warnings);
         QVERIFY(warnings.isEmpty());
         QCOMPARE(back.size(), 1);
         QVERIFY(back.first() == chat);
         QCOMPARE(back.first().entries().at(1).approval, QStringLiteral("approved"));
         QCOMPARE(back.first().entries().at(1).toolDurationMs, qint64(1234));
-        QCOMPARE(back.first().projectUuids(), QStringList({ QStringLiteral("{p}") }));
+        QCOMPARE(back.first().contextIds(), QStringList({ QStringLiteral("{p}") }));
 
         // nothing secret: no key fields anywhere
         const QString text = QString::fromUtf8(QJsonDocument(block).toJson());
@@ -110,19 +116,19 @@ private slots:
 
     void damagedAndFutureBlocksAreTolerated()
     {
-        QJsonObject block = ChatLog::toProjectBlock({ auditedChat(QStringLiteral("{p}")) });
+        QJsonObject block = ChatLog::toBlock({ auditedChat(QStringLiteral("{p}")) });
         QJsonArray chats = block.value(QStringLiteral("chats")).toArray();
         chats.append(QJsonObject{ { QStringLiteral("format"), QStringLiteral("suprafit-chat") }, { QStringLiteral("version"), 99 } });
         chats.append(QStringLiteral("garbage"));
         block.insert(QStringLiteral("chats"), chats);
         block.insert(QStringLiteral("version"), 7);
         QStringList warnings;
-        const QVector<ChatLog> back = ChatLog::fromProjectBlock(block, &warnings);
+        const QVector<ChatLog> back = ChatLog::fromBlock(block, &warnings);
         QCOMPARE(back.size(), 1);
         QCOMPARE(warnings.size(), 3); // newer block + two skipped chats
 
-        QVERIFY(ChatLog::fromProjectBlock(QJsonValue(QStringLiteral("nonsense")), &warnings).isEmpty());
-        QVERIFY(ChatLog::fromProjectBlock(QJsonValue(), nullptr).isEmpty());
+        QVERIFY(ChatLog::fromBlock(QJsonValue(QStringLiteral("nonsense")), &warnings).isEmpty());
+        QVERIFY(ChatLog::fromBlock(QJsonValue(), nullptr).isEmpty());
     }
 
     void projectSaveLoadKeepsChats()
@@ -148,7 +154,7 @@ private slots:
             const QJsonObject file = readFile(path);
             QVERIFY(file.contains(QStringLiteral("data")));
             QVERIFY(file.contains(QStringLiteral("model_0")) || file.contains(QStringLiteral("model_1")));
-            QVERIFY(file.contains(ChatLog::projectKey()));
+            QVERIFY(file.contains(ChatLog::blockKey()));
 
             SupraFit::ProjectManager::instance().removeProject(id);
             const QString again = loadNew(path);
@@ -168,7 +174,7 @@ private slots:
 
         // a damaged chat block: the project still loads, the chats are skipped
         QJsonObject damaged = readFile(path);
-        damaged.insert(ChatLog::projectKey(), QStringLiteral("not a block"));
+        damaged.insert(ChatLog::blockKey(), QStringLiteral("not a block"));
         const QString damagedPath = dir.filePath(QStringLiteral("damaged.json"));
         {
             QFile f(damagedPath);
@@ -182,7 +188,7 @@ private slots:
         QCOMPARE(warnings.size(), 1);
 
         ProjectChats::clear(id);
-        QVERIFY(SupraFit::ProjectManager::instance().projectAttachment(id, ChatLog::projectKey()).isUndefined());
+        QVERIFY(SupraFit::ProjectManager::instance().projectAttachment(id, ChatLog::blockKey()).isUndefined());
         SupraFit::ProjectManager::instance().removeProject(id);
     }
 
@@ -225,6 +231,7 @@ private slots:
 
         ChatLog chat;
         ChatRecorder recorder(&session, &registry);
+        recorder.setContextArguments({ QStringLiteral("project_id") });
         recorder.setLog(&chat);
         recorder.setAutonomy(ToolAutonomy::Ask);
         bool answer = true;
@@ -262,7 +269,7 @@ private slots:
         QCOMPARE(change.approval, QStringLiteral("approved"));
         QCOMPARE(change.decidedBy, QStringLiteral("user"));
         QVERIFY(change.toolOk);
-        QCOMPARE(chat.projectUuids(), QStringList({ QStringLiteral("{proj}") }));
+        QCOMPARE(chat.contextIds(), QStringList({ QStringLiteral("{proj}") }));
 
         // refused by the user
         answer = false;

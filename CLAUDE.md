@@ -100,6 +100,7 @@ One home per kind of information; copies drift apart.
 - [ML Integration Plan](./ml_integration_plan/README.md)
 - [CLI Usage Examples](./src/client/usage_example.md)
 - [Roadmap: LLM Agent Analysis](./roadmap/llm_agent_analysis.md) — agentische Auswertung über OpenAI-kompatible Endpunkte (Ollama), Qurcuma-Vorbild
+- [Roadmap: Shared Chat Library (CuteChat)](./roadmap/shared_chat_library.md) — generischer Agent-Kern + Chat-Dock, geteilt mit qurcuma
 - [Roadmap: Python Interface](./roadmap/python_interface.md)
 - [Roadmap: Joint Solver](./roadmap/joint_solver.md)
 - [Roadmap: ScriptModel Performance](./roadmap/scriptmodel_performance.md)
@@ -109,7 +110,7 @@ One home per kind of information; copies drift apart.
 ### Core Libraries
 - **libcore.a**: Core functionality (capabilities/, core/) with ProjectManager integration
 - **libmodels.a**: Data models and analysis models
-- **libagent** (planned, `USE_LLM`): Tool-Registry + LLM-Client + Agent-Loop (`src/agent/`), see [roadmap/llm_agent_analysis.md](./roadmap/llm_agent_analysis.md)
+- **libagent** (`USE_LLM`): SupraFit-Werkzeuge, Headless-Runner, Projekt-Chats (`src/agent/`), see [roadmap/llm_agent_analysis.md](./roadmap/llm_agent_analysis.md); Tool-Kontrakt, LLM-Client, Session und Chat-Dock liegen in der Bibliothek **CuteChat** (`../CuteChat` oder `external/CuteChat`, `-DCUTECHAT_DIR=`; [roadmap/shared_chat_library.md](./roadmap/shared_chat_library.md))
 - **suprafit_cli**: Command-line interface with unified ProjectManager
 - **suprafit**: GUI application with completed ProjectManager integration
 

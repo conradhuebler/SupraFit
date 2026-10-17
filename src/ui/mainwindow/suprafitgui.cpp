@@ -20,7 +20,8 @@
 #include "src/global.h"
 #include "src/global_config.h"
 #ifdef USE_LLM
-#include "src/ui/widgets/chatdock.h"
+#include <cutechat/chatdock.h>
+#include "src/ui/widgets/suprafitchathost.h"
 #endif
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/global_infos.h"
@@ -113,7 +114,8 @@ SupraFitGui::SupraFitGui()
 
 #ifdef USE_LLM
     // Claude Generated: LLM agent dock, hidden until toggled (F5)
-    m_chat_dock = new ChatDock(this);
+    m_chat_host = new SupraFitChatHost;
+    m_chat_dock = new ChatDock(m_chat_host, this);
     addDockWidget(Qt::RightDockWidgetArea, m_chat_dock);
     m_chat_dock->hide();
 #endif
@@ -486,6 +488,13 @@ SupraFitGui::SupraFitGui()
 
 SupraFitGui::~SupraFitGui()
 {
+#ifdef USE_LLM
+    // the dock stores its chat through the host: it must go first
+    delete m_chat_dock;
+    m_chat_dock = nullptr;
+    delete m_chat_host;
+    m_chat_host = nullptr;
+#endif
     if (m_instance)
         delete m_instance;
 }
@@ -747,7 +756,7 @@ void SupraFitGui::UpdateWorkspaceMenus()
 #ifdef USE_LLM
     // the agent chat follows the project on screen (its chats are stored in that project)
     if (m_chat_dock)
-        m_chat_dock->setProject(window && !window->isMetaModel() ? window->UUID() : QString());
+        m_chat_dock->setContext(window && !window->isMetaModel() ? window->UUID() : QString());
 #endif
     const bool available = bar && bar->ToolsAvailable();
     const QList<QPair<QToolButton*, QMenu*>> buttons = {

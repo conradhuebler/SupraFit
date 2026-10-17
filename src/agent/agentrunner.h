@@ -6,7 +6,7 @@
 // ProjectManager. Blocks in a local event loop until the model has answered.
 #pragma once
 
-#include "tool.h"
+#include <cutechat/tool.h>
 
 #include <QString>
 

@@ -266,6 +266,32 @@ endif()
 # include the charts, which where formerly part of SupraFit
 add_subdirectory(external/CuteChart)
 
+# The LLM agent core and the chat dock live in the shared CuteChat library (src/agent keeps only
+# the SupraFit tools, src/ui/widgets/suprafitchathost the plug-in). Claude Generated 2026.
+# CuteChat has no remote yet, so it is not a git submodule like external/CuteChart: point
+# -DCUTECHAT_DIR=<checkout> at it, or put it at external/CuteChat or next to SupraFit (../CuteChat).
+# Once a remote exists: `git submodule add <url> external/CuteChat` and nothing here changes.
+if(USE_LLM)
+    set(CUTECHAT_DIR "" CACHE PATH "CuteChat checkout (default: external/CuteChat, then ../CuteChat)")
+    if(NOT CUTECHAT_DIR)
+        foreach(_candidate ${PROJECT_SOURCE_DIR}/external/CuteChat ${PROJECT_SOURCE_DIR}/../CuteChat)
+            if(EXISTS ${_candidate}/CMakeLists.txt)
+                set(CUTECHAT_DIR ${_candidate})
+                break()
+            endif()
+        endforeach()
+    endif()
+    if(NOT CUTECHAT_DIR OR NOT EXISTS ${CUTECHAT_DIR}/CMakeLists.txt)
+        message(FATAL_ERROR "USE_LLM needs the CuteChat library: set -DCUTECHAT_DIR=<path to CuteChat> "
+                            "(external/CuteChat or ../CuteChat are tried), or configure with -DUSE_LLM=OFF")
+    endif()
+    message(STATUS "CuteChat (LLM agent core + chat dock) from ${CUTECHAT_DIR}")
+    set(CUTECHAT_BUILD_WIDGETS ${BUILD_GUI})
+    set(CUTECHAT_BUILD_TESTS ON)   # its tests run with SupraFit's ctest (ToolRegistryTest, LlmSessionTest, ...)
+    set(CUTECHAT_INSTALL OFF)
+    add_subdirectory(${CUTECHAT_DIR} ${CMAKE_BINARY_DIR}/external/CuteChat)
+endif()
+
 set(core_SRC
     src/core/bc50.cpp
     src/core/equil.cpp
@@ -622,23 +648,15 @@ set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 # Claude Generated.
 if(USE_LLM)
     set(agent_SRC
-        src/agent/tool.cpp
-        src/agent/toolregistry.cpp
-        src/agent/tooldispatcher.cpp
-        src/agent/llmconfig.cpp
-        src/agent/llmclient.cpp
-        src/agent/llmsession.cpp
         src/agent/tools_project.cpp
         src/agent/tools_analysis.cpp
         src/agent/tools_inspect.cpp
         src/agent/postfitjobs.cpp
         src/agent/agentrunner.cpp
-        src/agent/chatlog.cpp
-        src/agent/llmpresets.cpp
-        src/agent/chatrecorder.cpp
+        src/agent/projectchats.cpp
     )
     add_library(agent ${agent_SRC})
-    target_link_libraries(agent Qt::Core Qt::Network models core fmt::fmt-header-only)
+    target_link_libraries(agent Qt::Core Qt::Network CuteChat::core models core fmt::fmt-header-only)
     target_compile_definitions(agent PRIVATE USE_LLM)
     if(USE_PCH)
         target_precompile_headers(agent PRIVATE src/pch.h)

@@ -4,13 +4,14 @@
 // Claude Generated 2026
 #include "agentrunner.h"
 
-#include "chatrecorder.h"
+#include <cutechat/chatrecorder.h>
+#include "projectchats.h"
 
-#include "llmclient.h"
-#include "llmconfig.h"
-#include "llmsession.h"
-#include "toolregistry.h"
-#include "tooldispatcher.h"
+#include <cutechat/llmclient.h>
+#include <cutechat/llmconfig.h>
+#include <cutechat/llmsession.h>
+#include <cutechat/toolregistry.h>
+#include <cutechat/tooldispatcher.h>
 #include "tools_analysis.h"
 #include "tools_inspect.h"
 #include "tools_project.h"
@@ -175,8 +176,9 @@ int runAgent(const AgentRunOptions& options)
     chat.setAutonomy(toolAutonomyName(options.autonomy));
     chat.setAppVersion(options.appVersion, options.gitCommit);
     const QString startProject = SupraFit::ProjectManager::instance().getCurrentProjectId();
-    chat.addProjectUuid(startProject);
+    chat.addContextId(startProject);
     ChatRecorder recorder(&session, &registry);
+    recorder.setContextArguments({ QStringLiteral("project_id") });
     recorder.setLog(&chat);
     recorder.setAutonomy(options.autonomy);
     // Below the chosen autonomy a tool asks; a headless run has nobody to ask.
@@ -229,7 +231,7 @@ int runAgent(const AgentRunOptions& options)
     chat.setConversation(session.conversation());
     chat.touch();
     if (options.storeInProjects) {
-        QStringList projects = chat.projectUuids();
+        QStringList projects = chat.contextIds();
         if (projects.isEmpty())
             projects = SupraFit::ProjectManager::instance().getLoadedProjectIds();
         for (const QString& id : projects)

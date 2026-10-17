@@ -10,18 +10,18 @@ Vorlage: qurcuma `docs/WP-llm-tool-layer.md` + curcuma `docs/TOOL_API_WP.md`.
 
 ## Architektur (Schichten, saubere Trennung)
 
+**Der generische Teil liegt in der gemeinsamen Bibliothek CuteChat** (`../CuteChat`, `external/CuteChat` oder `-DCUTECHAT_DIR=`;
+Entwurf: [roadmap/shared_chat_library.md](../../roadmap/shared_chat_library.md)): Tool-Kontrakt, Registry, Dispatcher, `LlmClient`,
+`LlmConfig`/`LlmPresets`, `LlmSession`, `ChatLog`/`ChatRecorder`/`ChatBackend`, `ChatDock`, `EndpointDialog`. Includes: `<cutechat/xyz.h>`.
+Hier bleibt, was SupraFit-spezifisch ist:
+
 | Datei | Schicht | Qt-Abhängigkeit |
 |---|---|---|
-| `tool.h/.cpp` | Tool-Kontrakt (Werttypen: `ToolSpec`, `ToolResult`, `ToolEffect`, `ToolAffinity`) | QtCore only |
-| `toolregistry.h/.cpp` | Katalog + Schema-Validierung + `invoke()` | QtCore only |
-| `tooldispatcher.h/.cpp` | Thread-Marshalling (GUI-Thread) + Audit-Spur | QtCore only |
-| `llmconfig.h/.cpp` | Profile aus `~/.config/suprafit/llm.json`, Key nur aus ENV | QtCore only |
-| `llmclient.h/.cpp` | OpenAI-kompatibel, SSE-Streaming, Tool-Calls | QtCore + QtNetwork |
-| `llmsession.h/.cpp` | Agent-Loop: senden → Tool ausführen → Ergebnis zurück | QtCore + QtNetwork |
-| `tools_*.cpp` | Konkrete Werkzeuge (projekt, models, analysis, io) | gemischt |
-| `llmpresets.h/.cpp` | Anbieter-Presets (Ollama lokal zuerst, 127.0.0.1 statt localhost; LM Studio, llama.cpp, OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek, Custom) | QtCore only |
-| `chatrecorder.h/.cpp` | Audit-Spur einer Sitzung in den ChatLog (Tool, Argumente, Effekt, Ergebnis ≤64 KB, Dauer, Freigabe + wer); `ProjectChats` = Chats im Projekt (`agent_chats`) | QtCore + core |
-| `chatlog.h/.cpp` | Sichtbarer Chat als Daten: Einträge, JSON/Markdown-Export+Import, Verlauf (`<AppData>/chats`, Kappe 50), Eingabe-Historie | QtCore only |
+| `tools_*.cpp` | Konkrete Werkzeuge (projekt, models, analysis, inspect) gegen `ProjectManager` | gemischt |
+| `postfitjobs.{h,cpp}` | Job-Konfigurationen für `run_postfit_analysis` aus den Dialog-Defaults | QtCore + core |
+| `agentrunner.{h,cpp}` | `suprafit_cli --agent` + Systemprompt `agentSystemPrompt()` | QtCore + core |
+| `projectchats.{h,cpp}` | `ProjectChats` + `ProjectChatBackend` (Chats im Projekt unter `agent_chats`, JSON-Tags mit Präfix `suprafit`) | QtCore + core |
+| `../ui/widgets/suprafitchathost.{h,cpp}` | `SupraFitChatHost`: Prompt, Tools, Backend, Texte, Freigabe-Dialog für das `ChatDock` | Widgets |
 
 **Prinzip:** Registry, Dispatcher und Schema-Prüfung sind GUI-frei und headless
 testbar (ctest gegen `QTcpServer`-Stub, kein Netz in ctest). Erste Tools laufen
@@ -44,7 +44,7 @@ gegen `ProjectManager::instance()` — wie der CLI.
 - Neue Dateien: Copyright `Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>`,
   Claude Generated 2026 in Kommentaren markieren.
 - Jede neue Quelle in `CMakeLists.txt` unter `if(USE_LLM)` → `add_library(agent ...)`
-  eintragen.
+  eintragen. Tool-Kontrakt/Registry-Regeln stehen in `CuteChat/CLAUDE.md`.
 
 ## Build
 
@@ -53,9 +53,9 @@ gegen `ProjectManager::instance()` — wie der CLI.
 
 ## Tests
 
-Headless, kein Netz: `test_toolregistry`, `test_tooldispatcher`, `test_llmclient`
-(gegen `QTcpServer`-Stub), `test_llmsession` (Stub mit Antwort-Folge), `test_chatlog`, `test_llmpresets`.
+Headless, kein Netz. Die generischen Tests (`ToolRegistryTest`, `ToolDispatcherTest`, `LlmClientTest`, `LlmSessionTest`, `ChatLogTest`,
+`LlmConfigPresetTest`, `ChatDockTest`) gehören CuteChat und laufen in SupraFits ctest mit (`CUTECHAT_BUILD_TESTS`); hier: `ToolsProject/Analysis/Inspect`, `ProjectChatsTest`.
 
-- Chats gehören ins Projekt: `ProjectChats::store()` → `ProjectManager`-Attachment `agent_chats`; die Kopie in `<AppData>/chats` ist nur Komfort.
+- Chats gehören ins Projekt: `ProjectChats::store()` (`ChatLog::setFormatPrefix("suprafit")` hält die Tags) → `ProjectManager`-Attachment `agent_chats`; die Kopie in `<AppData>/chats` ist nur Komfort.
 - `llm.json` wird über `LlmConfig::save()` geschrieben (atomar, unbekannte Schlüssel und `_note` bleiben, nie ein Key).
 - `LlmClient::setProfile()` verwirft einen Modell-Override eines anderen Profils; Listen-Antworten eines alten Profils werden verworfen.

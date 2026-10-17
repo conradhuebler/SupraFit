@@ -156,6 +156,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ## Variable Section (Short-term information, regularly updated)
 
 ### Recent UI Updates
+- 2026-10-17: 🤖 **Chat dock and endpoint manager come from the shared CuteChat library** (`<cutechat/chatdock.h>`, `<cutechat/endpointdialog.h>`); SupraFit supplies `widgets/suprafitchathost.{h,cpp}` (prompt, tools, project-file storage, wording). Render of the dock unchanged (pixel-identical offscreen, light/dark). See [roadmap/shared_chat_library.md](../../roadmap/shared_chat_library.md).
 - 2026-10-15: 🤖 **Main window redesign** (branch `feature/ui-redesign`, [roadmap/ui_redesign.md](../../roadmap/ui_redesign.md)) — one toolbar row with Data/Model/Evaluation menus of the project on screen (`MDHDockTitleBar` owns menus, not buttons), Log under the project list, model pane = header (name, fit row, parameters, actions) + tabs/data series + fit results.
 - 2026-10-15: 🤖 **Colours come from the palette** — `guitools/appearance.{h,cpp}` sets System/Light/Dark (setting `appearance`) and restyles every QChartView on show; use palette roles, and `Appearance::ContrastText()` for text on meaningful colours. No window-wide style sheets.
 - 2026-07-21: ✅ **MC results widget 15x faster** — the cost was never the chart/render chain (30 ms) but `WriteConfidence` → BC50 integration; see AIChangelog. Measure this path with `benchmark_mcwidget` (offscreen, `src/tests/`), never by feel.

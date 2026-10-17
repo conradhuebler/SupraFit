@@ -48,8 +48,8 @@
 
 #include <cmath>
 
-#include "src/agent/tool.h"
-#include "src/agent/toolregistry.h"
+#include <cutechat/tool.h>
+#include <cutechat/toolregistry.h>
 #include "src/agent/tools_analysis.h"
 #include "src/agent/tools_project.h"
 #include "src/core/models/AbstractModel.h"
