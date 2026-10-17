@@ -173,7 +173,7 @@ int runAgent(const AgentRunOptions& options)
     chat.setProfile(profile.name);
     chat.setModel(client.model());
     chat.setEndpointHost(QUrl(profile.baseUrl).host());
-    chat.setAutonomy(toolAutonomyName(options.autonomy));
+    chat.setAutonomy(toolAutonomyId(options.autonomy));
     chat.setAppVersion(options.appVersion, options.gitCommit);
     const QString startProject = SupraFit::ProjectManager::instance().getCurrentProjectId();
     chat.addContextId(startProject);
