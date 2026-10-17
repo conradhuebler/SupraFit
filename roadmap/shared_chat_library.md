@@ -1,6 +1,6 @@
 # Roadmap: shared chat library (CuteChat)
 
-> Copy of CuteChat/docs/DESIGN.md at the time of extraction (2026-10-17); the library repo is the source of truth. Library checkout: `../CuteChat` or `external/CuteChat` (`-DCUTECHAT_DIR=`). SupraFit status: branch `feature/cutechat-extract`.
+> Copy of CuteChat/docs/DESIGN.md (2026-10-17); the library repo is the source of truth. Library checkout: `../CuteChat` or `external/CuteChat` (`-DCUTECHAT_DIR=`). SupraFit status: branch `feature/cutechat-extract`; adopted by qurcuma on `feature/shared-chat` (core only).
 
 
 Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net> (GPL-3.0-or-later, like SupraFit and qurcuma).
@@ -13,7 +13,8 @@ named tools" that is *not* specific to one application:
 
 | Layer (target)            | Content | Qt modules |
 |---------------------------|---------|------------|
-| `cutechat_core`           | tool contract, registry, dispatcher, LLM client, config, presets, session (agent loop), chat log / history / recorder, persistence + host interfaces | Core, Network |
+| `cutechat_tools`          | tool contract, registry, dispatcher (Qt Core only; used by qurcuma's core, script dock and palette without a network) | Core |
+| `cutechat_core`           | LLM client, config, presets, session (agent loop), chat log / history / recorder, persistence interface | + Network |
 | `cutechat` (optional)     | `ChatDock` (bubbles, Markdown, streaming, reasoning, history, export), `EndpointDialog` | + Widgets |
 
 Applications plug in through two small interfaces (`ChatHost`, `ChatBackend`); the library
@@ -44,6 +45,25 @@ Things qurcuma has and SupraFit lacks that are generic (all ported): vision mess
 free "waiting" rounds, `reasoning effort`, per-model `describeModel`, `updateBaseUrl`,
 call-origin set by the session, reasoning blocks and effort/rounds controls in the dock.
 
+### Where the two code bases disagreed, and which side the library took
+
+| Point | qurcuma | SupraFit | Library |
+|---|---|---|---|
+| `ToolRegistry::all()` order | sorted by name (stable catalogue) | hash order | sorted |
+| Schema keyword `items` (scalar array items) | refused at registration | validated | validated (SupraFit) |
+| `invoke()` of a tool whose `available()` is false | runs | refused ("not available") | refused (SupraFit) |
+| Validation wording | `expects string, got number`, `must be one of: ...`, `must be >= n` | `must be of type`, `below the minimum` | qurcuma's wording, plus the words minimum/maximum |
+| Failed registration | `qWarning` + error | error only | both |
+| `toolEffectName` / `toolAutonomyName` | `file_write`; `auto in the program`, `full auto` | `file-write`; `in-program`, `full` | qurcuma's for labels and logs; new `toolAutonomyId()` = SupraFit's spellings for stored records |
+| Message to the model on a refusal / failure | `refused: ...` / `error: ...` | bare reason | qurcuma's prefixes |
+| Tool payload | text, JSON only when data present | text + JSON always | qurcuma's |
+| Timeout message | `did not finish ... within n ms` | `timed out after n ms` | contains both phrases |
+| Model list | sorted | endpoint order | endpoint order; `setSortModels(true)` for qurcuma |
+| Reasoning effort | none by default (`""`) | always `medium` | default `medium`, application may set `""` |
+| `describeModel` | any endpoint, `detailsKnown=false` on failure | Ollama only (`queryCapabilities`) | both |
+| `updateBaseUrl` | refuses an address without http(s) | no such function | refuses |
+| Session cancel, deferred tool run, audited refusals | missing | present | SupraFit's |
+
 ## 3. What stays in the applications
 
 * All tools (`tools_*.cpp`), job classes, the system prompt text, and the approval *policy* if it
@@ -66,18 +86,20 @@ public:
 };
 class FileChatBackend : public ChatBackend { ... };   // <dir>/<context>/<chat id>.json, ships with the library
 
-class ChatHost {                    // everything application specific the dock needs
+class ChatHost {                    // everything application specific the dock needs (chathost.h)
 public:
     virtual ~ChatHost() = default;
-    virtual QString systemPrompt() const = 0;
+    virtual QString systemPrompt() const = 0;                        // asked before every question
     virtual void registerTools(ToolRegistry& registry) = 0;          // called once by the dock
-    virtual ChatBackend* chatBackend() { return nullptr; }          // null: history in AppData only
-    virtual bool storeInBackend() const { return true; }            // user setting "store chats in ..."
+    virtual ToolRegistry* sharedRegistry() { return nullptr; }       // singleton-style registries
+    virtual ChatBackend* chatBackend() { return nullptr; }           // null: history in AppData only
+    virtual bool storeInBackend() const { return true; }             // user setting "store chats in ..."
+    virtual QStringList contextArguments() const { return {}; }      // tool arguments carrying a context id
     virtual QString appVersion() const; virtual QString appCommit() const;  // written into the chat record
-    virtual bool approveToolCall(const ToolSpec&, const QJsonObject&, QWidget* parent); // default: question box
-    virtual void toolFinished(const QString& name, const QJsonObject& args, const ToolResult&) {}  // "state changed" hook
-    virtual ChatUiTexts uiTexts() const;                            // title, placeholder, autonomy labels, context noun
     virtual QString settingsPrefix() const { return QStringLiteral("chat"); }   // QSettings keys
+    virtual ChatUiTexts uiTexts() const;                             // title, placeholder, autonomy label, context wording
+    virtual bool approveToolCall(const ToolSpec&, const QJsonObject&, QWidget* parent);  // default: question box
+    virtual void toolFinished(const QString& name, const QJsonObject& args, const ToolResult&) {}  // "state changed" hook
 };
 ```
 
@@ -91,7 +113,7 @@ public:
   identical to the keys SupraFit already wrote, so nothing migrates).
 * **Tools**: `ToolSpec` semantics are unchanged; both code bases already agreed on them. The
   dock owns a `ToolRegistry`/`ToolDispatcher` unless the host passes its own
-  (`ChatDock::setRegistry`, for `ToolRegistry::instance()` style applications).
+  (`ChatHost::sharedRegistry()`, for `ToolRegistry::instance()` style applications).
 * **Threads**: `LlmSession` and `LlmClient` are thread-agnostic (they only use queued signals and
   the dispatcher's marshalling). The dock runs them on the GUI thread (SupraFit). An application
   that wants the agent loop on a worker thread (qurcuma) keeps owning client and session and uses
@@ -105,7 +127,7 @@ public:
 * The chat JSON keeps its keys (`project_uuids`, block key `agent_chats`) so stored SupraFit
   projects keep loading; the C++ API says *context* (`addContextId`, `contextIds`,
   `ChatLog::blockKey`).
-* CMake: `cutechat_core`, `cutechat`, alias `CuteChat::core`, `CuteChat::cutechat`; options
+* CMake: `cutechat_tools`, `cutechat_core`, `cutechat`, aliases `CuteChat::tools`, `CuteChat::core`, `CuteChat::cutechat`; options
   `CUTECHAT_BUILD_WIDGETS`, `CUTECHAT_BUILD_TESTS`, `CUTECHAT_INSTALL`.
 
 ## 6. Licence
