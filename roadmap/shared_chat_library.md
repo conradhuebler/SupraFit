@@ -145,9 +145,9 @@ with Conrad Hübler; Claude-generated parts are marked in comments.
    (`ProjectChats`) stay in SupraFit. Library tests are registered in the SupraFit build too.
 3. qurcuma `feature/shared-chat`: `qurcuma_llm`/`core/tool*` replaced by the core library, qurcuma's
    dock keeps its own widgets (needs `ChatEngine` for the worker-thread model).
-4. Share: git submodule `external/CuteChat` once a remote URL exists (SupraFit uses the same pattern
-   for `external/CuteChart`); until then CMake looks for `-DCUTECHAT_DIR=...`, `external/CuteChat`,
-   then a sibling checkout `../CuteChat`.
+4. Share: done 2026-10-19 — git submodule `external/CuteChat` (https://github.com/conradhuebler/CuteChat,
+   pinned c791920) like `external/CuteChart`; CMake still honours `-DCUTECHAT_DIR=...` and a sibling
+   checkout `../CuteChat` for development.
 
 Migration notes for existing code: `#include "src/agent/xyz.h"` -> `<cutechat/xyz.h>`;
 `ChatLog::projectKey/addProjectUuid/projectUuids/toProjectBlock/fromProjectBlock` ->

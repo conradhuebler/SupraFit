@@ -118,7 +118,7 @@ One home per kind of information; copies drift apart.
 ### Core Libraries
 - **libcore.a**: Core functionality (capabilities/, core/) with ProjectManager integration
 - **libmodels.a**: Data models and analysis models
-- **libagent** (`USE_LLM`): SupraFit-Werkzeuge, Headless-Runner, Projekt-Chats (`src/agent/`), see [roadmap/llm_agent_analysis.md](./roadmap/llm_agent_analysis.md); Tool-Kontrakt, LLM-Client, Session und Chat-Dock liegen in der Bibliothek **CuteChat** (`../CuteChat` oder `external/CuteChat`, `-DCUTECHAT_DIR=`; [roadmap/shared_chat_library.md](./roadmap/shared_chat_library.md))
+- **libagent** (`USE_LLM`): SupraFit-Werkzeuge, Headless-Runner, Projekt-Chats (`src/agent/`), see [roadmap/llm_agent_analysis.md](./roadmap/llm_agent_analysis.md); Tool-Kontrakt, LLM-Client, Session und Chat-Dock liegen in der Bibliothek **CuteChat** (Submodul `external/CuteChat` — `git submodule update --init`; Entwicklung: `../CuteChat` oder `-DCUTECHAT_DIR=`; [roadmap/shared_chat_library.md](./roadmap/shared_chat_library.md))
 - **suprafit_cli**: Command-line interface with unified ProjectManager
 - **suprafit**: GUI application with completed ProjectManager integration
 

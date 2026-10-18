@@ -268,9 +268,8 @@ add_subdirectory(external/CuteChart)
 
 # The LLM agent core and the chat dock live in the shared CuteChat library (src/agent keeps only
 # the SupraFit tools, src/ui/widgets/suprafitchathost the plug-in). Claude Generated 2026.
-# CuteChat has no remote yet, so it is not a git submodule like external/CuteChart: point
-# -DCUTECHAT_DIR=<checkout> at it, or put it at external/CuteChat or next to SupraFit (../CuteChat).
-# Once a remote exists: `git submodule add <url> external/CuteChat` and nothing here changes.
+# CuteChat is a git submodule (external/CuteChat, `git submodule update --init external/CuteChat`);
+# -DCUTECHAT_DIR=<checkout> or a checkout next to SupraFit (../CuteChat) override it for development.
 if(USE_LLM)
     set(CUTECHAT_DIR "" CACHE PATH "CuteChat checkout (default: external/CuteChat, then ../CuteChat)")
     if(NOT CUTECHAT_DIR)
@@ -283,7 +282,8 @@ if(USE_LLM)
     endif()
     if(NOT CUTECHAT_DIR OR NOT EXISTS ${CUTECHAT_DIR}/CMakeLists.txt)
         message(FATAL_ERROR "USE_LLM needs the CuteChat library: set -DCUTECHAT_DIR=<path to CuteChat> "
-                            "(external/CuteChat or ../CuteChat are tried), or configure with -DUSE_LLM=OFF")
+                            "(external/CuteChat or ../CuteChat are tried; run `git submodule update --init external/CuteChat`), "
+                            "or configure with -DUSE_LLM=OFF")
     endif()
     message(STATUS "CuteChat (LLM agent core + chat dock) from ${CUTECHAT_DIR}")
     set(CUTECHAT_BUILD_WIDGETS ${BUILD_GUI})
