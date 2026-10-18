@@ -19,6 +19,7 @@ struct AgentRunOptions {
     bool showReasoning = false;
     int maxIterations = 0;  ///< 0 = the profile's value
     bool storeInProjects = true;  ///< record the run as a chat in the projects (save with -o)
+    bool helpInPrompt = false;  ///< the whole program help in the system prompt instead of the get_help tool alone
     QString appVersion, gitCommit;  ///< written into the chat record
 };
 

@@ -20,12 +20,18 @@ Hier bleibt, was SupraFit-spezifisch ist:
 | `tools_*.cpp` | Konkrete Werkzeuge (projekt, models, analysis, inspect) gegen `ProjectManager` | gemischt |
 | `postfitjobs.{h,cpp}` | Job-Konfigurationen für `run_postfit_analysis` aus den Dialog-Defaults | QtCore + core |
 | `agentrunner.{h,cpp}` | `suprafit_cli --agent` + Systemprompt `agentSystemPrompt()` | QtCore + core |
+| `agenthelp.{h,cpp}`, `agenthelp.qrc` | Programmhilfe: `docs/ASSISTANT_HELP.md` wird eincompiliert und dem Chat als `ChatHost::helpText()` (und dem Headless-Runner) gegeben; Tool `get_help` und der Prompt-Schalter kommen aus CuteChat (`ChatHelp`) | QtCore |
 | `projectchats.{h,cpp}` | `ProjectChats` + `ProjectChatBackend` (Chats im Projekt unter `agent_chats`, JSON-Tags mit Präfix `suprafit`) | QtCore + core |
 | `../ui/widgets/suprafitchathost.{h,cpp}` | `SupraFitChatHost`: Prompt, Tools, Backend, Texte, Freigabe-Dialog für das `ChatDock` | Widgets |
 
 **Prinzip:** Registry, Dispatcher und Schema-Prüfung sind GUI-frei und headless
 testbar (ctest gegen `QTcpServer`-Stub, kein Netz in ctest). Erste Tools laufen
 gegen `ProjectManager::instance()` — wie der CLI.
+
+## Programmhilfe
+
+- Jedes sichtbare Feature steht in `docs/ASSISTANT_HELP.md` (Regel in der Haupt-`CLAUDE.md`, „Where Things Go"); `AgentHelpTest` prüft nummerierte Abschnitte und dass jedes Tool dort in Backticks genannt ist.
+- Zwei Wege zum Modell, beide in CuteChat: Tool `get_help` (nur bei Bedarf) oder der ganze Text im Systemprompt (Menü ☰ „Program help in the prompt", CLI `--agent-help`).
 
 ## Konventionen
 

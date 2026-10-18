@@ -1179,6 +1179,23 @@ if(USE_LLM)
     endif()
     add_test(NAME ToolsProjectTest COMMAND test_tools_project)
 
+    # The assistant's program help (docs/ASSISTANT_HELP.md) is complete: sections parse, every tool is named.
+    add_executable(test_agent_help
+        test_agent_help.cpp
+    )
+    target_link_libraries(test_agent_help
+        Qt6::Core
+        Qt6::Test
+        Qt6::Qml
+        -Wl,--start-group models core agent models core -Wl,--end-group
+        fmt::fmt-header-only
+        ${CMAKE_THREAD_LIBS_INIT}
+    )
+    if(UNIX)
+        target_link_libraries(test_agent_help pthread dl)
+    endif()
+    add_test(NAME AgentHelpTest COMMAND test_agent_help)
+
     # Phase-5 compute tools: fit, compare, post-process, BC50 (no GUI, no net).
     # Same cyclic link group as the Phase-4 test.
     add_executable(test_tools_analysis

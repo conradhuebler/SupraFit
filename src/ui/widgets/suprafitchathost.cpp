@@ -4,6 +4,7 @@
 // Claude Generated 2026
 #include "suprafitchathost.h"
 
+#include "src/agent/agenthelp.h"
 #include "src/agent/agentrunner.h"
 #include "src/agent/tools_analysis.h"
 #include "src/agent/tools_inspect.h"
@@ -30,6 +31,11 @@ void SupraFitChatHost::registerTools(ToolRegistry& registry)
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());
     registerInspectTools(registry, &SupraFit::ProjectManager::instance());
+}
+
+QString SupraFitChatHost::helpText() const
+{
+    return agentHelpText();
 }
 
 bool SupraFitChatHost::storeInBackend() const

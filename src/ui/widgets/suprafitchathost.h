@@ -19,6 +19,7 @@ public:
     void registerTools(ToolRegistry& registry) override;
     ChatBackend* chatBackend() override { return &m_backend; }
     bool storeInBackend() const override;
+    QString helpText() const override;
     QStringList contextArguments() const override { return { QStringLiteral("project_id") }; }
     QString appVersion() const override;
     QString appCommit() const override;

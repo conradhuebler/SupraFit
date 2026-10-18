@@ -3,7 +3,9 @@
 //
 // Claude Generated 2026
 #include "agentrunner.h"
+#include "agenthelp.h"
 
+#include <cutechat/chathelp.h>
 #include <cutechat/chatrecorder.h>
 #include "projectchats.h"
 
@@ -154,6 +156,8 @@ int runAgent(const AgentRunOptions& options)
     registerProjectTools(registry, &SupraFit::ProjectManager::instance());
     registerAnalysisTools(registry, &SupraFit::ProjectManager::instance());
     registerInspectTools(registry, &SupraFit::ProjectManager::instance());
+    const ChatHelp help(agentHelpText());
+    help.registerTool(registry); // get_help: how-to questions are answered from the program help
     ToolDispatcher dispatcher(&registry);
     LlmClient client;
     client.setProfile(profile);
@@ -165,7 +169,7 @@ int runAgent(const AgentRunOptions& options)
 
     LlmSession session(&client, &registry, &dispatcher);
     session.setAutonomy(options.autonomy);
-    session.setSystemPrompt(agentSystemPrompt());
+    session.setSystemPrompt(help.extendPrompt(agentSystemPrompt(), options.helpInPrompt ? ChatHelp::Mode::Prompt : ChatHelp::Mode::Tool));
     session.setMaxIterations(options.maxIterations > 0 ? options.maxIterations : profile.maxToolIterations);
     // Audit trail (WP11): the run is recorded like a chat in the dock and stored in the
     // projects it belongs to, so a saved project shows what the agent did.

@@ -654,6 +654,8 @@ if(USE_LLM)
         src/agent/postfitjobs.cpp
         src/agent/agentrunner.cpp
         src/agent/projectchats.cpp
+        src/agent/agenthelp.cpp
+        src/agent/agenthelp.qrc   # docs/ASSISTANT_HELP.md, compiled in
     )
     add_library(agent ${agent_SRC})
     target_link_libraries(agent Qt::Core Qt::Network CuteChat::core models core fmt::fmt-header-only)

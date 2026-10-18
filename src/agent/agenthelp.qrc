@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/agent">
+        <file alias="ASSISTANT_HELP.md">../../docs/ASSISTANT_HELP.md</file>
+    </qresource>
+</RCC>

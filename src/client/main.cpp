@@ -880,6 +880,8 @@ int main(int argc, char** argv)
     parser.addOption(agentProfile);
     QCommandLineOption agentConfig("llm-config", "LLM config file (default: ~/.config/suprafit/llm.json)", "file");
     parser.addOption(agentConfig);
+    QCommandLineOption agentHelp("agent-help", "Put the whole program help into the agent's prompt (default: the agent fetches sections with get_help)");
+    parser.addOption(agentHelp);
     QCommandLineOption agentReasoning("agent-reasoning", "Print the model's reasoning to stderr");
     parser.addOption(agentReasoning);
     QCommandLineOption agentModel("model", "LLM model to use instead of the profile's (with --agent or --list-models)", "name");
@@ -996,6 +998,7 @@ int main(int argc, char** argv)
         opt.model = parser.value("model");
         opt.configPath = parser.value("llm-config");
         opt.showReasoning = parser.isSet("agent-reasoning");
+        opt.helpInPrompt = parser.isSet("agent-help");
         opt.appVersion = git_tag;
         opt.gitCommit = git_commit_hash;
         const int agentExit = runAgent(opt);

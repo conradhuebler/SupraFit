@@ -82,12 +82,20 @@ One home per kind of information; copies drift apart.
 | Kind | Home |
 |---|---|
 | Rules, invariants, layout of a directory | the `CLAUDE.md` of that directory |
+| How a user does something (menu path, button, file format, workflow, setting, CLI option, assistant tool) | [`docs/ASSISTANT_HELP.md`](docs/ASSISTANT_HELP.md), the assistant's help |
 | Open code tasks and defects | `TODO.md`, open items only, at most 3 lines each |
 | Work packages / roadmaps | `roadmap/<topic>.md` (one WP document per feature area, like `roadmap/python_interface.md`) |
 | Bug report, measurement, campaign | one dated document in `docs/` plus one index line in `AIChangelog.md` |
 | History | git log and the `AIChangelog.md` index |
 
 - No dated status sections, "Completed" lists or fix narratives in a CLAUDE.md; the changelog line is the record.
+- **A user-visible feature is documented in the same change that adds it.** Adding, renaming or removing a menu entry, button,
+  dialog, setting, file format, CLI option or assistant tool means editing the matching section of `docs/ASSISTANT_HELP.md`
+  (labels quoted verbatim from `tr()`, one to three lines, no development history). Check the section list of that file first and
+  extend a section rather than adding one; sections stay numbered `## N. Title` without gaps. The file is compiled into the binary
+  and is what the assistant answers "how do I ...?" from, so a feature missing there does not exist for the user. A new assistant
+  tool must be named there in backticks (section 8): `AgentHelpTest` fails otherwise. Keep the file under about 4000 tokens;
+  it can be put into every prompt (CuteChat `ChatHelp`). Do not describe what you could not verify in the code.
 - Closing a task is one change: remove its TODO entry, add the changelog line.
 - `AIChangelog.md` is the index (one line per fact, newest first); long entries live in `docs/` and are linked.
 - Roadmap docs live in `roadmap/`, not in the repository root and not in `docs/outdated/`.
