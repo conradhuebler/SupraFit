@@ -2446,7 +2446,12 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
     QSharedPointer<DataClass> projectData = projectManager.getProject(projectId);
     
-    if (projectData) {
+    if (projectData && m_project_windows.contains(projectId) && m_project_windows[projectId]) {
+        // projectAdded precedes projectLoaded and has already created the window: a second one would
+        // overwrite the map entry and stay in the stack as an orphan that no close path reaches
+        m_stack_widget->setCurrentWidget(m_project_windows[projectId]);
+        setActionEnabled(true);
+    } else if (projectData) {
         qDebug() << "onProjectLoaded: Creating MainWindow for project" << projectId;
         
         // Create new MainWindow instance
