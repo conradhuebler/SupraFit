@@ -37,6 +37,19 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str)
     connect(m_tab, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
 }
 
+void ModalDialog::setEmbedded(bool embedded)
+{
+    m_embedded = embedded;
+    if (embedded)
+        setWindowFlags(Qt::Widget);
+}
+
+void ModalDialog::reject()
+{
+    if (!m_embedded)
+        QDialog::reject();
+}
+
 void ModalDialog::Attention()
 {
     show();

@@ -34,6 +34,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QToolButton>
 
@@ -375,6 +376,44 @@ private slots:
         QGroupBox* series2 = again.findChild<QGroupBox*>(QStringLiteral("series_box"));
         QVERIFY2(series2 && series2->isVisible(), "pinned data series not visible after a restart");
         QSettings().remove(QStringLiteral("model"));
+    }
+    // WP1b: statistics and the model charts are pages of the list, not windows. Claude Generated.
+    void statisticsIsAPageOfTheList()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible()) {
+                list = l;
+                break;
+            }
+        QVERIFY2(list, "no visible page list");
+        QStringList titles;
+        for (int i = 0; i < list->count(); ++i)
+            if (!list->item(i)->isHidden())
+                titles << list->item(i)->text();
+        QVERIFY2(titles.contains(QStringLiteral("Data series")), qPrintable(titles.join(", ")));
+        QVERIFY2(titles.contains(QStringLiteral("Statistics")), qPrintable(titles.join(", ")));
+        QVERIFY2(!titles.contains(QStringLiteral("Charts")), "Charts is listed although the model has no chart");
+
+        // the Statistics button asks for the page instead of opening a window
+        WindowShowCounter counter;
+        qApp->installEventFilter(&counter);
+        counter.allow(&widget);
+        QMetaObject::invokeMethod(&widget, "ToggleStatisticDialog");
+        QCoreApplication::processEvents();
+        qApp->removeEventFilter(&counter);
+        QCOMPARE(list->currentItem()->text(), QStringLiteral("Statistics"));
+        QVERIFY2(counter.shown().isEmpty(),
+            qPrintable(QStringLiteral("shown as own window: %1").arg(counter.shown().join(", "))));
+        QVERIFY(visibleTopLevels().size() == 1);
     }
 };
 

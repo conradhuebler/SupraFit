@@ -36,6 +36,10 @@ public:
 
     inline bool contains(const QString& str) { return m_tabNames.contains(str); }
 
+    /*! \brief Use the dialog as a page of a model pane instead of a window; Escape then does not close it. Claude Generated. */
+    void setEmbedded(bool embedded);
+    void reject() override;
+
 public slots:
     void Attention();
 
@@ -44,6 +48,7 @@ private:
     QPointer<QWidget> m_widget;
     QTabWidget* m_tab;
     QStringList m_tabNames;
+    bool m_embedded = false;
 
 private slots:
     void RemoveTab(int i);

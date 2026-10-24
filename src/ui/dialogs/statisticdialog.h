@@ -117,6 +117,11 @@ public:
 
     void updateUI();
 
+    /*! \brief Use the dialog as a page of a model pane instead of a window (no Hide button, never hidden,
+     * Attention() asks the pane to show the page). Claude Generated. */
+    void setEmbedded(bool embedded);
+    inline bool isEmbedded() const { return m_embedded; }
+
 public slots:
     void MaximumSteps(int steps);
     void MaximumMainSteps(int steps);
@@ -126,6 +131,7 @@ public slots:
     void ShowWidget();
     void Attention();
     void Message(const QString& str);
+    void reject() override;
 
 private:
     void setUi();
@@ -164,6 +170,7 @@ private:
     qint64 m_time_0;
     qreal m_f_value = 1, m_moco_max, m_wgs_max;
     bool m_hidden;
+    bool m_embedded = false;
     QString m_error_name = QString();
 
 private slots:
@@ -171,6 +178,7 @@ private slots:
     void CalculateError();
 
 signals:
+    void AttentionRequested(); ///< embedded: the pane should show this page
     void RunCalculation(const QJsonObject& controller);
     void Reduction();
     void Interrupt();

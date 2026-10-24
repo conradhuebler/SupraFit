@@ -544,6 +544,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // Model pages (options, system parameters, definition, table, simulated data) behind a slim list
     // on the left instead of a tab bar: no extra row of height. Claude Generated (UI redesign WP8).
     SectionStack* model_tab = new SectionStack;
+    m_pages = model_tab;
+
+    // Statistic tools and the model's own charts (e.g. concentration profiles) are pages of the list, no
+    // windows of their own. Both dialogs are used as plain widgets here. Claude Generated (WP1b).
+    m_statistic_dialog->setEmbedded(true);
+    connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() {
+        m_pages->setCurrentTitle(tr("Statistics"));
+    });
+    m_charts_dialogs = new ModalDialog(this);
+    m_charts_dialogs->setEmbedded(true);
+    m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     // The data series are a page of the list as well (default). Pinned they stay beside the pages as before;
     // unpinned they use the whole page area, which suits many series. Built here, placed after the pages.
@@ -587,6 +598,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->UseDynamicParameterWidget())
         model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"));
 
+    if (!m_model->isSimulation())
+        model_tab->addPage(m_statistic_dialog, tr("Statistics"));
+    m_charts_page = model_tab->addPage(m_charts_dialogs, tr("Charts"));
+    model_tab->setPageHidden(m_charts_page, m_model->Charts().isEmpty());
+
     // Simulated data sets from this model (drag an entry onto the project list).
     {
         QWidget* page = new QWidget;
@@ -616,7 +632,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
     connect(m_actions, &ModelActions::Charts, this, [this]() {
-        this->m_charts_dialogs->Attention();
+        m_pages->setCurrentTitle(tr("Charts")); // stays on the current page while the model has no chart
     });
 
     //m_splitter->addWidget(m_actions);
@@ -703,8 +719,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // if (m_model->SFModel() != SupraFit::ScriptModel)
     // m_model->Calculate();
 
-    m_charts_dialogs = new ModalDialog(this);
-    m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     for (const QString& str : m_model->Charts()) {
         ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
         m_charts_dialogs->setWidget(w, str);
@@ -1448,8 +1462,7 @@ void ModelWidget::MultiScanFinished()
 
 void ModelWidget::HideAllWindows()
 {
-    m_advancedsearch->hide();
-    m_statistic_dialog->hide();
+    m_advancedsearch->hide(); // the statistic tools are a page now, not a window
 }
 
 void ModelWidget::Data2Text()
@@ -1547,6 +1560,7 @@ void ModelWidget::ChartUpdated(const QString& str)
         return;
     ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
     m_charts_dialogs->setWidget(w, str);
+    m_pages->setPageHidden(m_charts_page, false);
 }
 
 #include "modelwidget.moc"

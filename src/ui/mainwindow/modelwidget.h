@@ -159,6 +159,8 @@ private:
     void UpdateSeriesOrientation();
     StatisticWidget* m_statistic_widget;
     ModalDialog *m_dialogs, *m_charts_dialogs;
+    SectionStack* m_pages = nullptr; ///< the page list of the pane (options, series, statistics, charts, ...)
+    int m_charts_page = -1; ///< index of the Charts page, hidden while the model has no chart
     ResultsDialog* m_results;
 
     bool m_statistic, m_val_readonly, m_SetUpFinished = false;

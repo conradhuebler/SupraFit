@@ -70,8 +70,29 @@ StatisticDialog::~StatisticDialog()
     m_model.clear();
 }
 
+void StatisticDialog::setEmbedded(bool embedded)
+{
+    m_embedded = embedded;
+    if (embedded) {
+        setWindowFlags(Qt::Widget);
+        setMinimumWidth(0);
+        m_hide->hide(); // there is nothing to hide: the pane's page list does the navigation
+        m_hide_widget->hide(); // progress and Interrupt only while a job runs
+    }
+}
+
+void StatisticDialog::reject()
+{
+    if (!m_embedded)
+        QDialog::reject(); // Escape must not blank an embedded page
+}
+
 void StatisticDialog::Attention()
 {
+    if (m_embedded) {
+        emit AttentionRequested();
+        return;
+    }
     show();
     raise();
     activateWindow();
@@ -957,12 +978,17 @@ void StatisticDialog::ShowWidget()
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setValue(0);
     m_hidden = false;
+    if (m_embedded)
+        m_hide_widget->show();
 }
 
 void StatisticDialog::HideWidget()
 {
     clearMessages();
-    hide();
+    if (m_embedded)
+        m_hide_widget->hide();
+    else
+        hide();
 }
 
 void StatisticDialog::Update()
