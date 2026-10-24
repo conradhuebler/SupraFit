@@ -29,10 +29,11 @@
  *
  * Counting: every model that is added bumps a counter of its entry. A stoichiometry or a technique's own model is
  * counted per technique (1:1 for NMR and 1:1 for UV/Vis are different habits), a scripted preset or a model file for
- * all techniques together. The bar shows the `count` most used entries of the technique on screen; entries that were
- * never used follow in the order of the catalogue, so a fresh installation shows the four established
- * stoichiometries. In the fixed mode the bar shows exactly the entries of a stored list. The technique is the one used
- * last unless one is fixed. Claude Generated. */
+ * all techniques together. An entry (1:1) is ranked by all its uses; the bar shows the `count` most used entries,
+ * entries that were never used follow in the order of the catalogue, so a fresh installation shows the four
+ * established stoichiometries. A click on an entry uses the technique it was used with most (NMR, a fixed technique or
+ * the one used last while it never was used); the bar offers the other techniques in a menu. In the fixed mode the bar
+ * shows exactly the entries of a stored list. Claude Generated. */
 namespace ModelUsage {
 
 enum class Mode {
@@ -56,6 +57,8 @@ QStringList DefaultFixed();
  * also make \p technique the one used last; scripted presets and model files do not. */
 void Record(ModelCatalog::Technique technique, const ModelCatalog::Entry& entry);
 int Used(ModelCatalog::Technique technique, const QString& entryKey);
+/*! \brief All uses of an entry, whatever the technique. */
+int UsedTotal(const QString& entryKey);
 /*! \brief Forget all counts and the technique used last. */
 void Reset();
 
@@ -63,11 +66,16 @@ void Reset();
  * last, if it fits the data, else NMR if it fits, else the first that does. */
 ModelCatalog::Technique DefaultTechnique(int independentColumns);
 
-/*! \brief Everything that can be added for \p technique and the data: its entries, the scripted presets and the
- * model files that have been used (and still exist). */
-QList<ModelCatalog::Entry> Candidates(ModelCatalog::Technique technique, int independentColumns);
+/*! \brief The technique a click on \p entry uses: the one the entry was used with most; if it never was used, the
+ * fixed technique, else the one used last, else NMR, each if the entry is offered for it, else the first that offers
+ * it. */
+ModelCatalog::Technique TechniqueFor(const ModelCatalog::Entry& entry, int independentColumns);
+
+/*! \brief Everything that can be added for the data: the catalogue's entries and the model files that have been used
+ * (and still exist). */
+QList<ModelCatalog::Entry> Candidates(int independentColumns);
 /*! \brief Candidates, the most used first; equal counts stay in the order of the catalogue. */
-QList<ModelCatalog::Entry> Ranked(ModelCatalog::Technique technique, int independentColumns);
+QList<ModelCatalog::Entry> Ranked(int independentColumns);
 /*! \brief What the quick bar shows, by the preferences. */
-QList<ModelCatalog::Entry> Quick(ModelCatalog::Technique technique, int independentColumns);
+QList<ModelCatalog::Entry> Quick(int independentColumns);
 }

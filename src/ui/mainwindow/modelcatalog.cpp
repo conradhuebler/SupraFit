@@ -18,6 +18,8 @@
 
 #include <climits>
 
+#include <QtCore/QHash>
+
 #include <QtCore/QFileInfo>
 #include <QtCore/QObject>
 
@@ -174,6 +176,35 @@ Entry FixedEntry(int model)
 }
 }
 
+Choice ChoiceFor(const Entry& entry, Technique technique)
+{
+    if (entry.kind == Kind::Stoichiometry)
+        return ForStoichiometry(technique, entry.key.mid(QStringLiteral("stoich:").size()));
+    return entry.choice;
+}
+
+QList<Entry> AllEntries(int independentColumns)
+{
+    QList<Entry> merged;
+    QHash<QString, int> position;
+    for (const Technique technique : TechniquesFor(independentColumns)) {
+        for (Entry entry : Entries(technique, independentColumns)) {
+            if (entry.kind == Kind::FixedModel) // a model of one technique alone: that technique is its own
+                entry.techniques = { technique };
+            if (position.contains(entry.key)) {
+                Entry& known = merged[position[entry.key]];
+                if (!known.techniques.contains(technique))
+                    known.techniques << technique;
+            } else {
+                position.insert(entry.key, merged.size());
+                merged << entry;
+            }
+        }
+    }
+    merged << ScriptPresetEntries(independentColumns);
+    return merged;
+}
+
 QList<Entry> Entries(Technique technique, int independentColumns)
 {
     QList<Entry> list;
@@ -198,6 +229,7 @@ QList<Entry> Entries(Technique technique, int independentColumns)
             entry.title = s.title;
             entry.tooltip = s.tooltip;
             entry.choice = choice;
+            entry.techniques << technique;
             list << entry;
         }
     }
@@ -212,8 +244,11 @@ QList<Entry> Entries(Technique technique, int independentColumns)
     if (technique == Technique::Kinetics)
         further << SupraFit::Michaelis_Menten << SupraFit::MonoMolecularModel << SupraFit::BiMolecularModel << SupraFit::FlexMolecularModel << SupraFit::TianModel << SupraFit::DecayRates;
 #endif
-    for (int model : further)
-        list << FixedEntry(model);
+    for (int model : further) {
+        Entry entry = FixedEntry(model);
+        entry.techniques << technique;
+        list << entry;
+    }
     return list;
 }
 

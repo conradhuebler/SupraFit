@@ -55,12 +55,14 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
   Per series: checkbox "Include" in the model's "Data series" box (or page). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
 - **Data** menu: **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
 
-## 3. Adding a model (bar **Add model** and menu **Model**)
+## 3. Adding a model (the models in the middle of the toolbar and the menu **Model**)
 
-The bar **Add model** (below the toolbar; drag it to dock it at any edge or let it float; "Add-Model Bar" in the SupraFit menu shows or hides it) adds a model with one click to the project on screen.
-Left the technique as buttons side by side (NMR, UV/Vis, Fluorescence for two or more independent columns; ITC, Kinetics for one; NMR is chosen at first, afterwards the technique you added a model with last),
-then the models you add most (a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2, 2:1 / 1:1 / 1:2); a stoichiometry gives the model of the chosen technique (the fixed model for the four established
-ones, otherwise the flexible `*_any` model with its reactions). **More...** opens the whole menu **Model**; the gear chooses between "most used" and "a fixed list" and forgets what was used.
+The toolbar has three zones: files and the menus Data, Model, Evaluation on the left, the models you add most in the middle, Log, Agent and the SupraFit menu on the right.
+Each model in the middle is a button for a stoichiometry (a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2, 2:1 / 1:1 / 1:2). A click adds the model for the technique that stoichiometry was used with
+most (NMR while it never was used; then the technique you used last, or the one you fixed); the arrow next to the button offers the other techniques that fit the data (NMR, UV/Vis, Fluorescence for
+two or more independent columns; ITC for one). The technique is named on the button when it is not NMR. A stoichiometry gives the fixed model of the technique (the four established ones) or its flexible
+`*_any` model with the reactions. Scripted presets and model files can be buttons too. The gear next to the models chooses "most used" (the 4 most used) or "a fixed list" and forgets what was used.
+The bar only shows models for a project on screen.
 
 The menu **Model** has everything. Only entries that fit the number of independent columns are shown.
 

@@ -1,5 +1,5 @@
 /*
- * Add-Model bar: the technique and the models that are added most, one click from the main window.
+ * Add-Model bar: the models that are added most, one click away, the technique in a menu.
  * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,47 +21,40 @@
 #include <QtCore/QList>
 #include <QtCore/QPointer>
 
-#include <QtWidgets/QToolBar>
+#include <QtWidgets/QWidget>
 
 #include "modelcatalog.h"
 
 class MDHDockTitleBar;
 class QToolButton;
-class QButtonGroup;
 
-/*! \brief A toolbar with the technique (NMR | UV/Vis | Fluorescence | ITC | Kinetics) as buttons side by side and the
- * models the operator adds most as buttons next to it: one click adds the model of the chosen technique to the
- * project on screen. "More..." opens the whole Model menu, the gear chooses what the bar shows.
+/*! \brief The models that are added most as buttons, for the project on screen: a click adds the model, the arrow
+ * next to a button offers the other techniques.
  *
- * The bar can be moved, docked at any edge or floated, and follows the project on screen like the Data, Model and
- * Evaluation menus: it is off without a project that offers its tools. What it shows comes from ModelUsage (the most
- * used entries or a fixed list), what a click does from ModelCatalog; the buttons are rebuilt when the project or the
- * technique changes, not after every click, so they do not jump under the pointer. Claude Generated. */
-class AddModelBar : public QToolBar {
+ * Each button is an entry (1:1, 1:1 / 1:2, ...). A click adds the model for the technique the entry was used with most
+ * (NMR while it never was used, see ModelUsage::TechniqueFor); the menu of the arrow lists the techniques that
+ * offer the entry for the data (NMR, UV/Vis, Fluorescence for two or more independent columns). An entry that has
+ * no technique (a scripted preset, a model file, a model of one technique alone) is a plain button. The buttons are
+ * rebuilt when the project changes or Refresh() is called, not after every click, so they do not jump under the pointer.
+ *
+ * The widget sits in the middle of the main toolbar and follows the project on screen like the Data, Model and
+ * Evaluation menus: it shows nothing without a project that offers its tools. Claude Generated. */
+class AddModelBar : public QWidget {
     Q_OBJECT
 public:
     explicit AddModelBar(QWidget* parent = nullptr);
 
-    /*! \brief Follow the workspace \p workspace (null: none, the bar is off). */
+    /*! \brief Follow the workspace \p workspace (null: none, the bar shows nothing). */
     void setWorkspace(MDHDockTitleBar* workspace);
-
-    ModelCatalog::Technique technique() const { return m_technique; }
-    /*! \brief Choose the technique (it must fit the data of the workspace). */
-    void setTechnique(ModelCatalog::Technique technique);
     /*! \brief Read the entries again (after the preferences or the counts changed). */
     void Refresh();
 
 private:
-    void RebuildTechniques();
-    void RebuildQuick();
-    void Add(const ModelCatalog::Entry& entry);
+    void Rebuild();
+    void Add(const ModelCatalog::Entry& entry, ModelCatalog::Technique technique);
 
     QPointer<MDHDockTitleBar> m_workspace;
-    ModelCatalog::Technique m_technique = ModelCatalog::Technique::NMR;
     int m_columns = 0;
-    QWidget* m_technique_box = nullptr; ///< the technique buttons
-    QWidget* m_quick_box = nullptr; ///< the quick entries
-    QButtonGroup* m_technique_group = nullptr;
-    QToolButton* m_more = nullptr;
+    QWidget* m_quick_box = nullptr;
     QToolButton* m_gear = nullptr;
 };

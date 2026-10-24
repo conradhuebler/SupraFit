@@ -36,6 +36,11 @@ Claude Generated - work package / roadmap document
 - **Schnellleiste füllen:** Modus "häufigste" (Zähler je Eintrag, die x häufigsten, x einstellbar, stabile Reihenfolge bei Gleichstand, Zähler rücksetzbar) oder "feste Liste" (Rechtsklick "Anpassen" an jedem Eintrag in Menü/Leiste, Dialog "Schnellleiste anpassen": Einträge mit Häkchen und Reihenfolge).
 - **Default-Technik:** zuletzt benutzte; eine Einstellung kann sie auf "immer NMR" (oder eine andere) festlegen.
 
+## Änderung des Entwurfs (Operator, nach WP-C)
+
+- Die Hauptleiste wird in **drei Zonen** geteilt: links Neu/Öffnen/Speichern und die Menüs, **in der Mitte die Modelle**, rechts SupraFit, Chat (Agent) und Log. Die Add-Model-Leiste ist damit ein Widget in der Mitte der Hauptleiste, keine eigene Leiste mehr (Andocken/Schweben entfällt).
+- Die **Technik ist kein Knopfreihe** mehr, sondern gehört zum Eintrag: ein Klick auf "1:1" fügt das Modell der Technik hinzu, mit der der Eintrag am häufigsten benutzt wurde (NMR, solange nie benutzt), der Pfeil daneben öffnet NMR / UV/Vis / Fluoreszenz ...
+
 ## Arbeitspakete (je ein baubarer Commit)
 
 - **WP-A Katalog (erledigt, `modelcatalog.{h,cpp}`, 5 Tests `catalog*`):** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü; Eintragsarten.

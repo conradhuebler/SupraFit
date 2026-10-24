@@ -1,5 +1,5 @@
 /*
- * Add-Model bar: the technique and the models that are added most, one click from the main window.
+ * Add-Model bar: the models that are added most, one click away, the technique in a menu.
  * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 #include <QtGui/QAction>
 
-#include <QtWidgets/QButtonGroup>
+#include <QtGui/QActionGroup>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
@@ -31,35 +31,18 @@
 #include "addmodelbar.h"
 
 AddModelBar::AddModelBar(QWidget* parent)
-    : QToolBar(tr("Add model"), parent)
+    : QWidget(parent)
 {
-    setObjectName(QStringLiteral("add_model_bar")); // the window state (place, floating) is kept under this name
-    setMovable(true);
-    setFloatable(true);
-    setAllowedAreas(Qt::AllToolBarAreas);
+    setObjectName(QStringLiteral("add_model_bar"));
+    QHBoxLayout* layout = new QHBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
 
-    m_technique_box = new QWidget;
-    QHBoxLayout* technique_layout = new QHBoxLayout(m_technique_box);
-    technique_layout->setContentsMargins(0, 0, 6, 0);
-    technique_layout->setSpacing(2);
-    m_technique_group = new QButtonGroup(this);
-    m_technique_group->setExclusive(true);
-    addWidget(m_technique_box);
-
-    addSeparator();
     m_quick_box = new QWidget;
     QHBoxLayout* quick_layout = new QHBoxLayout(m_quick_box);
-    quick_layout->setContentsMargins(6, 0, 0, 0);
+    quick_layout->setContentsMargins(0, 0, 0, 0);
     quick_layout->setSpacing(2);
-    addWidget(m_quick_box);
-
-    addSeparator();
-    m_more = new QToolButton;
-    m_more->setText(tr("More\u2026"));
-    m_more->setToolTip(tr("All models: the Model menu"));
-    m_more->setPopupMode(QToolButton::InstantPopup);
-    m_more->setAutoRaise(true);
-    addWidget(m_more);
+    layout->addWidget(m_quick_box);
 
     m_gear = new QToolButton;
     m_gear->setIcon(Icon("configure"));
@@ -98,9 +81,10 @@ AddModelBar::AddModelBar(QWidget* parent)
         Refresh();
     });
     m_gear->setMenu(gear);
-    addWidget(m_gear);
+    layout->addWidget(m_gear);
 
     setEnabled(false);
+    m_gear->setVisible(false);
 }
 
 void AddModelBar::setWorkspace(MDHDockTitleBar* workspace)
@@ -108,85 +92,69 @@ void AddModelBar::setWorkspace(MDHDockTitleBar* workspace)
     m_workspace = workspace;
     const bool available = workspace && workspace->ToolsAvailable();
     setEnabled(available);
-    m_more->setMenu(available ? workspace->ModelMenu() : nullptr);
     m_columns = available ? workspace->IndependentCount() : 0;
-    if (!available) {
-        RebuildQuick();
-        return;
-    }
-    // keep the technique of the session if it fits this project, else the one to start with
-    const QList<ModelCatalog::Technique> fitting = ModelCatalog::TechniquesFor(m_columns);
-    if (!fitting.contains(m_technique))
-        m_technique = ModelUsage::DefaultTechnique(m_columns);
-    RebuildTechniques();
-    RebuildQuick();
-}
-
-void AddModelBar::setTechnique(ModelCatalog::Technique technique)
-{
-    if (!ModelCatalog::TechniquesFor(m_columns).contains(technique))
-        return;
-    m_technique = technique;
-    for (QAbstractButton* button : m_technique_group->buttons())
-        button->setChecked(button->property("technique").toInt() == int(technique));
-    RebuildQuick();
+    Rebuild();
 }
 
 void AddModelBar::Refresh()
 {
-    RebuildQuick();
+    Rebuild();
 }
 
-void AddModelBar::RebuildTechniques()
-{
-    // buttons side by side for the techniques that fit the data (one column: calorimetry, kinetics; more: titrations)
-    for (QAbstractButton* button : m_technique_group->buttons()) {
-        m_technique_group->removeButton(button);
-        delete button;
-    }
-    for (const ModelCatalog::Technique t : ModelCatalog::TechniquesFor(m_columns)) {
-        const ModelCatalog::TechniqueInfo info = ModelCatalog::Info(t);
-        QToolButton* button = new QToolButton;
-        button->setText(info.shortName);
-        button->setToolTip(info.name);
-        button->setCheckable(true);
-        button->setAutoRaise(true);
-        button->setProperty("technique", int(t));
-        button->setChecked(t == m_technique);
-        m_technique_group->addButton(button);
-        m_technique_box->layout()->addWidget(button);
-        connect(button, &QToolButton::clicked, this, [this, t]() { setTechnique(t); });
-    }
-}
-
-void AddModelBar::RebuildQuick()
+void AddModelBar::Rebuild()
 {
     QLayout* layout = m_quick_box->layout();
     while (QLayoutItem* item = layout->takeAt(0)) {
         delete item->widget();
         delete item;
     }
-    if (!m_workspace || !m_workspace->ToolsAvailable())
+    const bool available = m_workspace && m_workspace->ToolsAvailable();
+    m_gear->setVisible(available);
+    if (!available)
         return;
-    const QString technique = ModelCatalog::Info(m_technique).shortName;
-    for (const ModelCatalog::Entry& entry : ModelUsage::Quick(m_technique, m_columns)) {
+
+    for (const ModelCatalog::Entry& entry : ModelUsage::Quick(m_columns)) {
+        const ModelCatalog::Technique technique = ModelUsage::TechniqueFor(entry, m_columns);
         QToolButton* button = new QToolButton;
-        button->setText(entry.title);
-        button->setToolTip(entry.kind == ModelCatalog::Kind::Stoichiometry
-                ? tr("%1 \u2014 %2\n%3").arg(entry.title, technique, entry.tooltip)
-                : entry.tooltip);
         button->setAutoRaise(true);
+        button->setProperty("entryKey", entry.key);
+        button->setProperty("technique", int(technique));
+
+        // an entry that is offered for one technique (or none) is a plain button, otherwise the arrow lists them
+        const bool several = entry.techniques.size() > 1;
+        const QString techniqueName = entry.techniques.isEmpty() ? QString() : ModelCatalog::Info(technique).shortName;
+        button->setText(several && technique != ModelCatalog::Technique::NMR ? tr("%1 (%2)").arg(entry.title, techniqueName) : entry.title);
+        QString tip = entry.techniques.isEmpty() ? entry.tooltip : tr("%1 \u2014 %2\n%3").arg(entry.title, techniqueName, entry.tooltip);
+        if (several)
+            tip += tr("\nThe arrow chooses another technique.");
+        button->setToolTip(tip);
+        connect(button, &QToolButton::clicked, this, [this, entry, technique]() { Add(entry, technique); });
+
+        if (several) {
+            QMenu* menu = new QMenu(button);
+            for (const ModelCatalog::Technique t : entry.techniques) {
+                const ModelCatalog::TechniqueInfo info = ModelCatalog::Info(t);
+                QAction* action = menu->addAction(info.name);
+                action->setData(int(t));
+                QFont font = action->font();
+                font.setBold(t == technique); // the one a click uses
+                action->setFont(font);
+                connect(action, &QAction::triggered, this, [this, entry, t]() { Add(entry, t); });
+            }
+            button->setMenu(menu);
+            button->setPopupMode(QToolButton::MenuButtonPopup);
+        }
         layout->addWidget(button);
-        connect(button, &QToolButton::clicked, this, [this, entry]() { Add(entry); });
     }
 }
 
-void AddModelBar::Add(const ModelCatalog::Entry& entry)
+void AddModelBar::Add(const ModelCatalog::Entry& entry, ModelCatalog::Technique technique)
 {
-    if (!m_workspace || !entry.choice.valid())
+    const ModelCatalog::Choice choice = ModelCatalog::ChoiceFor(entry, technique);
+    if (!m_workspace || !choice.valid())
         return;
     // counted before it is added: the dialog of a model that needs one may take a while, and a cancelled add still
     // is a wish for this model
-    ModelUsage::Record(m_technique, entry);
-    m_workspace->RequestModel(entry.choice);
+    ModelUsage::Record(technique, entry);
+    m_workspace->RequestModel(choice);
 }

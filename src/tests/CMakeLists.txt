@@ -1068,6 +1068,7 @@ if(BUILD_GUI)
     if(UNIX)
         target_link_libraries(test_modelwidget_layout pthread dl)
     endif()
+    target_compile_definitions(test_modelwidget_layout PRIVATE SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
     add_test(NAME ModelWidgetLayoutTest COMMAND test_modelwidget_layout)
     set_tests_properties(ModelWidgetLayoutTest PROPERTIES
         TIMEOUT 60

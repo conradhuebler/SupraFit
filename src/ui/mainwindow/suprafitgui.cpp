@@ -711,9 +711,17 @@ void SupraFitGui::SetupToolBar()
     m_main_toolbar->addWidget(m_model_button);
     m_main_toolbar->addWidget(m_evaluation_button);
 
-    QWidget* spacer = new QWidget;
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_main_toolbar->addWidget(spacer);
+    // Three zones: files and menus on the left, the models that are added most in the middle (the technique is a menu
+    // of each button), the docks and the program menu on the right.
+    auto stretch = []() {
+        QWidget* spacer = new QWidget;
+        spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        return spacer;
+    };
+    m_main_toolbar->addWidget(stretch());
+    m_add_model_bar = new AddModelBar;
+    m_main_toolbar->addWidget(m_add_model_bar);
+    m_main_toolbar->addWidget(stretch());
 
     m_main_toolbar->addAction(m_message_dock_action);
     addAction(m_message_dock_action);
@@ -741,15 +749,6 @@ void SupraFitGui::SetupToolBar()
     m_main_toolbar->addWidget(app);
 
     addToolBar(m_main_toolbar);
-
-    // The Add-Model bar sits below the main toolbar until the operator moves it (it can be docked anywhere or float).
-    m_add_model_bar = new AddModelBar(this);
-    addToolBarBreak(Qt::TopToolBarArea);
-    addToolBar(Qt::TopToolBarArea, m_add_model_bar);
-    QAction* barAction = m_add_model_bar->toggleViewAction();
-    barAction->setText(tr("Add-Model Bar"));
-    appMenu->insertAction(m_close, barAction); // between the program entries and Quit
-    appMenu->insertSeparator(m_close);
 
     connect(m_stack_widget, &QStackedWidget::currentChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
     UpdateWorkspaceMenus();

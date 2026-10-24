@@ -49,10 +49,10 @@ QString CounterKey(ModelCatalog::Technique technique, const QString& entryKey)
     return (perTechnique ? ModelCatalog::Info(technique).key : QStringLiteral("any")) + QLatin1Char('|') + entryKey;
 }
 
-// The entry with \p key for \p technique and the data, if there is one.
-bool EntryForKey(const QString& key, ModelCatalog::Technique technique, int columns, ModelCatalog::Entry* out)
+// The entry with \p key for the data, if there is one.
+bool EntryForKey(const QString& key, int columns, ModelCatalog::Entry* out)
 {
-    for (const ModelCatalog::Entry& entry : Candidates(technique, columns))
+    for (const ModelCatalog::Entry& entry : Candidates(columns))
         if (entry.key == key) {
             *out = entry;
             return true;
@@ -106,6 +106,17 @@ int Used(ModelCatalog::Technique technique, const QString& entryKey)
     return Counters().value(CounterKey(technique, entryKey)).toInt();
 }
 
+int UsedTotal(const QString& entryKey)
+{
+    const QJsonObject counters = Counters();
+    const QString suffix = QLatin1Char('|') + entryKey;
+    int total = 0;
+    for (auto it = counters.constBegin(); it != counters.constEnd(); ++it)
+        if (it.key().endsWith(suffix))
+            total += it.value().toInt();
+    return total;
+}
+
 void Reset()
 {
     QSettings settings;
@@ -129,10 +140,37 @@ ModelCatalog::Technique DefaultTechnique(int independentColumns)
     return fitting.isEmpty() ? Technique::NMR : fitting.first();
 }
 
-QList<ModelCatalog::Entry> Candidates(ModelCatalog::Technique technique, int independentColumns)
+ModelCatalog::Technique TechniqueFor(const ModelCatalog::Entry& entry, int independentColumns)
 {
-    QList<ModelCatalog::Entry> list = ModelCatalog::Entries(technique, independentColumns);
-    list << ModelCatalog::ScriptPresetEntries(independentColumns);
+    using ModelCatalog::Technique;
+    if (entry.techniques.isEmpty())
+        return DefaultTechnique(independentColumns); // a scripted preset or a file: no technique of its own
+    // the technique the entry was used with most
+    Technique best = entry.techniques.first();
+    int most = 0;
+    for (const Technique t : entry.techniques)
+        if (Used(t, entry.key) > most) {
+            most = Used(t, entry.key);
+            best = t;
+        }
+    if (most > 0)
+        return best;
+    // never used: the fixed technique, the one used last, NMR - each if the entry is offered for it
+    const Preferences preferences = Load();
+    const QString last = QSettings().value(kGroup + QStringLiteral("/last_technique")).toString();
+    for (const QString& key : { preferences.technique, last }) {
+        if (key.isEmpty())
+            continue;
+        const Technique wanted = ModelCatalog::TechniqueFromKey(key, Technique::NMR);
+        if (ModelCatalog::Info(wanted).key == key && entry.techniques.contains(wanted))
+            return wanted;
+    }
+    return entry.techniques.contains(Technique::NMR) ? Technique::NMR : entry.techniques.first();
+}
+
+QList<ModelCatalog::Entry> Candidates(int independentColumns)
+{
+    QList<ModelCatalog::Entry> list = ModelCatalog::AllEntries(independentColumns);
     // model files are known from having been used (the counters hold their path), as long as they exist
     const QJsonObject counters = Counters();
     const QString prefix = QStringLiteral("any|file:");
@@ -147,28 +185,28 @@ QList<ModelCatalog::Entry> Candidates(ModelCatalog::Technique technique, int ind
     return list;
 }
 
-QList<ModelCatalog::Entry> Ranked(ModelCatalog::Technique technique, int independentColumns)
+QList<ModelCatalog::Entry> Ranked(int independentColumns)
 {
-    QList<ModelCatalog::Entry> list = Candidates(technique, independentColumns);
-    std::stable_sort(list.begin(), list.end(), [technique](const ModelCatalog::Entry& a, const ModelCatalog::Entry& b) {
-        return Used(technique, a.key) > Used(technique, b.key);
+    QList<ModelCatalog::Entry> list = Candidates(independentColumns);
+    std::stable_sort(list.begin(), list.end(), [](const ModelCatalog::Entry& a, const ModelCatalog::Entry& b) {
+        return UsedTotal(a.key) > UsedTotal(b.key);
     });
     return list;
 }
 
-QList<ModelCatalog::Entry> Quick(ModelCatalog::Technique technique, int independentColumns)
+QList<ModelCatalog::Entry> Quick(int independentColumns)
 {
     const Preferences preferences = Load();
     QList<ModelCatalog::Entry> shown;
     if (preferences.mode == Mode::Fixed) {
         for (const QString& key : preferences.fixed) {
             ModelCatalog::Entry entry;
-            if (EntryForKey(key, technique, independentColumns, &entry))
-                shown << entry; // an entry the technique or the data does not offer is left out, not an error
+            if (EntryForKey(key, independentColumns, &entry))
+                shown << entry; // an entry the data does not offer is left out, not an error
         }
         return shown;
     }
-    shown = Ranked(technique, independentColumns);
+    shown = Ranked(independentColumns);
     while (shown.size() > preferences.count)
         shown.removeLast();
     return shown;

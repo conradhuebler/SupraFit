@@ -99,7 +99,8 @@ struct Entry {
     Kind kind = Kind::Stoichiometry;
     QString title;
     QString tooltip;
-    Choice choice;
+    Choice choice; ///< for a stoichiometry the choice of the first technique; ChoiceFor() gives it for any
+    QList<Technique> techniques; ///< the techniques that offer this entry (empty for scripted presets and files)
 };
 
 /*! \brief The fixed models of \p technique for the four established stoichiometries, in the order 1:1, 2:1 / 1:1,
@@ -116,6 +117,15 @@ Choice ForStoichiometry(Technique technique, const QString& key);
  * its stoichiometries - those whose component count matches the columns - and the further fixed models of the
  * technique (the special calorimetry models, the kinetic models). Empty if the technique does not fit the data. */
 QList<Entry> Entries(Technique technique, int independentColumns);
+
+/*! \brief Everything that can be added for data with \p independentColumns independent columns (0: unknown), each
+ * entry once: the stoichiometries with all the techniques that offer them (a click on a stoichiometry picks one of
+ * these, a menu offers the others), the models of one technique alone (special calorimetry and kinetic models) and the
+ * scripted presets. The order is that of the first technique that has an entry. */
+QList<Entry> AllEntries(int independentColumns);
+
+/*! \brief What \p entry stands for when added for \p technique (the entry's own choice if it does not depend on one). */
+Choice ChoiceFor(const Entry& entry, Technique technique);
 
 /*! \brief The predefined scripted models (Michaelis-Menten, Hill, binding signals ...) that fit data with
  * \p independentColumns columns (0: all); independent of the technique. */

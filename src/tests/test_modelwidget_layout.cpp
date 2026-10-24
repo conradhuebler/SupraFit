@@ -47,6 +47,7 @@
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTextBrowser>
+#include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
 
 #include <cmath>
@@ -70,6 +71,7 @@
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/addmodelbar.h"
+#include "src/ui/mainwindow/suprafitgui.h"
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelusage.h"
@@ -1621,6 +1623,40 @@ private slots:
             }
         }
     }
+    // The catalogue merges the techniques: one entry per stoichiometry that lists every technique offering it.
+    void catalogAllEntriesMergeTheTechniques()
+    {
+        using ModelCatalog::Technique;
+        const QList<Technique> titrations{ Technique::NMR, Technique::UVVis, Technique::Fluorescence };
+        int stoichiometries = 0, scripts = 0;
+        for (const ModelCatalog::Entry& e : ModelCatalog::AllEntries(2)) {
+            if (e.kind == ModelCatalog::Kind::Stoichiometry) {
+                ++stoichiometries;
+                QCOMPARE(e.techniques, titrations);
+            } else if (e.kind == ModelCatalog::Kind::ScriptPreset) {
+                ++scripts;
+                QVERIFY(e.techniques.isEmpty());
+            }
+        }
+        QCOMPARE(stoichiometries, 8);
+        QCOMPARE(scripts, int(ScriptModel::Presets().size()));
+        QCOMPARE(ModelCatalog::AllEntries(3).size() - ModelCatalog::ScriptPresetEntries(3).size(), qsizetype(2)); // the two three-component systems
+        for (const ModelCatalog::Entry& e : ModelCatalog::AllEntries(1)) { // one column: calorimetry and kinetics, one technique each
+            if (e.kind == ModelCatalog::Kind::Stoichiometry)
+                QCOMPARE(e.techniques, (QList<Technique>{ Technique::Calorimetry }));
+            if (e.kind == ModelCatalog::Kind::FixedModel) // the TIAN model is in the calorimetry and in the kinetics list, as in the old menu
+                QCOMPARE(e.techniques.size(), e.key == QStringLiteral("model:%1").arg(int(SupraFit::TianModel)) ? 2 : 1);
+        }
+        // what an entry stands for depends on the technique chosen
+        ModelCatalog::Entry oneToOne;
+        for (const ModelCatalog::Entry& e : ModelCatalog::AllEntries(2))
+            if (e.key == QStringLiteral("stoich:1:1"))
+                oneToOne = e;
+        QCOMPARE(ModelCatalog::ChoiceFor(oneToOne, Technique::NMR).model, int(SupraFit::nmr_ItoI));
+        QCOMPARE(ModelCatalog::ChoiceFor(oneToOne, Technique::UVVis).model, int(SupraFit::uv_vis_ItoI));
+        QCOMPARE(ModelCatalog::ChoiceFor(oneToOne, Technique::Fluorescence).model, int(SupraFit::fl_ItoI));
+    }
+
     // ---- WP-B: counters and what the quick bar shows ------------------------------------------------------------
 
     static QStringList keysOf(const QList<ModelCatalog::Entry>& list)
@@ -1631,15 +1667,15 @@ private slots:
         return keys;
     }
 
-    static ModelCatalog::Entry stoich(ModelCatalog::Technique t, const QString& key)
+    static ModelCatalog::Entry entryFor(const QString& key, int columns = 2)
     {
-        for (const ModelCatalog::Entry& e : ModelCatalog::Entries(t, 2))
-            if (e.key == QStringLiteral("stoich:%1").arg(key))
+        for (const ModelCatalog::Entry& e : ModelUsage::Candidates(columns))
+            if (e.key == key)
                 return e;
         return ModelCatalog::Entry();
     }
 
-    // A fresh installation shows the four established stoichiometries, in the order of the catalogue.
+    // A fresh installation shows the four established stoichiometries, in the order of the catalogue, NMR for each.
     void usageStartsWithTheEstablishedStoichiometries()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
@@ -1648,69 +1684,77 @@ private slots:
         QCOMPARE(p.mode, ModelUsage::Mode::Frequent);
         QCOMPARE(p.count, 4);
         QCOMPARE(p.fixed, ModelUsage::DefaultFixed());
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
-            (QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
-        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::NMR); // NMR unless something else was used
+        QCOMPARE(keysOf(ModelUsage::Quick(2)), (QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
+        for (const ModelCatalog::Entry& e : ModelUsage::Quick(2))
+            QCOMPARE(ModelUsage::TechniqueFor(e, 2), Technique::NMR);
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::NMR);
     }
 
-    // The most used come first; equal counts keep the order of the catalogue; counts are per technique.
+    // An entry is ranked by all its uses, whatever the technique; equal counts keep the catalogue's order.
     void usageRanksByCounts()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
         using ModelCatalog::Technique;
         for (int i = 0; i < 3; ++i)
-            ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("1:1/1:2")));
-        ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("2:1/1:1")));
+            ModelUsage::Record(Technique::NMR, entryFor(QStringLiteral("stoich:1:1/1:2")));
+        ModelUsage::Record(Technique::NMR, entryFor(QStringLiteral("stoich:2:1/1:1")));
         QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 3);
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
-            (QStringList{ "stoich:1:1/1:2", "stoich:2:1/1:1", "stoich:1:1", "stoich:2:1/1:1/1:2" }));
-        // another technique has its own habits
-        QCOMPARE(ModelUsage::Used(Technique::UVVis, QStringLiteral("stoich:1:1/1:2")), 0);
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::UVVis, 2)).first(), QStringLiteral("stoich:1:1"));
+        QCOMPARE(ModelUsage::UsedTotal(QStringLiteral("stoich:1:1/1:2")), 3);
+        QCOMPARE(keysOf(ModelUsage::Quick(2)), (QStringList{ "stoich:1:1/1:2", "stoich:2:1/1:1", "stoich:1:1", "stoich:2:1/1:1/1:2" }));
+        // uses with another technique count for the entry (1:1 with UV/Vis five times: it moves up)
+        for (int i = 0; i < 5; ++i)
+            ModelUsage::Record(Technique::UVVis, entryFor(QStringLiteral("stoich:1:1")));
+        QCOMPARE(ModelUsage::UsedTotal(QStringLiteral("stoich:1:1")), 5);
+        QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1")), 0);
+        QCOMPARE(keysOf(ModelUsage::Quick(2)).first(), QStringLiteral("stoich:1:1"));
         // the number shown is a preference
         ModelUsage::Preferences p = ModelUsage::Load();
         p.count = 2;
         ModelUsage::Save(p);
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)), (QStringList{ "stoich:1:1/1:2", "stoich:2:1/1:1" }));
-        // further entries (a dimerisation system) get in once they are used more
-        for (int i = 0; i < 5; ++i)
-            ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("1:1+A2")));
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)).first(), QStringLiteral("stoich:1:1+A2"));
+        QCOMPARE(keysOf(ModelUsage::Quick(2)), (QStringList{ "stoich:1:1", "stoich:1:1/1:2" }));
         ModelUsage::Reset();
-        QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 0);
+        QCOMPARE(ModelUsage::UsedTotal(QStringLiteral("stoich:1:1")), 0);
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 
-    // The technique is the one used last (stoichiometries and a technique's own models set it, scripted presets and
-    // files do not), if it fits the data; a fixed technique wins.
-    void usageFollowsTheTechniqueLastUsed()
+    // A click on an entry uses the technique it was used with most; never used: the fixed technique, else the one used
+    // last, else NMR. A scripted preset has no technique and leaves the one used last alone.
+    void usageTechniqueOfAnEntry()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
         using ModelCatalog::Technique;
-        ModelUsage::Record(Technique::UVVis, stoich(Technique::UVVis, QStringLiteral("1:1")));
-        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
-        QCOMPARE(ModelUsage::DefaultTechnique(1), Technique::Calorimetry); // UV/Vis does not fit one column: the first that does
-        // a scripted preset is counted for all techniques and leaves the technique alone
-        ModelCatalog::Entry hill;
-        for (const ModelCatalog::Entry& e : ModelCatalog::ScriptPresetEntries(2))
-            if (e.title == QStringLiteral("Hill"))
-                hill = e;
-        QVERIFY(hill.choice.valid());
-        ModelUsage::Record(Technique::Fluorescence, hill);
-        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
+        const QString one = QStringLiteral("stoich:1:1");
+        const QString two = QStringLiteral("stoich:1:1/1:2");
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(one), 2), Technique::NMR); // the default
+        ModelUsage::Record(Technique::UVVis, entryFor(one));
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(one), 2), Technique::UVVis); // used with UV/Vis
+        ModelUsage::Record(Technique::NMR, entryFor(one));
+        ModelUsage::Record(Technique::NMR, entryFor(one));
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(one), 2), Technique::NMR); // NMR now more often
+        // another entry that never was used follows the technique used last (NMR was last here)
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(two), 2), Technique::NMR);
+        ModelUsage::Record(Technique::Fluorescence, entryFor(QStringLiteral("stoich:2:1/1:1")));
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(two), 2), Technique::Fluorescence);
+        // a scripted preset is counted for all techniques and does not change the one used last
+        const ModelCatalog::Entry hill = entryFor(QStringLiteral("script:Hill"));
+        QVERIFY(hill.choice.valid() && hill.techniques.isEmpty());
+        ModelUsage::Record(Technique::UVVis, hill);
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(two), 2), Technique::Fluorescence);
         QCOMPARE(ModelUsage::Used(Technique::NMR, hill.key), 1);
-        QCOMPARE(ModelUsage::Used(Technique::UVVis, hill.key), 1);
-        // a fixed technique beats the last one
+        // a fixed technique beats the one used last, for entries never used with any
         ModelUsage::Preferences p = ModelUsage::Load();
-        p.technique = ModelCatalog::Info(Technique::Fluorescence).key;
+        p.technique = ModelCatalog::Info(Technique::UVVis).key;
         ModelUsage::Save(p);
-        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::Fluorescence);
-        QCOMPARE(ModelUsage::DefaultTechnique(1), Technique::Calorimetry); // ... but only if it fits the data
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(two), 2), Technique::UVVis);
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(one), 2), Technique::NMR); // ... not for one used with another
+        // one column: the entries have calorimetry only
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(one, 1), 1), Technique::Calorimetry);
+        QCOMPARE(ModelUsage::DefaultTechnique(1), Technique::Calorimetry);
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 
-    // In the fixed mode the bar shows the stored entries, in that order; what the technique or the data does not
-    // offer is left out. Scripted presets and model files can be among them.
+    // In the fixed mode the bar shows the stored entries, in that order; what the data does not offer is left out.
+    // Scripted presets and model files can be among them.
     void usageFixedListIsShownAsStored()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
@@ -1727,155 +1771,209 @@ private slots:
         p.fixed = { QStringLiteral("stoich:1:1/1:2"), QStringLiteral("script:Hill"), QStringLiteral("stoich:2:1/1:1"), QStringLiteral("file:") + file.fileName(),
             QStringLiteral("stoich:no such"), QStringLiteral("file:/does/not/exist.json") };
         ModelUsage::Save(p);
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
-            (QStringList{ "stoich:1:1/1:2", "script:Hill", "stoich:2:1/1:1", QStringLiteral("file:") + file.fileName() }));
-        // one column: no NMR stoichiometry, the single-input preset and the file stay
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 1)), (QStringList{ "script:Hill", QStringLiteral("file:") + file.fileName() }));
-        // the stoichiometry means the one of the technique on screen
-        QCOMPARE(keysOf(ModelUsage::Quick(Technique::Fluorescence, 2)).first(), QStringLiteral("stoich:1:1/1:2"));
-        QCOMPARE(ModelUsage::Quick(Technique::Fluorescence, 2).first().choice.model, int(SupraFit::fl_ItoI_ItoII));
+        QCOMPARE(keysOf(ModelUsage::Quick(2)), (QStringList{ "stoich:1:1/1:2", "script:Hill", "stoich:2:1/1:1", QStringLiteral("file:") + file.fileName() }));
+        // one column: the host/guest systems of calorimetry stay, the single-input preset and the file too
+        QVERIFY(keysOf(ModelUsage::Quick(1)).contains(QStringLiteral("script:Hill")));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
+
     // ---- WP-C: the Add-Model bar --------------------------------------------------------------------------------
 
-    static QToolButton* barButton(AddModelBar& bar, const QString& text)
+    static QToolButton* barButton(AddModelBar& bar, const QString& entryKey)
     {
         for (QToolButton* b : bar.findChildren<QToolButton*>())
-            if (b->text() == text)
+            if (b->property("entryKey").toString() == entryKey)
                 return b;
         return nullptr;
     }
 
-    static QStringList barQuickTitles(AddModelBar& bar, const ModelCatalog::Technique technique, int columns)
-    {
-        QStringList titles;
-        for (const ModelCatalog::Entry& e : ModelUsage::Quick(technique, columns))
-            titles << e.title;
-        Q_UNUSED(bar);
-        return titles;
-    }
+private: // moc takes everything after "private slots:" for slots: a struct needs its own section
+    struct BarFixture {
+        QSharedPointer<DataClass> data;
+        ChartWidget chart;
+        ModelDataHolder holder;
+        AddModelBar bar;
+        explicit BarFixture(int columns)
+            : data(makeDataFor(columns))
+        {
+            chart.setRawData(data);
+            holder.setChartWidget(&chart);
+            holder.setData(data, QSharedPointer<ChartWrapper>::create());
+            bar.setWorkspace(holder.TitleBarWidget());
+        }
+    };
+private slots:
 
-    // The bar follows the project on screen, offers the techniques that fit its data side by side, the models added
-    // most as buttons, and one click adds the model of the chosen technique. Claude Generated.
-    void addModelBarAddsTheModelOfTheChosenTechnique()
+    // The bar shows the models added most as buttons; a click adds the model of the technique the entry was used
+    // with most, the menu of the arrow offers the other techniques. Claude Generated.
+    void addModelBarAddsTheModelOfTheEntrysTechnique()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
         using ModelCatalog::Technique;
-        QSharedPointer<DataClass> data(makeDataFor(2));
-        ChartWidget chart;
-        chart.setRawData(data);
-        ModelDataHolder holder;
-        holder.setChartWidget(&chart);
-        holder.setData(data, QSharedPointer<ChartWrapper>::create());
-
-        AddModelBar bar;
-        QVERIFY2(!bar.isEnabled(), "the bar is on without a project");
-        bar.setWorkspace(holder.TitleBarWidget());
+        BarFixture f(2);
+        AddModelBar& bar = f.bar;
         QVERIFY(bar.isEnabled());
-        QCOMPARE(bar.objectName(), QStringLiteral("add_model_bar")); // its place is kept under this name
-        QVERIFY(bar.isMovable() && bar.isFloatable());
 
-        // the techniques that fit two columns, NMR chosen
-        QCOMPARE(bar.technique(), Technique::NMR);
-        QVERIFY(barButton(bar, QStringLiteral("NMR")) && barButton(bar, QStringLiteral("UV/Vis")) && barButton(bar, QStringLiteral("Fluorescence")));
-        QVERIFY(!barButton(bar, QStringLiteral("ITC")));
-        QVERIFY(barButton(bar, QStringLiteral("NMR"))->isChecked());
-        // the quick buttons: the four established stoichiometries of a fresh installation
-        for (const QString& title : barQuickTitles(bar, Technique::NMR, 2))
-            QVERIFY2(barButton(bar, title), qPrintable(title));
-        QCOMPARE(barQuickTitles(bar, Technique::NMR, 2).size(), 4);
-        // "More..." is the whole Model menu of the project
-        QToolButton* more = barButton(bar, QStringLiteral("More\u2026"));
-        QVERIFY(more && more->menu() == holder.TitleBarWidget()->ModelMenu());
+        // the four established stoichiometries, each with a menu of the three techniques; NMR is the one a click uses
+        for (const QString& key : QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }) {
+            QToolButton* b = barButton(bar, key);
+            QVERIFY2(b, qPrintable(key));
+            QVERIFY(b->menu() && b->menu()->actions().size() == 3);
+            QCOMPARE(b->property("technique").toInt(), int(Technique::NMR));
+        }
+        QCOMPARE(barButton(bar, QStringLiteral("stoich:1:1"))->text(), QStringLiteral("1:1"));
+        QVERIFY(!barButton(bar, QStringLiteral("stoich:1:1+A2"))); // not among the most used
 
-        // a click adds the model of the chosen technique and counts it
-        const QString second = barQuickTitles(bar, Technique::NMR, 2).at(2); // 1:1 / 1:2
-        barButton(bar, second)->click();
+        // a click adds the NMR model
+        barButton(bar, QStringLiteral("stoich:1:1/1:2"))->click();
         QCoreApplication::processEvents();
-        QCOMPARE(holder.ModelCount(), 1);
-        QCOMPARE(int(holder.Model(0)->SFModel()), int(SupraFit::nmr_ItoI_ItoII));
+        QCOMPARE(f.holder.ModelCount(), 1);
+        QCOMPARE(int(f.holder.Model(0)->SFModel()), int(SupraFit::nmr_ItoI_ItoII));
         QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 1);
 
-        // another technique: the same stoichiometry gives that technique's model, counted for it
-        barButton(bar, QStringLiteral("UV/Vis"))->click();
-        QCOMPARE(bar.technique(), Technique::UVVis);
-        barButton(bar, second)->click();
+        // the menu adds it for another technique
+        QAction* uvvis = nullptr;
+        for (QAction* a : barButton(bar, QStringLiteral("stoich:1:1/1:2"))->menu()->actions())
+            if (a->data().toInt() == int(Technique::UVVis))
+                uvvis = a;
+        QVERIFY(uvvis);
+        uvvis->trigger();
         QCoreApplication::processEvents();
-        QCOMPARE(holder.ModelCount(), 2);
-        QCOMPARE(int(holder.Model(1)->SFModel()), int(SupraFit::uv_vis_ItoI_ItoII));
-        QCOMPARE(ModelUsage::Used(Technique::UVVis, QStringLiteral("stoich:1:1/1:2")), 1);
-        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis); // the next project starts with it
+        QCOMPARE(f.holder.ModelCount(), 2);
+        QCOMPARE(int(f.holder.Model(1)->SFModel()), int(SupraFit::uv_vis_ItoI_ItoII));
 
-        // a flexible model: a dimerisation system is the technique's `*_any` model with its reactions, no dialog
-        const ModelCatalog::Entry dimer = [&]() {
-            for (const ModelCatalog::Entry& e : ModelCatalog::Entries(Technique::UVVis, 2))
-                if (e.key == QStringLiteral("stoich:1:1+A2"))
-                    return e;
-            return ModelCatalog::Entry();
-        }();
-        QVERIFY(dimer.choice.valid());
-        holder.TitleBarWidget()->RequestModel(dimer.choice);
+        // the buttons do not change under the pointer; after a Refresh the click uses what was used most
+        QCOMPARE(barButton(bar, QStringLiteral("stoich:1:1/1:2"))->property("technique").toInt(), int(Technique::NMR));
+        uvvis->trigger(); // UV/Vis twice now, NMR once
         QCoreApplication::processEvents();
-        QCOMPARE(holder.ModelCount(), 3);
-        QCOMPARE(int(holder.Model(2)->SFModel()), int(SupraFit::uvvis_any));
+        bar.Refresh();
+        QToolButton* b = barButton(bar, QStringLiteral("stoich:1:1/1:2"));
+        QCOMPARE(b->property("technique").toInt(), int(Technique::UVVis));
+        QCOMPARE(b->text(), QStringLiteral("1:1 / 1:2 (UV/Vis)")); // it says which technique a click uses
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
 
-        // without a project the bar is off again
+        // without a project the bar shows nothing
         bar.setWorkspace(nullptr);
         QVERIFY(!bar.isEnabled());
+        QVERIFY(bar.findChildren<QToolButton*>().size() <= 1); // the gear is hidden
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 
-    // The fixed list: scripted presets are buttons of the bar too, and a click adds that model whatever the technique.
+    // The fixed list: a dimerisation system is the technique's flexible model with its reactions (no dialog), a
+    // scripted preset is a plain button without technique menu. Claude Generated.
     void addModelBarShowsAFixedList()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
         using ModelCatalog::Technique;
-        QSharedPointer<DataClass> data(makeDataFor(2));
-        ChartWidget chart;
-        chart.setRawData(data);
-        ModelDataHolder holder;
-        holder.setChartWidget(&chart);
-        holder.setData(data, QSharedPointer<ChartWrapper>::create());
-        AddModelBar bar;
-        bar.setWorkspace(holder.TitleBarWidget());
-
+        BarFixture f(2);
         ModelUsage::Preferences p;
         p.mode = ModelUsage::Mode::Fixed;
-        p.fixed = { QStringLiteral("script:Hill"), QStringLiteral("stoich:1:1") };
+        p.fixed = { QStringLiteral("script:Hill"), QStringLiteral("stoich:1:1+A2") };
         ModelUsage::Save(p);
-        bar.Refresh();
-        QVERIFY(barButton(bar, QStringLiteral("Hill")));
-        QVERIFY(barButton(bar, QStringLiteral("1:1")));
-        QVERIFY(!barButton(bar, QStringLiteral("2:1 / 1:1")));
+        f.bar.Refresh();
+        QVERIFY(barButton(f.bar, QStringLiteral("script:Hill")));
+        QVERIFY(!barButton(f.bar, QStringLiteral("script:Hill"))->menu()); // no technique to choose
+        QVERIFY(!barButton(f.bar, QStringLiteral("stoich:2:1/1:1")));
 
-        barButton(bar, QStringLiteral("Hill"))->click();
+        barButton(f.bar, QStringLiteral("script:Hill"))->click();
         QCoreApplication::processEvents();
-        QCOMPARE(holder.ModelCount(), 1);
-        QCOMPARE(int(holder.Model(0)->SFModel()), int(SupraFit::ScriptModel));
+        QCOMPARE(f.holder.ModelCount(), 1);
+        QCOMPARE(int(f.holder.Model(0)->SFModel()), int(SupraFit::ScriptModel));
         QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::NMR); // a scripted preset does not change the technique
+
+        barButton(f.bar, QStringLiteral("stoich:1:1+A2"))->click(); // NMR: the flexible model
+        QCoreApplication::processEvents();
+        QCOMPARE(f.holder.ModelCount(), 2);
+        QCOMPARE(int(f.holder.Model(1)->SFModel()), int(SupraFit::nmr_any));
+        QAction* fl = nullptr;
+        for (QAction* a : barButton(f.bar, QStringLiteral("stoich:1:1+A2"))->menu()->actions())
+            if (a->data().toInt() == int(Technique::Fluorescence))
+                fl = a;
+        QVERIFY(fl);
+        fl->trigger();
+        QCoreApplication::processEvents();
+        QCOMPARE(int(f.holder.Model(2)->SFModel()), int(SupraFit::fl_any));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 
     void addModelBarRenders()
     {
         QSettings().remove(QStringLiteral("add_model_bar"));
-        QSharedPointer<DataClass> data(makeDataFor(2));
-        ChartWidget chart;
-        chart.setRawData(data);
-        ModelDataHolder holder;
-        holder.setChartWidget(&chart);
-        holder.setData(data, QSharedPointer<ChartWrapper>::create());
-        AddModelBar bar;
-        bar.setWorkspace(holder.TitleBarWidget());
-        bar.resize(900, 40);
-        bar.show();
-        QTest::qWaitForWindowExposed(&bar);
+        BarFixture f(2);
+        for (int i = 0; i < 3; ++i) // UV/Vis for the second one, to show a technique in the text
+            ModelUsage::Record(ModelCatalog::Technique::UVVis, entryFor(QStringLiteral("stoich:2:1/1:1")));
+        f.bar.Refresh();
+        f.bar.resize(700, 40);
+        f.bar.show();
+        QTest::qWaitForWindowExposed(&f.bar);
         const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
         if (!renderDir.isEmpty()) {
             QDir().mkpath(renderDir);
-            bar.grab().save(QStringLiteral("%1/add_model_bar.png").arg(renderDir));
+            f.bar.grab().save(QStringLiteral("%1/add_model_bar.png").arg(renderDir));
         }
-        QVERIFY(!bar.grab().isNull());
+        QVERIFY(!f.bar.grab().isNull());
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+    // The main toolbar in three zones: files and menus on the left, the models that are added most in the middle, the
+    // docks and the program menu on the right. With a project loaded the middle shows the model buttons. Claude Generated.
+    void mainToolbarHasThreeZones()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        const QString project = QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json");
+        if (!QFileInfo::exists(project))
+            QSKIP("sample project not found");
+
+        // fresh settings start the first-start dialog (modal, it would wait for ever): the setting exists, and
+        // anything else that is modal is closed and counted
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QStringList dialogs;
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, [&dialogs]() {
+            if (QWidget* w = QApplication::activeModalWidget()) {
+                dialogs << w->windowTitle();
+                w->close();
+            }
+        });
+        closer.start();
+
+        SupraFitGui gui;
+        gui.resize(1500, 700);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+        gui.LoadFile(project);
+        AddModelBar* bar = gui.findChild<AddModelBar*>();
+        QVERIFY(bar);
+        QTRY_VERIFY2(!bar->findChildren<QToolButton*>().isEmpty() && bar->isEnabled(), "no model buttons after loading a project");
+        QCoreApplication::processEvents();
+
+        QToolBar* toolbar = gui.findChild<QToolBar*>(QStringLiteral("main_toolbar"));
+        QVERIFY(toolbar);
+        auto leftOf = [toolbar](const QWidget* w) { return w->mapTo(toolbar, QPoint(0, 0)).x(); };
+        QToolButton* supra = nullptr;
+        QToolButton* newTable = nullptr;
+        for (QToolButton* b : toolbar->findChildren<QToolButton*>()) {
+            if (b->text() == QStringLiteral("SupraFit"))
+                supra = b;
+            if (b->defaultAction() && b->defaultAction()->text().contains(QStringLiteral("New Table")))
+                newTable = b;
+        }
+        QVERIFY2(dialogs.isEmpty(), qPrintable(QStringLiteral("a modal dialog came up: %1").arg(dialogs.join(", "))));
+        QVERIFY2(supra && newTable, "toolbar buttons not found");
+        const int barLeft = leftOf(bar), barRight = barLeft + bar->width();
+        QVERIFY2(leftOf(newTable) + newTable->width() < barLeft, "the file buttons are not left of the models");
+        QVERIFY2(barRight < leftOf(supra), "the program menu is not right of the models");
+        QVERIFY2(qAbs((barLeft + barRight) / 2 - toolbar->width() / 2) < toolbar->width() / 4, "the model buttons are not in the middle");
+
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty()) {
+            QDir().mkpath(renderDir);
+            toolbar->grab().save(QStringLiteral("%1/main_toolbar.png").arg(renderDir));
+        }
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 };
