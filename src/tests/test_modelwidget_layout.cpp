@@ -46,6 +46,8 @@
 #include "src/core/models/models.h"
 #include "src/global.h"
 
+#include "src/capabilities/jobmanager.h"
+#include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/instance.h"
@@ -469,6 +471,82 @@ private slots:
                 QVERIFY2(l->currentItem() && l->currentItem()->text() != QStringLiteral("Statistics"), "Statistics selected at start");
                 break;
             }
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // Finished analyses are listed in the Statistics list next to the analyses to start, can be looked at, and
+    // a result can be taken out of the pane into a window of its own; closing that window puts it back. Claude Generated.
+    void finishedResultsAreListedAndDetachable()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        const QString resultTitle = QStringLiteral("%1 # 1").arg(SupraFit::Method2Name(SupraFit::Method::MonteCarlo));
+        QJsonObject job = MonteCarloConfigBlock;
+        job["MaxSteps"] = 100;
+        JobManager jobs;
+        jobs.setModel(m_model);
+        jobs.AddSingleJob(job);
+        jobs.RunJobs();
+        QVERIFY2(m_model->getMCStatisticResult() >= 1, "the Monte Carlo run left no result");
+        QCoreApplication::processEvents();
+
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Results button
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        QStringList titles;
+        for (int i = 0; i < list->count(); ++i)
+            titles << list->item(i)->text();
+        QVERIFY2(titles.contains(QStringLiteral("Monte Carlo")), qPrintable(titles.join(", "))); // to start
+        QVERIFY2(titles.contains(QStringLiteral("Results")), qPrintable(titles.join(", ")));
+        QVERIFY2(titles.contains(resultTitle), qPrintable(titles.join(", "))); // finished
+        QCOMPARE(list->currentItem()->text(), resultTitle);
+
+        // the heading is no choice
+        const int heading = titles.indexOf(QStringLiteral("Results"));
+        QVERIFY(!(list->item(heading)->flags() & Qt::ItemIsSelectable));
+
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QVERIFY2(results->isVisible(), "the result is not shown on the page");
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_results_page.png").arg(renderDir));
+        const int windowsBefore = visibleTopLevels().size();
+
+        // take the result out of the pane
+        QVERIFY(results->DetachEntry(SupraFit::Method::MonteCarlo, 0));
+        QCoreApplication::processEvents();
+        QList<QWidget*> windows = visibleTopLevels();
+        QCOMPARE(windows.size(), windowsBefore + 1);
+        QWidget* external = nullptr;
+        for (QWidget* w : windows)
+            if (w != &widget)
+                external = w;
+        QVERIFY(external);
+        QVERIFY2(external->windowTitle().contains(resultTitle), qPrintable(external->windowTitle()));
+        QVERIFY(results->DetachEntry(SupraFit::Method::MonteCarlo, 0)); // again: raises, no second window
+        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
+
+        // closing it puts the result back as a tab
+        external->close();
+        QCoreApplication::processEvents();
+        QCOMPARE(visibleTopLevels().size(), windowsBefore);
+        QVERIFY(results->isVisible());
+        QVERIFY2(results->ShowEntry(SupraFit::Method::MonteCarlo, 0), "the result is gone after closing its window");
+
+        m_model->RemoveStatistic(SupraFit::Method::MonteCarlo, 0);
         QSettings().remove(QStringLiteral("model"));
     }
 };

@@ -102,7 +102,7 @@ Model tab **Statistic** (one model: shows the page "Statistics"; the page list i
   Percentile confidence interval. Assumes the model is right and noise random; a misspecified or sparse data set gives wide or skewed intervals.
 - **Weakened Grid Search**: F-test confidence interval for one chosen parameter. **Model Comparison**: F-test with random steps (Max. Steps 20000).
 - **Simplified MOC** (Fit dropdown) and the setting "Automatic Confidence Calculation using Simplified Model Comparison." (default on): quick F-test intervals.
-- Results: button **Results**; each run is a tab ("Monte Carlo Simulation # 1", "Cross Validation # 1", ...). Monte Carlo has Histogram / Scatter Plot / Series Chart,
+- Results: button **Results** or a finished run shows the page "Statistics": its list has the analyses under "New analysis" (start one) and every finished run under "Results" ("Monte Carlo Simulation # 1", "Cross Validation # 1", ...; pick one to look at it, right-click: Open in window, Save data, Drop raw data, Remove). **Open in window** (also below the result) moves a result into a window of its own; closing it puts it back. Monte Carlo has Histogram / Scatter Plot / Series Chart,
   "Confidence Intervall", bins, Export Results. Global search: Result List / Scatter Plot, filters Only Valid / Only Converged Models, Export Models.
 - Model quality box ("Fit results"): Parameters fitted, Points used, Degrees of freedom, SAE, R2, F value, Mean error, Standard error, χ2.
 - **Analyse and Compare** (Evaluation menu, checked tabs): Compare Reduction Analysis (Cutoff), **Compare AIC**, Compare Cross Validation / Monte Carlo (LOO/L2O/LXO).

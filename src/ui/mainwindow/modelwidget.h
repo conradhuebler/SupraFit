@@ -67,6 +67,7 @@ class ResultsDialog;
 class SpinBox;
 class StatisticWidget;
 class ExportSimulationWidget;
+class QStackedWidget;
 class SectionStack;
 class StatisticDialog;
 class SystemParameterWidget;
@@ -161,6 +162,20 @@ private:
     ModalDialog *m_dialogs, *m_charts_dialogs;
     SectionStack* m_pages = nullptr; ///< the page list of the pane (options, series, statistics, charts, ...)
     int m_charts_page = -1; ///< index of the Charts page, hidden while the model has no chart
+    int m_stat_page = -1; ///< index of the Statistics page (new analyses + finished results), -1 for simulations
+    QStackedWidget* m_statistic_stack = nullptr; ///< [0] statistic dialog (start), [1] results of finished analyses
+
+    /*! \brief One row of the Statistics list: heading, analysis to start (a tab of the statistic dialog) or result. */
+    struct StatEntry {
+        QString title;
+        int kind; ///< 0 heading, 1 analysis, 2 result
+        int index; ///< tab of the statistic dialog (analysis)
+        SupraFit::Method type; ///< method and number of the result
+        int result;
+    };
+    QList<StatEntry> StatisticEntries() const;
+    void OpenStatistics(bool results);
+    void ShowStatisticResult(SupraFit::Method type, int index);
     ResultsDialog* m_results;
 
     bool m_statistic, m_val_readonly, m_SetUpFinished = false;

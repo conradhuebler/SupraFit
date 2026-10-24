@@ -24,9 +24,14 @@
 #include <QAction>
 
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QListView>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QTabWidget>
+#include <QtWidgets/QToolButton>
+#include <QtWidgets/QVBoxLayout>
 
 #include "src/global.h"
 
@@ -115,8 +120,133 @@ ResultsDialog::~ResultsDialog()
     m_model.clear();
 }
 
+void ResultsDialog::setEmbedded(bool embedded)
+{
+    m_embedded = embedded;
+    if (embedded) {
+        setWindowFlags(Qt::Widget);
+        m_results->hide(); // the pane lists the results in its own navigation
+        if (!m_detach) {
+            m_detach = new QToolButton;
+            m_detach->setText(tr("Open in window"));
+            m_detach->setToolTip(tr("Show this result in a window of its own, apart from the main window"));
+            m_detach->setAutoRaise(true);
+            connect(m_detach, &QToolButton::clicked, this, &ResultsDialog::DetachCurrent);
+            QHBoxLayout* row = new QHBoxLayout;
+            row->addStretch();
+            row->addWidget(m_detach);
+            m_layout->addLayout(row, 1, 0);
+        }
+    }
+}
+
+bool ResultsDialog::DetachEntry(SupraFit::Method type, int index)
+{
+    if (!ShowEntry(type, index)) // makes sure the result widget exists
+        return false;
+    const QModelIndex i = IndexOf(type, index);
+    const QStandardItem* item = m_itemmodel->itemFromIndex(i);
+    const double timestamp = item->data(Qt::UserRole + 3).toDouble();
+    if (QDialog* window = m_detached.value(timestamp)) {
+        window->raise();
+        window->activateWindow();
+        return true;
+    }
+    ResultsWidget* results = m_stored_widgets.value(timestamp);
+    if (!results)
+        return false;
+
+    const int tab = m_tabs->indexOf(results);
+    const QString name = tab >= 0 ? m_tabs->tabText(tab) : item->text();
+    if (tab >= 0)
+        m_tabs->removeTab(tab);
+
+    QDialog* window = new QDialog(this, Qt::Window);
+    window->setAttribute(Qt::WA_DeleteOnClose, false);
+    window->setWindowTitle(tr("%1 | %2").arg(name, m_model.toStrongRef().data()->Name()));
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->setContentsMargins(4, 4, 4, 4);
+    layout->addWidget(results);
+    window->setLayout(layout);
+    window->resize(900, 700);
+    results->show();
+    m_detached.insert(timestamp, window);
+    // closing the window puts the result back as a tab
+    connect(window, &QDialog::finished, this, [this, window, results, timestamp, name]() {
+        if (m_stored_widgets.value(timestamp) == results) {
+            window->layout()->removeWidget(results);
+            m_tabs->setCurrentIndex(m_tabs->addTab(results, name));
+        }
+        m_detached.remove(timestamp);
+        window->deleteLater();
+    });
+    window->show();
+    return true;
+}
+
+void ResultsDialog::DetachCurrent()
+{
+    const QWidget* current = m_tabs->currentWidget();
+    for (auto it = m_stored_widgets.constBegin(); it != m_stored_widgets.constEnd(); ++it)
+        if (it.value() == current) {
+            const double timestamp = it.key();
+            for (int row = 0; row < m_itemmodel->rowCount(); ++row) {
+                const QStandardItem* item = m_itemmodel->item(row);
+                if (item->data(Qt::UserRole + 3).toDouble() == timestamp) {
+                    DetachEntry(SupraFit::Method(item->data(Qt::UserRole).toInt()), item->data(Qt::UserRole + 1).toInt());
+                    return;
+                }
+            }
+        }
+}
+
+void ResultsDialog::reject()
+{
+    if (!m_embedded)
+        QDialog::reject();
+}
+
+QList<ResultsDialog::Entry> ResultsDialog::Entries() const
+{
+    QList<Entry> list;
+    if (!m_itemmodel)
+        return list;
+    for (int i = 0; i < m_itemmodel->rowCount(); ++i) {
+        const QStandardItem* item = m_itemmodel->item(i);
+        list << Entry{ item->text(), SupraFit::Method(item->data(Qt::UserRole).toInt()), item->data(Qt::UserRole + 1).toInt() };
+    }
+    return list;
+}
+
+QModelIndex ResultsDialog::IndexOf(SupraFit::Method type, int index) const
+{
+    for (int i = 0; m_itemmodel && i < m_itemmodel->rowCount(); ++i) {
+        const QStandardItem* item = m_itemmodel->item(i);
+        if (item->data(Qt::UserRole).toInt() == int(type) && item->data(Qt::UserRole + 1).toInt() == index)
+            return item->index();
+    }
+    return QModelIndex();
+}
+
+bool ResultsDialog::ShowEntry(SupraFit::Method type, int index)
+{
+    const QModelIndex i = IndexOf(type, index);
+    if (!i.isValid())
+        return false;
+    itemDoubleClicked(i);
+    return true;
+}
+
+void ResultsDialog::SaveEntry(SupraFit::Method type, int index) { Save(IndexOf(type, index)); }
+void ResultsDialog::DropRawDataOf(SupraFit::Method type, int index) { DropRawData(IndexOf(type, index)); }
+void ResultsDialog::RemoveEntry(SupraFit::Method type, int index) { RemoveItem(IndexOf(type, index)); }
+
 void ResultsDialog::Attention()
 {
+    if (m_embedded) {
+        emit AttentionRequested();
+        return;
+    }
     show();
     raise();
     activateWindow();
@@ -224,6 +354,7 @@ void ResultsDialog::UpdateList()
     m_save->setEnabled(m_itemmodel->rowCount());
     m_drop_data->setEnabled(m_itemmodel->rowCount());
     m_remove->setEnabled(m_itemmodel->rowCount());
+    emit ListChanged();
 }
 
 void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
@@ -249,7 +380,10 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
     } else {
         QStandardItem* item = m_itemmodel->itemFromIndex(index);
         double timestamp = item->data(Qt::UserRole + 3).toDouble();
-        if (m_stored_widgets.contains(timestamp)) {
+        if (QDialog* window = m_detached.value(timestamp)) {
+            window->raise(); // the result lives in its own window
+            window->activateWindow();
+        } else if (m_stored_widgets.contains(timestamp)) {
             ResultsWidget* results = m_stored_widgets[timestamp];
             m_tabs->setCurrentIndex(m_tabs->indexOf(results));
         }
@@ -268,6 +402,8 @@ void ResultsDialog::RemoveItem(const QModelIndex& index)
         m_tabs->removeTab(m_tabs->indexOf(results));
         delete results;
         m_stored_widgets.remove(timestamp);
+        if (QDialog* window = m_detached.take(timestamp))
+            window->deleteLater(); // its result is gone
     }
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());

@@ -95,6 +95,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
@@ -549,9 +550,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // Statistic tools and the model's own charts (e.g. concentration profiles) are pages of the list, no
     // windows of their own. Both dialogs are used as plain widgets here. Claude Generated (WP1b).
     m_statistic_dialog->setEmbedded(true);
-    connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() {
-        m_pages->setCurrentTitle(tr("Statistics"), true);
-    });
+    connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() { OpenStatistics(false); });
     m_charts_dialogs = new ModalDialog(this);
     m_charts_dialogs->setEmbedded(true);
     m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -599,12 +598,49 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"));
 
     if (!m_model->isSimulation()) {
-        // the analyses of the statistic tools are listed in place of the page list while this page is shown
-        model_tab->addGroupPage(m_statistic_dialog, tr("Statistics"), m_statistic_dialog->TabTitles(),
-            [dialog = QPointer<StatisticDialog>(m_statistic_dialog)](int index) {
-                if (dialog)
-                    dialog->setCurrentTab(index);
+        // One page for everything about statistics: the analyses to start and the finished results. The list
+        // replaces the page list while the page is shown (SectionStack group page); the page itself switches
+        // between the statistic dialog and the results view.
+        m_results->setEmbedded(true);
+        connect(m_results, &ResultsDialog::AttentionRequested, this, [this]() { OpenStatistics(true); });
+        m_statistic_stack = new QStackedWidget;
+        m_statistic_stack->addWidget(m_statistic_dialog);
+        m_statistic_stack->addWidget(m_results);
+        m_stat_page = model_tab->addGroupPage(
+            m_statistic_stack, tr("Statistics"),
+            [this]() {
+                QList<SectionStack::SubEntry> rows;
+                for (const StatEntry& e : StatisticEntries())
+                    rows << SectionStack::SubEntry{ e.title, e.kind == 0 };
+                return rows;
+            },
+            [this](int row) {
+                const QList<StatEntry> entries = StatisticEntries();
+                if (row < 0 || row >= entries.size())
+                    return;
+                const StatEntry& e = entries[row];
+                if (e.kind == 1) {
+                    m_statistic_stack->setCurrentIndex(0);
+                    m_statistic_dialog->setCurrentTab(e.index);
+                } else if (e.kind == 2) {
+                    m_statistic_stack->setCurrentIndex(1);
+                    m_results->ShowEntry(e.type, e.result);
+                }
+            },
+            [this](int row, const QPoint& pos) {
+                const QList<StatEntry> entries = StatisticEntries();
+                if (row < 0 || row >= entries.size() || entries[row].kind != 2)
+                    return;
+                const StatEntry e = entries[row];
+                QMenu menu;
+                menu.addAction(tr("Open in window"), this, [this, e]() { m_results->DetachEntry(e.type, e.result); });
+                menu.addSeparator();
+                menu.addAction(tr("Save data"), this, [this, e]() { m_results->SaveEntry(e.type, e.result); });
+                menu.addAction(tr("Drop raw data"), this, [this, e]() { m_results->DropRawDataOf(e.type, e.result); });
+                menu.addAction(tr("Remove"), this, [this, e]() { m_results->RemoveEntry(e.type, e.result); });
+                menu.exec(pos);
             });
+        connect(m_results, &ResultsDialog::ListChanged, this, [this]() { m_pages->refreshGroup(m_stat_page); });
         m_statistic_dialog->show(); // hidden by its constructor; a layout does not show an explicitly hidden widget
     }
     m_charts_page = model_tab->addPage(m_charts_dialogs, tr("Charts"));
@@ -766,10 +802,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         this->m_jobmanager->RunJobs();
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
-        if (type != SupraFit::Method::FastConfidence) {
-            this->m_results->Attention();
-            this->m_results->ShowResult(type, index);
-        }
+        if (type != SupraFit::Method::FastConfidence)
+            ShowStatisticResult(type, index);
 
         QApplication::restoreOverrideCursor();
         // The chart is on screen now — this is the end of what the user perceives as "running".
@@ -1314,10 +1348,54 @@ void ModelWidget::Interrupt()
 void ModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
-    m_results->Attention();
     m_statistic_dialog->HideWidget();
     SupraFit::Method type = SupraFit::Method(AccessCI(data["controller"].toObject(), "Method").toInt());
-    m_results->ShowResult(type, index);
+    ShowStatisticResult(type, index);
+}
+
+/*! \brief Rows of the Statistics list: the analyses to start, then the finished results (if any).
+ * Claude Generated. */
+QList<ModelWidget::StatEntry> ModelWidget::StatisticEntries() const
+{
+    QList<StatEntry> rows;
+    rows << StatEntry{ tr("New analysis"), 0, -1, SupraFit::Method::MonteCarlo, -1 };
+    const QStringList tabs = m_statistic_dialog->TabTitles();
+    for (int i = 0; i < tabs.size(); ++i)
+        rows << StatEntry{ tabs[i], 1, i, SupraFit::Method::MonteCarlo, -1 };
+    const QList<ResultsDialog::Entry> results = m_results->Entries();
+    if (!results.isEmpty())
+        rows << StatEntry{ tr("Results"), 0, -1, SupraFit::Method::MonteCarlo, -1 };
+    for (const ResultsDialog::Entry& e : results)
+        rows << StatEntry{ e.title, 2, -1, e.type, e.index };
+    return rows;
+}
+
+/*! \brief Show the Statistics page with its list; \p results selects the newest finished analysis. */
+void ModelWidget::OpenStatistics(bool results)
+{
+    if (m_stat_page < 0) { // simulations have no statistic page: the old window
+        m_results->Attention();
+        return;
+    }
+    m_pages->setCurrentTitle(tr("Statistics"), true);
+    if (!results)
+        return;
+    const QList<ResultsDialog::Entry> entries = m_results->Entries();
+    if (!entries.isEmpty())
+        m_pages->selectSub(entries.last().title);
+}
+
+/*! \brief A finished analysis: list it and show it on the Statistics page. */
+void ModelWidget::ShowStatisticResult(SupraFit::Method type, int index)
+{
+    m_results->ShowResult(type, index); // opens the result tab
+    if (m_stat_page < 0) {
+        m_results->Attention();
+        return;
+    }
+    m_pages->setCurrentTitle(tr("Statistics"), true);
+    m_pages->refreshGroup(m_stat_page);
+    m_pages->selectSub(tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1));
 }
 
 void ModelWidget::LocalMinimize()
@@ -1460,7 +1538,7 @@ void ModelWidget::ExportSimModel()
 
 void ModelWidget::TogglePlot()
 {
-    m_results->Attention();
+    OpenStatistics(true);
 }
 
 void ModelWidget::MultiScanFinished()

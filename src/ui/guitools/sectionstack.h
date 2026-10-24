@@ -23,7 +23,10 @@
 #include <functional>
 
 #include <QtCore/QHash>
+#include <QtCore/QPoint>
 #include <QtCore/QStringList>
+
+#include <QtGui/QFont>
 
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
@@ -39,10 +42,17 @@
  * buttons), which used to sit on the tab. The list costs no vertical space, which matters when the page
  * area sits between the fit controls and the data series; with a single page the list is hidden.
  *
- * A page added with addGroupPage() has sub-pages (e.g. the analyses of the statistic tools). Choosing it
- * replaces the page list by the list of its sub-pages with a "Back" entry on top. Claude Generated. */
+ * A page added with addGroupPage() has sub-entries (e.g. the analyses of the statistic tools and their
+ * finished results). Choosing it replaces the page list by the list of its entries with a "Back" entry on
+ * top; entries may be headers (not selectable) and are re-read by refreshGroup(). Claude Generated. */
 class SectionStack : public QWidget {
 public:
+    /*! \brief One row of a group page's list: a selectable entry or a (non-selectable) header. */
+    struct SubEntry {
+        QString title;
+        bool header = false;
+    };
+
     explicit SectionStack(QWidget* parent = nullptr)
         : QWidget(parent)
     {
@@ -80,6 +90,16 @@ public:
             else
                 chooseSub(row - 1);
         });
+        m_sub_list->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(m_sub_list, &QListWidget::customContextMenuRequested, m_sub_list, [this](const QPoint& pos) {
+            QListWidgetItem* item = m_sub_list->itemAt(pos);
+            auto it = m_groups.find(m_list->currentRow());
+            if (!item || it == m_groups.end() || !it->menu)
+                return;
+            const int row = m_sub_list->row(item);
+            if (row > 0)
+                it->menu(row - 1, m_sub_list->viewport()->mapToGlobal(pos));
+        });
     }
 
     /*! \brief Add \p page under \p title; \p tools (may be null) is shown right-aligned in the page header. */
@@ -111,13 +131,39 @@ public:
         return m_list->count() - 1;
     }
 
-    /*! \brief Like addPage(), with sub-pages: \p subTitles are listed instead of the pages while this page is
-     * shown, \p subChosen(i) is called when the i-th one is picked (it switches whatever \p page shows). */
-    int addGroupPage(QWidget* page, const QString& title, const QStringList& subTitles, std::function<void(int)> subChosen)
+    /*! \brief Like addPage(), with sub-entries: \p entries is asked for the rows listed instead of the pages while
+     * this page is shown, \p chosen(i) is called when the i-th row of that list is picked (it switches whatever
+     * \p page shows), \p menu(i, globalPos) when its context menu is requested (may be empty). */
+    int addGroupPage(QWidget* page, const QString& title, std::function<QList<SubEntry>()> entries,
+        std::function<void(int)> chosen, std::function<void(int, const QPoint&)> menu = nullptr)
     {
         const int index = addPage(page, title);
-        m_groups.insert(index, Group{ subTitles, subChosen, 0 });
+        m_groups.insert(index, Group{ entries, chosen, menu, QString() });
         return index;
+    }
+
+    /*! \brief Re-read the entries of group page \p page; the shown list keeps its choice (by title) without
+     * calling chosen() again. Call it when the entries changed, e.g. a new result arrived. */
+    void refreshGroup(int page)
+    {
+        if (m_nav->currentIndex() == 1 && m_list->currentRow() == page)
+            populateSub(page);
+    }
+
+    /*! \brief Choose the entry called \p title of the group page that is shown; false if there is none. */
+    bool selectSub(const QString& title)
+    {
+        auto it = m_groups.find(m_list->currentRow());
+        if (it == m_groups.end() || m_nav->currentIndex() != 1)
+            return false;
+        const QList<SubEntry> entries = it->entries();
+        for (int i = 0; i < entries.size(); ++i)
+            if (!entries[i].header && entries[i].title == title) {
+                m_sub_list->setCurrentRow(1 + i);
+                chooseSub(i);
+                return true;
+            }
+        return false;
     }
 
     /*! \brief Index of the page called \p title, -1 if there is none. Pages are found by title because the
@@ -167,9 +213,10 @@ public:
 
 private:
     struct Group {
-        QStringList subs;
+        std::function<QList<SubEntry>()> entries;
         std::function<void(int)> chosen;
-        int current;
+        std::function<void(int, const QPoint&)> menu;
+        QString current; ///< title of the chosen entry
     };
 
     static QListWidget* makeList()
@@ -193,21 +240,52 @@ private:
             }
     }
 
+    // fill the sub list from the group's entries; the entry called group.current stays selected
+    // (else the first selectable one). Returns the index of that entry, -1 if there is none.
+    int populateSub(int row)
+    {
+        auto it = m_groups.find(row);
+        if (it == m_groups.end())
+            return -1;
+        const QList<SubEntry> entries = it->entries();
+        int current = -1;
+        for (int i = 0; i < entries.size(); ++i) {
+            if (entries[i].header)
+                continue;
+            if (current < 0 || entries[i].title == it->current)
+                current = i;
+        }
+        m_sub_list->blockSignals(true);
+        m_sub_list->clear();
+        m_sub_list->addItem(QObject::tr("\u2190 Back"));
+        for (const SubEntry& entry : entries) {
+            QListWidgetItem* item = new QListWidgetItem(entry.title);
+            if (entry.header) {
+                item->setFlags(Qt::NoItemFlags); // a heading, not a choice
+                QFont font = item->font();
+                font.setBold(true);
+                item->setFont(font);
+            }
+            m_sub_list->addItem(item);
+        }
+        if (current >= 0)
+            m_sub_list->setCurrentRow(1 + current);
+        m_sub_list->blockSignals(false);
+        if (current >= 0)
+            it->current = entries[current].title;
+        return current;
+    }
+
     void enterGroup(int row)
     {
         auto it = m_groups.find(row);
         if (it == m_groups.end())
             return;
-        m_sub_list->blockSignals(true);
-        m_sub_list->clear();
-        m_sub_list->addItem(QObject::tr("\u2190 Back"));
-        m_sub_list->addItems(it->subs);
-        m_sub_list->setCurrentRow(1 + it->current);
-        m_sub_list->blockSignals(false);
+        const int current = populateSub(row);
         m_nav->setCurrentIndex(1);
         m_nav->setVisible(true);
-        if (it->chosen)
-            it->chosen(it->current);
+        if (current >= 0 && it->chosen)
+            it->chosen(current);
     }
 
     void leaveGroup()
@@ -221,7 +299,10 @@ private:
         auto it = m_groups.find(m_list->currentRow());
         if (it == m_groups.end())
             return;
-        it->current = sub;
+        const QList<SubEntry> entries = it->entries();
+        if (sub < 0 || sub >= entries.size() || entries[sub].header)
+            return;
+        it->current = entries[sub].title;
         if (it->chosen)
             it->chosen(sub);
     }
