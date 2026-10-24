@@ -243,10 +243,17 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
 }
 void ExportSimulationWidget::UpdateVisibility()
 {
-    m_ideal->setVisible(qApp->instance()->property("advanced_ui").toBool());
-    m_mc_std->setVisible(qApp->instance()->property("advanced_ui").toBool());
-    m_mc_sey->setVisible(qApp->instance()->property("advanced_ui").toBool());
-    m_mc_user->setVisible(qApp->instance()->property("advanced_ui").toBool());
-    m_variance->setVisible(qApp->instance()->property("advanced_ui").toBool());
-    m_include_deactivated->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    // advanced_ui adds the further simulation tools; a simulation itself offers neither MC from the fit nor
+    // Bootstrap (it has no fit). The simulation rule is part of this function, because the setting must not
+    // show again what the model hides. Claude Generated.
+    const bool advanced = qApp->instance()->property("advanced_ui").toBool();
+    const bool simulation = m_model.toStrongRef() && m_model.toStrongRef().data()->isSimulation();
+    m_ideal->setVisible(advanced);
+    m_mc_std->setVisible(advanced && !simulation);
+    m_mc_sey->setVisible(advanced && !simulation);
+    m_bs->setVisible(!simulation);
+    m_mc_user->setVisible(advanced);
+    m_variance->setVisible(advanced);
+    m_include_deactivated->setVisible(advanced);
+    emit AdvancedChanged(advanced);
 }

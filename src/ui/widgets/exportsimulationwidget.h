@@ -97,6 +97,9 @@ public:
      * the model widget. Owned by this widget until reparented. Claude Generated. */
     QWidget* MetricsWidget() const { return m_metrics; }
 
+signals:
+    void AdvancedChanged(bool advanced); ///< the setting advanced_ui changed (the page may show a hint)
+
 private:
     void UpdateVisibility();
 

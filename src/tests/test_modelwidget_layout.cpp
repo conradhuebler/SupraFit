@@ -60,6 +60,7 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
+#include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/preparewidget.h"
 #include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/instance.h"
@@ -839,6 +840,49 @@ private slots:
         QCOMPARE(model->GlobalParameterSize(), reference->GlobalParameterSize());
         QCOMPARE(model->LocalParameterSize(), reference->LocalParameterSize());
         QCOMPARE(model->InputParameterSize(), reference->InputParameterSize());
+    }
+    // WP6: advanced_ui is followed live (no restart): the simulation chips and the statistic strategy box
+    // appear and disappear when the setting changes. Claude Generated.
+    void advancedUiIsFollowedLive()
+    {
+        const QVariant before = qApp->property("advanced_ui");
+        Charts charts = m_chart->addModel(m_model);
+        qApp->setProperty("advanced_ui", false);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        auto shownChips = [&widget]() {
+            int shown = 0;
+            for (DnDLabel* label : widget.findChildren<DnDLabel*>())
+                if (!label->isHidden()) // the page may not be the shown one: only the chip's own state counts
+                    ++shown;
+            return shown;
+        };
+        auto strategyBoxShown = [&widget]() {
+            for (QGroupBox* box : widget.findChildren<QGroupBox*>())
+                if (box->title() == QStringLiteral("Map Calculation Strategy in LXO"))
+                    return !box->isHidden();
+            return false;
+        };
+        const int basic = shownChips();
+        QVERIFY2(basic >= 1, "no simulation chip at all without advanced_ui (the Bootstrap chip stays)");
+        QVERIFY(!strategyBoxShown());
+
+        qApp->setProperty("advanced_ui", true);
+        emit Instance::GlobalInstance()->ConfigurationChanged();
+        QCoreApplication::processEvents();
+        QVERIFY2(shownChips() > basic, "the advanced simulation chips did not appear");
+        QVERIFY2(strategyBoxShown(), "the statistic strategy box did not appear");
+
+        qApp->setProperty("advanced_ui", false);
+        emit Instance::GlobalInstance()->ConfigurationChanged();
+        QCoreApplication::processEvents();
+        QCOMPARE(shownChips(), basic);
+        QVERIFY(!strategyBoxShown());
+        qApp->setProperty("advanced_ui", before);
     }
 };
 

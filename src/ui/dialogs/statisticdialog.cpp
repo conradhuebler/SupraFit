@@ -46,6 +46,7 @@
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 
+#include "src/ui/instance.h"
 #include "statisticdialog.h"
 StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget* parent)
     : QDialog(parent)
@@ -759,8 +760,12 @@ QWidget* StatisticDialog::CVWidget()
     layout->addWidget(m_radio_cv_lxo, 2, 0);
     layout->addWidget(m_cv_lxo, 2, 1);
     layout->addWidget(m_cv_runs, 2, 2);
-    if (qApp->instance()->property("advanced_ui").toBool())
-        layout->addWidget(cv_algo, 4, 1, 1, 2);
+    layout->addWidget(cv_algo, 4, 1, 1, 2);
+    // advanced_ui is followed live: the strategy box is always there and only shown while the setting is on
+    auto showAdvanced = [cv_algo]() { cv_algo->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
+    showAdvanced();
+    if (Instance::GlobalInstance())
+        connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, cv_algo, showAdvanced);
 
     connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
     connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);

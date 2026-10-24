@@ -77,6 +77,7 @@
 
 #include <QtCore/QSignalBlocker>
 
+#include "src/ui/instance.h"
 #include "modeldataholder.h"
 
 void ToolButton::ChangeColor(const QColor& color)
@@ -380,7 +381,10 @@ MDHDockTitleBar::MDHDockTitleBar()
             emit this->AddModel();
         }
     });
-    m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    auto showAdvanced = [this]() { m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
+    showAdvanced();
+    if (Instance::GlobalInstance())
+        connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, showAdvanced); // live, no restart
 }
 
 void MDHDockTitleBar::setEnabled(bool enabled)

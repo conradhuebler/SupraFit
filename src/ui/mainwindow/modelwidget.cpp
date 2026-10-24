@@ -655,6 +655,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         QLabel* hint = new QLabel(tr("Drag an entry onto the project list to create a data set simulated from this model."));
         hint->setWordWrap(true);
         page_layout->addWidget(hint);
+        // Without the advanced setting only part of the simulation tools is offered: say where the rest is.
+        QLabel* more = new QLabel(tr("More simulation tools are shown with the setting \"Show advanced options and simulation tools in GUI\"."));
+        more->setWordWrap(true);
+        more->setEnabled(false);
+        if (qApp->instance()->property("advanced_ui").toBool())
+            more->hide(); // never setVisible(true) here: the label has no parent yet and would flash as a window
+        connect(m_simulation_export, &ExportSimulationWidget::AdvancedChanged, more, [more](bool advanced) { more->setVisible(!advanced); });
+        page_layout->addWidget(more);
         page_layout->addWidget(m_simulation_export);
         page_layout->addStretch();
         page->setLayout(page_layout);

@@ -114,8 +114,8 @@ Model tab **Statistic** (one model: shows the page "Statistics"; the page list i
   Models and statistics are included. Agent chats are stored in the project if "Store agent chats in project files" is on - save to keep them.
 - Export: project tree Export; Export Data (input tables as text); Export Projects (one `.suprafit` per project); model Save / Save Constants / Export Simulated;
   Monte Carlo Export Results; search Export Models; charts Export Diagram (PNG).
-- **Settings** tabs: General Settings (Threads, "Report thermodynamics in kcal/mol (instead of kJ/mol)", "Automatic open Thermogram Dialog", "Show advanced options..."
-  needs restart), Appearance ("Colour scheme:" System / Light / Dark, "Toolbar buttons:"), File Save Settings (agent chats, raw data), Standard Calculation
+- **Settings** tabs: General Settings (Threads, "Report thermodynamics in kcal/mol (instead of kJ/mol)", "Automatic open Thermogram Dialog", "Show advanced options and simulation tools in GUI." shows
+  further tools at once: more simulation chips, "Any Model…", "Drop Random", the LXO strategy and the thermogram "Advanced stuff"), Appearance ("Colour scheme:" System / Light / Dark, "Toolbar buttons:"), File Save Settings (agent chats, raw data), Standard Calculation
   (confidence 95 %, Maximal Steps, bins, BC50 points), Chart Settings, Optimizer Settings (defaults of Fit Settings).
 
 ## 7. Reading results

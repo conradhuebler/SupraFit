@@ -332,10 +332,13 @@ SupraFitGui::SupraFitGui()
     FlowLayout* tools = new FlowLayout; // wraps in a narrow left column
     tools->addWidget(m_export_plain);
     tools->addWidget(m_export_suprafit);
-    if (qApp->instance()->property("advanced_ui").toBool()) {
-        tools->addWidget(m_add_scatter);
-    }
+    tools->addWidget(m_add_scatter);
     tools->addWidget(m_close_all);
+    // advanced_ui is followed live: the button is always in the row and only shown while the setting is on
+    auto showAdvanced = [this]() { m_add_scatter->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
+    showAdvanced();
+    if (Instance::GlobalInstance())
+        connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, showAdvanced);
 
     QGridLayout* layout = new QGridLayout;
 

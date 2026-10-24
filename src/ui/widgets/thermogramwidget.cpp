@@ -525,9 +525,13 @@ void ThermogramWidget::setUi()
     group->setLayout(vlayout);
     peak_layout->addWidget(group);
 
-    if (qApp->instance()->property("advanced_ui").toBool()) {
+    {
         group = new QGroupBox;
         group->setTitle(tr("Advanced stuff"));
+        // advanced_ui is followed live: the box is always built and only shown while the setting is on
+        auto showAdvanced = [group]() { group->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
+        if (Instance::GlobalInstance())
+            connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, group, showAdvanced);
         group->setMaximumWidth(maxwidth);
         group->setMaximumHeight(maxheight);
 
@@ -546,6 +550,7 @@ void ThermogramWidget::setUi()
 
         group->setLayout(vlayout);
         peak_layout->addWidget(group);
+        showAdvanced();
     }
     QVBoxLayout* layout = new QVBoxLayout;
     layout->addLayout(peak_layout);
