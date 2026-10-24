@@ -790,6 +790,13 @@ void PrepareWidget::AddScriptGuidance()
     UpdateGuidance();
 }
 
+void PrepareWidget::setInputColumns(int columns)
+{
+    m_input_columns = qMax(0, columns);
+    if (m_guidance)
+        UpdateGuidance(); // the derived fields follow
+}
+
 void PrepareWidget::UpdateGuidance()
 {
     if (m_destroying || !m_guidance)
@@ -999,18 +1006,22 @@ void PrepareWidget::DeriveDefinition()
             globals << symbol;
     }
 
-    // Equilibrium: one column per component. Free equation: as many as the highest X index used.
-    const int inputs = m_equilibrium && !components.isEmpty()
+    // Equilibrium: one column per component. Free equation: as many as the highest X index used. Either way
+    // as many as the data has columns: the model refuses any other count.
+    const int used = m_equilibrium && !components.isEmpty()
         ? qMax(components.size(), maxInput)
         : qMax(1, maxInput);
+    const int inputs = qMax(used, m_input_columns);
 
     if (PrepareBox* box = boxNamed(QStringLiteral("InputSize"))) {
         QJsonObject v;
         v["value"] = inputs;
         box->setValue(v);
-        box->setDerived(true, m_equilibrium && !components.isEmpty()
-                ? tr("One independent column per component (%1).").arg(components.join(", "))
-                : tr("Highest independent column referenced by the equation (X1…X%1).").arg(inputs));
+        box->setDerived(true, inputs > used
+                ? tr("The data has %1 independent columns; the equation may use fewer of them.").arg(inputs)
+                : (m_equilibrium && !components.isEmpty()
+                          ? tr("One independent column per component (%1).").arg(components.join(", "))
+                          : tr("Highest independent column referenced by the equation (X1…X%1).").arg(inputs)));
     }
 
     if (PrepareBox* box = boxNamed(QStringLiteral("GlobalParameterNames"))) {

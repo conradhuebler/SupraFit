@@ -394,6 +394,17 @@ void ScriptModel::UpdateModelDefinition()
     m_defined_model["GlobalParameterGuess"] = object;
 }
 
+QVector<QJsonObject> ScriptModel::PresetBlockFor(const ScriptModelPreset& preset, int columns)
+{
+    QVector<QJsonObject> block = preset.block;
+    if (columns <= preset.inputSize)
+        return block;
+    for (QJsonObject& descriptor : block)
+        if (descriptor["name"].toString() == QLatin1String("InputSize"))
+            descriptor["value"] = columns;
+    return block;
+}
+
 QVector<ScriptModelPreset> ScriptModel::Presets()
 {
     // Fill a copy of a base descriptor with its value.

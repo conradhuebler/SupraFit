@@ -194,6 +194,12 @@ public:
      * independent columns are required. The coupling is otherwise invisible. Claude Generated. */
     void AddScriptGuidance();
 
+    /*! \brief The number of independent columns of the data the model is for. A scripted model takes exactly as many
+     * inputs as the data has columns, so the derived "Columns of Input" is never smaller than this: an equation
+     * that uses X1 only (Michaelis-Menten, a custom model) still is a model for two columns, it just does not use
+     * the second. Without it (0) the input count follows the equation alone. Claude Generated. */
+    void setInputColumns(int columns);
+
     /*! \brief Switch between the two kinds of scripted model. In equation mode the reaction editor is
      * hidden entirely; in equilibrium mode the component count and the stability-constant names are
      * derived from the reaction system and locked. Claude Generated. */
@@ -227,6 +233,7 @@ private:
     class QLabel* m_status = nullptr; ///< always-visible banner: compiler / parser verdict
     class QVBoxLayout* m_pane_layout = nullptr; ///< toolbar + banner + scrolling field grid
     bool m_equilibrium = false;
+    int m_input_columns = 0; ///< columns of the data; lower bound of the derived input count
     /*! \brief The items of the form in display order. The grid is rebuilt from this list by Reflow(), so the
      * form can go from two columns to one when it gets narrow, hidden items leave no gap, and an item can
      * be inserted at a chosen place (the guidance right below the equation). Claude Generated. */

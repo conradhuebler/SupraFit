@@ -68,6 +68,8 @@
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
+#include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/preparewidget.h"
@@ -747,22 +749,24 @@ private slots:
         QStringList failures;
         for (const ScriptModelPreset& preset : presets) {
             // the reference: defined straight from the preset (the menu's way)
-            QSharedPointer<DataClass> refData(makeDataFor(preset.inputSize));
+            const int columns = qMax(2, preset.inputSize); // titration data have two columns, whatever the preset needs
+            QSharedPointer<DataClass> refData(makeDataFor(columns));
             QSharedPointer<AbstractModel> reference = CreateModel(SupraFit::ScriptModel, refData.data());
             QHash<QString, QJsonObject> direct;
-            for (const QJsonObject& d : preset.block)
+            for (const QJsonObject& d : ScriptModel::PresetBlockFor(preset, columns))
                 direct[d["name"].toString()] = d;
             reference->setModelDefinition(direct);
             const bool referenceOk = reference->DefineModel(QJsonObject()) && reference->Complete();
 
             // the dialog's way
-            QSharedPointer<DataClass> data(makeDataFor(preset.inputSize));
+            QSharedPointer<DataClass> data(makeDataFor(columns));
             QSharedPointer<AbstractModel> model = CreateModel(SupraFit::ScriptModel, data.data());
             PrepareWidget* form = new PrepareWidget(model->getInputBlock(), true);
-            QVector<QPair<QString, QVector<QJsonObject>>> offered;
+            QVector<QPair<QString, QVector<QJsonObject>>> offered; // as ModelDataHolder offers them for this data
             for (const ScriptModelPreset& p : presets)
-                if (p.inputSize <= preset.inputSize)
-                    offered << qMakePair(p.name, p.block);
+                if (p.inputSize <= columns)
+                    offered << qMakePair(p.name, ScriptModel::PresetBlockFor(p, columns));
+            form->setInputColumns(columns);
             form->AddPresets(offered);
             form->AddScriptGuidance();
             form->setEquilibriumMode(false);
@@ -1335,6 +1339,155 @@ private slots:
         m_model->RemoveStatistic(SupraFit::Method::MonteCarlo, 0);
         QSettings().remove(QStringLiteral("ui"));
         QSettings().remove(QStringLiteral("model"));
+    }
+    // "Define Model" used twice in a row: choose one entry of the preset list (also "Equilibrium (reactions)" from
+    // scratch), then another one. The form must end up as the second entry alone, whatever the first was. Claude Generated.
+    void defineModelDialogSecondPresetBuildsTheModel()
+    {
+        const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+        QStringList entries; // the list of the dialog, by its texts
+        entries << QStringLiteral("Free equation") << QStringLiteral("Equilibrium (reactions)");
+        for (const ScriptModelPreset& p : presets)
+            entries << p.name;
+        QStringList failures;
+        int combinations = 0;
+        for (const QString& first : entries)
+            for (const QString& second : entries) {
+                if (first == second)
+                    continue;
+                // the second as a preset, if it is one (a start-from-scratch entry as second is checked as empty form)
+                const ScriptModelPreset* wanted = nullptr;
+                for (const ScriptModelPreset& p : presets)
+                    if (p.name == second)
+                        wanted = &p;
+                const int inputs = qMax(2, wanted ? wanted->inputSize : 2); // titration data have two columns
+                QSharedPointer<DataClass> data(makeDataFor(inputs));
+                QSharedPointer<AbstractModel> model = CreateModel(SupraFit::ScriptModel, data.data());
+                PrepareWidget* form = new PrepareWidget(model->getInputBlock(), true);
+                QVector<QPair<QString, QVector<QJsonObject>>> offered;
+                for (const ScriptModelPreset& p : presets)
+                    if (p.inputSize <= inputs)
+                        offered << qMakePair(p.name, ScriptModel::PresetBlockFor(p, inputs));
+                form->setInputColumns(inputs);
+                form->AddPresets(offered);
+                form->AddScriptGuidance();
+                form->setEquilibriumMode(false);
+                form->resize(1000, 700);
+                form->show();
+                QCoreApplication::processEvents();
+
+                auto click = [form](const QString& text) {
+                    for (QListWidget* l : form->findChildren<QListWidget*>())
+                        for (int i = 0; i < l->count(); ++i)
+                            if (l->item(i)->text() == text) {
+                                l->setCurrentRow(i);
+                                emit l->itemClicked(l->item(i));
+                                QCoreApplication::processEvents();
+                                return true;
+                            }
+                    return false;
+                };
+                if (!click(first) || !click(second)) {
+                    failures << first + QStringLiteral(" -> ") + second + QStringLiteral(": entry not offered");
+                    delete form;
+                    continue;
+                }
+                ++combinations;
+                if (wanted) {
+                    QSharedPointer<DataClass> refData(makeDataFor(inputs));
+                    QSharedPointer<AbstractModel> reference = CreateModel(SupraFit::ScriptModel, refData.data());
+                    QHash<QString, QJsonObject> direct;
+                    for (const QJsonObject& d : ScriptModel::PresetBlockFor(*wanted, inputs))
+                        direct[d["name"].toString()] = d;
+                    reference->setModelDefinition(direct);
+                    const bool referenceOk = reference->DefineModel(QJsonObject()) && reference->Complete();
+
+                    model->setModelDefinition(form->getObject());
+                    const bool defined = model->DefineModel(QJsonObject());
+                    const bool complete = defined && model->Complete();
+                    if (referenceOk && !complete)
+                        failures << QStringLiteral("%1 -> %2: dialog %3").arg(first, second, defined ? QStringLiteral("incomplete") : QStringLiteral("DefineModel failed"));
+                    else if (referenceOk && (model->GlobalParameterSize() != reference->GlobalParameterSize()
+                                 || model->LocalParameterSize() != reference->LocalParameterSize()
+                                 || model->InputParameterSize() != reference->InputParameterSize()))
+                        failures << QStringLiteral("%1 -> %2: parameters differ (global %3/%4, local %5/%6, input %7/%8)")
+                                        .arg(first, second)
+                                        .arg(model->GlobalParameterSize()).arg(reference->GlobalParameterSize())
+                                        .arg(model->LocalParameterSize()).arg(reference->LocalParameterSize())
+                                        .arg(model->InputParameterSize()).arg(reference->InputParameterSize());
+                }
+                delete form;
+            }
+        qInfo("%d combinations tried, %lld failures", combinations, static_cast<long long>(failures.size()));
+        QVERIFY2(failures.isEmpty(), qPrintable(failures.mid(0, 12).join("\n")));
+    }
+    // The operator's case: a custom model with an equilibrium system is in the workspace, then a predefined model is
+    // taken from the menu (New Model > Predefined models): every preset must still add its model. A message box (the
+    // "preset could not be applied" warning) would block the test, so it is closed and counted as a failure.
+    // Claude Generated.
+    void presetFromTheMenuAfterAnEquilibriumCustomModel()
+    {
+        const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+        QStringList failures;
+        QStringList baseline; // the same presets on the same data without the custom model in the workspace
+        int tried = 0;
+        for (const bool withCustom : { true, false })
+        for (int index = 0; index < presets.size(); ++index) {
+            // titration data like an NMR experiment: two independent columns (host, guest)
+            QSharedPointer<DataClass> data(makeDataFor(2));
+            ChartWidget chart;
+            chart.setRawData(data);
+            ModelDataHolder holder;
+            holder.setChartWidget(&chart);
+            holder.setData(data, QSharedPointer<ChartWrapper>::create());
+
+            // the custom model with an equilibrium system: the "native solver" preset is what the dialog's
+            // "Equilibrium (reactions)" start leads to; it only gets a name of its own
+            QHash<QString, QJsonObject> equilibrium;
+            for (const ScriptModelPreset& p : presets)
+                if (p.name.contains(QStringLiteral("native solver")))
+                    for (const QJsonObject& d : p.block)
+                        equilibrium[d["name"].toString()] = d;
+            QVERIFY2(!equilibrium.isEmpty() && equilibrium.contains(QStringLiteral("Reactions")), "no equilibrium preset to start from");
+            QJsonObject name = equilibrium.value(QStringLiteral("Name"));
+            name["value"] = QStringLiteral("My equilibrium model");
+            equilibrium[QStringLiteral("Name")] = name;
+            if (withCustom) {
+                QSharedPointer<AbstractModel> custom = CreateModel(SupraFit::ScriptModel, data.data());
+                custom->setModelDefinition(equilibrium);
+                const bool customOk = custom->DefineModel(QJsonObject()) && custom->Complete();
+                if (!customOk) {
+                    failures << presets[index].name + QStringLiteral(": the custom model could not be defined (test setup)");
+                    continue;
+                }
+                custom->InitialGuess();
+                holder.createModelWidgetFromModel(custom);
+            }
+            const int before = holder.ModelCount();
+
+            QStringList boxes;
+            QTimer closer;
+            closer.setInterval(30);
+            QObject::connect(&closer, &QTimer::timeout, [&boxes]() {
+                if (QWidget* w = QApplication::activeModalWidget()) {
+                    boxes << w->windowTitle();
+                    w->close();
+                }
+            });
+            closer.start();
+            QMetaObject::invokeMethod(&holder, "NewModelFromPreset", Q_ARG(int, index));
+            QCoreApplication::processEvents();
+            closer.stop();
+            ++tried;
+            QStringList& into = withCustom ? failures : baseline;
+            if (!boxes.isEmpty())
+                into << QStringLiteral("%1: message box \"%2\"").arg(presets[index].name, boxes.join(", "));
+            else if (holder.ModelCount() != before + 1)
+                into << QStringLiteral("%1: no model added (%2 -> %3 models)").arg(presets[index].name).arg(before).arg(holder.ModelCount());
+        }
+        qInfo("%d runs, failures after the custom model: %lld, without it: %lld", tried, static_cast<long long>(failures.size()), static_cast<long long>(baseline.size()));
+        qInfo("baseline failures: %s", qPrintable(baseline.join("; ")));
+        QVERIFY2(failures.isEmpty(), qPrintable(failures.mid(0, 12).join("\n")));
     }
 };
 
