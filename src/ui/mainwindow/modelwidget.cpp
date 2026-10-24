@@ -611,7 +611,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             [this]() {
                 QList<SectionStack::SubEntry> rows;
                 for (const StatEntry& e : StatisticEntries())
-                    rows << SectionStack::SubEntry{ e.title, e.kind == 0 };
+                    rows << SectionStack::SubEntry{ e.title, e.kind == 0, e.icon, e.tooltip };
                 return rows;
             },
             [this](int row) {
@@ -1357,17 +1357,87 @@ void ModelWidget::LoadStatistic(const QJsonObject& data)
  * Claude Generated. */
 QList<ModelWidget::StatEntry> ModelWidget::StatisticEntries() const
 {
+    // The list is narrow: short names, the full ones are the tooltips; one icon per method for the analysis
+    // to start and for its results.
+    struct Analysis {
+        const char* tab; ///< start of the tab title in the statistic dialog
+        const char* shortName;
+        SupraFit::Method method;
+    };
+    static const Analysis analyses[] = {
+        { "Cross", QT_TR_NOOP("Cross Validation"), SupraFit::Method::CrossValidation },
+        { "Monte", QT_TR_NOOP("Monte Carlo"), SupraFit::Method::MonteCarlo },
+        { "Weakened", QT_TR_NOOP("Grid Search"), SupraFit::Method::WeakenedGridSearch },
+        { "Model", QT_TR_NOOP("Model Comparison"), SupraFit::Method::ModelComparison },
+    };
+
     QList<StatEntry> rows;
-    rows << StatEntry{ tr("New analysis"), 0, -1, SupraFit::Method::MonteCarlo, -1 };
+    rows << StatEntry{ tr("New analysis"), 0, -1, SupraFit::Method::MonteCarlo, -1, QIcon(), QString() };
     const QStringList tabs = m_statistic_dialog->TabTitles();
-    for (int i = 0; i < tabs.size(); ++i)
-        rows << StatEntry{ tabs[i], 1, i, SupraFit::Method::MonteCarlo, -1 };
+    for (int i = 0; i < tabs.size(); ++i) {
+        QString title = tabs[i];
+        QIcon icon;
+        for (const Analysis& a : analyses)
+            if (tabs[i].startsWith(QLatin1String(a.tab))) {
+                title = tr(a.shortName);
+                icon = MethodIcon(a.method);
+            }
+        rows << StatEntry{ title, 1, i, SupraFit::Method::MonteCarlo, -1, icon, title == tabs[i] ? QString() : tabs[i] };
+    }
     const QList<ResultsDialog::Entry> results = m_results->Entries();
     if (!results.isEmpty())
-        rows << StatEntry{ tr("Results"), 0, -1, SupraFit::Method::MonteCarlo, -1 };
+        rows << StatEntry{ tr("Results"), 0, -1, SupraFit::Method::MonteCarlo, -1, QIcon(), QString() };
     for (const ResultsDialog::Entry& e : results)
-        rows << StatEntry{ e.title, 2, -1, e.type, e.index };
+        rows << StatEntry{ ResultListTitle(e.type, e.index), 2, -1, e.type, e.index, MethodIcon(e.type), e.title };
     return rows;
+}
+
+/*! \brief Short, numbered name of a finished analysis as listed on the Statistics page ("Monte Carlo #1"). */
+QString ModelWidget::ResultListTitle(SupraFit::Method type, int index)
+{
+    QString name;
+    switch (type) {
+    case SupraFit::Method::MonteCarlo:
+        name = tr("Monte Carlo");
+        break;
+    case SupraFit::Method::CrossValidation:
+        name = tr("Cross Validation");
+        break;
+    case SupraFit::Method::WeakenedGridSearch:
+        name = tr("Grid Search");
+        break;
+    case SupraFit::Method::ModelComparison:
+        name = tr("Model Comparison");
+        break;
+    case SupraFit::Method::Reduction:
+        name = tr("Reduction");
+        break;
+    case SupraFit::Method::GlobalSearch:
+        name = tr("Global Search");
+        break;
+    default:
+        name = SupraFit::Method2Name(type);
+    }
+    return tr("%1 #%2").arg(name).arg(index + 1);
+}
+
+/*! \brief Icon of an analysis method; the project only ships a few, so some are shared. */
+QIcon ModelWidget::MethodIcon(SupraFit::Method type)
+{
+    switch (type) {
+    case SupraFit::Method::MonteCarlo:
+        return Icon("applications-education-science");
+    case SupraFit::Method::CrossValidation:
+    case SupraFit::Method::Reduction:
+        return Icon("split");
+    case SupraFit::Method::WeakenedGridSearch:
+    case SupraFit::Method::GlobalSearch:
+        return Icon("kspread");
+    case SupraFit::Method::ModelComparison:
+        return Icon("fork");
+    default:
+        return QIcon();
+    }
 }
 
 /*! \brief Show the Statistics page with its list; \p results selects the newest finished analysis. */
@@ -1382,7 +1452,7 @@ void ModelWidget::OpenStatistics(bool results)
         return;
     const QList<ResultsDialog::Entry> entries = m_results->Entries();
     if (!entries.isEmpty())
-        m_pages->selectSub(entries.last().title);
+        m_pages->selectSub(ResultListTitle(entries.last().type, entries.last().index));
 }
 
 /*! \brief A finished analysis: list it and show it on the Statistics page. */
@@ -1395,7 +1465,7 @@ void ModelWidget::ShowStatisticResult(SupraFit::Method type, int index)
     }
     m_pages->setCurrentTitle(tr("Statistics"), true);
     m_pages->refreshGroup(m_stat_page);
-    m_pages->selectSub(tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1));
+    m_pages->selectSub(ResultListTitle(type, index));
 }
 
 void ModelWidget::LocalMinimize()

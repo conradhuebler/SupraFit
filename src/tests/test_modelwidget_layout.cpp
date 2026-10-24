@@ -487,7 +487,8 @@ private slots:
         QTest::qWaitForWindowExposed(&widget);
         QCoreApplication::processEvents();
 
-        const QString resultTitle = QStringLiteral("%1 # 1").arg(SupraFit::Method2Name(SupraFit::Method::MonteCarlo));
+        const QString resultTitle = QStringLiteral("Monte Carlo #1"); // short name in the list
+        const QString tabName = QStringLiteral("%1 # 1").arg(SupraFit::Method2Name(SupraFit::Method::MonteCarlo)); // the window's
         QJsonObject job = MonteCarloConfigBlock;
         job["MaxSteps"] = 100;
         JobManager jobs;
@@ -540,7 +541,7 @@ private slots:
             if (w != &widget)
                 external = w;
         QVERIFY(external);
-        QVERIFY2(external->windowTitle().contains(resultTitle), qPrintable(external->windowTitle()));
+        QVERIFY2(external->windowTitle().contains(tabName), qPrintable(external->windowTitle()));
         QVERIFY(results->DetachEntry(SupraFit::Method::MonteCarlo, 0)); // again: raises, no second window
         QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
 

@@ -27,6 +27,7 @@
 #include <QtCore/QStringList>
 
 #include <QtGui/QFont>
+#include <QtGui/QIcon>
 
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
@@ -51,6 +52,8 @@ public:
     struct SubEntry {
         QString title;
         bool header = false;
+        QIcon icon;
+        QString tooltip; ///< the full name when the title is a short one
     };
 
     explicit SectionStack(QWidget* parent = nullptr)
@@ -59,7 +62,7 @@ public:
         m_list = makeList();
         m_sub_list = makeList();
         m_nav = new QStackedWidget;
-        m_nav->setFixedWidth(150);
+        m_nav->setFixedWidth(160);
         m_nav->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
         m_nav->addWidget(m_list);
         m_nav->addWidget(m_sub_list);
@@ -83,8 +86,10 @@ public:
         });
         // choosing the group page again after "Back" does not change the row: the click enters it
         QObject::connect(m_list, &QListWidget::itemClicked, m_list, [this](QListWidgetItem*) { enterGroup(m_list->currentRow()); });
-        QObject::connect(m_sub_list, &QListWidget::itemClicked, m_sub_list, [this](QListWidgetItem*) {
-            const int row = m_sub_list->currentRow();
+        QObject::connect(m_sub_list, &QListWidget::itemClicked, m_sub_list, [this](QListWidgetItem* item) {
+            if (!(item->flags() & Qt::ItemIsSelectable))
+                return; // a heading
+            const int row = m_sub_list->row(item);
             if (row == 0)
                 leaveGroup();
             else
@@ -225,6 +230,8 @@ private:
         list->setFrameShape(QFrame::NoFrame);
         list->setSpacing(2);
         list->setBackgroundRole(QPalette::Window);
+        list->setAlternatingRowColors(true); // tells the entries apart without any style sheet
+        list->setIconSize(QSize(18, 18));
         list->setWordWrap(true); // long titles ("Cross Validation/Reduction") wrap instead of getting a scroll bar
         list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         list->setTextElideMode(Qt::ElideNone);
@@ -259,12 +266,16 @@ private:
         m_sub_list->clear();
         m_sub_list->addItem(QObject::tr("\u2190 Back"));
         for (const SubEntry& entry : entries) {
-            QListWidgetItem* item = new QListWidgetItem(entry.title);
+            QListWidgetItem* item = new QListWidgetItem(entry.icon, entry.title);
+            if (!entry.tooltip.isEmpty())
+                item->setToolTip(entry.tooltip);
             if (entry.header) {
-                item->setFlags(Qt::NoItemFlags); // a heading, not a choice
+                item->setFlags(Qt::ItemIsEnabled); // a heading, not a choice: readable, but cannot be selected
                 QFont font = item->font();
                 font.setBold(true);
                 item->setFont(font);
+                item->setBackground(m_sub_list->palette().color(QPalette::Midlight));
+                item->setForeground(m_sub_list->palette().color(QPalette::WindowText));
             }
             m_sub_list->addItem(item);
         }

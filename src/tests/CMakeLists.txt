@@ -1055,8 +1055,9 @@ endif()
 # Like benchmark_mcwidget it links the GUI layer; Instance.h carries a Q_OBJECT whose moc output
 # otherwise only exists in the suprafit executable target.
 if(BUILD_GUI)
+    qt_add_resources(modelwidget_layout_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
     add_executable(test_modelwidget_layout test_modelwidget_layout.cpp
-        ${CMAKE_SOURCE_DIR}/src/ui/instance.h)
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${modelwidget_layout_RES})
     target_link_libraries(test_modelwidget_layout
         Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
         -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group

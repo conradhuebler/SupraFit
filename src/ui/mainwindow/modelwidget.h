@@ -29,6 +29,7 @@
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include <QtCharts/QLineSeries>
+#include <QtGui/QIcon>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
@@ -172,9 +173,13 @@ private:
         int index; ///< tab of the statistic dialog (analysis)
         SupraFit::Method type; ///< method and number of the result
         int result;
+        QIcon icon;
+        QString tooltip;
     };
     QList<StatEntry> StatisticEntries() const;
     void OpenStatistics(bool results);
+    static QString ResultListTitle(SupraFit::Method type, int index);
+    static QIcon MethodIcon(SupraFit::Method type);
     void ShowStatisticResult(SupraFit::Method type, int index);
     ResultsDialog* m_results;
 
