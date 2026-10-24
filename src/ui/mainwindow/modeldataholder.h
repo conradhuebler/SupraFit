@@ -138,9 +138,10 @@ public:
 
 private:
     QPointer<QMenu> m_data_menu, m_model_menu, m_evaluation_menu;
-    QPointer<QMenu> m_nmr_menu, m_uv_vis_menu, m_fl_menu, m_itc_menu, m_kinetics_menu;
+    QAction* m_menu_marker = nullptr; ///< the catalogue's entries of the Model menu are inserted before it
+    QVector<QPointer<QAction>> m_menu_dynamic; ///< what addToMenu inserted, removed again on the next call
+    QHash<int, QPointer<QMenu>> m_reaction_menus; ///< per ModelCatalog::Technique: the flexible model's reaction presets
     QPointer<QAction> m_edit_data, m_split_data, m_any_model, m_optimize, m_statistics, m_analyse, m_close_all;
-    QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_uv_vis_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model, m_calorimetry;
 
     QAction* m_last_action = nullptr;
     bool m_enabled = false, m_tools_hidden = false;

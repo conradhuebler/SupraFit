@@ -266,64 +266,21 @@ MDHDockTitleBar::MDHDockTitleBar()
         anyAction->setMenu(sub);
     };
 
-    //#ifdef NMR_Models
-    m_nmr_model << addModel(SupraFit::nmr_ItoI);
-    m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI);
-    m_nmr_model << addModel(SupraFit::nmr_ItoI_ItoII);
-    m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI_ItoII);
-    QAction* nmrAny = addModel(SupraFit::nmr_any);
-    attachPresets(nmrAny, SupraFit::nmr_any);
-    m_nmr_model << nmrAny;
-
-    //#endif
-
-    //#ifdef Fluorescence_Models
-    m_fl_model << addModel(SupraFit::fl_ItoI);
-    m_fl_model << addModel(SupraFit::fl_IItoI_ItoI);
-    m_fl_model << addModel(SupraFit::fl_ItoI_ItoII);
-    m_fl_model << addModel(SupraFit::fl_IItoI_ItoI_ItoII);
-    QAction* flAny = addModel(SupraFit::fl_any);
-    attachPresets(flAny, SupraFit::fl_any); // N-component: full preset set incl. three-component systems
-    m_fl_model << flAny;
-    //#endif
-
-    //#ifdef UV_VIS_Models
-    m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI);
-    m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI);
-    m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI_ItoII);
-    m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI_ItoII);
-    QAction* uvvisAny = addModel(SupraFit::uvvis_any);
-    attachPresets(uvvisAny, SupraFit::uvvis_any);
-    m_uv_vis_model << uvvisAny;
-
-    //#endif
-
-#ifdef Kinetic_Models
-    m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
-
-    m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
-    m_kinetcs_model << addModel(SupraFit::BiMolecularModel);
-    m_kinetcs_model << addModel(SupraFit::FlexMolecularModel);
-    m_kinetcs_model << addModel(SupraFit::TianModel);
-
-    m_kinetcs_model << addModel(SupraFit::DecayRates);
-#endif
-
+    // The fixed models and stoichiometries come from ModelCatalog (addToMenu). What the catalogue does not list stays
+    // here: the flexible `*_any` models with every reaction preset of the editor, one submenu per technique.
+    auto reactionMenu = [&](ModelCatalog::Technique technique, SupraFit::Model model, int maxComponents) {
+        QAction* any = addModel(model);
+        attachPresets(any, model, maxComponents);
+        QMenu* sub = any->menu();
+        sub->setTitle(ModelCatalog::Info(technique).name);
+        sub->setToolTipsVisible(true);
+        m_reaction_menus.insert(int(technique), sub);
+    };
+    reactionMenu(ModelCatalog::Technique::NMR, SupraFit::nmr_any, INT_MAX);
+    reactionMenu(ModelCatalog::Technique::UVVis, SupraFit::uvvis_any, INT_MAX);
+    reactionMenu(ModelCatalog::Technique::Fluorescence, SupraFit::fl_any, INT_MAX);
 #ifdef ITC_Models
-    m_itc_fixed_model << addModel(SupraFit::itc_ItoI);
-    m_itc_fixed_model << addModel(SupraFit::itc_IItoI);
-    m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
-    m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
-    QAction* itcAny = addModel(SupraFit::itc_any);
-    attachPresets(itcAny, SupraFit::itc_any, /*maxComponents=*/2); // ITC is 2-component (host/guest from protocol)
-    m_itc_fixed_model << itcAny;
-
-    //m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
-    m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
-
-    m_itc_fixed_model << addModel(SupraFit::itc_blank);
-
-    m_calorimetry << addModel(SupraFit::TianModel);
+    reactionMenu(ModelCatalog::Technique::Calorimetry, SupraFit::itc_any, 2); // ITC is 2-component (host/guest from protocol)
 #endif
 
     /* Model menu: scripted models, model files, then the experiment submenus (filled in addToMenu,
@@ -376,20 +333,8 @@ MDHDockTitleBar::MDHDockTitleBar()
         emit this->AddScriptModel(file);
     });
 
-    m_model_menu->addSection(tr("Experiment"));
-    auto experimentMenu = [this](const QString& title) {
-        QMenu* menu = m_model_menu->addMenu(Icon("list-add"), title);
-        menu->setToolTipsVisible(true);
-        menu->menuAction()->setVisible(false); // shown by addToMenu when the data fits the experiment
-        return QPointer<QMenu>(menu);
-    };
-    m_nmr_menu = experimentMenu(tr("NMR Titration"));
-    m_uv_vis_menu = experimentMenu(tr("UV/Vis Titration"));
-    m_fl_menu = experimentMenu(tr("Fluorescence Titration"));
-    m_itc_menu = experimentMenu(tr("Calorimetry"));
-    m_kinetics_menu = experimentMenu(tr("Kinetics"));
-
-    m_model_menu->addSeparator();
+    // the catalogue's entries are inserted before this separator by addToMenu
+    m_menu_marker = m_model_menu->addSeparator();
     m_any_model = m_model_menu->addAction(QIcon(":/icons/list-add-blue.png"), tr("Any Model…"));
     m_any_model->setToolTip(tr("Add a model by its numeric model ID"));
     connect(m_any_model, &QAction::triggered, this, [this]() {
@@ -406,8 +351,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     // right click on an entry: put it on the quick bar (the experiment submenus and preset submenus are filled later,
     // their menus exist now)
     m_model_menu->installEventFilter(this);
-    for (QMenu* menu : { m_nmr_menu.data(), m_uv_vis_menu.data(), m_fl_menu.data(), m_itc_menu.data(), m_kinetics_menu.data(), scriptPresets })
-        menu->installEventFilter(this);
+    scriptPresets->installEventFilter(this);
     for (QMenu* menu : findChildren<QMenu*>())
         menu->installEventFilter(this);
     auto showAdvanced = [this]() { m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
@@ -424,33 +368,102 @@ void MDHDockTitleBar::setEnabled(bool enabled)
 
 void MDHDockTitleBar::addToMenu(int IndependetCount)
 {
-    // Fill the experiment submenus with the models (stoichiometries) that fit the data: one independent
-    // column means calorimetry/kinetics, two mean host/guest titrations (NMR, UV/Vis, fluorescence).
-    auto fill = [](QMenu* menu, const QVector<QPointer<QAction>>& list) {
-        for (const QPointer<QAction>& ptr : std::as_const(list))
-            if (ptr)
-                menu->addAction(ptr);
-        menu->menuAction()->setVisible(!menu->isEmpty());
+    // Rebuild the part of the Model menu that depends on the data, from ModelCatalog: the stoichiometries (a submenu
+    // of the techniques that offer them), the models of one technique alone, the reaction systems of the flexible
+    // models. A column count of one means calorimetry/kinetics, two or more host/guest titrations. Claude Generated.
+    for (const QPointer<QAction>& action : std::as_const(m_menu_dynamic)) {
+        if (!action)
+            continue;
+        m_model_menu->removeAction(action);
+        QMenu* sub = action->menu();
+        if (sub && m_reaction_menus.values().contains(sub))
+            continue; // the reaction systems live as long as the menu
+        if (sub)
+            sub->deleteLater(); // takes its action along
+        else
+            action->deleteLater();
+    }
+    m_menu_dynamic.clear();
+
+    auto insert = [this](QAction* action) {
+        m_model_menu->insertAction(m_menu_marker, action);
+        m_menu_dynamic << action;
+    };
+    auto choose = [this](const ModelCatalog::Entry& entry, ModelCatalog::Technique technique) {
+        const ModelCatalog::Choice choice = ModelCatalog::ChoiceFor(entry, technique);
+        CountMenuChoice(choice);
+        RequestModel(choice);
+    };
+    auto entryAction = [&](QObject* parent, const ModelCatalog::Entry& entry, ModelCatalog::Technique technique, const QString& text) {
+        QAction* action = new QAction(text, parent);
+        action->setToolTip(entry.tooltip);
+        action->setProperty("entry_key", entry.key);
+        connect(action, &QAction::triggered, this, [choose, entry, technique]() { choose(entry, technique); });
+        return action;
     };
 
-    for (QMenu* menu : { m_nmr_menu.data(), m_uv_vis_menu.data(), m_fl_menu.data(), m_itc_menu.data(), m_kinetics_menu.data() }) {
-        menu->clear();
-        menu->menuAction()->setVisible(false);
+    const QList<ModelCatalog::Entry> entries = ModelCatalog::AllEntries(IndependetCount);
+    bool section = false;
+    for (const ModelCatalog::Entry& entry : entries) {
+        if (entry.kind != ModelCatalog::Kind::Stoichiometry)
+            continue;
+        if (!section) {
+            QAction* header = new QAction(tr("Stoichiometry"), m_model_menu);
+            header->setSeparator(true);
+            insert(header);
+            section = true;
+        }
+        if (entry.techniques.size() == 1) {
+            insert(entryAction(m_model_menu, entry, entry.techniques.first(), tr("%1 \u00b7 %2").arg(entry.title, ModelCatalog::Info(entry.techniques.first()).shortName)));
+            continue;
+        }
+        QMenu* sub = new QMenu(entry.title, m_model_menu);
+        sub->setToolTipsVisible(true);
+        sub->installEventFilter(this);
+        for (const ModelCatalog::Technique t : entry.techniques)
+            sub->addAction(entryAction(sub, entry, t, ModelCatalog::Info(t).name));
+        sub->menuAction()->setToolTip(entry.tooltip);
+        sub->menuAction()->setProperty("entry_key", entry.key);
+        insert(sub->menuAction());
     }
 
-    if (IndependetCount == 1) {
-        fill(m_kinetics_menu, m_kinetcs_model);
-        m_itc_menu->addSection(tr("Fixed Stoichiometry"));
-        fill(m_itc_menu, m_itc_fixed_model);
-        m_itc_menu->addSection(tr("Flexible Stoichiometry"));
-        fill(m_itc_menu, m_itc_flex_model);
-        m_itc_menu->addSection(tr("Thermokinetics"));
-        fill(m_itc_menu, m_calorimetry);
-        m_itc_menu->menuAction()->setVisible(!(m_itc_fixed_model.isEmpty() && m_itc_flex_model.isEmpty() && m_calorimetry.isEmpty()));
-    } else if (IndependetCount == 2) {
-        fill(m_nmr_menu, m_nmr_model);
-        fill(m_uv_vis_menu, m_uv_vis_model);
-        fill(m_fl_menu, m_fl_model);
+    // the models of one technique alone (special calorimetry models, kinetics), one submenu per technique
+    QMap<int, QMenu*> further;
+    for (const ModelCatalog::Entry& entry : entries) {
+        if (entry.kind != ModelCatalog::Kind::FixedModel || entry.techniques.isEmpty())
+            continue;
+        const ModelCatalog::Technique t = entry.techniques.first();
+        if (!further.contains(int(t))) {
+            QMenu* sub = new QMenu(ModelCatalog::Info(t).name, m_model_menu);
+            sub->setToolTipsVisible(true);
+            sub->installEventFilter(this);
+            further.insert(int(t), sub);
+        }
+        QAction* action = entryAction(further[int(t)], entry, t, entry.title);
+        action->setData(entry.choice.model);
+        further[int(t)]->addAction(action);
+    }
+    if (!further.isEmpty()) {
+        QAction* header = new QAction(tr("Further models"), m_model_menu);
+        header->setSeparator(true);
+        insert(header);
+        for (QMenu* sub : std::as_const(further))
+            insert(sub->menuAction());
+    }
+
+    // reaction systems of the flexible models, for the techniques that fit the data
+    bool reactions = false;
+    for (const ModelCatalog::Technique t : ModelCatalog::TechniquesFor(IndependetCount)) {
+        QMenu* sub = m_reaction_menus.value(int(t));
+        if (!sub)
+            continue;
+        if (!reactions) {
+            QAction* header = new QAction(tr("Reaction systems"), m_model_menu);
+            header->setSeparator(true);
+            insert(header);
+            reactions = true;
+        }
+        insert(sub->menuAction());
     }
 }
 

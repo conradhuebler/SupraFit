@@ -63,7 +63,7 @@ A stoichiometry stands for the fixed model of the technique (the four establishe
 The gear next to the buttons switches between **Show the most used models** and **Show a fixed list**, and has **Customise...**, **Fix the bar as it is** (turns what the bar shows now into the fixed list) and **Forget what was used** (resets the counts).
 **Customise...** opens "Customise the quick bar": "The models I add most" with how many, or "A list I put together" (tick what the bar shows, order with Up and Down; the list holds all stoichiometries, models, scripted models and the model files you used), and the technique a model starts with that was never added.
 Right-click on a button: **Remove from the bar** (fixed list), **Fix the bar as it is** (most used), **Customise...**.
-Models added from the menu **Model** count for the bar as well. Right-click an entry there and choose **Add to the quick bar**; the bar then shows a fixed list.
+The menu **Model** lists the same things for the data of the project: **New Model** and **Load Model File...**, then **Stoichiometry** (each stoichiometry has a submenu with the techniques), **Further models** (models of one technique alone, e.g. special calorimetry and kinetic models) and **Reaction systems** (per technique every reaction preset of the editor, or **Define reactions...**). Models added from the menu count for the bar as well. Right-click an entry there and choose **Add to the quick bar**; the bar then shows a fixed list.
 
 ## 4. Fitting (model tab)
 
