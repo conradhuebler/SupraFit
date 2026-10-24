@@ -36,6 +36,8 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabBar>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
 
 #include <Eigen/Dense>
@@ -520,6 +522,9 @@ private slots:
         ResultsDialog* results = widget.findChild<ResultsDialog*>();
         QVERIFY(results);
         QVERIFY2(results->isVisible(), "the result is not shown on the page");
+        QTabWidget* resultTabs = results->findChild<QTabWidget*>();
+        QVERIFY(resultTabs);
+        QVERIFY2(!resultTabs->tabBar()->isVisible(), "the result tab bar repeats what the list already shows");
         const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
         if (!renderDir.isEmpty())
             widget.grab().save(QStringLiteral("%1/modelwidget_results_page.png").arg(renderDir));

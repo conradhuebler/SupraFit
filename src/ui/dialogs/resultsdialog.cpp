@@ -29,6 +29,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QListView>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QVBoxLayout>
@@ -126,6 +127,7 @@ void ResultsDialog::setEmbedded(bool embedded)
     if (embedded) {
         setWindowFlags(Qt::Widget);
         m_results->hide(); // the pane lists the results in its own navigation
+        m_tabs->tabBar()->hide(); // ... and chooses the result there: the tab bar would only repeat the title
         if (!m_detach) {
             m_detach = new QToolButton;
             m_detach->setText(tr("Open in window"));
