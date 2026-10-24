@@ -1,0 +1,41 @@
+<!--
+Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+Claude Generated - work package / roadmap document
+-->
+
+# Work Package: Add-Model-Leiste (NMR als Kern, Stöchiometrien gebündelt, nach Häufigkeit)
+
+**Status:** PLAN, Entscheidungen offen (nichts umgesetzt) · **Branch:** `feature/add-model-bar` (baut auf `feature/model-pane-navigation` auf)
+
+## Ziel
+
+- Modelle hinzufügen ist die häufigste Handlung im Workspace und bekommt eine **eigene Leiste**, die man andocken/lösen kann (QToolBar, alle Seiten, Zustand wird mit dem Fenster gespeichert).
+- **Technik und Stöchiometrie getrennt:** eine einzige Stöchiometrie-Liste (1:1, 1:1 / 1:2, 2:1 / 1:1, 2:1 / 1:1 / 1:2, …) statt je Technik dieselbe Liste noch einmal; die **Technik** (NMR, UV/Vis, Fluoreszenz, Kalorimetrie) wird daneben gewählt. **Default: NMR**, änderbar durch Bedienung und gezielt per Einstellung.
+- Die Leiste füllt sich **nach Häufigkeit** der Aufrufe: die meistgenutzten Kombinationen stehen vorn.
+
+## Ist-Stand (Belege)
+
+- Menü "Model" der Toolbar (`modeldataholder.cpp:320-395`): "New Model" (Script-Presets), "Load Model File…", je Technik ein Untermenü (`m_nmr_menu`, `m_uv_vis_menu`, `m_fl_menu`, `m_itc_menu`, `m_kinetics_menu`), gefüllt von `MDHDockTitleBar::addToMenu(IndependetCount)`: 1 Eingabespalte = Kalorimetrie/Kinetik, 2 = NMR/UV-Vis/Fluoreszenz.
+- Je Technik dieselben vier festen Modelle (z. B. `nmr_ItoI`, `nmr_IItoI_ItoI`, `nmr_ItoI_ItoII`, `nmr_IItoI_ItoI_ItoII`; `fl_*`, `uv_vis_*`, `itc_*` analog) plus ein `*_any`-Modell mit Reaktions-Presets (`ReactionEditorWidget::Presets()`), das ohne Preset den Dialog "Define Model" öffnet.
+- Hinzufügen läuft über `MDHDockTitleBar::AddModel` (`m_model_choosen`, `m_preset_reactions`) -> `ModelDataHolder::AddModel(int, QString)`.
+- Die Hauptleiste (`SupraFitGui::SetupToolBar`) ist nicht verschiebbar; der Fensterzustand (`restoreState`) wird bereits gespeichert.
+
+## Vorschlag
+
+- **Katalog** (rein, testbar): Technik x Stöchiometrie -> `{festes Modell | any-Modell + Preset}`; welche Techniken zu den Daten passen (Eingabespalten); Aufrufzähler in den Einstellungen.
+- **Leiste** `AddModelBar` (QToolBar, `objectName` für den gespeicherten Zustand): links die Technik (Knöpfe NMR | UV/Vis | Fluoreszenz | Kalorimetrie, nur die passenden), daneben die Stöchiometrien als Knöpfe (die meistgenutzten zuerst, Rest hinter "More…"), ganz rechts "New Model" (Script) und "Load Model File…". Ein Klick fügt das Modell der gewählten Technik hinzu.
+- **Default-Technik:** NMR; die Auswahl wandert mit der Bedienung (zuletzt benutzte Technik), eine Einstellung legt sie fest ("immer NMR" / "zuletzt benutzte").
+
+## Arbeitspakete (je ein baubarer Commit)
+
+- **WP-A Katalog:** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü.
+- **WP-B Zähler und Ranking:** Aufrufe je (Technik, Stöchiometrie) in `QSettings` (`model_usage/...`), Sortierung stabil (feste Reihenfolge bei Gleichstand), Zurücksetzen in den Einstellungen.
+- **WP-C Leiste:** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), Offscreen-Test und Render hell/dunkel.
+- **WP-D Menü "Model":** aus dem Katalog gebaut (keine doppelten Listen mehr), Einträge der Leiste und des Menüs bleiben gleich.
+- **WP-E Einstellung und Hilfe:** `add_model_technique`; `docs/ASSISTANT_HELP.md`; Tooltips mit voller Bezeichnung ("1:1 / 1:2 = ...").
+
+## Risiken
+
+- Die festen Modelle und `*_any` unterscheiden sich in Parametern/Dialog (`DemandInput`): der Katalog muss pro Technik sagen, welcher Weg gilt; Fluoreszenz/UV-Vis haben nicht alle Presets.
+- Das offene Problem "Define Model" (`TODO.md`) betrifft denselben Weg: vor dem Umbau klären.
+- Eine verschiebbare Leiste braucht einen stabilen `objectName`, sonst geht der gespeicherte Zustand verloren.
