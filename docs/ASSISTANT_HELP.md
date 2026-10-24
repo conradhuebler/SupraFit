@@ -93,7 +93,7 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 - The "..." button next to a global parameter ("Boundaries of <param> and root search"): Enable Lower/Upper Boundary (soft log-Fermi penalty, experimental;
   keep the start value inside), "Single Optimisation".
 - Action buttons: **New Guess**, Restore, Save, Load Constants, Save Constants, **Fit Settings** (iterations, tolerances, Fit Solver).
-  Statistics, results, charts and the detailed data (input data, model, parameters and statistics as text) are not buttons: they are the pages "Statistics", "Charts" and "Detailed" of the page list.
+  Statistics, results, charts and the detailed data (input data, model, parameters and statistics as text) are not buttons: they are the pages "Statistics", "Charts" and "Detailed" of the page list. "Detailed" shows the statistical analyses of the stored results only with its box "Include the statistical analyses" (off by default: they can take a while).
 - No convergence: try New Guess, other start values, the Global Search, fix a weakly determined parameter, or exclude an outlier series/row.
 - **Evaluation** menu: **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
 

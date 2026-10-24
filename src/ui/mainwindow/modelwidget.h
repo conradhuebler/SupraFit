@@ -164,6 +164,7 @@ private:
     ModalDialog* m_charts_dialogs;
     TextWidget* m_detailed_text = nullptr; ///< the page "Detailed": data, model and statistics as text
     QTimer* m_detailed_timer = nullptr; ///< follows a recalculation while that page is shown
+    class QCheckBox* m_detailed_statistics = nullptr; ///< include the (slow) statistical analyses in that page
     void RefreshDetailed(bool recalculate);
     SectionStack* m_pages = nullptr; ///< the page list of the pane (options, series, statistics, charts, ...)
     bool m_series_state_restored = false; ///< the series splitter got its direction and sizes (needs the width)

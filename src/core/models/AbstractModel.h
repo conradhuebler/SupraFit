@@ -202,6 +202,7 @@ public:
      * some useless loops will be omitted in AbstractModel::Calculation call
      */
     inline void setFast(bool fast = true) { m_fast = fast; }
+    inline bool isFast() const { return m_fast; }
 
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call
@@ -671,7 +672,10 @@ public:
 
     /*! \brief return text of calculated model
      */
-    QString Model2Text() const;
+    /*! \brief The model's results as text. \p withStatistics adds the analysis of every stored statistic result
+     * (Monte Carlo, cross validation, ...), which is by far the expensive part: the titration models integrate
+     * BC50 for each of them. Claude Generated. */
+    QString Model2Text(bool withStatistics = true) const;
 
     QString Global2Text() const;
 

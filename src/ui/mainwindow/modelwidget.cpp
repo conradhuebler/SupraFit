@@ -690,10 +690,25 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_detailed_timer->setSingleShot(true);
     connect(m_detailed_timer, &QTimer::timeout, this, [this]() { RefreshDetailed(false); });
     connect(m_model.data(), &AbstractModel::Recalculated, this, [this]() {
-        if (m_pages && m_pages->currentTitle() == tr("Detailed"))
+        // follow a recalculation while the page is shown; not while a fit runs (fast mode), and not with the
+        // statistics, which take their time: those are rewritten when the page is opened or the box is toggled
+        if (m_pages && m_pages->currentTitle() == tr("Detailed") && !m_model->isFast() && !m_detailed_statistics->isChecked())
             m_detailed_timer->start(200); // one refresh for a series of recalculations
     });
-    model_tab->addPage(m_detailed_text, tr("Detailed"), nullptr, Icon("help-about"));
+    // The statistical analyses of the stored results (Monte Carlo, cross validation, ...) are the expensive part of
+    // this text (BC50 integrals for every result): they are an opt-in in the header of the page, remembered.
+    QWidget* detailed_tools = new QWidget;
+    QHBoxLayout* detailed_tools_layout = new QHBoxLayout(detailed_tools);
+    detailed_tools_layout->setContentsMargins(0, 0, 0, 0);
+    m_detailed_statistics = new QCheckBox(tr("Include the statistical analyses"));
+    m_detailed_statistics->setToolTip(tr("Adds the analysis of every stored result (Monte Carlo, cross validation, ...). This can take a while."));
+    m_detailed_statistics->setChecked(QSettings().value(QStringLiteral("ui/detailed_statistics"), false).toBool());
+    connect(m_detailed_statistics, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue(QStringLiteral("ui/detailed_statistics"), on);
+        RefreshDetailed(false);
+    });
+    detailed_tools_layout->addWidget(m_detailed_statistics);
+    model_tab->addPage(m_detailed_text, tr("Detailed"), detailed_tools, Icon("help-about"));
 
     // Simulated data sets from this model (drag an entry onto the project list).
     {
@@ -1775,18 +1790,27 @@ void ModelWidget::Restore()
     Repaint();
 }
 
-/*! \brief Write the page "Detailed": input data, model, parameters and statistics as text. With \p recalculate
- * the model is calculated completely first (that is what the page shows); a recalculation that arrives while
- * the page is shown only rewrites the text. Claude Generated. */
+/*! \brief Write the page "Detailed": input data, model, parameters and, if asked for, the statistical analyses of
+ * the stored results as text. The model is only calculated again when it still is in the fast mode of a fit
+ * (the tables are those of the last calculation otherwise, which is what the rest of the pane shows). Claude Generated. */
 void ModelWidget::RefreshDetailed(bool recalculate)
 {
-    if (!m_detailed_text)
+    if (!m_detailed_text || !m_detailed_statistics)
         return;
-    if (recalculate) {
+    if (recalculate && m_model->isFast()) {
         m_model->setFast(false);
-        m_model->Calculate(); // emits Recalculated: the timer started by that is one more, cheap, refresh
+        m_model->Calculate();
     }
-    m_detailed_text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
+    // the box only matters when there is something to analyse
+    const int results = m_model->getMCStatisticResult() + m_model->getCVStatisticResult() + m_model->getWGStatisticResult()
+        + m_model->getMoCoStatisticResult() + m_model->getReductionStatisticResults() + m_model->SearchSize();
+    m_detailed_statistics->setVisible(results > 0);
+    const bool withStatistics = results > 0 && m_detailed_statistics->isChecked();
+    if (withStatistics)
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+    m_detailed_text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text(withStatistics) + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
+    if (withStatistics)
+        QApplication::restoreOverrideCursor();
 }
 
 void ModelWidget::Detailed()

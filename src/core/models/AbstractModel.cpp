@@ -825,7 +825,7 @@ void AbstractModel::ParseFastConfidence(const QJsonObject& data)
     emit ChartUpdated(str);
 }
 
-QString AbstractModel::Model2Text() const
+QString AbstractModel::Model2Text(bool withStatistics) const
 {
     QString text;
     text += "\n";
@@ -854,7 +854,8 @@ QString AbstractModel::Model2Text() const
     text += "\n\n";
     text += AdditionalOutput();
     text += "###############################################################################################\n\n";
-    text += AnalyseStatistic();
+    if (withStatistics)
+        text += AnalyseStatistic();
     text += "\n\n###############################################################################################";
     text += "## Current Model Results Done ####\n";
     return text;

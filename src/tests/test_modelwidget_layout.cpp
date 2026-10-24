@@ -25,6 +25,8 @@
  */
 
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
+#include <functional>
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QJsonObject>
@@ -1265,6 +1267,73 @@ private slots:
         QVERIFY2(text->isVisible(), "the detailed page is empty: its text is not shown");
         QVERIFY2(text->toPlainText().size() > 100, qPrintable(QStringLiteral("detailed text too short: %1 characters").arg(text->toPlainText().size())));
         QCOMPARE(visibleTopLevels().size(), windowsBefore); // a page, not a window
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // The statistical analyses of the stored results are the slow part of the Detailed page (BC50 integrals for every
+    // result): they are an opt-in box in the page header, off by default, and switching them on adds the text.
+    // Claude Generated.
+    void detailedStatisticsAreOptIn()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSettings().remove(QStringLiteral("ui"));
+        {
+            QJsonObject job = MonteCarloConfigBlock;
+            job["MaxSteps"] = 200;
+            JobManager jobs;
+            jobs.setModel(m_model);
+            jobs.AddSingleJob(job);
+            jobs.RunJobs();
+        }
+        QVERIFY(m_model->getMCStatisticResult() >= 1);
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        for (int i = 0; i < list->count(); ++i)
+            if (list->item(i)->text() == QStringLiteral("Detailed")) {
+                list->setCurrentRow(i);
+                emit list->itemClicked(list->item(i));
+            }
+        QCoreApplication::processEvents();
+
+        QCheckBox* box = nullptr;
+        for (QCheckBox* c : widget.findChildren<QCheckBox*>())
+            if (c->text() == QStringLiteral("Include the statistical analyses"))
+                box = c;
+        QVERIFY2(box, "no box for the statistical analyses on the Detailed page");
+        QVERIFY2(!box->isHidden(), "the box is hidden although the model has results");
+        QVERIFY2(!box->isChecked(), "the statistics are on by default: the page is slow again");
+
+        auto viewText = [&widget]() {
+            QTextBrowser* view = nullptr;
+            for (QTextBrowser* b : widget.findChildren<QTextBrowser*>())
+                if (b->isVisible())
+                    view = b;
+            return view ? view->toPlainText() : QString();
+        };
+        const QString without = viewText();
+        QVERIFY(without.size() > 100);
+        box->setChecked(true);
+        QCoreApplication::processEvents();
+        const QString with = viewText();
+        QVERIFY2(with.size() > without.size(), qPrintable(QStringLiteral("no statistics added: %1 vs %2 characters").arg(with.size()).arg(without.size())));
+        box->setChecked(false);
+        QCoreApplication::processEvents();
+        QCOMPARE(viewText().size(), without.size());
+
+        m_model->RemoveStatistic(SupraFit::Method::MonteCarlo, 0);
+        QSettings().remove(QStringLiteral("ui"));
         QSettings().remove(QStringLiteral("model"));
     }
 };
