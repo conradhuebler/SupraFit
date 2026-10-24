@@ -708,7 +708,6 @@ void SupraFitGui::SetupToolBar()
     m_model_button = menuButton(Icon("list-add"), tr("Model"), tr("Add a model to the current project"));
     m_evaluation_button = menuButton(Icon("fork"), tr("Evaluation"), tr("Optimise, analyse and compare the models of the current project"));
     m_main_toolbar->addWidget(m_data_button);
-    m_main_toolbar->addWidget(m_model_button);
     m_main_toolbar->addWidget(m_evaluation_button);
 
     // Three zones: files and menus on the left, the models that are added most in the middle (the technique is a menu
@@ -719,6 +718,7 @@ void SupraFitGui::SetupToolBar()
         return spacer;
     };
     m_main_toolbar->addWidget(stretch());
+    m_main_toolbar->addWidget(m_model_button); // the menu with all models belongs with the models you add most
     m_add_model_bar = new AddModelBar;
     m_main_toolbar->addWidget(m_add_model_bar);
     m_main_toolbar->addWidget(stretch());

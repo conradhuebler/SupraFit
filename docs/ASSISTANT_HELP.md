@@ -57,7 +57,7 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
 
 ## 3. Adding a model (the models in the middle of the toolbar and the menu **Model**)
 
-The toolbar has three zones: files and the menus Data, Model, Evaluation on the left, the models you add most in the middle, Log, Agent and the SupraFit menu on the right. The models in the middle only show for a project on screen.
+The toolbar has three zones: files and the menus Data and Evaluation on the left, the menu Model together with the models you add most in the middle, Log, Agent and the SupraFit menu on the right. The models in the middle only show for a project on screen.
 Each model is a button for a stoichiometry; a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2 and 2:1 / 1:1 / 1:2. A click adds the model for the technique that stoichiometry was used with most: NMR while it never was used, then the technique you used last or the one you chose in **Customise...**. Every button names its technique ("1:1 · NMR"). The arrow next to a button lists the other techniques that fit the data: NMR, UV/Vis and Fluorescence for two or more independent columns, Calorimetry for one.
 A stoichiometry stands for the fixed model of the technique (the four established ones) or for its flexible `*_any` model with the reactions preset. Scripted presets and model files can be buttons too.
 The gear next to the buttons switches between **Show the most used models** and **Show a fixed list**, and has **Customise...**, **Fix the bar as it is** (turns what the bar shows now into the fixed list) and **Forget what was used** (resets the counts).
