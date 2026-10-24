@@ -704,13 +704,9 @@ void SupraFitGui::SetupToolBar()
     m_main_toolbar->addWidget(groupButton(m_save, { m_save, m_save_as }, QString()));
     m_main_toolbar->addSeparator();
 
-    m_data_button = menuButton(Icon("kspread"), tr("Data"), tr("Edit or split the data of the current project"));
     m_model_button = menuButton(Icon("list-add"), tr("Model"), tr("Add a model to the current project"));
-    m_evaluation_button = menuButton(Icon("fork"), tr("Evaluation"), tr("Optimise, analyse and compare the models of the current project"));
-    m_main_toolbar->addWidget(m_data_button);
-    m_main_toolbar->addWidget(m_evaluation_button);
 
-    // Three zones: files and menus on the left, the models that are added most in the middle (the technique is a menu
+    // Three zones: files on the left (Data and Evaluation sit next to the tabs of the project), the models that are added most in the middle (the technique is a menu
     // of each button), the docks and the program menu on the right.
     auto stretch = []() {
         QWidget* spacer = new QWidget;
@@ -766,7 +762,7 @@ void SupraFitGui::ApplyToolBarStyle()
         button->setToolButtonStyle(list);
 }
 
-/*! \brief Point the Data/Model/Evaluation toolbar buttons at the workspace menus of the project on
+/*! \brief Point the Model toolbar button at the workspace menu of the project on
  * screen; disable them on the start page and for meta models. Claude Generated. */
 void SupraFitGui::UpdateWorkspaceMenus()
 {
@@ -784,9 +780,7 @@ void SupraFitGui::UpdateWorkspaceMenus()
 #endif
     const bool available = bar && bar->ToolsAvailable();
     const QList<QPair<QToolButton*, QMenu*>> buttons = {
-        { m_data_button, available ? bar->DataMenu() : nullptr },
-        { m_model_button, available ? bar->ModelMenu() : nullptr },
-        { m_evaluation_button, available ? bar->EvaluationMenu() : nullptr }
+        { m_model_button, available ? bar->ModelMenu() : nullptr }
     };
     for (const auto& entry : buttons) {
         entry.first->setMenu(entry.second);

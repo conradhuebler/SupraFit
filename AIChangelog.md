@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-10-24: **Data and Evaluation left the main toolbar: `Edit Data` (arrow: Data menu with Split Data Set) is the left, `Evaluation` the right corner widget of the project's tab bar (`ModelDataHolder`), both follow `ToolsChanged`. Test `dataAndEvaluationSitNextToTheTabs`.**
 - 2026-10-24: **The Model menu button moved from the left zone of the main toolbar to the middle zone, in front of the quick bar.**
 - 2026-10-24: **Add-Model bar WP-F: help section 3 rewritten (gear entries named, Calorimetry instead of ITC, no literal escapes), tooltips for the gear, mode radios, count, Up/Down and the technique choice.**
 - 2026-10-24: **Add-Model bar WP-E: what is added from the Model menu (fixed models, reaction presets, scripted presets, model files) is counted like a click on the bar (`ModelCatalog::Identify`, `ModelUsage::RecordChoice`; `MDHDockTitleBar::UsageChanged` refreshes the bar); right click on a menu entry offers "Add to the quick bar" (`ModelUsage::Pin`). Test `modelMenuCountsAndPins`; the right-click popup itself is untested.**

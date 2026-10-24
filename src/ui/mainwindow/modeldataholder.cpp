@@ -614,6 +614,35 @@ ModelDataHolder::ModelDataHolder()
     });
     connect(m_TitleBarWidget, &MDHDockTitleBar::SplitData, this, &ModelDataHolder::SplitData);
 
+    // Data (left) and Evaluation (right) sit next to the tabs: they belong to the project, not to the program.
+    // The actions stay with the title bar object; these buttons only show them. Claude Generated.
+    QToolButton* dataButton = new QToolButton(m_modelsWidget);
+    dataButton->setObjectName(QStringLiteral("data_corner"));
+    dataButton->setDefaultAction(m_TitleBarWidget->EditDataAction());
+    dataButton->setMenu(m_TitleBarWidget->DataMenu());
+    dataButton->setPopupMode(QToolButton::MenuButtonPopup);
+    dataButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    dataButton->setAutoRaise(true);
+    dataButton->setToolTip(tr("Edit the data of the current project; the arrow also splits the data set"));
+    QToolButton* evaluationButton = new QToolButton(m_modelsWidget);
+    evaluationButton->setObjectName(QStringLiteral("evaluation_corner"));
+    evaluationButton->setIcon(Icon("fork"));
+    evaluationButton->setText(tr("Evaluation"));
+    evaluationButton->setToolTip(tr("Optimise, analyse and compare the models of the current project"));
+    evaluationButton->setMenu(m_TitleBarWidget->EvaluationMenu());
+    evaluationButton->setPopupMode(QToolButton::InstantPopup);
+    evaluationButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    evaluationButton->setAutoRaise(true);
+    m_modelsWidget->setCornerWidget(dataButton, Qt::TopLeftCorner);
+    m_modelsWidget->setCornerWidget(evaluationButton, Qt::TopRightCorner);
+    auto followTools = [this, dataButton, evaluationButton]() {
+        const bool available = m_TitleBarWidget->ToolsAvailable();
+        dataButton->setEnabled(available);
+        evaluationButton->setEnabled(available);
+    };
+    connect(m_TitleBarWidget, &MDHDockTitleBar::ToolsChanged, this, followTools);
+    followTools();
+
     layout->addWidget(m_modelsWidget, 1, 0);
     ActiveBatch();
 }

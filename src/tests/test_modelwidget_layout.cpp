@@ -2133,6 +2133,21 @@ private slots:
         QVERIFY(!ModelUsage::Pin(title->EntryKeyOf(nmrPreset), 2));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
+    // Data (left) and Evaluation (right) sit next to the tabs and use the project's actions. Claude Generated.
+    void dataAndEvaluationSitNextToTheTabs()
+    {
+        BarFixture f(2);
+        QToolButton* data = f.holder.findChild<QToolButton*>(QStringLiteral("data_corner"));
+        QToolButton* evaluation = f.holder.findChild<QToolButton*>(QStringLiteral("evaluation_corner"));
+        QVERIFY(data && evaluation);
+        QCOMPARE(data->defaultAction()->text(), QStringLiteral("Edit Data"));
+        QVERIFY(data->menu() == f.holder.TitleBarWidget()->DataMenu());
+        QVERIFY(evaluation->menu() == f.holder.TitleBarWidget()->EvaluationMenu());
+        QCOMPARE(data->isEnabled(), f.holder.TitleBarWidget()->ToolsAvailable());
+        f.holder.TitleBarWidget()->HideModelTools();
+        QVERIFY(!data->isEnabled());
+        QVERIFY(!evaluation->isEnabled());
+    }
 };
 
 int main(int argc, char** argv)

@@ -117,6 +117,7 @@ public:
 
     /** @brief Menus shown in the main toolbar for the current project. Claude Generated. */
     QMenu* DataMenu() const { return m_data_menu; }
+    QAction* EditDataAction() const { return m_edit_data; }
     QMenu* ModelMenu() const { return m_model_menu; }
     QMenu* EvaluationMenu() const { return m_evaluation_menu; }
 

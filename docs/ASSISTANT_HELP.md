@@ -15,7 +15,7 @@ Name labels exactly as written here. If something is not covered, say so instead
 
 - One toolbar. Split buttons (main part = default action, arrow = more): **New Table** (Ctrl+N; arrow: New Window),
   **Open Project** (Ctrl+O; arrow: Open Thermogram, Open Spectra), **Save Project** (Ctrl+S; arrow: Save Project As, Ctrl+Shift+S).
-- Three menus act on the project on screen: **Data**, **Model**, **Evaluation**. **Log** (F4) and **Agent** (F5, this chat) toggle docks.
+- Three things act on the project on screen: **Edit Data** (button left of the tabs, its arrow offers the Data menu), the menu **Model** in the toolbar, **Evaluation** (button right of the tabs). **Log** (F4) and **Agent** (F5, this chat) toggle docks.
   **SupraFit** menu: Settings, Info, License Info, About Qt, Quit.
 - Left: the project tree (right-click: Duplicate, Add Up, Substract, Export, Delete; buttons Export Data, Export Projects, Close All) and the Log.
   Dropping files on the tree opens them. Dragging a model onto another project copies it.
@@ -47,17 +47,17 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
   Inject Volume; per thermogram "Start time [s]"/"End time [s]" (click "Click to Select", then double-click in the chart), "Inject Time [s]" with
   **Apply and Update** (finds peaks, fits baseline, integrates), "Peak Ranges" (Custom/Zero/Threshold), Calibration and "Scaling (raw heat unit)".
   Per-injection volumes are editable in the table. The result is a two-column table (volume, net heat).
-  Reopen it later with Data > Edit Data. The setting "Automatic open Thermogram Dialog" does it automatically.
+  Reopen it later with the Edit Data button left of the tabs. The setting "Automatic open Thermogram Dialog" does it automatically.
 - **Spectra**: Open Spectra / "Import as Spectras" opens "Spectra Analysis and Import" (Load file, Open Directory).
 - **Simulated data**: in New Table tick "Simulate Data with # Data Points" (columns by equation, default `X`; Store/Load Recipe), or in a fitted model's
   tab "Simulated Data" drag an entry (Ideal model, MC with model σfit, MC with model SEy, Bootstrap, MC with user σ) onto the project list.
 - **Excluding data**: in the data tab right-click a row of the signal table to toggle it; right-click in the independent table: Begin Data / End Data.
   Per series: checkbox "Include" in the model's "Data series" box (or page). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
-- **Data** menu: **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
+- **Edit Data** button (left of the tabs; its arrow opens the Data menu): **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
 
 ## 3. Adding a model (the models in the middle of the toolbar and the menu **Model**)
 
-The toolbar has three zones: files and the menus Data and Evaluation on the left, the menu Model together with the models you add most in the middle, Log, Agent and the SupraFit menu on the right. The models in the middle only show for a project on screen.
+The toolbar has three zones: files on the left (Edit Data and Evaluation sit next to the tabs of the project), the menu Model together with the models you add most in the middle, Log, Agent and the SupraFit menu on the right. The models in the middle only show for a project on screen.
 Each model is a button for a stoichiometry; a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2 and 2:1 / 1:1 / 1:2. A click adds the model for the technique that stoichiometry was used with most: NMR while it never was used, then the technique you used last or the one you chose in **Customise...**. Every button names its technique ("1:1 · NMR"). The arrow next to a button lists the other techniques that fit the data: NMR, UV/Vis and Fluorescence for two or more independent columns, Calorimetry for one.
 A stoichiometry stands for the fixed model of the technique (the four established ones) or for its flexible `*_any` model with the reactions preset. Scripted presets and model files can be buttons too.
 The gear next to the buttons switches between **Show the most used models** and **Show a fixed list**, and has **Customise...**, **Fix the bar as it is** (turns what the bar shows now into the fixed list) and **Forget what was used** (resets the counts).
@@ -80,11 +80,11 @@ Models added from the menu **Model** count for the bar as well. Right-click an e
 - Action buttons: **New Guess**, Restore, Save, Load Constants, Save Constants, **Fit Settings** (iterations, tolerances, Fit Solver).
   Statistics, results, charts and the detailed data (input data, model, parameters and statistics as text) are not buttons: they are the pages "Statistics", "Charts" and "Detailed" of the page list. "Detailed" shows the statistical analyses of the stored results only with its box "Include the statistical analyses" (off by default: they can take a while).
 - No convergence: try New Guess, other start values, the Global Search, fix a weakly determined parameter, or exclude an outlier series/row.
-- **Evaluation** menu: **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
+- **Evaluation** button (right of the tabs): **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
 
 ## 5. Statistics
 
-The page "Statistics" of a model (one model; the page list is replaced by the analyses, "← Back" returns) or Evaluation > **Statistics** (all checked models, window) opens "Statistic Tools":
+The page "Statistics" of a model (one model; the page list is replaced by the analyses, "← Back" returns) or **Evaluation** > **Statistics** (all checked models, window) opens "Statistic Tools":
 - **Cross Validation/Reduction**: Leave-One-Out / Leave-Two-Out / Leave-X-Out; buttons Cross Validation, Reduction Analysis.
 - **Monte Carlo**: "Number of MC Steps:" (2000), σ taken as "σ from fit", "SEy" (default), user input, or bootstrapping; "Use Original Data"; **Simulate**.
   Percentile confidence interval. Assumes the model is right and noise random; a misspecified or sparse data set gives wide or skewed intervals.
