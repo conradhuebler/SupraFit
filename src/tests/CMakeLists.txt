@@ -1051,6 +1051,29 @@ if(BUILD_GUI)
     endif()
 endif()
 
+# Offscreen layout test for the ModelWidget of a scripted model (roadmap/scriptmodel_ui_layout.md WP0).
+# Like benchmark_mcwidget it links the GUI layer; Instance.h carries a Q_OBJECT whose moc output
+# otherwise only exists in the suprafit executable target.
+if(BUILD_GUI)
+    add_executable(test_modelwidget_layout test_modelwidget_layout.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h)
+    target_link_libraries(test_modelwidget_layout
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_modelwidget_layout ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_modelwidget_layout pthread dl)
+    endif()
+    add_test(NAME ModelWidgetLayoutTest COMMAND test_modelwidget_layout)
+    set_tests_properties(ModelWidgetLayoutTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Quadrature regression tests (Claude Generated 2026) - pins SimpsonIntegrate against analytically
 # known integrals, including the endpoint singularities the BC50 integrands carry.
 add_executable(test_quadrature
