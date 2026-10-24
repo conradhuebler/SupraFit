@@ -87,6 +87,7 @@ void MCResultsWidget::setUi()
     QWidget* widget = new QWidget;
     QTabWidget* tabs = new QTabWidget;
     tabs->setTabPosition(QTabWidget::South);
+    tabs->setDocumentMode(true); // no frame around the charts, the page already is a box
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(tabs, 0, 0, 1, 7);
 

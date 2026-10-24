@@ -128,6 +128,8 @@ void ResultsDialog::setEmbedded(bool embedded)
         setWindowFlags(Qt::Widget);
         m_results->hide(); // the pane lists the results in its own navigation
         m_tabs->tabBar()->hide(); // ... and chooses the result there: the tab bar would only repeat the title
+        m_tabs->setDocumentMode(true); // without a tab bar the pane frame is just a box around the result
+        m_layout->setContentsMargins(0, 0, 0, 0); // the page area already has its own margins
         if (!m_detach) {
             m_detach = new QToolButton;
             m_detach->setText(tr("Open in window"));

@@ -78,6 +78,8 @@ void StatisticDialog::setEmbedded(bool embedded)
         setWindowFlags(Qt::Widget);
         setMinimumWidth(0);
         m_tab_widget->tabBar()->hide(); // the pane lists the analyses
+        m_tab_widget->setDocumentMode(true); // no pane frame around the forms either
+        layout()->setContentsMargins(0, 0, 0, 0); // the page area already has its own margins
         m_hide->hide(); // there is nothing to hide: the pane's page list does the navigation
         m_hide_widget->hide(); // progress and Interrupt only while a job runs
     }
