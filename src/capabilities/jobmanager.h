@@ -31,6 +31,7 @@ class MonteCarloStatistics;
 class ModelComparison;
 class WeakenedGridSearch;
 class ResampleAnalyse;
+class LandscapeSearch;
 
 /* Standard Settings for Task are given here */
 
@@ -90,6 +91,33 @@ const QJsonObject ModelComparisonConfigBlock{
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool
+};
+
+/* Landscape Sampling Settings - every key is optional, see LandscapeSearch for the defaults derived from the fit */
+
+const QJsonObject LandscapeConfigBlock{
+    /* Set method */
+    { "Method", SupraFit::Method::LandscapeSampling }, // int
+
+    /* Confidence in % */
+    { "confidence", 95 }, // double (the search reads "Confidence" as well)
+
+    /* Walkers run in parallel, one per thread by default (0) */
+    { "Walkers", 0 }, // int
+
+    /* Steps per walker and round */
+    { "MaxSteps", 5e4 }, // int
+
+    /* "Metropolis" or "Langevin" */
+    { "Sampler", "Metropolis" },
+
+    /* Half width of the box in log10 units for every parameter, 0: derived from the fit and widened as needed */
+    { "Range", 0 }, // double
+
+    /* Minima found by the walkers that are polished with the minimiser */
+    { "Polish", 5 }, // int
+
+    { "Seed", 1 }, // int
 };
 
 /* Monte Carlo Settings */
@@ -240,12 +268,14 @@ private:
     QJsonObject RunResample(const QJsonObject& job);
     QJsonObject RunModelComparison(const QJsonObject& job);
     QJsonObject RunGlobalSearch(const QJsonObject& job);
+    QJsonObject RunLandscapeSearch(const QJsonObject& job);
 
     QPointer<MonteCarloStatistics> m_montecarlo_handler;
     QPointer<WeakenedGridSearch> m_gridsearch_handler;
     QPointer<ModelComparison> m_modelcomparison_handler;
     QPointer<ResampleAnalyse> m_resample_handler;
     QPointer<GlobalSearch> m_globalsearch;
+    QPointer<LandscapeSearch> m_landscape;
 
     bool m_working = false;
     bool m_interrupt = false;

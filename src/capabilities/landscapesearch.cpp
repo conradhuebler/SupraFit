@@ -20,6 +20,7 @@
 
 #include "landscapesearch.h"
 
+#include "src/core/minimizer.h"
 #include "src/core/models/AbstractModel.h"
 
 #include <QtCore/QCoreApplication>
@@ -238,14 +239,14 @@ bool LandscapeSearch::Run()
         return false;
     }
 
-    const double confidence = m_controller.value("Confidence").toDouble(95.0);
+    const double confidence = AccessCI(m_controller, "Confidence").toDouble(95.0);
     m_level = LandscapeConfidenceLevel(sseMin, points, parameters, m_model->finv(confidence / 100.0));
-    const double cutFactor = m_controller.value("CutFactor").toDouble(3.0);
+    const double cutFactor = AccessCI(m_controller, "CutFactor").toDouble(3.0);
     const double cut = sseMin + cutFactor * (m_level - sseMin);
 
     // box: fixed half width, or a multiple of the extent of the level along each variable alone
-    const double range = m_controller.value("Range").toDouble(0.0);
-    const double boxFactor = m_controller.value("BoxFactor").toDouble(4.0);
+    const double range = AccessCI(m_controller, "Range").toDouble(0.0);
+    const double boxFactor = AccessCI(m_controller, "BoxFactor").toDouble(4.0);
     std::vector<double> half(d, range);
     for (int i = 0; i < d; ++i)
         if (!(range > 0)) {
@@ -256,24 +257,24 @@ bool LandscapeSearch::Run()
     m_upper.assign(d, 0.0);
 
     LandscapeSettings settings;
-    const QString sampler = m_controller.value("Sampler").toString("Metropolis");
+    const QString sampler = AccessCI(m_controller, "Sampler").toString("Metropolis");
     settings.sampler = sampler == QLatin1String("Langevin") ? LandscapeSettings::Sampler::Langevin : LandscapeSettings::Sampler::Metropolis;
-    settings.temperature = m_controller.value("TemperatureFactor").toDouble(1.0) * LandscapeSampler::NaturalTemperature(sseMin, points, parameters);
+    settings.temperature = AccessCI(m_controller, "TemperatureFactor").toDouble(1.0) * LandscapeSampler::NaturalTemperature(sseMin, points, parameters);
     settings.stepSize = settings.sampler == LandscapeSettings::Sampler::Langevin ? 0.04 : 0.05;
     settings.hillHeight = 0.25 * settings.temperature;
     settings.biasTemperature = 0.5 * (cut - sseMin); // takes down barriers up to about 2.3 times this
     settings.sseCut = cut;
-    settings.maxSteps = m_controller.value("MaxSteps").toInt(50000);
-    settings.bins = m_controller.value("Bins").toInt(60);
-    settings.seed = uint64_t(m_controller.value("Seed").toInt(1));
+    settings.maxSteps = AccessCI(m_controller, "MaxSteps").toInt(50000);
+    settings.bins = AccessCI(m_controller, "Bins").toInt(60);
+    settings.seed = uint64_t(AccessCI(m_controller, "Seed").toInt(1));
 
-    int walkers = m_controller.value("Walkers").toInt(qApp->instance()->property("threads").toInt());
+    int walkers = AccessCI(m_controller, "Walkers").toInt(qApp->instance()->property("threads").toInt());
     walkers = std::max(1, walkers);
     emit setMaximumSteps(walkers);
 
     // The extent along one variable alone understates the profile extent of correlated constants: if a
     // stretch reaches the box, that variable's box is doubled and the walk repeated (fixed `Range`: never).
-    const int maxExpansions = m_controller.value("MaxExpansions").toInt(4);
+    const int maxExpansions = AccessCI(m_controller, "MaxExpansions").toInt(4);
     std::vector<std::unique_ptr<Walker>> run;
     QJsonArray walkerInfo;
     double evaluations = 0;
@@ -383,12 +384,46 @@ bool LandscapeSearch::Run()
     }
     out["variables"] = variables;
 
+    // minima: the best cells of the walkers, refitted with the minimiser and merged when they end up in one place
+    struct Minimum {
+        std::vector<double> x;
+        double sse;
+    };
+    std::vector<Minimum> polished;
+    const int polish = AccessCI(m_controller, "Polish").toInt(5);
+    std::vector<double> tolerance(d);
+    for (int i = 0; i < d; ++i)
+        tolerance[i] = std::max(0.02, (m_upper[i] - m_lower[i]) / settings.bins);
+    for (size_t k = 0; k < m_merged.minima.size() && int(polished.size()) < polish && !m_stop; ++k) {
+        QSharedPointer<AbstractModel> candidate = m_model->Clone(false);
+        for (int i = 0; i < d; ++i)
+            candidate->setGlobalParameter(m_merged.minima[k].x[i], base.GlobalIndex(i));
+        Minimizer minimizer(false);
+        minimizer.setModel(candidate);
+        minimizer.Minimize();
+        ModelLandscape landscape(candidate);
+        Minimum found{ landscape.Start(), 0 };
+        found.sse = landscape(found.x);
+        if (!std::isfinite(found.sse))
+            continue;
+        const bool known = std::any_of(polished.begin(), polished.end(), [&](const Minimum& m) {
+            for (int i = 0; i < d; ++i)
+                if (std::abs(m.x[i] - found.x[i]) > tolerance[i])
+                    return false;
+            return true;
+        });
+        if (!known)
+            polished.push_back(found);
+    }
+    std::sort(polished.begin(), polished.end(), [](const Minimum& a, const Minimum& b) { return a.sse < b.sse; });
+
     QJsonArray minima;
-    for (size_t k = 0; k < m_merged.minima.size() && k < 10; ++k) {
-        QJsonObject m;
-        m["sse"] = m_merged.minima[k].sse;
-        m["parameters"] = ToArray(m_merged.minima[k].x);
-        minima << m;
+    for (const Minimum& m : polished) {
+        QJsonObject o;
+        o["sse"] = m.sse;
+        o["parameters"] = ToArray(m.x);
+        o["within_level"] = m.sse <= m_level;
+        minima << o;
     }
     out["minima"] = minima;
 

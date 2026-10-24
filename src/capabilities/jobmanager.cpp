@@ -18,6 +18,7 @@
  */
 
 #include "globalsearch.h"
+#include "landscapesearch.h"
 #include "modelcomparison.h"
 #include "montecarlostatistics.h"
 #include "resampleanalyse.h"
@@ -67,6 +68,12 @@ JobManager::JobManager(QObject* parent)
     connect(m_globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_globalsearch, &AbstractSearchClass::Message, this, &JobManager::Message);
 
+    m_landscape = new LandscapeSearch(this);
+    connect(this, SIGNAL(Interrupt()), m_landscape, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_landscape, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_landscape, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
+    connect(m_landscape, &AbstractSearchClass::Message, this, &JobManager::Message);
+
     connect(this, &JobManager::Interrupt, this, [this]() {
         m_interrupt = true;
     });
@@ -115,6 +122,17 @@ void JobManager::RunJobs()
         case SupraFit::Method::GlobalSearch:
             result = RunGlobalSearch(object);
             break;
+
+        case SupraFit::Method::LandscapeSampling:
+            result = RunLandscapeSearch(object);
+            break;
+        }
+        if (result.isEmpty()) { // nothing to store, e.g. a model the method cannot handle (the reason went out as a Message)
+            start++;
+            emit finished(start, m_jobs.size(), 0);
+            if (m_interrupt)
+                break;
+            continue;
         }
         start++;
         t1 = QDateTime::currentMSecsSinceEpoch();
@@ -231,6 +249,19 @@ QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
     m_last_multicore = m_globalsearch->MultiCoreTime();
 
     m_globalsearch->clear();
+    return result;
+}
+
+QJsonObject JobManager::RunLandscapeSearch(const QJsonObject& job)
+{
+    m_landscape->setController(job);
+    m_landscape->setModel(m_model);
+    const bool ok = m_landscape->Run();
+
+    QJsonObject result = ok ? m_landscape->Result() : QJsonObject();
+    m_last_multicore = m_landscape->MultiCoreTime();
+
+    m_landscape->clear();
     return result;
 }
 

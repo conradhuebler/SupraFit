@@ -29,6 +29,7 @@
 
 #include <Eigen/Dense>
 
+#include "src/capabilities/jobmanager.h"
 #include "src/capabilities/landscapesearch.h"
 #include "src/core/minimizer.h"
 #include "src/core/models/AbstractModel.h"
@@ -256,6 +257,60 @@ private slots:
         }
         // lg beta 1 is bounded on both sides; lg beta 2 is open towards "no second complex" (the data do not rule it out)
         QVERIFY(bounded >= 1);
+        delete data;
+    }
+
+    // The method is a first-class result: a job through the JobManager lands in the model's store, survives export
+    // and import, and a model without variable projection is refused without storing anything.
+    void jobManagerStoresAndRestoresTheResult()
+    {
+        DataClass* data = makeData(3);
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB"), { 3.0 }, 3, 0.05);
+
+        JobManager manager;
+        manager.setModel(model);
+        QJsonObject job = LandscapeConfigBlock;
+        job["Walkers"] = 2;
+        job["Polish"] = 3;
+        job["MaxSteps"] = 20000;
+        manager.AddSingleJob(job);
+        manager.RunJobs();
+
+        QCOMPARE(model->getStatistic(SupraFit::Method::LandscapeSampling, 0).isEmpty(), false);
+        const QJsonObject stored = model->getStatistic(SupraFit::Method::LandscapeSampling, 0);
+        QCOMPARE(AccessCI(stored["controller"].toObject(), "Method").toInt(), int(SupraFit::Method::LandscapeSampling));
+        const QJsonObject result = stored["0"].toObject();
+        QCOMPARE(result["variables"].toArray().size(), 1);
+        const QJsonArray minima = result["minima"].toArray();
+        QVERIFY(!minima.isEmpty());
+        QVERIFY(minima[0].toObject()["within_level"].toBool()); // the fitted minimum itself, polished
+        QVERIFY(std::abs(minima[0].toObject()["parameters"].toArray()[0].toDouble() - model->GlobalParameter(0)) < 0.05);
+
+        // export / import round trip into a fresh model
+        const QJsonObject exported = model->ExportModel(true);
+        QSharedPointer<AbstractModel> copy = CreateModel(SupraFit::nmr_any, data);
+        QJsonObject def;
+        def["Reactions"] = strOption(QStringLiteral("A + B <=> AB"));
+        copy->DefineModel(def);
+        QVERIFY(copy->ImportModel(exported));
+        QCOMPARE(copy->getStatistic(SupraFit::Method::LandscapeSampling, 0)["0"].toObject()["level"].toDouble(), result["level"].toDouble());
+        delete data;
+    }
+
+    void modelWithoutVariableProjectionStoresNothing()
+    {
+        DataClass* data = makeData(2);
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_ItoI, data);
+        model->setOption(1, QStringLiteral("yes")); // not the VarPro default: see nmr_1_1_Model::SupportsVarPro
+        if (model->SupportsVarPro())
+            QSKIP("the model still supports variable projection with this option");
+        model->InitialGuess();
+
+        JobManager manager;
+        manager.setModel(model);
+        manager.AddSingleJob(LandscapeConfigBlock);
+        manager.RunJobs();
+        QCOMPARE(model->getStatistic(SupraFit::Method::LandscapeSampling, 0).isEmpty(), true);
         delete data;
     }
 

@@ -29,7 +29,7 @@
  * \brief The model's post-processing results store (Claude Generated 2026, R2).
  *
  * Extracted from AbstractModel: the six per-method result lists (MonteCarlo, CrossValidation,
- * WeakenedGridSearch, ModelComparison, GlobalSearch, Reduction) plus the single FastConfidence
+ * WeakenedGridSearch, ModelComparison, GlobalSearch, LandscapeSampling, Reduction) plus the single FastConfidence
  * object, with the timestamp-deduplicated update, keyed get/remove/clear/size, and the const
  * list accessors used by the model's export loop. Behaviour is a faithful port of the previous
  * inline switch logic — including Reduction's ReductionRuntype-based replace and its
@@ -106,6 +106,7 @@ public:
         m_wg_statistics.clear();
         m_moco_statistics.clear();
         m_search_results.clear();
+        m_landscape.clear();
         m_reduction.clear();
         m_fast_confidence = QJsonObject();
     }
@@ -124,7 +125,7 @@ public:
     const QList<QJsonObject>& list(SupraFit::Method type) const { return listFor(type); }
 
     //! Selective copy matching the previous CopyStatistic: MC, WGS, MoCo, Reduction, FastConfidence
-    //! (deliberately not CrossValidation / GlobalSearch, preserving prior behaviour).
+    //! (deliberately not CrossValidation / GlobalSearch / LandscapeSampling, preserving prior behaviour).
     void copyStatisticsFrom(const ModelStatisticsStore& other)
     {
         m_mc_statistics = other.m_mc_statistics;
@@ -148,6 +149,8 @@ private:
             return m_moco_statistics;
         case SupraFit::Method::GlobalSearch:
             return m_search_results;
+        case SupraFit::Method::LandscapeSampling:
+            return m_landscape;
         case SupraFit::Method::Reduction:
             return m_reduction;
         default:
@@ -189,6 +192,7 @@ private:
     QList<QJsonObject> m_wg_statistics;
     QList<QJsonObject> m_moco_statistics;
     QList<QJsonObject> m_search_results;
+    QList<QJsonObject> m_landscape;
     QList<QJsonObject> m_reduction;
     QJsonObject m_fast_confidence;
 };

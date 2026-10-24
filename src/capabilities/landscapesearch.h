@@ -65,7 +65,8 @@ private:
  * The model should be fitted before: the fitted point is the centre of the box and defines SSE_min.
  *
  * Controller keys (all optional):
- *  - `Confidence` percent, 95
+ *  - `Confidence` percent, 95 (keys are read case-insensitively, as the job blocks write `confidence`)
+ *  - `Polish` how many minima found by the walkers are refitted with the minimiser, 5
  *  - `Walkers` (threads), `Seed` 1, `MaxSteps` 50000, `Sampler` "Metropolis" | "Langevin"
  *  - `Range` half width of the box in log10 units for every variable; 0 (default) takes `BoxFactor` (4) times
  *    the extent of the confidence level along that variable alone
