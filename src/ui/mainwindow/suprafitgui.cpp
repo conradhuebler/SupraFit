@@ -1866,22 +1866,16 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
     } else {
         // Project removal - remove entire project
         
-        // Remove from ProjectManager
-        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
-        if (projectManager.removeProject(projectId)) {
-            qDebug() << "TreeRemoveRequest: ProjectManager successfully removed project" << projectId;
-        } else {
-            qWarning() << "TreeRemoveRequest: ProjectManager failed to remove project" << projectId;
-        }
-        
-        // Remove from GUI structures
+        // Tear down the GUI first: removeProject() drops the only strong reference to the DataClass,
+        // so mainWindow->Data() must not be used afterwards. The project id equals the data UUID.
+        const QString dataUUID = projectId;
         m_stack_widget->removeWidget(mainWindow);
         m_project_windows.remove(projectId);
-        
+
         // Clean up legacy data structures (they should be synchronized)
-        QString dataUUID = mainWindow->Data()->UUID();
         m_hashed_data.remove(dataUUID);
-        
+        m_hashed_wrapper.remove(dataUUID);
+
         // Find and remove from m_data_list by UUID
         for (int i = m_data_list.size() - 1; i >= 0; --i) {
             if (m_data_list[i].toStrongRef() && m_data_list[i].toStrongRef()->UUID() == dataUUID) {
@@ -1889,8 +1883,12 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
                 break;
             }
         }
-        
+
         delete mainWindow;
+
+        // The project tree is built from the ProjectManager, so the project must be removed there as well
+        if (!SupraFit::ProjectManager::instance().removeProject(projectId))
+            qWarning() << "TreeRemoveRequest: ProjectManager failed to remove project" << projectId;
         qDebug() << "TreeRemoveRequest: Removed project" << projectId << "from GUI";
     }
 
@@ -1925,10 +1923,18 @@ void SupraFitGui::CloseProjects()
         if (mainwindow) {
             m_stack_widget->removeWidget(mainwindow);
             m_hashed_data.remove(projectId);
+            m_hashed_wrapper.remove(projectId);
             delete mainwindow;
         }
         m_project_windows.remove(projectId);
     }
+
+    // The project tree is built from the ProjectManager: remove the projects there too,
+    // including those without a MainWindow (e.g. created by the agent or the CLI)
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    const QStringList managedIds = projectManager.getLoadedProjectIds();
+    for (const QString& projectId : managedIds)
+        projectManager.removeProject(projectId);
     
     // Clear legacy data structures
     m_data_list.clear();
