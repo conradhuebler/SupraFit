@@ -586,18 +586,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         QVBoxLayout* host_layout = new QVBoxLayout;
         host_layout->setContentsMargins(0, 0, 0, 0);
         series_host->setLayout(host_layout);
-        series_page = model_tab->addPage(series_host, tr("Data series"));
+        series_page = model_tab->addPage(series_host, tr("Data series"), nullptr, Icon("view-list-text"));
     }
 
     if (m_model->OptionsCount())
-        model_tab->addPage(m_model_options, tr("Model Options"));
+        model_tab->addPage(m_model_options, tr("Model Options"), nullptr, Icon("configure"));
     if (m_model->SystemParameterCount())
         AddSystemParameterTab(model_tab);
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
     // Scalable table view for models with many species (additive: the classic view is unchanged).
     if (m_model->UseDynamicParameterWidget())
-        model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"));
+        model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"), nullptr, Icon("kspread"));
 
     if (!m_model->isSimulation()) {
         // One page for everything about statistics: the analyses to start and the finished results. The list
@@ -641,11 +641,37 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 menu.addAction(tr("Drop raw data"), this, [this, e]() { m_results->DropRawDataOf(e.type, e.result); });
                 menu.addAction(tr("Remove"), this, [this, e]() { m_results->RemoveEntry(e.type, e.result); });
                 menu.exec(pos);
-            });
+            },
+            Icon("applications-education-science"));
         connect(m_results, &ResultsDialog::ListChanged, this, [this]() { m_pages->refreshGroup(m_stat_page); });
         m_statistic_dialog->show(); // hidden by its constructor; a layout does not show an explicitly hidden widget
     }
-    m_charts_page = model_tab->addPage(m_charts_dialogs, tr("Charts"));
+    // The model's own charts (concentration profiles, heat charts): one entry per chart in the list that replaces the
+    // page list, like the statistic tools; no tabs inside. The page is listed once there is a chart.
+    m_charts_page = model_tab->addGroupPage(
+        m_charts_dialogs, tr("Charts"),
+        [this]() {
+            QList<SectionStack::SubEntry> rows;
+            for (const QString& name : m_charts_dialogs->TabNames()) {
+                QString title = name;
+                title.replace(QStringLiteral(" Chart"), QString()); // "Concentration Chart" -> "Concentration"
+                rows << SectionStack::SubEntry{ title, false, Icon("charts"), title == name ? QString() : name };
+            }
+            return rows;
+        },
+        [this](int row) { m_charts_dialogs->setCurrentTab(row); },
+        [this](int row, const QPoint& pos) {
+            QMenu menu;
+            menu.addAction(tr("Close chart"), this, [this, row]() {
+                m_charts_dialogs->CloseTab(row);
+                if (m_charts_dialogs->Count() == 0)
+                    m_pages->setPageHidden(m_charts_page, true);
+                else
+                    m_pages->refreshGroup(m_charts_page);
+            });
+            menu.exec(pos);
+        },
+        Icon("charts"));
     m_charts_dialogs->show();
     model_tab->setPageHidden(m_charts_page, m_model->Charts().isEmpty());
 
@@ -668,7 +694,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         page_layout->addWidget(m_simulation_export);
         page_layout->addStretch();
         page->setLayout(page_layout);
-        model_tab->addPage(page, tr("Simulated Data"));
+        model_tab->addPage(page, tr("Simulated Data"), nullptr, Icon("window-duplicate"));
     }
 
     m_actions = new ModelActions;
@@ -686,7 +712,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
     connect(m_actions, &ModelActions::Charts, this, [this]() {
-        m_pages->setCurrentTitle(tr("Charts")); // stays on the current page while the model has no chart
+        m_pages->setCurrentTitle(tr("Charts"), true); // stays on the current page while the model has no chart
     });
 
     //m_splitter->addWidget(m_actions);
@@ -977,7 +1003,7 @@ void ModelWidget::AddScriptModelTab(SectionStack* model_tab)
     bar->setMaximum(qApp->instance()->property("ScriptTimeout").toInt());
     bar->setMinimumWidth(120);
     bar->setToolTip(tr("Time until the edited definition is applied"));
-    model_tab->addPage(scrollArea, tr("Model Definition"), buttonBar);
+    model_tab->addPage(scrollArea, tr("Model Definition"), buttonBar, Icon("document-edit"));
 }
 
 void ModelWidget::AddSystemParameterTab(SectionStack* model_tab)
@@ -1008,7 +1034,7 @@ void ModelWidget::AddSystemParameterTab(SectionStack* model_tab)
     tools_layout->addWidget(load);
     tools_layout->addWidget(save);
     tools->setLayout(tools_layout);
-    model_tab->addPage(m_system_parameter, tr("System Parameter"), tools);
+    model_tab->addPage(m_system_parameter, tr("System Parameter"), tools, Icon("text-field"));
 
     connect(load, &QPushButton::clicked, this, [this]() {
         QString str = QFileDialog::getOpenFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));
@@ -1762,6 +1788,7 @@ void ModelWidget::ChartUpdated(const QString& str)
     ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
     m_charts_dialogs->setWidget(w, str);
     m_pages->setPageHidden(m_charts_page, false);
+    m_pages->refreshGroup(m_charts_page); // a chart came: it is listed
 }
 
 #include "modelwidget.moc"

@@ -19,6 +19,7 @@
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 
 #include "src/ui/guitools/windowhost.h"
@@ -41,8 +42,25 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str)
 void ModalDialog::setEmbedded(bool embedded)
 {
     m_embedded = embedded;
-    if (embedded)
+    if (embedded) {
         setWindowFlags(Qt::Widget);
+        m_tab->tabBar()->hide(); // the pane lists the pages and chooses there
+        m_tab->setTabsClosable(false);
+        m_tab->setDocumentMode(true);
+        layout->setContentsMargins(0, 0, 0, 0);
+    }
+}
+
+void ModalDialog::setCurrentTab(int index)
+{
+    if (index >= 0 && index < m_tab->count())
+        m_tab->setCurrentIndex(index);
+}
+
+void ModalDialog::CloseTab(int index)
+{
+    if (index >= 0 && index < m_tab->count())
+        RemoveTab(index);
 }
 
 void ModalDialog::reject()

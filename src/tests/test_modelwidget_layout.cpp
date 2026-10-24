@@ -94,6 +94,24 @@ private:
     QStringList m_names;
 };
 
+// A scripted model that lets the test report charts the way the titration models do (the chart functions of
+// AbstractModel are protected).
+class ChartingModel : public ScriptModel {
+public:
+    explicit ChartingModel(DataClass* data)
+        : ScriptModel(data)
+    {
+    }
+    void feed(const QString& chart, const QStringList& names)
+    {
+        Vector row(names.size());
+        for (int i = 0; i < names.size(); ++i)
+            row(i) = i + 1.0;
+        addPoints(chart, 0.1, row, names);
+        emit ChartUpdated(chart);
+    }
+};
+
 class TestModelWidgetLayout : public QObject {
     Q_OBJECT
 
@@ -1051,6 +1069,123 @@ private slots:
                                                               .arg(scan->pos().x()).arg(scan->pos().y()).arg(scan->frameGeometry().x()).arg(scan->frameGeometry().y())));
         scan->hide();
         QSettings().remove(QStringLiteral("windows"));
+    }
+    // The model's charts are listed one by one (no tabs): a chart that appears is an entry of the Charts page, the
+    // page is chosen with the Charts button, an entry shows its chart, and Close chart removes it. Claude Generated.
+    void chartsAreListedOneByOne()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<DataClass> data(makeData(2));
+        QSharedPointer<ChartingModel> charting(new ChartingModel(data.data()));
+        QSharedPointer<AbstractModel> model = charting;
+        QHash<QString, QJsonObject> elements;
+        for (const ScriptModelPreset& preset : ScriptModel::Presets())
+            if (preset.name.startsWith(QStringLiteral("Binding 1:1 \u2014 signal"))) { // the one that fits two input columns
+                for (const QJsonObject& d : preset.block)
+                    elements[d["name"].toString()] = d;
+                break;
+            }
+        QVERIFY(!elements.isEmpty());
+        model->setModelDefinition(elements);
+        QVERIFY(model->DefineModel(QJsonObject()));
+
+        ChartWidget chart;
+        chart.setRawData(data);
+        Charts charts = chart.addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        auto listTitles = [&widget](QListWidget** found = nullptr) {
+            QStringList titles;
+            for (QListWidget* l : widget.findChildren<QListWidget*>())
+                if (l->isVisible() && l->count() > 0) {
+                    if (found)
+                        *found = l;
+                    for (int i = 0; i < l->count(); ++i)
+                        if (!l->item(i)->isHidden())
+                            titles << l->item(i)->text();
+                    break;
+                }
+            return titles;
+        };
+        QVERIFY2(!listTitles().contains(QStringLiteral("Charts")), "Charts is listed although the model has no chart");
+
+        // the model reports two charts (names as the titration models use them)
+        charting->feed(QStringLiteral("Concentration Chart"), { QStringLiteral("A"), QStringLiteral("B") });
+        charting->feed(QStringLiteral("Heat Chart I"), { QStringLiteral("q"), QStringLiteral("dq") });
+        QCoreApplication::processEvents();
+        QVERIFY2(listTitles().contains(QStringLiteral("Charts")), "Charts is not listed although the model has charts");
+
+        QListWidget* list = nullptr;
+        QStringList titles;
+        // choose the page like the Charts button does
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible())
+                for (int i = 0; i < l->count(); ++i)
+                    if (l->item(i)->text() == QStringLiteral("Charts")) {
+                        l->setCurrentRow(i);
+                        emit l->itemClicked(l->item(i));
+                    }
+        QCoreApplication::processEvents();
+        titles = listTitles(&list);
+        QVERIFY2(titles.size() >= 3 && titles.first().contains(QStringLiteral("Back")), qPrintable(titles.join(", ")));
+        QVERIFY2(titles.contains(QStringLiteral("Concentration")), qPrintable(titles.join(", ")));
+        QVERIFY2(titles.contains(QStringLiteral("Heat I")), qPrintable(titles.join(", ")));
+
+        // no tab bar of its own inside the page
+        for (QTabBar* bar : widget.findChildren<QTabBar*>())
+            QVERIFY2(!bar->isVisible() || bar->count() == 0 || bar->parentWidget()->parentWidget() == nullptr, "a tab bar is shown on the Charts page");
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // Every entry of the page list has an icon, and the entries that open a list of their own (Statistics, Charts)
+    // are marked as such, the others are not. Claude Generated.
+    void pageListHasIconsAndGroupMarkers()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<ChartingModel> charting(new ChartingModel(m_data.data()));
+        QSharedPointer<AbstractModel> model = charting;
+        QHash<QString, QJsonObject> elements;
+        for (const ScriptModelPreset& preset : ScriptModel::Presets())
+            if (preset.name.startsWith(QStringLiteral("Binding 1:1 \u2014 signal"))) {
+                for (const QJsonObject& d : preset.block)
+                    elements[d["name"].toString()] = d;
+                break;
+            }
+        model->setModelDefinition(elements);
+        QVERIFY(model->DefineModel(QJsonObject()));
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        charting->feed(QStringLiteral("Concentration Chart"), { QStringLiteral("A"), QStringLiteral("B") });
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        QStringList seen;
+        for (int i = 0; i < list->count(); ++i) {
+            const QListWidgetItem* item = list->item(i);
+            if (item->isHidden())
+                continue;
+            seen << item->text();
+            QVERIFY2(!item->icon().isNull(), qPrintable(QStringLiteral("no icon for '%1'").arg(item->text())));
+            const bool group = item->text() == QStringLiteral("Statistics") || item->text() == QStringLiteral("Charts");
+            QCOMPARE(item->data(Qt::UserRole + 10).toBool(), group); // GroupMarkerDelegate::GroupRole
+        }
+        QVERIFY2(seen.contains(QStringLiteral("Statistics")) && seen.contains(QStringLiteral("Charts")), qPrintable(seen.join(", ")));
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_list_icons.png").arg(renderDir));
+        QSettings().remove(QStringLiteral("model"));
     }
 };
 

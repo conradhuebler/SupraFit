@@ -40,6 +40,12 @@ public:
     void setEmbedded(bool embedded);
     /*! \brief The key under which the window's place and size are remembered (see WindowHost). */
     void setHostKey(const QString& key) { m_host_key = key; }
+
+    /*! \brief The pages (tabs) by name, and a way to show or close one: an embedding pane lists them itself.
+     * Claude Generated. */
+    inline QStringList TabNames() const { return m_tabNames; }
+    void setCurrentTab(int index);
+    void CloseTab(int index);
     void reject() override;
 
 public slots:

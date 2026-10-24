@@ -82,7 +82,7 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 
 ## 4. Fitting (model tab)
 
-- Below the fit controls a list on the left selects the page: Data series, Model Options, System Parameter, Model Definition (script models), Parameter Table (`*_any`), Statistics, Charts (the model's own charts, listed once it has one), Simulated Data.
+- Below the fit controls a list on the left selects the page: Data series, Model Options, System Parameter, Model Definition (script models), Parameter Table (`*_any`), Statistics, Charts (the model's own charts, listed once it has one), Simulated Data. Entries with a ">" (Statistics, Charts) replace the list by their own list with "← Back"; Charts has one entry per chart (right-click: Close chart).
   **Pin** in "Data series" keeps the series beside the pages; by default they are a page of the list. The last page and the pin are remembered per model type.
 - Checkboxes **Global Parameter** / **Local Parameter** choose what is optimised; the box next to a single value fixes that parameter.
   Status label: Converged / Not converged / Model corrupt. "Read Only" locks the local parameters.

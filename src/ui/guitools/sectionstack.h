@@ -28,6 +28,7 @@
 
 #include <QtGui/QFont>
 #include <QtGui/QIcon>
+#include <QtGui/QPainter>
 
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
@@ -35,6 +36,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QScrollArea>
+#include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -48,6 +50,46 @@
  * A page added with addGroupPage() has sub-entries (e.g. the analyses of the statistic tools and their
  * finished results). Choosing it replaces the page list by the list of its entries with a "Back" entry on
  * top; entries may be headers (not selectable) and are re-read by refreshGroup(). Claude Generated. */
+/*! \brief Draws a small chevron at the right edge of the entries that open a list of their own (group pages), in
+ * the colour of the entry's text, and keeps the text clear of it. Claude Generated. */
+class GroupMarkerDelegate : public QStyledItemDelegate {
+public:
+    static constexpr int GroupRole = Qt::UserRole + 10;
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        if (!index.data(GroupRole).toBool()) {
+            QStyledItemDelegate::paint(painter, option, index);
+            return;
+        }
+        QStyleOptionViewItem narrowed = option;
+        narrowed.rect.setRight(option.rect.right() - kMarkerWidth); // the text stays clear of the marker
+        QStyledItemDelegate::paint(painter, narrowed, index);
+
+        const bool selected = option.state & QStyle::State_Selected;
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(QPen(option.palette.color(selected ? QPalette::HighlightedText : QPalette::Text), 1.6, Qt::SolidLine, Qt::RoundCap));
+        const int x = option.rect.right() - kMarkerWidth / 2;
+        const int y = option.rect.center().y();
+        painter->drawLine(x - 2, y - 4, x + 2, y);
+        painter->drawLine(x + 2, y, x - 2, y + 4);
+        painter->restore();
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        QStyleOptionViewItem narrowed = option;
+        if (index.data(GroupRole).toBool())
+            narrowed.rect.setRight(option.rect.right() - kMarkerWidth);
+        return QStyledItemDelegate::sizeHint(narrowed, index);
+    }
+
+private:
+    static constexpr int kMarkerWidth = 16;
+};
+
 class SectionStack : public QWidget {
 public:
     /*! \brief One row of a group page's list: a selectable entry or a (non-selectable) header. */
@@ -62,6 +104,7 @@ public:
         : QWidget(parent)
     {
         m_list = makeList();
+        m_list->setItemDelegate(new GroupMarkerDelegate(m_list)); // a chevron tells which entries open a list of their own
         m_sub_list = makeList();
         m_nav = new QStackedWidget;
         m_nav->setFixedWidth(160);
@@ -110,7 +153,7 @@ public:
     }
 
     /*! \brief Add \p page under \p title; \p tools (may be null) is shown right-aligned in the page header. */
-    int addPage(QWidget* page, const QString& title, QWidget* tools = nullptr)
+    int addPage(QWidget* page, const QString& title, QWidget* tools = nullptr, const QIcon& icon = QIcon())
     {
         QWidget* container = new QWidget;
         QVBoxLayout* layout = new QVBoxLayout;
@@ -138,7 +181,7 @@ public:
         container->setLayout(layout);
 
         m_stack->addWidget(container);
-        m_list->addItem(title);
+        m_list->addItem(new QListWidgetItem(icon, title));
         m_titles << title;
         updateListVisibility();
         if (m_list->currentRow() < 0) {
@@ -153,10 +196,11 @@ public:
      * this page is shown, \p chosen(i) is called when the i-th row of that list is picked (it switches whatever
      * \p page shows), \p menu(i, globalPos) when its context menu is requested (may be empty). */
     int addGroupPage(QWidget* page, const QString& title, std::function<QList<SubEntry>()> entries,
-        std::function<void(int)> chosen, std::function<void(int, const QPoint&)> menu = nullptr)
+        std::function<void(int)> chosen, std::function<void(int, const QPoint&)> menu = nullptr, const QIcon& icon = QIcon())
     {
-        const int index = addPage(page, title);
+        const int index = addPage(page, title, nullptr, icon);
         m_groups.insert(index, Group{ entries, chosen, menu, QString() });
+        m_list->item(index)->setData(GroupMarkerDelegate::GroupRole, true); // shown with a chevron
         return index;
     }
 
@@ -211,6 +255,8 @@ public:
         if (index < 0 || index >= m_list->count())
             return;
         m_list->item(index)->setHidden(hidden);
+        if (hidden && m_list->currentRow() == index && m_groups.contains(index) && m_nav->currentIndex() == 1)
+            leaveGroup(); // the entries of a page that is going away are no longer on offer
         if (hidden && m_list->currentRow() == index) {
             m_quiet = true;
             selectFirstVisible();
