@@ -87,24 +87,25 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 - Checkboxes **Global Parameter** / **Local Parameter** choose what is optimised; the box next to a single value fixes that parameter.
   Status label: Converged / Not converged / Model corrupt. "Read Only" locks the local parameters.
 - **Fit** button runs the default "Tight". Its dropdown: Tight, Progress (shows optimisation history), Simplified MOC (fast F-test interval),
+  **Global Search...** (the Scan: grid over start values, "No of calculations to be done"; opens the Scan window),
   LevMar (classic) / VarPro (projection; only nmr_any/uvvis_any), submenu "Speciation solver" (LevMar / Newton default, BFGS legacy; `*_any` models).
   Picking a solver refits at once.
 - The "..." button next to a global parameter ("Boundaries of <param> and root search"): Enable Lower/Upper Boundary (soft log-Fermi penalty, experimental;
   keep the start value inside), "Single Optimisation".
-- Action buttons (second row via "..more.."; the choice is remembered): **Scan** (grid over start values, "No of calculations to be done"), **Statistic**, **Results**, **Detailed**,
-  **New Guess**, Restore, Charts (shows the page "Charts"), **Local Fits** (one model per series), Save, Load Constants, Save Constants, **Fit Settings** (iterations, tolerances, Fit Solver).
-- No convergence: try New Guess, other start values, the Scan, fix a weakly determined parameter, or exclude an outlier series/row.
+- Action buttons: **Detailed**, **New Guess**, Restore; second row via "..more.." (the choice is remembered): **Local Fits** (one model per series), Save, Load Constants, Save Constants,
+  **Fit Settings** (iterations, tolerances, Fit Solver). Statistics, results and charts are not buttons: they are the pages "Statistics" and "Charts" of the page list.
+- No convergence: try New Guess, other start values, the Global Search, fix a weakly determined parameter, or exclude an outlier series/row.
 - **Evaluation** menu: **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
 
 ## 5. Statistics
 
-Model tab **Statistic** (one model: shows the page "Statistics"; the page list is replaced by the analyses, "← Back" returns) or Evaluation > **Statistics** (all checked models, window) opens "Statistic Tools":
+The page "Statistics" of a model (one model; the page list is replaced by the analyses, "← Back" returns) or Evaluation > **Statistics** (all checked models, window) opens "Statistic Tools":
 - **Cross Validation/Reduction**: Leave-One-Out / Leave-Two-Out / Leave-X-Out; buttons Cross Validation, Reduction Analysis.
 - **Monte Carlo**: "Number of MC Steps:" (2000), σ taken as "σ from fit", "SEy" (default), user input, or bootstrapping; "Use Original Data"; **Simulate**.
   Percentile confidence interval. Assumes the model is right and noise random; a misspecified or sparse data set gives wide or skewed intervals.
 - **Weakened Grid Search**: F-test confidence interval for one chosen parameter. **Model Comparison**: F-test with random steps (Max. Steps 20000).
 - **Simplified MOC** (Fit dropdown) and the setting "Automatic Confidence Calculation using Simplified Model Comparison." (default on): quick F-test intervals.
-- Results: button **Results** or a finished run shows the page "Statistics": its list has the analyses under "New analysis" (start one) and every finished run under "Results" ("Monte Carlo #1", "Cross Validation #1", "Grid Search #1", ...; each with the icon of its method, the tooltip has the full name; pick one to look at it, right-click: Open in window, Save data, Drop raw data, Remove). **Open in window** (also below the result) moves a result into a window of its own; closing it puts it back. Monte Carlo has Histogram / Scatter Plot / Series Chart,
+- Results: a finished run shows the page "Statistics": its list has the analyses under "New analysis" (start one) and every finished run under "Results" ("Monte Carlo #1", "Cross Validation #1", "Grid Search #1", ...; each with the icon of its method, the tooltip has the full name; pick one to look at it, right-click: Open in window, Save data, Drop raw data, Remove). **Open in window** (also below the result) moves a result into a window of its own; closing it puts it back. Monte Carlo has Histogram / Scatter Plot / Series Chart,
   "Confidence Intervall", bins, Export Results. Global search: Result List / Scatter Plot, filters Only Valid / Only Converged Models, Export Models.
 - Model quality box ("Fit results"): Parameters fitted, Points used, Degrees of freedom, SAE, R2, F value, Mean error, Standard error, χ2.
 - **Analyse and Compare** (Evaluation menu, checked tabs): Compare Reduction Analysis (Cutoff), **Compare AIC**, Compare Cross Validation / Monte Carlo (LOO/L2O/LXO).

@@ -113,14 +113,22 @@ void ModelActions::LocalEnabled(bool enabled)
     m_minimize_single->setEnabled(enabled);
 }
 
+void ModelActions::setPageNavigation(bool pages)
+{
+    m_page_nav = pages;
+    setSimulation(m_simulation); // applies the buttons' visibility again
+}
+
 void ModelActions::setSimulation(bool simulation)
 {
+    m_simulation = simulation;
     m_minimize_single->setHidden(simulation);
     m_restore->setHidden(simulation);
-    m_advanced->setHidden(simulation);
+    m_advanced->setHidden(simulation || m_page_nav); // Scan: in the Fit menu of the model pane
     m_optim_config->setHidden(simulation);
-    m_statistics->setHidden(simulation);
-    m_plots->setHidden(simulation);
+    m_statistics->setHidden(simulation || m_page_nav); // the page list has Statistics (with the results)
+    m_plots->setHidden(simulation || m_page_nav);
+    m_charts->setHidden(m_page_nav); // ... and Charts
 }
 
 void ModelActions::resizeButtons()

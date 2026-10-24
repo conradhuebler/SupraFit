@@ -42,6 +42,10 @@ public:
     void EnableCharts(bool enable);
     void LocalEnabled(bool local_enabled);
     void setSimulation(bool simulation);
+    /*! \brief The owner has a page list that reaches Statistics, Results and Charts, and a Fit menu that holds the
+     * global search: the buttons for them are not needed (the model pane). A owner without such a list (the
+     * meta model) keeps them. Claude Generated. */
+    void setPageNavigation(bool pages);
 
 private:
     void setUi();
@@ -49,7 +53,8 @@ private:
     PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
     PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_restore, *m_detailed, *m_charts;
     QWidget* m_second;
-    bool m_simulation;
+    bool m_simulation = false;
+    bool m_page_nav = false;
 
 signals:
     void LocalMinimize();

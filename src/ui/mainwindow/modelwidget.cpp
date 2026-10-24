@@ -360,10 +360,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         GlobalMinimize(); /* re-fit with the chosen speciation solver — Claude Generated */
     });
 
+    QAction* global_search = new QAction(tr("Global Search..."), this);
+    global_search->setToolTip(tr("Scan the parameter space from many start values (opens the Scan window)"));
+    connect(global_search, &QAction::triggered, this, &ModelWidget::OpenAdvancedSearch);
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
+    menu->addAction(global_search);
     menu->addSeparator();
     menu->addAction(solver_levmar);
     menu->addAction(solver_varpro);
@@ -698,22 +703,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     }
 
     m_actions = new ModelActions;
+    m_actions->setPageNavigation(true); // Statistics, Results and Charts are pages of the list, the global search is in the Fit menu
 
     connect(m_actions, &ModelActions::NewGuess, this, &ModelWidget::NewGuess);
     connect(m_actions, &ModelActions::LocalMinimize, this, &ModelWidget::LocalMinimize);
     connect(m_actions, &ModelActions::OptimizerSettings, this, &ModelWidget::OptimizerSettings);
     connect(m_actions, &ModelActions::ImportConstants, this, &ModelWidget::ImportConstants);
     connect(m_actions, &ModelActions::ExportConstants, this, &ModelWidget::ExportConstants);
-    connect(m_actions, &ModelActions::OpenAdvancedSearch, this, &ModelWidget::OpenAdvancedSearch);
-    connect(m_actions, &ModelActions::TogglePlot, this, &ModelWidget::TogglePlot);
-    connect(m_actions, &ModelActions::ToggleStatisticDialog, this, &ModelWidget::ToggleStatisticDialog);
     connect(m_actions, &ModelActions::Save2File, this, &ModelWidget::Save2File);
     connect(m_actions, &ModelActions::ExportSimModel, this, &ModelWidget::ExportSimModel);
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
-    connect(m_actions, &ModelActions::Charts, this, [this]() {
-        m_pages->setCurrentTitle(tr("Charts"), true); // stays on the current page while the model has no chart
-    });
 
     //m_splitter->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());

@@ -36,6 +36,7 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QSplitter>
@@ -65,6 +66,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
+#include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/preparewidget.h"
 #include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/guitools/windowhost.h"
@@ -1185,6 +1187,40 @@ private slots:
         const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
         if (!renderDir.isEmpty())
             widget.grab().save(QStringLiteral("%1/modelwidget_list_icons.png").arg(renderDir));
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // The page list reaches Statistics, Results and Charts, and the global search sits in the Fit menu: the model
+    // pane has no buttons for them any more. Claude Generated.
+    void actionButtonsAreNotDoubledByThePageList()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        // only the action buttons of the pane count (the dialogs of the pane have buttons of their own)
+        ModelActions* actions = widget.findChild<ModelActions*>();
+        QVERIFY(actions);
+        QStringList shown;
+        for (QPushButton* b : actions->findChildren<QPushButton*>())
+            if (!b->isHidden() && b->text() != QString())
+                shown << b->text();
+        QPushButton* fit = nullptr;
+        for (QPushButton* b : widget.findChildren<QPushButton*>())
+            if (b->text() == QStringLiteral("Fit") && b->menu())
+                fit = b;
+        for (const QString& gone : { QStringLiteral("Statistic"), QStringLiteral("Results"), QStringLiteral("Charts"), QStringLiteral("Scan") })
+            QVERIFY2(!shown.contains(gone), qPrintable(QStringLiteral("button '%1' is still there: %2").arg(gone, shown.join(", "))));
+        QVERIFY2(shown.contains(QStringLiteral("Detailed")) && shown.contains(QStringLiteral("New Guess")), qPrintable(shown.join(", ")));
+
+        QVERIFY2(fit, "no Fit button with a menu");
+        QStringList entries;
+        for (const QAction* action : fit->menu()->actions())
+            entries << action->text();
+        QVERIFY2(entries.contains(QStringLiteral("Global Search...")), qPrintable(entries.join(", ")));
         QSettings().remove(QStringLiteral("model"));
     }
 };
