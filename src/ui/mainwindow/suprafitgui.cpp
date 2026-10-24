@@ -636,6 +636,9 @@ void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
     m_save_as->setEnabled(enabled);
+    // the buttons above the project list act on open projects only
+    for (QToolButton* button : QList<QToolButton*>{ m_export_plain, m_export_suprafit, m_add_scatter, m_close_all })
+        button->setEnabled(enabled);
 }
 
 /*! \brief Build the single main toolbar: file groups as drop-down buttons, the workspace menus
@@ -1911,7 +1914,10 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         m_supr_file.clear();
         m_filename_line->clear();
     }
-    
+
+    if (m_project_windows.isEmpty())
+        setActionEnabled(false);
+
     m_project_tree->UpdateStructure();
 }
 
@@ -1956,6 +1962,7 @@ void SupraFitGui::CloseProjects()
 
     m_project_tree->UpdateStructure();
     UpdateRecentList();
+    setActionEnabled(false);
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)
