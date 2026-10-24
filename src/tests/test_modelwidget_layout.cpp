@@ -69,6 +69,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
@@ -1488,6 +1489,135 @@ private slots:
         qInfo("%d runs, failures after the custom model: %lld, without it: %lld", tried, static_cast<long long>(failures.size()), static_cast<long long>(baseline.size()));
         qInfo("baseline failures: %s", qPrintable(baseline.join("; ")));
         QVERIFY2(failures.isEmpty(), qPrintable(failures.mid(0, 12).join("\n")));
+    }
+    // ---- WP-A: the model catalogue ------------------------------------------------------------------------------
+
+    void catalogTechniquesFitTheColumns()
+    {
+        using ModelCatalog::Technique;
+        const QList<Technique> titrations{ Technique::NMR, Technique::UVVis, Technique::Fluorescence };
+        QCOMPARE(ModelCatalog::TechniquesFor(2), titrations);
+        QCOMPARE(ModelCatalog::TechniquesFor(3), titrations); // three components: flexible models only
+        const QList<Technique> one = ModelCatalog::TechniquesFor(1);
+        QVERIFY(one.contains(Technique::Calorimetry) && one.contains(Technique::Kinetics) && !one.contains(Technique::NMR));
+        QCOMPARE(ModelCatalog::TechniquesFor(0).size(), ModelCatalog::Techniques().size()); // unknown: all
+        for (const ModelCatalog::TechniqueInfo& info : ModelCatalog::Techniques()) { // the settings key round-trips
+            QVERIFY(!info.key.isEmpty() && !info.name.isEmpty() && !info.shortName.isEmpty());
+            QCOMPARE(ModelCatalog::TechniqueFromKey(info.key, Technique::Kinetics), info.technique);
+        }
+        QCOMPARE(ModelCatalog::TechniqueFromKey(QStringLiteral("no such technique")), Technique::NMR); // default: NMR
+    }
+
+    void catalogStoichiometries()
+    {
+        const QList<ModelCatalog::Stoichiometry> list = ModelCatalog::Stoichiometries();
+        QCOMPARE(list.size(), 10); // 4 established, 4 with host dimerisation, 2 with three components
+        QSet<QString> keys;
+        for (int i = 0; i < list.size(); ++i) {
+            QVERIFY2(!list[i].key.isEmpty() && !list[i].title.isEmpty() && !list[i].reactions.isEmpty(), qPrintable(list[i].key));
+            QVERIFY2(!keys.contains(list[i].key), qPrintable(QStringLiteral("key twice: %1").arg(list[i].key)));
+            keys << list[i].key;
+            QCOMPARE(list[i].fixedIndex, i < 4 ? i : -1);
+            QCOMPARE(list[i].components, i < 8 ? 2 : 3);
+        }
+    }
+
+    // What the Model menu has always offered, per technique: the four fixed models and the flexible one. The catalogue
+    // must give the same, or the menu built from it (WP-E) would lose or gain entries.
+    void catalogHasWhatTheModelMenuHad()
+    {
+        using ModelCatalog::Technique;
+        QCOMPARE(ModelCatalog::FixedModels(Technique::NMR), (QList<int>{ SupraFit::nmr_ItoI, SupraFit::nmr_IItoI_ItoI, SupraFit::nmr_ItoI_ItoII, SupraFit::nmr_IItoI_ItoI_ItoII }));
+        QCOMPARE(ModelCatalog::FixedModels(Technique::UVVis), (QList<int>{ SupraFit::uv_vis_ItoI, SupraFit::uv_vis_IItoI_ItoI, SupraFit::uv_vis_ItoI_ItoII, SupraFit::uv_vis_IItoI_ItoI_ItoII }));
+        QCOMPARE(ModelCatalog::FixedModels(Technique::Fluorescence), (QList<int>{ SupraFit::fl_ItoI, SupraFit::fl_IItoI_ItoI, SupraFit::fl_ItoI_ItoII, SupraFit::fl_IItoI_ItoI_ItoII }));
+        QCOMPARE(ModelCatalog::FixedModels(Technique::Calorimetry), (QList<int>{ SupraFit::itc_ItoI, SupraFit::itc_IItoI, SupraFit::itc_ItoII, SupraFit::itc_IItoII }));
+        QCOMPARE(ModelCatalog::AnyModel(Technique::NMR), int(SupraFit::nmr_any));
+        QCOMPARE(ModelCatalog::AnyModel(Technique::UVVis), int(SupraFit::uvvis_any));
+        QCOMPARE(ModelCatalog::AnyModel(Technique::Fluorescence), int(SupraFit::fl_any));
+        QCOMPARE(ModelCatalog::AnyModel(Technique::Calorimetry), int(SupraFit::itc_any));
+
+        // the established stoichiometries are the fixed models, the others the flexible model with reactions
+        for (const Technique t : { Technique::NMR, Technique::UVVis, Technique::Fluorescence, Technique::Calorimetry }) {
+            const QList<ModelCatalog::Stoichiometry> list = ModelCatalog::Stoichiometries();
+            for (int i = 0; i < list.size(); ++i) {
+                const ModelCatalog::Choice choice = ModelCatalog::ForStoichiometry(t, list[i].key);
+                if (i < 4) {
+                    QCOMPARE(choice.kind, ModelCatalog::Choice::Kind::FixedModel);
+                    QCOMPARE(choice.model, ModelCatalog::FixedModels(t).at(i));
+                } else if (t == Technique::Calorimetry && list[i].components > 2) {
+                    QVERIFY2(!choice.valid(), "calorimetry takes host/guest systems only");
+                } else {
+                    QCOMPARE(choice.kind, ModelCatalog::Choice::Kind::AnyModelWithReactions);
+                    QCOMPARE(choice.model, ModelCatalog::AnyModel(t));
+                    QCOMPARE(choice.reactions, list[i].reactions);
+                }
+            }
+        }
+        QVERIFY(!ModelCatalog::ForStoichiometry(Technique::NMR, QStringLiteral("no such")).valid());
+    }
+
+    void catalogEntriesByColumns()
+    {
+        using ModelCatalog::Technique;
+        // two columns: the established and the dimerisation systems for NMR, UV/Vis and fluorescence
+        for (const Technique t : { Technique::NMR, Technique::UVVis, Technique::Fluorescence })
+            QCOMPARE(ModelCatalog::Entries(t, 2).size(), 8);
+        // three columns: only the three-component systems, flexible models
+        for (const ModelCatalog::Entry& e : ModelCatalog::Entries(Technique::NMR, 3))
+            QCOMPARE(e.choice.kind, ModelCatalog::Choice::Kind::AnyModelWithReactions);
+        QCOMPARE(ModelCatalog::Entries(Technique::NMR, 3).size(), 2);
+        // a technique that does not fit the data offers nothing
+        QVERIFY(ModelCatalog::Entries(Technique::NMR, 1).isEmpty());
+        QVERIFY(ModelCatalog::Entries(Technique::Calorimetry, 2).isEmpty());
+        // calorimetry (one column): the host/guest systems and the models of its own
+        QCOMPARE(ModelCatalog::Entries(Technique::Calorimetry, 1).size(), 8 + 3);
+        QCOMPARE(ModelCatalog::Entries(Technique::Kinetics, 1).size(), 6);
+        // keys: stable and unique inside a technique
+        for (const Technique t : ModelCatalog::TechniquesFor(0)) {
+            QSet<QString> keys;
+            for (const ModelCatalog::Entry& e : ModelCatalog::Entries(t, 0)) {
+                QVERIFY2(!e.key.isEmpty() && !e.title.isEmpty(), qPrintable(e.key));
+                QVERIFY2(!keys.contains(e.key), qPrintable(QStringLiteral("key twice: %1").arg(e.key)));
+                keys << e.key;
+            }
+        }
+        // script presets: as the menu, those that need more columns than the data has are left out
+        const int all = ModelCatalog::ScriptPresetEntries(0).size();
+        QCOMPARE(all, int(ScriptModel::Presets().size()));
+        QVERIFY(ModelCatalog::ScriptPresetEntries(1).size() < all);
+        QCOMPARE(ModelCatalog::ScriptPresetEntries(2).size(), all);
+        const ModelCatalog::Entry file = ModelCatalog::ModelFileEntry(QStringLiteral("/some/dir/my model.json"));
+        QCOMPARE(file.title, QStringLiteral("my model"));
+        QCOMPARE(file.choice.file, QStringLiteral("/some/dir/my model.json"));
+    }
+
+    // Every entry of the catalogue must lead to a model that really is added, the way ModelDataHolder::AddModel
+    // adds it: a fixed model is created, a flexible one is defined from its reactions. For the titration techniques
+    // the model must be complete with data of the right number of columns. Claude Generated.
+    void catalogChoicesMakeModels()
+    {
+        using ModelCatalog::Technique;
+        for (const Technique t : { Technique::NMR, Technique::UVVis, Technique::Fluorescence, Technique::Calorimetry }) {
+            for (const int columns : { 1, 2, 3 }) {
+                for (const ModelCatalog::Entry& e : ModelCatalog::Entries(t, columns)) {
+                    if (e.kind != ModelCatalog::Kind::Stoichiometry)
+                        continue;
+                    QSharedPointer<DataClass> data(makeDataFor(columns));
+                    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::Model(e.choice.model), data.data());
+                    QVERIFY2(model, qPrintable(QStringLiteral("%1 / %2 columns / %3: no model").arg(ModelCatalog::Info(t).shortName).arg(columns).arg(e.key)));
+                    if (e.choice.kind == ModelCatalog::Choice::Kind::AnyModelWithReactions) {
+                        QJsonObject reactions;
+                        reactions["name"] = QStringLiteral("Reactions");
+                        reactions["type"] = 6;
+                        reactions["value"] = e.choice.reactions;
+                        model->setModelDefinition(QHash<QString, QJsonObject>{ { QStringLiteral("Reactions"), reactions } });
+                        QVERIFY2(model->DefineModel(QJsonObject()), qPrintable(QStringLiteral("%1 / %2: definition failed").arg(ModelCatalog::Info(t).shortName, e.key)));
+                    }
+                    if (t != Technique::Calorimetry) // the calorimetry models need a titration protocol to be complete
+                        QVERIFY2(model->Complete(), qPrintable(QStringLiteral("%1 / %2 columns / %3: incomplete").arg(ModelCatalog::Info(t).shortName).arg(columns).arg(e.key)));
+                }
+            }
+        }
     }
 };
 

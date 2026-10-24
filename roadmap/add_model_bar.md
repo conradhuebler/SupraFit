@@ -38,7 +38,7 @@ Claude Generated - work package / roadmap document
 
 ## Arbeitspakete (je ein baubarer Commit)
 
-- **WP-A Katalog:** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü; Eintragsarten.
+- **WP-A Katalog (erledigt, `modelcatalog.{h,cpp}`, 5 Tests `catalog*`):** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü; Eintragsarten.
 - **WP-B Zähler und Auswahl:** Aufrufzähler je Eintrag (`QSettings` `model_usage/...`), Modus häufigste/feste Liste, x, Zurücksetzen; Test mit Zählern und stabiler Reihenfolge.
 - **WP-C Leiste:** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), schwebend/andockbar, Offscreen-Test und Render hell/dunkel.
 - **WP-D Anpassen:** Dialog und Rechtsklick-Menü für die feste Liste, Einstellung in der Registry (`add_model_bar_mode`, `add_model_bar_count`, `add_model_technique`).
