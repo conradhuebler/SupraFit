@@ -306,6 +306,7 @@ set(core_SRC
     src/capabilities/montecarlostatistics.cpp
     src/capabilities/globalsearch.cpp
     src/capabilities/weakenedgridsearch.cpp
+    src/capabilities/landscapesampler.cpp
     src/capabilities/jobmanager.cpp
     src/capabilities/mlfeatureextractor.cpp
     src/core/analyse.cpp

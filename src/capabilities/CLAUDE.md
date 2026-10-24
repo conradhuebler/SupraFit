@@ -50,6 +50,10 @@ Core capabilities providing advanced analysis, search, and data generation funct
   - X/Y series generation for parameter-response mapping
   - Cutoff-based parameter importance ranking
 
+- **landscapesampler.cpp/h**: Well-tempered, metadynamics-like walker on a plain function f(theta) in a box (SSE as energy)
+  - Metropolis or Langevin (finite-difference gradient); wall at `sseCut`; stop by patience once the bias has converged
+  - Result: profile per variable, minimum candidates, free-energy estimate; no Qt/model dependency; plan: [roadmap/landscape_sampling.md](../../roadmap/landscape_sampling.md)
+
 - **abstractsearchclass.cpp/h**: Base class for all search/analysis implementations
   - Common interface for parallel execution
   - Thread-safe result collection

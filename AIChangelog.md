@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-10-24: **Landscape sampler WP-A (`capabilities/landscapesampler.{h,cpp}`, test `LandscapeSamplerTest`): well-tempered metadynamics-like walker on f(theta) in a box with Metropolis or Langevin (finite-difference gradient) moves, SSE wall, profile and minimum candidates; stopping by patience counts only once the hill height has fallen below `minHillFraction` (a fully visited but unfilled basin ended runs early: 18 of 20 seeds crossed a 30 kT barrier with Langevin, 20 of 20 after the fix, both samplers; runs then take up to the 200000-step cap, dT sets the barrier a run can take down). Plan: [roadmap/landscape_sampling.md](roadmap/landscape_sampling.md), branch `feature/landscape-sampling`.**
 - 2026-10-24: **Data and Evaluation left the main toolbar: `Edit Data` (arrow: Data menu with Split Data Set) is the left, `Evaluation` the right corner widget of the project's tab bar (`ModelDataHolder`), both follow `ToolsChanged`. Test `dataAndEvaluationSitNextToTheTabs`.**
 - 2026-10-24: **The Model menu button moved from the left zone of the main toolbar to the middle zone, in front of the quick bar.**
 - 2026-10-24: **Add-Model bar WP-F: help section 3 rewritten (gear entries named, Calorimetry instead of ITC, no literal escapes), tooltips for the gear, mode radios, count, Up/Down and the technique choice.**
