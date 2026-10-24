@@ -63,7 +63,7 @@ most (NMR while it never was used; then the technique you used last, or the one 
 two or more independent columns; ITC for one). Every button names its technique ("1:1 \u00b7 NMR"). A stoichiometry gives the fixed model of the technique (the four established ones) or its flexible
 `*_any` model with the reactions. Scripted presets and model files can be buttons too. The gear next to the models opens **Customise...** (dialog "Customise the quick bar": "The models I add most" with how many, or "A list I put together" - tick what the bar shows, order with Up/Down, from all
 stoichiometries, models, scripted models and model files you used - and the technique a never used model starts with), **Fix the bar as it is** (turns what it shows now into the list) and **Forget what was used**.
-Right-click on a button: Remove from the bar (list), Fix the bar as it is (most used), Customise... The bar only shows models for a project on screen.
+Right-click on a button: Remove from the bar (list), Fix the bar as it is (most used), Customise... Models added from the **Model** menu count for the bar as well; right-click an entry there and choose **Add to the quick bar** (the bar then shows a list). The bar only shows models for a project on screen.
 
 The menu **Model** has everything. Only entries that fit the number of independent columns are shown.
 

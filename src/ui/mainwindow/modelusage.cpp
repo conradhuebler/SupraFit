@@ -211,4 +211,32 @@ QList<ModelCatalog::Entry> Quick(int independentColumns)
         shown.removeLast();
     return shown;
 }
+
+bool RecordChoice(const ModelCatalog::Choice& choice)
+{
+    ModelCatalog::Entry entry;
+    ModelCatalog::Technique technique = ModelCatalog::Technique::NMR;
+    if (!ModelCatalog::Identify(choice, &entry, &technique))
+        return false;
+    Record(technique, entry);
+    return true;
+}
+
+bool Pin(const QString& entryKey, int independentColumns)
+{
+    Preferences p = Load();
+    QStringList keys;
+    if (p.mode == Mode::Fixed)
+        keys = p.fixed;
+    else
+        for (const ModelCatalog::Entry& entry : Quick(independentColumns))
+            keys << entry.key;
+    if (keys.contains(entryKey))
+        return false;
+    keys << entryKey;
+    p.fixed = keys;
+    p.mode = Mode::Fixed;
+    Save(p);
+    return true;
+}
 }

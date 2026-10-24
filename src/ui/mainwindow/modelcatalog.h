@@ -133,4 +133,10 @@ QList<Entry> ScriptPresetEntries(int independentColumns);
 
 /*! \brief An entry for a model file. */
 Entry ModelFileEntry(const QString& file);
+
+/*! \brief Which entry and technique a \p choice stands for (the reverse of ChoiceFor): a fixed model or a `*_any` model
+ * with the reactions of a stoichiometry, a scripted preset, a model file. False if it is none of them, e.g. a model
+ * added with its own reactions or by its numeric ID. \p technique stays unset for scripted presets and files.
+ * Claude Generated. */
+bool Identify(const Choice& choice, Entry* entry, Technique* technique);
 }

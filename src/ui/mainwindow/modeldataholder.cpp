@@ -68,6 +68,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QInputDialog>
+#include <QtGui/QMouseEvent>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
@@ -79,6 +80,7 @@
 
 #include "src/ui/instance.h"
 #include "modeldataholder.h"
+#include "modelusage.h"
 
 void ToolButton::ChangeColor(const QColor& color)
 {
@@ -247,8 +249,15 @@ MDHDockTitleBar::MDHDockTitleBar()
                 continue;
             QAction* a = sub->addAction(p.name);
             a->setToolTip(QString(p.reactions).replace('\n', QStringLiteral(" ; ")));
+            a->setData(model);
+            a->setProperty("preset_reactions", p.reactions);
             const QString reactions = p.reactions;
             connect(a, &QAction::triggered, this, [this, model, reactions]() {
+                ModelCatalog::Choice choice;
+                choice.kind = ModelCatalog::Choice::Kind::AnyModelWithReactions;
+                choice.model = model;
+                choice.reactions = reactions;
+                CountMenuChoice(choice);
                 m_model_choosen = model;
                 m_preset_reactions = reactions;
                 emit AddModel();
@@ -334,7 +343,14 @@ MDHDockTitleBar::MDHDockTitleBar()
     for (int i = 0; i < presets.size(); ++i) {
         QAction* a = scriptPresets->addAction(presets[i].name);
         a->setToolTip(tr("%1 — needs %2 independent column(s)").arg(presets[i].name).arg(presets[i].inputSize));
-        connect(a, &QAction::triggered, this, [this, i]() { emit this->NewModelFromPreset(i); });
+        connect(a, &QAction::triggered, this, [this, i]() {
+            ModelCatalog::Choice choice;
+            choice.kind = ModelCatalog::Choice::Kind::ScriptPreset;
+            choice.scriptPreset = i;
+            CountMenuChoice(choice);
+            emit this->NewModelFromPreset(i);
+        });
+        a->setProperty("entry_key", QStringLiteral("script:%1").arg(presets[i].name));
         m_script_preset_actions << qMakePair(QPointer<QAction>(a), presets[i].inputSize);
     }
     // Grey out presets that need more independent columns than the current data provides (0 = unknown
@@ -351,6 +367,12 @@ MDHDockTitleBar::MDHDockTitleBar()
     addScript->setToolTip(tr("Add a model stored in a model file (*.json)"));
     connect(addScript, &QAction::triggered, this, [this]() {
         QString file = QFileDialog::getOpenFileName(this, tr("Custom Model"), getDir(), "*.json");
+        if (!file.isEmpty()) {
+            ModelCatalog::Choice choice;
+            choice.kind = ModelCatalog::Choice::Kind::ModelFile;
+            choice.file = file;
+            CountMenuChoice(choice);
+        }
         emit this->AddScriptModel(file);
     });
 
@@ -381,6 +403,13 @@ MDHDockTitleBar::MDHDockTitleBar()
             emit this->AddModel();
         }
     });
+    // right click on an entry: put it on the quick bar (the experiment submenus and preset submenus are filled later,
+    // their menus exist now)
+    m_model_menu->installEventFilter(this);
+    for (QMenu* menu : { m_nmr_menu.data(), m_uv_vis_menu.data(), m_fl_menu.data(), m_itc_menu.data(), m_kinetics_menu.data(), scriptPresets })
+        menu->installEventFilter(this);
+    for (QMenu* menu : findChildren<QMenu*>())
+        menu->installEventFilter(this);
     auto showAdvanced = [this]() { m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
     showAdvanced();
     if (Instance::GlobalInstance())
@@ -476,9 +505,67 @@ void MDHDockTitleBar::RequestModel(const ModelCatalog::Choice& choice)
     }
 }
 
+void MDHDockTitleBar::CountMenuChoice(const ModelCatalog::Choice& choice)
+{
+    if (ModelUsage::RecordChoice(choice))
+        emit UsageChanged();
+}
+
+QString MDHDockTitleBar::EntryKeyOf(const QAction* action) const
+{
+    if (!action)
+        return QString();
+    const QString key = action->property("entry_key").toString();
+    if (!key.isEmpty())
+        return key;
+    ModelCatalog::Choice choice;
+    ModelCatalog::Entry entry;
+    ModelCatalog::Technique technique = ModelCatalog::Technique::NMR;
+    if (action->menu() || !action->data().isValid())
+        return QString();
+    if (action->property("preset_reactions").isValid()) {
+        choice.kind = ModelCatalog::Choice::Kind::AnyModelWithReactions;
+        choice.reactions = action->property("preset_reactions").toString();
+    } else
+        choice.kind = ModelCatalog::Choice::Kind::FixedModel;
+    choice.model = action->data().toInt();
+    return ModelCatalog::Identify(choice, &entry, &technique) ? entry.key : QString();
+}
+
+bool MDHDockTitleBar::eventFilter(QObject* object, QEvent* event)
+{
+    // A right click on a Model-menu entry offers to put it on the quick bar. Claude Generated.
+    QMenu* menu = qobject_cast<QMenu*>(object);
+    if (menu && event->type() == QEvent::MouseButtonRelease) {
+        QMouseEvent* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::RightButton) {
+            const QString key = EntryKeyOf(menu->actionAt(mouse->position().toPoint()));
+            if (!key.isEmpty()) {
+                QMenu context;
+                const bool on_bar = [&]() {
+                    for (const ModelCatalog::Entry& e : ModelUsage::Quick(m_independent_count))
+                        if (e.key == key)
+                            return true;
+                    return false;
+                }();
+                QAction* pin = context.addAction(on_bar ? tr("On the quick bar") : tr("Add to the quick bar"));
+                pin->setEnabled(!on_bar);
+                if (context.exec(mouse->globalPosition().toPoint()) == pin && ModelUsage::Pin(key, m_independent_count))
+                    emit UsageChanged();
+            }
+            return true; // a right click never triggers an entry
+        }
+    }
+    return QWidget::eventFilter(object, event);
+}
+
 void MDHDockTitleBar::PrepareAddModel()
 {
     m_model_choosen = qobject_cast<QAction*>(sender())->data().toInt();
+    ModelCatalog::Choice choice;
+    choice.kind = ModelCatalog::Choice::Kind::FixedModel;
+    choice.model = m_model_choosen;
+    CountMenuChoice(choice);
     m_preset_reactions.clear(); // plain add: no preset, show the definition dialog as usual
     emit AddModel();
 }

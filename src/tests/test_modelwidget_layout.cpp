@@ -33,6 +33,7 @@
 #include <QtCore/QThread>
 #include <QtGui/QPixmap>
 #include <QtTest/QtTest>
+#include <QtTest/QSignalSpy>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QVBoxLayout>
@@ -2064,6 +2065,72 @@ private slots:
         QVERIFY(!barButton(f.bar, QStringLiteral("stoich:2:1/1:1")));
         QCOMPARE(ModelUsage::Load().fixed, (QStringList{ "stoich:1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
         QVERIFY(!trigger(QStringLiteral("stoich:1:1"), QStringLiteral("Fix the bar as it is"))); // already fixed
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+    // The Model menu goes through the same catalogue: what is added there is counted, and a right click puts the
+    // entry on the quick bar. Claude Generated.
+    void modelMenuCountsAndPins()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        // every entry is found again from the choice that adds it
+        for (const ModelCatalog::Entry& entry : ModelCatalog::AllEntries(0)) {
+            if (entry.kind == ModelCatalog::Kind::ScriptPreset) {
+                ModelCatalog::Entry back;
+                Technique t = Technique::NMR;
+                QVERIFY2(ModelCatalog::Identify(entry.choice, &back, &t), qPrintable(entry.key));
+                QCOMPARE(back.key, entry.key);
+                continue;
+            }
+            for (const Technique t : entry.techniques) {
+                ModelCatalog::Entry back;
+                Technique found = Technique::NMR;
+                QVERIFY2(ModelCatalog::Identify(ModelCatalog::ChoiceFor(entry, t), &back, &found), qPrintable(entry.key));
+                QCOMPARE(back.key, entry.key);
+                // the Tian model is offered by two techniques with the same choice: either one will do
+                QVERIFY(entry.techniques.contains(found));
+                QCOMPARE(ModelCatalog::ChoiceFor(entry, found).model, ModelCatalog::ChoiceFor(entry, t).model);
+            }
+        }
+        ModelCatalog::Choice own; // a model with its own reactions is none of the entries
+        own.kind = ModelCatalog::Choice::Kind::AnyModelWithReactions;
+        own.model = SupraFit::nmr_any;
+        own.reactions = QStringLiteral("A + B = AB\nAB + A = A2B");
+        ModelCatalog::Entry ignored;
+        Technique ignoredT = Technique::NMR;
+        QVERIFY(!ModelCatalog::Identify(own, &ignored, &ignoredT));
+
+        BarFixture f(2);
+        MDHDockTitleBar* title = f.holder.TitleBarWidget();
+        QAction* uvvis = nullptr;
+        QAction* nmrPreset = nullptr;
+        for (QMenu* menu : title->findChildren<QMenu*>())
+            for (QAction* a : menu->actions()) {
+                if (a->data().isValid() && a->data().toInt() == SupraFit::uv_vis_IItoI_ItoI && !a->menu())
+                    uvvis = a;
+                // a preset the bar does not show from the start
+                if (a->property("preset_reactions").isValid() && !nmrPreset && a->data().toInt() == SupraFit::nmr_any
+                    && !title->EntryKeyOf(a).isEmpty() && !ModelUsage::DefaultFixed().contains(title->EntryKeyOf(a)))
+                    nmrPreset = a;
+            }
+        QVERIFY(uvvis);
+        QCOMPARE(title->EntryKeyOf(uvvis), QStringLiteral("stoich:2:1/1:1"));
+        QVERIFY(nmrPreset);
+        QVERIFY(!title->EntryKeyOf(nmrPreset).isEmpty());
+
+        // using the menu entry counts for UV/Vis, and the bar is told
+        QSignalSpy changed(title, &MDHDockTitleBar::UsageChanged);
+        uvvis->trigger();
+        QCOMPARE(ModelUsage::Used(Technique::UVVis, QStringLiteral("stoich:2:1/1:1")), 1);
+        QCOMPARE(changed.count(), 1);
+
+        // pinning: the frequent bar becomes the fixed list, the entry is added once
+        QVERIFY(ModelUsage::Pin(title->EntryKeyOf(nmrPreset), 2));
+        const ModelUsage::Preferences p = ModelUsage::Load();
+        QCOMPARE(p.mode, ModelUsage::Mode::Fixed);
+        QCOMPARE(p.fixed.last(), title->EntryKeyOf(nmrPreset));
+        QCOMPARE(p.fixed.size(), 5);
+        QVERIFY(!ModelUsage::Pin(title->EntryKeyOf(nmrPreset), 2));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 };

@@ -133,6 +133,8 @@ public:
      * its reactions through AddModel(), a scripted preset or a model file through their own signals. Used by the
      * Add-Model bar. Claude Generated. */
     void RequestModel(const ModelCatalog::Choice& choice);
+    /*! \brief The entry of the quick bar a Model-menu action adds (see ModelCatalog), empty if it has none. Claude Generated. */
+    QString EntryKeyOf(const QAction* action) const;
 
 private:
     QPointer<QMenu> m_data_menu, m_model_menu, m_evaluation_menu;
@@ -148,6 +150,9 @@ private:
     QVector<QPair<QPointer<QAction>, int>> m_script_preset_actions; ///< (preset action, required inputs)
 private slots:
     void PrepareAddModel();
+    /** @brief Count a model added from the Model menu, so the quick bar learns from it. Claude Generated. */
+    void CountMenuChoice(const ModelCatalog::Choice& choice);
+    bool eventFilter(QObject* object, QEvent* event) override;
 
 signals:
     void NewModel();
@@ -164,6 +169,8 @@ signals:
     void SplitData();
     /** @brief Availability of the menus changed (enabled, hidden for meta models). Claude Generated. */
     void ToolsChanged();
+    /** @brief What the Add-Model bar shows may have changed (a model was added from the menu, an entry was put on the bar). Claude Generated. */
+    void UsageChanged();
 };
 
 class ModelDataHolder : public QWidget {

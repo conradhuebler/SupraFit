@@ -95,7 +95,11 @@ AddModelBar::AddModelBar(QWidget* parent)
 
 void AddModelBar::setWorkspace(MDHDockTitleBar* workspace)
 {
+    if (m_workspace)
+        disconnect(m_workspace, &MDHDockTitleBar::UsageChanged, this, &AddModelBar::Refresh);
     m_workspace = workspace;
+    if (m_workspace)
+        connect(m_workspace, &MDHDockTitleBar::UsageChanged, this, &AddModelBar::Refresh);
     const bool available = workspace && workspace->ToolsAvailable();
     setEnabled(available);
     m_columns = available ? workspace->IndependentCount() : 0;

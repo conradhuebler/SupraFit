@@ -282,4 +282,53 @@ Entry ModelFileEntry(const QString& file)
     entry.choice.file = file;
     return entry;
 }
+
+bool Identify(const Choice& choice, Entry* entry, Technique* technique)
+{
+    auto sameReactions = [](const QString& a, const QString& b) { return a.simplified() == b.simplified(); };
+    switch (choice.kind) {
+    case Choice::Kind::ScriptPreset:
+        for (const Entry& e : ScriptPresetEntries(0))
+            if (e.choice.scriptPreset == choice.scriptPreset) {
+                *entry = e;
+                return true;
+            }
+        return false;
+    case Choice::Kind::ModelFile:
+        *entry = ModelFileEntry(choice.file);
+        return !choice.file.isEmpty();
+    case Choice::Kind::FixedModel:
+    case Choice::Kind::AnyModelWithReactions:
+        for (const Entry& e : AllEntries(0))
+            for (const Technique t : e.techniques) {
+                const Choice c = ChoiceFor(e, t);
+                if (c.kind != choice.kind || c.model != choice.model)
+                    continue;
+                if (c.kind == Choice::Kind::AnyModelWithReactions && !sameReactions(c.reactions, choice.reactions))
+                    continue;
+                *entry = e;
+                *technique = t;
+                return true;
+            }
+        // the flexible model with the reactions of a stoichiometry that the technique has as fixed model (1:1)
+        if (choice.kind == Choice::Kind::AnyModelWithReactions)
+            for (const Technique t : { Technique::NMR, Technique::UVVis, Technique::Fluorescence, Technique::Calorimetry }) {
+                if (AnyModel(t) != choice.model)
+                    continue;
+                for (const Stoichiometry& st : Stoichiometries())
+                    if (sameReactions(st.reactions, choice.reactions)) {
+                        for (const Entry& e : AllEntries(0))
+                            if (e.key == QStringLiteral("stoich:") + st.key) {
+                                *entry = e;
+                                *technique = t;
+                                return true;
+                            }
+                    }
+            }
+        return false;
+    case Choice::Kind::None:
+        break;
+    }
+    return false;
+}
 }

@@ -57,6 +57,12 @@ QStringList DefaultFixed();
  * also make \p technique the one used last; scripted presets and model files do not. */
 void Record(ModelCatalog::Technique technique, const ModelCatalog::Entry& entry);
 int Used(ModelCatalog::Technique technique, const QString& entryKey);
+/*! \brief Count what was added through \p choice, if the catalogue knows it (the Model menu goes through here);
+ * true if it was counted. Claude Generated. */
+bool RecordChoice(const ModelCatalog::Choice& choice);
+/*! \brief Put the entry \p entryKey on the quick bar: the bar becomes the fixed list (in the frequent mode the list
+ * of what it shows now) with the entry at the end. False if it was on the bar already. Claude Generated. */
+bool Pin(const QString& entryKey, int independentColumns);
 /*! \brief All uses of an entry, whatever the technique. */
 int UsedTotal(const QString& entryKey);
 /*! \brief Forget all counts and the technique used last. */
