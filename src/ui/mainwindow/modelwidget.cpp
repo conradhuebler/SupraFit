@@ -545,7 +545,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // on the left instead of a tab bar: no extra row of height. Claude Generated (UI redesign WP8).
     SectionStack* model_tab = new SectionStack;
 
-    // The data series are a page of the list as well. Pinned (default) they stay beside the pages as before;
+    // The data series are a page of the list as well (default). Pinned they stay beside the pages as before;
     // unpinned they use the whole page area, which suits many series. Built here, placed after the pages.
     QGroupBox* series_box = nullptr;
     QWidget* series_host = nullptr;
@@ -657,7 +657,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             series_box->show();
     };
     if (series_box) {
-        const bool pinned = QSettings().value(pin_key, true).toBool();
+        const bool pinned = QSettings().value(pin_key, false).toBool();
         series_pin->setChecked(pinned);
         placeSeries(pinned, false);
         connect(series_pin, &QToolButton::toggled, this, [this, model_tab, series_page, placeSeries, pin_key](bool pinned) {

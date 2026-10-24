@@ -324,8 +324,8 @@ private slots:
         // hidden items do not count for the minimum width either
         QCOMPARE(flow->minimumSize().width(), qMax(buttons[0]->minimumSizeHint().width(), buttons[4]->minimumSizeHint().width()));
     }
-    // WP1: the data series are a list page and can be pinned beside the pages; toggling must keep them
-    // visible, never show a window, and the choice must stick in the settings. Claude Generated.
+    // WP1: the data series are a page of the list (default) and can be pinned beside the pages; toggling
+    // must keep them visible, never show a window, and the choice must stick in the settings. Claude Generated.
     void dataSeriesPinToggle()
     {
         QSettings().remove(QStringLiteral("model"));
@@ -339,40 +339,41 @@ private slots:
         QGroupBox* series = widget.findChild<QGroupBox*>(QStringLiteral("series_box"));
         QToolButton* pin = widget.findChild<QToolButton*>(QStringLiteral("series_pin"));
         QVERIFY(series && pin);
-        QVERIFY2(pin->isChecked(), "pinned is the default (as before the list page existed)");
-        QVERIFY(series->isVisible());
-        const QWidget* pinnedParent = series->parentWidget();
+        QVERIFY2(!pin->isChecked(), "not pinned is the default: the data series are a page of the list");
+        QVERIFY2(series->isVisible(), "data series not visible as the default page");
+        QVERIFY(series->isFlat());
+        const QWidget* pageParent = series->parentWidget();
 
         WindowShowCounter counter;
         qApp->installEventFilter(&counter);
         counter.allow(&widget);
-        pin->click(); // unpin: the data series become a page of the list
+        pin->click(); // pin: the data series move beside the pages
         QCoreApplication::processEvents();
-        QVERIFY(!pin->isChecked());
-        QVERIFY2(series->isVisible(), "data series vanished after unpinning");
-        QVERIFY(series->parentWidget() != pinnedParent);
-        QVERIFY(series->isFlat());
-
-        pin->click(); // pin again
-        QCoreApplication::processEvents();
-        qApp->removeEventFilter(&counter);
         QVERIFY(pin->isChecked());
         QVERIFY2(series->isVisible(), "data series vanished after pinning");
-        QCOMPARE(series->parentWidget(), pinnedParent);
+        QVERIFY(series->parentWidget() != pageParent);
+        QVERIFY(!series->isFlat());
+
+        pin->click(); // unpin again
+        QCoreApplication::processEvents();
+        qApp->removeEventFilter(&counter);
+        QVERIFY(!pin->isChecked());
+        QVERIFY2(series->isVisible(), "data series vanished after unpinning");
+        QCOMPARE(series->parentWidget(), pageParent);
         QVERIFY2(counter.shown().isEmpty(),
             qPrintable(QStringLiteral("shown as own window while toggling: %1").arg(counter.shown().join(", "))));
 
-        pin->click(); // leave it unpinned: it must come back unpinned
+        pin->click(); // leave it pinned: it must come back pinned
         QCoreApplication::processEvents();
-        QVERIFY(QSettings().value(QStringLiteral("model/model %1 series pinned").arg(m_model->SFModel())).toBool() == false);
+        QVERIFY(QSettings().value(QStringLiteral("model/model %1 series pinned").arg(m_model->SFModel())).toBool());
         ModelWidget again(m_model, m_chart->addModel(m_model));
         again.resize(1100, 700);
         again.show();
         QTest::qWaitForWindowExposed(&again);
         QToolButton* pin2 = again.findChild<QToolButton*>(QStringLiteral("series_pin"));
-        QVERIFY(pin2 && !pin2->isChecked());
+        QVERIFY(pin2 && pin2->isChecked());
         QGroupBox* series2 = again.findChild<QGroupBox*>(QStringLiteral("series_box"));
-        QVERIFY2(series2 && series2->isVisible(), "unpinned data series not visible after a restart");
+        QVERIFY2(series2 && series2->isVisible(), "pinned data series not visible after a restart");
         QSettings().remove(QStringLiteral("model"));
     }
 };
