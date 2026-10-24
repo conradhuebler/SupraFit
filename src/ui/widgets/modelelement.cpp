@@ -106,7 +106,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         vlayout->setContentsMargins(0, 0, 0, 0);
         vlayout->setSpacing(3);
         widget->setLayout(vlayout);
-        check->setHidden(m_model.toStrongRef().data()->isSimulation());
+        if (m_model.toStrongRef().data()->isSimulation())
+            check->hide(); // parentless until the layout takes it: setHidden(false) would show a window
         check->setToolTip(tr("Optimise this parameter in the fit"));
 
         QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.toStrongRef().data()->LocalParameterName(i)));

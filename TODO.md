@@ -22,7 +22,6 @@
 - [ ] Main window redesign from the operator's mockup (toolbar menus, Projects+Log column, model tab, dark mode, small screens) — WIP on `feature/ui-redesign`, see [roadmap/ui_redesign.md](roadmap/ui_redesign.md)
 - [ ] GUI project/model removal: central `onProjectRemoved` slot on `ProjectManager::projectRemoved`/`projectsCleared` (no GUI receiver yet); `DataClass::removeModel` (`RemoveTab` leaves the model in the project, so tab/Delete/"Remove All Models" are dead in effect); `m_data_list`/`m_hashed_data` paths (Add Up, Substract, Copy model, drag&drop, Export all) miss projects from `onProjectAdded`
 - [ ] Assistant tools `close_project` and `remove_model` (approval level "Ask for fits"; after `onProjectRemoved` / `DataClass::removeModel`); name them in `docs/ASSISTANT_HELP.md` section 8 (`AgentHelpTest`)
-- [ ] Parentless widgets flash as top-level windows on project load: `setHidden(false)` before layout parenting at `modelwidget.cpp:282,293,294,626`, `widgets/modelelement.cpp:109` (use `hide()` only when hiding)
 
 ---
 

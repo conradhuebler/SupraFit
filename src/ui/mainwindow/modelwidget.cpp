@@ -279,7 +279,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         hlayout->addWidget(check);
         hlayout->addWidget(more_action);
 
-        check->setHidden(m_model.data()->isSimulation());
+        if (m_model.data()->isSimulation())
+            check->hide(); // parentless until group->setLayout(): setHidden(false) would show it as a window
         check->setToolTip(tr("Optimise %1 in the fit").arg(m_model->GlobalParameterName(i)));
         hlayout->setContentsMargins(6, 2, 6, 4);
         constant->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -290,8 +291,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_local_box = new QCheckBox(tr("Local Parameter"));
     m_local_box->setChecked(true);
 
-    m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
-    m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
+    if (m_model->isSimulation() || m_val_readonly) { // hide() only: both boxes are parentless until fit_flow takes them
+        m_global_box->hide();
+        m_local_box->hide();
+    }
 
     m_minimize_all = new QPushButton(tr("Fit"));
     QAction* minimize_normal = new QAction(tr("Tight"), this);
@@ -623,7 +626,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     results_layout->addWidget(m_statistic_widget);
     m_statistic_widget->setMinimumHeight(140);
     results_box->setLayout(results_layout);
-    results_box->setHidden(m_model->isSimulation());
+    if (m_model->isSimulation())
+        results_box->hide(); // parentless until m_splitter->addWidget: setHidden(false) would show a window
     m_splitter->addWidget(results_box);
     m_splitter->setStretchFactor(0, m_model->LocalParameterSize() ? 2 : 1);
     m_splitter->setStretchFactor(1, 1);
