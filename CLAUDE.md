@@ -112,6 +112,7 @@ One home per kind of information; copies drift apart.
 - [Roadmap: Python Interface](./roadmap/python_interface.md)
 - [Roadmap: Joint Solver](./roadmap/joint_solver.md)
 - [Roadmap: ScriptModel Performance](./roadmap/scriptmodel_performance.md)
+- [Roadmap: Model-Pane Navigation (ScriptModel UI)](./roadmap/scriptmodel_ui_layout.md) — Bereichsliste mit Pin, Statistik als Seite, FlowLayout-Ruhe, More/Less-Bauteil
 
 ## Key Components
 
