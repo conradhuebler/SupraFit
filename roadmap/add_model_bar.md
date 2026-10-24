@@ -55,5 +55,3 @@ Claude Generated - work package / roadmap document
 - Die festen Modelle und `*_any` unterscheiden sich in Parametern/Dialog (`DemandInput`): der Katalog muss pro Technik sagen, welcher Weg gilt; Fluoreszenz/UV-Vis haben nicht alle Presets.
 - Die Behebung des Spaltenproblems steht noch unter Beobachtung (`TODO.md`): der Operator bestätigt, ob es der gemeldete Fehler war.
 - Eine verschiebbare Leiste braucht einen stabilen `objectName`, sonst geht der gespeicherte Zustand verloren.
-
-- **Menü "Model" aus dem Katalog (erledigt):** `addToMenu` baut Stoichiometry / Further models / Reaction systems aus `ModelCatalog`; die Listen pro Technik sind entfernt. Offen: Symbole für die Knöpfe.

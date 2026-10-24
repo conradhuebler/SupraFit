@@ -2106,7 +2106,7 @@ private slots:
         QAction* nmrPreset = nullptr;
         for (QMenu* menu : title->findChildren<QMenu*>())
             for (QAction* a : menu->actions()) {
-                if (a->property("entry_key").toString() == QLatin1String("stoich:2:1/1:1") && a->text() == ModelCatalog::Info(Technique::UVVis).name)
+                if (a->data().isValid() && a->data().toInt() == SupraFit::uv_vis_IItoI_ItoI && !a->menu())
                     uvvis = a;
                 // a preset the bar does not show from the start
                 if (a->property("preset_reactions").isValid() && !nmrPreset && a->data().toInt() == SupraFit::nmr_any
@@ -2132,44 +2132,6 @@ private slots:
         QCOMPARE(p.fixed.size(), 5);
         QVERIFY(!ModelUsage::Pin(title->EntryKeyOf(nmrPreset), 2));
         QSettings().remove(QStringLiteral("add_model_bar"));
-    }
-    // The Model menu is built from the catalogue: one list of stoichiometries with the techniques as submenu, the models
-    // of one technique alone, the reaction systems; rebuilt for other data without leftovers. Claude Generated.
-    void modelMenuFollowsTheCatalogue()
-    {
-        using ModelCatalog::Technique;
-        BarFixture f(2);
-        MDHDockTitleBar* title = f.holder.TitleBarWidget();
-        QMenu* menu = title->ModelMenu();
-        auto texts = [menu]() {
-            QStringList list;
-            for (QAction* a : menu->actions())
-                list << a->text();
-            return list;
-        };
-        auto subTexts = [menu](const QString& title) {
-            QStringList list;
-            for (QAction* a : menu->actions())
-                if (a->text() == title && a->menu())
-                    for (QAction* b : a->menu()->actions())
-                        list << b->text();
-            return list;
-        };
-        const QStringList two = texts();
-        QVERIFY(two.contains(QStringLiteral("Stoichiometry")));
-        QCOMPARE(subTexts(QStringLiteral("1:1")), (QStringList{ "NMR Titration", "UV/Vis Titration", "Fluorescence Titration" }));
-        QVERIFY(two.contains(QStringLiteral("Reaction systems")));
-        QVERIFY(two.contains(QStringLiteral("NMR Titration")));
-        QVERIFY(!two.contains(QStringLiteral("Kinetics")));
-
-        title->addToMenu(1); // one independent column: calorimetry and kinetics
-        const QStringList one = texts();
-        QVERIFY(!one.contains(QStringLiteral("NMR Titration")));
-        QVERIFY(one.contains(QStringLiteral("Calorimetry")) || one.contains(QStringLiteral("Kinetics")) || one.contains(QStringLiteral("Further models")));
-        title->addToMenu(2); // back: the same menu again, nothing left over
-        QCOMPARE(texts(), two);
-        title->addToMenu(2);
-        QCOMPARE(texts(), two);
     }
 };
 
