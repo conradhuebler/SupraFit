@@ -40,6 +40,9 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
+#include <QtWidgets/QRadioButton>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
@@ -71,6 +74,7 @@
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/addmodelbar.h"
+#include "src/ui/mainwindow/quickbardialog.h"
 #include "src/ui/mainwindow/suprafitgui.h"
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
@@ -1821,7 +1825,7 @@ private slots:
             QVERIFY(b->menu() && b->menu()->actions().size() == 3);
             QCOMPARE(b->property("technique").toInt(), int(Technique::NMR));
         }
-        QCOMPARE(barButton(bar, QStringLiteral("stoich:1:1"))->text(), QStringLiteral("1:1"));
+        QCOMPARE(barButton(bar, QStringLiteral("stoich:1:1"))->text(), QStringLiteral("1:1 \u00b7 NMR")); // the technique is always named
         QVERIFY(!barButton(bar, QStringLiteral("stoich:1:1+A2"))); // not among the most used
 
         // a click adds the NMR model
@@ -1849,7 +1853,7 @@ private slots:
         bar.Refresh();
         QToolButton* b = barButton(bar, QStringLiteral("stoich:1:1/1:2"));
         QCOMPARE(b->property("technique").toInt(), int(Technique::UVVis));
-        QCOMPARE(b->text(), QStringLiteral("1:1 / 1:2 (UV/Vis)")); // it says which technique a click uses
+        QCOMPARE(b->text(), QStringLiteral("1:1 / 1:2 \u00b7 UV/Vis")); // it says which technique a click uses
         QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
 
         // without a project the bar shows nothing
@@ -1941,6 +1945,12 @@ private slots:
         });
         closer.start();
 
+        // the main window takes the global Instance with it when it goes: the next test needs a new one (declared before
+        // the window, so it runs after the window's destructor)
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+
         SupraFitGui gui;
         gui.resize(1500, 700);
         gui.show();
@@ -1974,6 +1984,86 @@ private slots:
             QDir().mkpath(renderDir);
             toolbar->grab().save(QStringLiteral("%1/main_toolbar.png").arg(renderDir));
         }
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+    // ---- WP-D: customising the quick bar --------------------------------------------------------------------
+
+    // The dialog hands back what the operator set: the mode, how many, the ticked entries in their order, the technique.
+    void quickBarDialogReturnsWhatWasSet()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        ModelUsage::Preferences start;
+        start.fixed = { QStringLiteral("stoich:1:1"), QStringLiteral("stoich:2:1/1:1") };
+        QuickBarDialog dialog(start);
+
+        // as stored: most used, 4, and the ticked entries come first, in order
+        QCOMPARE(dialog.preferences().mode, ModelUsage::Mode::Frequent);
+        QCOMPARE(dialog.preferences().count, 4);
+        QCOMPARE(dialog.preferences().fixed, (QStringList{ "stoich:1:1", "stoich:2:1/1:1" }));
+        QCOMPARE(dialog.preferences().technique, QString());
+        QListWidget* list = dialog.findChild<QListWidget*>(QStringLiteral("fixed_list"));
+        QVERIFY(list && list->count() > 10); // everything that can be added
+        QVERIFY2(!list->isEnabled(), "the list can be edited in the frequent mode");
+
+        // set a fixed list: tick the Hill preset, move it to the top, choose the technique and the count
+        dialog.findChild<QRadioButton*>(QStringLiteral("fixed"))->setChecked(true);
+        QVERIFY(list->isEnabled());
+        int hill = -1;
+        for (int i = 0; i < list->count(); ++i)
+            if (list->item(i)->data(Qt::UserRole).toString() == QStringLiteral("script:Hill")) {
+                hill = i;
+                list->item(i)->setCheckState(Qt::Checked);
+            }
+        QVERIFY(hill >= 0);
+        list->setCurrentRow(hill);
+        for (int i = hill; i > 0; --i)
+            dialog.findChild<QPushButton*>(QStringLiteral("up"))->click();
+        QCOMPARE(list->item(0)->data(Qt::UserRole).toString(), QStringLiteral("script:Hill"));
+        QComboBox* technique = dialog.findChild<QComboBox*>(QStringLiteral("technique"));
+        technique->setCurrentIndex(technique->findData(ModelCatalog::Info(ModelCatalog::Technique::UVVis).key));
+        dialog.findChild<QSpinBox*>(QStringLiteral("count"))->setValue(6);
+
+        const ModelUsage::Preferences p = dialog.preferences();
+        QCOMPARE(p.mode, ModelUsage::Mode::Fixed);
+        QCOMPARE(p.count, 6);
+        QCOMPARE(p.fixed, (QStringList{ "script:Hill", "stoich:1:1", "stoich:2:1/1:1" }));
+        QCOMPARE(p.technique, ModelCatalog::Info(ModelCatalog::Technique::UVVis).key);
+
+        // what is saved is what the bar shows
+        ModelUsage::Save(p);
+        QCOMPARE(keysOf(ModelUsage::Quick(2)), (QStringList{ "script:Hill", "stoich:1:1", "stoich:2:1/1:1" }));
+        QCOMPARE(ModelUsage::TechniqueFor(entryFor(QStringLiteral("stoich:1:1/1:2")), 2), ModelCatalog::Technique::UVVis);
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    // The right-click menu of a button: remove it from a fixed list, or fix the bar as it is.
+    void addModelBarContextMenu()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        BarFixture f(2);
+        auto trigger = [&f](const QString& entryKey, const QString& text) {
+            QMenu* menu = f.bar.ContextMenu(entryKey);
+            QAction* found = nullptr;
+            for (QAction* a : menu->actions())
+                if (a->text() == text)
+                    found = a;
+            const bool ok = found != nullptr;
+            if (ok)
+                found->trigger();
+            menu->deleteLater();
+            return ok;
+        };
+        // the most used: no "Remove", but the bar can be fixed as it is (the four established stoichiometries)
+        QVERIFY(!trigger(QStringLiteral("stoich:1:1"), QStringLiteral("Remove from the bar")));
+        QVERIFY(trigger(QStringLiteral("stoich:1:1"), QStringLiteral("Fix the bar as it is")));
+        QCOMPARE(ModelUsage::Load().mode, ModelUsage::Mode::Fixed);
+        QCOMPARE(ModelUsage::Load().fixed, (QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
+        // a fixed list: remove an entry, the button goes
+        QVERIFY(barButton(f.bar, QStringLiteral("stoich:2:1/1:1")));
+        QVERIFY(trigger(QStringLiteral("stoich:2:1/1:1"), QStringLiteral("Remove from the bar")));
+        QVERIFY(!barButton(f.bar, QStringLiteral("stoich:2:1/1:1")));
+        QCOMPARE(ModelUsage::Load().fixed, (QStringList{ "stoich:1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
+        QVERIFY(!trigger(QStringLiteral("stoich:1:1"), QStringLiteral("Fix the bar as it is"))); // already fixed
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 };

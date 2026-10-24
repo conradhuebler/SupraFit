@@ -78,6 +78,7 @@ set(SFGui_SRC
                 mainwindow/addmodelbar.cpp
                 mainwindow/modelcatalog.cpp
                 mainwindow/modelusage.cpp
+                mainwindow/quickbardialog.cpp
                 mainwindow/modeldataholder.cpp
                 mainwindow/datawidget.cpp
                 mainwindow/metamodelwidget.cpp

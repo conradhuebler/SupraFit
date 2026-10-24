@@ -27,6 +27,7 @@
 #include "src/ui/guitools/guitools.h"
 #include "modeldataholder.h"
 #include "modelusage.h"
+#include "quickbardialog.h"
 
 #include "addmodelbar.h"
 
@@ -57,6 +58,11 @@ AddModelBar::AddModelBar(QWidget* parent)
     QActionGroup* modes = new QActionGroup(gear);
     modes->addAction(frequent);
     modes->addAction(fixed);
+    gear->addSeparator();
+    QAction* customise = gear->addAction(tr("Customise\u2026"));
+    connect(customise, &QAction::triggered, this, &AddModelBar::Customise);
+    QAction* fix = gear->addAction(tr("Fix the bar as it is"));
+    connect(fix, &QAction::triggered, this, &AddModelBar::FixAsItIs);
     gear->addSeparator();
     QAction* reset = gear->addAction(tr("Forget what was used"));
     connect(gear, &QMenu::aboutToShow, this, [frequent, fixed]() {
@@ -123,12 +129,19 @@ void AddModelBar::Rebuild()
         // an entry that is offered for one technique (or none) is a plain button, otherwise the arrow lists them
         const bool several = entry.techniques.size() > 1;
         const QString techniqueName = entry.techniques.isEmpty() ? QString() : ModelCatalog::Info(technique).shortName;
-        button->setText(several && technique != ModelCatalog::Technique::NMR ? tr("%1 (%2)").arg(entry.title, techniqueName) : entry.title);
+        // every entry that has a technique names it, so the buttons read alike whatever they were used with
+        button->setText(entry.techniques.isEmpty() ? entry.title : tr("%1 \u00b7 %2").arg(entry.title, techniqueName));
         QString tip = entry.techniques.isEmpty() ? entry.tooltip : tr("%1 \u2014 %2\n%3").arg(entry.title, techniqueName, entry.tooltip);
         if (several)
             tip += tr("\nThe arrow chooses another technique.");
         button->setToolTip(tip);
         connect(button, &QToolButton::clicked, this, [this, entry, technique]() { Add(entry, technique); });
+        button->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(button, &QToolButton::customContextMenuRequested, this, [this, button, entry](const QPoint& pos) {
+            QMenu* menu = ContextMenu(entry.key);
+            menu->exec(button->mapToGlobal(pos));
+            menu->deleteLater();
+        });
 
         if (several) {
             QMenu* menu = new QMenu(button);
@@ -146,6 +159,47 @@ void AddModelBar::Rebuild()
         }
         layout->addWidget(button);
     }
+}
+
+QMenu* AddModelBar::ContextMenu(const QString& entryKey)
+{
+    QMenu* menu = new QMenu(this);
+    if (ModelUsage::Load().mode == ModelUsage::Mode::Fixed) {
+        QAction* remove = menu->addAction(tr("Remove from the bar"));
+        connect(remove, &QAction::triggered, this, [this, entryKey]() {
+            ModelUsage::Preferences p = ModelUsage::Load();
+            p.fixed.removeAll(entryKey);
+            ModelUsage::Save(p);
+            Refresh();
+        });
+    } else {
+        QAction* fix = menu->addAction(tr("Fix the bar as it is"));
+        connect(fix, &QAction::triggered, this, &AddModelBar::FixAsItIs);
+    }
+    menu->addSeparator();
+    QAction* customise = menu->addAction(tr("Customise\u2026"));
+    connect(customise, &QAction::triggered, this, &AddModelBar::Customise);
+    return menu;
+}
+
+void AddModelBar::Customise()
+{
+    QuickBarDialog dialog(ModelUsage::Load(), this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    ModelUsage::Save(dialog.preferences());
+    Refresh();
+}
+
+void AddModelBar::FixAsItIs()
+{
+    ModelUsage::Preferences p = ModelUsage::Load();
+    p.fixed.clear();
+    for (const ModelCatalog::Entry& entry : ModelUsage::Quick(m_columns))
+        p.fixed << entry.key;
+    p.mode = ModelUsage::Mode::Fixed;
+    ModelUsage::Save(p);
+    Refresh();
 }
 
 void AddModelBar::Add(const ModelCatalog::Entry& entry, ModelCatalog::Technique technique)

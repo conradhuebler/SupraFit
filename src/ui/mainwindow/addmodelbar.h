@@ -26,6 +26,7 @@
 #include "modelcatalog.h"
 
 class MDHDockTitleBar;
+class QMenu;
 class QToolButton;
 
 /*! \brief The models that are added most as buttons, for the project on screen: a click adds the model, the arrow
@@ -48,6 +49,14 @@ public:
     void setWorkspace(MDHDockTitleBar* workspace);
     /*! \brief Read the entries again (after the preferences or the counts changed). */
     void Refresh();
+
+    /*! \brief The menu of a right click on the button of entry \p entryKey: customise the bar, remove the entry from a
+     * fixed list, or fix the bar as it is. The caller shows it and deletes it. */
+    QMenu* ContextMenu(const QString& entryKey);
+    /*! \brief Open the dialog that customises the bar and apply what it returns. */
+    void Customise();
+    /*! \brief Turn what the bar shows now into a fixed list. */
+    void FixAsItIs();
 
 private:
     void Rebuild();
