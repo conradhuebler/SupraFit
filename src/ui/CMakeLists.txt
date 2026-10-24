@@ -76,6 +76,7 @@ set(SFGui_SRC
                 widgets/textwidget.cpp
                 mainwindow/chartwidget.cpp
                 mainwindow/modelcatalog.cpp
+                mainwindow/modelusage.cpp
                 mainwindow/modeldataholder.cpp
                 mainwindow/datawidget.cpp
                 mainwindow/metamodelwidget.cpp

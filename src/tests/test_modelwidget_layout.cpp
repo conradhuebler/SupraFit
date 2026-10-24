@@ -71,6 +71,7 @@
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
+#include "src/ui/mainwindow/modelusage.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/preparewidget.h"
@@ -1618,6 +1619,121 @@ private slots:
                 }
             }
         }
+    }
+    // ---- WP-B: counters and what the quick bar shows ------------------------------------------------------------
+
+    static QStringList keysOf(const QList<ModelCatalog::Entry>& list)
+    {
+        QStringList keys;
+        for (const ModelCatalog::Entry& e : list)
+            keys << e.key;
+        return keys;
+    }
+
+    static ModelCatalog::Entry stoich(ModelCatalog::Technique t, const QString& key)
+    {
+        for (const ModelCatalog::Entry& e : ModelCatalog::Entries(t, 2))
+            if (e.key == QStringLiteral("stoich:%1").arg(key))
+                return e;
+        return ModelCatalog::Entry();
+    }
+
+    // A fresh installation shows the four established stoichiometries, in the order of the catalogue.
+    void usageStartsWithTheEstablishedStoichiometries()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        const ModelUsage::Preferences p = ModelUsage::Load();
+        QCOMPARE(p.mode, ModelUsage::Mode::Frequent);
+        QCOMPARE(p.count, 4);
+        QCOMPARE(p.fixed, ModelUsage::DefaultFixed());
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
+            (QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2", "stoich:2:1/1:1/1:2" }));
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::NMR); // NMR unless something else was used
+    }
+
+    // The most used come first; equal counts keep the order of the catalogue; counts are per technique.
+    void usageRanksByCounts()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        for (int i = 0; i < 3; ++i)
+            ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("1:1/1:2")));
+        ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("2:1/1:1")));
+        QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 3);
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
+            (QStringList{ "stoich:1:1/1:2", "stoich:2:1/1:1", "stoich:1:1", "stoich:2:1/1:1/1:2" }));
+        // another technique has its own habits
+        QCOMPARE(ModelUsage::Used(Technique::UVVis, QStringLiteral("stoich:1:1/1:2")), 0);
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::UVVis, 2)).first(), QStringLiteral("stoich:1:1"));
+        // the number shown is a preference
+        ModelUsage::Preferences p = ModelUsage::Load();
+        p.count = 2;
+        ModelUsage::Save(p);
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)), (QStringList{ "stoich:1:1/1:2", "stoich:2:1/1:1" }));
+        // further entries (a dimerisation system) get in once they are used more
+        for (int i = 0; i < 5; ++i)
+            ModelUsage::Record(Technique::NMR, stoich(Technique::NMR, QStringLiteral("1:1+A2")));
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)).first(), QStringLiteral("stoich:1:1+A2"));
+        ModelUsage::Reset();
+        QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 0);
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    // The technique is the one used last (stoichiometries and a technique's own models set it, scripted presets and
+    // files do not), if it fits the data; a fixed technique wins.
+    void usageFollowsTheTechniqueLastUsed()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        ModelUsage::Record(Technique::UVVis, stoich(Technique::UVVis, QStringLiteral("1:1")));
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
+        QCOMPARE(ModelUsage::DefaultTechnique(1), Technique::Calorimetry); // UV/Vis does not fit one column: the first that does
+        // a scripted preset is counted for all techniques and leaves the technique alone
+        ModelCatalog::Entry hill;
+        for (const ModelCatalog::Entry& e : ModelCatalog::ScriptPresetEntries(2))
+            if (e.title == QStringLiteral("Hill"))
+                hill = e;
+        QVERIFY(hill.choice.valid());
+        ModelUsage::Record(Technique::Fluorescence, hill);
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis);
+        QCOMPARE(ModelUsage::Used(Technique::NMR, hill.key), 1);
+        QCOMPARE(ModelUsage::Used(Technique::UVVis, hill.key), 1);
+        // a fixed technique beats the last one
+        ModelUsage::Preferences p = ModelUsage::Load();
+        p.technique = ModelCatalog::Info(Technique::Fluorescence).key;
+        ModelUsage::Save(p);
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::Fluorescence);
+        QCOMPARE(ModelUsage::DefaultTechnique(1), Technique::Calorimetry); // ... but only if it fits the data
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    // In the fixed mode the bar shows the stored entries, in that order; what the technique or the data does not
+    // offer is left out. Scripted presets and model files can be among them.
+    void usageFixedListIsShownAsStored()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        QTemporaryDir dir;
+        QFile file(dir.filePath(QStringLiteral("my model.json")));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("{}");
+        file.close();
+        ModelUsage::Record(Technique::NMR, ModelCatalog::ModelFileEntry(file.fileName())); // a file is known by having been used
+
+        ModelUsage::Preferences p;
+        p.mode = ModelUsage::Mode::Fixed;
+        p.fixed = { QStringLiteral("stoich:1:1/1:2"), QStringLiteral("script:Hill"), QStringLiteral("stoich:2:1/1:1"), QStringLiteral("file:") + file.fileName(),
+            QStringLiteral("stoich:no such"), QStringLiteral("file:/does/not/exist.json") };
+        ModelUsage::Save(p);
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 2)),
+            (QStringList{ "stoich:1:1/1:2", "script:Hill", "stoich:2:1/1:1", QStringLiteral("file:") + file.fileName() }));
+        // one column: no NMR stoichiometry, the single-input preset and the file stay
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::NMR, 1)), (QStringList{ "script:Hill", QStringLiteral("file:") + file.fileName() }));
+        // the stoichiometry means the one of the technique on screen
+        QCOMPARE(keysOf(ModelUsage::Quick(Technique::Fluorescence, 2)).first(), QStringLiteral("stoich:1:1/1:2"));
+        QCOMPARE(ModelUsage::Quick(Technique::Fluorescence, 2).first().choice.model, int(SupraFit::fl_ItoI_ItoII));
+        QSettings().remove(QStringLiteral("add_model_bar"));
     }
 };
 
