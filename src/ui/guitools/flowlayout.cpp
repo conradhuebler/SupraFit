@@ -159,7 +159,8 @@ QSize FlowLayout::minimumSize() const
 {
     QSize size;
     for (const QLayoutItem* item : qAsConst(itemList))
-        size = size.expandedTo(item->minimumSize());
+        if (!item->isEmpty())
+            size = size.expandedTo(item->minimumSize());
 
     const QMargins margins = contentsMargins();
     size += QSize(margins.left() + margins.right(), margins.top() + margins.bottom());
@@ -180,6 +181,10 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
 
     //! [10]
     for (QLayoutItem* item : qAsConst(itemList)) {
+        // Claude Generated: hidden widgets take neither room nor spacing (each one used to leave a gap of
+        // one horizontal spacing and could force an earlier wrap).
+        if (item->isEmpty())
+            continue;
         const QWidget* wid = item->widget();
         int spaceX = horizontalSpacing();
         if (spaceX == -1)

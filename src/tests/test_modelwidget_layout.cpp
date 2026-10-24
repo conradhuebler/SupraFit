@@ -30,6 +30,8 @@
 #include <QtGui/QPixmap>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QLayout>
+#include <QtWidgets/QPushButton>
 
 #include <Eigen/Dense>
 
@@ -39,6 +41,7 @@
 #include "src/core/models/models.h"
 #include "src/global.h"
 
+#include "src/ui/guitools/flowlayout.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
@@ -207,6 +210,115 @@ private slots:
             QDir().mkpath(dir);
             pix.save(QStringLiteral("%1/modelwidget_%2x%3.png").arg(dir).arg(width).arg(height));
         }
+    }
+    // Measurement for WP-F (FlowLayout calm-down): sweeps the pane width down and up and reports, per
+    // FlowLayout in the tree, rows and height at each step. A pure flow layout must never get taller
+    // when it gets wider; hidden items must not take room. Prints a table (qInfo), fails on a
+    // non-monotonic height.
+    void flowLayoutsStayMonotonic()
+    {
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        QList<FlowLayout*> flows; // FlowLayout has no Q_OBJECT, so findChildren<FlowLayout*> is not available
+        for (QLayout* layout : widget.findChildren<QLayout*>())
+            if (FlowLayout* flow = dynamic_cast<FlowLayout*>(layout))
+                flows << flow;
+        QVERIFY2(!flows.isEmpty(), "no FlowLayout found in the pane");
+        qInfo("FlowLayouts in the pane: %lld", static_cast<long long>(flows.size()));
+
+        int hiddenTaken = 0;
+        for (int f = 0; f < flows.size(); ++f) {
+            const FlowLayout* flow = flows[f];
+            int hidden = 0;
+            for (int i = 0; i < flow->count(); ++i) {
+                const QLayoutItem* item = flow->itemAt(i);
+                if (item->widget() && item->widget()->isHidden())
+                    ++hidden;
+            }
+            hiddenTaken += hidden;
+            qInfo("flow %d: parent=%s items=%d hidden=%d minimumSize=%dx%d", f,
+                flow->parent() ? flow->parent()->metaObject()->className() : "none", flow->count(), hidden,
+                flow->minimumSize().width(), flow->minimumSize().height());
+        }
+
+        for (int f = 0; f < flows.size(); ++f) {
+            const FlowLayout* flow = flows[f];
+            int previous = -1;
+            for (int w = 200; w <= 1400; w += 10) {
+                const int h = flow->heightForWidth(w);
+                QVERIFY2(previous < 0 || h <= previous,
+                    qPrintable(QStringLiteral("flow %1 (%2): height %3 at width %4 is larger than %5 at width %6")
+                                   .arg(f)
+                                   .arg(QString::fromLatin1(flow->parent() ? flow->parent()->metaObject()->className() : "none"))
+                                   .arg(h).arg(w).arg(previous).arg(w - 10)));
+                previous = h;
+            }
+        }
+
+        // Count layout passes the whole pane needs per resize step: the "restlessness" of the live pane.
+        struct LayoutCounter : QObject {
+            int requests = 0;
+            bool eventFilter(QObject*, QEvent* e) override
+            {
+                if (e->type() == QEvent::LayoutRequest)
+                    ++requests;
+                return false;
+            }
+        } counter;
+        qApp->installEventFilter(&counter);
+        QStringList report;
+        for (int w : { 1100, 900, 760, 640, 520, 420, 520, 640, 760, 900, 1100 }) {
+            counter.requests = 0;
+            widget.resize(w, 700);
+            QCoreApplication::processEvents();
+            QList<int> rows;
+            for (const FlowLayout* flow : flows) {
+                QSet<int> ys;
+                for (int i = 0; i < flow->count(); ++i)
+                    if (flow->itemAt(i)->widget() && !flow->itemAt(i)->widget()->isHidden())
+                        ys.insert(flow->itemAt(i)->geometry().y());
+                rows << ys.size();
+            }
+            QStringList r;
+            for (int n : rows)
+                r << QString::number(n);
+            report << QStringLiteral("w=%1 layoutRequests=%2 rows=[%3]").arg(w).arg(counter.requests).arg(r.join(','));
+        }
+        qApp->removeEventFilter(&counter);
+        for (const QString& line : report)
+            qInfo("%s", qPrintable(line));
+        qInfo("hidden items still inside flow layouts: %d", hiddenTaken);
+    }
+    // Hidden widgets must take neither room nor spacing in a FlowLayout. Claude Generated.
+    void hiddenItemsTakeNoRoomInFlowLayout()
+    {
+        QWidget host;
+        FlowLayout* flow = new FlowLayout(&host, 0, 12, 4);
+        QList<QPushButton*> buttons;
+        for (int i = 0; i < 5; ++i) {
+            QPushButton* b = new QPushButton(QStringLiteral("button %1").arg(i), &host);
+            flow->addWidget(b);
+            buttons << b;
+        }
+        host.resize(2000, 100);
+        host.show();
+        QTest::qWaitForWindowExposed(&host);
+        const int widthAll = flow->heightForWidth(2000) >= 0 ? buttons[4]->geometry().right() : 0;
+
+        buttons[1]->hide();
+        buttons[2]->hide();
+        buttons[3]->hide();
+        QCoreApplication::processEvents();
+        // the last button now follows the first one directly after one spacing
+        QCOMPARE(buttons[4]->geometry().left(), buttons[0]->geometry().right() + 1 + 12);
+        QVERIFY(buttons[4]->geometry().right() < widthAll);
+        // hidden items do not count for the minimum width either
+        QCOMPARE(flow->minimumSize().width(), qMax(buttons[0]->minimumSizeHint().width(), buttons[4]->minimumSizeHint().width()));
     }
 };
 
