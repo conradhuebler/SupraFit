@@ -71,7 +71,7 @@ Only entries that fit the number of independent columns are shown.
   (Michaelis-Menten, Linear, Hill, Exponential decay, Quadratic, Binding 1:1 signal / NMR shift, ...) are added directly.
   Example 1:1 NMR: `var K := pow(10,lgK); var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2)); ((X1-AB)*dHost + AB*dAB)/X1`
   with local names `dHost|dAB`.
-- **Load Model File...** adds a stored model definition (`.json`); a model's tab "Model Definition" has the save icon.
+- **Load Model File...** adds a stored model definition (`.json`); a model's page "Model Definition" has the save icon. That page shows the compile verdict on top, then the equation with its help text below it, "Model Name" and "Print x values as"; the form uses one column on a narrow page. "..more.." at the end opens the "Scripting engine".
 - Which model? Start with 1:1. Add 1:2 or 2:1 only if residuals are systematic, then decide by AIC (section 7). Self-association: `2 A <=> A2` variants.
 
 Built-in parameter names: `lg K11` (A+B<=>AB), `lg K21` (stepwise AB+A->A2B), `lg K12` (stepwise AB+B->AB2); all binding constants are log10.

@@ -899,6 +899,10 @@ void ModelWidget::AddScriptModelTab(SectionStack* model_tab)
     widget->AddTableHeader(m_model->IndependentModel()->header());
     widget->AddTableHeader(m_model->DependentModel()->header());
 
+    // The only scroll bar of the page: the form follows the page width (one or two columns), so there is no
+    // horizontal scrolling and no scroll area inside a scroll area. Claude Generated (WP2).
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setWidget(widget);
 
     QPushButton* save = new QPushButton;

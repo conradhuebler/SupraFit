@@ -43,6 +43,7 @@
 #include "src/core/models/exprtkinterpreter.h"
 #include "src/core/reactionparser.h"
 #include "src/core/speciationengine.h"
+#include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/widgets/reactioneditorwidget.h"
 
 #include "preparewidget.h"
@@ -274,6 +275,12 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
     setLayout(layout);
 }
 
+void PrepareBox::setWideLayout(bool wide)
+{
+    if (m_type == 4 || m_type == 6)
+        setMinimumWidth(wide ? 2 * kCellWidth + kCellSpacing : kCellWidth);
+}
+
 void PrepareBox::setDerived(bool derived, const QString& reason)
 {
     QWidget* editor = nullptr;
@@ -391,12 +398,17 @@ PrepareWidget::PrepareWidget(const QVector<QJsonObject>& objects, bool initial, 
         if (object.isEmpty())
             continue;
         PrepareBox* box = new PrepareBox(object, m_highlighter, this);
-        PlaceField(box, box->Span());
         connect(box, &PrepareBox::changed, this, &PrepareWidget::changed);
         m_stored_objects << box;
+        if (box->Name() == QLatin1String("Engine"))
+            AddToDetails(box);
+        else
+            PlaceField(box, box->Span());
     }
+    FinishDetails();
     QWidget* fields = new QWidget;
     fields->setLayout(m_field_layout);
+    WatchWidth(fields);
 
     // Only the field grid scrolls. The preset list and the preview chart are siblings in the splitter,
     // so they stay put while the fields move — scrolling the whole dialog dragged the presets and the
@@ -406,9 +418,9 @@ PrepareWidget::PrepareWidget(const QVector<QJsonObject>& objects, bool initial, 
     m_field_scroll->setFrameShape(QFrame::NoFrame);
     m_field_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_field_scroll->setWidget(fields);
-    // Both grid columns plus room for the vertical scrollbar, so the splitter never opens with the
-    // fields squeezed into a single column next to the presets.
-    m_field_scroll->setMinimumWidth(kColumns * kCellWidth + kCellSpacing + 24);
+    // One grid column plus room for the vertical scrollbar; the form goes to two columns by itself when
+    // the splitter gives it the width (WatchWidth/Reflow).
+    m_field_scroll->setMinimumWidth(kCellWidth + 24); // one column fits; two when there is room (Reflow)
 
     // The pane stacks a toolbar and (later) a status banner ABOVE the scrolling grid, so both stay
     // visible no matter how far the fields are scrolled. Claude Generated.
@@ -486,22 +498,120 @@ void PrepareWidget::SetStatus(const QString& message, int severity)
     m_status->setText(message);
 }
 
-void PrepareWidget::PlaceField(QWidget* widget, int span)
+void PrepareWidget::PlaceField(QWidget* widget, int span, int index)
 {
     if (!m_field_layout || !widget)
         return;
 
     span = qBound(1, span, kColumns);
-    if (m_grid_col + span > kColumns) { // does not fit next to what is already on this row
-        ++m_grid_row;
-        m_grid_col = 0;
+    PrepareBox* box = qobject_cast<PrepareBox*>(widget);
+    if (index < 0 && box && span == kColumns && (box->Type() == 4 || box->Type() == 6)) {
+        // the equation and the reaction editor are what the form is about: they come first
+        index = m_leading_wide++;
     }
-    m_field_layout->addWidget(widget, m_grid_row, m_grid_col, 1, span);
-    m_grid_col += span;
-    if (m_grid_col >= kColumns) {
-        ++m_grid_row;
-        m_grid_col = 0;
+    if (index < 0 || index > m_flow.size())
+        m_flow.append(FlowItem{ widget, span });
+    else
+        m_flow.insert(index, FlowItem{ widget, span });
+    Reflow();
+}
+
+/*! \brief Lay the items out on the grid again: m_columns columns, hidden items skipped (a hidden item must
+ * neither keep a cell nor a gap), items wider than the grid squeezed to its width. Claude Generated. */
+void PrepareWidget::Reflow()
+{
+    if (!m_field_layout || m_reflowing)
+        return;
+    m_reflowing = true;
+    while (QLayoutItem* item = m_field_layout->takeAt(0))
+        delete item; // only the layout item: the widgets stay children of the form
+
+    for (int c = 0; c < kColumns; ++c) {
+        m_field_layout->setColumnMinimumWidth(c, c < m_columns ? kCellWidth : 0);
+        m_field_layout->setColumnStretch(c, c < m_columns ? 1 : 0);
     }
+
+    int row = 0, col = 0;
+    for (const FlowItem& item : qAsConst(m_flow)) {
+        // explicitly hidden (the reaction editor in equation mode): no cell. isHidden() alone is also true for a
+        // widget that has no parent yet (a label created just before it is placed), which is not meant.
+        if (item.widget->isHidden() && item.widget->testAttribute(Qt::WA_WState_ExplicitShowHide))
+            continue;
+        const int span = qMin(item.span, m_columns);
+        if (PrepareBox* box = qobject_cast<PrepareBox*>(item.widget))
+            box->setWideLayout(m_columns >= kColumns);
+        if (col + span > m_columns) { // does not fit next to what is already on this row
+            ++row;
+            col = 0;
+        }
+        m_field_layout->addWidget(item.widget, row, col, 1, span);
+        col += span;
+        if (col >= m_columns) {
+            ++row;
+            col = 0;
+        }
+    }
+    m_reflowing = false;
+}
+
+/*! \brief Follow the width that is on offer: two columns when it holds two cells, else one. The width of the
+ * host itself cannot decide: with two columns it is never narrower than two cells, so it could never switch
+ * back. What holds the host (the viewport of the scroll area) is what gets narrow. */
+void PrepareWidget::WatchWidth(QWidget* host)
+{
+    m_flow_host = host;
+    host->installEventFilter(this);
+    m_flow_parent = host->parentWidget();
+    if (m_flow_parent)
+        m_flow_parent->installEventFilter(this);
+}
+
+void PrepareWidget::UpdateColumns()
+{
+    if (!m_flow_host || m_reflowing)
+        return;
+    const int available = m_flow_parent ? m_flow_parent->width() : m_flow_host->width();
+    const int columns = available >= kColumns * kCellWidth + (kColumns - 1) * kCellSpacing ? kColumns : 1;
+    if (columns != m_columns) {
+        m_columns = columns;
+        Reflow();
+    }
+}
+
+bool PrepareWidget::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_flow_host && event->type() == QEvent::ParentChange) {
+        if (m_flow_parent)
+            m_flow_parent->removeEventFilter(this);
+        m_flow_parent = m_flow_host->parentWidget(); // put into a scroll area: follow its viewport
+        if (m_flow_parent)
+            m_flow_parent->installEventFilter(this);
+        UpdateColumns();
+    } else if ((watched == m_flow_host || watched == m_flow_parent) && event->type() == QEvent::Resize) {
+        UpdateColumns();
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+/*! \brief Put a rarely needed field behind a "..more.." switch at the end of the form. */
+void PrepareWidget::AddToDetails(PrepareBox* box)
+{
+    if (!m_details) {
+        m_details = new QWidget(this);
+        m_details_layout = new QVBoxLayout(m_details);
+        m_details_layout->setContentsMargins(0, 0, 0, 0);
+    }
+    m_details_layout->addWidget(box);
+}
+
+void PrepareWidget::FinishDetails()
+{
+    if (!m_details)
+        return;
+    MoreLessToggle* toggle = new MoreLessToggle(m_details, QStringLiteral("script_details"), this);
+    toggle->setToolTip(tr("Show further settings: %1").arg(m_details_layout->count() == 1 ? tr("the scripting engine") : tr("scripting engine and others")));
+    PlaceField(toggle, kColumns, m_flow.size());
+    PlaceField(m_details, kColumns, m_flow.size());
 }
 
 static constexpr int kCustomEquation = -1;
@@ -608,12 +718,17 @@ PrepareWidget::PrepareWidget(const QHash<QString, QJsonObject>& objects, bool in
             delete box;
             continue;
         }
-        PlaceField(box, box->Span());
         connect(box, &PrepareBox::changed, this, &PrepareWidget::changed);
         m_stored_objects << box;
+        if (box->Name() == QLatin1String("Engine"))
+            AddToDetails(box);
+        else
+            PlaceField(box, box->Span());
     }
+    FinishDetails();
     m_highlighter->setMathFunctions(function_names);
     setLayout(m_field_layout);
+    WatchWidth(this);
 }
 
 QHash<QString, QJsonObject> PrepareWidget::getObject() const
@@ -643,7 +758,7 @@ void PrepareWidget::AddScriptGuidance()
         "QLabel { background: palette(alternate-base); border: 1px solid palette(mid);"
         " border-radius: 4px; padding: 8px; }"));
     m_guidance->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    PlaceField(m_guidance, kColumns); // full width — it is prose, not a field
+    PlaceField(m_guidance, kColumns, m_leading_wide); // full width prose, right below the equation it explains
 
     // The compiler / reaction-parser verdict goes into a banner PINNED above the scrolling grid.
     // Buried at the end of the guidance paragraph it was regularly scrolled out of sight, so a broken
@@ -655,7 +770,7 @@ void PrepareWidget::AddScriptGuidance()
     if (m_pane_layout)
         m_pane_layout->insertWidget(1, m_status); // 0 is the toolbar row
     else
-        PlaceField(m_status, kColumns); // model-definition tab: no pane, so it rides in the grid
+        PlaceField(m_status, kColumns, 0); // model-definition tab: no pane, so it heads the grid
 
     // Refresh whenever any field changes — the reaction system and the parameter counts both matter.
     for (PrepareBox* box : qAsConst(m_stored_objects)) {
@@ -686,17 +801,24 @@ void PrepareWidget::UpdateGuidance()
     const int inputSize = FieldValue(QStringLiteral("InputSize")).toInt();
     const int globalSize = FieldValue(QStringLiteral("GlobalParameterSize")).toInt();
 
+    // ValidateEquation() also paints the status banner; its verdict line is repeated inside the guidance only
+    // where there is no banner (the banner is the one place the verdict belongs).
+    // It is called where it was called before (not on the invalid-reaction path), because it has side effects.
+    auto verdictLine = [this]() {
+        const QString verdict = ValidateEquation();
+        return m_status ? QString() : QStringLiteral("<br><br>") + verdict;
+    };
+
     if (reactions.trimmed().isEmpty()) {
         m_guidance->setText(tr("<b>Free equation.</b> Just write it — the parameters are read out of it:"
                                "<br>· <tt>X1…X%1</tt> are the independent columns"
                                "<br>· every other name becomes a <b>global</b> parameter (%2)"
                                "<br>· list a name under <b>Names of local parameters</b> to make it "
                                "vary <b>per series</b> instead"
-                               "<br>Helpers: <tt>cubic_root(a,b,c,d)</tt>, <tt>quadratic_root(a,b,c)</tt>."
-                               "<br><br>%3")
+                               "<br>Helpers: <tt>cubic_root(a,b,c,d)</tt>, <tt>quadratic_root(a,b,c)</tt>.%3")
                                 .arg(qMax(1, inputSize))
                                 .arg(globalNames.isEmpty() ? tr("none yet") : globalNames)
-                                .arg(ValidateEquation()));
+                                .arg(verdictLine()));
         return;
     }
 
@@ -749,7 +871,7 @@ void PrepareWidget::UpdateGuidance()
                             .arg(concList.join(" &nbsp;·&nbsp; "))
                             .arg(nSpecies)
                             .arg(betaList.join(", "))
-                            .arg(warning + "<br><br>" + ValidateEquation()));
+                            .arg(warning + verdictLine()));
 }
 
 PrepareBox* PrepareWidget::boxNamed(const QString& name) const
@@ -788,6 +910,7 @@ void PrepareWidget::setEquilibriumMode(bool equilibrium)
         DeriveFromReactions();
     }
     UpdateGuidance();
+    Reflow(); // the reaction editor came or went: no gap, no empty cell
 }
 
 QString PrepareWidget::EquationText() const

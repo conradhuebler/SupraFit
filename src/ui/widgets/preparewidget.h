@@ -142,6 +142,9 @@ public:
     /*! \brief Grid units this field occupies: 1 for a simple input, 2 for the equation and the
      * reaction editor, which need the full width. Keeps the form on a regular grid. CG. */
     inline int Span() const { return (m_type == 4 || m_type == 6) ? 2 : 1; }
+    /*! \brief A wide field (equation, reactions) needs two cells only while the form has two columns; on one
+     * column it must shrink to a cell, or it would force a horizontal scroll bar. Claude Generated. */
+    void setWideLayout(bool wide);
     QStringList HighlightMatch() const { return m_highlight_match; }
 
     /*! \brief Reset the field to the value it was created with. Applying a preset on top of a filled
@@ -224,7 +227,28 @@ private:
     class QLabel* m_status = nullptr; ///< always-visible banner: compiler / parser verdict
     class QVBoxLayout* m_pane_layout = nullptr; ///< toolbar + banner + scrolling field grid
     bool m_equilibrium = false;
-    int m_grid_row = 0, m_grid_col = 0; ///< placement cursor of the semi-flexible field grid
+    /*! \brief The items of the form in display order. The grid is rebuilt from this list by Reflow(), so the
+     * form can go from two columns to one when it gets narrow, hidden items leave no gap, and an item can
+     * be inserted at a chosen place (the guidance right below the equation). Claude Generated. */
+    struct FlowItem {
+        QWidget* widget;
+        int span;
+    };
+    QVector<FlowItem> m_flow;
+    int m_columns = 2;
+    int m_leading_wide = 0; ///< wide fields (equation, reactions) come first
+    QWidget* m_flow_host = nullptr; ///< the widget the grid lives in
+    QWidget* m_flow_parent = nullptr; ///< what holds it (the scroll area's viewport): its width decides the columns
+    QWidget* m_details = nullptr; ///< rarely needed fields (scripting engine) behind a More/Less switch
+    class QVBoxLayout* m_details_layout = nullptr;
+    bool m_reflowing = false;
+
+    void Reflow();
+    void WatchWidth(QWidget* host);
+    void UpdateColumns();
+    void AddToDetails(PrepareBox* box);
+    void FinishDetails();
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     /*! \brief Reset all fields without touching the mode or emitting — the shared part of ClearAll()
      * and of filling the form from a preset. Claude Generated. */
@@ -257,7 +281,7 @@ private:
 
     /*! \brief Place a field in the fixed-column grid, occupying @c span cells. A span-2 field always
      * starts a fresh row so the grid never breaks apart. Claude Generated. */
-    void PlaceField(QWidget* widget, int span);
+    void PlaceField(QWidget* widget, int span, int index = -1);
     PrepareBox* boxNamed(const QString& name) const;
     void DeriveFromReactions();
     QString ValidateEquation();

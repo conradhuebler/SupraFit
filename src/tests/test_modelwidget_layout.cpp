@@ -37,9 +37,13 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
+
+#include <cmath>
 
 #include <Eigen/Dense>
 
@@ -47,6 +51,7 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/datatable.h"
 #include "src/core/models/models.h"
+#include "src/core/models/scriptmodel.h"
 #include "src/global.h"
 
 #include "src/capabilities/jobmanager.h"
@@ -86,40 +91,16 @@ class TestModelWidgetLayout : public QObject {
 private:
     static constexpr int N = 15;
 
-    static QJsonObject descr(const QJsonValue& value)
-    {
-        QJsonObject o;
-        o["value"] = value;
-        return o;
-    }
-
-    // Michaelis-Menten with one local parameter: global and local parameter pages both exist.
-    static QJsonObject definition()
-    {
-        QJsonObject lines;
-        lines["0"] = QStringLiteral("(vmax*X1)/(Km+X1)+offset");
-        QJsonObject def;
-        def["Name"] = descr(QStringLiteral("Layout ScriptModel"));
-        def["InputSize"] = descr(1);
-        def["InputNames"] = descr(QStringLiteral("X1"));
-        def["DepModelNames"] = descr(QStringLiteral("Y"));
-        def["GlobalParameterSize"] = descr(2);
-        def["GlobalParameterNames"] = descr(QStringLiteral("vmax|Km"));
-        def["LocalParameterSize"] = descr(1);
-        def["LocalParameterNames"] = descr(QStringLiteral("offset"));
-        def["Equation"] = descr(lines);
-        return def;
-    }
-
+    // Host/guest titration data (constant host, guest titrated in) with `series` zeroed dependent columns.
     static DataClass* makeData(int series)
     {
-        Eigen::MatrixXd indep(N, 1);
+        Eigen::MatrixXd indep(N, 2);
         Eigen::MatrixXd dep(N, series);
         for (int i = 0; i < N; ++i) {
-            const double x = 0.1 + 0.5 * i;
-            indep(i, 0) = x;
+            indep(i, 0) = 1e-3; // host total
+            indep(i, 1) = 3e-3 * i / (N - 1); // guest total
             for (int j = 0; j < series; ++j)
-                dep(i, j) = 3.5 * x / (0.8 + x) + 0.1 * j;
+                dep(i, j) = 0.0;
         }
         DataClass* data = new DataClass();
         data->setIndependentTable(new DataTable(indep));
@@ -151,12 +132,34 @@ private slots:
         qApp->setProperty("lineWidth", 20);
         Instance::setInstance(new Instance);
 
+        // The model is built from a preset, like the creation dialog does: its definition block carries the full
+        // field descriptors (name, type, once, ...) that the Model Definition page is made of. A bare
+        // {"value": ...} block would leave that page empty.
         m_data = QSharedPointer<DataClass>(makeData(2));
         m_model = CreateModel(SupraFit::ScriptModel, m_data.data());
         QVERIFY(!m_model.isNull());
-        QVERIFY(m_model->DefineModel(definition()));
-        m_model->setGlobalParameter(3.5, 0);
-        m_model->setGlobalParameter(0.8, 1);
+        const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+        int preset = -1;
+        for (int i = 0; i < presets.size(); ++i)
+            if (presets[i].name.startsWith(QStringLiteral("Binding 1:1 \u2014 signal")))
+                preset = i;
+        QVERIFY2(preset >= 0, "1:1 signal preset not found");
+        QHash<QString, QJsonObject> elements;
+        for (const QJsonObject& descriptor : presets[preset].block)
+            elements[descriptor["name"].toString()] = descriptor;
+        m_model->setModelDefinition(elements);
+        QVERIFY(m_model->DefineModel(QJsonObject()));
+        m_model->setGlobalParameter(4.0, 0); // lg K
+        for (int series = 0; series < 2; ++series) {
+            m_model->setLocalParameter(100.0 + 20 * series, 0, series);
+            m_model->setLocalParameter(5000.0 - 500 * series, 1, series);
+        }
+        m_model->Calculate();
+        // measured signal = the model plus a small deterministic wobble, so fits and Monte Carlo have a spread
+        for (int i = 0; i < N; ++i)
+            for (int series = 0; series < 2; ++series)
+                m_data->DependentModel()->setData(m_data->DependentModel()->index(i, series),
+                    m_model->ModelTable()->data(i, series) * (1.0 + 0.002 * std::sin(1.7 * i + series)));
         m_model->Calculate();
 
         m_chart = new ChartWidget;
@@ -615,6 +618,73 @@ private slots:
         QTRY_COMPARE(target->maximumHeight(), 0);
         QVERIFY(!QSettings().value(QStringLiteral("ui/more/test_layout")).toBool());
         QSettings().remove(QStringLiteral("ui"));
+    }
+    // WP2 measurement: the Model Definition page at several widths - how many scroll areas are nested and
+    // which scroll bars show. PNGs for the docs with SUPRAFIT_LAYOUT_RENDER_DIR. Claude Generated.
+    void modelDefinitionPageScrolling()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        const QList<QPair<int, int>> sizes = { { 1100, 700 }, { 760, 540 }, { 520, 540 } };
+        for (const QPair<int, int>& size : sizes) {
+            Charts charts = m_chart->addModel(m_model);
+            ModelWidget widget(m_model, charts);
+            widget.resize(size.first, size.second);
+            widget.show();
+            QTest::qWaitForWindowExposed(&widget);
+            QCoreApplication::processEvents();
+
+            QListWidget* list = nullptr;
+            for (QListWidget* l : widget.findChildren<QListWidget*>())
+                if (l->isVisible() && l->count() > 0) {
+                    list = l;
+                    break;
+                }
+            QVERIFY(list);
+            for (int i = 0; i < list->count(); ++i)
+                if (list->item(i)->text() == QStringLiteral("Model Definition")) {
+                    list->setCurrentRow(i);
+                    emit list->itemClicked(list->item(i));
+                }
+            QCoreApplication::processEvents();
+
+            int areas = 0, vbars = 0, hbars = 0;
+            for (QScrollArea* area : widget.findChildren<QScrollArea*>()) {
+                if (!area->isVisible())
+                    continue;
+                ++areas;
+                if (area->verticalScrollBar()->isVisible())
+                    ++vbars;
+                if (area->horizontalScrollBar()->isVisible())
+                    ++hbars;
+            }
+            qInfo("%dx%d: visible scroll areas=%d vertical bars=%d horizontal bars=%d", size.first, size.second, areas, vbars, hbars);
+            if (!renderDir.isEmpty()) {
+                QDir().mkpath(renderDir);
+                widget.grab().save(QStringLiteral("%1/modelwidget_definition_%2x%3.png").arg(renderDir).arg(size.first).arg(size.second));
+            }
+            QVERIFY2(hbars == 0, qPrintable(QStringLiteral("horizontal scroll bar on the definition page at %1 px").arg(size.first)));
+
+            // the equation is what the page is about: it comes first, the form follows the width
+            QGroupBox* equation = nullptr;
+            QGroupBox* name = nullptr;
+            QGroupBox* engine = nullptr;
+            for (QGroupBox* box : widget.findChildren<QGroupBox*>()) {
+                if (box->title() == QStringLiteral("Define model equation"))
+                    equation = box;
+                else if (box->title() == QStringLiteral("Model Name"))
+                    name = box;
+                else if (box->title() == QStringLiteral("Scripting engine"))
+                    engine = box;
+            }
+            QVERIFY(equation && name && engine);
+            QVERIFY2(equation->isVisible() && name->isVisible(), "equation or name not shown");
+            const QWidget* page = equation->parentWidget();
+            QVERIFY2(equation->mapTo(page, QPoint(0, 0)).y() < name->mapTo(page, QPoint(0, 0)).y(), "the equation is not the first field");
+            QVERIFY2(equation->width() <= page->width(), "the equation is wider than the page");
+            QVERIFY2(engine->height() < 5 || !engine->isVisible() || engine->parentWidget()->height() < 5, "the scripting engine is not tucked away");
+        }
+        QSettings().remove(QStringLiteral("model"));
     }
 };
 
