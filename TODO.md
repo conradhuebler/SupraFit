@@ -20,6 +20,9 @@
 - [ ] Agent chats in projects: ChatLog drops unknown per-chat fields when a project chat is rewritten (blocks of newer versions survive only untouched); `ReferenceProjectsTest` fails 2 cases independent of WP11 (2:1 model SSE, CV mean)
 - [ ] LLM presets: hosted providers (OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek) never contacted with a real key; OpenRouter/Mistral URLs only third-party-confirmed (`src/agent/llmpresets.cpp`)
 - [ ] Main window redesign from the operator's mockup (toolbar menus, Projects+Log column, model tab, dark mode, small screens) — WIP on `feature/ui-redesign`, see [roadmap/ui_redesign.md](roadmap/ui_redesign.md)
+- [ ] GUI project/model removal: central `onProjectRemoved` slot on `ProjectManager::projectRemoved`/`projectsCleared` (no GUI receiver yet); `DataClass::removeModel` (`RemoveTab` leaves the model in the project, so tab/Delete/"Remove All Models" are dead in effect); `m_data_list`/`m_hashed_data` paths (Add Up, Substract, Copy model, drag&drop, Export all) miss projects from `onProjectAdded`
+- [ ] Assistant tools `close_project` and `remove_model` (approval level "Ask for fits"; after `onProjectRemoved` / `DataClass::removeModel`); name them in `docs/ASSISTANT_HELP.md` section 8 (`AgentHelpTest`)
+- [ ] Parentless widgets flash as top-level windows on project load: `setHidden(false)` before layout parenting at `modelwidget.cpp:282,293,294,626`, `widgets/modelelement.cpp:109` (use `hide()` only when hiding)
 
 ---
 
