@@ -126,12 +126,13 @@ public:
     QString currentTitle() const { return m_titles.value(m_list->currentRow()); }
 
     /*! \brief Select the page called \p title; falls back to the first visible page if it is missing or hidden.
-     * \p enter also opens the sub-page list of a group page (a request by the user), a restored choice does not. */
+     * \p enter also opens the sub-page list of a group page (a request by the user). A restored choice
+     * (\p enter false) never lands on a group page: it would show the page next to the plain page list. */
     void setCurrentTitle(const QString& title, bool enter = false)
     {
         const int index = indexOfTitle(title);
         m_quiet = true;
-        if (index >= 0 && !m_list->item(index)->isHidden())
+        if (index >= 0 && !m_list->item(index)->isHidden() && (enter || !m_groups.contains(index)))
             m_list->setCurrentRow(index);
         else
             selectFirstVisible();

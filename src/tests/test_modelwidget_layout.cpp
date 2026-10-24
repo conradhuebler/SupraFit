@@ -448,6 +448,29 @@ private slots:
         QVERIFY2(titles.contains(QStringLiteral("Statistics")), qPrintable(titles.join(", ")));
         QVERIFY(dialog->isVisible());
     }
+    // A stored "Statistics" page must not come back as the start page: it would be shown beside the plain
+    // page list instead of its own list of analyses. Claude Generated.
+    void statisticsIsNeverTheStartPage()
+    {
+        QSettings().setValue(QStringLiteral("model/model %1 page title").arg(m_model->SFModel()), QStringLiteral("Statistics"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QVERIFY2(!dialog->isVisibleTo(&widget) || !dialog->isVisible(), "the statistic page is the start page");
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                QVERIFY2(!l->item(0)->text().contains(QStringLiteral("Back")), "sub-page list shown at start");
+                QVERIFY2(l->currentItem() && l->currentItem()->text() != QStringLiteral("Statistics"), "Statistics selected at start");
+                break;
+            }
+        QSettings().remove(QStringLiteral("model"));
+    }
 };
 
 int main(int argc, char** argv)
