@@ -115,10 +115,16 @@ void AddModelBar::Rebuild()
 {
     QLayout* layout = m_quick_box->layout();
     while (QLayoutItem* item = layout->takeAt(0)) {
-        delete item->widget();
+        // later: a button whose click led here (a dialog's event loop) must outlive its own slot
+        if (QWidget* old = item->widget()) {
+            old->hide();
+            old->setParent(nullptr); // gone from the bar at once, deleted when its slot is done
+            old->deleteLater();
+        }
         delete item;
     }
     const bool available = m_workspace && m_workspace->ToolsAvailable();
+    m_columns = available ? m_workspace->IndependentCount() : 0; // the data may have changed since setWorkspace
     m_gear->setVisible(available);
     if (!available)
         return;
