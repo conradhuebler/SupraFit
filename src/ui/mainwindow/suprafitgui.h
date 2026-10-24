@@ -174,6 +174,7 @@ private:
 
     QToolBar* m_main_toolbar;
     QToolButton *m_data_button, *m_model_button, *m_evaluation_button;
+    class AddModelBar* m_add_model_bar = nullptr;
     QList<QObject*> m_connected_bars; ///< workspace title bars whose ToolsChanged is connected
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;

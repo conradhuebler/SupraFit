@@ -452,6 +452,30 @@ void MDHDockTitleBar::EnableBatch(bool enabled)
     m_analyse->setEnabled(enabled);
 }
 
+void MDHDockTitleBar::RequestModel(const ModelCatalog::Choice& choice)
+{
+    switch (choice.kind) {
+    case ModelCatalog::Choice::Kind::FixedModel:
+        m_model_choosen = choice.model;
+        m_preset_reactions.clear(); // plain add, as from the menu
+        emit AddModel();
+        break;
+    case ModelCatalog::Choice::Kind::AnyModelWithReactions:
+        m_model_choosen = choice.model;
+        m_preset_reactions = choice.reactions; // the dialog is skipped, as for the preset submenus
+        emit AddModel();
+        break;
+    case ModelCatalog::Choice::Kind::ScriptPreset:
+        emit NewModelFromPreset(choice.scriptPreset);
+        break;
+    case ModelCatalog::Choice::Kind::ModelFile:
+        emit AddScriptModel(choice.file);
+        break;
+    case ModelCatalog::Choice::Kind::None:
+        break;
+    }
+}
+
 void MDHDockTitleBar::PrepareAddModel()
 {
     m_model_choosen = qobject_cast<QAction*>(sender())->data().toInt();

@@ -40,7 +40,7 @@ Claude Generated - work package / roadmap document
 
 - **WP-A Katalog (erledigt, `modelcatalog.{h,cpp}`, 5 Tests `catalog*`):** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü; Eintragsarten.
 - **WP-B Zähler und Auswahl (erledigt, `modelusage.{h,cpp}`, 4 Tests `usage*`; die Betriebsart/x/feste Liste liegen in `ModelUsage::Preferences`, der Dialog dazu ist WP-D):** Aufrufzähler je Eintrag (`QSettings` `model_usage/...`), Modus häufigste/feste Liste, x, Zurücksetzen; Test mit Zählern und stabiler Reihenfolge.
-- **WP-C Leiste:** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), schwebend/andockbar, Offscreen-Test und Render hell/dunkel.
+- **WP-C Leiste (erledigt, `addmodelbar.{h,cpp}`, 3 Tests `addModelBar*`; Zahnrad: Betriebsart und Zähler zurücksetzen, die feste Liste bearbeiten kommt mit WP-D):** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), schwebend/andockbar, Offscreen-Test und Render hell/dunkel.
 - **WP-D Anpassen:** Dialog und Rechtsklick-Menü für die feste Liste, Einstellung in der Registry (`add_model_bar_mode`, `add_model_bar_count`, `add_model_technique`).
 - **WP-E Menü "Model":** aus dem Katalog gebaut (keine doppelten Listen), bleibt der Zugriff auf alles.
 - **WP-F Hilfe:** `docs/ASSISTANT_HELP.md`, Tooltips mit voller Bezeichnung.

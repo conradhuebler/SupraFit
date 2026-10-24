@@ -69,6 +69,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/mainwindow/addmodelbar.h"
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelusage.h"
@@ -1733,6 +1734,148 @@ private slots:
         // the stoichiometry means the one of the technique on screen
         QCOMPARE(keysOf(ModelUsage::Quick(Technique::Fluorescence, 2)).first(), QStringLiteral("stoich:1:1/1:2"));
         QCOMPARE(ModelUsage::Quick(Technique::Fluorescence, 2).first().choice.model, int(SupraFit::fl_ItoI_ItoII));
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+    // ---- WP-C: the Add-Model bar --------------------------------------------------------------------------------
+
+    static QToolButton* barButton(AddModelBar& bar, const QString& text)
+    {
+        for (QToolButton* b : bar.findChildren<QToolButton*>())
+            if (b->text() == text)
+                return b;
+        return nullptr;
+    }
+
+    static QStringList barQuickTitles(AddModelBar& bar, const ModelCatalog::Technique technique, int columns)
+    {
+        QStringList titles;
+        for (const ModelCatalog::Entry& e : ModelUsage::Quick(technique, columns))
+            titles << e.title;
+        Q_UNUSED(bar);
+        return titles;
+    }
+
+    // The bar follows the project on screen, offers the techniques that fit its data side by side, the models added
+    // most as buttons, and one click adds the model of the chosen technique. Claude Generated.
+    void addModelBarAddsTheModelOfTheChosenTechnique()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        QSharedPointer<DataClass> data(makeDataFor(2));
+        ChartWidget chart;
+        chart.setRawData(data);
+        ModelDataHolder holder;
+        holder.setChartWidget(&chart);
+        holder.setData(data, QSharedPointer<ChartWrapper>::create());
+
+        AddModelBar bar;
+        QVERIFY2(!bar.isEnabled(), "the bar is on without a project");
+        bar.setWorkspace(holder.TitleBarWidget());
+        QVERIFY(bar.isEnabled());
+        QCOMPARE(bar.objectName(), QStringLiteral("add_model_bar")); // its place is kept under this name
+        QVERIFY(bar.isMovable() && bar.isFloatable());
+
+        // the techniques that fit two columns, NMR chosen
+        QCOMPARE(bar.technique(), Technique::NMR);
+        QVERIFY(barButton(bar, QStringLiteral("NMR")) && barButton(bar, QStringLiteral("UV/Vis")) && barButton(bar, QStringLiteral("Fluorescence")));
+        QVERIFY(!barButton(bar, QStringLiteral("ITC")));
+        QVERIFY(barButton(bar, QStringLiteral("NMR"))->isChecked());
+        // the quick buttons: the four established stoichiometries of a fresh installation
+        for (const QString& title : barQuickTitles(bar, Technique::NMR, 2))
+            QVERIFY2(barButton(bar, title), qPrintable(title));
+        QCOMPARE(barQuickTitles(bar, Technique::NMR, 2).size(), 4);
+        // "More..." is the whole Model menu of the project
+        QToolButton* more = barButton(bar, QStringLiteral("More\u2026"));
+        QVERIFY(more && more->menu() == holder.TitleBarWidget()->ModelMenu());
+
+        // a click adds the model of the chosen technique and counts it
+        const QString second = barQuickTitles(bar, Technique::NMR, 2).at(2); // 1:1 / 1:2
+        barButton(bar, second)->click();
+        QCoreApplication::processEvents();
+        QCOMPARE(holder.ModelCount(), 1);
+        QCOMPARE(int(holder.Model(0)->SFModel()), int(SupraFit::nmr_ItoI_ItoII));
+        QCOMPARE(ModelUsage::Used(Technique::NMR, QStringLiteral("stoich:1:1/1:2")), 1);
+
+        // another technique: the same stoichiometry gives that technique's model, counted for it
+        barButton(bar, QStringLiteral("UV/Vis"))->click();
+        QCOMPARE(bar.technique(), Technique::UVVis);
+        barButton(bar, second)->click();
+        QCoreApplication::processEvents();
+        QCOMPARE(holder.ModelCount(), 2);
+        QCOMPARE(int(holder.Model(1)->SFModel()), int(SupraFit::uv_vis_ItoI_ItoII));
+        QCOMPARE(ModelUsage::Used(Technique::UVVis, QStringLiteral("stoich:1:1/1:2")), 1);
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::UVVis); // the next project starts with it
+
+        // a flexible model: a dimerisation system is the technique's `*_any` model with its reactions, no dialog
+        const ModelCatalog::Entry dimer = [&]() {
+            for (const ModelCatalog::Entry& e : ModelCatalog::Entries(Technique::UVVis, 2))
+                if (e.key == QStringLiteral("stoich:1:1+A2"))
+                    return e;
+            return ModelCatalog::Entry();
+        }();
+        QVERIFY(dimer.choice.valid());
+        holder.TitleBarWidget()->RequestModel(dimer.choice);
+        QCoreApplication::processEvents();
+        QCOMPARE(holder.ModelCount(), 3);
+        QCOMPARE(int(holder.Model(2)->SFModel()), int(SupraFit::uvvis_any));
+
+        // without a project the bar is off again
+        bar.setWorkspace(nullptr);
+        QVERIFY(!bar.isEnabled());
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    // The fixed list: scripted presets are buttons of the bar too, and a click adds that model whatever the technique.
+    void addModelBarShowsAFixedList()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        using ModelCatalog::Technique;
+        QSharedPointer<DataClass> data(makeDataFor(2));
+        ChartWidget chart;
+        chart.setRawData(data);
+        ModelDataHolder holder;
+        holder.setChartWidget(&chart);
+        holder.setData(data, QSharedPointer<ChartWrapper>::create());
+        AddModelBar bar;
+        bar.setWorkspace(holder.TitleBarWidget());
+
+        ModelUsage::Preferences p;
+        p.mode = ModelUsage::Mode::Fixed;
+        p.fixed = { QStringLiteral("script:Hill"), QStringLiteral("stoich:1:1") };
+        ModelUsage::Save(p);
+        bar.Refresh();
+        QVERIFY(barButton(bar, QStringLiteral("Hill")));
+        QVERIFY(barButton(bar, QStringLiteral("1:1")));
+        QVERIFY(!barButton(bar, QStringLiteral("2:1 / 1:1")));
+
+        barButton(bar, QStringLiteral("Hill"))->click();
+        QCoreApplication::processEvents();
+        QCOMPARE(holder.ModelCount(), 1);
+        QCOMPARE(int(holder.Model(0)->SFModel()), int(SupraFit::ScriptModel));
+        QCOMPARE(ModelUsage::DefaultTechnique(2), Technique::NMR); // a scripted preset does not change the technique
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    void addModelBarRenders()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        QSharedPointer<DataClass> data(makeDataFor(2));
+        ChartWidget chart;
+        chart.setRawData(data);
+        ModelDataHolder holder;
+        holder.setChartWidget(&chart);
+        holder.setData(data, QSharedPointer<ChartWrapper>::create());
+        AddModelBar bar;
+        bar.setWorkspace(holder.TitleBarWidget());
+        bar.resize(900, 40);
+        bar.show();
+        QTest::qWaitForWindowExposed(&bar);
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty()) {
+            QDir().mkpath(renderDir);
+            bar.grab().save(QStringLiteral("%1/add_model_bar.png").arg(renderDir));
+        }
+        QVERIFY(!bar.grab().isNull());
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 };

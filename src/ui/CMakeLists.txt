@@ -75,6 +75,7 @@ set(SFGui_SRC
                 widgets/thermogramwidget.cpp
                 widgets/textwidget.cpp
                 mainwindow/chartwidget.cpp
+                mainwindow/addmodelbar.cpp
                 mainwindow/modelcatalog.cpp
                 mainwindow/modelusage.cpp
                 mainwindow/modeldataholder.cpp

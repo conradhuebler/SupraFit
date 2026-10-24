@@ -55,9 +55,14 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
   Per series: checkbox "Include" in the model's "Data series" box (or page). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
 - **Data** menu: **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
 
-## 3. Adding a model (menu **Model**)
+## 3. Adding a model (bar **Add model** and menu **Model**)
 
-Only entries that fit the number of independent columns are shown.
+The bar **Add model** (below the toolbar; drag it to dock it at any edge or let it float; "Add-Model Bar" in the SupraFit menu shows or hides it) adds a model with one click to the project on screen.
+Left the technique as buttons side by side (NMR, UV/Vis, Fluorescence for two or more independent columns; ITC, Kinetics for one; NMR is chosen at first, afterwards the technique you added a model with last),
+then the models you add most (a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2, 2:1 / 1:1 / 1:2); a stoichiometry gives the model of the chosen technique (the fixed model for the four established
+ones, otherwise the flexible `*_any` model with its reactions). **More...** opens the whole menu **Model**; the gear chooses between "most used" and "a fixed list" and forgets what was used.
+
+The menu **Model** has everything. Only entries that fit the number of independent columns are shown.
 
 - **Experiment** submenus: *NMR Titration*, *UV/Vis Titration*, *Fluorescence Titration* (1:1, 2:1/1:1, 1:1/1:2, 2:1/1:1/1:2 and a flexible model),
   *Calorimetry* (ITC 1:1, 2:1/1:1, 1:1/1:2, 2:1/1:1/1:2, flexible ITC, Blank Titration, Two Set Multiple Site, TIAN Thermokinetic),

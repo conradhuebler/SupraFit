@@ -34,6 +34,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/projectmanager.h"
 
+#include "addmodelbar.h"
 #include "src/ui/instance.h"
 
 #include "src/ui/dialogs/configdialog.h"
@@ -741,6 +742,15 @@ void SupraFitGui::SetupToolBar()
 
     addToolBar(m_main_toolbar);
 
+    // The Add-Model bar sits below the main toolbar until the operator moves it (it can be docked anywhere or float).
+    m_add_model_bar = new AddModelBar(this);
+    addToolBarBreak(Qt::TopToolBarArea);
+    addToolBar(Qt::TopToolBarArea, m_add_model_bar);
+    QAction* barAction = m_add_model_bar->toggleViewAction();
+    barAction->setText(tr("Add-Model Bar"));
+    appMenu->insertAction(m_close, barAction); // between the program entries and Quit
+    appMenu->insertSeparator(m_close);
+
     connect(m_stack_widget, &QStackedWidget::currentChanged, this, &SupraFitGui::UpdateWorkspaceMenus);
     UpdateWorkspaceMenus();
 }
@@ -783,6 +793,8 @@ void SupraFitGui::UpdateWorkspaceMenus()
         entry.first->setMenu(entry.second);
         entry.first->setEnabled(entry.second != nullptr);
     }
+    if (m_add_model_bar)
+        m_add_model_bar->setWorkspace(available ? bar : nullptr);
 }
 
 void SupraFitGui::UpdateRecentList()

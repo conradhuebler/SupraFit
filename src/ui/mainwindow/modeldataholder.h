@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "modelcatalog.h"
+
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
@@ -125,6 +127,12 @@ public:
     /** @brief Tell the bar how many independent columns the current data has, so the scripted-model
      * preset menu can grey out presets that need more inputs than are available. Claude Generated. */
     void setIndependentCount(int n) { m_independent_count = n; }
+    int IndependentCount() const { return m_independent_count; }
+
+    /*! \brief Add the model \p choice stands for, the way the Model menu adds it: a fixed model or a flexible model with
+     * its reactions through AddModel(), a scripted preset or a model file through their own signals. Used by the
+     * Add-Model bar. Claude Generated. */
+    void RequestModel(const ModelCatalog::Choice& choice);
 
 private:
     QPointer<QMenu> m_data_menu, m_model_menu, m_evaluation_menu;
