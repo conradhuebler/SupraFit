@@ -91,6 +91,8 @@ struct LandscapeResult {
     /*! profile[i][b]: lowest SSE seen with variable i in bin b (infinity: not visited); the minimum over all
      *  other variables, which is what a likelihood-based confidence interval needs (not a marginal). */
     std::vector<std::vector<double>> profile;
+    /*! profileAt[i][b]: coordinate of variable i at the point that set profile[i][b] (NaN: not visited). */
+    std::vector<std::vector<double>> profileAt;
     /*! Cells whose lowest SSE is below that of every visited neighbour, best first. Candidates only: polish
      *  them with the minimiser before reporting them as minima. Empty for more than 6 variables. */
     std::vector<LandscapeCell> minima;
@@ -137,3 +139,35 @@ private:
     std::function<bool()> m_interrupt;
     std::unique_ptr<Bias> m_bias;
 };
+
+/*! \brief Level of the likelihood-based confidence region: SSE_min (1 + p/(n - p) F) (Claude Generated).
+ *
+ * Same threshold as `AbstractModel::ErrorfTestThreshold`; `fValue` is the F quantile for the chosen confidence,
+ * `ToolSet::finv(confidence, parameters, datapoints - parameters)`. The sampler stays free of Qt, so the caller
+ * brings it. All parameters of the fit count for `parameters`, the linear ones that VarPro projects out as well.
+ */
+double LandscapeConfidenceLevel(double sseMin, int datapoints, int parameters, double fValue);
+
+/*! \brief One connected stretch of a variable where the profile stays at or below the confidence level. */
+struct LandscapeSegment {
+    /*! How an end was found: `Crossing` the profile rose above the level between two visited bins (the value is
+     *  interpolated), `Box` the stretch reaches the edge of the sampling box (the interval is cut by the box),
+     *  `Unsampled` the next bin was never visited (the wall or too short a run: the end is only a lower
+     *  bound of the interval; raise sseCut above the level or run longer). */
+    enum class Edge { Crossing, Box, Unsampled };
+
+    double lower = 0, upper = 0;
+    Edge lowerEdge = Edge::Unsampled, upperEdge = Edge::Unsampled;
+    double minimum = 0; ///< lowest profile value in the stretch
+    bool Bounded() const { return lowerEdge == Edge::Crossing && upperEdge == Edge::Crossing; }
+};
+
+/*! \brief Confidence region per variable from the profile of a run (Claude Generated).
+ *
+ * result[i] lists the stretches of variable i with profile <= level, lowest coordinate first; more than one
+ * stretch means separate minima within the level. The profile is the minimum over all other variables, so
+ * correlated parameters get the interval they need, not the narrower section through the minimum.
+ * The level only means something if `sseCut` of the run lies above it.
+ */
+std::vector<std::vector<LandscapeSegment>> LandscapeIntervals(const LandscapeResult& result, double level,
+    const std::vector<double>& lower, const std::vector<double>& upper);

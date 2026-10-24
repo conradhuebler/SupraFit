@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: SSE-Landscape Sampling (Metadynamics-like) for Global Search and Confidence Intervals
 
-**Status:** WP-A ADDED (`src/capabilities/landscapesampler.*`, machine-tested), B-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
+**Status:** WP-A, WP-B ADDED (`src/capabilities/landscapesampler.*`, machine-tested), C-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
 
 ## Goal
 

@@ -292,6 +292,110 @@ private slots:
         QVERIFY_EXCEPTION_THROWN(LandscapeSampler(quadratic({ 0 }, { 1.0 }), { 1 }, { -1 }), std::invalid_argument);
     }
 
+    // ---- WP-B: confidence region from the profile ----
+
+    void confidenceLevelIsTheFTestThreshold()
+    {
+        // same formula as AbstractModel::ErrorfTestThreshold: SSE (F p / (n - p) + 1)
+        QCOMPARE(LandscapeConfidenceLevel(2.0, 12, 2, 4.0), 3.6);
+    }
+
+    // Correlated parameters: the interval is the profile (minimum over the other variable), analytically
+    // c +- sqrt((L - SSE0) / (a - h^2/b)), wider than the section through the minimum c +- sqrt((L - SSE0) / a).
+    void profileIntervalOfACorrelatedParabola()
+    {
+        const double a = 60, b = 40, h = 35, sse0 = 1.0;
+        const V c{ 0.1, -0.2 };
+        const auto f = [=](const V& x) {
+            const double dx = x[0] - c[0], dy = x[1] - c[1];
+            return sse0 + a * dx * dx + b * dy * dy + 2 * h * dx * dy;
+        };
+        const double level = LandscapeConfidenceLevel(sse0, 12, 2, 3.0); // 1.6
+        const double halfX = std::sqrt((level - sse0) / (a - h * h / b));
+        const double halfY = std::sqrt((level - sse0) / (b - h * h / a));
+        const double section = std::sqrt((level - sse0) / a);
+        QVERIFY(halfX - section > 0.04); // the test can tell profile and section apart
+
+        // the worst deviation over several seeds is what counts, not one run
+        const double tolerance = 0.01; // measured worst case 0.0025
+        double worst = 0;
+        for (uint64_t seed = 1; seed <= 10; ++seed) {
+            LandscapeSampler sampler(f, { -1, -1 }, { 1, 1 });
+            LandscapeSettings s = quick();
+            s.sseCut = 2.4; // above the level, otherwise the profile cannot cross it
+            s.bins = 120;
+            s.maxSteps = 200000;
+            s.patience = 100;
+            s.seed = seed;
+            sampler.setSettings(s);
+            const LandscapeResult r = sampler.Run({ 0.1, -0.2 });
+            const auto intervals = LandscapeIntervals(r, level, { -1, -1 }, { 1, 1 });
+
+            QCOMPARE(intervals[0].size(), size_t(1));
+            QCOMPARE(intervals[1].size(), size_t(1));
+            const LandscapeSegment &sx = intervals[0][0], &sy = intervals[1][0];
+            QVERIFY(sx.Bounded() && sy.Bounded());
+            const double dev = std::max({ std::abs(sx.lower - (c[0] - halfX)), std::abs(sx.upper - (c[0] + halfX)),
+                std::abs(sy.lower - (c[1] - halfY)), std::abs(sy.upper - (c[1] + halfY)) });
+            worst = std::max(worst, dev);
+        }
+        qInfo() << "worst deviation of an interval end over 10 seeds:" << worst << "(bin width" << 2.0 / 120 << ")";
+        QVERIFY2(worst < tolerance, qPrintable(QString("worst deviation %1").arg(worst)));
+    }
+
+    // A level above the box is cut by the box and says so.
+    void boxEdgesAreMarked()
+    {
+        LandscapeSampler sampler(quadratic({ 0 }, { 1.0 }), { -1 }, { 1 });
+        LandscapeSettings s = quick();
+        s.sseCut = 10;
+        sampler.setSettings(s);
+        const LandscapeResult r = sampler.Run({ 0 });
+        const auto intervals = LandscapeIntervals(r, 5.0, { -1 }, { 1 }); // sqrt(4) = 2 > half box
+        QCOMPARE(intervals[0].size(), size_t(1));
+        QCOMPARE(intervals[0][0].lowerEdge, LandscapeSegment::Edge::Box);
+        QCOMPARE(intervals[0][0].upperEdge, LandscapeSegment::Edge::Box);
+        QCOMPARE(intervals[0][0].lower, -1.0);
+        QCOMPARE(intervals[0][0].upper, 1.0);
+    }
+
+    // Too short a run leaves the neighbours of the stretch unvisited: not bounded, and it says so.
+    void unsampledEdgesAreMarked()
+    {
+        LandscapeSampler sampler(quadratic({ 0, 0 }, { 40.0, 40.0 }), { -1, -1 }, { 1, 1 });
+        LandscapeSettings s = quick();
+        s.sseCut = 1.0 + 4.0;
+        s.maxSteps = 200;
+        s.minSteps = 200;
+        sampler.setSettings(s);
+        const LandscapeResult r = sampler.Run({ 0, 0 });
+        const auto intervals = LandscapeIntervals(r, 3.0, { -1, -1 }, { 1, 1 });
+        QVERIFY(!intervals[0].empty());
+        QVERIFY(!intervals[0][0].Bounded());
+    }
+
+    // Two minima within the level are two stretches, one around each well.
+    void separateMinimaAreSeparateSegments()
+    {
+        LandscapeSampler sampler(doubleWell(30.0), { -1.8, -1 }, { 1.8, 1 });
+        LandscapeSettings s = quick();
+        s.sseCut = 36.0;
+        s.maxSteps = 200000;
+        s.patience = 150;
+        s.minHillFraction = 0.1;
+        s.bins = 60;
+        sampler.setSettings(s);
+        const LandscapeResult r = sampler.Run({ -1, 0 });
+        const auto intervals = LandscapeIntervals(r, 2.0, { -1.8, -1 }, { 1.8, 1 });
+        QCOMPARE(intervals[0].size(), size_t(2));
+        // 30 (x^2 - 1)^2 ~ 120 (x -+ 1)^2 = 2 at +-0.129 around each well
+        for (int w = 0; w < 2; ++w) {
+            const double centre = w ? 1.0 : -1.0;
+            QVERIFY2(std::abs(intervals[0][w].lower - (centre - 0.129)) < 0.06 && std::abs(intervals[0][w].upper - (centre + 0.129)) < 0.06,
+                qPrintable(QString("well %1: [%2, %3]").arg(w).arg(intervals[0][w].lower).arg(intervals[0][w].upper)));
+        }
+    }
+
     void naturalTemperature()
     {
         QCOMPARE(LandscapeSampler::NaturalTemperature(0.5, 13, 3), 0.1);

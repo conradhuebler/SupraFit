@@ -364,12 +364,16 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
 
     // profile: lowest SSE per bin of each variable
     result.profile.assign(d, std::vector<double>(s.bins, std::numeric_limits<double>::infinity()));
+    result.profileAt.assign(d, std::vector<double>(s.bins, std::numeric_limits<double>::quiet_NaN()));
     for (const auto& [key, cell] : cells) {
         uint64_t k = key;
         for (int i = 0; i < d; ++i) {
             const int b = int(k % uint64_t(s.bins));
             k /= uint64_t(s.bins);
-            result.profile[i][b] = std::min(result.profile[i][b], cell.sse);
+            if (cell.sse < result.profile[i][b]) {
+                result.profile[i][b] = cell.sse;
+                result.profileAt[i][b] = cell.x[i];
+            }
         }
     }
 
@@ -415,4 +419,65 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
             [](const LandscapeCell& a, const LandscapeCell& b) { return a.sse < b.sse; });
     }
     return result;
+}
+
+double LandscapeConfidenceLevel(double sseMin, int datapoints, int parameters, double fValue)
+{
+    const int dof = std::max(1, datapoints - parameters);
+    return sseMin * (fValue * double(parameters) / double(dof) + 1.0);
+}
+
+std::vector<std::vector<LandscapeSegment>> LandscapeIntervals(const LandscapeResult& result, double level,
+    const std::vector<double>& lower, const std::vector<double>& upper)
+{
+    using Edge = LandscapeSegment::Edge;
+    std::vector<std::vector<LandscapeSegment>> intervals(result.profile.size());
+
+    for (size_t i = 0; i < result.profile.size(); ++i) {
+        const std::vector<double>& p = result.profile[i];
+        const std::vector<double>& at = result.profileAt[i];
+        const int bins = int(p.size());
+        auto below = [&](int b) { return std::isfinite(p[b]) && p[b] <= level; };
+        // coordinate where the line through (a, pa) and (b, pb) meets the level
+        auto crossing = [&](int inside, int outside) {
+            const double x0 = at[inside], x1 = at[outside], y0 = p[inside], y1 = p[outside];
+            return y1 == y0 ? x0 : x0 + (level - y0) / (y1 - y0) * (x1 - x0);
+        };
+
+        for (int b = 0; b < bins; ++b) {
+            if (!below(b))
+                continue;
+            int first = b, last = b;
+            while (last + 1 < bins && below(last + 1))
+                ++last;
+            b = last;
+
+            LandscapeSegment seg;
+            seg.minimum = *std::min_element(p.begin() + first, p.begin() + last + 1);
+            const double binWidth = (upper[i] - lower[i]) / bins;
+
+            if (first == 0) {
+                seg.lowerEdge = Edge::Box;
+                seg.lower = lower[i];
+            } else if (std::isfinite(p[first - 1])) {
+                seg.lowerEdge = Edge::Crossing;
+                seg.lower = crossing(first, first - 1);
+            } else {
+                seg.lowerEdge = Edge::Unsampled;
+                seg.lower = std::min(at[first], lower[i] + first * binWidth);
+            }
+            if (last == bins - 1) {
+                seg.upperEdge = Edge::Box;
+                seg.upper = upper[i];
+            } else if (std::isfinite(p[last + 1])) {
+                seg.upperEdge = Edge::Crossing;
+                seg.upper = crossing(last, last + 1);
+            } else {
+                seg.upperEdge = Edge::Unsampled;
+                seg.upper = std::max(at[last], lower[i] + (last + 1) * binWidth);
+            }
+            intervals[i].push_back(seg);
+        }
+    }
+    return intervals;
 }
