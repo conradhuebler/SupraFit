@@ -320,6 +320,15 @@ SupraFitGui::SupraFitGui()
     m_close_all->setDefaultAction(close_action);
     connect(close_action, &QAction::triggered, this, &SupraFitGui::CloseProjects);
 
+    // Small icon and font keep the four labelled buttons side by side in the narrow left column
+    // (the button style itself comes from the toolbar_style setting, see ApplyToolBarStyle)
+    for (QToolButton* button : QList<QToolButton*>{ m_export_plain, m_export_suprafit, m_add_scatter, m_close_all }) {
+        button->setIconSize(QSize(24, 24));
+        QFont font = button->font();
+        font.setPointSizeF(font.pointSizeF() * 0.85);
+        button->setFont(font);
+    }
+
     FlowLayout* tools = new FlowLayout; // wraps in a narrow left column
     tools->addWidget(m_export_plain);
     tools->addWidget(m_export_suprafit);
