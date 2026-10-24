@@ -46,6 +46,7 @@
 #include "src/core/models/models.h"
 #include "src/global.h"
 
+#include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/chartwidget.h"
@@ -377,7 +378,9 @@ private slots:
         QVERIFY2(series2 && series2->isVisible(), "pinned data series not visible after a restart");
         QSettings().remove(QStringLiteral("model"));
     }
-    // WP1b: statistics and the model charts are pages of the list, not windows. Claude Generated.
+    // WP1b: the statistic tools are a page of the list; choosing it swaps the page list for the list of
+    // analyses with a "Back" entry, and the dialog is really shown (an explicitly hidden widget stays empty
+    // inside a layout). Claude Generated.
     void statisticsIsAPageOfTheList()
     {
         QSettings().remove(QStringLiteral("model"));
@@ -388,32 +391,62 @@ private slots:
         QTest::qWaitForWindowExposed(&widget);
         QCoreApplication::processEvents();
 
+        auto visibleListTitles = [&widget](QListWidget** found = nullptr) {
+            QStringList titles;
+            for (QListWidget* l : widget.findChildren<QListWidget*>())
+                if (l->isVisible() && l->count() > 0) {
+                    if (found)
+                        *found = l;
+                    for (int i = 0; i < l->count(); ++i)
+                        if (!l->item(i)->isHidden())
+                            titles << l->item(i)->text();
+                    break;
+                }
+            return titles;
+        };
         QListWidget* list = nullptr;
-        for (QListWidget* l : widget.findChildren<QListWidget*>())
-            if (l->isVisible()) {
-                list = l;
-                break;
-            }
-        QVERIFY2(list, "no visible page list");
-        QStringList titles;
-        for (int i = 0; i < list->count(); ++i)
-            if (!list->item(i)->isHidden())
-                titles << list->item(i)->text();
+        QStringList titles = visibleListTitles(&list);
         QVERIFY2(titles.contains(QStringLiteral("Data series")), qPrintable(titles.join(", ")));
         QVERIFY2(titles.contains(QStringLiteral("Statistics")), qPrintable(titles.join(", ")));
         QVERIFY2(!titles.contains(QStringLiteral("Charts")), "Charts is listed although the model has no chart");
 
-        // the Statistics button asks for the page instead of opening a window
+        // the Statistic button asks for the page instead of opening a window
         WindowShowCounter counter;
         qApp->installEventFilter(&counter);
         counter.allow(&widget);
         QMetaObject::invokeMethod(&widget, "ToggleStatisticDialog");
         QCoreApplication::processEvents();
         qApp->removeEventFilter(&counter);
-        QCOMPARE(list->currentItem()->text(), QStringLiteral("Statistics"));
         QVERIFY2(counter.shown().isEmpty(),
             qPrintable(QStringLiteral("shown as own window: %1").arg(counter.shown().join(", "))));
         QVERIFY(visibleTopLevels().size() == 1);
+
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QVERIFY2(dialog->isVisible(), "the statistic page is empty: the dialog is hidden");
+        QVERIFY(dialog->width() > 100 && dialog->height() > 100);
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty()) {
+            QDir().mkpath(renderDir);
+            widget.grab().save(QStringLiteral("%1/modelwidget_statistics_page.png").arg(renderDir));
+        }
+
+        titles = visibleListTitles(&list);
+        QVERIFY2(titles.size() >= 3, qPrintable(titles.join(", ")));
+        QVERIFY2(titles.first().contains(QStringLiteral("Back")), qPrintable(titles.join(", ")));
+        QVERIFY2(titles.contains(QStringLiteral("Monte Carlo")), qPrintable(titles.join(", ")));
+
+        // choosing an analysis shows it; "Back" returns to the page list
+        const int mc = titles.indexOf(QStringLiteral("Monte Carlo"));
+        list->setCurrentRow(mc);
+        emit list->itemClicked(list->item(mc));
+        QCoreApplication::processEvents();
+        list->setCurrentRow(0);
+        emit list->itemClicked(list->item(0));
+        QCoreApplication::processEvents();
+        titles = visibleListTitles();
+        QVERIFY2(titles.contains(QStringLiteral("Statistics")), qPrintable(titles.join(", ")));
+        QVERIFY(dialog->isVisible());
     }
 };
 

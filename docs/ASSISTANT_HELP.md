@@ -96,7 +96,7 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 
 ## 5. Statistics
 
-Model tab **Statistic** (one model: shows the page "Statistics") or Evaluation > **Statistics** (all checked models, window) opens "Statistic Tools":
+Model tab **Statistic** (one model: shows the page "Statistics"; the page list is replaced by the analyses, "← Back" returns) or Evaluation > **Statistics** (all checked models, window) opens "Statistic Tools":
 - **Cross Validation/Reduction**: Leave-One-Out / Leave-Two-Out / Leave-X-Out; buttons Cross Validation, Reduction Analysis.
 - **Monte Carlo**: "Number of MC Steps:" (2000), σ taken as "σ from fit", "SEy" (default), user input, or bootstrapping; "Use Original Data"; **Simulate**.
   Percentile confidence interval. Assumes the model is right and noise random; a misspecified or sparse data set gives wide or skewed intervals.

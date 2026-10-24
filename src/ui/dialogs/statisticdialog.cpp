@@ -43,6 +43,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QSpinBox>
+#include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
 
 #include "statisticdialog.h"
@@ -76,9 +77,23 @@ void StatisticDialog::setEmbedded(bool embedded)
     if (embedded) {
         setWindowFlags(Qt::Widget);
         setMinimumWidth(0);
+        m_tab_widget->tabBar()->hide(); // the pane lists the analyses
         m_hide->hide(); // there is nothing to hide: the pane's page list does the navigation
         m_hide_widget->hide(); // progress and Interrupt only while a job runs
     }
+}
+
+QStringList StatisticDialog::TabTitles() const
+{
+    QStringList titles;
+    for (int i = 0; i < m_tab_widget->count(); ++i)
+        titles << m_tab_widget->tabText(i);
+    return titles;
+}
+
+void StatisticDialog::setCurrentTab(int index)
+{
+    m_tab_widget->setCurrentIndex(index);
 }
 
 void StatisticDialog::reject()

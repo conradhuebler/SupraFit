@@ -550,7 +550,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // windows of their own. Both dialogs are used as plain widgets here. Claude Generated (WP1b).
     m_statistic_dialog->setEmbedded(true);
     connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() {
-        m_pages->setCurrentTitle(tr("Statistics"));
+        m_pages->setCurrentTitle(tr("Statistics"), true);
     });
     m_charts_dialogs = new ModalDialog(this);
     m_charts_dialogs->setEmbedded(true);
@@ -598,9 +598,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->UseDynamicParameterWidget())
         model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"));
 
-    if (!m_model->isSimulation())
-        model_tab->addPage(m_statistic_dialog, tr("Statistics"));
+    if (!m_model->isSimulation()) {
+        // the analyses of the statistic tools are listed in place of the page list while this page is shown
+        model_tab->addGroupPage(m_statistic_dialog, tr("Statistics"), m_statistic_dialog->TabTitles(),
+            [dialog = QPointer<StatisticDialog>(m_statistic_dialog)](int index) {
+                if (dialog)
+                    dialog->setCurrentTab(index);
+            });
+        m_statistic_dialog->show(); // hidden by its constructor; a layout does not show an explicitly hidden widget
+    }
     m_charts_page = model_tab->addPage(m_charts_dialogs, tr("Charts"));
+    m_charts_dialogs->show();
     model_tab->setPageHidden(m_charts_page, m_model->Charts().isEmpty());
 
     // Simulated data sets from this model (drag an entry onto the project list).

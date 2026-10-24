@@ -121,6 +121,9 @@ public:
      * Attention() asks the pane to show the page). Claude Generated. */
     void setEmbedded(bool embedded);
     inline bool isEmbedded() const { return m_embedded; }
+    /*! \brief Titles of the analyses (the tabs), and a way to show one: a pane lists them itself. */
+    QStringList TabTitles() const;
+    void setCurrentTab(int index);
 
 public slots:
     void MaximumSteps(int steps);
