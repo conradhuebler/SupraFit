@@ -21,6 +21,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTabWidget>
 
+#include "src/ui/guitools/windowhost.h"
 #include "modaldialog.h"
 
 ModalDialog::ModalDialog(QWidget* widget, const QString& str)
@@ -52,9 +53,7 @@ void ModalDialog::reject()
 
 void ModalDialog::Attention()
 {
-    show();
-    raise();
-    activateWindow();
+    WindowHost::Show(this, m_host_key, parentWidget());
 }
 
 void ModalDialog::setWidget(QWidget* widget, QString str)

@@ -490,7 +490,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, &MDHDockTitleBar::NewModel, this, &ModelDataHolder::NewModel);
     connect(m_TitleBarWidget, &MDHDockTitleBar::NewModelFromPreset, this, &ModelDataHolder::NewModelFromPreset);
 
-    connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::Attention);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);

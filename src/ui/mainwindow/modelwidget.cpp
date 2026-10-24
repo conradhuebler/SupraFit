@@ -45,6 +45,7 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/gripsplitter.h"
 #include "src/ui/guitools/sectionstack.h"
+#include "src/ui/guitools/windowhost.h"
 #include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
@@ -192,6 +193,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(this, &ModelWidget::ToggleSeries, m_charts.signal_wrapper.data(), &ChartWrapper::SetBlocked);
 
     m_dialogs = new ModalDialog(this);
+    m_dialogs->setHostKey(QStringLiteral("information"));
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_widget = new StatisticWidget(m_model, this);
@@ -1627,7 +1629,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 void ModelWidget::OpenAdvancedSearch()
 {
     if (!m_advancedsearch.isNull())
-        m_advancedsearch->show();
+        WindowHost::Show(m_advancedsearch.data(), QStringLiteral("scan"), this); // same place and size every time
 }
 
 void ModelWidget::ExportSimModel()

@@ -47,6 +47,7 @@
 #include <QtWidgets/QTabWidget>
 
 #include "src/ui/instance.h"
+#include "src/ui/guitools/windowhost.h"
 #include "statisticdialog.h"
 StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget* parent)
     : QDialog(parent)
@@ -111,9 +112,7 @@ void StatisticDialog::Attention()
         emit AttentionRequested();
         return;
     }
-    show();
-    raise();
-    activateWindow();
+    WindowHost::Show(this, QStringLiteral("statistics"), parentWidget());
 }
 
 void StatisticDialog::setVisible(bool visible)

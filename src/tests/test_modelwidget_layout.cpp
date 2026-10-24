@@ -62,10 +62,12 @@
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
+#include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/preparewidget.h"
 #include "src/ui/guitools/morelesstoggle.h"
+#include "src/ui/guitools/windowhost.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
@@ -967,6 +969,88 @@ private slots:
 
         Appearance::Apply(Appearance::Light);
         QVERIFY(!Appearance::IsDark());
+    }
+    // WP3: a dialog that stays a window opens centred on the main window the first time and where the user left
+    // it, at the size the user gave it, afterwards. Claude Generated.
+    void windowHostRemembersPlaceAndSize()
+    {
+        QSettings().remove(QStringLiteral("windows"));
+        QWidget anchor;
+        anchor.resize(500, 300);
+        anchor.move(100, 100);
+        anchor.show();
+        QTest::qWaitForWindowExposed(&anchor);
+
+        QDialog* first = new QDialog;
+        first->resize(300, 200);
+        WindowHost::Show(first, QStringLiteral("test_window"), &anchor);
+        QTest::qWaitForWindowExposed(first);
+        const QPoint centre = first->frameGeometry().center();
+        const QPoint anchorCentre = anchor.frameGeometry().center();
+        QVERIFY2((centre - anchorCentre).manhattanLength() < 40,
+            qPrintable(QStringLiteral("first opening is not centred on the main window: %1,%2 vs %3,%4").arg(centre.x()).arg(centre.y()).arg(anchorCentre.x()).arg(anchorCentre.y())));
+
+        first->move(30, 40);
+        first->resize(333, 222);
+        QCoreApplication::processEvents();
+        WindowHost::Show(first, QStringLiteral("test_window"), &anchor); // open already: brought to the front, not moved
+        QCOMPARE(first->size(), QSize(333, 222));
+        first->hide(); // closing keeps the place
+        delete first;
+
+        QDialog second;
+        second.resize(100, 100);
+        WindowHost::Show(&second, QStringLiteral("test_window"), &anchor);
+        QTest::qWaitForWindowExposed(&second);
+        QCOMPARE(second.size(), QSize(333, 222));
+        QCOMPARE(second.pos(), QPoint(30, 40));
+
+        // another kind of window has its own place
+        QDialog other;
+        other.resize(150, 120);
+        WindowHost::Show(&other, QStringLiteral("other_window"), &anchor);
+        QTest::qWaitForWindowExposed(&other);
+        QCOMPARE(other.size(), QSize(150, 120));
+        second.hide();
+        other.hide();
+        QSettings().remove(QStringLiteral("windows"));
+    }
+
+    // WP3: the scan window of a model opens the same way: it comes up on the first call, once, and on the second
+    // call it is where it was left. Claude Generated.
+    void scanWindowKeepsItsPlace()
+    {
+        QSettings().remove(QStringLiteral("windows"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(900, 600);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        AdvancedSearch* scan = widget.findChild<AdvancedSearch*>();
+        QVERIFY(scan);
+        const int windowsBefore = visibleTopLevels().size();
+        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
+        QCoreApplication::processEvents();
+        QVERIFY(scan->isVisible());
+        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
+        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch"); // again: still one window
+        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
+
+        // a size of the user's own, above what the window needs at least
+        const QSize wanted(scan->minimumSizeHint().width() + 80, scan->minimumSizeHint().height() + 60);
+        scan->move(25, 35);
+        scan->resize(wanted);
+        QCoreApplication::processEvents();
+        scan->hide();
+        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
+        QCoreApplication::processEvents();
+        QVERIFY2(scan->size() == wanted, qPrintable(QStringLiteral("size %1x%2 instead of %3x%4").arg(scan->width()).arg(scan->height()).arg(wanted.width()).arg(wanted.height())));
+        QVERIFY2(scan->pos() == QPoint(25, 35), qPrintable(QStringLiteral("position %1,%2 instead of 25,35 (frame %3,%4)")
+                                                              .arg(scan->pos().x()).arg(scan->pos().y()).arg(scan->frameGeometry().x()).arg(scan->frameGeometry().y())));
+        scan->hide();
+        QSettings().remove(QStringLiteral("windows"));
     }
 };
 

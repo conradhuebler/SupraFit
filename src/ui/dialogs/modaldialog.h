@@ -38,6 +38,8 @@ public:
 
     /*! \brief Use the dialog as a page of a model pane instead of a window; Escape then does not close it. Claude Generated. */
     void setEmbedded(bool embedded);
+    /*! \brief The key under which the window's place and size are remembered (see WindowHost). */
+    void setHostKey(const QString& key) { m_host_key = key; }
     void reject() override;
 
 public slots:
@@ -49,6 +51,7 @@ private:
     QTabWidget* m_tab;
     QStringList m_tabNames;
     bool m_embedded = false;
+    QString m_host_key = QStringLiteral("dialog");
 
 private slots:
     void RemoveTab(int i);

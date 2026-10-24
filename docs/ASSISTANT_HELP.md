@@ -22,6 +22,8 @@ Name labels exactly as written here. If something is not covered, say so instead
 - Centre: per project a **Workspace** dock (tab **Overview** = the data, one closable tab per model) and a **Charts** dock.
   The checkbox in a model tab ("Toggle Series in Charts") also decides which models **Optimise All**, **Analyse and Compare**
   and the project-level **Statistics** use.
+- Dialogs that stay windows (Scan, Detailed, a result opened in a window, the project-level Statistics) open centred on the main window the first time and
+  afterwards where you left them, at the size you gave them.
 - Charts dock, "Tools and Chart Settings" button: Animation, Chart Theme, Export Diagram (PNG), Plot Settings, Rescale Axis, Lock Scaling.
 
 ## 2. Getting data in

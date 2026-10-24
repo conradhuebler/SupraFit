@@ -45,6 +45,7 @@
 
 #include "src/ui/widgets/results/resultswidget.h"
 
+#include "src/ui/guitools/windowhost.h"
 #include "resultsdialog.h"
 
 ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent)
@@ -184,7 +185,7 @@ bool ResultsDialog::DetachEntry(SupraFit::Method type, int index)
         m_detached.remove(timestamp);
         window->deleteLater();
     });
-    window->show();
+    WindowHost::Show(window, QStringLiteral("result window"), this);
     return true;
 }
 
@@ -251,9 +252,7 @@ void ResultsDialog::Attention()
         emit AttentionRequested();
         return;
     }
-    show();
-    raise();
-    activateWindow();
+    WindowHost::Show(this, QStringLiteral("results"), parentWidget());
 }
 
 void ResultsDialog::ShowResult(SupraFit::Method type, int index)
