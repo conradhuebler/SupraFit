@@ -697,8 +697,12 @@ void ModelDataHolder::NewModelFromPreset(int index)
     QSharedPointer<AbstractModel> t = CreateModel(SupraFit::ScriptModel, m_data);
     if (!t)
         return;
+    // a preset written for fewer inputs than the data has columns is applied with the data's column count
+    const int columns = (m_data && m_data.toStrongRef() && m_data.toStrongRef()->IndependentModel())
+        ? m_data.toStrongRef()->IndependentModel()->columnCount()
+        : 0;
     QHash<QString, QJsonObject> elements;
-    for (const QJsonObject& descriptor : presets[index].block)
+    for (const QJsonObject& descriptor : ScriptModel::PresetBlockFor(presets[index], columns))
         elements[descriptor["name"].toString()] = descriptor;
     t->setModelDefinition(elements);
     t->DefineModel(QJsonObject());
@@ -731,8 +735,9 @@ void ModelDataHolder::NewScriptModelDialog(const QVector<QJsonObject>& presetBlo
         QVector<QPair<QString, QVector<QJsonObject>>> presets;
         for (const ScriptModelPreset& preset : ScriptModel::Presets()) {
             if (available <= 0 || preset.inputSize <= available)
-                presets << qMakePair(preset.name, preset.block);
+                presets << qMakePair(preset.name, ScriptModel::PresetBlockFor(preset, available));
         }
+        prepareWidget->setInputColumns(available); // the model takes exactly as many inputs as the data has columns
         prepareWidget->AddPresets(presets);
         // Makes the otherwise invisible Reactions <-> Equation coupling explicit.
         prepareWidget->AddScriptGuidance();

@@ -67,6 +67,7 @@ Only entries that fit the number of independent columns are shown.
   `A + B <=> AB`, `A + 2 B <=> AB2`, `2 A <=> A2`, `A + AB <=> A2B`. Arrows `<=> = <-> ->` work, coefficients are integers, `#` starts a comment.
   Components are numbered by first appearance and map to the independent columns in that order (count must match; flexible ITC always has 2).
   Each reaction gets its own global parameter **lg β(species)** (cumulative constant from the free components).
+- A model may use fewer of the data's independent columns than there are (Michaelis-Menten on a titration table uses X1 only): "Columns of Input" is at least the number of columns of the data and the equation just does not use the others.
 - **New Model > Custom (empty)** opens "Define Model": "Model Name", "Define model equation" (ExprTk, inputs `X1..Xn`, statements end with `;`,
   last statement is the value; `var K := pow(10, lgK);` makes a temporary), "Names of local parameters" (fitted per series); other symbols become
   global parameters. Status shows "The equation compiles" or an error; "Print x values as" sets the chart x (e.g. `X2/X1`). Presets under "Predefined models"

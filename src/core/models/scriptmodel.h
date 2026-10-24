@@ -220,6 +220,13 @@ public:
     /*! \brief Predefined scripted models offered as one-click presets in the GUI. Claude Generated. */
     static QVector<ScriptModelPreset> Presets();
 
+    /*! \brief The definition block of \p preset for a data set with \p columns independent columns. A scripted model
+     * takes exactly as many inputs as the data has columns (it refuses anything else); a preset written for fewer
+     * (Michaelis-Menten uses X1 only) is applied to wider data by raising its "InputSize" - the equation simply does
+     * not use the further columns. Without a known column count (\p columns <= 0) the block is returned unchanged.
+     * Claude Generated. */
+    static QVector<QJsonObject> PresetBlockFor(const ScriptModelPreset& preset, int columns);
+
     inline QString getExecute() const { return m_equation; }
     /*! \brief Whether a reaction system is active (equilibrium model). Claude Generated. */
     inline bool UsesSpeciation() const { return m_has_speciation; }
