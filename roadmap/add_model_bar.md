@@ -48,7 +48,7 @@ Claude Generated - work package / roadmap document
 - **WP-C Leiste (erledigt, `addmodelbar.{h,cpp}`, 3 Tests `addModelBar*`; Zahnrad: Betriebsart und Zähler zurücksetzen, die feste Liste bearbeiten kommt mit WP-D):** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), schwebend/andockbar, Offscreen-Test und Render hell/dunkel.
 - **WP-D Anpassen (erledigt: Dialog, Zahnrad, Rechtsklick-Menü der Knöpfe, `quickbardialog.{h,cpp}`, 2 Tests; "in die Schnellleiste" im Menü "Model" kommt mit WP-E; die Einstellungs-Registry nimmt die Werte nicht auf, sie liegen in `QSettings` `add_model_bar/*`):** Dialog und Rechtsklick-Menü für die feste Liste, Einstellung in der Registry (`add_model_bar_mode`, `add_model_bar_count`, `add_model_technique`).
 - **WP-E Menü "Model" (erledigt, abgewandelt: das Menü bleibt wie es ist, jeder Eintrag wird über `ModelCatalog::Identify` dem Katalog zugeordnet; Zählen und "Add to the quick bar" per Rechtsklick; das Menü selbst nicht aus dem Katalog gebaut, die Listen dort bleiben bis zur Menü-Umstellung doppelt):** bleibt der Zugriff auf alles.
-- **WP-F Hilfe:** `docs/ASSISTANT_HELP.md`, Tooltips mit voller Bezeichnung.
+- **WP-F Hilfe und Tooltips (erledigt):** Abschnitt 3 der Hilfe neu gefasst, Tooltips für Zahnrad, Betriebsarten, Anzahl, Up/Down, Technik.
 
 ## Risiken
 

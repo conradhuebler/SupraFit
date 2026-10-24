@@ -47,7 +47,7 @@ AddModelBar::AddModelBar(QWidget* parent)
 
     m_gear = new QToolButton;
     m_gear->setIcon(Icon("configure"));
-    m_gear->setToolTip(tr("What this bar shows"));
+    m_gear->setToolTip(tr("Choose which models this bar shows: the most used ones or a list of your own"));
     m_gear->setPopupMode(QToolButton::InstantPopup);
     m_gear->setAutoRaise(true);
     QMenu* gear = new QMenu(m_gear);
@@ -137,7 +137,7 @@ void AddModelBar::Rebuild()
         button->setText(entry.techniques.isEmpty() ? entry.title : tr("%1 \u00b7 %2").arg(entry.title, techniqueName));
         QString tip = entry.techniques.isEmpty() ? entry.tooltip : tr("%1 \u2014 %2\n%3").arg(entry.title, techniqueName, entry.tooltip);
         if (several)
-            tip += tr("\nThe arrow chooses another technique.");
+            tip += tr("\nThe arrow next to the button chooses another technique.");
         button->setToolTip(tip);
         connect(button, &QToolButton::clicked, this, [this, entry, technique]() { Add(entry, technique); });
         button->setContextMenuPolicy(Qt::CustomContextMenu);

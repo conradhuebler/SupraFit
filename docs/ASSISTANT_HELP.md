@@ -57,37 +57,13 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
 
 ## 3. Adding a model (the models in the middle of the toolbar and the menu **Model**)
 
-The toolbar has three zones: files and the menus Data, Model, Evaluation on the left, the models you add most in the middle, Log, Agent and the SupraFit menu on the right.
-Each model in the middle is a button for a stoichiometry (a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2, 2:1 / 1:1 / 1:2). A click adds the model for the technique that stoichiometry was used with
-most (NMR while it never was used; then the technique you used last, or the one you fixed); the arrow next to the button offers the other techniques that fit the data (NMR, UV/Vis, Fluorescence for
-two or more independent columns; ITC for one). Every button names its technique ("1:1 \u00b7 NMR"). A stoichiometry gives the fixed model of the technique (the four established ones) or its flexible
-`*_any` model with the reactions. Scripted presets and model files can be buttons too. The gear next to the models opens **Customise...** (dialog "Customise the quick bar": "The models I add most" with how many, or "A list I put together" - tick what the bar shows, order with Up/Down, from all
-stoichiometries, models, scripted models and model files you used - and the technique a never used model starts with), **Fix the bar as it is** (turns what it shows now into the list) and **Forget what was used**.
-Right-click on a button: Remove from the bar (list), Fix the bar as it is (most used), Customise... Models added from the **Model** menu count for the bar as well; right-click an entry there and choose **Add to the quick bar** (the bar then shows a list). The bar only shows models for a project on screen.
-
-The menu **Model** has everything. Only entries that fit the number of independent columns are shown.
-
-- **Experiment** submenus: *NMR Titration*, *UV/Vis Titration*, *Fluorescence Titration* (1:1, 2:1/1:1, 1:1/1:2, 2:1/1:1/1:2 and a flexible model),
-  *Calorimetry* (ITC 1:1, 2:1/1:1, 1:1/1:2, 2:1/1:1/1:2, flexible ITC, Blank Titration, Two Set Multiple Site, TIAN Thermokinetic),
-  *Kinetics* (Michaelis Menten, Monomolecular, Bimolecular, Flexible kinetic, TIAN, Decay Rates).
-- **Flexible (`*_any`) models** - submenu with **Define reactions...** and presets: 1:1; 2:1/1:1; 1:1/1:2; 2:1/1:1/1:2; each also "+ host dimerisation"
-  (adds `2 A <=> A2`); three components: Competitive (A+B, A+C), Ternary (A+B+C <=> ABC). Reaction syntax: one reaction per line, e.g.
-  `A + B <=> AB`, `A + 2 B <=> AB2`, `2 A <=> A2`, `A + AB <=> A2B`. Arrows `<=> = <-> ->` work, coefficients are integers, `#` starts a comment.
-  Components are numbered by first appearance and map to the independent columns in that order (count must match; flexible ITC always has 2).
-  Each reaction gets its own global parameter **lg β(species)** (cumulative constant from the free components).
-- A model may use fewer of the data's independent columns than there are (Michaelis-Menten on a titration table uses X1 only): "Columns of Input" is at least the number of columns of the data and the equation just does not use the others.
-- **New Model > Custom (empty)** opens "Define Model": "Model Name", "Define model equation" (ExprTk, inputs `X1..Xn`, statements end with `;`,
-  last statement is the value; `var K := pow(10, lgK);` makes a temporary), "Names of local parameters" (fitted per series); other symbols become
-  global parameters. Status shows "The equation compiles" or an error; "Print x values as" sets the chart x (e.g. `X2/X1`). Presets under "Predefined models"
-  (Michaelis-Menten, Linear, Hill, Exponential decay, Quadratic, Binding 1:1 signal / NMR shift, ...) are added directly.
-  Example 1:1 NMR: `var K := pow(10,lgK); var AB := 0.5*((X1+X2+1/K) - sqrt((X1+X2+1/K)*(X1+X2+1/K) - 4*X1*X2)); ((X1-AB)*dHost + AB*dAB)/X1`
-  with local names `dHost|dAB`.
-- **Load Model File...** adds a stored model definition (`.json`); a model's page "Model Definition" has the save icon. That page shows the compile verdict on top, then the equation with its help text below it, "Model Name" and "Print x values as"; the form uses one column on a narrow page. "..more.." at the end opens the "Scripting engine".
-- Which model? Start with 1:1. Add 1:2 or 2:1 only if residuals are systematic, then decide by AIC (section 7). Self-association: `2 A <=> A2` variants.
-
-Built-in parameter names: `lg K11` (A+B<=>AB), `lg K21` (stepwise AB+A->A2B), `lg K12` (stepwise AB+B->AB2); all binding constants are log10.
-Local parameters are per series: NMR δ A, δ AB, ... (ppm); UV/Fl ε per species; ITC δH', and for dilution m, n and fx (effective host-concentration factor).
-ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/L) and Temperature (default 298 K) as system parameters.
+The toolbar has three zones: files and the menus Data, Model, Evaluation on the left, the models you add most in the middle, Log, Agent and the SupraFit menu on the right. The models in the middle only show for a project on screen.
+Each model is a button for a stoichiometry; a fresh installation shows 1:1, 2:1 / 1:1, 1:1 / 1:2 and 2:1 / 1:1 / 1:2. A click adds the model for the technique that stoichiometry was used with most: NMR while it never was used, then the technique you used last or the one you chose in **Customise...**. Every button names its technique ("1:1 · NMR"). The arrow next to a button lists the other techniques that fit the data: NMR, UV/Vis and Fluorescence for two or more independent columns, Calorimetry for one.
+A stoichiometry stands for the fixed model of the technique (the four established ones) or for its flexible `*_any` model with the reactions preset. Scripted presets and model files can be buttons too.
+The gear next to the buttons switches between **Show the most used models** and **Show a fixed list**, and has **Customise...**, **Fix the bar as it is** (turns what the bar shows now into the fixed list) and **Forget what was used** (resets the counts).
+**Customise...** opens "Customise the quick bar": "The models I add most" with how many, or "A list I put together" (tick what the bar shows, order with Up and Down; the list holds all stoichiometries, models, scripted models and the model files you used), and the technique a model starts with that was never added.
+Right-click on a button: **Remove from the bar** (fixed list), **Fix the bar as it is** (most used), **Customise...**.
+Models added from the menu **Model** count for the bar as well. Right-click an entry there and choose **Add to the quick bar**; the bar then shows a fixed list.
 
 ## 4. Fitting (model tab)
 

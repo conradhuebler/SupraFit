@@ -58,6 +58,8 @@ QuickBarDialog::QuickBarDialog(const ModelUsage::Preferences& preferences, QWidg
     m_frequent->setObjectName(QStringLiteral("frequent"));
     m_fixed = new QRadioButton(tr("A list I put together"));
     m_fixed->setObjectName(QStringLiteral("fixed"));
+    m_frequent->setToolTip(tr("The bar shows the models you added most often and learns from what you add"));
+    m_fixed->setToolTip(tr("The bar shows exactly the ticked entries below, in that order"));
     (preferences.mode == ModelUsage::Mode::Fixed ? m_fixed : m_frequent)->setChecked(true);
 
     m_count = new QSpinBox;
@@ -65,6 +67,7 @@ QuickBarDialog::QuickBarDialog(const ModelUsage::Preferences& preferences, QWidg
     m_count->setRange(1, 20);
     m_count->setValue(preferences.count);
     m_count->setSuffix(tr(" models"));
+    m_count->setToolTip(tr("How many models the bar shows"));
 
     // everything that can be added; the checked ones, in the stored order, come first
     m_list = new QListWidget;
@@ -89,8 +92,10 @@ QuickBarDialog::QuickBarDialog(const ModelUsage::Preferences& preferences, QWidg
             addItem(entry, false);
 
     m_up = new QPushButton(tr("Up"));
+    m_up->setToolTip(tr("Move the selected entry towards the left of the bar"));
     m_up->setObjectName(QStringLiteral("up"));
     m_down = new QPushButton(tr("Down"));
+    m_down->setToolTip(tr("Move the selected entry towards the right of the bar"));
     m_down->setObjectName(QStringLiteral("down"));
     connect(m_up, &QPushButton::clicked, this, [this]() { Move(-1); });
     connect(m_down, &QPushButton::clicked, this, [this]() { Move(1); });
@@ -102,7 +107,7 @@ QuickBarDialog::QuickBarDialog(const ModelUsage::Preferences& preferences, QWidg
         m_technique->addItem(info.name, info.key);
     const int at = m_technique->findData(preferences.technique);
     m_technique->setCurrentIndex(at >= 0 ? at : 0);
-    m_technique->setToolTip(tr("What a click on a model uses as long as that model was not added with any technique."));
+    m_technique->setToolTip(tr("The technique a click on a model uses as long as you never added that model; afterwards it uses the technique you added it with most."));
 
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
