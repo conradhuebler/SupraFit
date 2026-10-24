@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: SSE-Landscape Sampling (Metadynamics-like) for Global Search and Confidence Intervals
 
-**Status:** WP-A, WP-B ADDED (`src/capabilities/landscapesampler.*`, machine-tested), C-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
+**Status:** WP-A, WP-B, WP-C ADDED (`src/capabilities/landscapesampler.*`, `landscapesearch.*`, machine-tested), C2-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
 
 ## Goal
 
@@ -77,7 +77,8 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
 |---|---|---|
 | A | Headless sampler core on a plain functor `f(θ)` (MC + Langevin, well-tempered bias, grid, wall, termination); no model dependency | analytic surfaces: double well (barrier known), banana valley, flat unbounded valley (must stop at `MaxSteps`/wall), profile of a quadratic = known ellipse |
 | B | Profile and F-threshold confidence region from visited points | quadratic surface: interval equals the analytic one; compare with constrained refit on a 1:1 model |
-| C | `AbstractSearchClass` subclass on a VarPro model (log K, `ProjectLinearParameters`), JSON in/out, method id, `StatisticTool` metrics | result vs. `WeakenedGridSearch` and Monte Carlo on one NMR 1:1 and one 1:1/1:2 data set |
+| C | `LandscapeSearch : AbstractSearchClass` on a VarPro model (log K, `ProjectLinearParameters`), JSON out, box from the fit, box expansion — ADDED | scan (1 constant) and exact 2D profile (2 constants) |
+| C2 | method id, `JobManager`, project JSON store, `StatisticTool` metrics, Langevin/`Walkers` in the CLI; polish of the minimum candidates with the minimiser; ends that stay `Unsampled` (neighbour bin behind the wall) | vs. `WeakenedGridSearch` and Monte Carlo |
 | D | UI page in Statistics (settings, progress, profile plots, surface for ≤2D), `docs/ASSISTANT_HELP.md` entry | offscreen dialog test |
 | E | Evaluation: number of SSE evaluations vs. profile by constrained refit and vs. MC; quote the worst case over several data sets (not one sample) | measurement document in `docs/` + index line |
 
@@ -87,3 +88,16 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
 - The bias surface is a marginal at finite T; only the sample profile is a profile. Do not label the surface a CI.
 - The honest benchmark is the cheap alternative (profile likelihood by warm-started constrained refit,
   multistart). If the sampler does not beat it on found minima or cost, it stays an expert option.
+
+## Findings (WP-C)
+
+- Isotropic Metropolis steps fail on the thin tilted valleys of correlated constants (acceptance 3 %, profile edges
+  unvisited); adaptive proposals (chain covariance, acceptance target) fix that (test `adaptiveProposalFollowsAThinValley`).
+- The extent of the level along one variable alone understates the profile extent of correlated constants, so the box
+  is doubled and the walk repeated while an interval reaches it (`MaxExpansions`); costs rounds, not accuracy.
+- NMR 1:1/1:2: with few points below one equivalent lg beta 1 is open to the top, and lg beta 2 stays open towards
+  "no second complex" even with good data. Sampler and an exact grid profile agree; the intervals say so with `Box` ends.
+- Cost for two constants about 7e5 SSE evaluations (15 s, 4 threads), not cheaper than a grid; the sampler is for three
+  or more variables and for finding other minima. Measure in WP-E.
+- Hill width is a fraction of the box; after a box expansion the hills are wide against a thin valley. Candidate
+  improvement: derive the hill width from the chain covariance as well.

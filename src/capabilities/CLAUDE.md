@@ -53,7 +53,10 @@ Core capabilities providing advanced analysis, search, and data generation funct
 - **landscapesampler.cpp/h**: Well-tempered, metadynamics-like walker on a plain function f(theta) in a box (SSE as energy)
   - Metropolis or Langevin (finite-difference gradient); wall at `sseCut`; stop by patience once the bias has converged
   - `LandscapeConfidenceLevel` / `LandscapeIntervals`: F-test level and confidence stretches from the profile (edges marked Crossing/Box/Unsampled; needs `sseCut` above the level)
+  - Metropolis proposals adapt to the chain covariance (`adaptive`); `LandscapeResult::Merge` joins walkers
   - Result: profile per variable, minimum candidates, free-energy estimate; no Qt/model dependency; plan: [roadmap/landscape_sampling.md](../../roadmap/landscape_sampling.md)
+
+- **landscapesearch.cpp/h**: `ModelLandscape` (SSE of a VarPro model over its enabled globals) and `LandscapeSearch` (parallel walkers on model clones, F-test intervals as JSON); not yet in `JobManager`/`SupraFit::Method`
 
 - **abstractsearchclass.cpp/h**: Base class for all search/analysis implementations
   - Common interface for parallel execution

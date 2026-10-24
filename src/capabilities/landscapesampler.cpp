@@ -292,6 +292,15 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
     if (langevin)
         sseGradient(x, sse, gradSSE);
 
+    // Adaptive Metropolis: proposal = scale * L z with L the Cholesky factor of 2.38^2/d times the chain covariance
+    const bool adapt = !langevin && s.adaptive;
+    const int adaptSteps = s.adaptSteps > 0 ? s.adaptSteps : s.minSteps;
+    std::vector<double> chainMean(d, 0.0), chainM2(size_t(d) * d, 0.0), L(size_t(d) * d, 0.0);
+    long chainN = 0, windowProposed = 0, windowAccepted = 0;
+    double scale = 1.0;
+    for (int i = 0; i < d; ++i)
+        L[size_t(i) * d + i] = s.stepSize * width[i];
+
     long proposed = 0, accepted = 0;
     int idle = 0;
     bool novelSinceHill = false;
@@ -313,11 +322,22 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
                 xp[i] = x[i] - 0.5 * s.stepSize * s.stepSize * width[i] * width[i] * g / s.temperature
                     + s.stepSize * width[i] * normal(rng);
             }
+        } else if (adapt) {
+            std::vector<double> z(d);
+            for (int i = 0; i < d; ++i)
+                z[i] = normal(rng);
+            for (int i = 0; i < d; ++i) {
+                double move = 0;
+                for (int j = 0; j <= i; ++j)
+                    move += L[size_t(i) * d + j] * z[j];
+                xp[i] = x[i] + scale * move;
+            }
         } else {
             for (int i = 0; i < d; ++i)
                 xp[i] = x[i] + s.stepSize * width[i] * normal(rng);
         }
         ++proposed;
+        ++windowProposed;
 
         bool inside = true;
         for (int i = 0; i < d; ++i)
@@ -337,10 +357,59 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
                     x = xp;
                     sse = sp;
                     ++accepted;
+                    ++windowAccepted;
                     novelSinceHill |= record(x, sse);
                     if (langevin)
                         sseGradient(x, sse, gradSSE);
                 }
+            }
+        }
+
+        if (adapt && step <= adaptSteps) {
+            // running mean and covariance of the chain (Welford), every step, stays included
+            ++chainN;
+            std::vector<double> delta(d);
+            for (int i = 0; i < d; ++i) {
+                delta[i] = x[i] - chainMean[i];
+                chainMean[i] += delta[i] / double(chainN);
+            }
+            for (int i = 0; i < d; ++i)
+                for (int j = 0; j <= i; ++j)
+                    chainM2[size_t(i) * d + j] += delta[i] * (x[j] - chainMean[j]);
+
+            if (step % 100 == 0 && chainN >= 20) {
+                // scale towards the target acceptance, shape from the chain
+                const double acceptance = windowProposed ? double(windowAccepted) / double(windowProposed) : 0.0;
+                scale = std::min(std::max(scale * std::exp(acceptance - s.targetAcceptance), 0.05), 20.0);
+                windowProposed = windowAccepted = 0;
+
+                std::vector<double> C(size_t(d) * d, 0.0), chol(size_t(d) * d, 0.0);
+                const double shape = 2.38 * 2.38 / double(d);
+                bool ok = true;
+                for (int i = 0; i < d; ++i)
+                    for (int j = 0; j <= i; ++j) {
+                        C[size_t(i) * d + j] = shape * chainM2[size_t(i) * d + j] / double(chainN - 1);
+                        if (i == j) { // keeps a stuck chain from collapsing the proposal
+                            const double floorStep = 1e-3 * s.stepSize * width[i];
+                            C[size_t(i) * d + j] += shape * floorStep * floorStep;
+                        }
+                    }
+                for (int i = 0; i < d && ok; ++i)
+                    for (int j = 0; j <= i; ++j) {
+                        double sum = C[size_t(i) * d + j];
+                        for (int k = 0; k < j; ++k)
+                            sum -= chol[size_t(i) * d + k] * chol[size_t(j) * d + k];
+                        if (i == j) {
+                            if (!(sum > 0)) {
+                                ok = false;
+                                break;
+                            }
+                            chol[size_t(i) * d + i] = std::sqrt(sum);
+                        } else
+                            chol[size_t(i) * d + j] = sum / chol[size_t(j) * d + j];
+                    }
+                if (ok)
+                    L = chol;
             }
         }
 
@@ -480,4 +549,30 @@ std::vector<std::vector<LandscapeSegment>> LandscapeIntervals(const LandscapeRes
         }
     }
     return intervals;
+}
+
+void LandscapeResult::Merge(const LandscapeResult& other)
+{
+    steps += other.steps;
+    evaluations += other.evaluations;
+    hills += other.hills;
+    maxAcceptedSSE = std::max(maxAcceptedSSE, other.maxAcceptedSSE);
+    cellsVisited += other.cellsVisited; // sum over walkers, cells seen by several are counted several times
+    if (other.bestSSE < bestSSE) {
+        bestSSE = other.bestSSE;
+        best = other.best;
+    }
+    if (profile.size() < other.profile.size()) {
+        profile = other.profile;
+        profileAt = other.profileAt;
+    } else {
+        for (size_t i = 0; i < other.profile.size(); ++i)
+            for (size_t b = 0; b < other.profile[i].size() && b < profile[i].size(); ++b)
+                if (other.profile[i][b] < profile[i][b]) {
+                    profile[i][b] = other.profile[i][b];
+                    profileAt[i][b] = other.profileAt[i][b];
+                }
+    }
+    minima.insert(minima.end(), other.minima.begin(), other.minima.end());
+    std::sort(minima.begin(), minima.end(), [](const LandscapeCell& a, const LandscapeCell& b) { return a.sse < b.sse; });
 }

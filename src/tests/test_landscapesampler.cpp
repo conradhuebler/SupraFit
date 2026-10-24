@@ -365,8 +365,8 @@ private slots:
         LandscapeSampler sampler(quadratic({ 0, 0 }, { 40.0, 40.0 }), { -1, -1 }, { 1, 1 });
         LandscapeSettings s = quick();
         s.sseCut = 1.0 + 4.0;
-        s.maxSteps = 200;
-        s.minSteps = 200;
+        s.maxSteps = 40;
+        s.minSteps = 40;
         sampler.setSettings(s);
         const LandscapeResult r = sampler.Run({ 0, 0 });
         const auto intervals = LandscapeIntervals(r, 3.0, { -1, -1 }, { 1, 1 });
@@ -394,6 +394,49 @@ private slots:
             QVERIFY2(std::abs(intervals[0][w].lower - (centre - 0.129)) < 0.06 && std::abs(intervals[0][w].upper - (centre + 0.129)) < 0.06,
                 qPrintable(QString("well %1: [%2, %3]").arg(w).arg(intervals[0][w].lower).arg(intervals[0][w].upper)));
         }
+    }
+
+    // A thin, tilted valley (curvatures 4e4 apart, 45 degrees): isotropic steps are almost always rejected, the
+    // adaptive proposal follows the valley. Both must give the profile; the adaptive one needs far fewer evaluations
+    // for the same coverage.
+    void adaptiveProposalFollowsAThinValley()
+    {
+        const double u = 1.0, w = 4e4; // curvature along (1,1)/sqrt2 and across it
+        const auto f = [=](const V& x) {
+            const double a = (x[0] + x[1]) / std::sqrt(2.0), b = (x[0] - x[1]) / std::sqrt(2.0);
+            return 1.0 + u * a * a + w * b * b;
+        };
+        const double level = 1.0 + 1.0; // |a| <= 1 along the valley: the profile of x is |x| <= sqrt(2) * ... see below
+        // x = (a + b)/sqrt2: profile over y is the minimum over b at fixed x: SSE = 1 + u a^2 + w b^2 with a + b = sqrt2 x
+        //   -> 1 + (u w / (u + w)) * 2 x^2, so the profile interval is |x| <= sqrt((level - 1) (u + w) / (2 u w))
+        const double expected = std::sqrt((level - 1.0) * (u + w) / (2.0 * u * w));
+
+        double evaluationsAdaptive = 0, evaluationsPlain = 0;
+        for (const bool adaptive : { true, false }) {
+            LandscapeSampler sampler(f, { -1, -1 }, { 1, 1 });
+            LandscapeSettings s = quick();
+            s.adaptive = adaptive;
+            s.sseCut = 3.0;
+            s.bins = 80;
+            s.maxSteps = 40000;
+            s.minSteps = 4000;
+            s.temperature = 0.5;
+            s.minHillFraction = 0.5;
+            sampler.setSettings(s);
+            const LandscapeResult r = sampler.Run({ 0, 0 });
+            const auto intervals = LandscapeIntervals(r, level, { -1, -1 }, { 1, 1 });
+            qInfo() << (adaptive ? "adaptive" : "isotropic") << "acceptance" << r.acceptance << "steps" << r.steps << "cells" << r.cellsVisited
+                    << "interval of x" << (intervals[0].empty() ? 0 : intervals[0][0].lower) << (intervals[0].empty() ? 0 : intervals[0][0].upper)
+                    << "expected +-" << expected;
+            (adaptive ? evaluationsAdaptive : evaluationsPlain) = double(r.cellsVisited);
+            if (adaptive) {
+                QVERIFY(r.acceptance > 0.1);
+                QCOMPARE(intervals[0].size(), size_t(1));
+                QVERIFY2(std::abs(intervals[0][0].lower + expected) < 0.05 && std::abs(intervals[0][0].upper - expected) < 0.05,
+                    qPrintable(QString("[%1, %2] expected +-%3").arg(intervals[0][0].lower).arg(intervals[0][0].upper).arg(expected)));
+            }
+        }
+        QVERIFY2(evaluationsAdaptive > evaluationsPlain, "the adaptive walker must cover more of the valley in the same steps");
     }
 
     void naturalTemperature()

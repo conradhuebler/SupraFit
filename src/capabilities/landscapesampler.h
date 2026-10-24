@@ -42,6 +42,12 @@ struct LandscapeSettings {
      *  for stepSize^2 width^2 k / (2 kT) < ~1 with k the largest curvature of SSE; too large a step shows as
      *  an acceptance near zero (all moves land behind the wall). */
     double stepSize = 0.05;
+    /*! Metropolis only: shape the proposal after the covariance of the chain (Adaptive Metropolis, Haario et al.)
+     *  and scale it to `targetAcceptance`, during the first `adaptSteps` steps (<= 0: `minSteps`). A thin tilted
+     *  valley, the usual shape of the SSE surface of correlated constants, is hopeless with isotropic steps. */
+    bool adaptive = true;
+    int adaptSteps = 0;
+    double targetAcceptance = 0.25;
     double gradientStep = 1e-3; ///< Langevin: finite-difference step of the SSE gradient
     bool centralGradient = false; ///< Langevin: central instead of forward differences (2N instead of N evaluations)
 
@@ -96,6 +102,10 @@ struct LandscapeResult {
     /*! Cells whose lowest SSE is below that of every visited neighbour, best first. Candidates only: polish
      *  them with the minimiser before reporting them as minima. Empty for more than 6 variables. */
     std::vector<LandscapeCell> minima;
+
+    /*! \brief Folds the result of another walker on the same landscape into this one (profile, best, counters,
+     *  minimum candidates; the stop reason stays that of this walker). Claude Generated. */
+    void Merge(const LandscapeResult& other);
 };
 
 /*! \brief Well-tempered metadynamics-like walker on a function f(theta) inside a box (Claude Generated).

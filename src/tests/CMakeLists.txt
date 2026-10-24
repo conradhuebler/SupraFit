@@ -242,6 +242,35 @@ set_tests_properties(LandscapeSamplerTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# Landscape search on fitted titration models (Claude Generated 2026)
+add_executable(test_landscapesearch
+    test_landscapesearch.cpp
+)
+
+target_link_libraries(test_landscapesearch
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_landscapesearch ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_landscapesearch pthread dl)
+endif()
+
+add_test(NAME LandscapeSearchTest COMMAND test_landscapesearch)
+
+set_tests_properties(LandscapeSearchTest PROPERTIES
+    TIMEOUT 600
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Reaction-equation parser test - arrow syntax -> components/stoichiometry (Claude Generated 2026)
 add_executable(test_reactionparser
     test_reactionparser.cpp

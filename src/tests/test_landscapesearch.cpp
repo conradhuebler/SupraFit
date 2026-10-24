@@ -1,0 +1,270 @@
+/*
+ * SupraFit - tests of the landscape search on fitted titration models
+ * Copyright (C) 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * WP-C of roadmap/landscape_sampling.md: the intervals of the sampler are checked against the profile of the same
+ * model computed on a plain grid (SSE(log beta) with the linear parameters projected out), which uses nothing of
+ * the sampler. Claude Generated.
+ */
+
+#include <cmath>
+#include <random>
+
+#include <QtTest/QtTest>
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
+
+#include <Eigen/Dense>
+
+#include "src/capabilities/landscapesearch.h"
+#include "src/core/minimizer.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
+#include "src/core/models/datatable.h"
+#include "src/core/models/models.h"
+#include "src/global.h"
+
+namespace {
+constexpr double Host = 1e-3;
+
+QJsonObject strOption(const QString& value)
+{
+    QJsonObject o;
+    o["value"] = value;
+    return o;
+}
+
+DataClass* makeData(int series, double ratio = 3.0, int points = 16)
+{
+    const int Points = points;
+    Eigen::MatrixXd indep(Points, 2), dep = Eigen::MatrixXd::Zero(Points, series);
+    for (int i = 0; i < Points; ++i) {
+        indep(i, 0) = Host;
+        indep(i, 1) = ratio * Host * i / (Points - 1);
+    }
+    DataClass* data = new DataClass();
+    data->setIndependentTable(new DataTable(indep));
+    data->setDataType(DataClassPrivate::Table);
+    data->setSimulateDependent(series);
+    data->setDependentTable(new DataTable(dep));
+    data->setDataBegin(0);
+    data->setDataEnd(Points);
+    return data;
+}
+
+/*! A fitted nmr_any model on noisy synthetic data (fixed seed). */
+QSharedPointer<AbstractModel> fittedModel(DataClass* data, const QString& reactions, const QList<double>& betas, int series, double noise,
+    const double* localScale = nullptr)
+{
+    static const double defaultScale[3] = { 9.0, 8.1, 7.2 };
+    if (!localScale)
+        localScale = defaultScale;
+    {
+        QSharedPointer<AbstractModel> truth = CreateModel(SupraFit::nmr_any, data);
+        QJsonObject def;
+        def["Reactions"] = strOption(reactions);
+        truth->DefineModel(def);
+        truth->InitialGuess();
+        for (int k = 0; k < betas.size(); ++k)
+            truth->setGlobalParameter(betas[k], k);
+        for (int s = 0; s < series; ++s)
+            for (int p = 0; p < truth->LocalParameterSize(); ++p)
+                truth->setLocalParameter(localScale[std::min(p, 2)] * (1.0 - 0.07 * s), p, s);
+        truth->Calculate();
+        Eigen::MatrixXd signal = truth->ModelTable()->Table();
+        std::mt19937 rng(12345);
+        std::normal_distribution<double> g(0.0, noise);
+        for (int r = 0; r < signal.rows(); ++r)
+            for (int c = 0; c < signal.cols(); ++c)
+                signal(r, c) += g(rng);
+        data->setDependentTable(new DataTable(signal));
+    }
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+    QJsonObject def;
+    def["Reactions"] = strOption(reactions);
+    model->DefineModel(def);
+    QJsonObject cfg = model->getOptimizerConfig();
+    cfg["FitSolver"] = QStringLiteral("VarPro");
+    model->setOptimizerConfig(cfg);
+    model->InitialGuess();
+    Minimizer m(false);
+    m.setModel(model);
+    m.Minimize();
+    model->Calculate();
+    return model;
+}
+}
+
+class TestLandscapeSearch : public QObject {
+    Q_OBJECT
+
+private slots:
+    void initTestCase() { qApp->setProperty("threads", 4); }
+
+    // One constant: the interval of the sampler is the one of a fine scan of SSE(log beta).
+    void oneConstantAgainstAScan()
+    {
+        DataClass* data = makeData(3);
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB"), { 3.0 }, 3, 0.05);
+
+        LandscapeSearch search;
+        search.setModel(model);
+        QJsonObject controller;
+        controller["Walkers"] = 2;
+        controller["Bins"] = 80;
+        search.setController(controller);
+        QVERIFY(search.Run());
+
+        // reference: scan of the same landscape
+        ModelLandscape landscape(model->Clone(false));
+        const std::vector<double> x0 = landscape.Start();
+        const double level = search.Level();
+        QVERIFY(landscape(x0) < level);
+        double lo = x0[0], hi = x0[0];
+        const double step = 1e-3;
+        for (double x = x0[0]; x > x0[0] - 6; x -= step) {
+            if (landscape({ x }) > level)
+                break;
+            lo = x;
+        }
+        for (double x = x0[0]; x < x0[0] + 6; x += step) {
+            if (landscape({ x }) > level)
+                break;
+            hi = x;
+        }
+
+        const auto& seg = search.Intervals()[0];
+        QCOMPARE(seg.size(), size_t(1));
+        const double bin = (search.Upper()[0] - search.Lower()[0]) / 80;
+        qInfo() << "sampler" << seg[0].lower << seg[0].upper << "scan" << lo << hi << "bin" << bin;
+        QVERIFY(seg[0].Bounded());
+        QVERIFY(std::abs(seg[0].lower - lo) < 0.5 * bin && std::abs(seg[0].upper - hi) < 0.5 * bin);
+
+        const QJsonObject result = search.Result()["0"].toObject();
+        QCOMPARE(result["variables"].toArray().size(), 1);
+        QVERIFY(result["variables"].toArray()[0].toObject()["segments"].toArray().size() == 1);
+        QVERIFY(result["evaluations"].toDouble() > 0);
+        delete data;
+    }
+
+    // Two correlated constants: profile intervals against the profile of a plain 2D grid.
+    void twoConstantsAgainstAGrid()
+    {
+        // 30 points up to 4 equivalents: enough points below one equivalent (the kink of the curve) and enough guest
+        // for the second constant. (16 points up to 12 equivalents leave lg beta 1 open to the top: only one or two
+        // points lie below one equivalent. Sampler and grid agree on that, but it is no test case.)
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 }; // species far apart in the signal
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+
+        LandscapeSearch search;
+        search.setModel(model);
+        QJsonObject controller;
+        controller["Walkers"] = 4;
+        controller["Bins"] = 60;
+        controller["MaxSteps"] = 40000;
+        search.setController(controller);
+        QVERIFY(search.Run());
+
+        ModelLandscape landscape(model->Clone(false));
+        const double level = search.Level();
+        const std::vector<double>& lo = search.Lower();
+        const std::vector<double>& hi = search.Upper();
+        // exact profile on a grid of the variable in question: coarse scan of the other variable, then golden section
+        // around the best coarse point (the valley of correlated constants is thinner than any sensible grid)
+        const int g = 90;
+        std::vector<double> profile[2] = { std::vector<double>(g, INFINITY), std::vector<double>(g, INFINITY) };
+        for (int v = 0; v < 2; ++v) {
+            const int o = 1 - v;
+            for (int a = 0; a < g; ++a) {
+                const double xv = lo[v] + (a + 0.5) * (hi[v] - lo[v]) / g;
+                auto f = [&](double xo) {
+                    std::vector<double> x(2);
+                    x[v] = xv;
+                    x[o] = xo;
+                    return landscape(x);
+                };
+                const int coarse = 200;
+                const double wo = (hi[o] - lo[o]) / coarse;
+                double best = INFINITY, at = lo[o];
+                for (int c = 0; c <= coarse; ++c) {
+                    const double s = f(lo[o] + c * wo);
+                    if (s < best) {
+                        best = s;
+                        at = lo[o] + c * wo;
+                    }
+                }
+                double l = std::max(lo[o], at - wo), r = std::min(hi[o], at + wo);
+                const double phi = 0.6180339887498949;
+                for (int it = 0; it < 40; ++it) {
+                    const double m1 = r - phi * (r - l), m2 = l + phi * (r - l);
+                    if (f(m1) < f(m2))
+                        r = m2;
+                    else
+                        l = m1;
+                }
+                profile[v][a] = std::min(best, f(0.5 * (l + r)));
+            }
+        }
+        int bounded = 0;
+        for (int v = 0; v < 2; ++v) {
+            const double w = (hi[v] - lo[v]) / g;
+            int first = -1, last = -1;
+            for (int i = 0; i < g; ++i)
+                if (profile[v][i] <= level) {
+                    if (first < 0)
+                        first = i;
+                    last = i;
+                }
+            QVERIFY(first >= 0);
+            const double refLower = lo[v] + first * w, refUpper = lo[v] + (last + 1) * w;
+            const auto& seg = search.Intervals()[v];
+            QVERIFY(!seg.empty());
+            const LandscapeSegment& lowSeg = seg.front();
+            const LandscapeSegment& highSeg = seg.back();
+            qInfo() << "variable" << v << "sampler" << lowSeg.lower << highSeg.upper << "grid" << refLower << refUpper
+                    << "cell of the grid" << w << "edges" << int(lowSeg.lowerEdge) << int(highSeg.upperEdge);
+            // an end the grid finds at the box has to be reported as the box (an interval cut by the box, not a
+            // crossing); every other end has to match the grid. The grid cell and the sampler's bin both count.
+            const double tolerance = 2.5 * w;
+            const bool gridLowAtBox = first == 0, gridHighAtBox = last == g - 1;
+            if (gridLowAtBox)
+                QCOMPARE(lowSeg.lowerEdge, LandscapeSegment::Edge::Box);
+            else
+                QVERIFY2(lowSeg.lowerEdge == LandscapeSegment::Edge::Crossing && std::abs(lowSeg.lower - refLower) < tolerance,
+                    qPrintable(QString("variable %1: lower end %2, grid %3").arg(v).arg(lowSeg.lower).arg(refLower)));
+            if (gridHighAtBox)
+                QCOMPARE(highSeg.upperEdge, LandscapeSegment::Edge::Box);
+            else
+                QVERIFY2(highSeg.upperEdge == LandscapeSegment::Edge::Crossing && std::abs(highSeg.upper - refUpper) < tolerance,
+                    qPrintable(QString("variable %1: upper end %2, grid %3").arg(v).arg(highSeg.upper).arg(refUpper)));
+            if (!gridLowAtBox && !gridHighAtBox)
+                ++bounded;
+        }
+        // lg beta 1 is bounded on both sides; lg beta 2 is open towards "no second complex" (the data do not rule it out)
+        QVERIFY(bounded >= 1);
+        delete data;
+    }
+
+    void modelWithoutVariableProjectionIsRefused()
+    {
+        LandscapeSearch none;
+        QVERIFY(!none.Run()); // no model
+    }
+};
+
+QTEST_MAIN(TestLandscapeSearch)
+#include "test_landscapesearch.moc"
