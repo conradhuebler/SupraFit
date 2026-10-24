@@ -50,7 +50,7 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
 - **Simulated data**: in New Table tick "Simulate Data with # Data Points" (columns by equation, default `X`; Store/Load Recipe), or in a fitted model's
   tab "Simulated Data" drag an entry (Ideal model, MC with model σfit, MC with model SEy, Bootstrap, MC with user σ) onto the project list.
 - **Excluding data**: in the data tab right-click a row of the signal table to toggle it; right-click in the independent table: Begin Data / End Data.
-  Per series: checkbox "Include" in the model's "Data series" box. Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
+  Per series: checkbox "Include" in the model's "Data series" box (or page). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
 - **Data** menu: **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
 
 ## 3. Adding a model (menu **Model**)
@@ -80,6 +80,8 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 
 ## 4. Fitting (model tab)
 
+- Below the fit controls a list on the left selects the page: Data series, Model Options, System Parameter, Model Definition (script models), Parameter Table (`*_any`), Simulated Data.
+  **Pin** in "Data series" keeps the series beside the pages (default); unpinned they are a page of the list. The last page and the pin are remembered per model type.
 - Checkboxes **Global Parameter** / **Local Parameter** choose what is optimised; the box next to a single value fixes that parameter.
   Status label: Converged / Not converged / Model corrupt. "Read Only" locks the local parameters.
 - **Fit** button runs the default "Tight". Its dropdown: Tight, Progress (shows optimisation history), Simplified MOC (fast F-test interval),

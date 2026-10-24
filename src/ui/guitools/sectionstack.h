@@ -22,6 +22,8 @@
 
 #include <functional>
 
+#include <QtCore/QStringList>
+
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
@@ -83,10 +85,37 @@ public:
 
         m_stack->addWidget(container);
         m_list->addItem(title);
-        m_list->setVisible(m_list->count() > 1);
+        m_titles << title;
+        updateListVisibility();
         if (m_list->currentRow() < 0)
             m_list->setCurrentRow(0);
         return m_list->count() - 1;
+    }
+
+    /*! \brief Index of the page called \p title, -1 if there is none. Pages are found by title because the
+     * set of pages differs between models, so a stored index would point at another page. Claude Generated. */
+    int indexOfTitle(const QString& title) const { return m_titles.indexOf(title); }
+    QString currentTitle() const { return m_titles.value(m_list->currentRow()); }
+
+    /*! \brief Select the page called \p title; falls back to the first visible page if it is missing or hidden. */
+    void setCurrentTitle(const QString& title)
+    {
+        const int index = indexOfTitle(title);
+        if (index >= 0 && !m_list->item(index)->isHidden())
+            m_list->setCurrentRow(index);
+        else
+            selectFirstVisible();
+    }
+
+    /*! \brief Take a page out of the list (its content may live elsewhere meanwhile) or put it back. */
+    void setPageHidden(int index, bool hidden)
+    {
+        if (index < 0 || index >= m_list->count())
+            return;
+        m_list->item(index)->setHidden(hidden);
+        if (hidden && m_list->currentRow() == index)
+            selectFirstVisible();
+        updateListVisibility();
     }
 
     int count() const { return m_list->count(); }
@@ -100,6 +129,26 @@ public:
     void onPageChanged(std::function<void(int)> callback) { m_changed = callback; }
 
 private:
+    void selectFirstVisible()
+    {
+        for (int i = 0; i < m_list->count(); ++i)
+            if (!m_list->item(i)->isHidden()) {
+                m_list->setCurrentRow(i);
+                return;
+            }
+    }
+
+    // the list is only worth its width when there is something to choose from
+    void updateListVisibility()
+    {
+        int visible = 0;
+        for (int i = 0; i < m_list->count(); ++i)
+            if (!m_list->item(i)->isHidden())
+                ++visible;
+        m_list->setVisible(visible > 1);
+    }
+
+    QStringList m_titles;
     QListWidget* m_list;
     QStackedWidget* m_stack;
     std::function<void(int)> m_changed;

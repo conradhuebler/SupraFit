@@ -25,13 +25,17 @@
  */
 
 #include <QtCore/QDir>
+#include <QtCore/QSettings>
+#include <QtCore/QTemporaryDir>
 #include <QtCore/QJsonObject>
 #include <QtCore/QThread>
 #include <QtGui/QPixmap>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLayout>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QToolButton>
 
 #include <Eigen/Dense>
 
@@ -320,12 +324,68 @@ private slots:
         // hidden items do not count for the minimum width either
         QCOMPARE(flow->minimumSize().width(), qMax(buttons[0]->minimumSizeHint().width(), buttons[4]->minimumSizeHint().width()));
     }
+    // WP1: the data series are a list page and can be pinned beside the pages; toggling must keep them
+    // visible, never show a window, and the choice must stick in the settings. Claude Generated.
+    void dataSeriesPinToggle()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        QGroupBox* series = widget.findChild<QGroupBox*>(QStringLiteral("series_box"));
+        QToolButton* pin = widget.findChild<QToolButton*>(QStringLiteral("series_pin"));
+        QVERIFY(series && pin);
+        QVERIFY2(pin->isChecked(), "pinned is the default (as before the list page existed)");
+        QVERIFY(series->isVisible());
+        const QWidget* pinnedParent = series->parentWidget();
+
+        WindowShowCounter counter;
+        qApp->installEventFilter(&counter);
+        counter.allow(&widget);
+        pin->click(); // unpin: the data series become a page of the list
+        QCoreApplication::processEvents();
+        QVERIFY(!pin->isChecked());
+        QVERIFY2(series->isVisible(), "data series vanished after unpinning");
+        QVERIFY(series->parentWidget() != pinnedParent);
+        QVERIFY(series->isFlat());
+
+        pin->click(); // pin again
+        QCoreApplication::processEvents();
+        qApp->removeEventFilter(&counter);
+        QVERIFY(pin->isChecked());
+        QVERIFY2(series->isVisible(), "data series vanished after pinning");
+        QCOMPARE(series->parentWidget(), pinnedParent);
+        QVERIFY2(counter.shown().isEmpty(),
+            qPrintable(QStringLiteral("shown as own window while toggling: %1").arg(counter.shown().join(", "))));
+
+        pin->click(); // leave it unpinned: it must come back unpinned
+        QCoreApplication::processEvents();
+        QVERIFY(QSettings().value(QStringLiteral("model/model %1 series pinned").arg(m_model->SFModel())).toBool() == false);
+        ModelWidget again(m_model, m_chart->addModel(m_model));
+        again.resize(1100, 700);
+        again.show();
+        QTest::qWaitForWindowExposed(&again);
+        QToolButton* pin2 = again.findChild<QToolButton*>(QStringLiteral("series_pin"));
+        QVERIFY(pin2 && !pin2->isChecked());
+        QGroupBox* series2 = again.findChild<QGroupBox*>(QStringLiteral("series_box"));
+        QVERIFY2(series2 && series2->isVisible(), "unpinned data series not visible after a restart");
+        QSettings().remove(QStringLiteral("model"));
+    }
 };
 
 int main(int argc, char** argv)
 {
     qputenv("QT_QPA_PLATFORM", "offscreen");
     QApplication app(argc, argv);
+    // never touch the real SupraFit settings: the pane stores page and pin choices there
+    QTemporaryDir settingsDir;
+    QSettings::setPath(QSettings::NativeFormat, QSettings::UserScope, settingsDir.path());
+    QCoreApplication::setOrganizationName(QStringLiteral("SupraFitLayoutTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("test_modelwidget_layout"));
     TestModelWidgetLayout test;
     return QTest::qExec(&test, argc, argv);
 }

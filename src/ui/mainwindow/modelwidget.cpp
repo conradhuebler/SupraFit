@@ -545,6 +545,38 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // on the left instead of a tab bar: no extra row of height. Claude Generated (UI redesign WP8).
     SectionStack* model_tab = new SectionStack;
 
+    // The data series are a page of the list as well. Pinned (default) they stay beside the pages as before;
+    // unpinned they use the whole page area, which suits many series. Built here, placed after the pages.
+    QGroupBox* series_box = nullptr;
+    QWidget* series_host = nullptr;
+    int series_page = -1;
+    QToolButton* series_pin = nullptr;
+    if (m_model->LocalParameterSize()) {
+        series_box = new QGroupBox(tr("Data series"));
+        series_box->setObjectName("series_box");
+        series_box->setToolTip(tr("Local parameters of each data series, their inclusion in the fit and their appearance in the charts"));
+        series_pin = new QToolButton;
+        series_pin->setObjectName("series_pin");
+        series_pin->setText(tr("Pin"));
+        series_pin->setCheckable(true);
+        series_pin->setAutoRaise(true);
+        series_pin->setToolTip(tr("Keep the data series beside the pages instead of listing them as a page"));
+        QVBoxLayout* series_layout = new QVBoxLayout;
+        series_layout->setContentsMargins(4, 4, 4, 4);
+        QHBoxLayout* series_top = new QHBoxLayout;
+        series_top->addStretch();
+        series_top->addWidget(series_pin);
+        series_layout->addLayout(series_top);
+        series_layout->addWidget(m_model_parameter);
+        series_box->setLayout(series_layout);
+
+        series_host = new QWidget;
+        QVBoxLayout* host_layout = new QVBoxLayout;
+        host_layout->setContentsMargins(0, 0, 0, 0);
+        series_host->setLayout(host_layout);
+        series_page = model_tab->addPage(series_host, tr("Data series"));
+    }
+
     if (m_model->OptionsCount())
         model_tab->addPage(m_model_options, tr("Model Options"));
     if (m_model->SystemParameterCount())
@@ -605,16 +637,36 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_series_splitter->setObjectName("modelSeriesSplitter");
     m_series_splitter->addWidget(model_tab);
     model_tab->setMinimumWidth(300);
-    if (m_model->LocalParameterSize()) {
-        QGroupBox* series_box = new QGroupBox(tr("Data series"));
-        series_box->setToolTip(tr("Local parameters of each data series, their inclusion in the fit and their appearance in the charts"));
-        QVBoxLayout* series_layout = new QVBoxLayout;
-        series_layout->setContentsMargins(4, 4, 4, 4);
-        series_layout->addWidget(m_model_parameter);
-        series_box->setLayout(series_layout);
-        m_series_splitter->addWidget(series_box);
-        m_series_splitter->setStretchFactor(0, 2);
-        m_series_splitter->setStretchFactor(1, 3);
+    // Where the data series sit: beside the pages (pinned) or as a page of the list. Reparenting happens
+    // before the first show; on a later toggle the widget is shown again explicitly after reparenting.
+    const QString pin_key = QStringLiteral("model/model %1 series pinned").arg(m_model->SFModel());
+    auto placeSeries = [this, model_tab, series_box, series_host, series_page](bool pinned, bool shown) {
+        if (pinned) {
+            m_series_splitter->addWidget(series_box);
+            m_series_splitter->setStretchFactor(0, 2);
+            m_series_splitter->setStretchFactor(1, 3);
+            series_box->setTitle(tr("Data series"));
+            series_box->setFlat(false);
+        } else {
+            series_host->layout()->addWidget(series_box);
+            series_box->setTitle(QString());
+            series_box->setFlat(true);
+        }
+        model_tab->setPageHidden(series_page, pinned);
+        if (shown)
+            series_box->show();
+    };
+    if (series_box) {
+        const bool pinned = QSettings().value(pin_key, true).toBool();
+        series_pin->setChecked(pinned);
+        placeSeries(pinned, false);
+        connect(series_pin, &QToolButton::toggled, this, [this, model_tab, series_page, placeSeries, pin_key](bool pinned) {
+            placeSeries(pinned, true);
+            if (!pinned)
+                model_tab->setCurrentIndex(series_page);
+            QSettings().setValue(pin_key, pinned);
+            SplitterResized();
+        });
     }
     m_splitter->addWidget(m_series_splitter);
 
@@ -726,13 +778,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
     m_series_splitter->restoreState(settings.value(SplitterSettingsKey() + " series").toByteArray());
-    model_tab->setCurrentIndex(settings.value(QString("model %1 page").arg(m_model->SFModel()), 0).toInt());
+    // pages are stored by title: the set of pages differs between models, an index would point elsewhere
+    model_tab->setCurrentTitle(settings.value(QString("model %1 page title").arg(m_model->SFModel())).toString());
     settings.endGroup();
     const int model_type = m_model->SFModel();
-    model_tab->onPageChanged([model_type](int index) {
+    model_tab->onPageChanged([model_type, model_tab](int) {
         QSettings settings;
         settings.beginGroup("model");
-        settings.setValue(QString("model %1 page").arg(model_type), index);
+        settings.setValue(QString("model %1 page title").arg(model_type), model_tab->currentTitle());
         settings.endGroup();
     });
     emit m_model->Recalculated();
