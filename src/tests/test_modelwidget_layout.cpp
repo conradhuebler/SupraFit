@@ -33,6 +33,7 @@
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLayout>
+#include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
@@ -52,6 +53,7 @@
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/flowlayout.h"
+#include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
@@ -554,6 +556,65 @@ private slots:
 
         m_model->RemoveStatistic(SupraFit::Method::MonteCarlo, 0);
         QSettings().remove(QStringLiteral("model"));
+    }
+    // WP5: the More/Less switch takes the height from its content (a wrapped FlowLayout included), lifts the
+    // height limit when open so a later wrap is never clipped, and remembers the choice. Claude Generated.
+    void moreLessToggleUsesItsContentHeight()
+    {
+        QSettings().remove(QStringLiteral("ui"));
+        auto makeTarget = []() {
+            QWidget* target = new QWidget;
+            FlowLayout* flow = new FlowLayout(target, 0, 6, 4);
+            for (int i = 0; i < 20; ++i)
+                flow->addWidget(new QPushButton(QStringLiteral("button %1").arg(i), target));
+            return target;
+        };
+
+        QWidget host;
+        QVBoxLayout* layout = new QVBoxLayout(&host);
+        QWidget* target = makeTarget();
+        MoreLessToggle* toggle = new MoreLessToggle(target, QStringLiteral("test_layout"));
+        layout->addWidget(toggle);
+        layout->addWidget(target);
+        layout->addStretch();
+        host.resize(300, 500);
+        host.show();
+        QTest::qWaitForWindowExposed(&host);
+        QCoreApplication::processEvents();
+
+        QVERIFY(!toggle->isExpanded());
+        QCOMPARE(toggle->text(), QStringLiteral("..more.."));
+        QCOMPARE(target->maximumHeight(), 0);
+
+        toggle->click();
+        QTRY_COMPARE(target->maximumHeight(), QWIDGETSIZE_MAX); // the animation ends by lifting the limit
+        QCOMPARE(toggle->text(), QStringLiteral("..less.."));
+        const FlowLayout* flow = dynamic_cast<FlowLayout*>(target->layout());
+        QVERIFY(flow);
+        const int needed = flow->heightForWidth(target->width());
+        QVERIFY2(needed > 60, "the buttons are expected to wrap at this width");
+        QVERIFY2(target->height() >= needed, qPrintable(QStringLiteral("clipped: %1 < %2").arg(target->height()).arg(needed)));
+        QVERIFY(QSettings().value(QStringLiteral("ui/more/test_layout")).toBool());
+
+        // narrowing the host later must not clip the now taller content
+        host.resize(160, 800);
+        QCoreApplication::processEvents();
+        QVERIFY(target->height() >= flow->heightForWidth(target->width()));
+
+        // a second switch with the same id starts open
+        QWidget host2;
+        QVBoxLayout* layout2 = new QVBoxLayout(&host2);
+        QWidget* target2 = makeTarget();
+        MoreLessToggle* toggle2 = new MoreLessToggle(target2, QStringLiteral("test_layout"));
+        layout2->addWidget(toggle2);
+        layout2->addWidget(target2);
+        QVERIFY(toggle2->isExpanded());
+        QCOMPARE(target2->maximumHeight(), QWIDGETSIZE_MAX);
+
+        toggle->click(); // and closes again
+        QTRY_COMPARE(target->maximumHeight(), 0);
+        QVERIFY(!QSettings().value(QStringLiteral("ui/more/test_layout")).toBool());
+        QSettings().remove(QStringLiteral("ui"));
     }
 };
 

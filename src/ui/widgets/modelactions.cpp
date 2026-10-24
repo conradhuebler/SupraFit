@@ -29,9 +29,10 @@
 
 #include "modelactions.h"
 
+#include "src/ui/guitools/morelesstoggle.h"
+
 ModelActions::ModelActions(QWidget* parent)
     : QWidget(parent)
-    , m_hidden(true)
 {
     setUi();
     resizeButtons();
@@ -58,8 +59,6 @@ void ModelActions::setUi()
     m_detailed = new PushButton(tr("Detailed"));
     m_restore = new PushButton(tr("Restore"));
     m_charts = new PushButton(tr("Charts"));
-    m_toggle = new QPushButton(tr("..more.."));
-    m_toggle->setFlat(true);
 
     // Both button rows wrap when the pane is narrow (FlowLayout). Claude Generated (layout).
     layout->setContentsMargins(0, 4, 0, 0);
@@ -71,10 +70,11 @@ void ModelActions::setUi()
     h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_restore);
     h_layout->addWidget(m_charts);
-    h_layout->addWidget(m_toggle);
-    layout->addLayout(h_layout);
-
     m_second = new QWidget;
+    MoreLessToggle* toggle = new MoreLessToggle(m_second, QStringLiteral("model_actions"));
+    toggle->setMaximumSize(50, 30);
+    h_layout->addWidget(toggle);
+    layout->addLayout(h_layout);
     layout->addWidget(m_second);
 
     h_layout = new FlowLayout;
@@ -86,7 +86,6 @@ void ModelActions::setUi()
     h_layout->addWidget(m_optim_config);
     m_second->setLayout(h_layout);
 
-    connect(m_toggle, SIGNAL(clicked()), this, SLOT(ToggleMore()));
     connect(m_new_guess, SIGNAL(clicked()), this, SIGNAL(NewGuess()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SIGNAL(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SIGNAL(OptimizerSettings()));
@@ -100,7 +99,6 @@ void ModelActions::setUi()
     connect(m_detailed, &PushButton::clicked, this, &ModelActions::Detailed);
     connect(m_charts, &PushButton::clicked, this, &ModelActions::Charts);
 
-    m_second->setMaximumHeight(0);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     setLayout(layout);
 }
@@ -119,10 +117,8 @@ void ModelActions::setSimulation(bool simulation)
 {
     m_minimize_single->setHidden(simulation);
     m_restore->setHidden(simulation);
-    m_minimize_single->setHidden(simulation);
     m_advanced->setHidden(simulation);
     m_optim_config->setHidden(simulation);
-    m_advanced->setHidden(simulation);
     m_statistics->setHidden(simulation);
     m_plots->setHidden(simulation);
 }
@@ -136,37 +132,12 @@ void ModelActions::resizeButtons()
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);
     m_advanced->setMaximumSize(50, 30);
-    m_toggle->setMaximumSize(50, 30);
     m_plots->setMaximumSize(110, 30);
     m_statistics->setMaximumSize(70, 30);
     m_save->setMaximumSize(70, 30);
     m_new_guess->setMaximumSize(80, 30);
     m_detailed->setMaximumSize(120, 30);
     m_restore->setMaximumSize(120, 30);
-}
-
-void ModelActions::ToggleMore()
-{
-
-    if (!m_hidden) {
-        QPropertyAnimation* animation = new QPropertyAnimation(m_second, "maximumHeight");
-        animation->setEasingCurve(QEasingCurve::InOutCubic);
-        animation->setDuration(200);
-        animation->setStartValue(100);
-        animation->setEndValue(0);
-        animation->start();
-        m_toggle->setText(tr("..more.."));
-        m_hidden = true;
-    } else {
-        QPropertyAnimation* animation = new QPropertyAnimation(m_second, "maximumHeight");
-        animation->setEasingCurve(QEasingCurve::InOutCubic);
-        animation->setDuration(200);
-        animation->setStartValue(0);
-        animation->setEndValue(100);
-        animation->start();
-        m_toggle->setText(tr("..less.."));
-        m_hidden = false;
-    }
 }
 
 #include "modelactions.moc"

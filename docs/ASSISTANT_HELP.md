@@ -89,7 +89,7 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
   Picking a solver refits at once.
 - The "..." button next to a global parameter ("Boundaries of <param> and root search"): Enable Lower/Upper Boundary (soft log-Fermi penalty, experimental;
   keep the start value inside), "Single Optimisation".
-- Action buttons (second row via "..more.."): **Scan** (grid over start values, "No of calculations to be done"), **Statistic**, **Results**, **Detailed**,
+- Action buttons (second row via "..more.."; the choice is remembered): **Scan** (grid over start values, "No of calculations to be done"), **Statistic**, **Results**, **Detailed**,
   **New Guess**, Restore, Charts (shows the page "Charts"), **Local Fits** (one model per series), Save, Load Constants, Save Constants, **Fit Settings** (iterations, tolerances, Fit Solver).
 - No convergence: try New Guess, other start values, the Scan, fix a weakly determined parameter, or exclude an outlier series/row.
 - **Evaluation** menu: **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
