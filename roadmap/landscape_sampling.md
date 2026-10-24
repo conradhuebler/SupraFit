@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: SSE-Landscape Sampling (Metadynamics-like) for Global Search and Confidence Intervals
 
-**Status:** WP-A, WP-B, WP-C, WP-C2 ADDED (`src/capabilities/landscapesampler.*`, `landscapesearch.*`, machine-tested), C3-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
+**Status:** WP-A, WP-B, WP-C, WP-C2, WP-E (measured) ADDED (`src/capabilities/landscapesampler.*`, `landscapesearch.*`, machine-tested), C3-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
 
 ## Goal
 
@@ -81,7 +81,7 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
 | C2 | method id 8, `ModelStatisticsStore`, project JSON save/restore, `JobManager`, polish of the minimum candidates with the minimiser — ADDED | job -> model -> export -> import |
 | C3 | `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (`tools_analysis`), `MLFeatureExtractor`; ends that stay `Unsampled` (neighbour bin behind the wall) | vs. `WeakenedGridSearch` and Monte Carlo |
 | D | UI page in Statistics (settings, progress, profile plots, surface for ≤2D), `docs/ASSISTANT_HELP.md` entry | offscreen dialog test |
-| E | Evaluation: number of SSE evaluations vs. profile by constrained refit and vs. MC; quote the worst case over several data sets (not one sample) | measurement document in `docs/` + index line |
+| E | MEASURED, see docs/landscape_sampling_measurement_2026-10-24.md - Evaluation: number of SSE evaluations vs. profile by constrained refit and vs. MC; quote the worst case over several data sets (not one sample) | measurement document in `docs/` + index line |
 
 ## Risks
 
@@ -102,3 +102,9 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
   or more variables and for finding other minima. Measure in WP-E.
 - Hill width is a fraction of the box; after a box expansion the hills are wide against a thin valley. Candidate
   improvement: derive the hill width from the chain covariance as well.
+
+## Decision after WP-E
+
+Measured 2026-10-24: the sampler gives the same intervals as the profile likelihood by constrained refit but costs 14-3000x
+the SSE evaluations; random multistart beats it for finding a deeper minimum on the one case available. Operator decision:
+build the GUI (WP-D) anyway. Proposal not yet decided: add the constrained-refit profile as the cheap interval method.

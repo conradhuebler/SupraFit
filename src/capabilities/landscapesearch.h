@@ -70,6 +70,10 @@ private:
  *  - `Walkers` (threads), `Seed` 1, `MaxSteps` 50000, `Sampler` "Metropolis" | "Langevin"
  *  - `Range` half width of the box in log10 units for every variable; 0 (default) takes `BoxFactor` (4) times
  *    the extent of the confidence level along that variable alone
+ *  - `MaxRange` upper limit of the half width of an automatic box in log10 units, 10: an interval that still reaches
+ *    the box then is open (edge kind Box) instead of growing the box without end
+ *  - `MaxRecentre` how often the walk restarts around a deeper minimum found by the walkers (the fit sat in a
+ *    wrong basin), 2; the level and the box belong to the new minimum
  *  - `MaxExpansions` how often the box of a variable is doubled and the walk repeated when an interval reaches
  *    the box (correlated constants have wider profile than section extents), 4
  *  - `CutFactor` wall at SSE_min + CutFactor (level - SSE_min), 3
@@ -88,6 +92,11 @@ public:
 
     bool Run() override;
 
+    /*! \brief Rich text of a stored result (`Result()["0"]`): intervals per parameter, other minima, effort. */
+    static QString Summary(const QJsonObject& result);
+    /*! \brief How often the walk was restarted around a deeper minimum the walkers found (0: the fit was the minimum). */
+    int Recentered() const { return m_recentered; }
+
     /*! \brief Merged outcome of the last run. */
     const LandscapeResult& Merged() const { return m_merged; }
     /*! \brief Intervals of the last run per variable. */
@@ -101,11 +110,14 @@ public slots:
 
 private:
     /*! One-sided distance from x0 along variable i until the landscape reaches `level` (doubling, then bisection). */
+    bool Execute();
     static double Extent(ModelLandscape& landscape, const std::vector<double>& x0, int i, double sign, double level, double limit);
 
     LandscapeResult m_merged;
     std::vector<std::vector<LandscapeSegment>> m_intervals;
     double m_level = 0;
     std::vector<double> m_lower, m_upper;
+    int m_recentered = 0;
+    double m_carryEvaluations = 0, m_startSSE = 0;
     std::atomic<bool> m_stop{ false };
 };

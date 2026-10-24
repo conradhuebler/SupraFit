@@ -1075,6 +1075,19 @@ if(UNIX)
     target_link_libraries(benchmark_varpro pthread dl)
 endif()
 
+# Landscape sampling vs profile likelihood vs Monte Carlo vs multistart (Claude Generated 2026) - manual measurement, not a ctest
+add_executable(benchmark_landscape benchmark_landscape.cpp)
+target_link_libraries(benchmark_landscape
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_landscape ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_landscape pthread dl)
+endif()
+
 # Dimer-model fit on clean 1:1/1:2 data: LevMar vs VarPro on the flat lg beta(A2) direction (Claude Generated 2026) - manual, not a ctest
 add_executable(benchmark_dimer_flat benchmark_dimer_flat.cpp)
 target_link_libraries(benchmark_dimer_flat

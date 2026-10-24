@@ -214,6 +214,14 @@ double LandscapeSearch::Extent(ModelLandscape& landscape, const std::vector<doub
 bool LandscapeSearch::Run()
 {
     m_stop = false;
+    m_recentered = 0;
+    m_carryEvaluations = 0;
+    m_startSSE = 0;
+    return Execute();
+}
+
+bool LandscapeSearch::Execute()
+{
     m_merged = LandscapeResult();
     m_intervals.clear();
     m_results.clear();
@@ -233,6 +241,8 @@ bool LandscapeSearch::Run()
     const int d = base.Dimension();
     const std::vector<double> x0 = base.Start();
     const double sseMin = base(x0);
+    if (m_recentered == 0)
+        m_startSSE = sseMin;
     const int points = m_model->Points(), parameters = m_model->Parameter();
     if (!(sseMin > 1e-300) || points <= parameters) {
         emit Message(tr("The landscape search needs a fit with residuals (SSE %1, %2 points, %3 parameters).").arg(sseMin).arg(points).arg(parameters));
@@ -247,11 +257,12 @@ bool LandscapeSearch::Run()
     // box: fixed half width, or a multiple of the extent of the level along each variable alone
     const double range = AccessCI(m_controller, "Range").toDouble(0.0);
     const double boxFactor = AccessCI(m_controller, "BoxFactor").toDouble(4.0);
+    const double maxRange = AccessCI(m_controller, "MaxRange").toDouble(10.0);
     std::vector<double> half(d, range);
     for (int i = 0; i < d; ++i)
         if (!(range > 0)) {
             const double ext = std::max(Extent(base, x0, i, +1.0, m_level, ExtentLimit), Extent(base, x0, i, -1.0, m_level, ExtentLimit));
-            half[i] = boxFactor * std::max(ext, 1e-3);
+            half[i] = std::min(maxRange, boxFactor * std::max(ext, 1e-3));
         }
     m_lower.assign(d, 0.0);
     m_upper.assign(d, 0.0);
@@ -323,13 +334,34 @@ bool LandscapeSearch::Run()
         if (!(range > 0) && rounds < maxExpansions && !m_stop)
             for (int i = 0; i < d; ++i)
                 for (const LandscapeSegment& seg : m_intervals[i])
-                    if (seg.lowerEdge == LandscapeSegment::Edge::Box || seg.upperEdge == LandscapeSegment::Edge::Box) {
-                        half[i] *= 2;
+                    if ((seg.lowerEdge == LandscapeSegment::Edge::Box || seg.upperEdge == LandscapeSegment::Edge::Box) && half[i] < maxRange - 1e-9) {
+                        half[i] = std::min(2 * half[i], maxRange);
                         expand = true;
                         break;
                     }
         if (!expand)
             break;
+    }
+
+    // The walkers found a deeper minimum than the fit: the level, the box and the intervals belong to that one.
+    const int maxRecentre = AccessCI(m_controller, "MaxRecentre").toInt(2);
+    if (!m_stop && m_recentered < maxRecentre && m_merged.bestSSE < sseMin * (1.0 - 1e-3) && !m_merged.best.empty()) {
+        QSharedPointer<AbstractModel> candidate = m_model->Clone(false);
+        for (int i = 0; i < d; ++i)
+            candidate->setGlobalParameter(m_merged.best[i], base.GlobalIndex(i));
+        Minimizer minimizer(false);
+        minimizer.setModel(candidate);
+        minimizer.Minimize();
+        ModelLandscape deeper(candidate);
+        const std::vector<double> xd = deeper.Start();
+        const double sd = deeper(xd);
+        if (std::isfinite(sd) && sd < sseMin * (1.0 - 1e-3)) {
+            ++m_recentered;
+            m_carryEvaluations += evaluations;
+            for (int i = 0; i < d; ++i)
+                m_model->setGlobalParameter(xd[i], base.GlobalIndex(i));
+            return Execute();
+        }
     }
 
     QJsonObject out;
@@ -340,7 +372,9 @@ bool LandscapeSearch::Run()
     out["datapoints"] = points;
     out["parameters"] = parameters;
     out["time_ms"] = double(QDateTime::currentMSecsSinceEpoch() - t0);
-    out["evaluations"] = evaluations;
+    out["evaluations"] = evaluations + m_carryEvaluations;
+    out["recentered"] = m_recentered;
+    out["start_sse"] = m_startSSE;
     out["rounds"] = rounds + 1;
     out["walkers"] = walkerInfo;
     out["best"] = ToArray(m_merged.best);
@@ -430,4 +464,67 @@ bool LandscapeSearch::Run()
     m_results << out;
     emit AnalyseFinished();
     return true;
+}
+
+QString LandscapeSearch::Summary(const QJsonObject& r)
+{
+    if (r.isEmpty() || !r.contains("variables"))
+        return QString();
+    auto number = [](double x) { return QString::number(x, 'g', 5); };
+    auto edgeNote = [](const QString& edge) {
+        if (edge == QLatin1String("box"))
+            return QObject::tr("reaches the border of the sampled range");
+        if (edge == QLatin1String("unsampled"))
+            return QObject::tr("not reached by the sampling");
+        return QString();
+    };
+
+    QString text;
+    text += QObject::tr("<p><b>Landscape sampling</b>: %1 % confidence, SSE of the fit %2, limit of the confidence region %3.</p>")
+                .arg(number(r["confidence"].toDouble()), number(r["sse_min"].toDouble()), number(r["level"].toDouble()));
+    if (r["recentered"].toInt() > 0)
+        text += QObject::tr("<p>The walkers found a deeper minimum than the fit (SSE %1 instead of %2); the intervals belong to it.</p>")
+                    .arg(number(r["sse_min"].toDouble()), number(r["start_sse"].toDouble()));
+
+    text += QStringLiteral("<table><tr><th>%1</th><th>%2</th><th>%3</th><th>%4</th><th></th></tr>")
+                .arg(QObject::tr("Parameter"), QObject::tr("Fit"), QObject::tr("Lower"), QObject::tr("Upper"));
+    for (const QJsonValue& value : r["variables"].toArray()) {
+        const QJsonObject v = value.toObject();
+        const QJsonArray segments = v["segments"].toArray();
+        if (segments.isEmpty()) {
+            text += QStringLiteral("<tr><td>%1</td><td>%2</td><td></td><td></td><td>%3</td></tr>")
+                        .arg(v["name"].toString(), number(v["value"].toDouble()), QObject::tr("no interval below the limit"));
+            continue;
+        }
+        for (const QJsonValue& s : segments) {
+            const QJsonObject seg = s.toObject();
+            const QStringList notes = { edgeNote(seg["lower_edge"].toString()), edgeNote(seg["upper_edge"].toString()) };
+            QString note;
+            if (!notes[0].isEmpty())
+                note += QObject::tr("lower: %1").arg(notes[0]);
+            if (!notes[1].isEmpty())
+                note += (note.isEmpty() ? QString() : QStringLiteral("; ")) + QObject::tr("upper: %1").arg(notes[1]);
+            text += QStringLiteral("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>")
+                        .arg(v["name"].toString(), number(v["value"].toDouble()), number(seg["lower"].toDouble()), number(seg["upper"].toDouble()), note);
+        }
+    }
+    text += QStringLiteral("</table>");
+
+    const QJsonArray minima = r["minima"].toArray();
+    if (minima.size() > 1) {
+        text += QObject::tr("<p>Minima found (refitted):</p><ul>");
+        for (const QJsonValue& m : minima) {
+            QStringList values;
+            for (const QJsonValue& x : m.toObject()["parameters"].toArray())
+                values << number(x.toDouble());
+            text += QStringLiteral("<li>SSE %1 at (%2)%3</li>")
+                        .arg(number(m.toObject()["sse"].toDouble()), values.join(QStringLiteral(", ")),
+                            m.toObject()["within_level"].toBool() ? QObject::tr(" - inside the confidence region") : QString());
+        }
+        text += QStringLiteral("</ul>");
+    }
+    text += QObject::tr("<p>%1 walkers, %2 evaluations of the SSE, %3 s.</p>")
+                .arg(r["walkers"].toArray().size())
+                .arg(number(r["evaluations"].toDouble()), number(r["time_ms"].toDouble() / 1000.0));
+    return text;
 }
