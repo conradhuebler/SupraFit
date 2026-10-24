@@ -5,13 +5,22 @@ Claude Generated - work package / roadmap document
 
 # Work Package: Add-Model-Leiste (NMR als Kern, Stöchiometrien gebündelt, nach Häufigkeit)
 
-**Status:** PLAN, Entscheidungen offen (nichts umgesetzt) · **Branch:** `feature/add-model-bar` (baut auf `feature/model-pane-navigation` auf)
+**Status:** PLAN, Entscheidungen des Operators eingearbeitet (nichts umgesetzt) · **Branch:** `feature/add-model-bar` (baut auf `feature/model-pane-navigation` auf)
 
 ## Ziel
 
 - Modelle hinzufügen ist die häufigste Handlung im Workspace und bekommt eine **eigene Leiste**, die man andocken/lösen kann (QToolBar, alle Seiten, Zustand wird mit dem Fenster gespeichert).
 - **Technik und Stöchiometrie getrennt:** eine einzige Stöchiometrie-Liste (1:1, 1:1 / 1:2, 2:1 / 1:1, 2:1 / 1:1 / 1:2, …) statt je Technik dieselbe Liste noch einmal; die **Technik** (NMR, UV/Vis, Fluoreszenz, Kalorimetrie) wird daneben gewählt. **Default: NMR**, änderbar durch Bedienung und gezielt per Einstellung.
 - Die Leiste füllt sich **nach Häufigkeit** der Aufrufe: die meistgenutzten Kombinationen stehen vorn.
+
+## Entscheidungen des Operators
+
+- Die Technik-Wahl besteht aus **Knöpfen nebeneinander** (NMR | UV/Vis | Fluoreszenz | Kalorimetrie), nicht aus einer Auswahlbox.
+- **Inhalt der Schnellleiste wählbar:** entweder die **x häufigsten** (Zähler, x einstellbar) oder eine **feste, vom Operator zusammengestellte** Liste; die Betriebsart ist eine Einstellung.
+- **Default-Technik = zuletzt benutzte**; das kann später verfeinert werden (iterieren).
+- Das Menü "Model" **bleibt** als Zugriff auf alles.
+- Auch die Stöchiometrien jenseits der vier festen (Host-Dimerisierung, Dreikomponenten) und **eigene Modelle** (Script-Presets, gespeicherte Modelldateien, ein eigenes Modell mit Gleichgewichtssystem) können in die Schnellleiste, **nach Häufigkeit oder nach Wunsch** (editierbar).
+- Der gemeldete Fehler "eigenes Modell mit Gleichgewichtssystem anlegen, dann eines heraussuchen" wurde gefunden und behoben (Presets und eigene Gleichungen für weniger Eingaben als die Daten Spalten haben, 2026-10-24, `ScriptModel::PresetBlockFor`, `PrepareWidget::setInputColumns`); der Bar-Umbau setzt darauf auf.
 
 ## Ist-Stand (Belege)
 
@@ -22,20 +31,22 @@ Claude Generated - work package / roadmap document
 
 ## Vorschlag
 
-- **Katalog** (rein, testbar): Technik x Stöchiometrie -> `{festes Modell | any-Modell + Preset}`; welche Techniken zu den Daten passen (Eingabespalten); Aufrufzähler in den Einstellungen.
-- **Leiste** `AddModelBar` (QToolBar, `objectName` für den gespeicherten Zustand): links die Technik (Knöpfe NMR | UV/Vis | Fluoreszenz | Kalorimetrie, nur die passenden), daneben die Stöchiometrien als Knöpfe (die meistgenutzten zuerst, Rest hinter "More…"), ganz rechts "New Model" (Script) und "Load Model File…". Ein Klick fügt das Modell der gewählten Technik hinzu.
-- **Default-Technik:** NMR; die Auswahl wandert mit der Bedienung (zuletzt benutzte Technik), eine Einstellung legt sie fest ("immer NMR" / "zuletzt benutzte").
+- **Katalog** (rein, testbar): Technik x Stöchiometrie -> `{festes Modell | any-Modell + Preset}`; welche Techniken zu den Daten passen (Eingabespalten); Eintragsarten: Stöchiometrie, Script-Preset, Modelldatei.
+- **Leiste** `AddModelBar` (QToolBar, `objectName` für den gespeicherten Zustand, alle Seiten, schwebend): links die Technik als Knöpfe nebeneinander (nur die passenden), dann die Schnellleiste mit Knöpfen für die gewählten Einträge, rechts "More..." (alles, wie das Menü) und "Edit...". Ein Klick fügt das Modell der gewählten Technik hinzu; ein Eintrag einer anderen Art (Script-Preset, Modelldatei) ist von der Technik unabhängig.
+- **Schnellleiste füllen:** Modus "häufigste" (Zähler je Eintrag, die x häufigsten, x einstellbar, stabile Reihenfolge bei Gleichstand, Zähler rücksetzbar) oder "feste Liste" (Rechtsklick "Anpassen" an jedem Eintrag in Menü/Leiste, Dialog "Schnellleiste anpassen": Einträge mit Häkchen und Reihenfolge).
+- **Default-Technik:** zuletzt benutzte; eine Einstellung kann sie auf "immer NMR" (oder eine andere) festlegen.
 
 ## Arbeitspakete (je ein baubarer Commit)
 
-- **WP-A Katalog:** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü.
-- **WP-B Zähler und Ranking:** Aufrufe je (Technik, Stöchiometrie) in `QSettings` (`model_usage/...`), Sortierung stabil (feste Reihenfolge bei Gleichstand), Zurücksetzen in den Einstellungen.
-- **WP-C Leiste:** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), Offscreen-Test und Render hell/dunkel.
-- **WP-D Menü "Model":** aus dem Katalog gebaut (keine doppelten Listen mehr), Einträge der Leiste und des Menüs bleiben gleich.
-- **WP-E Einstellung und Hilfe:** `add_model_technique`; `docs/ASSISTANT_HELP.md`; Tooltips mit voller Bezeichnung ("1:1 / 1:2 = ...").
+- **WP-A Katalog:** `mainwindow/modelcatalog.{h,cpp}`; Test: jede (Technik, Stöchiometrie) liefert ein Modell, das sich mit passenden Daten definieren lässt und dieselben Parameter hat wie der Weg über das Menü; Eintragsarten.
+- **WP-B Zähler und Auswahl:** Aufrufzähler je Eintrag (`QSettings` `model_usage/...`), Modus häufigste/feste Liste, x, Zurücksetzen; Test mit Zählern und stabiler Reihenfolge.
+- **WP-C Leiste:** `AddModelBar`, eingebunden in `SupraFitGui` (folgt dem Projekt auf dem Bildschirm wie die Workspace-Menüs, aus ohne Projekt), schwebend/andockbar, Offscreen-Test und Render hell/dunkel.
+- **WP-D Anpassen:** Dialog und Rechtsklick-Menü für die feste Liste, Einstellung in der Registry (`add_model_bar_mode`, `add_model_bar_count`, `add_model_technique`).
+- **WP-E Menü "Model":** aus dem Katalog gebaut (keine doppelten Listen), bleibt der Zugriff auf alles.
+- **WP-F Hilfe:** `docs/ASSISTANT_HELP.md`, Tooltips mit voller Bezeichnung.
 
 ## Risiken
 
 - Die festen Modelle und `*_any` unterscheiden sich in Parametern/Dialog (`DemandInput`): der Katalog muss pro Technik sagen, welcher Weg gilt; Fluoreszenz/UV-Vis haben nicht alle Presets.
-- Das offene Problem "Define Model" (`TODO.md`) betrifft denselben Weg: vor dem Umbau klären.
+- Die Behebung des Spaltenproblems steht noch unter Beobachtung (`TODO.md`): der Operator bestätigt, ob es der gemeldete Fehler war.
 - Eine verschiebbare Leiste braucht einen stabilen `objectName`, sonst geht der gespeicherte Zustand verloren.
