@@ -58,6 +58,9 @@
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/flowlayout.h"
+#include "src/core/models/titrations/nmr/nmr_any_Model.h"
+#include "src/ui/dialogs/genericwidgetdialog.h"
+#include "src/ui/widgets/preparewidget.h"
 #include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/chartwidget.h"
@@ -106,6 +109,27 @@ private:
         data->setIndependentTable(new DataTable(indep));
         data->setDataType(DataClassPrivate::Table);
         data->setSimulateDependent(series);
+        data->setDependentTable(new DataTable(dep));
+        data->setDataBegin(0);
+        data->setDataEnd(N);
+        return data;
+    }
+
+    // Titration data with `inputs` independent columns (host, guest, ...) and two series.
+    static DataClass* makeDataFor(int inputs)
+    {
+        Eigen::MatrixXd indep(N, qMax(1, inputs));
+        Eigen::MatrixXd dep(N, 2);
+        for (int i = 0; i < N; ++i) {
+            indep(i, 0) = 1e-3;
+            for (int c = 1; c < indep.cols(); ++c)
+                indep(i, c) = 3e-3 * i / (N - 1) * c;
+            dep(i, 0) = dep(i, 1) = 0.0;
+        }
+        DataClass* data = new DataClass();
+        data->setIndependentTable(new DataTable(indep));
+        data->setDataType(DataClassPrivate::Table);
+        data->setSimulateDependent(2);
         data->setDependentTable(new DataTable(dep));
         data->setDataBegin(0);
         data->setDataEnd(N);
@@ -685,6 +709,136 @@ private slots:
             QVERIFY2(engine->height() < 5 || !engine->isVisible() || engine->parentWidget()->height() < 5, "the scripting engine is not tucked away");
         }
         QSettings().remove(QStringLiteral("model"));
+    }
+    // The "Define Model" dialog: clicking ANY preset in its list must fill the form so that the model built from
+    // getObject() is the model the Add-model menu defines directly from that preset. Claude Generated.
+    void defineModelDialogPresetBuildsTheModel()
+    {
+        const QVector<ScriptModelPreset> presets = ScriptModel::Presets();
+        QStringList failures;
+        for (const ScriptModelPreset& preset : presets) {
+            // the reference: defined straight from the preset (the menu's way)
+            QSharedPointer<DataClass> refData(makeDataFor(preset.inputSize));
+            QSharedPointer<AbstractModel> reference = CreateModel(SupraFit::ScriptModel, refData.data());
+            QHash<QString, QJsonObject> direct;
+            for (const QJsonObject& d : preset.block)
+                direct[d["name"].toString()] = d;
+            reference->setModelDefinition(direct);
+            const bool referenceOk = reference->DefineModel(QJsonObject()) && reference->Complete();
+
+            // the dialog's way
+            QSharedPointer<DataClass> data(makeDataFor(preset.inputSize));
+            QSharedPointer<AbstractModel> model = CreateModel(SupraFit::ScriptModel, data.data());
+            PrepareWidget* form = new PrepareWidget(model->getInputBlock(), true);
+            QVector<QPair<QString, QVector<QJsonObject>>> offered;
+            for (const ScriptModelPreset& p : presets)
+                if (p.inputSize <= preset.inputSize)
+                    offered << qMakePair(p.name, p.block);
+            form->AddPresets(offered);
+            form->AddScriptGuidance();
+            form->setEquilibriumMode(false);
+            form->resize(1000, 700);
+            form->show();
+            QTest::qWaitForWindowExposed(form);
+            QCoreApplication::processEvents();
+
+            QListWidget* list = nullptr;
+            QListWidgetItem* entry = nullptr;
+            for (QListWidget* l : form->findChildren<QListWidget*>())
+                for (int i = 0; i < l->count(); ++i)
+                    if (l->item(i)->text() == preset.name) {
+                        list = l;
+                        entry = l->item(i);
+                    }
+            if (!entry) {
+                failures << preset.name + QStringLiteral(": not offered");
+                delete form;
+                continue;
+            }
+            list->setCurrentItem(entry);
+            emit list->itemClicked(entry);
+            QCoreApplication::processEvents();
+
+            model->setModelDefinition(form->getObject());
+            const bool defined = model->DefineModel(QJsonObject());
+            const bool complete = defined && model->Complete();
+            if (referenceOk && !complete)
+                failures << QStringLiteral("%1: direct ok, dialog %2").arg(preset.name, defined ? QStringLiteral("incomplete") : QStringLiteral("DefineModel failed"));
+            else if (referenceOk && (model->GlobalParameterSize() != reference->GlobalParameterSize()
+                         || model->LocalParameterSize() != reference->LocalParameterSize()
+                         || model->InputParameterSize() != reference->InputParameterSize()))
+                failures << QStringLiteral("%1: parameters differ (global %2/%3, local %4/%5, input %6/%7)")
+                                .arg(preset.name)
+                                .arg(model->GlobalParameterSize()).arg(reference->GlobalParameterSize())
+                                .arg(model->LocalParameterSize()).arg(reference->LocalParameterSize())
+                                .arg(model->InputParameterSize()).arg(reference->InputParameterSize());
+            delete form;
+        }
+        QVERIFY2(failures.isEmpty(), qPrintable(failures.join("\n")));
+    }
+    // The *_any titration models ask for their reaction system in the "Define Model" dialog when they are added
+    // without a preset. What that dialog hands back (getObject()) must define the same model as the menu
+    // does for a preset (only the Reactions element). Claude Generated.
+    void anyModelDialogBuildsTheModel()
+    {
+        const QString reactions = QStringLiteral("A + B <=> AB");
+
+        QSharedPointer<DataClass> refData(makeDataFor(2));
+        QSharedPointer<AbstractModel> reference = CreateModel(SupraFit::nmr_any, refData.data());
+        QVERIFY(reference && reference->DemandInput());
+        QJsonObject direct;
+        direct["name"] = QStringLiteral("Reactions");
+        direct["type"] = 6;
+        direct["value"] = reactions;
+        reference->setModelDefinition(QHash<QString, QJsonObject>{ { QStringLiteral("Reactions"), direct } });
+        QVERIFY2(reference->DefineModel(QJsonObject()), "the menu's way does not define the model");
+        QVERIFY(reference->Complete());
+
+        QSharedPointer<DataClass> data(makeDataFor(2));
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data.data());
+        PrepareWidget* form = new PrepareWidget(model->getInputBlock(), true);
+        // hosted like ModelDataHolder::AddModel does it, at the dialog's own size
+        GenericWidgetDialog dialog(QStringLiteral("Define Model"), form);
+        dialog.show();
+        QTest::qWaitForWindowExposed(&dialog);
+        QCoreApplication::processEvents();
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            dialog.grab().save(QStringLiteral("%1/define_model_dialog_any.png").arg(renderDir));
+
+        PrepareBox* box = nullptr;
+        QStringList names;
+        for (PrepareBox* b : form->findChildren<PrepareBox*>()) {
+            names << b->Name();
+            if (b->Name() == QLatin1String("Reactions"))
+                box = b;
+        }
+        QVERIFY2(box, qPrintable(QStringLiteral("no Reactions field in the dialog, fields: %1").arg(names.join(", "))));
+        QVERIFY2(box->isVisible(), "the reaction editor is not shown");
+        // choose "1:1" in the preset list of the reaction editor, like the user does
+        QListWidgetItem* preset = nullptr;
+        QListWidget* presetList = nullptr;
+        for (QListWidget* l : box->findChildren<QListWidget*>())
+            for (int i = 0; i < l->count(); ++i)
+                if (l->item(i)->text() == QStringLiteral("1:1")) {
+                    presetList = l;
+                    preset = l->item(i);
+                }
+        QVERIFY2(preset, "the 1:1 preset is not offered in the dialog");
+        presetList->setCurrentItem(preset);
+        emit presetList->itemClicked(preset);
+        QCoreApplication::processEvents();
+
+        const QHash<QString, QJsonObject> elements = form->getObject();
+        QVERIFY2(elements.contains(QStringLiteral("Reactions")), "the dialog returns no reaction system");
+        QVERIFY2(!elements.value(QStringLiteral("Reactions"))["value"].toString().trimmed().isEmpty(), "the preset did not reach the form's value");
+        qInfo("reactions from the preset: %s", qPrintable(elements.value(QStringLiteral("Reactions"))["value"].toString()));
+        model->setModelDefinition(elements);
+        QVERIFY2(model->DefineModel(QJsonObject()), "the dialog's definition does not define the model");
+        QVERIFY2(model->Complete(), "the dialog's model is incomplete");
+        QCOMPARE(model->GlobalParameterSize(), reference->GlobalParameterSize());
+        QCOMPARE(model->LocalParameterSize(), reference->LocalParameterSize());
+        QCOMPARE(model->InputParameterSize(), reference->InputParameterSize());
     }
 };
 
