@@ -22,7 +22,7 @@ Name labels exactly as written here. If something is not covered, say so instead
 - Centre: per project a **Workspace** dock (tab **Overview** = the data, one closable tab per model) and a **Charts** dock.
   The checkbox in a model tab ("Toggle Series in Charts") also decides which models **Optimise All**, **Analyse and Compare**
   and the project-level **Statistics** use.
-- Dialogs that stay windows (Scan, Detailed, a result opened in a window, the project-level Statistics) open centred on the main window the first time and
+- Dialogs that stay windows (Scan, a result opened in a window, the project-level Statistics) open centred on the main window the first time and
   afterwards where you left them, at the size you gave them.
 - Charts dock, "Tools and Chart Settings" button: Animation, Chart Theme, Export Diagram (PNG), Plot Settings, Rescale Axis, Lock Scaling.
 
@@ -82,18 +82,18 @@ ITC needs Cell Volume (µL), Cell concentration and Syringe concentration (mmol/
 
 ## 4. Fitting (model tab)
 
-- Below the fit controls a list on the left selects the page: Data series, Model Options, System Parameter, Model Definition (script models), Parameter Table (`*_any`), Statistics, Charts (the model's own charts, listed once it has one), Simulated Data. Entries with a ">" (Statistics, Charts) replace the list by their own list with "← Back"; Charts has one entry per chart (right-click: Close chart).
+- Below the fit controls a list on the left selects the page: Data series, Model Options, System Parameter, Model Definition (script models), Parameter Table (`*_any`), Statistics, Charts (the model's own charts, listed once it has one), Detailed, Simulated Data. Entries with a ">" (Statistics, Charts) replace the list by their own list with "← Back"; Charts has one entry per chart (right-click: Close chart).
   **Pin** in "Data series" keeps the series beside the pages; by default they are a page of the list. The last page and the pin are remembered per model type.
 - Checkboxes **Global Parameter** / **Local Parameter** choose what is optimised; the box next to a single value fixes that parameter.
   Status label: Converged / Not converged / Model corrupt. "Read Only" locks the local parameters.
 - **Fit** button runs the default "Tight". Its dropdown: Tight, Progress (shows optimisation history), Simplified MOC (fast F-test interval),
-  **Global Search...** (the Scan: grid over start values, "No of calculations to be done"; opens the Scan window),
+  **Global Search...** (the Scan: grid over start values, "No of calculations to be done"; opens the Scan window), **Local Fits** (one model per series),
   LevMar (classic) / VarPro (projection; only nmr_any/uvvis_any), submenu "Speciation solver" (LevMar / Newton default, BFGS legacy; `*_any` models).
   Picking a solver refits at once.
 - The "..." button next to a global parameter ("Boundaries of <param> and root search"): Enable Lower/Upper Boundary (soft log-Fermi penalty, experimental;
   keep the start value inside), "Single Optimisation".
-- Action buttons: **Detailed**, **New Guess**, Restore; second row via "..more.." (the choice is remembered): **Local Fits** (one model per series), Save, Load Constants, Save Constants,
-  **Fit Settings** (iterations, tolerances, Fit Solver). Statistics, results and charts are not buttons: they are the pages "Statistics" and "Charts" of the page list.
+- Action buttons: **New Guess**, Restore, Save, Load Constants, Save Constants, **Fit Settings** (iterations, tolerances, Fit Solver).
+  Statistics, results, charts and the detailed data (input data, model, parameters and statistics as text) are not buttons: they are the pages "Statistics", "Charts" and "Detailed" of the page list.
 - No convergence: try New Guess, other start values, the Global Search, fix a weakly determined parameter, or exclude an outlier series/row.
 - **Evaluation** menu: **Optimise All** (checked models), **Statistics**, **Analyse and Compare**, Remove All Models.
 

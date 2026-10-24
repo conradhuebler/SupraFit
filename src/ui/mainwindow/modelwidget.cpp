@@ -192,9 +192,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(this, &ModelWidget::ToggleSeries, m_charts.error_wrapper.data(), &ChartWrapper::SetBlocked);
     connect(this, &ModelWidget::ToggleSeries, m_charts.signal_wrapper.data(), &ChartWrapper::SetBlocked);
 
-    m_dialogs = new ModalDialog(this);
-    m_dialogs->setHostKey(QStringLiteral("information"));
-    m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_widget = new StatisticWidget(m_model, this);
 
@@ -364,11 +361,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     global_search->setToolTip(tr("Scan the parameter space from many start values (opens the Scan window)"));
     connect(global_search, &QAction::triggered, this, &ModelWidget::OpenAdvancedSearch);
 
+    QAction* local_fits = new QAction(tr("Local Fits"), this);
+    local_fits->setToolTip(tr("Fit every data series on its own (one model per series)"));
+    local_fits->setEnabled(m_model->SupportSeries());
+    connect(local_fits, &QAction::triggered, this, &ModelWidget::LocalMinimize);
+
     QMenu* menu = new QMenu(m_minimize_all);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
     menu->addAction(global_search);
+    menu->addAction(local_fits);
     menu->addSeparator();
     menu->addAction(solver_levmar);
     menu->addAction(solver_varpro);
@@ -680,6 +683,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_charts_dialogs->show();
     model_tab->setPageHidden(m_charts_page, m_model->Charts().isEmpty());
 
+    // The detailed data (input data, model, parameters and statistics as text) is a page like the others; it is
+    // written when the page is chosen and follows a recalculation while it is shown.
+    m_detailed_text = new TextWidget;
+    m_detailed_timer = new QTimer(this);
+    m_detailed_timer->setSingleShot(true);
+    connect(m_detailed_timer, &QTimer::timeout, this, [this]() { RefreshDetailed(false); });
+    connect(m_model.data(), &AbstractModel::Recalculated, this, [this]() {
+        if (m_pages && m_pages->currentTitle() == tr("Detailed"))
+            m_detailed_timer->start(200); // one refresh for a series of recalculations
+    });
+    model_tab->addPage(m_detailed_text, tr("Detailed"), nullptr, Icon("help-about"));
+
     // Simulated data sets from this model (drag an entry onto the project list).
     {
         QWidget* page = new QWidget;
@@ -706,14 +721,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_actions->setPageNavigation(true); // Statistics, Results and Charts are pages of the list, the global search is in the Fit menu
 
     connect(m_actions, &ModelActions::NewGuess, this, &ModelWidget::NewGuess);
-    connect(m_actions, &ModelActions::LocalMinimize, this, &ModelWidget::LocalMinimize);
     connect(m_actions, &ModelActions::OptimizerSettings, this, &ModelWidget::OptimizerSettings);
     connect(m_actions, &ModelActions::ImportConstants, this, &ModelWidget::ImportConstants);
     connect(m_actions, &ModelActions::ExportConstants, this, &ModelWidget::ExportConstants);
     connect(m_actions, &ModelActions::Save2File, this, &ModelWidget::Save2File);
     connect(m_actions, &ModelActions::ExportSimModel, this, &ModelWidget::ExportSimModel);
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
-    connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
 
     //m_splitter->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());
@@ -888,12 +901,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     model_tab->setCurrentTitle(settings.value(QString("model %1 page title").arg(m_model->SFModel())).toString());
     settings.endGroup();
     const int model_type = m_model->SFModel();
-    model_tab->onPageChanged([model_type, model_tab](int) {
+    model_tab->onPageChanged([this, model_type, model_tab](int) {
         QSettings settings;
         settings.beginGroup("model");
         settings.setValue(QString("model %1 page title").arg(model_type), model_tab->currentTitle());
         settings.endGroup();
+        if (model_tab->currentTitle() == tr("Detailed"))
+            RefreshDetailed(true);
     });
+    if (model_tab->currentTitle() == tr("Detailed"))
+        RefreshDetailed(true); // restored as the last page
     emit m_model->Recalculated();
 }
 
@@ -1758,14 +1775,23 @@ void ModelWidget::Restore()
     Repaint();
 }
 
+/*! \brief Write the page "Detailed": input data, model, parameters and statistics as text. With \p recalculate
+ * the model is calculated completely first (that is what the page shows); a recalculation that arrives while
+ * the page is shown only rewrites the text. Claude Generated. */
+void ModelWidget::RefreshDetailed(bool recalculate)
+{
+    if (!m_detailed_text)
+        return;
+    if (recalculate) {
+        m_model->setFast(false);
+        m_model->Calculate(); // emits Recalculated: the timer started by that is one more, cheap, refresh
+    }
+    m_detailed_text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
+}
+
 void ModelWidget::Detailed()
 {
-    TextWidget* text = new TextWidget;
-    m_model->setFast(false);
-    m_model->Calculate();
-    text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
-    m_dialogs->setWidget(text, tr("Detailed Information on Calculation Results"));
-    m_dialogs->Attention();
+    m_pages->setCurrentTitle(tr("Detailed")); // the page writes itself when it is chosen
 }
 
 QString ModelWidget::Keys() const

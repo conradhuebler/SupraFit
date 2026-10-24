@@ -29,7 +29,6 @@
 
 #include "modelactions.h"
 
-#include "src/ui/guitools/morelesstoggle.h"
 
 ModelActions::ModelActions(QWidget* parent)
     : QWidget(parent)
@@ -60,7 +59,9 @@ void ModelActions::setUi()
     m_restore = new PushButton(tr("Restore"));
     m_charts = new PushButton(tr("Charts"));
 
-    // Both button rows wrap when the pane is narrow (FlowLayout). Claude Generated (layout).
+    // One row of buttons that wraps when the pane is narrow (FlowLayout). What the model pane reaches elsewhere
+    // (statistics, results, charts, detailed data: page list; scan, local fits: Fit menu) is hidden by
+    // setPageNavigation(). Claude Generated (layout).
     layout->setContentsMargins(0, 4, 0, 0);
     FlowLayout* h_layout = new FlowLayout;
     h_layout->addWidget(m_advanced);
@@ -70,21 +71,12 @@ void ModelActions::setUi()
     h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_restore);
     h_layout->addWidget(m_charts);
-    m_second = new QWidget;
-    MoreLessToggle* toggle = new MoreLessToggle(m_second, QStringLiteral("model_actions"));
-    toggle->setMaximumSize(50, 30);
-    h_layout->addWidget(toggle);
-    layout->addLayout(h_layout);
-    layout->addWidget(m_second);
-
-    h_layout = new FlowLayout;
-    h_layout->setContentsMargins(0, 0, 0, 0);
     h_layout->addWidget(m_minimize_single);
     h_layout->addWidget(m_save);
     h_layout->addWidget(m_import);
     h_layout->addWidget(m_export);
     h_layout->addWidget(m_optim_config);
-    m_second->setLayout(h_layout);
+    layout->addLayout(h_layout);
 
     connect(m_new_guess, SIGNAL(clicked()), this, SIGNAL(NewGuess()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SIGNAL(LocalMinimize()));
@@ -122,7 +114,8 @@ void ModelActions::setPageNavigation(bool pages)
 void ModelActions::setSimulation(bool simulation)
 {
     m_simulation = simulation;
-    m_minimize_single->setHidden(simulation);
+    m_minimize_single->setHidden(simulation || m_page_nav); // Local Fits: in the Fit menu of the model pane
+    m_detailed->setHidden(m_page_nav); // the page list has the detailed data
     m_restore->setHidden(simulation);
     m_advanced->setHidden(simulation || m_page_nav); // Scan: in the Fit menu of the model pane
     m_optim_config->setHidden(simulation);

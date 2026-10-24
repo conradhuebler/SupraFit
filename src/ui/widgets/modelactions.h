@@ -52,7 +52,6 @@ private:
     void resizeButtons();
     PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
     PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_restore, *m_detailed, *m_charts;
-    QWidget* m_second;
     bool m_simulation = false;
     bool m_page_nav = false;
 

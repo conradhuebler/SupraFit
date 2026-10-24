@@ -70,6 +70,7 @@ class StatisticWidget;
 class ExportSimulationWidget;
 class QStackedWidget;
 class SectionStack;
+class TextWidget;
 class StatisticDialog;
 class SystemParameterWidget;
 
@@ -160,7 +161,10 @@ private:
     QSplitter* m_series_splitter = nullptr; ///< model tabs + actions | data series (beside or below)
     void UpdateSeriesOrientation();
     StatisticWidget* m_statistic_widget;
-    ModalDialog *m_dialogs, *m_charts_dialogs;
+    ModalDialog* m_charts_dialogs;
+    TextWidget* m_detailed_text = nullptr; ///< the page "Detailed": data, model and statistics as text
+    QTimer* m_detailed_timer = nullptr; ///< follows a recalculation while that page is shown
+    void RefreshDetailed(bool recalculate);
     SectionStack* m_pages = nullptr; ///< the page list of the pane (options, series, statistics, charts, ...)
     bool m_series_state_restored = false; ///< the series splitter got its direction and sizes (needs the width)
     QString SeriesStateKey() const;

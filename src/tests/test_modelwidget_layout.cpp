@@ -44,6 +44,7 @@
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
+#include <QtWidgets/QTextBrowser>
 #include <QtWidgets/QToolButton>
 
 #include <cmath>
@@ -1212,15 +1213,58 @@ private slots:
         for (QPushButton* b : widget.findChildren<QPushButton*>())
             if (b->text() == QStringLiteral("Fit") && b->menu())
                 fit = b;
-        for (const QString& gone : { QStringLiteral("Statistic"), QStringLiteral("Results"), QStringLiteral("Charts"), QStringLiteral("Scan") })
+        for (const QString& gone : { QStringLiteral("Statistic"), QStringLiteral("Results"), QStringLiteral("Charts"), QStringLiteral("Scan"),
+                 QStringLiteral("Detailed"), QStringLiteral("Local Fits"), QStringLiteral("..more..") })
             QVERIFY2(!shown.contains(gone), qPrintable(QStringLiteral("button '%1' is still there: %2").arg(gone, shown.join(", "))));
-        QVERIFY2(shown.contains(QStringLiteral("Detailed")) && shown.contains(QStringLiteral("New Guess")), qPrintable(shown.join(", ")));
+        QVERIFY2(shown.contains(QStringLiteral("New Guess")) && shown.contains(QStringLiteral("Restore")), qPrintable(shown.join(", ")));
+        // the "..more.." switch is gone: everything left sits in one row that wraps
+        for (QToolButton* b : actions->findChildren<QToolButton*>())
+            QVERIFY2(!b->text().contains(QStringLiteral("..")), "the more/less switch is still in the action bar");
 
         QVERIFY2(fit, "no Fit button with a menu");
         QStringList entries;
         for (const QAction* action : fit->menu()->actions())
             entries << action->text();
-        QVERIFY2(entries.contains(QStringLiteral("Global Search...")), qPrintable(entries.join(", ")));
+        QVERIFY2(entries.contains(QStringLiteral("Global Search...")) && entries.contains(QStringLiteral("Local Fits")), qPrintable(entries.join(", ")));
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // The detailed data (input data, model, parameters, statistics) is a page of the list that writes itself when
+    // it is chosen. Claude Generated.
+    void detailedIsAPage()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        const int windowsBefore = visibleTopLevels().size();
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        QListWidgetItem* entry = nullptr;
+        for (int i = 0; i < list->count(); ++i)
+            if (list->item(i)->text() == QStringLiteral("Detailed"))
+                entry = list->item(i);
+        QVERIFY2(entry, "no page \"Detailed\"");
+        list->setCurrentItem(entry);
+        emit list->itemClicked(entry);
+        QCoreApplication::processEvents();
+
+        QTextBrowser* text = nullptr; // TextWidget is a QTextBrowser without Q_OBJECT: found by its base class
+        for (QTextBrowser* b : widget.findChildren<QTextBrowser*>())
+            if (b->isVisible())
+                text = b;
+        QVERIFY2(text, "no visible text view on the Detailed page");
+        QVERIFY2(text->isVisible(), "the detailed page is empty: its text is not shown");
+        QVERIFY2(text->toPlainText().size() > 100, qPrintable(QStringLiteral("detailed text too short: %1 characters").arg(text->toPlainText().size())));
+        QCOMPARE(visibleTopLevels().size(), windowsBefore); // a page, not a window
         QSettings().remove(QStringLiteral("model"));
     }
 };
