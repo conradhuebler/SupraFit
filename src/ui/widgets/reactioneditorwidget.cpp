@@ -30,16 +30,19 @@
 
 #include "src/core/reactionparser.h"
 
+#include "src/ui/guitools/appearance.h"
 #include "reactioneditorwidget.h"
 
 ReactionHighlighter::ReactionHighlighter(QTextDocument* parent)
     : QSyntaxHighlighter(parent)
 {
-    m_arrowFormat.setForeground(QColor(0x1e, 0x88, 0xe5));
+    // lighter colours on a dark scheme, where the medium ones are hard to read. Claude Generated.
+    const bool dark = Appearance::IsDark();
+    m_arrowFormat.setForeground(dark ? QColor(0x64, 0xb5, 0xf6) : QColor(0x1e, 0x88, 0xe5));
     m_arrowFormat.setFontWeight(QFont::Bold);
-    m_coeffFormat.setForeground(QColor(0xd8, 0x1b, 0x60));
+    m_coeffFormat.setForeground(dark ? QColor(0xf4, 0x8f, 0xb1) : QColor(0xd8, 0x1b, 0x60));
     m_componentFormat.setFontWeight(QFont::Bold);
-    m_componentFormat.setForeground(QColor(0x2e, 0x7d, 0x32));
+    m_componentFormat.setForeground(dark ? QColor(0x81, 0xc7, 0x84) : QColor(0x2e, 0x7d, 0x32));
 }
 
 void ReactionHighlighter::setComponents(const QStringList& components)

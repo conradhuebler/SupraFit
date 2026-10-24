@@ -162,6 +162,8 @@ private:
     StatisticWidget* m_statistic_widget;
     ModalDialog *m_dialogs, *m_charts_dialogs;
     SectionStack* m_pages = nullptr; ///< the page list of the pane (options, series, statistics, charts, ...)
+    bool m_series_state_restored = false; ///< the series splitter got its direction and sizes (needs the width)
+    QString SeriesStateKey() const;
     int m_charts_page = -1; ///< index of the Charts page, hidden while the model has no chart
     int m_stat_page = -1; ///< index of the Statistics page (new analyses + finished results), -1 for simulations
     QStackedWidget* m_statistic_stack = nullptr; ///< [0] statistic dialog (start), [1] results of finished analyses

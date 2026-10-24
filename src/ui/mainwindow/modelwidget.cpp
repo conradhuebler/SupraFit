@@ -730,7 +730,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         placeSeries(pinned, false);
         connect(series_pin, &QToolButton::toggled, this, [this, model_tab, series_page, placeSeries, pin_key](bool pinned) {
             placeSeries(pinned, true);
-            if (!pinned)
+            if (pinned)
+                UpdateSeriesOrientation(); // beside or below, with the sizes last used in that direction
+            else
                 model_tab->setCurrentIndex(series_page);
             QSettings().setValue(pin_key, pinned);
             SplitterResized();
@@ -761,7 +763,19 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     vlayout->addWidget(header);
     vlayout->addWidget(m_splitter, 1);
 
-    setLayout(vlayout);
+    // The whole pane scrolls when it gets less room than its parts ask for (header, page list, fit results):
+    // a 1024x600 screen has no use for a pane that insists on 1000 px of height. Claude Generated (WP7).
+    QWidget* content = new QWidget;
+    content->setLayout(vlayout);
+    QScrollArea* pane = new QScrollArea;
+    pane->setObjectName("model_pane_scroll");
+    pane->setWidgetResizable(true);
+    pane->setFrameShape(QFrame::NoFrame);
+    pane->setWidget(content);
+    QVBoxLayout* outer = new QVBoxLayout;
+    outer->setContentsMargins(0, 0, 0, 0);
+    outer->addWidget(pane);
+    setLayout(outer);
     m_last_model = m_model->ExportModel(true, true);
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
@@ -841,7 +855,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
-    m_series_splitter->restoreState(settings.value(SplitterSettingsKey() + " series").toByteArray());
+    // the state of the series splitter is restored by UpdateSeriesOrientation(), once the width is known
     // pages are stored by title: the set of pages differs between models, an index would point elsewhere
     model_tab->setCurrentTitle(settings.value(QString("model %1 page title").arg(m_model->SFModel())).toString());
     settings.endGroup();
@@ -1051,17 +1065,33 @@ QString ModelWidget::SplitterSettingsKey() const
  * the model tab stays usable in narrow workspaces (small screens, open agent dock). Claude Generated. */
 void ModelWidget::UpdateSeriesOrientation()
 {
-    if (!m_series_splitter || m_series_splitter->count() < 2)
+    if (!m_series_splitter || m_series_splitter->count() < 2 || width() <= 0)
         return;
     const Qt::Orientation orientation = width() >= 900 ? Qt::Horizontal : Qt::Vertical;
-    if (m_series_splitter->orientation() != orientation) {
-        m_series_splitter->setOrientation(orientation);
-        // the old sizes belong to the other direction: below each other the tabs get what they need
-        // (at most a third), beside each other the series get the larger share
+    if (m_series_state_restored && m_series_splitter->orientation() == orientation)
+        return;
+
+    // Each direction has its own sizes: what looks right beside each other is wrong below each other. The
+    // sizes the user set last in this direction come back; without any, the tabs get what they need
+    // (at most a third) below, and the series the larger share beside. Claude Generated.
+    if (m_series_state_restored)
+        SplitterResized(); // keep what was set in the direction that is being left
+    m_series_splitter->setOrientation(orientation);
+    m_series_state_restored = true;
+    QSettings settings;
+    settings.beginGroup("model");
+    const bool restored = m_series_splitter->restoreState(settings.value(SeriesStateKey()).toByteArray());
+    settings.endGroup();
+    if (!restored) {
         const int total = orientation == Qt::Horizontal ? m_series_splitter->width() : m_series_splitter->height();
         const int first = orientation == Qt::Horizontal ? total * 2 / 5 : qMin(total / 3, m_series_splitter->widget(0)->minimumSizeHint().height() + 40);
         m_series_splitter->setSizes({ first, total - first });
     }
+}
+
+QString ModelWidget::SeriesStateKey() const
+{
+    return SplitterSettingsKey() + (m_series_splitter->orientation() == Qt::Horizontal ? " series beside" : " series below");
 }
 
 void ModelWidget::resizeEvent(QResizeEvent* event)
@@ -1075,7 +1105,8 @@ void ModelWidget::SplitterResized()
     QSettings settings;
     settings.beginGroup("model");
     settings.setValue(SplitterSettingsKey(), m_splitter->saveState());
-    settings.setValue(SplitterSettingsKey() + " series", m_series_splitter->saveState());
+    if (m_series_state_restored) // before that the splitter still has its construction state
+        settings.setValue(SeriesStateKey(), m_series_splitter->saveState());
     settings.endGroup();
 }
 

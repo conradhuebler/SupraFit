@@ -31,8 +31,10 @@
 
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QAbstractScrollArea>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -121,7 +123,18 @@ public:
         if (tools)
             header->addWidget(tools);
         layout->addLayout(header);
-        layout->addWidget(page, 1);
+        // A page that has no scroll bars of its own sits in a scroll area: the stack is as small as its
+        // smallest allowance, not as large as the most demanding page (the statistic tools alone ask for
+        // 528x443 px), and a pane on a small screen scrolls instead of overlapping.
+        QWidget* content = page;
+        if (!qobject_cast<QAbstractScrollArea*>(page)) {
+            QScrollArea* scroll = new QScrollArea;
+            scroll->setWidgetResizable(true);
+            scroll->setFrameShape(QFrame::NoFrame);
+            scroll->setWidget(page);
+            content = scroll;
+        }
+        layout->addWidget(content, 1);
         container->setLayout(layout);
 
         m_stack->addWidget(container);

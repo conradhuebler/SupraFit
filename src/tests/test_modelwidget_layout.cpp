@@ -38,6 +38,8 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
+#include <QtWidgets/QSplitter>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
@@ -57,6 +59,7 @@
 #include "src/capabilities/jobmanager.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
+#include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
@@ -883,6 +886,87 @@ private slots:
         QCOMPARE(shownChips(), basic);
         QVERIFY(!strategyBoxShown());
         qApp->setProperty("advanced_ui", before);
+    }
+    // WP7: on a small screen the pane must not ask for more room than there is. The page list (the statistic
+    // tools alone asked for 528x443 px) and the whole pane scroll instead; nothing overlaps. Claude Generated.
+    void paneScrollsOnSmallScreens()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        const QList<QPair<int, int>> sizes = { { 1000, 600 }, { 640, 460 }, { 480, 420 } };
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        for (const QPair<int, int>& size : sizes) {
+            Charts charts = m_chart->addModel(m_model);
+            ModelWidget widget(m_model, charts);
+            widget.resize(size.first, size.second);
+            widget.show();
+            QTest::qWaitForWindowExposed(&widget);
+            QCoreApplication::processEvents();
+
+            // the window really is that small (the layout no longer insists on its content size)
+            QVERIFY2(widget.height() <= size.second + 2, qPrintable(QStringLiteral("pane forced to %1 px height instead of %2")
+                                                                        .arg(widget.height()).arg(size.second)));
+            QVERIFY2(widget.width() <= size.first + 2, qPrintable(QStringLiteral("pane forced to %1 px width instead of %2")
+                                                                      .arg(widget.width()).arg(size.first)));
+
+            // inside the scrolled content, the parts do not overlap
+            QScrollArea* pane = widget.findChild<QScrollArea*>(QStringLiteral("model_pane_scroll"));
+            QVERIFY(pane && pane->widget());
+            QLayout* content = pane->widget()->layout();
+            QVERIFY(content && content->count() >= 2);
+            const QRect header = content->itemAt(0)->geometry();
+            const QRect splitter = content->itemAt(1)->geometry();
+            QVERIFY2(header.bottom() < splitter.top(), qPrintable(QStringLiteral("header and page area overlap at %1x%2").arg(size.first).arg(size.second)));
+            if (!renderDir.isEmpty()) {
+                QDir().mkpath(renderDir);
+                widget.grab().save(QStringLiteral("%1/modelwidget_small_%2x%3.png").arg(renderDir).arg(size.first).arg(size.second));
+            }
+        }
+        QSettings().remove(QStringLiteral("model"));
+    }
+    // WP7: the pane in the dark scheme - pages render (PNGs with SUPRAFIT_LAYOUT_RENDER_DIR for a look at the
+    // contrast) and the colours come from the palette, so the window colour really is dark. Claude Generated.
+    void rendersInTheDarkScheme()
+    {
+        Appearance::Install();
+        Appearance::Apply(Appearance::Dark);
+        QVERIFY(Appearance::IsDark());
+        QSettings().remove(QStringLiteral("model"));
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(900, 640);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        QVERIFY2(widget.palette().color(QPalette::Window).lightness() < 128, "the pane did not take the dark palette");
+
+        auto select = [&widget](const QString& title) {
+            for (QListWidget* l : widget.findChildren<QListWidget*>())
+                if (l->isVisible())
+                    for (int i = 0; i < l->count(); ++i)
+                        if (l->item(i)->text() == title) {
+                            l->setCurrentRow(i);
+                            emit l->itemClicked(l->item(i));
+                            QCoreApplication::processEvents();
+                            return true;
+                        }
+            return false;
+        };
+        QDir().mkpath(renderDir.isEmpty() ? QStringLiteral(".") : renderDir);
+        for (const QString& page : { QStringLiteral("Data series"), QStringLiteral("Model Definition"), QStringLiteral("Simulated Data") }) {
+            QVERIFY2(select(page), qPrintable(page));
+            QVERIFY(!widget.grab().isNull());
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/modelwidget_dark_%2.png").arg(renderDir, QString(page).replace(' ', '_')));
+        }
+        QMetaObject::invokeMethod(&widget, "ToggleStatisticDialog");
+        QCoreApplication::processEvents();
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_dark_statistics.png").arg(renderDir));
+
+        Appearance::Apply(Appearance::Light);
+        QVERIFY(!Appearance::IsDark());
     }
 };
 

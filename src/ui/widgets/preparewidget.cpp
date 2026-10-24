@@ -43,6 +43,7 @@
 #include "src/core/models/exprtkinterpreter.h"
 #include "src/core/reactionparser.h"
 #include "src/core/speciationengine.h"
+#include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/widgets/reactioneditorwidget.h"
 
@@ -81,26 +82,28 @@ void Highlighter::highlightBlock(const QString& text)
         setFormat(match.capturedStart(), match.capturedLength(), notfound);
     }
 
+    // The syntax colours are chosen for the window they sit on: dark colours vanish on a dark scheme. Claude Generated.
+    const bool dark = Appearance::IsDark();
     QTextCharFormat format;
     format.setFontUnderline(false);
-    format.setForeground(Qt::darkGreen);
+    format.setForeground(dark ? QColor(0x7b, 0xd8, 0x8f) : QColor(Qt::darkGreen));
     format.setFontWeight(QFont::Light);
     format.setToolTip(tr("Mathematical function or expression."));
     Highlight(text, m_math_functions, format);
 
-    format.setForeground(Qt::darkBlue);
+    format.setForeground(dark ? QColor(0x79, 0xb8, 0xff) : QColor(Qt::darkBlue));
     format.setFontWeight(QFont::Bold);
     format.setToolTip(tr("Independent variable."));
 
     Highlight(text, m_table_header, format);
 
-    format.setForeground(Qt::darkRed);
+    format.setForeground(dark ? QColor(0xff, 0x8f, 0x8f) : QColor(Qt::darkRed));
     format.setFontWeight(QFont::Bold);
     format.setToolTip(tr("Global parameter."));
 
     Highlight(text, m_global_parameter_names, format);
 
-    format.setForeground(Qt::darkMagenta);
+    format.setForeground(dark ? QColor(0xe6, 0xa6, 0xff) : QColor(Qt::darkMagenta));
     format.setFontWeight(QFont::Bold);
     format.setToolTip(tr("Local parameter."));
 
@@ -163,7 +166,7 @@ PrepareBox::PrepareBox(const QJsonObject& object, Highlighter* highlighter, QWid
     description->setWordWrap(true);
     description->setText(object["description"].toString());
     // Normal weight + muted, so the bold group title stays the thing you read first.
-    description->setStyleSheet(QStringLiteral("QLabel { font-weight: normal; color: palette(mid); }"));
+    description->setStyleSheet(QStringLiteral("QLabel { font-weight: normal; color: palette(placeholder-text); }"));
     layout->addWidget(description);
 
     m_title = object["title"].toString();
