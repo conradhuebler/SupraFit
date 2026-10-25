@@ -39,7 +39,7 @@ Reading:
 
 - The intervals agree: worst deviation of an interval end from the reference is 3.3 % of the interval width.
 - The sampler is **never cheaper** than the constrained refit here: 14-16 times the SSE evaluations at two and three
-  constants, three thousand times at one constant. In wall time (sampler on 4 threads, reference on 1) 4-8 times.
+  constants, three thousand times at one constant. In wall time (sampler on 4 threads, reference on 1) 2-8 times at two and three constants. The measurement predates the MALA correction and the adjustable stopping of 2026-10-24 (commit `bfdb77cc`); neither changes the evaluation counts in a way that would change the conclusion.
 - For three constants 8 ends were reported differently (crossing vs. open) and 6 ends stayed `Unsampled`; the data constrain
   the third constant poorly. Not analysed further.
 
