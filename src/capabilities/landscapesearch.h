@@ -68,6 +68,11 @@ private:
  *  - `Confidence` percent, 95 (keys are read case-insensitively, as the job blocks write `confidence`)
  *  - `Polish` how many minima found by the walkers are refitted with the minimiser, 5
  *  - `Walkers` (threads), `Seed` 1, `MaxSteps` 50000, `Sampler` "Metropolis" | "Langevin"
+ *  - `StepSize` integration step as a fraction of the sampled range (start value, the walker adapts it); 0: 0.05
+ *    for Metropolis, 0.04 for Langevin
+ *  - `GradientStep` step of the finite differences for the gradient of the SSE (Langevin), fraction of the range, 1e-3
+ *  - `CentralGradient` central instead of forward differences (twice the evaluations), false
+ *  - `LangevinCorrection` Metropolis adjustment of the Langevin step (exact sampling, one gradient per proposal), true
  *  - `Range` half width of the box in log10 units for every variable; 0 (default) takes `BoxFactor` (4) times
  *    the extent of the confidence level along that variable alone
  *  - `MaxRange` upper limit of the half width of an automatic box in log10 units, 10: an interval that still reaches
@@ -76,7 +81,14 @@ private:
  *    wrong basin), 2; the level and the box belong to the new minimum
  *  - `MaxExpansions` how often the box of a variable is doubled and the walk repeated when an interval reaches
  *    the box (correlated constants have wider profile than section extents), 4
- *  - `CutFactor` wall at SSE_min + CutFactor (level - SSE_min), 3
+ *  - `CutFactor` wall at SSE_min + CutFactor (level - SSE_min), 3; a minimum behind a barrier higher than the wall is not
+ *    found, so a model with a distant second minimum needs a higher wall
+ *  - `MinSteps` 2000 and `Patience` 100 (hills, one per 20 steps, without a new region or a better minimum after which a
+ *    walker stops), `MinHillFraction` 0.1 (patience only counts once the hill height at the walker has fallen below this
+ *    fraction of the first hill)
+ *  - `BiasFactor` well-tempering temperature in units of the wall's excess, 0.5 (barriers up to about 2.3 times that are
+ *    taken down); `HillHeightFactor` hill height in kT, 0.25; `HillWidth` fraction of the sampled range, 0.05 (hills much
+ *    wider than a narrow valley fill it too early)
  *  - `TemperatureFactor` kT = factor * 2 SSE_min/(n - p), 1
  *  - `Bins` resolution of profile and coverage, 60
  *
@@ -102,6 +114,8 @@ public:
     /*! \brief Intervals of the last run per variable. */
     const std::vector<std::vector<LandscapeSegment>>& Intervals() const { return m_intervals; }
     double Level() const { return m_level; }
+    /*! \brief Points recorded by the walkers, (coordinates, SSE); empty unless `Surface` was on. */
+    const std::vector<std::vector<double>>& Points() const { return m_points; }
     const std::vector<double>& Lower() const { return m_lower; }
     const std::vector<double>& Upper() const { return m_upper; }
 
@@ -117,6 +131,8 @@ private:
     std::vector<std::vector<LandscapeSegment>> m_intervals;
     double m_level = 0;
     std::vector<double> m_lower, m_upper;
+    std::vector<std::vector<double>> m_points;
+    LandscapeSettings m_lastSettings;
     int m_recentered = 0;
     double m_carryEvaluations = 0, m_startSSE = 0;
     std::atomic<bool> m_stop{ false };

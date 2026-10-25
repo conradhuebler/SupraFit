@@ -314,6 +314,150 @@ private slots:
         delete data;
     }
 
+    // Every control of the sampler reaches it and is written to the result: the integration and finite-difference steps, central
+    // differences, the wall, the stopping rule and the bias (a very short run, only the settings are looked at).
+    void controlsReachTheSampler()
+    {
+        DataClass* data = makeData(3);
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB"), { 3.0 }, 3, 0.05);
+        LandscapeSearch search;
+        search.setModel(model);
+        QJsonObject ctl;
+        ctl["Walkers"] = 1;
+        ctl["Polish"] = 0;
+        ctl["MaxSteps"] = 300;
+        ctl["Sampler"] = QStringLiteral("Langevin");
+        ctl["StepSize"] = 0.02;
+        ctl["GradientStep"] = 5e-4;
+        ctl["CentralGradient"] = true;
+        ctl["LangevinCorrection"] = false;
+        ctl["CutFactor"] = 7.5;
+        ctl["MinSteps"] = 123;
+        ctl["Patience"] = 17;
+        ctl["MinHillFraction"] = 0.3;
+        ctl["BiasFactor"] = 1.25;
+        ctl["HillHeightFactor"] = 0.5;
+        ctl["HillWidth"] = 0.08;
+        search.setController(ctl);
+        QVERIFY(search.Run());
+        const QJsonObject result = search.Result()["0"].toObject();
+        const QJsonObject s = result["settings"].toObject();
+        QCOMPARE(s["step_size"].toDouble(), 0.02);
+        QCOMPARE(s["gradient_step"].toDouble(), 5e-4);
+        QCOMPARE(s["central_gradient"].toBool(), true);
+        QCOMPARE(s["langevin_correction"].toBool(), false);
+        QCOMPARE(s["cut_factor"].toDouble(), 7.5);
+        QCOMPARE(s["min_steps"].toInt(), 123);
+        QCOMPARE(s["patience"].toInt(), 17);
+        QCOMPARE(s["min_hill_fraction"].toDouble(), 0.3);
+        QCOMPARE(s["bias_factor"].toDouble(), 1.25);
+        QCOMPARE(s["hill_height_factor"].toDouble(), 0.5);
+        QCOMPARE(s["hill_width"].toDouble(), 0.08);
+        // the wall is where it was asked for: SSE_min + 7.5 (level - SSE_min)
+        const double sseMin = result["sse_min"].toDouble(), level = result["level"].toDouble();
+        QVERIFY(std::abs(result["wall"].toDouble() - (sseMin + 7.5 * (level - sseMin))) < 1e-9 * result["wall"].toDouble());
+        delete data;
+    }
+
+    // Langevin and Metropolis give the same interval on a fitted model (default settings, forward differences).
+    void langevinAgreesWithMetropolisOnAModel()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+
+        double edges[2][2];
+        for (int k = 0; k < 2; ++k) {
+            LandscapeSearch search;
+            search.setModel(model);
+            QJsonObject ctl;
+            ctl["Walkers"] = 4;
+            ctl["Polish"] = 0;
+            ctl["Sampler"] = k ? QStringLiteral("Langevin") : QStringLiteral("Metropolis");
+            search.setController(ctl);
+            QVERIFY(search.Run());
+            if (k) {
+                const double moving = search.Result()["0"].toObject()["walkers"].toArray()[0].toObject()["acceptance"].toDouble();
+                QVERIFY2(moving > 0.4, qPrintable(QString("Langevin walker is stopped by the wall: %1 of the moves pass").arg(moving)));
+            }
+            const auto& seg = search.Intervals()[0];
+            QCOMPARE(seg.size(), size_t(1));
+            QVERIFY(seg[0].Bounded());
+            edges[k][0] = seg[0].lower;
+            edges[k][1] = seg[0].upper;
+            qInfo() << (k ? "Langevin" : "Metropolis") << "interval of lg beta 1" << edges[k][0] << edges[k][1] << "evals"
+                    << search.Result()["0"].toObject()["evaluations"].toDouble();
+        }
+        // the sampled bins are about 0.05 wide
+        QVERIFY2(std::abs(edges[0][0] - edges[1][0]) < 0.1 && std::abs(edges[0][1] - edges[1][1]) < 0.1,
+            qPrintable(QString("Metropolis [%1, %2], Langevin [%3, %4]").arg(edges[0][0]).arg(edges[0][1]).arg(edges[1][0]).arg(edges[1][1])));
+        delete data;
+    }
+
+    // Surface: points are recorded, the 2D profile of the first pair has the profile's minima where they belong.
+    void surfaceProfileIsRecorded()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+
+        LandscapeSearch search;
+        search.setModel(model);
+        QJsonObject ctl;
+        ctl["Walkers"] = 4;
+        ctl["Polish"] = 0;
+        ctl["MaxSteps"] = 20000;
+        ctl["Surface"] = true;
+        search.setController(ctl);
+        QVERIFY(search.Run());
+
+        QVERIFY(!search.Points().empty());
+        const QJsonArray surface = search.Result()["0"].toObject()["surface"].toArray();
+        QVERIFY(surface.size() > 100);
+
+        // the surface profile of a variable runs along the 1D profile. Both take the minimum over the recorded points,
+        // but the 1D profile bins with a clamp at the bounds and drops nothing, while the surface assignment puts a point
+        // at the upper bound behind the wall: the two minima differ by at most one bin's step in SSE.
+        const int bins = 60;
+        std::vector<double> columnProfile(size_t(bins), INFINITY);
+        double worst = 0, level = search.Level(), sseFit = search.Result()["0"].toObject()["sse_min"].toDouble();
+        int compared = 0;
+        for (const QJsonValue& v : surface) {
+            const QJsonArray p = v.toArray();
+            const double x = p[0].toDouble(), sse = p[2].toDouble();
+            const int a = int((x - search.Lower()[0]) / (search.Upper()[0] - search.Lower()[0]) * bins);
+            if (a >= 0 && a < bins)
+                columnProfile[size_t(a)] = std::min(columnProfile[size_t(a)], sse);
+        }
+        double step = 0; // the largest change of the 1D profile from one bin to the next: one bin's step in SSE
+        for (int a = 0; a + 1 < bins; ++a)
+            if (std::isfinite(search.Merged().profile[0][a]) && std::isfinite(search.Merged().profile[0][a + 1]))
+                step = std::max(step, std::abs(search.Merged().profile[0][a + 1] - search.Merged().profile[0][a]));
+        for (int a = 0; a < bins; ++a)
+            if (std::isfinite(search.Merged().profile[0][a]) && std::isfinite(columnProfile[size_t(a)])) {
+                worst = std::max(worst, std::abs(columnProfile[size_t(a)] - search.Merged().profile[0][a]));
+                ++compared;
+            }
+        qInfo() << "surface vs 1D profile:" << compared << "bins compared, worst difference" << worst << ", largest bin step of the 1D profile" << step
+                << "(level" << level << ", SSE of the fit" << sseFit << ")";
+        QVERIFY2(worst <= 2 * step + 1e-12, qPrintable(QString("worst %1 against a bin step of %2").arg(worst).arg(step)));
+        // the level line in the result relative to the fit
+        const QJsonObject result = search.Result()["0"].toObject();
+        QVERIFY(result["contour_max"].toDouble() > result["level"].toDouble() / result["sse_min"].toDouble());
+
+        // without Surface nothing is recorded
+        LandscapeSearch quiet;
+        quiet.setModel(model);
+        QJsonObject c2;
+        c2["Walkers"] = 2;
+        c2["MaxSteps"] = 2000;
+        quiet.setController(c2);
+        QVERIFY(quiet.Run());
+        QVERIFY(quiet.Points().empty());
+        QVERIFY(quiet.Result()["0"].toObject()["surface"].toArray().isEmpty());
+        delete data;
+    }
+
     void modelWithoutVariableProjectionIsRefused()
     {
         LandscapeSearch none;

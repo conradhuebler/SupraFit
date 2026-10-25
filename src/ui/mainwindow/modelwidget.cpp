@@ -1473,6 +1473,7 @@ QList<ModelWidget::StatEntry> ModelWidget::StatisticEntries() const
         { "Monte", QT_TR_NOOP("Monte Carlo"), SupraFit::Method::MonteCarlo },
         { "Weakened", QT_TR_NOOP("Grid Search"), SupraFit::Method::WeakenedGridSearch },
         { "Model", QT_TR_NOOP("Model Comparison"), SupraFit::Method::ModelComparison },
+        { "Landscape", QT_TR_NOOP("Landscape Sampling"), SupraFit::Method::LandscapeSampling },
     };
 
     QList<StatEntry> rows;
@@ -1519,6 +1520,9 @@ QString ModelWidget::ResultListTitle(SupraFit::Method type, int index)
     case SupraFit::Method::GlobalSearch:
         name = tr("Global Search");
         break;
+    case SupraFit::Method::LandscapeSampling:
+        name = tr("Landscape Sampling");
+        break;
     default:
         name = SupraFit::Method2Name(type);
     }
@@ -1539,6 +1543,8 @@ QIcon ModelWidget::MethodIcon(SupraFit::Method type)
         return Icon("kspread");
     case SupraFit::Method::ModelComparison:
         return Icon("fork");
+    case SupraFit::Method::LandscapeSampling:
+        return Icon("charts");
     default:
         return QIcon();
     }

@@ -293,13 +293,39 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
         sseGradient(x, sse, gradSSE);
 
     // Adaptive Metropolis: proposal = scale * L z with L the Cholesky factor of 2.38^2/d times the chain covariance
-    const bool adapt = !langevin && s.adaptive;
-    const int adaptSteps = s.adaptSteps > 0 ? s.adaptSteps : s.minSteps;
+    const bool adapt = s.adaptive;
+    // Langevin keeps adapting: the bias widens the explored region, a covariance frozen in the first well would keep
+    // the walker from climbing out
+    const int adaptSteps = langevin ? s.maxSteps : (s.adaptSteps > 0 ? s.adaptSteps : s.minSteps);
     std::vector<double> chainMean(d, 0.0), chainM2(size_t(d) * d, 0.0), L(size_t(d) * d, 0.0);
+    double epsilon = s.stepSize; // Langevin: dimensionless step, 1 once L is the chain covariance
+    bool preconditioned = false;
     long chainN = 0, windowProposed = 0, windowAccepted = 0;
     double scale = 1.0;
     for (int i = 0; i < d; ++i)
-        L[size_t(i) * d + i] = s.stepSize * width[i];
+        L[size_t(i) * d + i] = (langevin ? 1.0 : s.stepSize) * width[i];
+
+    // Metropolis-adjusted Langevin: forward density of a move, M = L L^T the preconditioner
+    const bool corrected = langevin && s.langevinCorrection;
+    const double langevinTarget = corrected ? s.langevinAcceptance : std::max(s.langevinAcceptance, 0.8);
+    auto logProposal = [&](const std::vector<double>& to, const std::vector<double>& from, const std::vector<double>& g) {
+        std::vector<double> w(d, 0.0), mg(d, 0.0), y(d, 0.0);
+        for (int i = 0; i < d; ++i)
+            for (int j = 0; j <= i; ++j)
+                w[j] += L[size_t(i) * d + j] * g[i];
+        for (int i = 0; i < d; ++i)
+            for (int j = 0; j <= i; ++j)
+                mg[i] += L[size_t(i) * d + j] * w[j];
+        double q = 0;
+        for (int i = 0; i < d; ++i) {
+            double sum = to[i] - (from[i] - 0.5 * epsilon * epsilon * mg[i] / s.temperature);
+            for (int j = 0; j < i; ++j)
+                sum -= L[size_t(i) * d + j] * y[j];
+            y[i] = sum / L[size_t(i) * d + i];
+            q += y[i] * y[i];
+        }
+        return -0.5 * q / (epsilon * epsilon);
+    };
 
     long proposed = 0, accepted = 0;
     int idle = 0;
@@ -316,11 +342,22 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
 
         // propose
         if (langevin) {
+            // preconditioned Langevin: x' = x - eps^2/2 M grad(U)/kT + eps L z, M = L L^T (L = diag(width) at first)
             m_bias->Gradient(x, m_upper, gradBias);
+            std::vector<double> w(d, 0.0), z(d);
             for (int i = 0; i < d; ++i) {
+                z[i] = normal(rng);
                 const double g = gradSSE[i] + gradBias[i];
-                xp[i] = x[i] - 0.5 * s.stepSize * s.stepSize * width[i] * width[i] * g / s.temperature
-                    + s.stepSize * width[i] * normal(rng);
+                for (int j = 0; j <= i; ++j)
+                    w[j] += L[size_t(i) * d + j] * g; // L^T grad
+            }
+            for (int i = 0; i < d; ++i) {
+                double drift = 0, noise = 0;
+                for (int j = 0; j <= i; ++j) {
+                    drift += L[size_t(i) * d + j] * w[j];
+                    noise += L[size_t(i) * d + j] * z[j];
+                }
+                xp[i] = x[i] - 0.5 * epsilon * epsilon * drift / s.temperature + epsilon * noise;
             }
         } else if (adapt) {
             std::vector<double> z(d);
@@ -349,9 +386,23 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
             const double sp = evaluate(xp);
             if (sp <= s.sseCut) { // the wall
                 bool accept = true;
+                std::vector<double> gradProposal;
                 if (!langevin) {
                     const double dU = (sp + m_bias->Value(xp)) - (sse + m_bias->Value(x));
                     accept = dU <= 0 || uniform(rng) < std::exp(-dU / s.temperature);
+                } else if (corrected) {
+                    // MALA: the Langevin step is a proposal, judged by the Metropolis-Hastings ratio
+                    gradProposal.assign(d, 0.0);
+                    sseGradient(xp, sp, gradProposal);
+                    std::vector<double> gradBiasProposal(d, 0.0), gx(d), gxp(d);
+                    m_bias->Gradient(xp, m_upper, gradBiasProposal);
+                    for (int i = 0; i < d; ++i) {
+                        gx[i] = gradSSE[i] + gradBias[i];
+                        gxp[i] = gradProposal[i] + gradBiasProposal[i];
+                    }
+                    const double dU = (sp + m_bias->Value(xp)) - (sse + m_bias->Value(x));
+                    const double logAlpha = -dU / s.temperature + logProposal(x, xp, gxp) - logProposal(xp, x, gx);
+                    accept = logAlpha >= 0 || uniform(rng) < std::exp(logAlpha);
                 }
                 if (accept) {
                     x = xp;
@@ -359,8 +410,10 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
                     ++accepted;
                     ++windowAccepted;
                     novelSinceHill |= record(x, sse);
+                    if (m_listener && accepted % m_listenerStride == 0)
+                        m_listener(x, sse);
                     if (langevin)
-                        sseGradient(x, sse, gradSSE);
+                        gradProposal.empty() ? sseGradient(x, sse, gradSSE) : void(gradSSE = gradProposal);
                 }
             }
         }
@@ -380,11 +433,14 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
             if (step % 100 == 0 && chainN >= 20) {
                 // scale towards the target acceptance, shape from the chain
                 const double acceptance = windowProposed ? double(windowAccepted) / double(windowProposed) : 0.0;
-                scale = std::min(std::max(scale * std::exp(acceptance - s.targetAcceptance), 0.05), 20.0);
+                if (langevin)
+                    epsilon = std::min(std::max(epsilon * std::exp(2.0 * (acceptance - langevinTarget)), 1e-4), 5.0);
+                else
+                    scale = std::min(std::max(scale * std::exp(acceptance - s.targetAcceptance), 0.05), 20.0);
                 windowProposed = windowAccepted = 0;
 
                 std::vector<double> C(size_t(d) * d, 0.0), chol(size_t(d) * d, 0.0);
-                const double shape = 2.38 * 2.38 / double(d);
+                const double shape = langevin ? 1.0 : 2.38 * 2.38 / double(d);
                 bool ok = true;
                 for (int i = 0; i < d; ++i)
                     for (int j = 0; j <= i; ++j) {
@@ -408,8 +464,13 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
                         } else
                             chol[size_t(i) * d + j] = sum / chol[size_t(j) * d + j];
                     }
-                if (ok)
+                if (ok) {
                     L = chol;
+                    if (langevin && !preconditioned) {
+                        preconditioned = true;
+                        epsilon = 1.0; // the chain covariance now carries the length scales
+                    }
+                }
             }
         }
 

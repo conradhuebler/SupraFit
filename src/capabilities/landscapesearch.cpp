@@ -85,6 +85,8 @@ public:
     {
         setAutoDelete(false);
     }
+    /*! \brief Points the walker accepts, (coordinates, SSE), for 2D profiles. Filled by the walker thread, read after waitForDone. */
+    std::vector<std::vector<double>> points;
 
     void setStart(const std::vector<double>& x) { m_start = x; }
     void setRandomStart(double cut) { m_randomStartCut = cut; }
@@ -95,6 +97,11 @@ public:
         LandscapeSampler sampler([&landscape](const std::vector<double>& x) { return landscape(x); }, m_lower, m_upper);
         sampler.setSettings(m_settings);
         sampler.setInterrupt([this] { return m_stop->load(); });
+        if (m_settings.recordPoints)
+            sampler.addListener([this](const std::vector<double>& x, double sse) {
+                points.push_back(x);
+                points.back().push_back(sse);
+            });
 
         std::vector<double> start = m_start;
         if (m_randomStartCut > 0) { // somewhere below the wall, else the fitted point
@@ -224,7 +231,7 @@ bool LandscapeSearch::Execute()
 {
     m_merged = LandscapeResult();
     m_intervals.clear();
-    m_results.clear();
+    m_results.clear(); // points of an older round are kept: they are part of the coverage; only the first round clears
 
     if (!m_model) {
         emit Message(tr("No model for the landscape search."));
@@ -271,13 +278,35 @@ bool LandscapeSearch::Execute()
     const QString sampler = AccessCI(m_controller, "Sampler").toString("Metropolis");
     settings.sampler = sampler == QLatin1String("Langevin") ? LandscapeSettings::Sampler::Langevin : LandscapeSettings::Sampler::Metropolis;
     settings.temperature = AccessCI(m_controller, "TemperatureFactor").toDouble(1.0) * LandscapeSampler::NaturalTemperature(sseMin, points, parameters);
-    settings.stepSize = settings.sampler == LandscapeSettings::Sampler::Langevin ? 0.04 : 0.05;
-    settings.hillHeight = 0.25 * settings.temperature;
-    settings.biasTemperature = 0.5 * (cut - sseMin); // takes down barriers up to about 2.3 times this
+    // integration step and finite-difference step, fractions of the sampled range; 0 takes the default
+    const double step = AccessCI(m_controller, "StepSize").toDouble(0.0);
+    settings.stepSize = step > 0 ? step : (settings.sampler == LandscapeSettings::Sampler::Langevin ? 0.04 : 0.05);
+    const double gradientStep = AccessCI(m_controller, "GradientStep").toDouble(0.0);
+    if (gradientStep > 0)
+        settings.gradientStep = gradientStep;
+    settings.centralGradient = AccessCI(m_controller, "CentralGradient").toBool(false);
+    settings.langevinCorrection = AccessCI(m_controller, "LangevinCorrection").toBool(true);
+    // bias and stopping: how fast the region fills, which barriers can be taken down and when a walker gives up
+    const double hillHeightFactor = AccessCI(m_controller, "HillHeightFactor").toDouble(0.25);
+    const double biasFactor = AccessCI(m_controller, "BiasFactor").toDouble(0.5);
+    const double hillWidth = AccessCI(m_controller, "HillWidth").toDouble(0.05);
+    settings.hillHeight = hillHeightFactor * settings.temperature;
+    settings.biasTemperature = biasFactor * (cut - sseMin); // takes down barriers up to about 2.3 times this
+    if (hillWidth > 0)
+        settings.hillWidth = hillWidth;
+    settings.minSteps = AccessCI(m_controller, "MinSteps").toInt(settings.minSteps);
+    settings.patience = std::max(1, AccessCI(m_controller, "Patience").toInt(settings.patience));
+    const double minHillFraction = AccessCI(m_controller, "MinHillFraction").toDouble(settings.minHillFraction);
+    if (minHillFraction > 0)
+        settings.minHillFraction = minHillFraction;
     settings.sseCut = cut;
     settings.maxSteps = AccessCI(m_controller, "MaxSteps").toInt(50000);
     settings.bins = AccessCI(m_controller, "Bins").toInt(60);
     settings.seed = uint64_t(AccessCI(m_controller, "Seed").toInt(1));
+
+    m_lastSettings = settings;
+    const bool recordPoints = d >= 2 && AccessCI(m_controller, "Surface").toBool(false);
+    settings.recordPoints = recordPoints;
 
     int walkers = AccessCI(m_controller, "Walkers").toInt(qApp->instance()->property("threads").toInt());
     walkers = std::max(1, walkers);
@@ -321,6 +350,8 @@ bool LandscapeSearch::Execute()
             o["acceptance"] = r.acceptance;
             o["best_sse"] = r.bestSSE;
             walkerInfo << o;
+            if (recordPoints)
+                m_points.insert(m_points.end(), run[w]->points.begin(), run[w]->points.end());
             if (w == 0)
                 m_merged = r;
             else
@@ -382,11 +413,23 @@ bool LandscapeSearch::Execute()
 
     QJsonObject set;
     set["sampler"] = sampler;
+    set["step_size"] = settings.stepSize;
+    set["gradient_step"] = settings.gradientStep;
+    set["central_gradient"] = settings.centralGradient;
+    set["langevin_correction"] = settings.langevinCorrection;
+    set["cut_factor"] = cutFactor;
+    set["min_steps"] = settings.minSteps;
+    set["patience"] = settings.patience;
+    set["min_hill_fraction"] = settings.minHillFraction;
+    set["bias_factor"] = biasFactor;
+    set["hill_height_factor"] = hillHeightFactor;
+    set["hill_width"] = settings.hillWidth;
     set["temperature"] = settings.temperature;
     set["hill_height"] = settings.hillHeight;
     set["bias_temperature"] = settings.biasTemperature;
     set["max_steps"] = settings.maxSteps;
     set["bins"] = settings.bins;
+    set["surface"] = recordPoints;
     out["settings"] = set;
 
     QJsonArray variables;
@@ -415,6 +458,47 @@ bool LandscapeSearch::Execute()
                 profile << QJsonArray{ m_merged.profileAt[i][b], m_merged.profile[i][b] };
         v["profile"] = profile;
         variables << v;
+    }
+    // surface: 2D profile of the first pair, one point per visited bin (the GUI draws the levels)
+    if (recordPoints) {
+        QJsonArray surface;
+        const int bins = settings.bins;
+        std::vector<double> z(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity());
+        for (const auto& p : m_points) {
+            if (int(p.size()) != d + 1)
+                continue;
+            int bx = -1, by = -1;
+            for (int k = 0; k < d; ++k) {
+                const double value = p[k];
+                const int b = int((value - m_lower[k]) / (m_upper[k] - m_lower[k]) * bins);
+                if (b < 0 || b >= bins)
+                    break;
+                if (k == 0)
+                    bx = b;
+                if (k == 1)
+                    by = b;
+            }
+            if (bx < 0 || by < 0)
+                continue;
+            const size_t flat = size_t(bx) * size_t(bins) + size_t(by);
+            z[flat] = std::min(z[flat], p.back());
+        }
+        double smin = std::numeric_limits<double>::infinity();
+        for (int a = 0; a < bins; ++a)
+            for (int b = 0; b < bins; ++b) {
+                const double sse = z[size_t(a) * bins + b];
+                if (!std::isfinite(sse))
+                    continue;
+                smin = std::min(smin, sse);
+                QJsonArray point;
+                point << m_lower[0] + (a + 0.5) * (m_upper[0] - m_lower[0]) / bins;
+                point << m_lower[1] + (b + 0.5) * (m_upper[1] - m_lower[1]) / bins;
+                point << sse;
+                surface << point;
+            }
+        out["surface"] = surface;
+        out["contour_min"] = smin / (sseMin > 0 ? sseMin : 1.0); // relative to the fit, as the 1D chart draws it
+        out["contour_max"] = std::max(4.0, 2.0 * (m_level / (sseMin > 0 ? sseMin : 1.0)));
     }
     out["variables"] = variables;
 
@@ -528,3 +612,4 @@ QString LandscapeSearch::Summary(const QJsonObject& r)
                 .arg(number(r["evaluations"].toDouble()), number(r["time_ms"].toDouble() / 1000.0));
     return text;
 }
+

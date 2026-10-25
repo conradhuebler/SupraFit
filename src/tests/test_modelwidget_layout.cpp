@@ -66,6 +66,7 @@
 #include "src/global.h"
 
 #include "src/capabilities/jobmanager.h"
+#include "src/core/minimizer.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/appearance.h"
@@ -547,6 +548,120 @@ private slots:
     }
     // Finished analyses are listed in the Statistics list next to the analyses to start, can be looked at, and
     // a result can be taken out of the pane into a window of its own; closing that window puts it back. Claude Generated.
+    // Landscape sampling is an analysis of the Statistics page: a tab to start it (only where the model can do it), a
+    // finished run in the list of results, and the result page with the intervals and the profile chart.
+    void landscapeSamplingIsStartedListedAndShown()
+    {
+        QSettings().remove(QStringLiteral("model"));
+
+        // a model without variable projection: the tab is there, the button is not usable
+        {
+            Charts charts = m_chart->addModel(m_model);
+            ModelWidget widget(m_model, charts);
+            widget.resize(1100, 700);
+            widget.show();
+            QTest::qWaitForWindowExposed(&widget);
+            StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+            QVERIFY(dialog);
+            QVERIFY(dialog->TabTitles().contains(QStringLiteral("Landscape Sampling")));
+            QVERIFY(!m_model->SupportsVarPro());
+            QPushButton* sample = nullptr;
+            for (QPushButton* b : dialog->findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("Sample"))
+                    sample = b;
+            QVERIFY(sample);
+            QVERIFY2(!sample->isEnabled(), "a model without variable projection must not offer to sample");
+        }
+
+        // a fitted reaction model: sample, list, show
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, m_data.data());
+        QJsonObject reactions, definition;
+        reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        definition["Reactions"] = reactions;
+        model->DefineModel(definition);
+        QJsonObject cfg = model->getOptimizerConfig();
+        cfg["FitSolver"] = QStringLiteral("VarPro");
+        model->setOptimizerConfig(cfg);
+        model->InitialGuess();
+        model->setGlobalParameter(3.0, 0);
+        model->setGlobalParameter(5.4, 1);
+        Minimizer minimizer(false);
+        minimizer.setModel(model);
+        minimizer.Minimize();
+        model->Calculate();
+        QVERIFY(model->SupportsVarPro());
+        QCOMPARE(model->GlobalParameterSize(), 2);
+
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QPushButton* sample = nullptr;
+        for (QPushButton* b : dialog->findChildren<QPushButton*>())
+            if (b->text() == QStringLiteral("Sample"))
+                sample = b;
+        QVERIFY(sample);
+        QVERIFY(sample->isEnabled());
+        const QJsonObject controller = dialog->RunLandscape();
+        QCOMPARE(AccessCI(controller, "Method").toInt(), int(SupraFit::Method::LandscapeSampling));
+
+        QJsonObject job = LandscapeConfigBlock;
+        job["Walkers"] = 2;
+        job["MaxSteps"] = 3000;
+        job["Polish"] = 2;
+        job["Surface"] = true;
+        JobManager jobs;
+        jobs.setModel(model);
+        jobs.AddSingleJob(job);
+        jobs.RunJobs();
+        QVERIFY2(model->LandscapeSize() >= 1, "the sampling left no result");
+        QCoreApplication::processEvents();
+
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Results button
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        QStringList titles;
+        for (int i = 0; i < list->count(); ++i)
+            titles << list->item(i)->text();
+        QVERIFY2(titles.contains(QStringLiteral("Landscape Sampling")), qPrintable(titles.join(", "))); // to start
+        QVERIFY2(titles.contains(QStringLiteral("Landscape Sampling #1")), qPrintable(titles.join(", "))); // finished
+
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QVERIFY2(results->isVisible(), "the result is not shown on the page");
+        bool text = false, chart = false, surfaceChart = false;
+        for (QLabel* l : results->findChildren<QLabel*>())
+            if (l->isVisible() && l->text().contains(QStringLiteral("Landscape sampling")) && l->text().contains(QStringLiteral("<table>")))
+                text = true;
+        QVERIFY2(text, "the intervals are not written on the result page");
+        for (QWidget* w : results->findChildren<QWidget*>())
+            if (w->isVisible() && w->objectName() == QStringLiteral("landscapechart"))
+                chart = true;
+        QVERIFY2(chart, "no profile chart on the result page");
+        for (QWidget* w : results->findChildren<QWidget*>())
+            if (w->isVisible() && w->objectName() == QStringLiteral("landscapesurface"))
+                surfaceChart = true;
+        QVERIFY2(surfaceChart, "no surface chart on the result page of a two-constant model with 'Surface' on");
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_page.png").arg(renderDir));
+
+        model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+        QCOMPARE(model->LandscapeSize(), 0);
+    }
+
     void finishedResultsAreListedAndDetachable()
     {
         QSettings().remove(QStringLiteral("model"));

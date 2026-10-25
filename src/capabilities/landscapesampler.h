@@ -38,16 +38,27 @@ struct LandscapeSettings {
 
     Sampler sampler = Sampler::Metropolis;
     double temperature = 1.0; ///< kT in SSE units
-    /*! Metropolis: proposal sigma. Langevin: step of the explicit Euler-Maruyama update, which is only stable
-     *  for stepSize^2 width^2 k / (2 kT) < ~1 with k the largest curvature of SSE; too large a step shows as
-     *  an acceptance near zero (all moves land behind the wall). */
+    /*! Metropolis: proposal sigma. Langevin: step of the explicit Euler-Maruyama update (the integration step), which
+     *  is only stable for stepSize^2 width^2 k / (2 kT) < ~1 with k the largest curvature of SSE when it is not
+     *  adapted; too large a step shows as an acceptance near zero (all moves land behind the wall). Start value
+     *  only while `adaptive` is on. */
     double stepSize = 0.05;
-    /*! Metropolis only: shape the proposal after the covariance of the chain (Adaptive Metropolis, Haario et al.)
-     *  and scale it to `targetAcceptance`, during the first `adaptSteps` steps (<= 0: `minSteps`). A thin tilted
-     *  valley, the usual shape of the SSE surface of correlated constants, is hopeless with isotropic steps. */
+    /*! Shape the proposal after the covariance of the chain (Adaptive Metropolis, Haario et al.; for Langevin the
+     *  drift and the noise are preconditioned with it) and scale it to `targetAcceptance` (Langevin:
+     *  `langevinAcceptance`), during the first `adaptSteps` steps (<= 0: `minSteps`). A thin tilted valley, the
+     *  usual shape of the SSE surface of correlated constants, is hopeless with isotropic steps: explicit Euler
+     *  overshoots across it and nearly every move ends behind the wall. */
     bool adaptive = true;
     int adaptSteps = 0;
     double targetAcceptance = 0.25;
+    /*! Langevin: Metropolis adjustment of the Langevin step (MALA): the step is only a proposal that is accepted or rejected
+     *  like a Metropolis move, so the walk samples exp(-U/kT) exactly. Without it (unadjusted Langevin) the explicit Euler
+     *  step samples a broadened distribution, which shows as a rougher profile; it saves the gradient at rejected proposals. */
+    bool langevinCorrection = true;
+    /*! Langevin: share of the moves that are accepted (with the correction; 0.57 is the optimum for MALA) or not stopped by
+     *  the wall or the box (without it, at least 0.8 is used). The step (`stepSize` first, then a factor of the chain
+     *  covariance) is regulated to it during the adaptation. */
+    double langevinAcceptance = 0.57;
     double gradientStep = 1e-3; ///< Langevin: finite-difference step of the SSE gradient
     bool centralGradient = false; ///< Langevin: central instead of forward differences (2N instead of N evaluations)
 
@@ -67,6 +78,11 @@ struct LandscapeSettings {
      *  a run can take down (about 2.3 dT for 0.1). Not applicable without well-tempering (dT <= 0). */
     double minHillFraction = 0.1;
     double minimumTolerance = 1e-4; ///< relative improvement of the best SSE that counts as new
+
+    /*! \brief Record every accepted point via the listener (coordinates + SSE) for 2D profiles; the record is a copy per
+ *  point and reaches `minPoints2D` points before it keeps only every point that opens a new bin of the finer pair, so
+ *  that memory and build time stay bounded. Slow: off by default. */
+    bool recordPoints = false;
 
     int bins = 50; ///< resolution of coverage, profile and minimum candidates per variable
     uint64_t seed = 1;
@@ -128,6 +144,11 @@ public:
     const LandscapeSettings& Settings() const { return m_settings; }
     /*! \brief Polled once per step; returning true ends the run. */
     void setInterrupt(std::function<bool()> interrupt) { m_interrupt = std::move(interrupt); }
+    /*! \brief Called for every accepted point, in the walker thread. What it copies per call is its own business (points
+     *  for a 2D profile, coverage...): with no listener there is no per-step cost. */
+    void addListener(std::function<void(const std::vector<double>& x, double sse)> listener) { m_listener = std::move(listener); }
+    /*! \brief Fraction of the accepted points offered to the listener (a sample of the walk), 1. */
+    void setListenerStride(int stride) { m_listenerStride = std::max(1, stride); }
 
     /*! \brief Runs from `start` (clamped into the box). Throws std::invalid_argument for unusable settings. */
     LandscapeResult Run(const std::vector<double>& start);
@@ -147,6 +168,8 @@ private:
     std::vector<double> m_lower, m_upper;
     LandscapeSettings m_settings;
     std::function<bool()> m_interrupt;
+    std::function<void(const std::vector<double>&, double)> m_listener;
+    int m_listenerStride = 1;
     std::unique_ptr<Bias> m_bias;
 };
 

@@ -35,6 +35,7 @@
 #include <QPropertyAnimation>
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
@@ -129,6 +130,17 @@ void StatisticDialog::updateUI()
     m_moco_f_value->setToolTip(FOutput());
     m_wgs_f_value->setValue(m_model.toStrongRef().data()->finv(m_wgs_maxerror->value() / 100));
     m_moco_f_value->setValue(m_model.toStrongRef().data()->finv(m_moco_maxerror->value() / 100));
+    updateLandscape();
+}
+
+/*! \brief Sampling needs variable projection: say so instead of offering a button that cannot work. Claude Generated. */
+void StatisticDialog::updateLandscape()
+{
+    if (!m_model || !m_ls_run)
+        return;
+    const bool usable = m_model.toStrongRef().data()->SupportsVarPro();
+    m_ls_run->setEnabled(usable);
+    m_ls_note->setVisible(!usable);
 }
 
 void StatisticDialog::setUi()
@@ -140,6 +152,8 @@ void StatisticDialog::setUi()
     m_tab_widget->addTab(GridSearchWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
+    if (m_model) // the project-wide dialog has no single model to sample
+        m_tab_widget->addTab(LandscapeWidget(), tr("Landscape Sampling"));
 
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
@@ -296,6 +310,193 @@ QWidget* StatisticDialog::MonteCarloWidget()
 
     mc_widget->setLayout(layout);
     return mc_widget;
+}
+
+/*! \brief Tab of the landscape sampling: confidence region of every constant from the sum of squares itself,
+ * and other minima. Claude Generated. */
+QWidget* StatisticDialog::LandscapeWidget()
+{
+    QWidget* widget = new QWidget;
+    QGridLayout* layout = new QGridLayout;
+
+    QLabel* info = new QLabel(tr("Samples the sum of squares over the global parameters (the linear parameters are fitted for each point) and "
+                                 "reads the confidence interval of every constant from it, also for correlated constants. Minima other than the "
+                                 "fit are refitted and listed."));
+    info->setWordWrap(true);
+    layout->addWidget(info, 0, 0, 1, 2);
+
+    m_ls_confidence = new QDoubleSpinBox;
+    m_ls_confidence->setRange(50, 99.9);
+    m_ls_confidence->setDecimals(1);
+    m_ls_confidence->setValue(95);
+    m_ls_confidence->setSuffix(" %");
+    layout->addWidget(new QLabel(tr("Confidence:")), 1, 0);
+    layout->addWidget(m_ls_confidence, 1, 1);
+
+    m_ls_walkers = new QSpinBox;
+    m_ls_walkers->setRange(0, 64);
+    m_ls_walkers->setSpecialValueText(tr("one per thread"));
+    m_ls_walkers->setToolTip(tr("Walkers sampling in parallel, each on its own copy of the model."));
+    layout->addWidget(new QLabel(tr("Walkers:")), 2, 0);
+    layout->addWidget(m_ls_walkers, 2, 1);
+
+    m_ls_steps = new QSpinBox;
+    m_ls_steps->setRange(1000, 10000000);
+    m_ls_steps->setSingleStep(10000);
+    m_ls_steps->setValue(50000);
+    m_ls_steps->setToolTip(tr("Steps of one walker; it stops earlier when it finds nothing new."));
+    layout->addWidget(new QLabel(tr("Steps per walker:")), 3, 0);
+    layout->addWidget(m_ls_steps, 3, 1);
+
+    m_ls_sampler = new QComboBox;
+    m_ls_sampler->addItem(tr("Metropolis"), QStringLiteral("Metropolis"));
+    m_ls_sampler->addItem(tr("Langevin"), QStringLiteral("Langevin"));
+    m_ls_sampler->setToolTip(tr("Metropolis needs the sum of squares only; Langevin follows its numerical gradient."));
+    layout->addWidget(new QLabel(tr("Sampler:")), 4, 0);
+    layout->addWidget(m_ls_sampler, 4, 1);
+
+    m_ls_step = new QDoubleSpinBox;
+    m_ls_step->setRange(0, 1);
+    m_ls_step->setDecimals(4);
+    m_ls_step->setSingleStep(0.005);
+    m_ls_step->setSpecialValueText(tr("automatic"));
+    m_ls_step->setToolTip(tr("Step of the sampler (for Langevin the step of the integration) as a fraction of the sampled range; the start value, "
+                             "the walker adapts it to the shape of the surface. A step that is too large shows as nearly all moves being rejected."));
+    layout->addWidget(new QLabel(tr("Step size (integration):")), 5, 0);
+    layout->addWidget(m_ls_step, 5, 1);
+
+    m_ls_gradient_step = new QDoubleSpinBox;
+    m_ls_gradient_step->setRange(1e-8, 0.1);
+    m_ls_gradient_step->setDecimals(8);
+    m_ls_gradient_step->setSingleStep(1e-4);
+    m_ls_gradient_step->setValue(1e-3);
+    m_ls_gradient_step->setToolTip(tr("Step of the finite differences that give the gradient of the sum of squares (Langevin), as a fraction of the sampled range. "
+                                      "Too small a step reads the noise of the fit, too large one smooths the surface."));
+    layout->addWidget(new QLabel(tr("Gradient step (finite differences):")), 6, 0);
+    layout->addWidget(m_ls_gradient_step, 6, 1);
+
+    m_ls_central = new QCheckBox(tr("Central differences"));
+    m_ls_central->setToolTip(tr("Central instead of forward differences for the gradient: more accurate, twice the evaluations per step (Langevin)."));
+    layout->addWidget(m_ls_central, 7, 0, 1, 2);
+
+    m_ls_correction = new QCheckBox(tr("Metropolis correction"));
+    m_ls_correction->setChecked(true);
+    m_ls_correction->setToolTip(tr("Accept or reject each Langevin step like a Metropolis move: the walk then samples the surface exactly and the step is "
+                                   "regulated to the acceptance. Without it the explicit step samples a broadened distribution (rougher profile) but needs "
+                                   "no gradient at rejected steps."));
+    layout->addWidget(m_ls_correction, 8, 0, 1, 2);
+
+    // the gradient belongs to Langevin only
+    auto langevinOnly = [this]() {
+        const bool langevin = m_ls_sampler->currentData().toString() == QLatin1String("Langevin");
+        m_ls_gradient_step->setEnabled(langevin);
+        m_ls_central->setEnabled(langevin);
+        m_ls_correction->setEnabled(langevin);
+    };
+    connect(m_ls_sampler, &QComboBox::currentIndexChanged, this, langevinOnly);
+    langevinOnly();
+
+    m_ls_range = new QDoubleSpinBox;
+    m_ls_range->setRange(0, 50);
+    m_ls_range->setDecimals(1);
+    m_ls_range->setSpecialValueText(tr("automatic"));
+    m_ls_range->setToolTip(tr("Half width of the sampled range around the fit, in log10 units of the constants."));
+    layout->addWidget(new QLabel(tr("Range (log10):")), 9, 0);
+    layout->addWidget(m_ls_range, 9, 1);
+
+    m_ls_polish = new QSpinBox;
+    m_ls_polish->setRange(0, 20);
+    m_ls_polish->setValue(5);
+    m_ls_polish->setToolTip(tr("How many minima found by the walkers are refitted."));
+    layout->addWidget(new QLabel(tr("Minima to refit:")), 10, 0);
+    layout->addWidget(m_ls_polish, 10, 1);
+
+    m_ls_surface = new QCheckBox(tr("2D surface with the level lines"));
+    m_ls_surface->setToolTip(tr("Records the points of the walk and shows the profile of the sum of squares over the first two constants, with the "
+                               "lines of the confidence level (useful to see the correlation). costs a little time and memory."));
+    layout->addWidget(m_ls_surface, 10, 0, 1, 2);
+
+    // when to stop and which barriers can be crossed
+    QGroupBox* stopping = new QGroupBox(tr("Stopping and barriers"));
+    QGridLayout* stopLayout = new QGridLayout;
+
+    m_ls_wall = new QDoubleSpinBox;
+    m_ls_wall->setRange(1.1, 100);
+    m_ls_wall->setDecimals(1);
+    m_ls_wall->setValue(3.0);
+    m_ls_wall->setToolTip(tr("Height of the wall in units of how far the limit of the confidence region lies above the fit. Moves above the wall "
+                             "are rejected; another minimum behind a barrier higher than the wall is not found."));
+    stopLayout->addWidget(new QLabel(tr("Wall height:")), 0, 0);
+    stopLayout->addWidget(m_ls_wall, 0, 1);
+
+    m_ls_min_steps = new QSpinBox;
+    m_ls_min_steps->setRange(0, 10000000);
+    m_ls_min_steps->setSingleStep(1000);
+    m_ls_min_steps->setValue(2000);
+    m_ls_min_steps->setToolTip(tr("A walker does not stop before this many steps."));
+    stopLayout->addWidget(new QLabel(tr("Minimum steps:")), 1, 0);
+    stopLayout->addWidget(m_ls_min_steps, 1, 1);
+
+    m_ls_patience = new QSpinBox;
+    m_ls_patience->setRange(1, 100000);
+    m_ls_patience->setValue(100);
+    m_ls_patience->setToolTip(tr("A walker stops after this many hills in a row (one per 20 steps) that opened up no new region and no better minimum."));
+    stopLayout->addWidget(new QLabel(tr("Patience:")), 2, 0);
+    stopLayout->addWidget(m_ls_patience, 2, 1);
+
+    m_ls_converged = new QDoubleSpinBox;
+    m_ls_converged->setRange(0.001, 1);
+    m_ls_converged->setDecimals(3);
+    m_ls_converged->setSingleStep(0.01);
+    m_ls_converged->setValue(0.1);
+    m_ls_converged->setToolTip(tr("A walker only counts towards its patience while the hill height at its position is below this fraction of the "
+                                  "first hill, i.e. while the bias there has filled up. Smaller: longer runs, higher barriers are taken down."));
+    stopLayout->addWidget(new QLabel(tr("Bias convergence:")), 3, 0);
+    stopLayout->addWidget(m_ls_converged, 3, 1);
+
+    m_ls_bias = new QDoubleSpinBox;
+    m_ls_bias->setRange(0, 10);
+    m_ls_bias->setDecimals(2);
+    m_ls_bias->setSingleStep(0.1);
+    m_ls_bias->setValue(0.5);
+    m_ls_bias->setToolTip(tr("Well-tempering temperature in units of the wall's height above the fit; barriers up to about 2.3 times this are taken "
+                             "down. 0 switches well-tempering off."));
+    stopLayout->addWidget(new QLabel(tr("Bias strength:")), 4, 0);
+    stopLayout->addWidget(m_ls_bias, 4, 1);
+
+    m_ls_hill_width = new QDoubleSpinBox;
+    m_ls_hill_width->setRange(0.005, 0.5);
+    m_ls_hill_width->setDecimals(3);
+    m_ls_hill_width->setSingleStep(0.005);
+    m_ls_hill_width->setValue(0.05);
+    m_ls_hill_width->setToolTip(tr("Width of one hill as a fraction of the sampled range. Hills much wider than a narrow valley fill it too early."));
+    stopLayout->addWidget(new QLabel(tr("Hill width:")), 5, 0);
+    stopLayout->addWidget(m_ls_hill_width, 5, 1);
+
+    stopping->setLayout(stopLayout);
+    layout->addWidget(stopping, 11, 0, 1, 2);
+
+    m_ls_note = new QLabel(tr("This model has no variable projection: the landscape can only be sampled for models that fit their linear parameters out."));
+    m_ls_note->setWordWrap(true);
+    layout->addWidget(m_ls_note, 12, 0, 1, 2);
+
+    m_ls_run = new QPushButton(tr("Sample"));
+    layout->addWidget(m_ls_run, 13, 0, 1, 2);
+    layout->setRowStretch(14, 1);
+
+    connect(m_ls_run, &QPushButton::clicked, this, [this]() {
+        clearMessages();
+        emit RunCalculation(RunLandscape());
+    });
+    if (m_model)
+        connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, &StatisticDialog::updateLandscape);
+
+    widget->setLayout(layout);
+    updateLandscape();
+    if (m_model)
+        m_ls_surface->setChecked(m_model.toStrongRef().data()->GlobalParameterSize() == 2);
+    m_ls_surface->setEnabled(m_model && m_model.toStrongRef().data()->GlobalParameterSize() >= 2);
+    return widget;
 }
 
 QWidget* StatisticDialog::GridSearchWidget()
@@ -867,6 +1068,30 @@ QJsonObject StatisticDialog::RunModelComparison() const
     controller["GlobalParameterScalingList"] = ToolSet::DoubleVec2String(glob_box);
     controller["LocalParameterScalingList"] = ToolSet::DoubleVec2String(local_box);
 
+    return controller;
+}
+
+QJsonObject StatisticDialog::RunLandscape() const
+{
+    QJsonObject controller = LandscapeConfigBlock;
+    controller["Method"] = SupraFit::Method::LandscapeSampling;
+    controller["confidence"] = m_ls_confidence->value();
+    controller["Walkers"] = m_ls_walkers->value();
+    controller["MaxSteps"] = m_ls_steps->value();
+    controller["Sampler"] = m_ls_sampler->currentData().toString();
+    controller["StepSize"] = m_ls_step->value();
+    controller["GradientStep"] = m_ls_gradient_step->value();
+    controller["CentralGradient"] = m_ls_central->isChecked();
+    controller["LangevinCorrection"] = m_ls_correction->isChecked();
+    controller["CutFactor"] = m_ls_wall->value();
+    controller["MinSteps"] = m_ls_min_steps->value();
+    controller["Patience"] = m_ls_patience->value();
+    controller["MinHillFraction"] = m_ls_converged->value();
+    controller["BiasFactor"] = m_ls_bias->value();
+    controller["HillWidth"] = m_ls_hill_width->value();
+    controller["Range"] = m_ls_range->value();
+    controller["Polish"] = m_ls_polish->value();
+    controller["Surface"] = m_ls_surface->isChecked();
     return controller;
 }
 

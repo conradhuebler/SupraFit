@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: SSE-Landscape Sampling (Metadynamics-like) for Global Search and Confidence Intervals
 
-**Status:** WP-A, WP-B, WP-C, WP-C2, WP-E (measured) ADDED (`src/capabilities/landscapesampler.*`, `landscapesearch.*`, machine-tested), C3-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
+**Status:** WP-A, WP-B, WP-C, WP-C2, WP-D (GUI incl. 2D surface), WP-E (measured) ADDED (`src/capabilities/landscapesampler.*`, `landscapesearch.*`, machine-tested), C3-E ADD · **Owner:** Conrad Hübler · **Idea:** operator · **Author note:** Claude Generated
 
 ## Goal
 
@@ -80,7 +80,7 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
 | C | `LandscapeSearch : AbstractSearchClass` on a VarPro model (log K, `ProjectLinearParameters`), JSON out, box from the fit, box expansion — ADDED | scan (1 constant) and exact 2D profile (2 constants) |
 | C2 | method id 8, `ModelStatisticsStore`, project JSON save/restore, `JobManager`, polish of the minimum candidates with the minimiser — ADDED | job -> model -> export -> import |
 | C3 | `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (`tools_analysis`), `MLFeatureExtractor`; ends that stay `Unsampled` (neighbour bin behind the wall) | vs. `WeakenedGridSearch` and Monte Carlo |
-| D | UI page in Statistics (settings, progress, profile plots, surface for ≤2D), `docs/ASSISTANT_HELP.md` entry | offscreen dialog test |
+| D | UI tab, list entry, result page (profile chart, interval table, 2D surface with height lines), `docs/ASSISTANT_HELP.md` entry — ADDED | offscreen test with a real run |
 | E | MEASURED, see docs/landscape_sampling_measurement_2026-10-24.md - Evaluation: number of SSE evaluations vs. profile by constrained refit and vs. MC; quote the worst case over several data sets (not one sample) | measurement document in `docs/` + index line |
 
 ## Risks

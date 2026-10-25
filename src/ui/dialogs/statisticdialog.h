@@ -34,6 +34,7 @@
 #include "src/capabilities/resampleanalyse.h"
 
 class QCheckBox;
+class QComboBox;
 class QGroupBox;
 class QDoubleSpinBox;
 class QLabel;
@@ -106,6 +107,7 @@ public:
     QJsonObject RunModelComparison() const;
     QJsonObject RunReductionAnalyse() const;
     QJsonObject RunCrossValidation() const;
+    QJsonObject RunLandscape() const;
 
     inline void setRuns(int runs) { m_main_steps = runs; }
     virtual void setVisible(bool visible) override;
@@ -145,6 +147,8 @@ private:
     QWidget* GridSearchWidget();
     QWidget* ModelComparison();
     QWidget* CVWidget();
+    QWidget* LandscapeWidget();
+    void updateLandscape();
 
     QWidget *m_hide_widget, *m_moco_widget;
     QTabWidget* m_tab_widget;
@@ -155,6 +159,14 @@ private:
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance, m_glob_box_scaling, m_loc_box_scaling;
     QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
+    QDoubleSpinBox *m_ls_confidence, *m_ls_range, *m_ls_step, *m_ls_gradient_step;
+    QCheckBox *m_ls_central = nullptr, *m_ls_correction = nullptr, *m_ls_surface = nullptr;
+    QDoubleSpinBox *m_ls_wall, *m_ls_converged, *m_ls_bias, *m_ls_hill_width;
+    QSpinBox *m_ls_min_steps, *m_ls_patience;
+    QSpinBox *m_ls_walkers, *m_ls_steps, *m_ls_polish;
+    QComboBox* m_ls_sampler;
+    QLabel* m_ls_note = nullptr;
+    QPushButton* m_ls_run = nullptr;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar *m_progress, *m_main_progress;

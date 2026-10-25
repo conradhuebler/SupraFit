@@ -439,6 +439,94 @@ private slots:
         QVERIFY2(evaluationsAdaptive > evaluationsPlain, "the adaptive walker must cover more of the valley in the same steps");
     }
 
+    // Langevin on a thin tilted valley: explicit Euler with an isotropic step overshoots across it and nearly every move ends
+    // behind the wall (acceptance 6e-5 on a fitted model, a handful of points in the profile). Preconditioned with the chain
+    // covariance and with an adapted step, almost all moves stay inside, whatever the start value of the step. How far a single
+    // walker gets along the valley is another matter: its own bias drives it to one side of the start (see the wall test).
+    void langevinIsStableInAThinValley()
+    {
+        const double u = 1.0, w = 4e4;
+        const auto f = [=](const V& x) {
+            const double a = (x[0] + x[1]) / std::sqrt(2.0), b = (x[0] - x[1]) / std::sqrt(2.0);
+            return 1.0 + u * a * a + w * b * b;
+        };
+        for (const double start : { 0.01, 0.04, 0.2 }) {
+            LandscapeSampler sampler(f, { -1, -1 }, { 1, 1 });
+            LandscapeSettings s = quick();
+            s.sampler = LandscapeSettings::Sampler::Langevin;
+            s.stepSize = start;
+            s.sseCut = 3.0;
+            s.bins = 80;
+            s.maxSteps = 20000;
+            s.temperature = 0.5;
+            s.minHillFraction = 0.5;
+            sampler.setSettings(s);
+            const LandscapeResult r = sampler.Run({ 0, 0 });
+            qInfo() << "Langevin start step" << start << "moves not stopped by the wall" << r.acceptance << "cells" << r.cellsVisited;
+            QVERIFY2(r.acceptance > 0.4, qPrintable(QString("start step %1: only %2 of the moves were not stopped").arg(start).arg(r.acceptance)));
+            QVERIFY(r.cellsVisited > 20);
+        }
+    }
+
+    // The wall decides which minima can be found: a barrier above it cannot be crossed however long the bias fills the well,
+    // one below it can. (Models with a distant second minimum need a higher wall: CutFactor.)
+    void wallBelowTheBarrierKeepsTheSecondWellOut()
+    {
+        const auto f = doubleWell(30.0);
+        for (const double wall : { 20.0, 36.0 }) {
+            int found = 0;
+            for (uint64_t seed = 1; seed <= 4; ++seed) {
+                LandscapeSampler sampler(f, { -1.8, -1 }, { 1.8, 1 });
+                LandscapeSettings s = quick();
+                s.sseCut = wall;
+                s.maxSteps = 120000;
+                s.patience = 150;
+                s.minHillFraction = 0.1;
+                s.seed = seed;
+                sampler.setSettings(s);
+                if (reachesRightWell(sampler.Run({ -1, 0 })))
+                    ++found;
+            }
+            qInfo() << "wall" << wall << "barrier 30: second well found in" << found << "of 4 seeds";
+            if (wall < 30.0)
+                QCOMPARE(found, 0);
+            else
+                QCOMPARE(found, 4);
+        }
+    }
+
+    // A listener is called for every accepted point, in the walker thread; it is off until added.
+    void sampledPointsAreRecorded()
+    {
+        const auto f = doubleWell(10.0);
+        LandscapeSettings s = quick();
+        s.sseCut = 14;
+        s.maxSteps = 5000;
+        s.minSteps = 5000;
+        LandscapeSampler sampler(f, { -1.8, -1 }, { 1.8, 1 });
+        sampler.setSettings(s);
+        long runs = 0, below = 0;
+        sampler.addListener([&](const V& x, double sse) {
+            ++runs;
+            QVERIFY(sse <= s.sseCut);
+            QVERIFY(std::abs(x[0]) <= 1.8 && std::abs(x[1]) <= 1.0);
+            if (x[0] < 0)
+                ++below;
+        });
+        const LandscapeResult r = sampler.Run({ -1, 0 });
+        QVERIFY(runs > 0);
+        QVERIFY2(runs <= r.evaluations, "the listener must not cost SSE evaluations");
+        QVERIFY(below > 0);
+        // the stride samples
+        runs = 0;
+        LandscapeSampler strided(f, { -1.8, -1 }, { 1.8, 1 });
+        strided.setSettings(s);
+        strided.setListenerStride(10);
+        strided.addListener([&](const V&, double) { ++runs; });
+        strided.Run({ -1, 0 });
+        QVERIFY2(runs <= r.evaluations / 10 + 1 && runs > 0, qPrintable(QStringLiteral("%1 calls for %2 evaluated points").arg(runs).arg(r.evaluations)));
+    }
+
     void naturalTemperature()
     {
         QCOMPARE(LandscapeSampler::NaturalTemperature(0.5, 13, 3), 0.1);

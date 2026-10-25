@@ -812,6 +812,8 @@ public:
 
     inline QJsonObject Search(int i) { return m_stats.get(SupraFit::Method::GlobalSearch, i); }
 
+    inline int LandscapeSize() const { return m_stats.size(SupraFit::Method::LandscapeSampling); }
+
     QString RandomInput(double indep, double dep) const;
 
     virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const;
