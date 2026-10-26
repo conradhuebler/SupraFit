@@ -156,6 +156,9 @@ QWidget* ResultsWidget::LandscapeWidget()
     const double fit = result["sse_min"].toDouble() > 0 ? result["sse_min"].toDouble() : 1.0;
     const double level = result["level"].toDouble() / fit;
     const double hi = result["contour_max"].toDouble(4); // upper end of the height lines, above the level by construction
+    const bool logSpacing = result["contour_log"].toBool(); // a minima search spans the confidence limit up to the wall
+    const bool finder = result["mode"].toString() == QLatin1String("Minima");
+    const QJsonArray minima = result["minima"].toArray();
     auto plain = [](const QString& html) { return QTextDocumentFragment::fromHtml(html).toPlainText(); };
 
     // the 2D profiles: `surfaces` of the pairs, or the single `surface` of a result stored by an earlier version
@@ -251,7 +254,7 @@ QWidget* ResultsWidget::LandscapeWidget()
         double xmin = vx["value"].toDouble(), xmax = xmin, ymin = vy["value"].toDouble(), ymax = ymin;
         int index = 0;
         for (int k = 0; k <= 10; ++k) {
-            const double value = level + (hi - level) * k / 10.0;
+            const double value = logSpacing && hi > level ? level * std::pow(hi / level, k / 10.0) : level + (hi - level) * k / 10.0;
             const QColor color = hue(0.08 * k);
 
             QList<Segment> segments;
@@ -342,6 +345,25 @@ QWidget* ResultsWidget::LandscapeWidget()
         marker->append(vx["value"].toDouble(), vy["value"].toDouble());
         view->addSeries(marker, index, Qt::white, tr("Fit"));
 
+        if (finder && !minima.isEmpty()) { // the minima the search found, numbered as in the list
+            ++index;
+            QScatterSeries* found = new QScatterSeries;
+            found->setColor(QColor(220, 60, 40));
+            found->setBorderColor(Qt::black);
+            found->setMarkerSize(9);
+            for (const QJsonValue& m : minima) {
+                const QJsonArray at = m.toObject()["parameters"].toArray();
+                if (xi < at.size() && yi < at.size() && !m.toObject()["is_fit"].toBool()) {
+                    found->append(at[xi].toDouble(), at[yi].toDouble());
+                    xmin = qMin(xmin, at[xi].toDouble());
+                    xmax = qMax(xmax, at[xi].toDouble());
+                    ymin = qMin(ymin, at[yi].toDouble());
+                    ymax = qMax(ymax, at[yi].toDouble());
+                }
+            }
+            view->addSeries(found, index, QColor(220, 60, 40), tr("Minima found"));
+        }
+
         // the axes follow the lines, not the box the walkers were allowed to explore (set by the caller once the chart has
         // finished scaling itself)
         const double padX = 0.05 * (xmax - xmin > 0 ? xmax - xmin : 1.0), padY = 0.05 * (ymax - ymin > 0 ? ymax - ymin : 1.0);
@@ -383,7 +405,9 @@ QWidget* ResultsWidget::LandscapeWidget()
     };
     show(entries.first());
 
-    if (entries.size() == 1)
+    const QJsonArray found = result["minima"].toArray();
+    const bool loadable = result["mode"].toString() == QLatin1String("Minima") && !found.isEmpty();
+    if (entries.size() == 1 && !loadable)
         return view;
 
     QWidget* host = new QWidget;
@@ -399,11 +423,46 @@ QWidget* ResultsWidget::LandscapeWidget()
         if (row >= 0 && row < entries.size())
             show(entries[row]);
     });
-    QHBoxLayout* row = new QHBoxLayout;
-    row->addWidget(new QLabel(tr("Show:")));
-    row->addWidget(choice, 1);
-    box->addLayout(row);
+    if (entries.size() > 1) {
+        QHBoxLayout* row = new QHBoxLayout;
+        row->addWidget(new QLabel(tr("Show:")));
+        row->addWidget(choice, 1);
+        box->addLayout(row);
+    } else
+        delete choice;
     box->addWidget(view, 1);
+
+    if (loadable) { // the minima of a search: choose one and put it into the project
+        QComboBox* which = new QComboBox;
+        which->setObjectName(QStringLiteral("landscapeminima"));
+        for (int k = 0; k < found.size(); ++k) {
+            const QJsonObject m = found[k].toObject();
+            QString note = m["is_fit"].toBool() ? tr("contains the fit") : (m["relative_sse"].toDouble() < 1.0 - 1e-3 ? tr("deeper than the fit") : QString());
+            which->addItem(tr("#%1  SSE %2%3").arg(k + 1).arg(QString::number(m["sse"].toDouble(), 'g', 5), note.isEmpty() ? QString() : QStringLiteral("  (%1)").arg(note)));
+        }
+        QPushButton* load = new QPushButton(tr("Load into model"));
+        load->setObjectName(QStringLiteral("landscapeminima_load"));
+        load->setToolTip(tr("Set the parameters of the model to the chosen minimum."));
+        QPushButton* add = new QPushButton(tr("Add as model"));
+        add->setObjectName(QStringLiteral("landscapeminima_add"));
+        add->setToolTip(tr("Add the chosen minimum as a new model."));
+        connect(load, &QPushButton::clicked, this, [=]() {
+            const QJsonObject model = found[which->currentIndex()].toObject()["model"].toObject();
+            if (!model.isEmpty())
+                emit LoadModel(model);
+        });
+        connect(add, &QPushButton::clicked, this, [=]() {
+            const QJsonObject model = found[which->currentIndex()].toObject()["model"].toObject();
+            if (!model.isEmpty())
+                emit AddModel(model);
+        });
+        QHBoxLayout* minimaRow = new QHBoxLayout;
+        minimaRow->addWidget(new QLabel(tr("Minima:")));
+        minimaRow->addWidget(which, 1);
+        minimaRow->addWidget(load);
+        minimaRow->addWidget(add);
+        box->addLayout(minimaRow);
+    }
     host->setLayout(box);
     return host;
 }

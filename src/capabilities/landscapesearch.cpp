@@ -108,7 +108,7 @@ public:
         if (m_randomStartCut > 0) { // somewhere below the wall, else the fitted point
             std::mt19937_64 rng(m_settings.seed);
             std::uniform_real_distribution<double> u(0.0, 1.0);
-            for (int attempt = 0; attempt < 200; ++attempt) {
+            for (int attempt = 0; attempt < 20000; ++attempt) { // the region below the wall is a small part of a large box
                 std::vector<double> x(m_lower.size());
                 for (size_t i = 0; i < x.size(); ++i)
                     x[i] = m_lower[i] + u(rng) * (m_upper[i] - m_lower[i]);
@@ -259,11 +259,16 @@ bool LandscapeSearch::Execute()
 
     const double confidence = AccessCI(m_controller, "Confidence").toDouble(95.0);
     m_level = LandscapeConfidenceLevel(sseMin, points, parameters, m_model->finv(confidence / 100.0));
+    // Mode "Minima" looks for other minima: the wall is a multiple of the SSE of the fit (a wrong basin lies at several times the
+    // optimum, not at the F-test level), the box is a fixed one around the fit and the search is not re-centred on a deeper
+    // minimum - that one is listed first instead.
+    const bool finder = AccessCI(m_controller, "Mode").toString(QStringLiteral("Confidence")) == QLatin1String("Minima");
+    const double searchWall = std::max(1.5, AccessCI(m_controller, "SearchWall").toDouble(10.0));
     const double cutFactor = AccessCI(m_controller, "CutFactor").toDouble(3.0);
-    const double cut = sseMin + cutFactor * (m_level - sseMin);
+    const double cut = finder ? sseMin * searchWall : sseMin + cutFactor * (m_level - sseMin);
 
     // box: fixed half width, or a multiple of the extent of the level along each variable alone
-    const double range = AccessCI(m_controller, "Range").toDouble(0.0);
+    const double range = AccessCI(m_controller, "Range").toDouble(finder ? 6.0 : 0.0);
     const double boxFactor = AccessCI(m_controller, "BoxFactor").toDouble(4.0);
     const double maxRange = AccessCI(m_controller, "MaxRange").toDouble(10.0);
     std::vector<double> half(d, range);
@@ -279,6 +284,8 @@ bool LandscapeSearch::Execute()
     const QString sampler = AccessCI(m_controller, "Sampler").toString("Metropolis");
     settings.sampler = sampler == QLatin1String("Langevin") ? LandscapeSettings::Sampler::Langevin : LandscapeSettings::Sampler::Metropolis;
     settings.temperature = AccessCI(m_controller, "TemperatureFactor").toDouble(1.0) * LandscapeSampler::NaturalTemperature(sseMin, points, parameters);
+    if (finder) // the barriers of interest are as high as the wall: a temperature of the statistical scale would never leave the basin
+        settings.temperature = AccessCI(m_controller, "SearchTemperature").toDouble(0.02) * (cut - sseMin);
     // integration step and finite-difference step, fractions of the sampled range; 0 takes the default
     const double step = AccessCI(m_controller, "StepSize").toDouble(0.0);
     settings.stepSize = step > 0 ? step : (settings.sampler == LandscapeSettings::Sampler::Langevin ? 0.04 : 0.05);
@@ -315,7 +322,7 @@ bool LandscapeSearch::Execute()
 
     // The extent along one variable alone understates the profile extent of correlated constants: if a
     // stretch reaches the box, that variable's box is doubled and the walk repeated (fixed `Range`: never).
-    const int maxExpansions = AccessCI(m_controller, "MaxExpansions").toInt(4);
+    const int maxExpansions = finder ? 0 : AccessCI(m_controller, "MaxExpansions").toInt(4);
     std::vector<std::unique_ptr<Walker>> run;
     QJsonArray walkerInfo;
     double evaluations = 0;
@@ -376,7 +383,7 @@ bool LandscapeSearch::Execute()
     }
 
     // The walkers found a deeper minimum than the fit: the level, the box and the intervals belong to that one.
-    const int maxRecentre = AccessCI(m_controller, "MaxRecentre").toInt(2);
+    const int maxRecentre = finder ? 0 : AccessCI(m_controller, "MaxRecentre").toInt(2);
     if (!m_stop && m_recentered < maxRecentre && m_merged.bestSSE < sseMin * (1.0 - 1e-3) && !m_merged.best.empty()) {
         QSharedPointer<AbstractModel> candidate = m_model->Clone(false);
         for (int i = 0; i < d; ++i)
@@ -401,6 +408,7 @@ bool LandscapeSearch::Execute()
     out["sse_min"] = sseMin;
     out["level"] = m_level;
     out["wall"] = cut;
+    out["mode"] = finder ? QStringLiteral("Minima") : QStringLiteral("Confidence");
     out["datapoints"] = points;
     out["parameters"] = parameters;
     out["time_ms"] = double(QDateTime::currentMSecsSinceEpoch() - t0);
@@ -419,6 +427,8 @@ bool LandscapeSearch::Execute()
     set["central_gradient"] = settings.centralGradient;
     set["langevin_correction"] = settings.langevinCorrection;
     set["cut_factor"] = cutFactor;
+    set["mode"] = finder ? QStringLiteral("Minima") : QStringLiteral("Confidence");
+    set["search_wall"] = searchWall;
     set["min_steps"] = settings.minSteps;
     set["patience"] = settings.patience;
     set["min_hill_fraction"] = settings.minHillFraction;
@@ -508,7 +518,8 @@ bool LandscapeSearch::Execute()
             surfaces << surface;
         }
         out["surfaces"] = surfaces;
-        out["contour_max"] = std::max(4.0, 2.0 * (m_level / (sseMin > 0 ? sseMin : 1.0))); // relative to the fit, as the charts draw it
+        out["contour_max"] = finder ? cut / sseMin : std::max(4.0, 2.0 * (m_level / (sseMin > 0 ? sseMin : 1.0))); // relative to the fit, as the charts draw it
+        out["contour_log"] = finder; // the lines of a search between the confidence limit and the wall are spaced geometrically
     }
     out["variables"] = variables;
 
@@ -516,9 +527,30 @@ bool LandscapeSearch::Execute()
     struct Minimum {
         std::vector<double> x;
         double sse;
+        QJsonObject model; ///< the refitted model, to load it into the project
     };
     std::vector<Minimum> polished;
-    const int polish = AccessCI(m_controller, "Polish").toInt(5);
+    const int polish = AccessCI(m_controller, "Polish").toInt(finder ? 10 : 5);
+    // The same minimum if the parameters agree, or if it is another point of the same flat valley: about the same SSE and no ridge on
+    // the straight line between the two (a refit stops anywhere on a valley floor that is flat to its tolerance).
+    auto sameBasin = [&](const std::vector<double>& a, double sseA, const std::vector<double>& b, double sseB) {
+        bool same = true;
+        for (int i = 0; i < d && same; ++i)
+            same = std::abs(a[i] - b[i]) <= std::max(0.02, (m_upper[i] - m_lower[i]) / settings.bins);
+        if (same && std::abs(sseA - sseB) <= 0.03 * std::max(sseA, sseB))
+            return true;
+        if (std::abs(sseA - sseB) > 0.03 * std::max(sseA, sseB))
+            return false;
+        const double ceiling = 1.03 * std::max(sseA, sseB);
+        std::vector<double> at(d);
+        for (int k = 1; k < 10; ++k) {
+            for (int i = 0; i < d; ++i)
+                at[i] = a[i] + (b[i] - a[i]) * k / 10.0;
+            if (!(base(at) <= ceiling))
+                return false;
+        }
+        return true;
+    };
     std::vector<double> tolerance(d);
     for (int i = 0; i < d; ++i)
         tolerance[i] = std::max(0.02, (m_upper[i] - m_lower[i]) / settings.bins);
@@ -530,16 +562,14 @@ bool LandscapeSearch::Execute()
         minimizer.setModel(candidate);
         minimizer.Minimize();
         ModelLandscape landscape(candidate);
-        Minimum found{ landscape.Start(), 0 };
+        Minimum found{ landscape.Start(), 0, QJsonObject() };
         found.sse = landscape(found.x);
-        if (!std::isfinite(found.sse))
+        candidate->Calculate();
+        found.model = candidate->ExportModel(false, false);
+        // a refit that ends above the point it started from did not converge: nothing to report
+        if (!std::isfinite(found.sse) || found.sse > m_merged.minima[k].sse * (1.0 + 1e-9))
             continue;
-        const bool known = std::any_of(polished.begin(), polished.end(), [&](const Minimum& m) {
-            for (int i = 0; i < d; ++i)
-                if (std::abs(m.x[i] - found.x[i]) > tolerance[i])
-                    return false;
-            return true;
-        });
+        const bool known = std::any_of(polished.begin(), polished.end(), [&](const Minimum& m) { return sameBasin(m.x, m.sse, found.x, found.sse); });
         if (!known)
             polished.push_back(found);
     }
@@ -551,6 +581,9 @@ bool LandscapeSearch::Execute()
         o["sse"] = m.sse;
         o["parameters"] = ToArray(m.x);
         o["within_level"] = m.sse <= m_level;
+        o["relative_sse"] = m.sse / sseMin; // against the SSE of the fit this search started from
+        o["is_fit"] = sameBasin(m.x, m.sse, x0, sseMin); // the fit lies in this minimum's basin
+        o["model"] = m.model;
         minima << o;
     }
     out["minima"] = minima;
@@ -572,6 +605,38 @@ QString LandscapeSearch::Summary(const QJsonObject& r)
             return QObject::tr("not reached by the sampling");
         return QString();
     };
+
+    if (r["mode"].toString() == QLatin1String("Minima")) {
+        QString text = QObject::tr("<p><b>Minima search</b>: SSE of the fit %1, wall at %2 times that.</p>")
+                           .arg(QString::number(r["sse_min"].toDouble(), 'g', 5), QString::number(r["wall"].toDouble() / r["sse_min"].toDouble(), 'g', 3));
+        const QJsonArray found = r["minima"].toArray();
+        if (found.isEmpty())
+            text += QObject::tr("<p>No minimum was refitted.</p>");
+        else {
+            text += QStringLiteral("<table><tr><th>#</th><th>%1</th><th>%2</th><th>%3</th><th></th></tr>")
+                        .arg(QObject::tr("SSE"), QObject::tr("SSE / SSE of the fit"), QObject::tr("Parameters"));
+            for (int k = 0; k < found.size(); ++k) {
+                const QJsonObject m = found[k].toObject();
+                QStringList values;
+                for (const QJsonValue& x : m["parameters"].toArray())
+                    values << number(x.toDouble());
+                QString note;
+                if (m["is_fit"].toBool())
+                    note = QObject::tr("contains the fit");
+                else if (m["relative_sse"].toDouble() < 1.0 - 1e-3)
+                    note = QObject::tr("deeper than the fit");
+                else if (m["within_level"].toBool())
+                    note = QObject::tr("inside the confidence region");
+                text += QStringLiteral("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>")
+                            .arg(k + 1).arg(number(m["sse"].toDouble()), number(m["relative_sse"].toDouble()), values.join(QStringLiteral(", ")), note);
+            }
+            text += QStringLiteral("</table>");
+        }
+        text += QObject::tr("<p>%1 walkers, %2 evaluations of the SSE, %3 s.</p>")
+                    .arg(r["walkers"].toArray().size())
+                    .arg(number(r["evaluations"].toDouble()), number(r["time_ms"].toDouble() / 1000.0));
+        return text;
+    }
 
     QString text;
     text += QObject::tr("<p><b>Landscape sampling</b>: %1 % confidence, SSE of the fit %2, limit of the confidence region %3.</p>")

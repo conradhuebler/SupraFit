@@ -8,6 +8,20 @@ Claude Generated - measurement document (WP-E of roadmap/landscape_sampling.md)
 Tool: `src/tests/benchmark_landscape.cpp` (target `benchmark_landscape`, manual, not a ctest), release build, 4 threads for the
 sampler and Monte Carlo, 1 thread for the reference. Commit of the sampler at the time: after WP-C2 plus `MaxRange` and re-centring.
 
+## Correction (2026-10-26): the "wrong basin" was no second minimum
+
+Part 2 below speaks of 1 of 32 blind fits that "ended in a wrong basin" (SSE 0.191 instead of 0.0223) and of the sampler finding
+"the better minimum". Checked later on that data set (1:1/2:1, lg beta (3.0, 4.5), noise 0.02, seed 6): the SSE on the straight line
+between the blind fit and the optimum has its maximum at the blind fit itself, it falls monotonically. There is **no barrier**: the
+blind fit stopped on the slope of a flat valley (lg beta 2 is about -8.8 there, a direction the data hardly constrain). Neither is the
+"multistart success" a count of basins: it counts starts that reached an SSE within 2 % of the reference. What the part-2 table
+measures is therefore the cost of getting from a stalled fit to the optimum (3.0e5 evaluations, 4 s for the sampler, three
+random starts of the ordinary minimiser, 10 ms), **not** the cost of crossing a barrier. Barrier crossing is demonstrated only on analytic
+double wells (`barrierFallsForEverySeed`, `wallBelowTheBarrierKeepsTheSecondWellOut`). For this data set 60 random starts show a flat
+valley (lg beta 2 from 4.4 down to -9, SSE 0.0221 - 0.0223) and a separate region without the second species (lg beta 2 -> -inf,
+SSE 0.0235); the minima search lists both (`finderFindsTheOtherBasin`). The conclusion about the cost of finding better points stays
+(random starts of the ordinary minimiser are far cheaper); the statement about wrong basins does not.
+
 ## What was compared
 
 - **Sampler**: `LandscapeSearch`, default settings (Metropolis, adaptive proposals, 4 walkers, box from the fit, `MaxRange` 10,

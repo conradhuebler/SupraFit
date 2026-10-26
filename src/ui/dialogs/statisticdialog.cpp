@@ -322,39 +322,47 @@ QWidget* StatisticDialog::LandscapeWidget()
     QVBoxLayout* top = new QVBoxLayout;
     QGridLayout* layout = new QGridLayout;
 
-    QLabel* info = new QLabel(tr("Samples the sum of squares over the global parameters (the linear parameters are fitted for each point) and "
-                                 "reads the confidence interval of every constant from it, also for correlated constants. Minima other than the "
-                                 "fit are refitted and listed."));
+    QLabel* info = new QLabel;
     info->setWordWrap(true);
     top->addWidget(info);
 
+    m_ls_task = new QComboBox;
+    m_ls_task->addItem(tr("Confidence intervals"), QStringLiteral("Confidence"));
+    m_ls_task->addItem(tr("Find other minima"), QStringLiteral("Minima"));
+    m_ls_task->setToolTip(tr("Confidence intervals: samples the sum of squares around the fit and reads the interval of every constant from it. "
+                             "Find other minima: lets the walkers climb out of the basin of the fit, up to a multiple of its sum of squares, and "
+                             "refits the minima they find."));
+    layout->addWidget(new QLabel(tr("Task:")), 0, 0);
+    layout->addWidget(m_ls_task, 0, 1);
+
+    QLabel* confidenceLabel = new QLabel(tr("Confidence:"));
     m_ls_confidence = new QDoubleSpinBox;
     m_ls_confidence->setRange(50, 99.9);
     m_ls_confidence->setDecimals(1);
     m_ls_confidence->setValue(95);
     m_ls_confidence->setSuffix(" %");
-    layout->addWidget(new QLabel(tr("Confidence:")), 0, 0);
-    layout->addWidget(m_ls_confidence, 0, 1);
+    layout->addWidget(confidenceLabel, 1, 0);
+    layout->addWidget(m_ls_confidence, 1, 1);
 
     m_ls_steps = new QSpinBox;
     m_ls_steps->setRange(1000, 10000000);
     m_ls_steps->setSingleStep(10000);
     m_ls_steps->setValue(50000);
     m_ls_steps->setToolTip(tr("Steps of one walker; it stops earlier when it finds nothing new."));
-    layout->addWidget(new QLabel(tr("Steps per walker:")), 1, 0);
-    layout->addWidget(m_ls_steps, 1, 1);
+    layout->addWidget(new QLabel(tr("Steps per walker:")), 2, 0);
+    layout->addWidget(m_ls_steps, 2, 1);
 
     m_ls_sampler = new QComboBox;
     m_ls_sampler->addItem(tr("Metropolis"), QStringLiteral("Metropolis"));
     m_ls_sampler->addItem(tr("Langevin"), QStringLiteral("Langevin"));
     m_ls_sampler->setToolTip(tr("Metropolis needs the sum of squares only; Langevin follows its numerical gradient."));
-    layout->addWidget(new QLabel(tr("Sampler:")), 2, 0);
-    layout->addWidget(m_ls_sampler, 2, 1);
+    layout->addWidget(new QLabel(tr("Sampler:")), 3, 0);
+    layout->addWidget(m_ls_sampler, 3, 1);
 
     m_ls_surface = new QCheckBox(tr("2D surfaces of the pairs"));
     m_ls_surface->setToolTip(tr("Records the points of the walk and offers the sum of squares over every pair of constants (up to six pairs) as height "
                                "lines on the result page: the shape of the confidence region and the correlation of the constants."));
-    layout->addWidget(m_ls_surface, 3, 0, 1, 2);
+    layout->addWidget(m_ls_surface, 4, 0, 1, 2);
     top->addLayout(layout);
 
     // everything else, folded away
@@ -419,7 +427,7 @@ QWidget* StatisticDialog::LandscapeWidget()
     m_ls_range->setRange(0, 50);
     m_ls_range->setDecimals(1);
     m_ls_range->setSpecialValueText(tr("automatic"));
-    m_ls_range->setToolTip(tr("Half width of the sampled range around the fit, in log10 units of the constants."));
+    m_ls_range->setToolTip(tr("Half width of the sampled range around the fit, in log10 units of the constants. Automatic: derived from the fit, 6 when looking for other minima."));
     addRow(tr("Range (log10):"), m_ls_range);
 
     m_ls_polish = new QSpinBox;
@@ -429,13 +437,34 @@ QWidget* StatisticDialog::LandscapeWidget()
     addRow(tr("Minima to refit:"), m_ls_polish);
 
     addHeading(tr("Stopping and barriers"));
+    QList<QWidget*> searchOnly, confidenceOnly;
+    m_ls_search_wall = new QDoubleSpinBox;
+    m_ls_search_wall->setRange(1.5, 1000);
+    m_ls_search_wall->setDecimals(1);
+    m_ls_search_wall->setValue(10);
+    m_ls_search_wall->setToolTip(tr("Height of the wall as a multiple of the sum of squares of the fit. Moves above the wall are rejected: another "
+                                    "minimum behind a barrier higher than the wall is not found. A wrong basin of a titration fit lies at several times "
+                                    "the optimum."));
+    {
+        QLabel* l = new QLabel(tr("Wall (x SSE of the fit):"));
+        grid->addWidget(l, row, 0);
+        grid->addWidget(m_ls_search_wall, row, 1);
+        ++row;
+        searchOnly << l << m_ls_search_wall;
+    }
     m_ls_wall = new QDoubleSpinBox;
     m_ls_wall->setRange(1.1, 100);
     m_ls_wall->setDecimals(1);
     m_ls_wall->setValue(3.0);
     m_ls_wall->setToolTip(tr("Height of the wall in units of how far the limit of the confidence region lies above the fit. Moves above the wall "
                              "are rejected; another minimum behind a barrier higher than the wall is not found."));
-    addRow(tr("Wall height:"), m_ls_wall);
+    {
+        QLabel* l = new QLabel(tr("Wall height:"));
+        grid->addWidget(l, row, 0);
+        grid->addWidget(m_ls_wall, row, 1);
+        ++row;
+        confidenceOnly << l << m_ls_wall;
+    }
 
     m_ls_min_steps = new QSpinBox;
     m_ls_min_steps->setRange(0, 10000000);
@@ -488,7 +517,23 @@ QWidget* StatisticDialog::LandscapeWidget()
             w->setVisible(langevin);
     };
     connect(m_ls_sampler, &QComboBox::currentIndexChanged, this, showLangevin);
-    showLangevin();
+
+    // what belongs to the task: the confidence is not asked for a search, the wall of a search is a multiple of the SSE
+    confidenceOnly << confidenceLabel << m_ls_confidence;
+    auto showTask = [this, info, searchOnly, confidenceOnly]() {
+        const bool search = m_ls_task->currentData().toString() == QLatin1String("Minima");
+        for (QWidget* w : searchOnly)
+            w->setVisible(search);
+        for (QWidget* w : confidenceOnly)
+            w->setVisible(!search);
+        info->setText(search ? tr("Lets the walkers climb out of the basin of the fit and refits the minima they find. Another minimum is only found "
+                                  "if the wall is higher than the barrier to it.")
+                             : tr("Samples the sum of squares over the global parameters (the linear parameters are fitted for each point) and reads "
+                                  "the confidence interval of every constant from it, also for correlated constants. Minima other than the fit are "
+                                  "refitted and listed."));
+        m_ls_polish->setValue(search ? 10 : 5);
+    };
+    connect(m_ls_task, &QComboBox::currentIndexChanged, this, showTask);
 
     m_ls_note = new QLabel(tr("This model has no variable projection: the landscape can only be sampled for models that fit their linear parameters out."));
     m_ls_note->setWordWrap(true);
@@ -506,6 +551,9 @@ QWidget* StatisticDialog::LandscapeWidget()
         connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, &StatisticDialog::updateLandscape);
 
     widget->setLayout(top);
+    // only now: setVisible(true) on a widget without a parent shows it as a window of its own
+    showLangevin();
+    showTask();
     updateLandscape();
     if (m_model) {
         const int globals = m_model.toStrongRef().data()->GlobalParameterSize();
@@ -1100,6 +1148,8 @@ QJsonObject StatisticDialog::RunLandscape() const
     controller["GradientStep"] = m_ls_gradient_step->value();
     controller["CentralGradient"] = m_ls_central->isChecked();
     controller["LangevinCorrection"] = m_ls_correction->isChecked();
+    controller["Mode"] = m_ls_task->currentData().toString();
+    controller["SearchWall"] = m_ls_search_wall->value();
     controller["CutFactor"] = m_ls_wall->value();
     controller["MinSteps"] = m_ls_min_steps->value();
     controller["Patience"] = m_ls_patience->value();

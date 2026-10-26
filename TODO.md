@@ -18,6 +18,7 @@
 
 ## Landscape sampling (roadmap/landscape_sampling.md)
 - [ ] Constrained-refit profile likelihood as the cheap interval method: the sampler needs 14-3000x the SSE evaluations for the same intervals (docs/landscape_sampling_measurement_2026-10-24.md); proposal, not decided
+- [ ] Landscape surfaces show only visited bins (gaps in the height lines): exact evaluation of the unvisited cells (two constants) or reconstruction from the bias, see roadmap/landscape_sampling.md
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
 ## UI Redesign (supersedes Phases 1–3 below)

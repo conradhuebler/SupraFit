@@ -501,6 +501,121 @@ private slots:
         delete data;
     }
 
+    // The minima search on a data set with two regions (1:1/2:1, lg beta (3.0, 4.5), noise 0.02, seed 6) whose blind fit stops on a
+    // slope (SSE 8.6 times the optimum, no barrier to it: the SSE falls monotonically on the straight line). Each minimum comes with
+    // the model to load it.
+    void finderFindsTheOtherBasin()
+    {
+        const QString reactions = QStringLiteral("A + B <=> AB\n2 A + B <=> A2B");
+        const double truth[2] = { 3.0, 4.5 };
+        DataClass* data = makeData(3, 3.0, 20);
+        {
+            QSharedPointer<AbstractModel> signal = CreateModel(SupraFit::nmr_any, data);
+            QJsonObject def;
+            def["Reactions"] = strOption(reactions);
+            signal->DefineModel(def);
+            signal->InitialGuess();
+            signal->setGlobalParameter(truth[0], 0);
+            signal->setGlobalParameter(truth[1], 1);
+            const double shifts[3] = { 9.0, 6.0, 3.0 };
+            for (int s = 0; s < 3; ++s)
+                for (int p = 0; p < signal->LocalParameterSize(); ++p)
+                    signal->setLocalParameter(shifts[std::min(p, 2)] * (1.0 - 0.07 * s), p, s);
+            signal->Calculate();
+            Eigen::MatrixXd values = signal->ModelTable()->Table();
+            std::mt19937_64 rng(6);
+            std::normal_distribution<double> noise(0.0, 0.02);
+            for (int r = 0; r < values.rows(); ++r)
+                for (int c = 0; c < values.cols(); ++c)
+                    values(r, c) += noise(rng);
+            data->setDependentTable(new DataTable(values));
+        }
+        auto fit = [&](bool fromTruth) {
+            QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+            QJsonObject def;
+            def["Reactions"] = strOption(reactions);
+            model->DefineModel(def);
+            QJsonObject cfg = model->getOptimizerConfig();
+            cfg["FitSolver"] = QStringLiteral("VarPro");
+            model->setOptimizerConfig(cfg);
+            model->InitialGuess();
+            if (fromTruth) {
+                model->setGlobalParameter(truth[0], 0);
+                model->setGlobalParameter(truth[1], 1);
+            }
+            Minimizer minimizer(false);
+            minimizer.setModel(model);
+            minimizer.Minimize();
+            model->Calculate();
+            return model;
+        };
+        QSharedPointer<AbstractModel> right = fit(true), wrong = fit(false);
+        ModelLandscape rightLandscape(right->Clone(false)), wrongLandscape(wrong->Clone(false));
+        const double sseRight = rightLandscape(rightLandscape.Start()), sseWrong = wrongLandscape(wrongLandscape.Start());
+        qInfo() << "right basin SSE" << sseRight << "wrong basin SSE" << sseWrong << "ratio" << sseWrong / sseRight;
+        QVERIFY2(sseWrong > 3 * sseRight, "this data set no longer has a blind fit in the wrong basin");
+        auto search = [&](QSharedPointer<AbstractModel> start) {
+            LandscapeSearch s;
+            s.setModel(start);
+            QJsonObject ctl;
+            ctl["Mode"] = QStringLiteral("Minima");
+            ctl["Walkers"] = 4;
+            ctl["MaxSteps"] = 30000;
+            ctl["Polish"] = 10;
+            s.setController(ctl);
+            QObject::connect(&s, &AbstractSearchClass::Message, [](const QString& message) { qInfo() << "search message:" << message; });
+            if (!s.Run())
+                return QJsonObject();
+            return s.Result()["0"].toObject();
+        };
+
+        // The data have a flat valley (lg beta 2 from 4.4 down to -9 at SSE 0.0221 - 0.0223; the fit, 0.02227, sits at its far end) and a
+        // separate region without the second species (lg beta 2 -> -inf, SSE 0.0235). From the fit the search must list the valley's
+        // deepest point first (0.7 % below the fit), say that it contains the fit, and find the other region as a minimum of its own.
+        {
+            const QJsonObject result = search(right);
+            QCOMPARE(result["mode"].toString(), QStringLiteral("Minima"));
+            QCOMPARE(result["recentered"].toInt(), 0); // a minima search does not move its centre, the deeper minimum is listed instead
+            QVERIFY(std::abs(result["wall"].toDouble() / result["sse_min"].toDouble() - 10.0) < 1e-9);
+            const QJsonArray minima = result["minima"].toArray();
+            QVERIFY2(minima.size() >= 2, qPrintable(QString("%1 minima").arg(minima.size())));
+            int fits = 0;
+            double previous = 0;
+            bool otherRegion = false;
+            for (const QJsonValue& v : minima) {
+                const QJsonObject m = v.toObject();
+                qInfo() << "  from the fit: minimum" << m["sse"].toDouble() << "relative" << m["relative_sse"].toDouble() << "contains the fit" << m["is_fit"].toBool()
+                        << "parameters" << m["parameters"].toArray();
+                QVERIFY2(m["sse"].toDouble() >= previous, "the minima are sorted by SSE");
+                previous = m["sse"].toDouble();
+                QVERIFY2(!m["model"].toObject().isEmpty(), "a minimum comes with the model to load it");
+                QVERIFY2(m["relative_sse"].toDouble() <= 1.0 + 1e-9 || !m["is_fit"].toBool(), "a refit that ends above the fit's own SSE at the fit is not reported");
+                fits += m["is_fit"].toBool() ? 1 : 0;
+                if (!m["is_fit"].toBool() && m["parameters"].toArray()[1].toDouble() < -5.0 && std::abs(m["sse"].toDouble() / 0.0234977 - 1.0) < 0.03)
+                    otherRegion = true;
+            }
+            QCOMPARE(fits, 1); // the fit lies in exactly one of them
+            const QJsonObject deepest = minima[0].toObject();
+            QVERIFY2(std::abs(deepest["sse"].toDouble() / 0.022124 - 1.0) < 0.015, qPrintable(QString("deepest SSE %1").arg(deepest["sse"].toDouble())));
+            QVERIFY(deepest["is_fit"].toBool());
+            QVERIFY(deepest["relative_sse"].toDouble() < 1.0);
+            QVERIFY2(otherRegion, "the region without the second species was not found as a minimum of its own");
+        }
+        // from the blind fit that stopped on the slope (SSE 8.6 times the optimum): downhill to the same deepest minimum, not itself
+        {
+            const QJsonObject result = search(wrong);
+            const QJsonArray minima = result["minima"].toArray();
+            QVERIFY(!minima.isEmpty());
+            const QJsonObject first = minima[0].toObject();
+            qInfo() << "  from the blind fit: deepest minimum" << first["sse"].toDouble() << "relative" << first["relative_sse"].toDouble();
+            QVERIFY2(std::abs(first["sse"].toDouble() / 0.022124 - 1.0) < 0.015, qPrintable(QString("deepest SSE %1").arg(first["sse"].toDouble())));
+            QVERIFY(first["relative_sse"].toDouble() < 0.2);
+            QVERIFY(!first["is_fit"].toBool()); // the blind fit does not lie in a minimum: it stopped on the slope
+            QVERIFY(!first["model"].toObject().isEmpty());
+        }
+        delete data;
+    }
+
     void modelWithoutVariableProjectionIsRefused()
     {
         LandscapeSearch none;

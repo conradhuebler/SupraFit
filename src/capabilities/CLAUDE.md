@@ -58,7 +58,7 @@ Core capabilities providing advanced analysis, search, and data generation funct
   - Metropolis proposals adapt to the chain covariance (`adaptive`); `LandscapeResult::Merge` joins walkers
   - Result: profile per variable, minimum candidates, free-energy estimate; no Qt/model dependency; plan: [roadmap/landscape_sampling.md](../../roadmap/landscape_sampling.md)
 
-- **landscapesearch.cpp/h**: `ModelLandscape` (SSE of a VarPro model over its enabled globals) and `LandscapeSearch` (parallel walkers on model clones, F-test intervals as JSON); `SupraFit::Method::LandscapeSampling` (8), run by `JobManager` (`LandscapeConfigBlock`), stored in `ModelStatisticsStore`; minima refitted with the minimiser; `Surface` records the walk and gives `surfaces`, the 2D profile of every pair (at most six)
+- **landscapesearch.cpp/h**: `ModelLandscape` (SSE of a VarPro model over its enabled globals) and `LandscapeSearch` (parallel walkers on model clones, F-test intervals as JSON); `SupraFit::Method::LandscapeSampling` (8), run by `JobManager` (`LandscapeConfigBlock`), stored in `ModelStatisticsStore`; minima refitted with the minimiser; `Surface` records the walk and gives `surfaces`, the 2D profile of every pair (at most six); `Mode` "Minima" looks for other minima (wall = `SearchWall` x SSE, refitted minima merged by basin identity, each with its model)
 
 - **abstractsearchclass.cpp/h**: Base class for all search/analysis implementations
   - Common interface for parallel execution

@@ -647,6 +647,30 @@ private slots:
             if (!renderDir.isEmpty())
                 widget.grab().save(QStringLiteral("%1/statistic_landscape_tab_more.png").arg(renderDir));
             sampler->setCurrentIndex(0);
+            // the task: a search asks for a wall and not for a confidence
+            QComboBox* task = nullptr;
+            for (QComboBox* c : dialog->findChildren<QComboBox*>())
+                if (c->findText(QStringLiteral("Find other minima")) >= 0)
+                    task = c;
+            QVERIFY2(task, "no choice of the task");
+            QCOMPARE(dialog->RunLandscape()["Mode"].toString(), QStringLiteral("Confidence"));
+            task->setCurrentIndex(task->findText(QStringLiteral("Find other minima")));
+            QCoreApplication::processEvents();
+            const QJsonObject searching = dialog->RunLandscape();
+            QCOMPARE(searching["Mode"].toString(), QStringLiteral("Minima"));
+            QCOMPARE(searching["SearchWall"].toDouble(), 10.0);
+            QCOMPARE(searching["Polish"].toInt(), 10);
+            for (QLabel* l : dialog->findChildren<QLabel*>()) {
+                if (l->text() == QStringLiteral("Wall (x SSE of the fit):"))
+                    QVERIFY(l->isVisibleTo(dialog));
+                if (l->text() == QStringLiteral("Confidence:") || l->text() == QStringLiteral("Wall height:"))
+                    QVERIFY2(!l->isVisibleTo(dialog), qPrintable(l->text() + " is shown for a search"));
+            }
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab_search.png").arg(renderDir));
+            task->setCurrentIndex(0);
+            QCoreApplication::processEvents();
+            QCOMPARE(dialog->RunLandscape()["Mode"].toString(), QStringLiteral("Confidence"));
             more->click(); // fold again, the state is a setting
             QTRY_COMPARE(folded->maximumHeight(), 0);
             QSettings().remove(QStringLiteral("ui/more/landscape_more"));
@@ -839,6 +863,97 @@ private slots:
             if (!renderDir.isEmpty() && s == 4)
                 widget.grab().save(QStringLiteral("%1/modelwidget_landscape_pair.png").arg(renderDir));
         }
+        m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // The result of a minima search lists its minima for the project: the choice shows them, "Load into model" and "Add as model" hand
+    // the chosen minimum's model over (the signals the Monte Carlo and global-search results use), the task of the settings page
+    // sets the mode of the job.
+    void landscapeMinimaCanBeLoaded()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QJsonObject variable;
+        variable["index"] = 0;
+        variable["name"] = QStringLiteral("lgK");
+        variable["value"] = 4.0;
+        variable["box_lower"] = -2.0;
+        variable["box_upper"] = 10.0;
+        QJsonArray profile;
+        for (int k = 0; k < 60; ++k) {
+            const double x = -2.0 + (k + 0.5) * 12.0 / 60;
+            profile << QJsonArray({ x, 1.0 + 0.2 * (x - 4.0) * (x - 4.0) });
+        }
+        variable["profile"] = profile;
+
+        const QJsonObject exported = m_model->ExportModel(false, false);
+        QVERIFY(!exported.isEmpty());
+        QJsonArray minima;
+        const double sse[3] = { 0.9, 1.0, 3.5 };
+        const double at[3] = { 5.5, 4.0, 1.0 };
+        for (int k = 0; k < 3; ++k) {
+            QJsonObject m;
+            m["sse"] = sse[k];
+            m["relative_sse"] = sse[k];
+            m["within_level"] = k < 2;
+            m["is_fit"] = k == 1;
+            m["parameters"] = QJsonArray({ at[k] });
+            m["model"] = exported;
+            minima << m;
+        }
+        QJsonObject result;
+        result["mode"] = QStringLiteral("Minima");
+        result["variables"] = QJsonArray({ variable });
+        result["minima"] = minima;
+        result["sse_min"] = 1.0;
+        result["level"] = 1.3;
+        result["wall"] = 10.0;
+        result["contour_max"] = 10.0;
+        result["contour_log"] = true;
+        result["confidence"] = 95.0;
+        QJsonObject controller;
+        controller["Method"] = int(SupraFit::Method::LandscapeSampling);
+        controller["timestamp"] = 7654321.0;
+        controller["title"] = QStringLiteral("synthetic minima");
+        QJsonObject statistic;
+        statistic["controller"] = controller;
+        statistic["0"] = result;
+        m_model->UpdateStatistic(statistic);
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QSignalSpy loaded(results, &ResultsDialog::LoadModel), added(results, &ResultsDialog::AddModel);
+        QMetaObject::invokeMethod(&widget, "TogglePlot");
+        QCoreApplication::processEvents();
+        QVERIFY(results->ShowEntry(SupraFit::Method::LandscapeSampling, 0));
+        QCoreApplication::processEvents();
+
+        QComboBox* which = results->findChild<QComboBox*>(QStringLiteral("landscapeminima"));
+        QVERIFY2(which, "no list of the minima on the result page");
+        QCOMPARE(which->count(), 3);
+        QVERIFY2(which->itemText(0).contains(QStringLiteral("deeper than the fit")), qPrintable(which->itemText(0)));
+        QVERIFY2(which->itemText(1).contains(QStringLiteral("contains the fit")), qPrintable(which->itemText(1)));
+        QPushButton* load = results->findChild<QPushButton*>(QStringLiteral("landscapeminima_load"));
+        QPushButton* add = results->findChild<QPushButton*>(QStringLiteral("landscapeminima_add"));
+        QVERIFY(load && add);
+        // one constant: no choice of what to show, only the minima row
+        QVERIFY(!results->findChild<QComboBox*>(QStringLiteral("landscapeview")));
+        which->setCurrentIndex(2);
+        load->click();
+        add->click();
+        QCOMPARE(loaded.count(), 1);
+        QCOMPARE(added.count(), 1);
+        QVERIFY2(!loaded.first().first().toJsonObject().isEmpty(), "Load handed over an empty model");
+        QCOMPARE(loaded.first().first().toJsonObject(), exported);
+        QCOMPARE(added.first().first().toJsonObject(), exported);
+
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_minima.png").arg(renderDir));
         m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
     }
 

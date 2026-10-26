@@ -161,7 +161,8 @@ private:
     QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
     QDoubleSpinBox *m_ls_confidence, *m_ls_range, *m_ls_step, *m_ls_gradient_step;
     QCheckBox *m_ls_central = nullptr, *m_ls_correction = nullptr, *m_ls_surface = nullptr;
-    QDoubleSpinBox *m_ls_wall, *m_ls_converged, *m_ls_bias, *m_ls_hill_width;
+    QComboBox* m_ls_task = nullptr;
+    QDoubleSpinBox *m_ls_search_wall = nullptr, *m_ls_wall, *m_ls_converged, *m_ls_bias, *m_ls_hill_width;
     QSpinBox *m_ls_min_steps, *m_ls_patience;
     QSpinBox *m_ls_walkers, *m_ls_steps, *m_ls_polish;
     QComboBox* m_ls_sampler;

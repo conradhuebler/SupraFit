@@ -99,6 +99,11 @@ const QJsonObject LandscapeConfigBlock{
     /* Set method */
     { "Method", SupraFit::Method::LandscapeSampling }, // int
 
+    /* "Confidence": the confidence interval of every constant. "Minima": look for other minima - the wall is a multiple of the
+     * SSE of the fit (SearchWall), the box a fixed one (Range, 6 log10 units when 0), refitted minima come with their model */
+    { "Mode", "Confidence" },
+    { "SearchWall", 10.0 }, // double, Mode "Minima": wall as a multiple of the SSE of the fit
+
     /* Confidence in % */
     { "confidence", 95 }, // double (the search reads "Confidence" as well)
 

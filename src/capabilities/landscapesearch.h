@@ -65,6 +65,9 @@ private:
  * The model should be fitted before: the fitted point is the centre of the box and defines SSE_min.
  *
  * Controller keys (all optional):
+ *  - `Mode` "Confidence" (default) or "Minima": look for other minima. The wall is `SearchWall` (10) times the SSE of the fit,
+ *    the box `Range` (6 log10 units), the temperature `SearchTemperature` (0.02) of the wall's excess; no box expansion and no
+ *    re-centring, a deeper minimum is listed first. Every minimum comes refitted with its model (`model`) to load it.
  *  - `Confidence` percent, 95 (keys are read case-insensitively, as the job blocks write `confidence`)
  *  - `Polish` how many minima found by the walkers are refitted with the minimiser, 5
  *  - `Walkers` (threads), `Seed` 1, `MaxSteps` 50000, `Sampler` "Metropolis" | "Langevin"

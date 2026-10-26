@@ -108,3 +108,13 @@ metadynamics, later). Seed is a setting; results are stored in the project JSON 
 Measured 2026-10-24: the sampler gives the same intervals as the profile likelihood by constrained refit but costs 14-3000x
 the SSE evaluations; random multistart beats it for finding a deeper minimum on the one case available. Operator decision:
 build the GUI (WP-D) anyway. Proposal not yet decided: add the constrained-refit profile as the cheap interval method.
+
+## Minima search (2026-10-26)
+
+`Mode` "Minima" (GUI task "Find other minima"): wall `SearchWall` x SSE of the fit, fixed box, temperature scaled to the wall, minima refitted, merged by
+basin identity, with their models for Load/Add. Barrier crossing is proven on analytic double wells; on titration data a second basin was
+not found beyond a flat valley and a separate region without the second species (data set of `finderFindsTheOtherBasin`) - **the WP-E
+"wrong basin" was a stalled fit, see the correction in `docs/landscape_sampling_measurement_2026-10-24.md`**. Open: gaps in the surfaces
+(only visited bins): reconstruct from the bias (calibrated against the exact visited values) or evaluate the unvisited cells exactly (two constants:
+at most bins^2 = 3600 evaluations); for three and more constants the profile of a pair is not a bias marginal (the bias lives in all dimensions);
+the MTD way would be biasing only the pair. A better benchmark for the finder needs a data set with a proven barrier (not found yet).
