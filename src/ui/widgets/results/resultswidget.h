@@ -43,7 +43,6 @@ private:
     QWidget* MonteCarloWidget();
     QWidget* ReductionWidget();
     QWidget* LandscapeWidget();
-    QWidget* LandscapeSurface();
     QWidget* ModelComparisonWidget();
     QWidget* GridSearchWidget();
     QWidget* SearchWidget();

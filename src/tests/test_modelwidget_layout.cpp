@@ -607,12 +607,56 @@ private slots:
                 sample = b;
         QVERIFY(sample);
         QVERIFY(sample->isEnabled());
+        {   // the settings page as the user sees it: a few fields, the rest behind "..more..", Langevin's only for Langevin
+            QSettings().remove(QStringLiteral("ui/more/landscape_more"));
+            QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Statistics page (the Results button) ...
+            QCoreApplication::processEvents();
+            dialog->setCurrentTab(dialog->TabTitles().indexOf(QStringLiteral("Landscape Sampling"))); // ... at the analysis to start
+            QCoreApplication::processEvents();
+            QCheckBox* surfaces = nullptr;
+            QToolButton* more = nullptr;
+            QCheckBox* correction = nullptr;
+            for (QCheckBox* c : dialog->findChildren<QCheckBox*>()) {
+                if (c->text() == QStringLiteral("2D surfaces of the pairs"))
+                    surfaces = c;
+                if (c->text() == QStringLiteral("Metropolis correction"))
+                    correction = c;
+            }
+            for (QToolButton* b : dialog->findChildren<QToolButton*>())
+                if (b->text() == QStringLiteral("..more.."))
+                    more = b;
+            QWidget* folded = dialog->findChild<QWidget*>(QStringLiteral("landscape_more"));
+            QVERIFY(surfaces && more && correction && folded);
+            QVERIFY2(surfaces->isChecked() && surfaces->isEnabled(), "the pair surfaces are on for two constants");
+            QCOMPARE(folded->maximumHeight(), 0); // folded away
+            QVERIFY2(!correction->isVisibleTo(dialog), "Langevin's settings are shown with Metropolis chosen");
+            const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab.png").arg(renderDir));
+            more->click();
+            QCoreApplication::processEvents();
+            QTRY_COMPARE_WITH_TIMEOUT(folded->maximumHeight(), QWIDGETSIZE_MAX, 3000); // the fold animation has finished
+            QComboBox* sampler = nullptr;
+            for (QComboBox* c : dialog->findChildren<QComboBox*>())
+                if (c->findText(QStringLiteral("Langevin")) >= 0)
+                    sampler = c;
+            QVERIFY(sampler);
+            sampler->setCurrentIndex(sampler->findText(QStringLiteral("Langevin")));
+            QCoreApplication::processEvents();
+            QVERIFY2(correction->isVisibleTo(dialog), "Langevin's settings are not shown with Langevin chosen");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab_more.png").arg(renderDir));
+            sampler->setCurrentIndex(0);
+            more->click(); // fold again, the state is a setting
+            QTRY_COMPARE(folded->maximumHeight(), 0);
+            QSettings().remove(QStringLiteral("ui/more/landscape_more"));
+        }
         const QJsonObject controller = dialog->RunLandscape();
         QCOMPARE(AccessCI(controller, "Method").toInt(), int(SupraFit::Method::LandscapeSampling));
 
         QJsonObject job = LandscapeConfigBlock;
         job["Walkers"] = 2;
-        job["MaxSteps"] = 3000;
+        job["MaxSteps"] = 20000; // the height lines need whole 2x2 blocks of visited bins: a short walk draws none
         job["Polish"] = 2;
         job["Surface"] = true;
         JobManager jobs;
@@ -641,25 +685,161 @@ private slots:
         ResultsDialog* results = widget.findChild<ResultsDialog*>();
         QVERIFY(results);
         QVERIFY2(results->isVisible(), "the result is not shown on the page");
-        bool text = false, chart = false, surfaceChart = false;
+        bool text = false;
         for (QLabel* l : results->findChildren<QLabel*>())
             if (l->isVisible() && l->text().contains(QStringLiteral("Landscape sampling")) && l->text().contains(QStringLiteral("<table>")))
                 text = true;
         QVERIFY2(text, "the intervals are not written on the result page");
+
+        // one chart, one choice above it: all profiles, one per constant, one surface per pair
+        QWidget* chart = nullptr;
         for (QWidget* w : results->findChildren<QWidget*>())
             if (w->isVisible() && w->objectName() == QStringLiteral("landscapechart"))
-                chart = true;
-        QVERIFY2(chart, "no profile chart on the result page");
+                chart = w;
+        QVERIFY2(chart, "no chart on the result page");
+        int chartCount = 0;
         for (QWidget* w : results->findChildren<QWidget*>())
-            if (w->isVisible() && w->objectName() == QStringLiteral("landscapesurface"))
-                surfaceChart = true;
-        QVERIFY2(surfaceChart, "no surface chart on the result page of a two-constant model with 'Surface' on");
+            if (w->objectName() == QStringLiteral("landscapechart") || w->objectName() == QStringLiteral("landscapesurface"))
+                ++chartCount;
+        QCOMPARE(chartCount, 1); // not two plots over each other
+        QComboBox* choice = results->findChild<QComboBox*>(QStringLiteral("landscapeview"));
+        QVERIFY2(choice, "no choice above the chart of a two-constant result");
+        QStringList entries;
+        for (int i = 0; i < choice->count(); ++i)
+            entries << choice->itemText(i);
+        QCOMPARE(choice->count(), 4); // Profiles, Profile: A, Profile: B, Surface: A x B
+        QVERIFY2(entries[0] == QStringLiteral("Profiles") && entries[1].startsWith(QStringLiteral("Profile: ")) && entries.last().startsWith(QStringLiteral("Surface: ")),
+            qPrintable(entries.join(" | ")));
+        auto listRows = [chart]() {
+            int rows = 0;
+            for (QListWidget* l : chart->findChildren<QListWidget*>())
+                rows = qMax(rows, l->count());
+            return rows;
+        };
+        QCOMPARE(listRows(), 3); // the two profiles and the limit of the confidence region
+        choice->setCurrentIndex(1); // one profile: the curve and the limit
+        QCoreApplication::processEvents();
+        QCOMPARE(listRows(), 2);
+        choice->setCurrentIndex(3); // the surface: height lines and the fit
+        QCoreApplication::processEvents();
+        QVERIFY2(listRows() >= 2, qPrintable(QString("%1 entries for the surface").arg(listRows()))); // height lines and the fit
         const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_surface.png").arg(renderDir));
+        choice->setCurrentIndex(0);
+        QCoreApplication::processEvents();
         if (!renderDir.isEmpty())
             widget.grab().save(QStringLiteral("%1/modelwidget_landscape_page.png").arg(renderDir));
 
         model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
         QCOMPARE(model->LandscapeSize(), 0);
+    }
+
+    // A result with three constants offers every pair: the choice lists Profiles, a profile per constant and a surface per pair,
+    // one chart changes with it, and the height lines of a correlated ellipse are drawn closed. The result is synthetic (an
+    // exact quadratic form), so what is drawn can be compared with what is known.
+    void landscapeResultOffersEveryPair()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        const QStringList names = { QStringLiteral("lg K1"), QStringLiteral("lg K2"), QStringLiteral("lg K3") };
+        const double centre[3] = { 3.0, 4.5, 5.5 };
+        QJsonArray variables, surfaces;
+        for (int i = 0; i < 3; ++i) {
+            QJsonObject v;
+            v["index"] = i;
+            v["name"] = names[i];
+            v["value"] = centre[i];
+            v["box_lower"] = centre[i] - 1.5;
+            v["box_upper"] = centre[i] + 1.5;
+            QJsonArray profile;
+            for (int k = 0; k < 60; ++k) {
+                const double x = centre[i] - 1.5 + (k + 0.5) * 3.0 / 60;
+                profile << QJsonArray({ x, 1.0 + 4.0 * (x - centre[i]) * (x - centre[i]) });
+            }
+            v["profile"] = profile;
+            variables << v;
+        }
+        const int pairs[3][2] = { { 0, 1 }, { 0, 2 }, { 1, 2 } };
+        for (const auto& pair : pairs) {
+            QJsonArray points;
+            for (int a = 0; a < 60; ++a)
+                for (int b = 0; b < 60; ++b) {
+                    const double x = centre[pair[0]] - 1.5 + (a + 0.5) * 3.0 / 60, y = centre[pair[1]] - 1.5 + (b + 0.5) * 3.0 / 60;
+                    const double dx = x - centre[pair[0]], dy = y - centre[pair[1]];
+                    const double sse = 1.0 + 6.0 * dx * dx + 6.0 * dy * dy - 5.0 * dx * dy; // a tilted ellipse
+                    if (sse <= 2.6) // what the walkers could reach below the wall
+                        points << QJsonArray({ x, y, sse });
+                }
+            QJsonObject s;
+            s["x"] = pair[0];
+            s["y"] = pair[1];
+            s["bins"] = 60;
+            s["points"] = points;
+            surfaces << s;
+        }
+        QJsonObject result;
+        result["variables"] = variables;
+        result["surfaces"] = surfaces;
+        result["sse_min"] = 1.0;
+        result["level"] = 1.3;
+        result["wall"] = 2.6;
+        result["contour_max"] = 2.6;
+        result["confidence"] = 95.0;
+        QJsonObject settings;
+        settings["bins"] = 60;
+        result["settings"] = settings;
+        QJsonObject controller;
+        controller["Method"] = int(SupraFit::Method::LandscapeSampling);
+        controller["timestamp"] = 1234567.0;
+        controller["title"] = QStringLiteral("synthetic");
+        QJsonObject statistic;
+        statistic["controller"] = controller;
+        statistic["0"] = result;
+        m_model->UpdateStatistic(statistic);
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Results button: the page of the newest result
+        QCoreApplication::processEvents();
+        QVERIFY(results->ShowEntry(SupraFit::Method::LandscapeSampling, 0));
+        QCoreApplication::processEvents();
+        QVERIFY2(results->isVisible(), "the result is not shown on the page");
+
+        QComboBox* choice = results->findChild<QComboBox*>(QStringLiteral("landscapeview"));
+        QVERIFY2(choice, "no choice above the chart");
+        QStringList entries;
+        for (int i = 0; i < choice->count(); ++i)
+            entries << choice->itemText(i);
+        QCOMPARE(entries.size(), 7); // Profiles, three profiles, three surfaces
+        QCOMPARE(entries[0], QStringLiteral("Profiles"));
+        QCOMPARE(entries[4], QStringLiteral("Surface: lg K1 \u00d7 lg K2"));
+        QCOMPARE(entries[5], QStringLiteral("Surface: lg K1 \u00d7 lg K3"));
+        QCOMPARE(entries[6], QStringLiteral("Surface: lg K2 \u00d7 lg K3"));
+
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        auto rows = [&widget]() {
+            int count = 0;
+            for (QWidget* w : widget.findChildren<QWidget*>(QStringLiteral("landscapechart")))
+                for (QListWidget* l : w->findChildren<QListWidget*>())
+                    count = qMax(count, l->count());
+            return count;
+        };
+        QCOMPARE(rows(), 4); // three profiles and the limit
+        for (int s = 4; s < 7; ++s) {
+            choice->setCurrentIndex(s);
+            QCoreApplication::processEvents();
+            // the level lines are the limit (1.3) and ten steps up to 2.6: all of them exist in this ellipse, plus the fit
+            QVERIFY2(rows() >= 8, qPrintable(QString("surface %1: %2 entries").arg(s).arg(rows())));
+            if (!renderDir.isEmpty() && s == 4)
+                widget.grab().save(QStringLiteral("%1/modelwidget_landscape_pair.png").arg(renderDir));
+        }
+        m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
     }
 
     void finishedResultsAreListedAndDetachable()

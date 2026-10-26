@@ -34,6 +34,7 @@
 #include <random>
 
 namespace {
+constexpr int MaxSurfacePairs = 6; ///< 2D profiles kept in the result (4 variables: all pairs)
 constexpr double ExtentLimit = 8.0; ///< log10 units: further than this the level counts as "not reached"
 
 QString StopName(LandscapeResult::Stop reason)
@@ -459,46 +460,55 @@ bool LandscapeSearch::Execute()
         v["profile"] = profile;
         variables << v;
     }
-    // surface: 2D profile of the first pair, one point per visited bin (the GUI draws the levels)
+    // surfaces: the 2D profile of every pair of variables (at most MaxSurfacePairs: d (d - 1) / 2 grow quickly), one point per
+    // visited bin; the result page draws the one that is chosen
     if (recordPoints) {
-        QJsonArray surface;
         const int bins = settings.bins;
-        std::vector<double> z(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity());
+        std::vector<std::pair<int, int>> pairs;
+        for (int j = 1; j < d && int(pairs.size()) < MaxSurfacePairs; ++j)
+            for (int i = 0; i < j && int(pairs.size()) < MaxSurfacePairs; ++i)
+                pairs.emplace_back(i, j);
+        std::vector<std::vector<double>> z(pairs.size(), std::vector<double>(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity()));
+        std::vector<int> bin(d);
         for (const auto& p : m_points) {
             if (int(p.size()) != d + 1)
                 continue;
-            int bx = -1, by = -1;
-            for (int k = 0; k < d; ++k) {
-                const double value = p[k];
-                const int b = int((value - m_lower[k]) / (m_upper[k] - m_lower[k]) * bins);
-                if (b < 0 || b >= bins)
-                    break;
-                if (k == 0)
-                    bx = b;
-                if (k == 1)
-                    by = b;
+            bool inside = true;
+            for (int k = 0; k < d && inside; ++k) {
+                bin[k] = int((p[k] - m_lower[k]) / (m_upper[k] - m_lower[k]) * bins);
+                inside = bin[k] >= 0 && bin[k] < bins;
             }
-            if (bx < 0 || by < 0)
+            if (!inside)
                 continue;
-            const size_t flat = size_t(bx) * size_t(bins) + size_t(by);
-            z[flat] = std::min(z[flat], p.back());
-        }
-        double smin = std::numeric_limits<double>::infinity();
-        for (int a = 0; a < bins; ++a)
-            for (int b = 0; b < bins; ++b) {
-                const double sse = z[size_t(a) * bins + b];
-                if (!std::isfinite(sse))
-                    continue;
-                smin = std::min(smin, sse);
-                QJsonArray point;
-                point << m_lower[0] + (a + 0.5) * (m_upper[0] - m_lower[0]) / bins;
-                point << m_lower[1] + (b + 0.5) * (m_upper[1] - m_lower[1]) / bins;
-                point << sse;
-                surface << point;
+            for (size_t q = 0; q < pairs.size(); ++q) {
+                double& cell = z[q][size_t(bin[pairs[q].first]) * size_t(bins) + size_t(bin[pairs[q].second])];
+                cell = std::min(cell, p.back());
             }
-        out["surface"] = surface;
-        out["contour_min"] = smin / (sseMin > 0 ? sseMin : 1.0); // relative to the fit, as the 1D chart draws it
-        out["contour_max"] = std::max(4.0, 2.0 * (m_level / (sseMin > 0 ? sseMin : 1.0)));
+        }
+        QJsonArray surfaces;
+        for (size_t q = 0; q < pairs.size(); ++q) {
+            const int i = pairs[q].first, j = pairs[q].second;
+            QJsonArray points;
+            for (int a = 0; a < bins; ++a)
+                for (int b = 0; b < bins; ++b) {
+                    const double sse = z[q][size_t(a) * bins + b];
+                    if (!std::isfinite(sse))
+                        continue;
+                    QJsonArray point;
+                    point << m_lower[i] + (a + 0.5) * (m_upper[i] - m_lower[i]) / bins;
+                    point << m_lower[j] + (b + 0.5) * (m_upper[j] - m_lower[j]) / bins;
+                    point << sse;
+                    points << point;
+                }
+            QJsonObject surface;
+            surface["x"] = i;
+            surface["y"] = j;
+            surface["bins"] = bins;
+            surface["points"] = points;
+            surfaces << surface;
+        }
+        out["surfaces"] = surfaces;
+        out["contour_max"] = std::max(4.0, 2.0 * (m_level / (sseMin > 0 ? sseMin : 1.0))); // relative to the fit, as the charts draw it
     }
     out["variables"] = variables;
 

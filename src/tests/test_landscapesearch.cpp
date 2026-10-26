@@ -412,7 +412,13 @@ private slots:
         QVERIFY(search.Run());
 
         QVERIFY(!search.Points().empty());
-        const QJsonArray surface = search.Result()["0"].toObject()["surface"].toArray();
+        // two constants: one pair (0, 1), its grid as recorded
+        const QJsonArray surfaces = search.Result()["0"].toObject()["surfaces"].toArray();
+        QCOMPARE(surfaces.size(), 1);
+        QCOMPARE(surfaces[0].toObject()["x"].toInt(), 0);
+        QCOMPARE(surfaces[0].toObject()["y"].toInt(), 1);
+        QCOMPARE(surfaces[0].toObject()["bins"].toInt(), 60);
+        const QJsonArray surface = surfaces[0].toObject()["points"].toArray();
         QVERIFY(surface.size() > 100);
 
         // the surface profile of a variable runs along the 1D profile. Both take the minimum over the recorded points,
@@ -454,7 +460,44 @@ private slots:
         quiet.setController(c2);
         QVERIFY(quiet.Run());
         QVERIFY(quiet.Points().empty());
-        QVERIFY(quiet.Result()["0"].toObject()["surface"].toArray().isEmpty());
+        QVERIFY(quiet.Result()["0"].toObject()["surfaces"].toArray().isEmpty());
+        delete data;
+    }
+
+    // Three constants give the 2D profile of every pair, in the order (0,1) (0,2) (1,2), each with its own grid.
+    void everyPairHasASurface()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[4] = { 9.0, 5.0, 2.0, 7.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2\n2 A + B <=> A2B"), { 3.0, 5.4, 5.6 }, 4, 0.02, shifts);
+
+        LandscapeSearch search;
+        search.setModel(model);
+        QJsonObject ctl;
+        ctl["Walkers"] = 2;
+        ctl["Polish"] = 0;
+        ctl["MaxSteps"] = 3000;
+        ctl["MaxExpansions"] = 0;
+        ctl["Surface"] = true;
+        search.setController(ctl);
+        QVERIFY(search.Run());
+
+        const QJsonArray surfaces = search.Result()["0"].toObject()["surfaces"].toArray();
+        QCOMPARE(surfaces.size(), 3);
+        const int pairs[3][2] = { { 0, 1 }, { 0, 2 }, { 1, 2 } };
+        for (int q = 0; q < 3; ++q) {
+            const QJsonObject s = surfaces[q].toObject();
+            QCOMPARE(s["x"].toInt(), pairs[q][0]);
+            QCOMPARE(s["y"].toInt(), pairs[q][1]);
+            QVERIFY2(s["points"].toArray().size() > 10, qPrintable(QString("pair %1: %2 points").arg(q).arg(s["points"].toArray().size())));
+        }
+        // the fit lies in every grid: some point of each pair is below the level
+        for (int q = 0; q < 3; ++q) {
+            double lowest = INFINITY;
+            for (const QJsonValue& v : surfaces[q].toObject()["points"].toArray())
+                lowest = std::min(lowest, v.toArray()[2].toDouble());
+            QVERIFY2(lowest < search.Level(), qPrintable(QString("pair %1: lowest SSE %2, level %3").arg(q).arg(lowest).arg(search.Level())));
+        }
         delete data;
     }
 
