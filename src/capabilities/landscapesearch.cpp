@@ -403,6 +403,93 @@ bool LandscapeSearch::Execute()
         }
     }
 
+    // Two constants: the walkers visit a path, not an area, and a height line needs whole squares of known cells. The SSE of the
+    // cells in and around the region the walkers explored (the product of the ranges of bins the two profiles reached) is therefore
+    // evaluated exactly, at their centres: at most bins^2 evaluations, bounded by the box. A cell keeps the lower of that value and
+    // the lowest point a walker had in it. The same grid gives the exact profile of each constant (the minimum over the other one),
+    // so the intervals no longer end where the walkers happened not to go. With more constants the profile of a variable is a minimum
+    // over several others and cannot be filled in this way.
+    std::vector<double> exactGrid;
+    long exactEvaluations = 0;
+    bool exact = false;
+    if (d == 2 && !m_stop && AccessCI(m_controller, "ExactSurface").toBool(true)) {
+        const int bins = settings.bins;
+        int lo[2] = { bins, bins }, hi[2] = { -1, -1 };
+        for (int v = 0; v < 2; ++v)
+            for (int b = 0; b < bins; ++b)
+                if (std::isfinite(m_merged.profile[v][b])) {
+                    lo[v] = std::min(lo[v], b);
+                    hi[v] = std::max(hi[v], b);
+                }
+        if (hi[0] >= 0 && hi[1] >= 0) {
+            // the rectangle grows until its outermost cells lie above the wall (or at the edge of the box): the region below the wall,
+            // and with it every interval, is then enclosed by cells that were evaluated
+            int amin = std::max(0, lo[0] - 2), amax = std::min(bins - 1, hi[0] + 2);
+            int bmin = std::max(0, lo[1] - 2), bmax = std::min(bins - 1, hi[1] + 2);
+            exactGrid.assign(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity());
+            std::vector<char> done(size_t(bins) * size_t(bins), 0);
+            std::vector<double> at(2);
+            auto evaluateRectangle = [&]() {
+                for (int a = amin; a <= amax && !m_stop; ++a)
+                    for (int b = bmin; b <= bmax && !m_stop; ++b) {
+                        const size_t cell = size_t(a) * bins + b;
+                        if (done[cell])
+                            continue;
+                        at[0] = m_lower[0] + (a + 0.5) * (m_upper[0] - m_lower[0]) / bins;
+                        at[1] = m_lower[1] + (b + 0.5) * (m_upper[1] - m_lower[1]) / bins;
+                        const double sse = base(at);
+                        ++exactEvaluations;
+                        done[cell] = 1;
+                        if (std::isfinite(sse))
+                            exactGrid[cell] = sse;
+                    }
+            };
+            evaluateRectangle();
+            const int grow = 3;
+            for (bool growing = true; growing && !m_stop;) {
+                growing = false;
+                auto belowWall = [&](int a, int b) { return exactGrid[size_t(a) * bins + b] <= cut; };
+                bool left = false, right = false, down = false, up = false;
+                for (int b = bmin; b <= bmax; ++b) {
+                    left |= amin > 0 && belowWall(amin, b);
+                    right |= amax < bins - 1 && belowWall(amax, b);
+                }
+                for (int a = amin; a <= amax; ++a) {
+                    down |= bmin > 0 && belowWall(a, bmin);
+                    up |= bmax < bins - 1 && belowWall(a, bmax);
+                }
+                if (left)
+                    amin = std::max(0, amin - grow);
+                if (right)
+                    amax = std::min(bins - 1, amax + grow);
+                if (down)
+                    bmin = std::max(0, bmin - grow);
+                if (up)
+                    bmax = std::min(bins - 1, bmax + grow);
+                if (left || right || down || up) {
+                    growing = true;
+                    evaluateRectangle();
+                }
+            }
+            exact = !m_stop;
+            if (exact) { // exact profiles: the lowest cell of each row and column, where lower than what the walkers saw
+                for (int a = amin; a <= amax; ++a)
+                    for (int b = bmin; b <= bmax; ++b) {
+                        const double sse = exactGrid[size_t(a) * bins + b];
+                        if (sse < m_merged.profile[0][a]) {
+                            m_merged.profile[0][a] = sse;
+                            m_merged.profileAt[0][a] = m_lower[0] + (a + 0.5) * (m_upper[0] - m_lower[0]) / bins;
+                        }
+                        if (sse < m_merged.profile[1][b]) {
+                            m_merged.profile[1][b] = sse;
+                            m_merged.profileAt[1][b] = m_lower[1] + (b + 0.5) * (m_upper[1] - m_lower[1]) / bins;
+                        }
+                    }
+                m_intervals = LandscapeIntervals(m_merged, m_level, m_lower, m_upper);
+            }
+        }
+    }
+
     QJsonObject out;
     out["confidence"] = confidence;
     out["sse_min"] = sseMin;
@@ -412,7 +499,8 @@ bool LandscapeSearch::Execute()
     out["datapoints"] = points;
     out["parameters"] = parameters;
     out["time_ms"] = double(QDateTime::currentMSecsSinceEpoch() - t0);
-    out["evaluations"] = evaluations + m_carryEvaluations;
+    out["evaluations"] = evaluations + m_carryEvaluations + double(exactEvaluations);
+    out["exact_profile"] = exact; // two constants: the profiles and the surface are exact in and around the explored region
     out["recentered"] = m_recentered;
     out["start_sse"] = m_startSSE;
     out["rounds"] = rounds + 1;
@@ -495,6 +583,9 @@ bool LandscapeSearch::Execute()
                 cell = std::min(cell, p.back());
             }
         }
+        if (!exactGrid.empty() && pairs.size() == 1) // two constants: the cells evaluated exactly fill the gaps between the visited ones
+            for (size_t c = 0; c < z[0].size(); ++c)
+                z[0][c] = std::min(z[0][c], exactGrid[c]);
         QJsonArray surfaces;
         for (size_t q = 0; q < pairs.size(); ++q) {
             const int i = pairs[q].first, j = pairs[q].second;
@@ -514,6 +605,8 @@ bool LandscapeSearch::Execute()
             surface["x"] = i;
             surface["y"] = j;
             surface["bins"] = bins;
+            surface["exact"] = exact && !exactGrid.empty(); // unvisited cells in the explored region were evaluated, no gaps
+            surface["exact_evaluations"] = double(exactEvaluations);
             surface["points"] = points;
             surfaces << surface;
         }

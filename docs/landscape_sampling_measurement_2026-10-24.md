@@ -22,6 +22,10 @@ valley (lg beta 2 from 4.4 down to -9, SSE 0.0221 - 0.0223) and a separate regio
 SSE 0.0235); the minima search lists both (`finderFindsTheOtherBasin`). The conclusion about the cost of finding better points stays
 (random starts of the ordinary minimiser are far cheaper); the statement about wrong basins does not.
 
+> Note (2026-10-26): with exactly two constants `LandscapeSearch` now also evaluates the explored region on a grid (at most 3600 evaluations,
+> `evaluations` includes them). With one walker and 400 steps the interval ends equal an independent grid exactly; for two constants the
+> walk is hardly needed, and the evaluation counts of the two-constant rows below are not comparable to a current run.
+
 ## What was compared
 
 - **Sampler**: `LandscapeSearch`, default settings (Metropolis, adaptive proposals, 4 walkers, box from the fit, `MaxRange` 10,

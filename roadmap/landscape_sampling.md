@@ -114,7 +114,7 @@ build the GUI (WP-D) anyway. Proposal not yet decided: add the constrained-refit
 `Mode` "Minima" (GUI task "Find other minima"): wall `SearchWall` x SSE of the fit, fixed box, temperature scaled to the wall, minima refitted, merged by
 basin identity, with their models for Load/Add. Barrier crossing is proven on analytic double wells; on titration data a second basin was
 not found beyond a flat valley and a separate region without the second species (data set of `finderFindsTheOtherBasin`) - **the WP-E
-"wrong basin" was a stalled fit, see the correction in `docs/landscape_sampling_measurement_2026-10-24.md`**. Open: gaps in the surfaces
-(only visited bins): reconstruct from the bias (calibrated against the exact visited values) or evaluate the unvisited cells exactly (two constants:
-at most bins^2 = 3600 evaluations); for three and more constants the profile of a pair is not a bias marginal (the bias lives in all dimensions);
-the MTD way would be biasing only the pair. A better benchmark for the finder needs a data set with a proven barrier (not found yet).
+"wrong basin" was a stalled fit, see the correction in `docs/landscape_sampling_measurement_2026-10-24.md`**. Done for two constants (2026-10-26): the unvisited cells of the explored region are evaluated exactly (at most bins^2 = 3600
+evaluations, the rectangle grows until the region below the wall is enclosed), surface and profiles are exact and the intervals equal an independent grid;
+for two constants the walk is then almost beside the point. Open for three and more constants: gaps in the surfaces (only visited bins); the profile of a pair is not a
+bias marginal (the bias lives in all dimensions), the MTD way would be biasing only the pair. A better benchmark for the finder needs a data set with a proven barrier (not found yet).

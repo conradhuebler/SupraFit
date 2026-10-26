@@ -148,6 +148,7 @@ const QJsonObject LandscapeConfigBlock{
     /* Record the points of the walk and give the 2D profile of the first two parameters (surface with the interval levels);
      * default on for two parameters, off for more (the recording costs memory and the result grows with it) */
     { "Surface", false }, // bool, off by default; the GUI turns it on for two parameters
+    { "ExactSurface", true }, // bool, two parameters: evaluate the unvisited cells of the explored region (no gaps in the height lines)
 
     { "Seed", 1 }, // int
 };

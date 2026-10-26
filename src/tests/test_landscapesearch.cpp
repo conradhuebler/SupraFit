@@ -616,6 +616,155 @@ private slots:
         delete data;
     }
 
+    // Two constants: the surface has no gaps. A short walk visits a path; with `ExactSurface` the cells in and around the explored
+    // region are evaluated, so every cell of the rectangle the surface spans is there and holds at most the exact SSE at its centre
+    // (the lowest visited point of a cell can be lower than that). Without it the same walk leaves gaps.
+    void exactSurfaceHasNoGaps()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+        ModelLandscape landscape(model->Clone(false));
+
+        auto run = [&](bool exact) {
+            LandscapeSearch search;
+            search.setModel(model);
+            QJsonObject ctl;
+            ctl["Walkers"] = 2;
+            ctl["Polish"] = 0;
+            ctl["MaxSteps"] = 3000;
+            ctl["MaxExpansions"] = 0;
+            ctl["Surface"] = true;
+            ctl["ExactSurface"] = exact;
+            search.setController(ctl);
+            if (!search.Run())
+                return QJsonObject();
+            return search.Result()["0"].toObject()["surfaces"].toArray()[0].toObject();
+        };
+        // bounds of the box are needed to put the points into bins: take them from the 1D profile result of a run
+        LandscapeSearch probe;
+        probe.setModel(model);
+        QJsonObject pc;
+        pc["Walkers"] = 2;
+        pc["Polish"] = 0;
+        pc["MaxSteps"] = 3000;
+        pc["MaxExpansions"] = 0;
+        pc["Surface"] = true;
+        probe.setController(pc);
+        QVERIFY(probe.Run());
+        const QJsonObject probeResult = probe.Result()["0"].toObject();
+        const QJsonObject exactSurface = probeResult["surfaces"].toArray()[0].toObject();
+        QVERIFY(exactSurface["exact"].toBool());
+        const int bins = exactSurface["bins"].toInt();
+        QVERIFY(exactSurface["exact_evaluations"].toDouble() > 0 && exactSurface["exact_evaluations"].toDouble() <= double(bins) * bins);
+
+        const double xlo = probe.Lower()[0], xw = probe.Upper()[0] - xlo, ylo = probe.Lower()[1], yw = probe.Upper()[1] - ylo;
+        std::vector<char> present(size_t(bins) * size_t(bins), 0);
+        int amin = bins, amax = -1, bmin = bins, bmax = -1;
+        int checked = 0;
+        double worstExcess = 0;
+        for (const QJsonValue& v : exactSurface["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            const int a = int((p[0].toDouble() - xlo) / xw * bins), b = int((p[1].toDouble() - ylo) / yw * bins);
+            QVERIFY(a >= 0 && a < bins && b >= 0 && b < bins);
+            present[size_t(a) * bins + b] = 1;
+            amin = std::min(amin, a);
+            amax = std::max(amax, a);
+            bmin = std::min(bmin, b);
+            bmax = std::max(bmax, b);
+            if (checked++ % 5 == 0) { // never above the exact SSE at the centre of the cell
+                const double exactAtCentre = landscape({ p[0].toDouble(), p[1].toDouble() });
+                worstExcess = std::max(worstExcess, (p[2].toDouble() - exactAtCentre) / exactAtCentre);
+            }
+        }
+        int missing = 0;
+        for (int a = amin; a <= amax; ++a)
+            for (int b = bmin; b <= bmax; ++b)
+                if (!present[size_t(a) * bins + b])
+                    ++missing;
+        qInfo() << "exact surface:" << exactSurface["points"].toArray().size() << "cells in a rectangle of" << (amax - amin + 1) * (bmax - bmin + 1) << ", missing" << missing
+                << ", exact evaluations" << exactSurface["exact_evaluations"].toDouble() << ", worst excess over the exact value" << worstExcess;
+        QCOMPARE(missing, 0);
+        QVERIFY2(worstExcess < 1e-9, qPrintable(QString("a cell above the exact SSE by %1").arg(worstExcess)));
+
+        // the same walk without it: gaps
+        const QJsonObject plain = run(false);
+        QVERIFY(!plain["exact"].toBool());
+        QVERIFY2(plain["points"].toArray().size() < exactSurface["points"].toArray().size() / 2,
+            qPrintable(QString("%1 visited cells against %2 exact").arg(plain["points"].toArray().size()).arg(exactSurface["points"].toArray().size())));
+        delete data;
+    }
+
+    // Two constants: the exact grid also gives the exact profile of each constant, so the intervals of a short walk agree with an
+    // independent profile over the whole box (within a bin) and none ends "not reached by the sampling"; without it the same short
+    // walk leaves such ends.
+    void exactProfileFillsTheIntervals()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+
+        auto run = [&](bool exact, LandscapeSearch& search) {
+            search.setModel(model);
+            QJsonObject ctl;
+            ctl["Walkers"] = 1;
+            ctl["Polish"] = 0;
+            ctl["MaxSteps"] = 400;
+            ctl["MaxExpansions"] = 0;
+            ctl["ExactSurface"] = exact;
+            search.setController(ctl);
+            return search.Run();
+        };
+        auto unsampledEnds = [](const LandscapeSearch& search) {
+            int n = 0;
+            for (const auto& variable : search.Intervals())
+                for (const LandscapeSegment& s : variable)
+                    n += (s.lowerEdge == LandscapeSegment::Edge::Unsampled) + (s.upperEdge == LandscapeSegment::Edge::Unsampled);
+            return n;
+        };
+
+        LandscapeSearch plain, exact;
+        QVERIFY(run(false, plain));
+        QVERIFY(run(true, exact));
+        QVERIFY(exact.Result()["0"].toObject()["exact_profile"].toBool());
+        QVERIFY(!plain.Result()["0"].toObject()["exact_profile"].toBool());
+        qInfo() << "unsampled interval ends: plain" << unsampledEnds(plain) << "exact" << unsampledEnds(exact);
+        QVERIFY2(unsampledEnds(plain) > 0, "the short walk was meant to leave ends the walkers did not reach");
+        QCOMPARE(unsampledEnds(exact), 0);
+
+        // independent: the profile of each constant over the whole box, from a grid of its own (the same box, bins of the same size)
+        ModelLandscape landscape(model->Clone(false));
+        const int bins = 60;
+        const std::vector<double>& lo = exact.Lower();
+        const std::vector<double>& hi = exact.Upper();
+        std::vector<double> profile[2] = { std::vector<double>(bins, INFINITY), std::vector<double>(bins, INFINITY) };
+        for (int a = 0; a < bins; ++a)
+            for (int b = 0; b < bins; ++b) {
+                const double sse = landscape({ lo[0] + (a + 0.5) * (hi[0] - lo[0]) / bins, lo[1] + (b + 0.5) * (hi[1] - lo[1]) / bins });
+                profile[0][a] = std::min(profile[0][a], sse);
+                profile[1][b] = std::min(profile[1][b], sse);
+            }
+        const double level = exact.Level();
+        for (int v = 0; v < 2; ++v) {
+            const double w = (hi[v] - lo[v]) / bins;
+            int first = -1, last = -1;
+            for (int i = 0; i < bins; ++i)
+                if (profile[v][i] <= level) {
+                    if (first < 0)
+                        first = i;
+                    last = i;
+                }
+            QVERIFY(first >= 0);
+            const auto& segments = exact.Intervals()[v];
+            QVERIFY(!segments.empty());
+            const double refLower = lo[v] + first * w, refUpper = lo[v] + (last + 1) * w;
+            qInfo() << "variable" << v << "exact result [" << segments.front().lower << segments.back().upper << "] independent grid [" << refLower << refUpper << "] bin" << w;
+            QVERIFY2(std::abs(segments.front().lower - refLower) < 1.5 * w && std::abs(segments.back().upper - refUpper) < 1.5 * w,
+                qPrintable(QString("variable %1 differs from an independent grid by more than a bin").arg(v)));
+        }
+        delete data;
+    }
+
     void modelWithoutVariableProjectionIsRefused()
     {
         LandscapeSearch none;
