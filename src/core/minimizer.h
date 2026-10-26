@@ -100,6 +100,8 @@ public:
     inline qreal SumOfError() const { return m_sum_error; }
     inline QSharedPointer<AbstractModel> Model() const { return m_model; }
     inline OptimisationHistory History() const { return m_history; }
+    /*! \brief No "Optimisation took ..." line in the log and no notification: for the many refits an analysis runs by itself. Claude Generated. */
+    inline void setQuiet(bool quiet) { m_quiet = quiet; }
 
 private:
     QSharedPointer<AbstractModel> m_model;
@@ -107,6 +109,7 @@ private:
     bool m_inform_config_changed;
     QJsonObject m_last_parameter;
     bool m_exc_statistics;
+    bool m_quiet = false;
     qreal m_sum_error;
     OptimisationHistory m_history;
 

@@ -339,6 +339,8 @@ LandscapeResult LandscapeSampler::Run(const std::vector<double>& start)
             result.reason = LandscapeResult::Stop::Interrupted;
             break;
         }
+        if (m_progress && step % m_progressStride == 0)
+            m_progress(step);
 
         // propose
         if (langevin) {

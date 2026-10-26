@@ -40,6 +40,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QRadioButton>
@@ -955,6 +956,100 @@ private slots:
         if (!renderDir.isEmpty())
             widget.grab().save(QStringLiteral("%1/modelwidget_landscape_minima.png").arg(renderDir));
         m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // A landscape job through the real pane: the progress dialog shows what happens (the stage text, a bar that counts and ends at its
+    // maximum), the log gets one line for the whole analysis and none for the refits, and the stage texts are not messages.
+    void landscapeJobShowsItsStagesAndStaysQuiet()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, m_data.data());
+        QJsonObject reactions, definition;
+        reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        definition["Reactions"] = reactions;
+        model->DefineModel(definition);
+        QJsonObject cfg = model->getOptimizerConfig();
+        cfg["FitSolver"] = QStringLiteral("VarPro");
+        model->setOptimizerConfig(cfg);
+        model->InitialGuess();
+        model->setGlobalParameter(3.0, 0);
+        model->setGlobalParameter(5.4, 1);
+        Minimizer minimizer(false);
+        minimizer.setModel(model);
+        minimizer.Minimize();
+        model->Calculate();
+
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QProgressBar* bar = dialog->findChild<QProgressBar*>();
+        QVERIFY(bar);
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the user is on the Statistics page when the job runs
+        QCoreApplication::processEvents();
+        dialog->setCurrentTab(dialog->TabTitles().indexOf(QStringLiteral("Landscape Sampling")));
+        QCoreApplication::processEvents();
+
+        QSignalSpy logged(model->Info(), &DataClassPrivateObject::Message), warned(model->Info(), &DataClassPrivateObject::Warning);
+        QStringList stagesSeen, labelsSeen;
+        bool barWithinMaximum = true;
+        int samplingMaximum = 0, samplingEnd = -1;
+        QMetaObject::Connection stage = QObject::connect(widget.Jobs(), &JobManager::Stage, [&](const QString& text, bool restart) {
+            // the dialog's own slot has run first (connected earlier): the label shows the text, a new stage starts the bar again
+            QLabel* shown = nullptr;
+            for (QLabel* l : dialog->findChildren<QLabel*>())
+                if (l->text() == text)
+                    shown = l;
+            labelsSeen << (shown ? QStringLiteral("shown") : QStringLiteral("NOT shown: ") + text);
+            if (restart) {
+                stagesSeen << text;
+                if (bar->value() != 0)
+                    barWithinMaximum = false;
+            }
+        });
+        QMetaObject::Connection counted = QObject::connect(widget.Jobs(), &JobManager::incremented, [&](int) {
+            if (bar->value() > bar->maximum())
+                barWithinMaximum = false;
+            if (!stagesSeen.isEmpty() && stagesSeen.last().startsWith(QStringLiteral("Sampling"))) {
+                samplingMaximum = bar->maximum();
+                samplingEnd = bar->value();
+                const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+                static bool rendered = false;
+                if (!renderDir.isEmpty() && !rendered && bar->value() * 2 >= bar->maximum()) {
+                    rendered = true; // what the user sees half way through the sampling
+                    widget.grab().save(QStringLiteral("%1/modelwidget_landscape_progress.png").arg(renderDir));
+                }
+            }
+        });
+
+        QJsonObject job = LandscapeConfigBlock;
+        job["Walkers"] = 2;
+        job["MaxSteps"] = 2000;
+        job["Polish"] = 3;
+        job["Surface"] = true;
+        widget.Jobs()->AddSingleJob(job);
+        widget.Jobs()->RunJobs();
+        QObject::disconnect(stage);
+        QObject::disconnect(counted);
+
+        qInfo().noquote() << "stages:" << stagesSeen.join(" | ");
+        QVERIFY2(stagesSeen.size() >= 4, qPrintable(stagesSeen.join(" | ")));
+        QVERIFY(stagesSeen[1].startsWith(QStringLiteral("Sampling")));
+        QVERIFY2(!labelsSeen.join(",").contains(QStringLiteral("NOT shown")), qPrintable(labelsSeen.join(", ")));
+        QVERIFY2(barWithinMaximum, "the bar went past its maximum or did not start again with a stage");
+        QCOMPARE(samplingMaximum, 2 * ((2000 + 499) / 500));
+        QCOMPARE(samplingEnd, samplingMaximum); // the sampling stage ends full
+        // the log: one line for the whole analysis (the job's own summary), none of the "Optimisation took ..." lines of the refits
+        QCOMPARE(logged.count(), 1);
+        QVERIFY2(logged.first().first().toString().contains(QStringLiteral("took")), qPrintable(logged.first().first().toString()));
+        QVERIFY2(!logged.first().first().toString().startsWith(QStringLiteral("Optimisation took")), "a refit logged its time");
+        QCOMPARE(warned.count(), 0);
+        QVERIFY(model->LandscapeSize() >= 1);
+        model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
     }
 
     void finishedResultsAreListedAndDetachable()

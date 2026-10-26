@@ -136,6 +136,8 @@ public slots:
     void ShowWidget();
     void Attention();
     void Message(const QString& str);
+    /*! \brief What the running analysis does now; with \p restart the progress starts again for this stage. Claude Generated. */
+    void Stage(const QString& text, bool restart);
     void reject() override;
 
 private:

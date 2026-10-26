@@ -110,4 +110,7 @@ signals:
     void AnalyseFinished();
     void setMaximumSteps(int maxsteps);
     void Message(const QString& str);
+    /*! \brief What an analysis is doing now ("Sampling ..."), for the progress display only - not for the log or a notification. With \p restart
+     *  the progress bar starts again for the new stage (followed by setMaximumSteps), without it only the text changes. */
+    void Stage(const QString& text, bool restart = true);
 };

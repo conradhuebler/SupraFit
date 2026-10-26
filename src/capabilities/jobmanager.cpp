@@ -73,6 +73,7 @@ JobManager::JobManager(QObject* parent)
     connect(m_landscape, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_landscape, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_landscape, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_landscape, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     connect(this, &JobManager::Interrupt, this, [this]() {
         m_interrupt = true;

@@ -323,4 +323,5 @@ signals:
     void ShowResult(SupraFit::Method type, int index);
     void Interrupt();
     void Message(const QString& str);
+    void Stage(const QString& text, bool restart);
 };

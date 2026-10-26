@@ -147,6 +147,12 @@ public:
     /*! \brief Called for every accepted point, in the walker thread. What it copies per call is its own business (points
      *  for a 2D profile, coverage...): with no listener there is no per-step cost. */
     void addListener(std::function<void(const std::vector<double>& x, double sse)> listener) { m_listener = std::move(listener); }
+    /*! \brief Called with the step number every `stride` steps (a walker's progress, read by another thread). */
+    void setProgress(std::function<void(long step)> progress, int stride = 200)
+    {
+        m_progress = std::move(progress);
+        m_progressStride = std::max(1, stride);
+    }
     /*! \brief Fraction of the accepted points offered to the listener (a sample of the walk), 1. */
     void setListenerStride(int stride) { m_listenerStride = std::max(1, stride); }
 
@@ -170,6 +176,8 @@ private:
     std::function<bool()> m_interrupt;
     std::function<void(const std::vector<double>&, double)> m_listener;
     int m_listenerStride = 1;
+    std::function<void(long)> m_progress;
+    int m_progressStride = 200;
     std::unique_ptr<Bias> m_bias;
 };
 

@@ -1100,6 +1100,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget->Jobs(), &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
     connect(modelwidget->Jobs(), &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps, Qt::DirectConnection);
     connect(modelwidget->Jobs(), &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
+    connect(modelwidget->Jobs(), &JobManager::Stage, m_statistic_dialog, &StatisticDialog::Stage, Qt::DirectConnection);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt, Qt::DirectConnection);
 

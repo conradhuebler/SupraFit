@@ -159,6 +159,8 @@ void StatisticDialog::setUi()
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
     m_message_box = new QLabel;
+    m_message_box->setWordWrap(true); // a stage text must not widen the pane on a small screen
+    m_time_info->setWordWrap(true);
     m_progress = new QProgressBar;
     m_main_progress = new QProgressBar;
     layout->addWidget(m_time_info);
@@ -1316,6 +1318,16 @@ void StatisticDialog::Update()
 void StatisticDialog::Message(const QString& str)
 {
     m_message_box->setText(str);
+}
+
+void StatisticDialog::Stage(const QString& text, bool restart)
+{
+    m_message_box->setText(text);
+    if (restart) { // the time estimate belongs to the stage, the elapsed time to the whole job
+        QMutexLocker locker(&mutex);
+        m_time = 0;
+        m_progress->setValue(0);
+    }
 }
 
 void StatisticDialog::CalculateError()

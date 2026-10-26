@@ -868,6 +868,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
+    connect(m_jobmanager, &JobManager::Stage, m_statistic_dialog, &StatisticDialog::Stage); // the stage of an analysis: progress display only, not the log
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         // Phase timing starts at the click, not inside the job: the table generation that precedes

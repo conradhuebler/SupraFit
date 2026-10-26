@@ -24,6 +24,7 @@
 #include "src/core/models/AbstractModel.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonArray>
 #include <QtCore/QRunnable>
@@ -86,6 +87,9 @@ public:
     {
         setAutoDelete(false);
     }
+    /*! \brief Steps the walker has done (updated every 200 steps by the walker, read by the thread that waits for it); at the end the
+     *  full number of steps, so that a walker that stopped early counts as complete. */
+    std::atomic<long> stepsDone{ 0 };
     /*! \brief Points the walker accepts, (coordinates, SSE), for 2D profiles. Filled by the walker thread, read after waitForDone. */
     std::vector<std::vector<double>> points;
 
@@ -98,6 +102,7 @@ public:
         LandscapeSampler sampler([&landscape](const std::vector<double>& x) { return landscape(x); }, m_lower, m_upper);
         sampler.setSettings(m_settings);
         sampler.setInterrupt([this] { return m_stop->load(); });
+        sampler.setProgress([this](long step) { stepsDone.store(step); });
         if (m_settings.recordPoints)
             sampler.addListener([this](const std::vector<double>& x, double sse) {
                 points.push_back(x);
@@ -120,6 +125,7 @@ public:
         }
         m_start = start;
         m_result = sampler.Run(start);
+        stepsDone.store(m_settings.maxSteps);
     }
 
     const LandscapeResult& Result() const { return m_result; }
@@ -272,10 +278,21 @@ bool LandscapeSearch::Execute()
     const double boxFactor = AccessCI(m_controller, "BoxFactor").toDouble(4.0);
     const double maxRange = AccessCI(m_controller, "MaxRange").toDouble(10.0);
     std::vector<double> half(d, range);
+    if (!(range > 0)) {
+        emit Stage(tr("Setting up: how far the confidence region reaches along each constant"));
+        emit setMaximumSteps(2 * d);
+    }
     for (int i = 0; i < d; ++i)
         if (!(range > 0)) {
-            const double ext = std::max(Extent(base, x0, i, +1.0, m_level, ExtentLimit), Extent(base, x0, i, -1.0, m_level, ExtentLimit));
-            half[i] = std::min(maxRange, boxFactor * std::max(ext, 1e-3));
+            QElapsedTimer timer;
+            timer.start();
+            const double up = Extent(base, x0, i, +1.0, m_level, ExtentLimit);
+            emit IncrementProgress(int(std::max<qint64>(1, timer.restart())));
+            QCoreApplication::processEvents();
+            const double down = Extent(base, x0, i, -1.0, m_level, ExtentLimit);
+            emit IncrementProgress(int(std::max<qint64>(1, timer.elapsed())));
+            QCoreApplication::processEvents();
+            half[i] = std::min(maxRange, boxFactor * std::max(std::max(up, down), 1e-3));
         }
     m_lower.assign(d, 0.0);
     m_upper.assign(d, 0.0);
@@ -318,7 +335,6 @@ bool LandscapeSearch::Execute()
 
     int walkers = AccessCI(m_controller, "Walkers").toInt(qApp->instance()->property("threads").toInt());
     walkers = std::max(1, walkers);
-    emit setMaximumSteps(walkers);
 
     // The extent along one variable alone understates the profile extent of correlated constants: if a
     // stretch reaches the box, that variable's box is doubled and the walk repeated (fixed `Range`: never).
@@ -344,7 +360,36 @@ bool LandscapeSearch::Execute()
                 run.back()->setRandomStart(cut);
             pool.start(run.back().get());
         }
-        pool.waitForDone();
+
+        // One bar unit is 500 steps of one walker. The walkers run in their own threads; this one only reads their counters,
+        // keeps the bar and the window alive and takes the stop request. A walker that ends early (nothing new for a long time)
+        // counts as complete, the bar then jumps to its end.
+        const long chunk = 500;
+        const long unitsPerWalker = (settings.maxSteps + chunk - 1) / chunk;
+        emit Stage(rounds == 0 ? tr("Sampling the landscape: %1 walkers, up to %2 steps each").arg(walkers).arg(settings.maxSteps)
+                               : tr("Sampling again over a wider range (round %1): %2 walkers, up to %3 steps each").arg(rounds + 1).arg(walkers).arg(settings.maxSteps));
+        emit setMaximumSteps(int(walkers * unitsPerWalker));
+        std::vector<long> reported(run.size(), 0);
+        long total = 0;
+        QElapsedTimer clock;
+        clock.start();
+        const int parallel = std::max(1, std::min(walkers, QThreadPool::globalInstance()->maxThreadCount()));
+        auto report = [&](bool final) {
+            for (size_t w = 0; w < run.size(); ++w) {
+                const long done = final ? unitsPerWalker : std::min(unitsPerWalker, run[w]->stepsDone.load() / chunk);
+                while (reported[w] < done) {
+                    ++reported[w];
+                    ++total;
+                    // the dialog divides by the number of threads: what one unit cost one thread, from the wall time so far
+                    emit IncrementProgress(int(std::max<qint64>(1, clock.elapsed() * parallel / total)));
+                }
+            }
+        };
+        while (!pool.waitForDone(50)) {
+            report(false);
+            QCoreApplication::processEvents();
+        }
+        report(true);
 
         walkerInfo = QJsonArray();
         m_merged = LandscapeResult();
@@ -385,10 +430,12 @@ bool LandscapeSearch::Execute()
     // The walkers found a deeper minimum than the fit: the level, the box and the intervals belong to that one.
     const int maxRecentre = finder ? 0 : AccessCI(m_controller, "MaxRecentre").toInt(2);
     if (!m_stop && m_recentered < maxRecentre && m_merged.bestSSE < sseMin * (1.0 - 1e-3) && !m_merged.best.empty()) {
+        emit Stage(tr("The walkers found a deeper minimum: refitting it"));
         QSharedPointer<AbstractModel> candidate = m_model->Clone(false);
         for (int i = 0; i < d; ++i)
             candidate->setGlobalParameter(m_merged.best[i], base.GlobalIndex(i));
         Minimizer minimizer(false);
+        minimizer.setQuiet(true);
         minimizer.setModel(candidate);
         minimizer.Minimize();
         ModelLandscape deeper(candidate);
@@ -429,6 +476,14 @@ bool LandscapeSearch::Execute()
             exactGrid.assign(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity());
             std::vector<char> done(size_t(bins) * size_t(bins), 0);
             std::vector<double> at(2);
+            // one bar unit is 25 cells; the number of cells is not known in advance (the rectangle grows), the maximum follows it
+            const long cellsPerUnit = 25;
+            QElapsedTimer gridClock;
+            gridClock.start();
+            long reportedUnits = 0;
+            auto rectangleCells = [&]() { return long(amax - amin + 1) * long(bmax - bmin + 1); };
+            emit Stage(tr("Evaluating the explored region of the two constants exactly"));
+            emit setMaximumSteps(int((rectangleCells() + cellsPerUnit - 1) / cellsPerUnit));
             auto evaluateRectangle = [&]() {
                 for (int a = amin; a <= amax && !m_stop; ++a)
                     for (int b = bmin; b <= bmax && !m_stop; ++b) {
@@ -442,6 +497,11 @@ bool LandscapeSearch::Execute()
                         done[cell] = 1;
                         if (std::isfinite(sse))
                             exactGrid[cell] = sse;
+                        if (exactEvaluations / cellsPerUnit > reportedUnits) {
+                            ++reportedUnits;
+                            emit IncrementProgress(int(std::max<qint64>(1, gridClock.elapsed() / reportedUnits)));
+                            QCoreApplication::processEvents();
+                        }
                     }
             };
             evaluateRectangle();
@@ -468,6 +528,7 @@ bool LandscapeSearch::Execute()
                     bmax = std::min(bins - 1, bmax + grow);
                 if (left || right || down || up) {
                     growing = true;
+                    emit setMaximumSteps(int((rectangleCells() + cellsPerUnit - 1) / cellsPerUnit)); // more cells to do than planned
                     evaluateRectangle();
                 }
             }
@@ -647,13 +708,31 @@ bool LandscapeSearch::Execute()
     std::vector<double> tolerance(d);
     for (int i = 0; i < d; ++i)
         tolerance[i] = std::max(0.02, (m_upper[i] - m_lower[i]) / settings.bins);
-    for (size_t k = 0; k < m_merged.minima.size() && int(polished.size()) < polish && !m_stop; ++k) {
+    // The candidates are sorted by SSE and a flat valley gives many that all end in the same place: one that already lies in the basin of
+    // a minimum found is skipped without a refit (a few evaluations on the line between them instead of a fit). The tries are capped
+    // at ten per minimum wanted.
+    const size_t attempts = std::min(m_merged.minima.size(), size_t(std::max(1, polish) * 10));
+    if (polish > 0 && attempts > 0 && !m_stop) {
+        emit Stage(tr("Refitting the minima the walkers found"));
+        emit setMaximumSteps(int(attempts));
+    }
+    QElapsedTimer refitClock;
+    refitClock.start();
+    for (size_t k = 0; k < attempts && int(polished.size()) < polish && !m_stop; ++k) {
+        if (std::any_of(polished.begin(), polished.end(), [&](const Minimum& m) { return sameBasin(m.x, m.sse, m_merged.minima[k].x, m_merged.minima[k].sse); })) {
+            emit IncrementProgress(1);
+            continue;
+        }
         QSharedPointer<AbstractModel> candidate = m_model->Clone(false);
         for (int i = 0; i < d; ++i)
             candidate->setGlobalParameter(m_merged.minima[k].x[i], base.GlobalIndex(i));
         Minimizer minimizer(false);
+        minimizer.setQuiet(true); // the refits are part of this analysis: one line for all of it, not one per minimum
         minimizer.setModel(candidate);
+        emit Stage(tr("Refitting the minima the walkers found: candidate %1 of up to %2, %3 distinct so far").arg(k + 1).arg(attempts).arg(polished.size()), false);
         minimizer.Minimize();
+        emit IncrementProgress(int(std::max<qint64>(1, refitClock.restart())));
+        QCoreApplication::processEvents();
         ModelLandscape landscape(candidate);
         Minimum found{ landscape.Start(), 0, QJsonObject() };
         found.sse = landscape(found.x);

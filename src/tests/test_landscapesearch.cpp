@@ -765,6 +765,86 @@ private slots:
         delete data;
     }
 
+    // The refits an analysis runs by itself are quiet (no line in the log, no notification: the model's Message and Warning stay
+    // silent, while an ordinary fit speaks), and the progress tells what happens: the stages come in order, the bar of each stage
+    // reaches exactly its maximum, and the stage text is not a message.
+    void progressIsReportedAndRefitsAreQuiet()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[3] = { 9.0, 5.0, 2.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2"), { 3.0, 5.4 }, 4, 0.02, shifts);
+
+        // sanity: the log line of an ordinary fit exists, so that its absence below means something
+        QSignalSpy messages(model->Info(), &DataClassPrivateObject::Message);
+        QSignalSpy warnings(model->Info(), &DataClassPrivateObject::Warning);
+        {
+            Minimizer loud(false);
+            loud.setModel(model->Clone(false));
+            loud.Minimize();
+        }
+        QVERIFY2(messages.count() >= 1, "an ordinary fit is expected to log its time");
+        messages.clear();
+
+        struct Stage {
+            QString text;
+            bool restart;
+            int maximum = -1;
+            int increments = 0;
+        };
+        QList<Stage> stages;
+        LandscapeSearch search;
+        QObject::connect(&search, &AbstractSearchClass::Stage, [&](const QString& text, bool restart) {
+            if (restart)
+                stages << Stage{ text, true, -1, 0 };
+            else if (!stages.isEmpty())
+                stages.last().text = text; // the same stage, a new text
+        });
+        QObject::connect(&search, &AbstractSearchClass::setMaximumSteps, [&](int maximum) {
+            if (!stages.isEmpty())
+                stages.last().maximum = maximum;
+        });
+        QObject::connect(&search, &AbstractSearchClass::IncrementProgress, [&](int msecs) {
+            QVERIFY(msecs >= 1); // the dialog ignores less
+            if (!stages.isEmpty())
+                ++stages.last().increments;
+        });
+        QSignalSpy plainMessages(&search, &AbstractSearchClass::Message);
+
+        search.setModel(model);
+        QJsonObject ctl;
+        ctl["Walkers"] = 2;
+        ctl["MaxSteps"] = 2500;
+        ctl["Polish"] = 3;
+        ctl["MaxExpansions"] = 0;
+        ctl["Surface"] = true;
+        search.setController(ctl);
+        QVERIFY(search.Run());
+
+        QCOMPARE(messages.count(), 0); // no "Optimisation took ..." for the refits
+        QCOMPARE(warnings.count(), 0);
+        QCOMPARE(plainMessages.count(), 0); // and the stages are no messages
+        QStringList texts;
+        for (const Stage& s : stages)
+            texts << s.text;
+        qInfo().noquote() << "stages:" << texts.join(" | ");
+        QVERIFY2(stages.size() >= 4, qPrintable(texts.join(" | ")));
+        QVERIFY2(stages[0].text.startsWith(QStringLiteral("Setting up")), qPrintable(stages[0].text));
+        QVERIFY2(stages[1].text.startsWith(QStringLiteral("Sampling")), qPrintable(stages[1].text));
+        QVERIFY2(stages[2].text.startsWith(QStringLiteral("Evaluating")), qPrintable(stages[2].text));
+        QVERIFY2(stages[3].text.startsWith(QStringLiteral("Refitting")), qPrintable(stages[3].text));
+        // sampling and setting up: the bar ends exactly at its maximum (a walker that ended early counts as complete)
+        for (int k = 0; k < 2; ++k) {
+            QVERIFY2(stages[k].maximum > 0, qPrintable(stages[k].text));
+            QCOMPARE(stages[k].increments, stages[k].maximum);
+        }
+        QCOMPARE(stages[1].maximum, 2 * ((2500 + 499) / 500)); // two walkers, 500 steps a unit
+        // the grid: one unit per 25 cells, the maximum follows the growing rectangle; never more increments than the maximum
+        QVERIFY(stages[2].maximum > 0 && stages[2].increments > 0 && stages[2].increments <= stages[2].maximum);
+        // the refits: one increment per candidate tried, not more than planned
+        QVERIFY(stages[3].maximum > 0 && stages[3].increments >= 1 && stages[3].increments <= stages[3].maximum);
+        delete data;
+    }
+
     void modelWithoutVariableProjectionIsRefused()
     {
         LandscapeSearch none;
