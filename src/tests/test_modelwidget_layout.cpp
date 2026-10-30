@@ -1194,6 +1194,34 @@ private slots:
         QCOMPARE(moco["MaxSteps"].toInt(), 20000);
     }
 
+    // WP-S2: the noise of the Monte Carlo simulation is one choice (VarianceSource 1 user, 2 SEy, 3 sigma of the fit, 4 bootstrap);
+    // the keys of the cross validation jobs stay as they were. Claude Generated.
+    void monteCarloNoiseIsOneChoice()
+    {
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QComboBox* noise = nullptr;
+        for (QComboBox* c : dialog->findChildren<QComboBox*>())
+            if (c->findData(4) >= 0 && c->findData(3) >= 0)
+                noise = c;
+        QVERIFY2(noise, "no noise choice in the Monte Carlo tab");
+        const QList<QPair<int, int>> expected = { { 2, 2 }, { 3, 3 }, { 1, 1 }, { 4, 4 } };
+        for (const QPair<int, int>& e : expected) {
+            noise->setCurrentIndex(noise->findData(e.first));
+            QCOMPARE(dialog->RunMonteCarlo()["VarianceSource"].toInt(), e.second);
+        }
+        const QJsonObject cv = dialog->RunCrossValidation();
+        QCOMPARE(cv["Method"].toInt(), int(SupraFit::Method::CrossValidation));
+        QVERIFY(cv.contains("CXO"));
+        QVERIFY(dialog->RunReductionAnalyse().contains("Method"));
+    }
+
     // The dialog of the project has no model: its jobs carry no parameter lists, they are made for each model when the job runs on it
     // (all parameters, global and local; or the global ones), together with the limit of the sum of squares of that model (the
     // dialog used to send an uninitialised one).
@@ -1605,7 +1633,7 @@ private slots:
         QCOMPARE(model->LocalParameterSize(), reference->LocalParameterSize());
         QCOMPARE(model->InputParameterSize(), reference->InputParameterSize());
     }
-    // WP6: advanced_ui is followed live (no restart): the simulation chips and the statistic strategy box
+    // WP6: advanced_ui is followed live (no restart): the simulation chips
     // appear and disappear when the setting changes. Claude Generated.
     void advancedUiIsFollowedLive()
     {
@@ -1625,27 +1653,18 @@ private slots:
                     ++shown;
             return shown;
         };
-        auto strategyBoxShown = [&widget]() {
-            for (QGroupBox* box : widget.findChildren<QGroupBox*>())
-                if (box->title() == QStringLiteral("Map Calculation Strategy in LXO"))
-                    return !box->isHidden();
-            return false;
-        };
         const int basic = shownChips();
         QVERIFY2(basic >= 1, "no simulation chip at all without advanced_ui (the Bootstrap chip stays)");
-        QVERIFY(!strategyBoxShown());
 
         qApp->setProperty("advanced_ui", true);
         emit Instance::GlobalInstance()->ConfigurationChanged();
         QCoreApplication::processEvents();
         QVERIFY2(shownChips() > basic, "the advanced simulation chips did not appear");
-        QVERIFY2(strategyBoxShown(), "the statistic strategy box did not appear");
 
         qApp->setProperty("advanced_ui", false);
         emit Instance::GlobalInstance()->ConfigurationChanged();
         QCoreApplication::processEvents();
         QCOMPARE(shownChips(), basic);
-        QVERIFY(!strategyBoxShown());
         qApp->setProperty("advanced_ui", before);
     }
     // WP7: on a small screen the pane must not ask for more room than there is. The page list (the statistic

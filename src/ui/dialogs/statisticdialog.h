@@ -113,10 +113,6 @@ public:
     inline void setRuns(int runs) { m_main_steps = runs; }
     virtual void setVisible(bool visible) override;
     inline bool UseChecked() const { return m_use_checked->isChecked(); }
-    inline bool isMCStd() const { return m_mc_std->isChecked(); }
-    inline bool isMCSEy() const { return m_mc_sey->isChecked(); }
-    inline bool isMCUser() const { return m_mc_user->isChecked(); }
-    inline qreal MCStd() const { return m_varianz_box->value(); }
 
     void updateUI();
 
@@ -176,7 +172,7 @@ private:
     QProgressBar *m_progress, *m_main_progress;
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
     QRadioButton *m_radio_cv_loo, *m_radio_cv_l2o, *m_radio_cv_lxo;
-    QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user, *m_mc_bootstrap;
+    QComboBox* m_mc_noise = nullptr;
 
     QRadioButton *m_cv_premap, *m_cv_automap, *m_cv_randmap;
     QMutex mutex;

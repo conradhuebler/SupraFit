@@ -196,121 +196,91 @@ void StatisticDialog::setUi()
     setMinimumWidth(1.5 * m_tab_widget->sizeHint().width());
 }
 
+/*! \brief Tab of the Monte Carlo simulation. In sight: the number of steps, where the noise comes from (and the standard deviation it
+ * gives), whether the original data are used; behind "..more.." the scatter of the independent variables. Claude Generated. */
 QWidget* StatisticDialog::MonteCarloWidget()
 {
-    QWidget* mc_widget = new QWidget;
-    QGridLayout* layout = new QGridLayout;
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
+    QFormLayout* form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
 
     m_mc_steps = new QSpinBox;
     m_mc_steps->setMinimum(2);
     m_mc_steps->setMaximum(1e9);
     m_mc_steps->setValue(2000);
     m_mc_steps->setSingleStep(1e2);
-    layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
-    layout->addWidget(m_mc_steps, 0, 1);
+    form->addRow(tr("Number of MC steps:"), m_mc_steps);
 
-    m_mc_std = new QRadioButton;
-    m_mc_std->setText(tr("%1 from fit").arg(Unicode_sigma));
-    m_mc_sey = new QRadioButton;
-    m_mc_sey->setText(tr("SE%1").arg(Unicode_Sub_y));
-    m_mc_user = new QRadioButton;
-    m_mc_user->setText(tr("%1 from user input").arg(Unicode_sigma));
+    // where the noise comes from; the data of the entries are the VarianceSource of the job
+    m_mc_noise = new QComboBox;
+    m_mc_noise->addItem(tr("SE%1 of the fit").arg(Unicode_Sub_y), 2);
+    m_mc_noise->addItem(tr("%1 of the fit").arg(Unicode_sigma), 3);
+    m_mc_noise->addItem(tr("%1 from user input").arg(Unicode_sigma), 1);
+    m_mc_noise->addItem(tr("Bootstrapping"), 4);
+    m_mc_noise->setItemData(3, tr("Using bootstrapping, no new errors will generated but rather the old error will randomly distributed on the model."), Qt::ToolTipRole);
+    form->addRow(tr("Noise:"), m_mc_noise);
 
     m_varianz_box = new QDoubleSpinBox;
     m_varianz_box->setDecimals(6);
     m_varianz_box->setSingleStep(1e-2);
     m_varianz_box->setMaximum(1e10);
+    m_varianz_box->setToolTip(tr("The standard deviation the noise has: given by the fit, or entered when it comes from user input."));
+    form->addRow(tr("Standard deviation %1:").arg(Unicode_sigma), m_varianz_box);
+    top->addLayout(form);
 
-    layout->addWidget(new QLabel(tr("Standard Deviation %1").arg(Unicode_sigma)), 1, 0);
-    layout->addWidget(m_varianz_box, 1, 1);
+    m_original = new QCheckBox(tr("Use original data"));
+    top->addWidget(m_original);
 
-    QHBoxLayout* hlayout = new QHBoxLayout;
-
-    hlayout->addWidget(new QLabel(tr("is taken as:")));
-
-#ifndef extended_f_test
-    hlayout->addWidget(m_mc_sey);
-    hlayout->addWidget(m_mc_std);
-    hlayout->addWidget(m_mc_user);
-#endif
-
-    m_mc_bootstrap = new QRadioButton;
-    m_mc_bootstrap->setText(tr("or use bootstrapping"));
-    m_mc_bootstrap->setToolTip(tr("Using bootstrapping, no new errors will generated but rather the old error will randomly distributed on the model."));
-    hlayout->addWidget(m_mc_bootstrap);
-
-    m_mc_sey->setChecked(true);
-    m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-    if (m_model)
-        m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-
-    connect(m_mc_std, &QRadioButton::toggled, m_mc_std, [this]() {
-        if (m_mc_std->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-        }
-    });
-
-    connect(m_mc_sey, &QRadioButton::toggled, m_mc_sey, [this]() {
-        if (m_mc_sey->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-        }
-    });
-
-    connect(m_mc_user, &QRadioButton::toggled, m_mc_user, [this]() {
-        if (m_mc_user->isChecked()) {
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+    // the value belongs to the source, only the user input can be edited, bootstrapping needs none
+    auto noiseChanged = [this]() {
+        const int source = m_mc_noise->currentData().toInt();
+        const QSharedPointer<AbstractModel> model = m_model.toStrongRef();
+        m_varianz_box->setReadOnly(source != 1);
+        m_varianz_box->setEnabled(source != 4);
+        if (source == 1)
             m_varianz_box->setValue(1e-3);
-        }
-    });
+        else if (model && source == 2)
+            m_varianz_box->setValue(model->SEy());
+        else if (model && source == 3)
+            m_varianz_box->setValue(model->StdDeviation());
+    };
+    connect(m_mc_noise, &QComboBox::currentIndexChanged, this, noiseChanged);
+    noiseChanged();
 
-    connect(m_mc_bootstrap, &QRadioButton::toggled, m_mc_bootstrap, [this]() {
-        if (m_mc_user->isChecked()) {
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-            m_varianz_box->setValue(1e-3);
-        }
-    });
-
-    layout->addLayout(hlayout, 2, 0, 1, 2);
-
-    m_original = new QCheckBox;
-    m_original->setText(tr("Use Original Data"));
-    layout->addWidget(m_original, 3, 0);
-
-    QVBoxLayout* indep_layout = new QVBoxLayout;
-    if (m_model.toStrongRef().data()) {
-        QStringList header = m_model.toStrongRef().data()->IndependentModel()->header();
-
-        indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
-
-        for (int i = 0; i < m_model.toStrongRef().data()->IndependentVariableSize(); ++i) {
-
+    if (m_model && m_model.toStrongRef()->IndependentVariableSize() > 0) {
+        QWidget* more = new QWidget;
+        QVBoxLayout* inner = new QVBoxLayout;
+        inner->setContentsMargins(0, 0, 0, 0);
+        const QStringList header = m_model.toStrongRef()->IndependentModel()->header();
+        inner->addWidget(new QLabel(tr("Create random scatter of independent variables, e.g. input concentrations:")));
+        for (int i = 0; i < m_model.toStrongRef()->IndependentVariableSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox(header[i]);
             QDoubleSpinBox* var = new QDoubleSpinBox;
             var->setDecimals(5);
             var->setSingleStep(1e-4);
             var->setDisabled(true);
             connect(checkbox, &QCheckBox::stateChanged, var, &QDoubleSpinBox::setEnabled);
-            QHBoxLayout* layout = new QHBoxLayout;
-            layout->addWidget(checkbox);
-            layout->addWidget(var);
+            QHBoxLayout* row = new QHBoxLayout;
+            row->addWidget(checkbox);
+            row->addWidget(var, 1);
             m_indepdent_checkboxes << checkbox;
             m_indepdent_variance << var;
-            indep_layout->addLayout(layout);
+            inner->addLayout(row);
         }
+        more->setLayout(inner);
+        AddFolded(top, more, QStringLiteral("mc_more"));
     }
-    layout->addLayout(indep_layout, 4, 0, 1, 2);
-    m_mc = new QPushButton(tr("Simulate"));
-    layout->addWidget(m_mc, 5, 0, 1, 2);
 
+    m_mc = new QPushButton(tr("Simulate"));
+    top->addWidget(m_mc);
+    top->addStretch(1);
     connect(m_mc, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunMonteCarlo());
     });
-
-    mc_widget->setLayout(layout);
-    return mc_widget;
+    widget->setLayout(top);
+    return widget;
 }
 
 /*! \brief Tab of the landscape sampling: confidence region of every constant from the sum of squares itself, and other
@@ -710,10 +680,12 @@ QWidget* StatisticDialog::ModelComparison()
     return widget;
 }
 
+/*! \brief Tab of Cross Validation and Reduction Analysis. In sight: how many points are left out; behind "..more..": how the map of the
+ * Leave-X-Out experiments is made. Claude Generated. */
 QWidget* StatisticDialog::CVWidget()
 {
     QWidget* widget = new QWidget;
-    QGridLayout* layout = new QGridLayout;
+    QVBoxLayout* top = new QVBoxLayout;
     m_radio_cv_loo = new QRadioButton(tr("Leave-One-Out"));
     m_radio_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
     m_radio_cv_lxo = new QRadioButton(tr("Leave-X-Out"));
@@ -722,31 +694,31 @@ QWidget* StatisticDialog::CVWidget()
     m_cv_lxo->setMinimum(1);
     m_cv_lxo->setPrefix(tr("X = "));
 
-
     m_cv_runs = new QSpinBox;
     m_cv_runs->setMinimum(1);
     m_cv_runs->setMaximum(10000000);
     m_cv_runs->setValue(10000);
     m_cv_runs->setSuffix(tr(" # steps"));
 
-
+    QLabel* max_runs = new QLabel;
+    max_runs->setWordWrap(true);
     if (m_model) {
         m_cv_lxo->setMaximum(m_model.toStrongRef().data()->DataPoints() - 1);
-        QLabel* max_runs = new QLabel;
-        connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this, layout](int value) {
+        connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this](int value) {
             int n = m_model.toStrongRef().data()->DataPoints();
             int k = value;
-            
+
             // Safety check to prevent overflow - Claude Generated
             if (k > n || k < 0 || n <= 0) {
                 max_runs->setText(tr("Invalid combination parameters"));
                 return;
             }
-            
+
             // Calculate binomial coefficient C(n,k) with overflow protection - Claude Generated
             long double maxsteps = 1.0;
-            if (k > n - k) k = n - k; // Take advantage of symmetry
-            
+            if (k > n - k)
+                k = n - k; // Take advantage of symmetry
+
             for (int i = 0; i < k; ++i) {
                 maxsteps = maxsteps * (n - i) / (i + 1);
                 // Check for overflow - Claude Generated
@@ -759,56 +731,47 @@ QWidget* StatisticDialog::CVWidget()
 
             max_runs->setText(tr("Maximal number of runs = %1").arg(QString::number(maxsteps, 'g')));
         });
-        max_runs->setMaximumHeight(10);
-        layout->addWidget(max_runs, 3, 1, 1, 2);
     }
     m_cv_lxo->setValue(3);
 
-
-    QGroupBox* cv_algo = new QGroupBox;
-
-    m_cv_premap = new QRadioButton(tr("Precalculation"));
-    m_cv_premap->setToolTip(tr("Precalculates the whole map systematically - more than # steps."));
-
-    m_cv_automap = new QRadioButton(tr("Automatic"));
-    m_cv_automap->setToolTip(tr("Automatically chooses between either full precalculation or random initialisation!"));
-
-    m_cv_randmap = new QRadioButton(tr("Random initialisation"));
-    m_cv_randmap->setToolTip(tr("Calculates only # steps of random LXO experiments!"));
-
-    cv_algo->setMaximumHeight(100);
-    QHBoxLayout* cv_algo_layout = new QHBoxLayout;
-    cv_algo->setTitle(tr("Map Calculation Strategy in LXO"));
-    cv_algo_layout->addWidget(m_cv_premap);
-    cv_algo_layout->addWidget(m_cv_automap);
-    cv_algo_layout->addWidget(m_cv_randmap);
-
-    m_cv_automap->setChecked(true);
-
-    cv_algo->setLayout(cv_algo_layout);
-
+    top->addWidget(m_radio_cv_loo);
+    top->addWidget(m_radio_cv_l2o);
+    QHBoxLayout* lxo = new QHBoxLayout;
+    lxo->addWidget(m_radio_cv_lxo);
+    lxo->addWidget(m_cv_lxo, 1);
+    lxo->addWidget(m_cv_runs, 1);
+    top->addLayout(lxo);
+    top->addWidget(max_runs);
     m_radio_cv_loo->setChecked(true);
-
-    layout->addWidget(m_radio_cv_loo, 0, 0);
-    layout->addWidget(m_radio_cv_l2o, 1, 0);
-    layout->addWidget(m_radio_cv_lxo, 2, 0);
-    layout->addWidget(m_cv_lxo, 2, 1);
-    layout->addWidget(m_cv_runs, 2, 2);
-    layout->addWidget(cv_algo, 4, 1, 1, 2);
-    // advanced_ui is followed live: the strategy box is always there and only shown while the setting is on
-    auto showAdvanced = [cv_algo]() { cv_algo->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
-    showAdvanced();
-    if (Instance::GlobalInstance())
-        connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, cv_algo, showAdvanced);
-
     connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
     connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
 
+    // the map of the Leave-X-Out experiments
+    QWidget* more = new QWidget;
+    QVBoxLayout* inner = new QVBoxLayout;
+    inner->setContentsMargins(0, 0, 0, 0);
+    QGroupBox* cv_algo = new QGroupBox(tr("Map calculation strategy in LXO"));
+    m_cv_premap = new QRadioButton(tr("Precalculation"));
+    m_cv_premap->setToolTip(tr("Precalculates the whole map systematically - more than # steps."));
+    m_cv_automap = new QRadioButton(tr("Automatic"));
+    m_cv_automap->setToolTip(tr("Automatically chooses between either full precalculation or random initialisation!"));
+    m_cv_randmap = new QRadioButton(tr("Random initialisation"));
+    m_cv_randmap->setToolTip(tr("Calculates only # steps of random LXO experiments!"));
+    QVBoxLayout* cv_algo_layout = new QVBoxLayout;
+    cv_algo_layout->addWidget(m_cv_premap);
+    cv_algo_layout->addWidget(m_cv_automap);
+    cv_algo_layout->addWidget(m_cv_randmap);
+    m_cv_automap->setChecked(true);
+    cv_algo->setLayout(cv_algo_layout);
+    inner->addWidget(cv_algo);
+    more->setLayout(inner);
+    AddFolded(top, more, QStringLiteral("cv_more"));
+
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
-
-    layout->addWidget(m_cross_validate, 5, 0, 1, 3);
-    layout->addWidget(m_reduction, 6, 0, 1, 3);
+    top->addWidget(m_cross_validate);
+    top->addWidget(m_reduction);
+    top->addStretch(1);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunCrossValidation());
@@ -817,7 +780,7 @@ QWidget* StatisticDialog::CVWidget()
         clearMessages();
         emit RunCalculation(RunReductionAnalyse());
     });
-    widget->setLayout(layout);
+    widget->setLayout(top);
     return widget;
 }
 
@@ -898,14 +861,7 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     controller["MaxSteps"] = m_mc_steps->value();
     controller["Variance"] = m_varianz_box->value();
 
-    if (m_mc_std->isChecked())
-        controller["VarianceSource"] = 3;
-    else if (m_mc_sey->isChecked())
-        controller["VarianceSource"] = 2;
-    else if (m_mc_user->isChecked())
-        controller["VarianceSource"] = 1;
-    else
-        controller["VarianceSource"] = 4;
+    controller["VarianceSource"] = m_mc_noise->currentData().toInt(); // 1 user input, 2 SEy, 3 sigma of the fit, 4 bootstrapping
 
     controller["OriginalData"] = m_original->isChecked();
     controller["Method"] = SupraFit::Method::MonteCarlo;
@@ -1036,9 +992,10 @@ void StatisticDialog::HideWidget()
 
 void StatisticDialog::Update()
 {
-    if (m_mc_sey->isChecked())
+    const int source = m_mc_noise->currentData().toInt();
+    if (source == 2)
         m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-    else if (m_mc_std->isChecked())
+    else if (source == 3)
         m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
     CalculateError();
 }
