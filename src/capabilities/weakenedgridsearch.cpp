@@ -224,6 +224,7 @@ bool WeakenedGridSearch::Run()
     if (!m_model.data()->SupportThreads()) {
         emit setMaximumSteps(2 * threads.size());
     }
+    emit Stage(tr("Searching the limit of %1 parameters in both directions").arg(threads.size()));
 
     if (!m_model.data()->SupportThreads()) {
         while (m_threadpool->activeThreadCount()) {

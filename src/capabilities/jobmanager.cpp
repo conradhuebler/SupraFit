@@ -42,6 +42,7 @@ JobManager::JobManager(QObject* parent)
     connect(this, SIGNAL(Interrupt()), m_montecarlo_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_montecarlo_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_montecarlo_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_montecarlo_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
     connect(m_montecarlo_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_gridsearch_handler = new WeakenedGridSearch(this);
@@ -49,24 +50,28 @@ JobManager::JobManager(QObject* parent)
     connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_gridsearch_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_gridsearch_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_gridsearch_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_resample_handler = new ResampleAnalyse();
     connect(this, SIGNAL(Interrupt()), m_resample_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_resample_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_resample_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_resample_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_resample_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_modelcomparison_handler = new ModelComparison(this);
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_modelcomparison_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_modelcomparison_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_globalsearch = new GlobalSearch(this);
     connect(this, SIGNAL(Interrupt()), m_globalsearch, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_globalsearch, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_globalsearch, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_landscape = new LandscapeSearch(this);
     connect(this, SIGNAL(Interrupt()), m_landscape, SLOT(Interrupt()), Qt::DirectConnection);

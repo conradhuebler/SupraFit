@@ -44,7 +44,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **dialogs/regressionanalysisdialog.cpp/h**: Regression analysis tools
 
 ### Advanced Tools
-- **dialogs/advancedsearch.cpp/h**: Global optimization parameter search
+- **widgets/scanwidget.cpp/h**: the Scan (grid of start values, job of the global search); tab "Scan" of `StatisticDialog`; **dialogs/advancedsearch.cpp/h** is its modal wrapper (meta model)
+- **widgets/analysisparts.cpp/h**: `ParameterSelector` (parameters to test, project dialog resolves per model) and `AddFolded` (`..more..`)
 - **dialogs/modaldialog.cpp/h**: Generic modal dialog framework
 - **dialogs/genericwidgetdialog.cpp/h**: Reusable widget containers
 

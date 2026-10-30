@@ -390,6 +390,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     QVector<QPointer<MCThread>> threads;
 
     int maxsteps = m_controller["MaxSteps"].toInt();
+    emit Stage(tr("Sampling %1 points of the box around the fit").arg(maxsteps));
     emit setMaximumSteps(maxsteps / update_intervall);
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);

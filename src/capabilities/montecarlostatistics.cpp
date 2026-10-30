@@ -380,6 +380,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         }
     }
     m_batch.enqueue(block);
+    emit Stage(tr("Simulating and fitting %1 data sets").arg(m_batch.size()));
     emit setMaximumSteps(m_batch.size());
 
     m_t0 = QDateTime::currentMSecsSinceEpoch();
@@ -399,17 +400,13 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& threads)
 {
     m_steps = 0;
-    int calculation = 0;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
             m_models << threads[i]->Models().values();
-            std::cout << "Thread " << i << " performed " << threads[i]->Counter() << " calculation in " << threads[i]->Timer() << " msecs." << std::endl;
-            calculation += threads[i]->Counter();
             m_steps++;
             delete threads[i];
         }
     }
-    std::cout << calculation << " in total" << std::endl;
     for (int i = 0; i < m_ptr_table.size(); ++i)
         if (m_ptr_table[i])
             delete m_ptr_table[i];

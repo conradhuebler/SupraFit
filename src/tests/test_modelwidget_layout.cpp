@@ -1223,6 +1223,52 @@ private slots:
         QVERIFY(dialog->RunReductionAnalyse().contains("Method"));
     }
 
+    // WP-S4: Monte Carlo, Grid Search, Model Comparison and Scan say what they do (a stage text, shown in the dialog), the bar does not
+    // pass its maximum, and the log gets one line for the whole analysis. Claude Generated.
+    void analysesSayWhatTheyDo()
+    {
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QProgressBar* bar = dialog->findChild<QProgressBar*>();
+        QVERIFY(bar);
+        ScanWidget* scan = dialog->findChild<ScanWidget*>();
+        QVERIFY(scan);
+
+        QJsonObject monte = dialog->RunMonteCarlo();
+        monte["MaxSteps"] = 40;
+        QJsonObject grid = dialog->RunGridSearch();
+        QJsonObject moco = dialog->RunModelComparison();
+        moco["MaxSteps"] = 400;
+        QJsonObject scanJob = scan->Job();
+        // two points of the first constant only
+        scanJob["0"] = QStringLiteral("%1 %2 1 1").arg(model->GlobalParameter(0) - 0.5).arg(model->GlobalParameter(0) + 0.5);
+        const QList<QPair<QString, QJsonObject>> jobs = { { "Monte Carlo", monte }, { "Grid Search", grid }, { "Model Comparison", moco }, { "Scan", scanJob } };
+        for (const QPair<QString, QJsonObject>& j : jobs) {
+            QSignalSpy logged(model->Info(), &DataClassPrivateObject::Message);
+            QStringList stages;
+            bool within = true;
+            QMetaObject::Connection stage = QObject::connect(widget.Jobs(), &JobManager::Stage, [&](const QString& text, bool) { stages << text; });
+            QMetaObject::Connection counted = QObject::connect(widget.Jobs(), &JobManager::incremented, [&](int) {
+                if (bar->value() > bar->maximum())
+                    within = false;
+            });
+            qInfo("analysis: %s", qPrintable(j.first));
+            widget.Jobs()->AddSingleJob(j.second);
+            widget.Jobs()->RunJobs();
+            QObject::disconnect(stage);
+            QObject::disconnect(counted);
+            QVERIFY2(!stages.isEmpty(), qPrintable(j.first + ": no stage text"));
+            QVERIFY2(within, qPrintable(j.first + ": the bar went past its maximum"));
+            QVERIFY2(logged.size() <= 1, qPrintable(j.first + QStringLiteral(": %1 lines in the log").arg(logged.size())));
+        }
+    }
+
     // The dialog of the project has no model: its jobs carry no parameter lists, they are made for each model when the job runs on it
     // (all parameters, global and local; or the global ones), together with the limit of the sum of squares of that model (the
     // dialog used to send an uninitialised one).
