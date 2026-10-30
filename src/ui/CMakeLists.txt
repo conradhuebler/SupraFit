@@ -53,6 +53,7 @@ set(SFGui_SRC
                 widgets/metamodelparameter.cpp
                 widgets/parameterwidget.cpp
                 widgets/analysisparts.cpp
+                widgets/scanwidget.cpp
                 widgets/optimizerwidget.cpp
                 widgets/results/scatterwidget.cpp
                 widgets/results/searchresultwidget.cpp

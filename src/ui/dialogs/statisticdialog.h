@@ -46,6 +46,7 @@ class QTabWidget;
 
 class ScientificBox;
 class ParameterSelector;
+class ScanWidget;
 
 class WGSConfig;
 class MCConfig;
@@ -147,6 +148,8 @@ private:
     QWidget* ModelComparison();
     QWidget* CVWidget();
     QWidget* LandscapeWidget();
+    QWidget* ScanTab();
+    ScanWidget* m_scan = nullptr;
     void updateLandscape();
 
     QWidget *m_hide_widget, *m_moco_widget;

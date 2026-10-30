@@ -33,7 +33,6 @@
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 
-#include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/dialogs/modaldialog.h"
@@ -183,10 +182,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     Data2Text();
     m_minimizer->setModel(m_model);
-
-    m_advancedsearch = new AdvancedSearch(this);
-    if (!m_model->isSimulation())
-        m_advancedsearch->setModel(m_model);
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
@@ -852,9 +847,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
     connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
 
-    connect(m_jobmanager, &JobManager::prepare, m_advancedsearch, &AdvancedSearch::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress, Qt::DirectConnection);
-
     connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress, Qt::DirectConnection);
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
     connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message);
@@ -863,10 +855,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
-    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
-    connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
     connect(m_jobmanager, &JobManager::Stage, m_statistic_dialog, &StatisticDialog::Stage); // the stage of an analysis: progress display only, not the log
@@ -891,12 +881,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         PhaseTiming::End();
     });
 
-    //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
-    connect(m_advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddSingleJob(job);
-        this->m_jobmanager->RunJobs();
-    });
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_SetUpFinished = true;
     /*
@@ -1479,6 +1463,7 @@ QList<ModelWidget::StatEntry> ModelWidget::StatisticEntries() const
         { "Weakened", QT_TR_NOOP("Grid Search"), SupraFit::Method::WeakenedGridSearch },
         { "Model", QT_TR_NOOP("Model Comparison"), SupraFit::Method::ModelComparison },
         { "Landscape", QT_TR_NOOP("Landscape Sampling"), SupraFit::Method::LandscapeSampling },
+        { "Scan", QT_TR_NOOP("Scan"), SupraFit::Method::GlobalSearch },
     };
 
     QList<StatEntry> rows;
@@ -1523,7 +1508,7 @@ QString ModelWidget::ResultListTitle(SupraFit::Method type, int index)
         name = tr("Reduction");
         break;
     case SupraFit::Method::GlobalSearch:
-        name = tr("Global Search");
+        name = tr("Scan");
         break;
     case SupraFit::Method::LandscapeSampling:
         name = tr("Landscape Sampling");
@@ -1698,8 +1683,10 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 
 void ModelWidget::OpenAdvancedSearch()
 {
-    if (!m_advancedsearch.isNull())
-        WindowHost::Show(m_advancedsearch.data(), QStringLiteral("scan"), this); // same place and size every time
+    if (m_stat_page < 0) // simulations have no statistics
+        return;
+    OpenStatistics(false);
+    m_pages->selectSub(tr("Scan")); // the Scan is an analysis on the Statistics page
 }
 
 void ModelWidget::ExportSimModel()
@@ -1726,14 +1713,8 @@ void ModelWidget::TogglePlot()
     OpenStatistics(true);
 }
 
-void ModelWidget::MultiScanFinished()
-{
-    LoadStatistic(m_advancedsearch->globalSearch()->Result());
-}
-
 void ModelWidget::HideAllWindows()
 {
-    m_advancedsearch->hide(); // the statistic tools are a page now, not a window
 }
 
 void ModelWidget::Data2Text()

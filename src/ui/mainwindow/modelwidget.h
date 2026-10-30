@@ -54,7 +54,6 @@ class QPushButton;
 class QVBoxLayout;
 class QTimer;
 
-class AdvancedSearch;
 class ChartView;
 class JobManager;
 class LineSeries;
@@ -128,7 +127,6 @@ private:
 
     QVector<QPointer<SpinBox>> m_constants;
     QVector<QPointer<ModelElement>> m_model_elements;
-    QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
@@ -218,7 +216,6 @@ private slots:
     void ExportConstants();
     void setParameter();
     void OpenAdvancedSearch();
-    void MultiScanFinished();
     void TogglePlot();
     void ToggleStatisticDialog();
     void Save2File();

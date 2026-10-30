@@ -74,6 +74,7 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
+#include "src/ui/widgets/scanwidget.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/addmodelbar.h"
@@ -1794,41 +1795,60 @@ private slots:
         QSettings().remove(QStringLiteral("windows"));
     }
 
-    // WP3: the scan window of a model opens the same way: it comes up on the first call, once, and on the second
-    // call it is where it was left. Claude Generated.
-    void scanWindowKeepsItsPlace()
+    // WP-S3: the Scan is an analysis of the Statistics page, not a window of its own; "Global Search..." selects it. Its job keeps the
+    // format of the global search: ParameterSize and "min max step optimise" for each parameter. Claude Generated.
+    void scanIsAnAnalysisOfTheStatisticsPage()
     {
-        QSettings().remove(QStringLiteral("windows"));
-        Charts charts = m_chart->addModel(m_model);
-        ModelWidget widget(m_model, charts);
-        widget.resize(900, 600);
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
         widget.show();
         QTest::qWaitForWindowExposed(&widget);
         QCoreApplication::processEvents();
 
-        AdvancedSearch* scan = widget.findChild<AdvancedSearch*>();
-        QVERIFY(scan);
         const int windowsBefore = visibleTopLevels().size();
         QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
         QCoreApplication::processEvents();
-        QVERIFY(scan->isVisible());
-        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
-        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch"); // again: still one window
-        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
+        QCOMPARE(visibleTopLevels().size(), windowsBefore); // no window
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        const QStringList tabs = dialog->TabTitles();
+        QVERIFY(tabs.contains(QStringLiteral("Scan")));
+        QVERIFY(!overlappingWidgets(dialog).size());
 
-        // a size of the user's own, above what the window needs at least
-        const QSize wanted(scan->minimumSizeHint().width() + 80, scan->minimumSizeHint().height() + 60);
-        scan->move(25, 35);
-        scan->resize(wanted);
-        QCoreApplication::processEvents();
-        scan->hide();
-        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
-        QCoreApplication::processEvents();
-        QVERIFY2(scan->size() == wanted, qPrintable(QStringLiteral("size %1x%2 instead of %3x%4").arg(scan->width()).arg(scan->height()).arg(wanted.width()).arg(wanted.height())));
-        QVERIFY2(scan->pos() == QPoint(25, 35), qPrintable(QStringLiteral("position %1,%2 instead of 25,35 (frame %3,%4)")
-                                                              .arg(scan->pos().x()).arg(scan->pos().y()).arg(scan->frameGeometry().x()).arg(scan->frameGeometry().y())));
-        scan->hide();
-        QSettings().remove(QStringLiteral("windows"));
+        ScanWidget* scan = dialog->findChild<ScanWidget*>();
+        QVERIFY(scan);
+        const QJsonObject job = scan->Job();
+        QCOMPARE(job["Method"].toInt(), int(SupraFit::Method::GlobalSearch));
+        const int size = job["ParameterSize"].toInt();
+        QVERIFY(size >= model->GlobalParameterSize());
+        for (int i = 0; i < size; ++i)
+            QCOMPARE(job[QString::number(i)].toString().split(' ').size(), 4);
+        QVERIFY(scan->Calculations() >= 1);
+
+        // the range of a logarithmic constant is the value +- 3, the others value/5 .. 5 value
+        double min, max, step;
+        ScanWidget::DefaultRange(QStringLiteral("lg K11"), 2.0, min, max, step);
+        QCOMPARE(min, -1.0);
+        QCOMPARE(max, 5.0);
+        ScanWidget::DefaultRange(QStringLiteral("K11"), 100.0, min, max, step);
+        QVERIFY(min > 0 && min <= 20.0); // rounded outwards
+        QVERIFY(max >= 500.0 && max < 1000.0);
+
+        // Fit is the optimisation flag of the model
+        QCheckBox* fit = nullptr;
+        for (QCheckBox* c : scan->findChildren<QCheckBox*>())
+            if (c->text() == QStringLiteral("Fit")) {
+                fit = c;
+                break;
+            }
+        QVERIFY(fit);
+        fit->setChecked(false);
+        QVERIFY(!model->GlobalTable()->isChecked(0, 0));
+        QVERIFY(scan->Job()["0"].toString().endsWith(QStringLiteral(" 0")));
+        fit->setChecked(true);
+        QVERIFY(model->GlobalTable()->isChecked(0, 0));
     }
     // The model's charts are listed one by one (no tabs): a chart that appears is an entry of the Charts page, the
     // page is chosen with the Charts button, an entry shows its chart, and Close chart removes it. Claude Generated.

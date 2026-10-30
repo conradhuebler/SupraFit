@@ -26,6 +26,7 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/morelesstoggle.h"
 #include "src/ui/widgets/analysisparts.h"
+#include "src/ui/widgets/scanwidget.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
 
@@ -153,6 +154,8 @@ void StatisticDialog::setUi()
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
     if (m_model) // the project-wide dialog has no single model to sample
         m_tab_widget->addTab(LandscapeWidget(), tr("Landscape Sampling"));
+    if (m_model && !m_model.toStrongRef()->isSimulation())
+        m_tab_widget->addTab(ScanTab(), tr("Scan"));
 
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
@@ -531,6 +534,21 @@ QWidget* StatisticDialog::LandscapeWidget()
         m_ls_surface->setEnabled(globals >= 2);
     } else
         m_ls_surface->setEnabled(false);
+    return widget;
+}
+
+/*! \brief Tab of the Scan: a grid of start values, every point fitted (global search). Claude Generated. */
+QWidget* StatisticDialog::ScanTab()
+{
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
+    m_scan = new ScanWidget(m_model.toStrongRef());
+    top->addWidget(m_scan);
+    QPushButton* run = new QPushButton(tr("Scan"));
+    top->addWidget(run, 0, Qt::AlignLeft);
+    top->addStretch(1);
+    connect(run, &QPushButton::clicked, this, [this]() { emit RunCalculation(m_scan->Job()); });
+    widget->setLayout(top);
     return widget;
 }
 
