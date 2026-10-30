@@ -111,6 +111,7 @@ One home per kind of information; copies drift apart.
 - [Roadmap: Shared Chat Library (CuteChat)](./roadmap/shared_chat_library.md) — generischer Agent-Kern + Chat-Dock, geteilt mit qurcuma
 - [Roadmap: Python Interface](./roadmap/python_interface.md)
 - [Roadmap: Joint Solver](./roadmap/joint_solver.md)
+- [Roadmap: Statistic dialogs and Scan](./roadmap/statistic_dialogs.md) — Statistik-Dialoge und Scan nach dem Vorbild des Landscape-Tabs (more statt advanced_ui, Scan als Seite)
 - [Roadmap: SSE-Landscape Sampling](./roadmap/landscape_sampling.md) — Metadynamik-artiges Sampling der SSE-Fläche für globale Suche und Profil-Konfidenzintervalle
 - [Roadmap: ScriptModel Performance](./roadmap/scriptmodel_performance.md)
 - [Roadmap: Model-Pane Navigation (ScriptModel UI)](./roadmap/scriptmodel_ui_layout.md) — Bereichsliste mit Pin, Statistik als Seite, FlowLayout-Ruhe, More/Less-Bauteil
