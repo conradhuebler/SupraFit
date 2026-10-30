@@ -58,6 +58,7 @@
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
+#include "src/ui/widgets/analysisparts.h"
 #include "src/ui/widgets/preparewidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/resultswidget.h"
@@ -1441,7 +1442,10 @@ void ModelWidget::FastConfidence()
 void ModelWidget::setJob(const QJsonObject& job)
 {
     Waiter wait;
-    m_jobmanager->AddSingleJob(job);
+    // a job of the project dialog has no parameter lists: they are made for this model
+    QJsonObject resolved = job;
+    ParameterSelector::ResolveFor(resolved, m_model);
+    m_jobmanager->AddSingleJob(resolved);
     m_jobmanager->RunJobs();
 }
 

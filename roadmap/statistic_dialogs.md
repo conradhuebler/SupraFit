@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document
 
 # Work Package: Statistic dialogs and Scan in the style of the Landscape tab
 
-**Status:** WIP · **Owner:** Conrad Hübler · **Author note:** Claude Generated · branch `feature/statistic-dialogs`
+**Status:** WIP (S1 ADDED) · **Owner:** Conrad Hübler · **Author note:** Claude Generated · branch `feature/statistic-dialogs`
 
 ## Goal
 

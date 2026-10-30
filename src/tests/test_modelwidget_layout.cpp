@@ -82,6 +82,7 @@
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelusage.h"
+#include "src/ui/widgets/analysisparts.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/preparewidget.h"
@@ -130,6 +131,61 @@ public:
         emit ChartUpdated(chart);
     }
 };
+
+
+// Widgets of a dialog that lie on top of each other (the label "Choose parameter to be tested:" sat on a check box of the Model
+// Comparison). Only what is on screen counts: what a folded section or a scroll area clips away has an empty visible region.
+static QStringList overlappingWidgets(QWidget* root)
+{
+    QList<QWidget*> leaves;
+    for (QWidget* w : root->findChildren<QWidget*>()) {
+        if (!w->isVisibleTo(root) || w->visibleRegion().isEmpty())
+            continue;
+        const bool leaf = qobject_cast<QLabel*>(w) || qobject_cast<QAbstractButton*>(w) || qobject_cast<QAbstractSpinBox*>(w) || qobject_cast<QComboBox*>(w);
+        const QWidget* parent = w->parentWidget();
+        if (leaf && !qobject_cast<const QAbstractSpinBox*>(parent) && !qobject_cast<const QComboBox*>(parent))
+            leaves << w;
+    }
+    auto text = [](QWidget* w) {
+        if (auto* l = qobject_cast<QLabel*>(w))
+            return QStringLiteral("label \"%1\"").arg(l->text().left(40));
+        if (auto* b = qobject_cast<QAbstractButton*>(w))
+            return QStringLiteral("button \"%1\"").arg(b->text().left(40));
+        return QString::fromLatin1(w->metaObject()->className());
+    };
+    QStringList found;
+    for (int a = 0; a < leaves.size(); ++a)
+        for (int b = a + 1; b < leaves.size(); ++b) {
+            if (leaves[a]->isAncestorOf(leaves[b]) || leaves[b]->isAncestorOf(leaves[a]))
+                continue;
+            const QRect ra(leaves[a]->mapTo(root, QPoint(0, 0)), leaves[a]->size()), rb(leaves[b]->mapTo(root, QPoint(0, 0)), leaves[b]->size());
+            const QRect common = ra.intersected(rb);
+            if (common.width() > 2 && common.height() > 2)
+                found << QStringLiteral("%1 over %2").arg(text(leaves[a]), text(leaves[b]));
+        }
+    return found;
+}
+
+// A fitted two-constant model on the data of the fixture, for the tests of the analysis dialogs.
+static QSharedPointer<AbstractModel> twoConstantModel(DataClass* data)
+{
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+    QJsonObject reactions, definition;
+    reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+    definition["Reactions"] = reactions;
+    model->DefineModel(definition);
+    QJsonObject cfg = model->getOptimizerConfig();
+    cfg["FitSolver"] = QStringLiteral("VarPro");
+    model->setOptimizerConfig(cfg);
+    model->InitialGuess();
+    model->setGlobalParameter(3.0, 0);
+    model->setGlobalParameter(5.4, 1);
+    Minimizer minimizer(false);
+    minimizer.setModel(model);
+    minimizer.Minimize();
+    model->Calculate();
+    return model;
+}
 
 class TestModelWidgetLayout : public QObject {
     Q_OBJECT
@@ -1050,6 +1106,167 @@ private slots:
         QCOMPARE(warned.count(), 0);
         QVERIFY(model->LandscapeSize() >= 1);
         model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // The tabs of the analyses: nothing lies on anything else (the Model Comparison had a label over a check box), and the lists a
+    // job carries are the ones the dialog always made: one flag per fitted parameter, a local parameter once for every series, the
+    // box scaling for every parameter of every series.
+    void analysisTabsDoNotOverlapAndMakeTheOldLists()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        {   // the check itself: two labels on top of each other are found, two side by side are not
+            QWidget probe;
+            QLabel *one = new QLabel(QStringLiteral("one"), &probe), *two = new QLabel(QStringLiteral("two"), &probe), *three = new QLabel(QStringLiteral("three"), &probe);
+            one->setGeometry(10, 10, 100, 30);
+            two->setGeometry(50, 15, 100, 30);
+            three->setGeometry(10, 100, 100, 30);
+            probe.resize(300, 200);
+            probe.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&probe));
+            const QStringList found = overlappingWidgets(&probe);
+            QCOMPARE(found.size(), 1);
+        }
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QMetaObject::invokeMethod(&widget, "TogglePlot");
+        QCoreApplication::processEvents();
+        const QStringList tabs = dialog->TabTitles();
+        QVERIFY(tabs.size() >= 5);
+        for (int i = 0; i < tabs.size(); ++i) {
+            dialog->setCurrentTab(i);
+            QCoreApplication::processEvents();
+            const QStringList overlaps = overlappingWidgets(dialog);
+            QVERIFY2(overlaps.isEmpty(), qPrintable(tabs[i] + ": " + overlaps.join("; ")));
+            // the tabs that test parameters show one check box for each of them: 2 constants and 3 local parameters of this model
+            if (tabs[i] == QStringLiteral("Weakened Grid Search") || tabs[i] == QStringLiteral("Model Comparison")) {
+                int visibleBoxes = 0;
+                for (QCheckBox* c : dialog->findChildren<QCheckBox*>())
+                    if (c->isVisibleTo(dialog) && !c->visibleRegion().isEmpty() && c->text().isEmpty())
+                        ++visibleBoxes; // the parameter boxes carry their name in a label beside them
+                QCOMPARE(visibleBoxes, model->GlobalParameterSize() + model->LocalParameterSize());
+            }
+            const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/analysis_tab_%2.png").arg(renderDir).arg(i));
+        }
+        {   // the dialog of the project: no model, so no parameter to pick - a choice of the scope instead
+            StatisticDialog project;
+            project.resize(600, 700);
+            project.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&project));
+            const QStringList projectTabs = project.TabTitles();
+            for (int i = 0; i < projectTabs.size(); ++i) {
+                project.setCurrentTab(i);
+                QCoreApplication::processEvents();
+                const QStringList overlaps = overlappingWidgets(&project);
+                QVERIFY2(overlaps.isEmpty(), qPrintable(QStringLiteral("project, ") + projectTabs[i] + ": " + overlaps.join("; ")));
+                const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+                if (!renderDir.isEmpty())
+                    project.grab().save(QStringLiteral("%1/analysis_project_%2.png").arg(renderDir).arg(i));
+            }
+        }
+
+        const int series = model->SeriesCount(), locals = model->LocalParameterSize(), globals = model->GlobalParameterSize();
+        QCOMPARE(globals, 2);
+        const QJsonObject wgs = dialog->RunGridSearch();
+        QCOMPARE(wgs["GlobalParameterList"].toString(), QStringLiteral("1 1")); // the globals ticked
+        QStringList zeros;
+        for (int k = 0; k < locals * series; ++k)
+            zeros << QStringLiteral("0");
+        QCOMPARE(wgs["LocalParameterList"].toString(), zeros.join(" ")); // the locals not, once per series
+        QVERIFY(!wgs.contains("GlobalParameterScalingList")); // the grid search has no box
+        QVERIFY(!wgs.contains("AllParameters"));
+        QVERIFY(std::abs(wgs["MaxParameter"].toDouble() - model->ErrorfTestThreshold(0.95)) < 1e-12 * model->ErrorfTestThreshold(0.95));
+
+        const QJsonObject moco = dialog->RunModelComparison();
+        QCOMPARE(moco["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QCOMPARE(moco["GlobalParameterScalingList"].toString().split(' ').size(), globals);
+        QCOMPARE(moco["LocalParameterScalingList"].toString().split(' ').size(), locals * series);
+        QCOMPARE(moco["GlobalParameterScalingList"].toString(), QStringLiteral("1.5 1.5"));
+        QVERIFY(std::abs(moco["MaxParameter"].toDouble() - model->ErrorfTestThreshold(0.95)) < 1e-12 * model->ErrorfTestThreshold(0.95));
+        QCOMPARE(moco["Method"].toInt(), int(SupraFit::Method::ModelComparison));
+        QCOMPARE(moco["MaxSteps"].toInt(), 20000);
+    }
+
+    // The dialog of the project has no model: its jobs carry no parameter lists, they are made for each model when the job runs on it
+    // (all parameters, global and local; or the global ones), together with the limit of the sum of squares of that model (the
+    // dialog used to send an uninitialised one).
+    void projectDialogJobsAreMadeForEachModel()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        StatisticDialog project;
+        const QJsonObject job = project.RunGridSearch();
+        QVERIFY(job["AllParameters"].toBool());
+        QVERIFY(job["AllLocalParameters"].toBool());
+        QVERIFY(job["GlobalParameterList"].toString().isEmpty()); // only the default of the block, nothing chosen
+        QVERIFY(project.RunModelComparison()["BoxScaling"].toBool());
+
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        const int series = model->SeriesCount(), locals = model->LocalParameterSize();
+        QJsonObject resolved = job;
+        ParameterSelector::ResolveFor(resolved, model);
+        QCOMPARE(resolved["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QStringList ones;
+        for (int k = 0; k < locals * series; ++k)
+            ones << QStringLiteral("1");
+        QCOMPARE(resolved["LocalParameterList"].toString(), ones.join(" ")); // all parameters
+        const double limit = model->ErrorfTestThreshold(job["confidence"].toDouble() / 100.0);
+        QVERIFY(std::abs(resolved["MaxParameter"].toDouble() - limit) < 1e-12 * limit);
+        QVERIFY(std::abs(resolved["f-value"].toDouble() - model->finv(job["confidence"].toDouble() / 100.0)) < 1e-12);
+        QVERIFY(resolved["MaxParameter"].toDouble() > model->SSE());
+
+        // the global ones only
+        QJsonObject globalOnly = job;
+        globalOnly["AllLocalParameters"] = false;
+        ParameterSelector::ResolveFor(globalOnly, model);
+        QCOMPARE(globalOnly["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QVERIFY(globalOnly["LocalParameterList"].toString().isEmpty());
+
+        // the box scaling of the Model Comparison for every parameter of every series
+        QJsonObject moco = project.RunModelComparison();
+        ParameterSelector::ResolveFor(moco, model);
+        QCOMPARE(moco["GlobalParameterScalingList"].toString(), QStringLiteral("1.5 1.5"));
+        QCOMPARE(moco["LocalParameterScalingList"].toString().split(' ').size(), locals * series);
+
+        // a job that already has its lists is left alone
+        QJsonObject own;
+        own["GlobalParameterList"] = QStringLiteral("1 0");
+        own["MaxParameter"] = 42.0;
+        QJsonObject copy = own;
+        ParameterSelector::ResolveFor(copy, model);
+        QCOMPARE(copy, own);
+    }
+
+    // The project job reaches the model: a grid search of the project dialog runs on the model through the pane and finds the limits of
+    // both constants.
+    void projectJobRunsOnTheModel()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+
+        StatisticDialog project;
+        QJsonObject job = project.RunGridSearch();
+        job["MaxSteps"] = 400;
+        const int before = model->getWGStatisticResult();
+        widget.setJob(job);
+        QCOMPARE(model->getWGStatisticResult(), before + 1);
+        const QJsonObject result = model->getStatistic(SupraFit::Method::WeakenedGridSearch, before);
+        const QJsonObject controller = result["controller"].toObject();
+        QCOMPARE(controller["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QVERIFY(controller["MaxParameter"].toDouble() > model->SSE());
+        QVERIFY(result.contains("0") && result.contains("1")); // the limits of both constants
+        model->RemoveStatistic(SupraFit::Method::WeakenedGridSearch, before);
     }
 
     void finishedResultsAreListedAndDetachable()
