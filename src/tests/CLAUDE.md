@@ -13,6 +13,7 @@ Comprehensive test suite for SupraFit functionality using Qt Test framework. Ens
 
 ### Advanced Component Tests
 - **test_datagenerator.cpp**: DataGenerator comprehensive testing ✅ **PASSED** (0.04s)
+- **test_project_compat.cpp**: load reports (reasons of failures, models left out), files of older versions (`data/samples/legacy/`, made by `make_legacy_fixtures.py`); `SUPRAFIT_PROJECT_CORPUS=<dir>` runs every project file below a directory and prints a table by file version
 - **test_pipeline.cpp**: ML pipeline integration tests ❌ **FAILED** (17/35) - API mismatches; links since 2026-07-17
 
 ### Comprehensive CLI Testing Suite (Claude Generated - 2025-09-04) ✅ **CLI MIGRATION COMPLETED**

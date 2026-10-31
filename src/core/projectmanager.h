@@ -40,6 +40,36 @@
 
 namespace SupraFit {
 
+/*! \brief One thing worth telling the user about while a project file is read (Claude Generated). */
+struct LoadIssue {
+    enum Severity { Note, Warning, Error };
+    Severity severity = Note;
+    QString scope; ///< "file", "data", or the key of a model ("model_2")
+    QString message;
+};
+
+/*! \brief What happened when a project file was read: the reason of a failure, every model that was left out and why (Claude Generated).
+ *
+ * `ProjectManager::loadProject` returns false with at least one `Error` issue, and a project that comes up with fewer models than the file
+ * holds has one issue for every missing model: a load never fails or loses something without saying so.
+ */
+struct LoadReport {
+    QString file;
+    QString format; ///< "json", "compressed" (the .suprafit files) or empty (data tables)
+    QString projectId;
+    int fileVersion = 0; ///< the "SupraFit" version of the data block, 0 if the file has none
+    bool loaded = false;
+    int projectsInFile = 0, projectsLoaded = 0; ///< files of several projects ("project_0", "project_1", ...); 0 for a single project
+    int modelsInFile = 0, modelsLoaded = 0;
+    QList<LoadIssue> issues;
+
+    bool HasProblems() const;
+    /*! \brief The first error, or the number of models that are missing. Empty when everything was read. */
+    QString Summary() const;
+    /*! \brief All issues, one per line, errors first. */
+    QString Details() const;
+};
+
 /**
  * @brief Centralized Project Manager for CLI and GUI Integration
  *
@@ -84,6 +114,8 @@ public:
      * - .itc/.dh (specialized formats)
      */
     bool loadProject(const QString& filePath);
+    /*! \brief What the last `loadProject` (or `loadProjectFromJson`) found: why it failed, which models it left out. */
+    const LoadReport& lastLoadReport() const { return m_report; }
 
     /**
      * @brief Save project to file path
@@ -389,6 +421,13 @@ private:
      * @return True if valid project structure, false otherwise
      */
     bool validateProjectJson(const QJsonObject& projectJson) const;
+    /*! \brief Why the JSON is not a project, in words; empty if it is one. */
+    QString projectJsonProblem(const QJsonObject& projectJson) const;
+    void addIssue(LoadIssue::Severity severity, const QString& scope, const QString& message);
+    QString loadProjectFromJsonImpl(const QJsonObject& jsonData, const QString& sourceFile);
+    LoadReport m_report;
+    QString m_scope; ///< the project of a multi-project file that is read, prefix of the scope of an issue
+    bool m_reportOpen = false; ///< `loadProject` keeps one report over the file read and the project made from it
 
     // === Member Variables ===
 

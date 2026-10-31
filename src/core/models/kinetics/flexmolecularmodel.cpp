@@ -29,12 +29,16 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
+#include <cmath>
+#include <limits>
+
 #include "flexmolecularmodel.h"
 
 FlexMolecularModel::FlexMolecularModel(DataClass* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    DeclareOptions();
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "t", Qt::DisplayRole);
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
@@ -43,6 +47,7 @@ FlexMolecularModel::FlexMolecularModel(AbstractModel* data)
     : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    DeclareOptions();
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "t", Qt::DisplayRole);
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
@@ -53,6 +58,29 @@ FlexMolecularModel::~FlexMolecularModel()
 
 void FlexMolecularModel::DeclareOptions()
 {
+    // The model of the first kinetic projects (August 2022) had another parameterisation: c(t) = (cA0 - cAeq) [(cA0 - cAeq)^(n-1) k t (n-1) + 1]^(1/(n-1)) + cAeq
+    addOption(Formula, "Formula", QStringList() << "current" << "2022-08");
+    setOption(Formula, "current");
+}
+
+void FlexMolecularModel::AdaptStoredModel(const QJsonObject& block)
+{
+    const double stored = StoredSSE(block);
+    if (!(stored > 0))
+        return;
+    double best = std::numeric_limits<double>::infinity();
+    QString choice = "current";
+    for (const QString& formula : { QStringLiteral("current"), QStringLiteral("2022-08") }) {
+        setOption(Formula, formula);
+        Calculate();
+        const double difference = std::abs(SSE() - stored) / stored;
+        if (std::isfinite(difference) && difference < best) {
+            best = difference;
+            choice = formula;
+        }
+    }
+    setOption(Formula, choice);
+    Calculate();
 }
 
 void FlexMolecularModel::DeclareSystemParameter()
@@ -84,9 +112,14 @@ void FlexMolecularModel::CalculateVariables()
     qreal n = GlobalParameter(1);
     qreal cA0 = GlobalParameter(2);
     qreal cAeq = GlobalParameter(3);
+    const bool earlier = getOption(Formula) == QLatin1String("2022-08");
 
     for (int i = DataBegin(); i < DataEnd(); ++i) {
         qreal t = IndependentModel()->data(i);
+        if (earlier) {
+            SetValue(i, AppliedSeries(), (cA0 - cAeq) * pow(pow(cA0 - cAeq, n - 1) * k * t * (n - 1) + 1, 1.0 / (n - 1.0)) + cAeq);
+            continue;
+        }
         // for (int j = 0; j < SeriesCount(); ++j) {
         qreal inner = -k * t * (1 - n) + pow(cA0 - cAeq, 1 - n);
         qreal value = pow(inner, 1 / (1 - n)) + cAeq;

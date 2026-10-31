@@ -1,96 +1,41 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * SupraFit - fluorescence titration, 1:1 and 1:2 (preset of fl_any)
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
+ * Rebuilt in 2026 (AI-implemented, Claude): the model is a preset of fl_any with the reactions of its stoichiometry, so that the signal is the
+ * textbook sum of concentration times fluorescence coefficient for every point (the earlier version gave the first point a coefficient of its own
+ * and, for 1:1, scaled the signal with the model signal of the first row). Stability constants are the cumulative lg beta of the species,
+ * not the stepwise lg K of the earlier version. See docs/fluorescence_models.md.
  */
 
 #pragma once
 
 #include "src/global.h"
 
-#include <QtCore/QObject>
-#include <QtCore/QVector>
+#include "fl_any_Model.h"
 
-#include "src/core/models/dataclass.h"
-#include "src/core/models/titrations/AbstractTitrationModel.h"
-
-class fl_ItoI_ItoII_Model : public AbstractTitrationModel {
+/*! \brief fluorescence titration, 1:1 and 1:2: the reactions `A + B <=> AB ; A + 2 B <=> AB2` as a preset of `fl_any` (AI-implemented rebuild, see the header). */
+class fl_ItoI_ItoII_Model : public fl_any_Model {
     Q_OBJECT
 
 public:
-    enum {
-        Cooperativity = 3
-    };
-
     fl_ItoI_ItoII_Model(DataClass* data);
-    fl_ItoI_ItoII_Model(AbstractTitrationModel* data);
-
+    fl_ItoI_ItoII_Model(AbstractTitrationModel* other);
     virtual ~fl_ItoI_ItoII_Model() override;
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::fl_ItoI_ItoII; }
-
-    virtual void CollectOptimizationParameters_Private() override;
-    inline int GlobalParameterSize() const override { return 2; }
-    virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
-    virtual bool SupportThreads() const override { return false; }
-
-    virtual inline QString GlobalParameterName(int i = 0) const override
-    {
-        if (i == 0)
-            return K11;
-        else if (i == 1)
-            return K12;
-        else
-            return QString();
-    }
-
-    virtual inline QString SpeciesName(int i) const override
-    {
-        if (i == 1)
-            return AB;
-        else if (i == 2)
-            return AB2;
-        else
-            return QString();
-    }
-
-    virtual void DeclareOptions() override;
-    virtual void EvaluateOptions() override;
-
-    virtual inline int Color(int i) const override
-    {
-        if (i == 0)
-            return 1;
-        else if (i == 1)
-            return 2;
-        else
-            return i + 2;
-    }
-
-    virtual QString ParameterComment(int parameter) const override;
-
-    BC50::ModelSystem BC50System() const override;
-
-    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
-
-    virtual QString AdditionalOutput() const override;
-
-    inline double ReductionCutOff() const override { return 2; }
-
-protected:
-    virtual void CalculateVariables() override;
 };

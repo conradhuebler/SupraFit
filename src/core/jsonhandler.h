@@ -36,6 +36,8 @@ public:
     static bool WriteJsonFile(const QJsonObject& json, const QString& file);
     static bool AppendJsonFile(const QJsonObject& json, const QString& filee);
     static bool ReadJsonFile(QJsonObject& json, const QString& file);
+    /*! \brief Like `ReadJsonFile`, with the reason of a failure in words and the format found ("json" or "compressed"); the format comes from the content. */
+    static bool ReadFile(const QString& file, QJsonObject& json, QString* error = nullptr, QString* format = nullptr);
 
     static QJsonObject LoadFile(const QString& file);
 

@@ -31,6 +31,8 @@
 
 #include "AbstractModel.h" // AbstractModel (return type) + DataClass (QPointer needs a complete type)
 
+/*! \brief Whether this SupraFit has a model with that id (CreateModel can still fail: the model may not fit the data). Claude Generated. */
+bool ModelIdKnown(int model);
 QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> data);
 QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data);
 QSharedPointer<AbstractModel> CreateModel(const QJsonObject& model, QWeakPointer<DataClass> data);

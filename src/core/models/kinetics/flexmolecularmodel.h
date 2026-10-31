@@ -31,6 +31,9 @@ class FlexMolecularModel : public AbstractModel {
     Q_OBJECT
 
 public:
+    enum {
+        Formula = 1
+    };
     FlexMolecularModel(DataClass* data);
     FlexMolecularModel(AbstractModel* data);
 
@@ -68,6 +71,8 @@ public:
     }
     virtual inline bool SupportSeries() const override { return false; }
     virtual void DeclareOptions() override;
+    /*! \brief Files of August 2022 were fitted with the earlier way of writing the model: tries both and keeps the one that gives the stored sum of squares. */
+    void AdaptStoredModel(const QJsonObject& block) override;
 
     /*! \brief Define the x axis label for charts
      */

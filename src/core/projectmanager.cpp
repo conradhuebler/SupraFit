@@ -24,6 +24,11 @@
 
 #ifdef DEBUG_ON
 #include "fmt/core.h"
+#include "src/version.h"
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #endif
 
 Q_LOGGING_CATEGORY(projectManager, "suprafit.core.projectmanager")
@@ -71,20 +76,23 @@ bool ProjectManager::loadProject(const QString& filePath)
 {
     QMutexLocker locker(&m_projectsMutex);
 
-    if (filePath.isEmpty()) {
-        emit errorOccurred("loadProject", "Empty file path provided");
+    m_report = LoadReport();
+    m_report.file = filePath;
+    m_reportOpen = true;
+    auto fail = [&](const QString& scope, const QString& reason) {
+        addIssue(LoadIssue::Error, scope, reason);
+        emit errorOccurred("loadProject", QString("%1: %2").arg(filePath, reason));
+        m_reportOpen = false;
+        m_report.loaded = false;
         return false;
-    }
+    };
+
+    if (filePath.isEmpty())
+        return fail("file", tr("No file name was given."));
 
     QFileInfo fileInfo(filePath);
-    if (!fileInfo.exists()) {
-        emit errorOccurred("loadProject", QString("File does not exist: %1").arg(filePath));
-        return false;
-    }
-
-#ifdef DEBUG_ON
-    SFDebugPrint("🔍 DEBUG ProjectManager::loadProject: Loading file: {}\n", filePath.toStdString());
-#endif
+    if (!fileInfo.exists())
+        return fail("file", tr("The file does not exist."));
 
     try {
         // Use existing FileHandler infrastructure
@@ -93,39 +101,62 @@ bool ProjectManager::loadProject(const QString& filePath)
 
         QJsonObject projectData;
         if (handler->Type() == FileHandler::SupraFit) {
-            // Load SupraFit project file
-            if (!JsonHandler::ReadJsonFile(projectData, filePath)) {
-                delete handler;
-                emit errorOccurred("loadProject", QString("Failed to read SupraFit file: %1").arg(filePath));
-                return false;
-            }
+            // Load SupraFit project file: the reason of a failure is part of the report
+            QString reason;
+            delete handler;
+            if (!JsonHandler::ReadFile(filePath, projectData, &reason, &m_report.format))
+                return fail("file", reason);
         } else {
             // Use handler data for other formats
             projectData = handler->getJsonData();
+            delete handler;
         }
-
-        delete handler;
 
         // Validate and create project
-        if (!validateProjectJson(projectData)) {
-            emit errorOccurred("loadProject", QString("Invalid project structure in file: %1").arg(filePath));
-            return false;
-        }
+        const QString problem = projectJsonProblem(projectData);
+        if (!problem.isEmpty())
+            return fail("file", problem);
 
-        // Claude Generated - Debug JSON data structure passed to loadProjectFromJson
-        SFDebugPrint("🔍 DEBUG loadProject: Passing JSON with keys {} to loadProjectFromJson\n", 
-            [&projectData]() {
-                QStringList keys;
-                for (auto it = projectData.begin(); it != projectData.end(); ++it) {
-                    keys << it.key();
+        QString projectId;
+        QStringList projectKeys; // a file of several projects: "project_0", "project_1", ... each a project of its own
+        if (!projectData.contains("data"))
+            for (const QString& key : projectData.keys())
+                if (key.startsWith(QLatin1String("project_")) && projectData[key].isObject())
+                    projectKeys << key;
+        if (!projectKeys.isEmpty()) {
+            std::sort(projectKeys.begin(), projectKeys.end(), [](const QString& a, const QString& b) { return a.mid(8).toInt() < b.mid(8).toInt(); });
+            m_report.projectsInFile = int(projectKeys.size());
+            const QString base = fileInfo.completeBaseName();
+            int number = 0;
+            for (const QString& key : projectKeys) {
+                ++number;
+                const QJsonObject single = projectData[key].toObject();
+                m_scope = key;
+                const QJsonObject block = single["data"].toObject();
+                if (block.contains("model") && block["model"].toInt() == int(SupraFit::MetaModel)) {
+                    // a meta model compares the models of other projects of the file; it is not a project of its own, and the load of a file does not rebuild it yet
+                    addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\" (it compares models of other projects of the file; meta models are not restored when a file is opened yet).").arg(block["name"].toString()));
+                } else if (!single.contains("data")) {
+                    addIssue(LoadIssue::Warning, "file", tr("Left out: the entry holds no data."));
+                } else {
+                    const QString id = loadProjectFromJson(single, QStringLiteral("%1-%2").arg(base).arg(number));
+                    if (id.isEmpty())
+                        addIssue(LoadIssue::Warning, "file", tr("Left out: the project could not be created."));
+                    else {
+                        ++m_report.projectsLoaded;
+                        if (projectId.isEmpty())
+                            projectId = id;
+                    }
                 }
-                return keys.join(", ").toStdString();
-            }());
-        
-        QString projectId = loadProjectFromJson(projectData, filePath);
-        if (projectId.isEmpty()) {
-            emit errorOccurred("loadProject", QString("Failed to create project from file: %1").arg(filePath));
-            return false;
+                m_scope.clear();
+            }
+            m_report.projectId = projectId;
+            if (projectId.isEmpty())
+                return fail("file", tr("None of the %1 projects of the file could be read.").arg(projectKeys.size()));
+        } else {
+            projectId = loadProjectFromJson(projectData, filePath);
+            if (projectId.isEmpty())
+                return fail("data", m_report.issues.isEmpty() ? tr("The project could not be created from the file.") : tr("The project could not be created from the file (see above)."));
         }
 
         // Set as current project if none is active
@@ -136,17 +167,12 @@ bool ProjectManager::loadProject(const QString& filePath)
         updateProjectHash();
 
         emit projectLoaded(projectId, filePath);
-
-#ifdef DEBUG_ON
-        SFDebugPrint("✅ DEBUG ProjectManager::loadProject: Successfully loaded project {} from {}\n",
-            projectId.toStdString(), filePath.toStdString());
-#endif
-
+        m_reportOpen = false;
+        m_report.loaded = true;
         return true;
 
     } catch (const std::exception& e) {
-        emit errorOccurred("loadProject", QString("Exception during project loading: %1").arg(e.what()));
-        return false;
+        return fail("file", tr("Exception while reading the file: %1").arg(e.what()));
     }
 }
 
@@ -841,17 +867,52 @@ QString ProjectManager::generateProjectId() const
 
 // === Private Helper Methods ===
 
+/*! \brief Creates a project from its JSON and tells in `lastLoadReport()` what was left out (Claude Generated). */
 QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const QString& sourceFile)
+{
+    const bool own = !m_reportOpen; // `loadProject` has opened the report already
+    if (own) {
+        m_report = LoadReport();
+        m_report.file = sourceFile;
+    }
+    const QString id = loadProjectFromJsonImpl(jsonData, sourceFile);
+    m_report.projectId = id;
+    if (own) {
+        m_report.loaded = !id.isEmpty();
+        if (id.isEmpty() && std::none_of(m_report.issues.begin(), m_report.issues.end(), [](const LoadIssue& i) { return i.severity == LoadIssue::Error; }))
+            addIssue(LoadIssue::Error, "data", tr("The project could not be created."));
+    }
+    return id;
+}
+
+void ProjectManager::addIssue(LoadIssue::Severity severity, const QString& scope, const QString& message)
+{
+    m_report.issues.append(LoadIssue{ severity, m_scope.isEmpty() ? scope : m_scope + QStringLiteral("/") + scope, message });
+}
+
+QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, const QString& sourceFile)
 {
     try {
         // Phase 2: Complete JSON handling - Extract data part for DataClass creation
         QJsonObject dataObject = jsonData.contains("data") ? jsonData["data"].toObject() : jsonData;
-        QSharedPointer<DataClass> project = QSharedPointer<DataClass>::create(dataObject);
+        // The data of the oldest files are stored otherwise: they go through the legacy reader; the current reader gets an empty object first,
+        // the constructor reads what it is given.
+        const int dataVersion = dataObject["SupraFit"].toInt();
+        // Tables in "independent"/"dependent" the current reader takes whatever the version; only the first layout (strings of numbers under
+        // "concentrations" and "signals") needs the legacy reader.
+        const bool legacyData = !dataObject.contains("independent") && dataObject.contains("concentrations");
+        QSharedPointer<DataClass> project = QSharedPointer<DataClass>::create(legacyData ? QJsonObject() : dataObject);
+        if (legacyData && !project->LegacyImportData(dataObject, true))
+            addIssue(LoadIssue::Warning, "data", tr("The data of the file (version %1) could not be read completely.").arg(dataVersion));
 
         if (!project) {
+            addIssue(LoadIssue::Error, "data", tr("The data of the project could not be created."));
             emit errorOccurred("loadProjectFromJson", "Failed to create DataClass from JSON");
             return QString();
         }
+        m_report.fileVersion = dataObject["SupraFit"].toInt();
+        if (m_report.fileVersion > qint_version)
+            addIssue(LoadIssue::Warning, "file", tr("The file was saved by a newer SupraFit (file version %1, this is %2); what this version does not know is left out.").arg(m_report.fileVersion).arg(qint_version));
 
         // Generate UUID if not present
         if (project->UUID().isEmpty()) {
@@ -874,6 +935,12 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
 
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
+        struct Reproduce {
+            QString key;
+            QSharedPointer<AbstractModel> model;
+            double stored;
+        };
+        QList<Reproduce> reproduce;
 #ifdef DEBUG_ON
         SFDebugPrint("DEBUG ProjectManager: Scanning for models in JSON keys: {}\n",
             jsonData.keys().join(", ").toStdString());
@@ -881,12 +948,14 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
 
         for (const QString& key : jsonData.keys()) {
             if (key.startsWith("model_")) {
+                ++m_report.modelsInFile;
 #ifdef DEBUG_ON
                 SFDebugPrint("DEBUG ProjectManager: Processing model key: {}\n", key.toStdString());
 #endif
                 // Claude Generated FIX 2: Type-check before conversion to ensure valid model data
                 QJsonValue modelValue = jsonData[key];
                 if (!modelValue.isObject()) {
+                    addIssue(LoadIssue::Warning, key, tr("Left out: the entry is not a model (a JSON %1 instead of an object).").arg(modelValue.isArray() ? tr("array") : tr("value")));
                     emit errorOccurred("loadProjectFromJson",
                         QString("Model %1 has invalid type (expected object, got %2)")
                             .arg(key)
@@ -897,6 +966,7 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                 QJsonObject modelObject = modelValue.toObject();
 
                 if (!modelObject.contains("model")) {
+                    addIssue(LoadIssue::Warning, key, tr("Left out: the entry has no \"model\" field that says which model it is."));
                     emit errorOccurred("loadProjectFromJson",
                         QString("Model object %1 missing 'model' field").arg(key));
                     continue;
@@ -904,7 +974,10 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                 
                 try {
                     // Create model using the factory function
-                    int modelId = modelObject["model"].toInt();
+                    // the oldest files name the model ("1:1-Model"), the others number it
+                    const int modelId = modelObject["model"].isString() ? int(Name2Model(modelObject["model"].toString())) : modelObject["model"].toInt();
+
+                    const int modelVersion = modelObject["SupraFit"].toInt();
 #ifdef DEBUG_ON
                     SFDebugPrint("DEBUG ProjectManager: Creating model ID {} for project {}\n",
                         modelId, project->UUID().toStdString());
@@ -920,12 +993,22 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
 #ifdef DEBUG_ON
                         qDebug() << "DEBUG ProjectManager: Model created with UUID:" << model->ModelUUID() << "for model name:" << model->Name();
 #endif
-                        // Import model state from JSON
-                        bool importSuccess = model->ImportModel(modelObject);
+                        // Import model state from JSON; what the model says on the way (a mismatch, a missing field) belongs to the report
+                        QStringList said, warned;
+                        const QMetaObject::Connection onWarning = QObject::connect(model->Info(), &DataClassPrivateObject::Warning, model.data(), [&said, &warned](const QString& text) { said << text; warned << text; });
+                        const QMetaObject::Connection onMessage = QObject::connect(model->Info(), &DataClassPrivateObject::Message, model.data(), [&said](const QString& text) { said << text; });
+                        bool importSuccess = (modelVersion < 2002) ? model->LegacyImportModel(modelObject) : model->ImportModel(modelObject);
+                        QObject::disconnect(onWarning);
+                        QObject::disconnect(onMessage);
+                        said.removeDuplicates();
 #ifdef DEBUG_ON
                         qDebug() << "DEBUG ProjectManager: After ImportModel, UUID:" << model->ModelUUID() << "ImportSuccess:" << importSuccess;
 #endif
                         if (importSuccess) {
+                            // the stored fit must come out of the stored parameters: checked after all models of the project are read
+                            const QJsonValue storedValue = modelObject.contains("SSE") ? modelObject["SSE"] : modelObject["sum_of_squares"];
+                            if (storedValue.isDouble() && storedValue.toDouble() > 0)
+                                reproduce.append(Reproduce{ key, model, storedValue.toDouble() });
                             // Claude Generated - Remove incorrect duplicate detection
                             // Models loaded from JSON are unique by definition (model_1, model_2, etc.)
                             // Each JSON model key represents a unique model to be loaded
@@ -935,6 +1018,9 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                             project->addModel(model);
                             
                             modelCount++;
+                            ++m_report.modelsLoaded;
+                            for (const QString& text : std::as_const(said))
+                                addIssue(warned.contains(text) ? LoadIssue::Warning : LoadIssue::Note, key, text);
                             // Emit signal for each successfully loaded model - CRITICAL FIX: Use ModelUUID() not UUID()
                             emit modelAdded(projectId, model->ModelUUID());
 
@@ -942,19 +1028,93 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
                             qDebug() << "DEBUG ProjectManager: Model" << model->Name() << "registered with ModelUUID:" << model->ModelUUID() << "Project now has" << project->ChildrenSize() << "children";
 #endif
                         } else {
+                            addIssue(LoadIssue::Warning, key, tr("Left out: the model \"%1\" could not be read from the file%2").arg(model->Name(), said.isEmpty() ? QStringLiteral(".") : QStringLiteral(": ") + said.join(" ")));
                             emit errorOccurred("loadProjectFromJson", 
                                 QString("Failed to import model data for %1").arg(key));
                         }
                     } else {
+                        if (ModelIdKnown(modelId))
+                            addIssue(LoadIssue::Warning, key, tr("Left out: the model (number %1) does not fit the data of the project: it needs another number of independent columns.").arg(modelId));
+                        else
+                            addIssue(LoadIssue::Warning, key, tr("Left out: model number %1 is not known to this SupraFit (saved by a newer version, or the model has been removed).").arg(modelId));
                         emit errorOccurred("loadProjectFromJson", 
                             QString("Failed to create model %1 (ID: %2)").arg(key).arg(modelId));
                     }
                     
                 } catch (const std::exception& e) {
+                    addIssue(LoadIssue::Warning, key, tr("Left out: an error while reading the model: %1").arg(e.what()));
                     emit errorOccurred("loadProjectFromJson", 
                         QString("Exception loading model %1: %2").arg(key, e.what()));
                 }
             }
+        }
+
+
+        // The fit as stored must come out of the stored parameters. If it does not, the model has changed since the file was written (or its
+        // equation cannot be calculated here): the model is there, its numbers are not those of the file. Older fits often left out the
+        // first points of the data (the first injection of a titration): if the same first points left out make the stored fits come out, the
+        // data range of the project is set so.
+        auto deviation = [](const Reproduce& r) {
+            double spread = 0; // the scale of an SSE: the data around their column means; below a millionth of it an SSE is rounding
+            const DataTable* dependent = r.model->DependentModel();
+            for (int c = 0; c < dependent->columnCount(); ++c) {
+                double mean = 0;
+                for (int row = 0; row < dependent->rowCount(); ++row)
+                    mean += dependent->data(row, c) / dependent->rowCount();
+                for (int row = 0; row < dependent->rowCount(); ++row)
+                    spread += (dependent->data(row, c) - mean) * (dependent->data(row, c) - mean);
+            }
+            const double now = r.model->SSE();
+            if (!std::isfinite(now))
+                return std::numeric_limits<double>::infinity();
+            return (now - r.stored) / std::max(r.stored, 1e-6 * spread); // positive: worse than the file says
+        };
+        auto matching = [&](double tolerance) {
+            int n = 0;
+            for (const Reproduce& r : std::as_const(reproduce))
+                n += std::abs(deviation(r)) <= tolerance;
+            return n;
+        };
+        int firstSkipped = 0;
+        if (!reproduce.isEmpty() && !project->isSimulation() && matching(1e-3) < reproduce.size()) {
+            // leave out the first rows one more at a time (the check marks of the data tables, as the data table of the GUI does), keep the
+            // number that makes the most stored fits come out exactly, and put every mark back if none does better than the rows as they are
+            const Eigen::MatrixXd independentMarks = project->IndependentModel()->CheckedTable(), dependentMarks = project->DependentModel()->CheckedTable();
+            const int rows = int(std::min(independentMarks.rows(), dependentMarks.rows())); // a simulation has no tables
+            auto restore = [&](int skip) {
+                Eigen::MatrixXd independent = independentMarks, dependent = dependentMarks;
+                for (int row = 0; row < skip && row < rows; ++row) {
+                    independent.row(row).setZero();
+                    dependent.row(row).setZero();
+                }
+                project->IndependentModel()->setCheckedTable(independent);
+                project->DependentModel()->setCheckedTable(dependent);
+                for (const Reproduce& r : std::as_const(reproduce))
+                    r.model->Calculate();
+            };
+            int best = matching(1e-6), bestSkip = 0;
+            for (int skip = 1; skip <= 4 && skip < rows - 3; ++skip) {
+                restore(skip);
+                const int n = matching(1e-6);
+                if (n > best) {
+                    best = n;
+                    bestSkip = skip;
+                }
+            }
+            restore(bestSkip);
+            firstSkipped = bestSkip;
+            if (firstSkipped > 0)
+                addIssue(LoadIssue::Note, "data", tr("The fits of the file leave out the first %1 data points; they are unchecked in the data table (check them there to use them).").arg(firstSkipped));
+        }
+        for (const Reproduce& r : std::as_const(reproduce)) {
+            const double d = deviation(r);
+            if (std::abs(d) <= 1e-3)
+                continue;
+            const double now = r.model->SSE();
+            if (d > 0)
+                addIssue(LoadIssue::Warning, r.key, tr("Read, but the fit of the file is not reproduced: the stored parameters give a sum of squares of %1 here, the file says %2. The model may have changed since the file was written; fit it again before using its numbers.").arg(now, 0, 'g', 4).arg(r.stored, 0, 'g', 4));
+            else // lower: the model finds a better description of the same parameters (linear parameters are projected out)
+                addIssue(LoadIssue::Note, r.key, tr("The sum of squares of the model is %1 here, the file says %2.").arg(now, 0, 'g', 4).arg(r.stored, 0, 'g', 4));
         }
 
         // Store source file info for debugging
@@ -1032,6 +1192,7 @@ QString ProjectManager::loadProjectFromJson(const QJsonObject& jsonData, const Q
         return projectId;
 
     } catch (const std::exception& e) {
+        addIssue(LoadIssue::Error, "data", tr("An error while reading the project: %1").arg(e.what()));
         emit errorOccurred("loadProjectFromJson", QString("Exception during JSON import: %1").arg(e.what()));
         return QString();
     }
@@ -1119,52 +1280,53 @@ void ProjectManager::updateProjectHash()
 
 bool ProjectManager::validateProjectJson(const QJsonObject& projectJson) const
 {
-    // Basic validation - check for essential structure
-    if (projectJson.isEmpty()) {
-        return false;
-    }
+    return projectJsonProblem(projectJson).isEmpty();
+}
 
-    // Check for wrapped project structure (legacy format)
+/*! \brief Why the JSON is not a project we can read, empty if it is one (Claude Generated). */
+QString ProjectManager::projectJsonProblem(const QJsonObject& projectJson) const
+{
+    if (projectJson.isEmpty())
+        return tr("The file holds no data.");
+
+    // wrapped project structure: "data" and the models next to it
     if (projectJson.contains("data")) {
-        QJsonObject data = projectJson["data"].toObject();
-        if (data.isEmpty()) {
-            return false;
-        }
-        return true;
+        if (!projectJson["data"].isObject())
+            return tr("The \"data\" entry of the file is not an object.");
+        if (projectJson["data"].toObject().isEmpty())
+            return tr("The \"data\" entry of the file is empty: the measured data of the project are missing.");
+        return QString();
     }
 
-    // Check for direct DataClass structure (raw format)
-    // Must have datatype for DataClass validation
-    if (projectJson.contains("datatype")) {
-        // Optional checks for dependent/independent data
-        return true;
-    }
+    // direct DataClass structure (raw format)
+    if (projectJson.contains("datatype"))
+        return QString();
 
-    // Check for CLI configuration format (Main, Independent, Dependent structure)
-    if (projectJson.contains("Main") || (projectJson.contains("Independent") && projectJson.contains("Dependent"))) {
-        // This is a CLI configuration format for data generation
-        return true;
-    }
+    // CLI configuration format (Main, Independent, Dependent structure)
+    if (projectJson.contains("Main") || (projectJson.contains("Independent") && projectJson.contains("Dependent")))
+        return QString();
 
-    // Check for Multi-Project format (Claude Generated - CLI Multi-Project Support)
+    // Multi-Project format
     if (projectJson.contains("format_version") && projectJson["format_version"].toString() == "2.0") {
-        // Multi-Project format: must contain at least one project_N entry
-        bool hasProjectEntry = false;
         for (auto it = projectJson.begin(); it != projectJson.end(); ++it) {
             if (it.key().startsWith("project_")) {
-                // Validate that each project entry has the right structure
                 QJsonObject projectData = it.value().toObject();
-                if (!projectData.isEmpty() && (projectData.contains("data") || projectData.contains("datatype"))) {
-                    hasProjectEntry = true;
-                    break;
-                }
+                if (!projectData.isEmpty() && (projectData.contains("data") || projectData.contains("datatype")))
+                    return QString();
             }
         }
-        return hasProjectEntry;
+        return tr("The multi-project file contains no project with data.");
     }
 
-    // If none of the formats is recognized, fail validation
-    return false;
+    // files of several projects as SupraFit has always written them: "project_0", "project_1", ... without a version of their own
+    for (auto it = projectJson.begin(); it != projectJson.end(); ++it)
+        if (it.key().startsWith("project_") && it.value().isObject())
+            return QString();
+
+    QStringList keys = projectJson.keys();
+    if (keys.size() > 6)
+        keys = keys.mid(0, 6) << QStringLiteral("...");
+    return tr("This is not a SupraFit project: there is no \"data\" entry (found: %1).").arg(keys.join(", "));
 }
 
 // Claude Generated - Backward compatibility method implementation
@@ -1221,6 +1383,45 @@ bool ProjectManager::registerExistingProject(QSharedPointer<DataClass> dataClass
         qWarning() << "ProjectManager::registerExistingProject: Unknown exception during registration";
         return false;
     }
+}
+
+} // namespace SupraFit
+namespace SupraFit {
+
+bool LoadReport::HasProblems() const
+{
+    if (!loaded || modelsLoaded < modelsInFile || projectsLoaded < projectsInFile)
+        return true;
+    return std::any_of(issues.begin(), issues.end(), [](const LoadIssue& i) { return i.severity != LoadIssue::Note; });
+}
+
+QString LoadReport::Summary() const
+{
+    for (const LoadIssue& i : issues)
+        if (i.severity == LoadIssue::Error)
+            return i.message;
+    if (fileVersion > qint_version) // the likely reason for everything else that is missing
+        return QObject::tr("The file was saved by a newer SupraFit (file version %1, this is %2): what this version does not know is left out.").arg(fileVersion).arg(qint_version);
+    if (projectsLoaded < projectsInFile)
+        return QObject::tr("%1 of %2 projects of the file were read; the others are left out.").arg(projectsLoaded).arg(projectsInFile);
+    if (modelsLoaded < modelsInFile)
+        return QObject::tr("%1 of %2 models of the file were read; the others are left out.").arg(modelsLoaded).arg(modelsInFile);
+    for (const LoadIssue& i : issues)
+        if (i.severity == LoadIssue::Warning)
+            return i.message;
+    return QString();
+}
+
+QString LoadReport::Details() const
+{
+    QStringList lines;
+    for (int severity = LoadIssue::Error; severity >= LoadIssue::Note; --severity)
+        for (const LoadIssue& i : issues)
+            if (i.severity == severity)
+                lines << QStringLiteral("%1 [%2]: %3").arg(severity == LoadIssue::Error ? QObject::tr("Error") : severity == LoadIssue::Warning ? QObject::tr("Warning") : QObject::tr("Note"), i.scope, i.message);
+    if (fileVersion > 0)
+        lines << QObject::tr("File version: %1").arg(fileVersion);
+    return lines.join('\n');
 }
 
 } // namespace SupraFit

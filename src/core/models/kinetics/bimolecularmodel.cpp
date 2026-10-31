@@ -118,6 +118,15 @@ QSharedPointer<AbstractModel> BiMolecularModel::Clone(bool statistics)
     return model;
 }
 
+void BiMolecularModel::AdaptStoredModel(const QJsonObject& block)
+{
+    const QString stored = block["data"].toObject()["globalParameter"].toObject()["data"].toObject()["0"].toString();
+    if (stored.split(' ', Qt::SkipEmptyParts).size() < GlobalParameterSize()) {
+        (*GlobalTable())[4] = 1; // the older formula equals the current one with q = 1
+        Calculate();
+    }
+}
+
 void BiMolecularModel::UpdateParameter()
 {
 }

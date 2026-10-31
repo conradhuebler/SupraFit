@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SupraFit - fluorescence titration, 1:1 (preset of fl_any)
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,165 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * Rebuilt in 2026 (AI-implemented, Claude): the model is a preset of fl_any with the reactions of its stoichiometry, so that the signal is the
+ * textbook sum of concentration times fluorescence coefficient for every point (the earlier version gave the first point a coefficient of its own
+ * and, for 1:1, scaled the signal with the model signal of the first row). Stability constants are the cumulative lg beta of the species,
+ * not the stepwise lg K of the earlier version. See docs/fluorescence_models.md.
  */
-#include "src/core/models/postprocess/statistic.h"
-
-#include "src/core/bc50.h"
-#include "src/core/equil.h"
-#include "src/core/libmath.h"
-#include "src/core/toolset.h"
-
-#include "src/core/models/models.h"
-
-#include <QDebug>
-#include <QtMath>
-
-#include <QtCore/QDateTime>
-#include <QtCore/QFile>
-#include <QtCore/QJsonObject>
 
 #include "fl_1_1_Model.h"
 
-fl_ItoI_Model::fl_ItoI_Model(DataClass* data)
-    : AbstractTitrationModel(data)
-{
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    DeclareOptions();
+#include <QtCore/QJsonObject>
+
+namespace {
+const char* Reactions = "A + B <=> AB";
 }
 
-fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* data)
-    : AbstractTitrationModel(data)
+fl_ItoI_Model::fl_ItoI_Model(DataClass* data)
+    : fl_any_Model(data)
 {
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    DeclareOptions();
+    DefinePreset(QString::fromLatin1(Reactions)); // here SFModel() is this model: name, ids and the check of the data columns are its own
+}
+
+fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* other)
+    : fl_any_Model(other)
+{
 }
 
 fl_ItoI_Model::~fl_ItoI_Model()
 {
-}
-
-void fl_ItoI_Model::DeclareOptions()
-{
-    QStringList host = QStringList() << "yes"
-                                     << "no";
-    addOption(Host, "Host dynamic", host);
-    setOption(Host, "yes");
-
-    QStringList guest = QStringList() << "dynamic"
-                                      << "silent";
-    addOption(Guest, "Guest (dynamic)", guest);
-    setOption(Guest, "silent");
-
-    QStringList host_only = QStringList() << "yes"
-                                          << "no";
-    addOption(HostOnly, "Host only", host);
-    setOption(HostOnly, "no");
-}
-
-void fl_ItoI_Model::InitialGuess_Private()
-{
-    qreal factor = 1;
-    factor = 1 / InitialHostConcentration(0);
-
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
-    for (int i = 0; i < SeriesCount(); ++i) {
-        auto IF = (DependentModel()->lastRow()(i) / DependentModel()->firstRow()(i) - 1) * DependentModel()->firstRow()(i) * factor;
-        LocalTable()->data(i, 3) = IF;
-    }
-    // Seed lg K via the shared GuessK/NewtonRoot heuristic (range kept at [2,10]);
-    // GuessK clones internally, so no explicit test clone is needed here.
-    (*GlobalTable())[0] = GuessK(0, 2, 10);
-    Calculate();
-}
-
-void fl_ItoI_Model::CollectOptimizationParameters_Private()
-{
-    QString host = getOption(Host);
-    QString guest = getOption(Guest);
-    QString hostonly = getOption(HostOnly);
-
-    addGlobalParameter(0);
-    //if (host == "no")
-    if (hostonly == "no") {
-        if (host == "yes") {
-            addLocalParameter(0);
-        }
-        // if (guest == "no")
-        addLocalParameter(1);
-        if (guest == "dynamic")
-            addLocalParameter(2);
-        addLocalParameter(3);
-    }
-}
-
-void fl_ItoI_Model::CalculateVariables()
-{
-    auto hostguest = getHostGuestPair();
-    QString guest_option = getOption(Guest);
-    QString host_option = getOption(Host);
-    QString hostonly = getOption(HostOnly);
-
-    qreal value = 0;
-    const double K = pow(10, GlobalParameter(0));
-    for (int i = DataBegin(); i < DataEnd(); ++i) {
-        qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = host_0 - host;
-        qreal guest = guest_0 - complex;
-
-        Vector vector(4);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
-
-        if (!m_fast)
-            SetConcentration(i, vector);
-
-        for (int j = 0; j < SeriesCount(); ++j) {
-            double A0 = LocalTable()->data(j, 0);
-            double A = LocalTable()->data(j, 1);
-            double B = LocalTable()->data(j, 2);
-            double AB = LocalTable()->data(j, 3);
-            double tau = 1;
-            double guest_part = 0;
-
-            if (host_option == "yes")
-                tau = A / A0;
-            if (guest_option == "dynamic")
-                guest_part = B / A0 * guest;
-
-            if (i == 0)
-                value = host * A0;
-            else
-                value = tau + AB / A * (guest * K) / (1 + guest * K) + guest_part;
-            if (i != 0)
-                value *= m_model_signal->data(0, j);
-            SetValue(i, j, value);
-        }
-    }
-}
-
-QVector<qreal> fl_ItoI_Model::DeCompose(int datapoint, int series) const
-{
-    QVector<qreal> vector;
-    qreal host_0 = InitialHostConcentration(datapoint);
-
-    Vector concentration = getConcentration(datapoint);
-
-    qreal host = concentration(1);
-
-    qreal complex = concentration(3);
-
-    host_0 = 1;
-
-    vector << host / host_0 * LocalTable()->data(series, 0);
-    vector << complex / host_0 * LocalTable()->data(series, 1);
-
-    return vector;
 }
 
 QSharedPointer<AbstractModel> fl_ItoI_Model::Clone(bool statistics)
@@ -182,56 +50,5 @@ QSharedPointer<AbstractModel> fl_ItoI_Model::Clone(bool statistics)
     finishClone(model, statistics);
     return model;
 }
-
-
-QString fl_ItoI_Model::AdditionalOutput() const
-{
-    QString result;
-    return result;
-
-    // double max = 1e3;
-    double delta = 1e-3;
-    qreal host_0 = 1.0;
-    qreal host = 0;
-    qreal diff = host_0 - host;
-    Vector integral(3);
-    qreal end = delta;
-    for (end = delta; diff > 1e-5; end += delta) {
-        qreal guest_0 = end;
-        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = host_0 - host;
-
-        integral(0) += host * delta;
-        integral(1) += (guest_0 - complex) * delta;
-        integral(2) += complex * delta;
-
-        diff = host_0 - complex;
-        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        //std::cout << host << " "
-        //          << " " << guest_0 - complex << " " << complex << std::endl;
-        //std::cout << integral.transpose() << std::endl;
-    }
-    integral(0) /= end;
-    integral(1) /= end;
-    integral(2) /= end;
-}
-
-QString fl_ItoI_Model::ParameterComment(int parameter) const
-{
-    Q_UNUSED(parameter)
-    return QString("Reaction: A + B &#8652; AB");
-}
-
-
-
-BC50::ModelSystem fl_ItoI_Model::BC50System() const
-{
-    BC50::ModelSystem sys;
-    sys.stoich.resize(2, 1);
-    sys.stoich << 1, 1;
-    sys.lgBeta = { GlobalParameter(0) };
-    return sys;
-}
-
 
 #include "fl_1_1_Model.moc"

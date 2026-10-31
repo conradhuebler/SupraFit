@@ -73,6 +73,7 @@
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
+#include "src/core/models/titrations/fluorescence/fl_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/scanwidget.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
@@ -1221,6 +1222,29 @@ private slots:
         QCOMPARE(cv["Method"].toInt(), int(SupraFit::Method::CrossValidation));
         QVERIFY(cv.contains("CXO"));
         QVERIFY(dialog->RunReductionAnalyse().contains("Method"));
+    }
+
+    // The fluorescence presets (fl_any with the reactions of their stoichiometry) open in the pane like any model: no overlap, the options of
+    // the corrections are offered, and the system parameters of the inner filter are there. Claude Generated.
+    void fluorescencePresetOpensInThePane()
+    {
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::fl_ItoI_ItoII, m_data.data());
+        QVERIFY(model);
+        model->InitialGuess();
+        model->Calculate();
+        QVERIFY(model->getAllOptions().contains(fl_any_Model::InnerFilter));
+        QVERIFY(model->getAllOptions().contains(fl_any_Model::Quenching));
+        QVERIFY(model->getSystemParameterList().contains(fl_any_Model::PathLength));
+        QVERIFY(model->getSystemParameterList().contains(fl_any_Model::EpsilonExcitation));
+        QCOMPARE(model->GlobalParameterSize(), 3); // lg beta(AB), lg beta(AB2), lg K_SV
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        const QStringList overlaps = overlappingWidgets(&widget);
+        QVERIFY2(overlaps.isEmpty(), qPrintable(overlaps.join("; ")));
     }
 
     // WP-S4: Monte Carlo, Grid Search, Model Comparison and Scan say what they do (a stage text, shown in the dialog), the bar does not

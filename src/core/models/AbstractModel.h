@@ -186,6 +186,16 @@ public:
      */
     virtual bool LegacyImportModel(const QJsonObject& topjson, bool override = true);
 
+    /*! \brief Called at the end of `ImportModel` with the stored block of the model (Claude Generated).
+     *
+     * A model that changed after files were written (a parameter added, another way to write the formula) brings the stored fit back
+     * here: it pads missing parameters with their neutral value, or tries the formulas of earlier versions and keeps the one that
+     * reproduces the stored sum of squares. The default does nothing.
+     */
+    virtual void AdaptStoredModel(const QJsonObject& block) { Q_UNUSED(block) }
+    /*! \brief The sum of squares a stored model block holds ("SSE", "sum_of_squares" in files before 1700), 0 if none. */
+    static double StoredSSE(const QJsonObject& block) { return block["SSE"].toDouble() > 0 ? block["SSE"].toDouble() : block["sum_of_squares"].toDouble(); }
+
     /*! \brief Returns the name of the model
      */
     inline QString Name() const { return m_name; }

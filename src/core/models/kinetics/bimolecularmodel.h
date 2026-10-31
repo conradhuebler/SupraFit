@@ -42,6 +42,8 @@ public:
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::BiMolecularModel; }
 
     virtual void CollectOptimizationParameters_Private() override;
+    /*! \brief Files before the scale factor q (parameter 4) have four parameters: q = 1 is the model they were fitted with. */
+    void AdaptStoredModel(const QJsonObject& block) override;
 
     inline int GlobalParameterSize() const override { return 5; }
     virtual void InitialGuess_Private() override;

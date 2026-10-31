@@ -169,6 +169,70 @@ QJsonObject AbstractModel::ExportStatistic(SupraFit::Method type, int index)
     return toplevel;
 }
 
+
+namespace {
+/*! \brief Reaction text for the grid definition (MaxA, MaxB, MaxSelfA, or the list Species "a,b|a,b") that the *_any models were defined by
+ * until July 2026 (Claude Generated). The order is that of the old grid, so the parameters keep their indices: first A_aB_b with a, b >= 1,
+ * then the host oligomers A_n. Empty if the definition holds none of it.
+ */
+QString LegacyReactionText(const QHash<QString, QJsonObject>& defined)
+{
+    auto number = [&defined](const QString& key, bool* found) {
+        // plain value or descriptor, at the top of the definition or inside the entry "ModelDefinition"
+        const QJsonObject nested = defined.value(QStringLiteral("ModelDefinition"));
+        for (const QJsonValue& v : { nested.value(key), QJsonValue(defined.value(key)) }) {
+            if (v.isObject() && v.toObject().contains(QStringLiteral("value"))) {
+                *found = true;
+                return v.toObject().value(QStringLiteral("value")).toVariant().toString();
+            }
+            if (!v.isUndefined() && !v.isObject() && !v.isNull()) {
+                *found = true;
+                return v.toVariant().toString();
+            }
+        }
+        *found = false;
+        return QString();
+    };
+    auto term = [](int count, const QString& component) { return (count > 1 ? QString::number(count) + QLatin1Char(' ') : QString()) + component; };
+    QList<QPair<int, int>> species;
+    bool hasSpecies = false;
+    const QString list = number(QStringLiteral("Species"), &hasSpecies).trimmed();
+    if (hasSpecies && !list.isEmpty()) {
+        for (const QString& token : list.split(QLatin1Char('|'), Qt::SkipEmptyParts)) {
+            const QStringList ab = token.split(QLatin1Char(','));
+            bool okA = false, okB = false;
+            const int a = ab.size() == 2 ? ab[0].trimmed().toInt(&okA) : 0, b = ab.size() == 2 ? ab[1].trimmed().toInt(&okB) : 0;
+            if (okA && okB && a >= 0 && b >= 0 && a + b >= 2)
+                species << qMakePair(a, b);
+        }
+    } else {
+        bool fa = false, fb = false, fs = false;
+        const int maxA = std::max(1, number(QStringLiteral("MaxA"), &fa).toInt());
+        const int maxB = std::max(1, number(QStringLiteral("MaxB"), &fb).toInt());
+        const int maxSelf = number(QStringLiteral("MaxSelfA"), &fs).toInt();
+        if (!fa && !fb && !fs)
+            return QString();
+        for (int a = 1; a <= maxA; ++a)
+            for (int b = 1; b <= maxB; ++b)
+                species << qMakePair(a, b);
+        for (int n = 2; n <= maxSelf; ++n)
+            species << qMakePair(n, 0);
+    }
+    QStringList lines;
+    for (const auto& ab : std::as_const(species)) {
+        QStringList left;
+        if (ab.first > 0)
+            left << term(ab.first, QStringLiteral("A"));
+        if (ab.second > 0)
+            left << term(ab.second, QStringLiteral("B"));
+        const QString label = (ab.first > 0 ? QStringLiteral("A") + (ab.first > 1 ? QString::number(ab.first) : QString()) : QString())
+            + (ab.second > 0 ? QStringLiteral("B") + (ab.second > 1 ? QString::number(ab.second) : QString()) : QString());
+        lines << left.join(QStringLiteral(" + ")) + QStringLiteral(" <=> ") + label;
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+} // namespace
+
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
 #ifdef DEBUG_ON
@@ -180,9 +244,31 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (topjson.contains("ModelDefinition")) {
         QJsonObject model = topjson["ModelDefinition"].toObject();
         for (const QString& key : model.keys()) {
-            m_defined_model.insert(key, model[key].toObject());
+            // Files of SupraFit 2002/2003 store the entries of the definition as plain values ("GlobalParameterSize": 2), the current
+            // ones as descriptors ({"value": 2}); the equation is a plain object of lines in both. A plain value is wrapped, otherwise
+            // the definition would be read as empty.
+            const QJsonValue entry = model[key];
+            m_defined_model.insert(key, entry.isObject() ? entry.toObject() : QJsonObject{ { QStringLiteral("value"), entry } });
         }
-        DefineModel(m_model_definition);
+        // *_any models of before July 2026 were defined by a grid (MaxA, MaxB, ...), the reactions are written out from it
+        const int id = int(SFModel());
+        if (id == SupraFit::nmr_any || id == SupraFit::uvvis_any || id == SupraFit::fl_any || id == SupraFit::itc_any) {
+            if (m_defined_model.value(QStringLiteral("Reactions")).value(QStringLiteral("value")).toString().trimmed().isEmpty()) {
+                const QString reactions = LegacyReactionText(m_defined_model);
+                if (!reactions.isEmpty()) {
+                    m_defined_model.insert(QStringLiteral("Reactions"), QJsonObject{ { QStringLiteral("value"), reactions } });
+                    emit Info()->Message(QString("The model was defined by a grid of species (an older SupraFit); it is read as the reactions %1").arg(QString(reactions).replace('\n', QStringLiteral("; "))));
+                }
+            }
+        }
+        if (!DefineModel(m_model_definition)) {
+            emit Info()->Warning(QString("The definition stored with the model could not be applied to this data set."));
+            return false;
+        }
+    }
+    if (!GlobalTable() || !LocalTable()) { // a model without its parameter tables has not been defined (an empty or unusable definition)
+        emit Info()->Warning(QString("The model is not defined: the file holds no usable model definition."));
+        return false;
     }
 
     int copy_model = topjson["model"].toInt();
@@ -325,8 +411,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
     emit ParameterChanged();
 
-    if (SFModel() != SupraFit::MetaModel)
+    if (SFModel() != SupraFit::MetaModel) {
         Calculate();
+        AdaptStoredModel(topjson);
+    }
 
 #ifdef DEBUG_ON
     // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
@@ -340,7 +428,9 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
 #ifdef DEBUG_ON
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
-    if (topjson[Name()].isNull()) {
+    // The model block of a project file ("model_1": {"SupraFit": 1700, "model": 1, "data": {...}}) is the model itself; only a file of a
+    // single model older than that keeps it under the name of the model.
+    if (!topjson.contains("data") && topjson[Name()].isNull()) {
         emit Info()->Warning("Sorry, this file doesn't contain any " + Name() + " model.");
         qWarning() << "file doesn't contain any " + Name();
         return false;
@@ -350,7 +440,9 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     if (fileversion >= 2002 && fileversion <= qint_version)
       return ImportModel(topjson, override);
 
-    if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {
+    // the oldest files name the model ("1:1-Model") instead of numbering it
+    const SupraFit::Model storedModel = topjson["model"].isString() ? Name2Model(topjson["model"].toString()) : static_cast<SupraFit::Model>(topjson["model"].toInt());
+    if (storedModel != SFModel()) {
         if (fileversion >= qint_version) {
             emit Info()->Warning("Sorry, I suppose I do not support this data. " + Name());
             qWarning() << "No old data, but models dont fit, sorry";
@@ -547,8 +639,10 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     */
-    if (SFModel() != SupraFit::MetaModel)
+    if (SFModel() != SupraFit::MetaModel) {
         Calculate();
+        AdaptStoredModel(topjson);
+    }
 
 #ifdef DEBUG_ON
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
