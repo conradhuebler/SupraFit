@@ -128,6 +128,7 @@ private:
     QVector<QPointer<SpinBox>> m_constants;
     QVector<QPointer<ModelElement>> m_model_elements;
     void UpdateCurvesShown();
+    bool m_curves_cascade = false; ///< the master checkbox is setting the curves one after the other
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions* m_actions;
     QPushButton* m_minimize_all;

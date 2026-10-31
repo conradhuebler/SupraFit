@@ -493,6 +493,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     }
 #endif
 
+    // the master checkbox of the tab shows or hides all curves of this model; the checkbox is told the result once, not after every curve
+    connect(this, &ModelWidget::ToggleSeries, this, [this](int state) {
+        m_curves_cascade = true;
+        for (const QPointer<ModelElement>& el : std::as_const(m_model_elements))
+            if (el)
+                el->ToggleSeries(state);
+        m_curves_cascade = false;
+        UpdateCurvesShown();
+    });
+
     if (m_model->SupportSeries()) {
         if (m_model->LocalParameterSize()) {
             for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
@@ -500,7 +510,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 connect(el, &ModelElement::ValueChanged, this, &ModelWidget::recalculate);
                 connect(el, &ModelElement::ActiveSignalChanged, this, &ModelWidget::CollectActiveSignals);
                 connect(this, &ModelWidget::Update, el, &ModelElement::Update);
-                connect(this, &ModelWidget::ToggleSeries, el, &ModelElement::ToggleSeries);
                 connect(el, &ModelElement::ShownChanged, this, &ModelWidget::UpdateCurvesShown);
 
                 if (!m_val_readonly)
@@ -1618,6 +1627,8 @@ QList<int> ModelWidget::ActiveSignals()
 /*! \brief Tells the master checkbox of the tab how many of the curves of this model are drawn (all, none, some). */
 void ModelWidget::UpdateCurvesShown()
 {
+    if (m_curves_cascade)
+        return;
     int shown = 0, total = 0;
     for (const QPointer<ModelElement>& el : std::as_const(m_model_elements)) {
         if (!el || !el->Include())
