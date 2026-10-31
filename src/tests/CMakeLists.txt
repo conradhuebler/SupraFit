@@ -760,6 +760,17 @@ set_tests_properties(ProjectCompatTest PROPERTIES
     TIMEOUT 300
 )
 
+# Fixed fluorescence models against fl_any on textbook data (Claude Generated 2026)
+add_executable(test_fl_fixed_vs_any
+    test_fl_fixed_vs_any.cpp
+)
+
+target_link_libraries(test_fl_fixed_vs_any
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME FlFixedVsAnyTest COMMAND test_fl_fixed_vs_any)
+
 # any-vs-fixed equivalence: nmr_any (via the Reactions field) must reproduce the hand-written
 # fixed NMR models (1:1, 2:1/1:1, 1:1/1:2) on identical data - fit AND CV/RA statistics
 # (Claude Generated 2026).
