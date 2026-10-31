@@ -994,8 +994,8 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                         qDebug() << "DEBUG ProjectManager: Model created with UUID:" << model->ModelUUID() << "for model name:" << model->Name();
 #endif
                         // Import model state from JSON; what the model says on the way (a mismatch, a missing field) belongs to the report
-                        QStringList said;
-                        const QMetaObject::Connection onWarning = QObject::connect(model->Info(), &DataClassPrivateObject::Warning, model.data(), [&said](const QString& text) { said << text; });
+                        QStringList said, warned;
+                        const QMetaObject::Connection onWarning = QObject::connect(model->Info(), &DataClassPrivateObject::Warning, model.data(), [&said, &warned](const QString& text) { said << text; warned << text; });
                         const QMetaObject::Connection onMessage = QObject::connect(model->Info(), &DataClassPrivateObject::Message, model.data(), [&said](const QString& text) { said << text; });
                         bool importSuccess = (modelVersion < 2002) ? model->LegacyImportModel(modelObject) : model->ImportModel(modelObject);
                         QObject::disconnect(onWarning);
@@ -1020,7 +1020,7 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                             modelCount++;
                             ++m_report.modelsLoaded;
                             for (const QString& text : std::as_const(said))
-                                addIssue(LoadIssue::Note, key, text);
+                                addIssue(warned.contains(text) ? LoadIssue::Warning : LoadIssue::Note, key, text);
                             // Emit signal for each successfully loaded model - CRITICAL FIX: Use ModelUUID() not UUID()
                             emit modelAdded(projectId, model->ModelUUID());
 

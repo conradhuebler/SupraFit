@@ -26,7 +26,8 @@
 - [ ] `suprafit_cli` prints the load report of `ProjectManager` (reason of a failure, models left out); only the GUI shows it so far.
 
 ## Fluorescence models
-- [ ] Fixed fluorescence models (`fl_ItoI`, `fl_ItoI_ItoII`, `fl_IItoI_ItoI`, `fl_IItoI_ItoI_ItoII`) are untested against the literature; findings in `src/tests/test_fl_fixed_vs_any.cpp`: row 0 is a special case with its own free coefficient `A0` (that point never constrains the fit, one extra parameter per series, the host has two coefficients), `fl_ItoI` scales every row with the model signal of row 0 (state-dependent, SSE 3e8 when row 0 is left out), its coefficients mean other things than their names (`AB` is an increment times A0/A), the guest can only fluoresce in `fl_ItoI`, the cold start of `fl_ItoI_ItoII` ends in a wrong minimum. Proposal: one signal model `sum(c_i * phi_i)` as in `fl_any` (the textbook form), the fixed models as presets of it, VarPro.
+- [ ] The inner filter and quenching terms of `fl_any` (AI-implemented 2026-11, [docs/fluorescence_models.md](docs/fluorescence_models.md)) need the operator's check against the literature and data with known absorbances/quencher; open extensions: absorptivities per series (multi-wavelength), complexes with an absorptivity of their own, mixed static + dynamic quenching (sphere of action).
+- [ ] Models of files of the earlier fixed fluorescence models (20-23, stepwise lg K, 4-5 local columns) are reset on load; a conversion is not possible (the old first-point formula).
 
 ## UI Redesign (supersedes Phases 1–3 below)
 - [ ] Agent chats in projects: ChatLog drops unknown per-chat fields when a project chat is rewritten (blocks of newer versions survive only untouched); `ReferenceProjectsTest` fails 2 cases independent of WP11 (2:1 model SSE, CV mean)

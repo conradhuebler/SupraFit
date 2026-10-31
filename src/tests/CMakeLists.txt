@@ -771,6 +771,17 @@ target_link_libraries(test_fl_fixed_vs_any
 
 add_test(NAME FlFixedVsAnyTest COMMAND test_fl_fixed_vs_any)
 
+# Inner filter and dynamic quenching of fl_any, against independent code in the test (AI-implemented, Claude Generated 2026)
+add_executable(test_fl_corrections
+    test_fl_corrections.cpp
+)
+
+target_link_libraries(test_fl_corrections
+    ${TEST_COMMON_LIBS}
+)
+
+add_test(NAME FlCorrectionsTest COMMAND test_fl_corrections)
+
 # any-vs-fixed equivalence: nmr_any (via the Reactions field) must reproduce the hand-written
 # fixed NMR models (1:1, 2:1/1:1, 1:1/1:2) on identical data - fit AND CV/RA statistics
 # (Claude Generated 2026).

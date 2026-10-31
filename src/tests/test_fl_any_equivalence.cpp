@@ -109,14 +109,14 @@ private:
         cfg["FitSolver"] = solver;
         model->setOptimizerConfig(cfg);
         model->InitialGuess();
-        for (int k = 0; k < truthBetas.size() && k < model->GlobalParameterSize(); ++k)
+        for (int k = 0; k < truthBetas.size() && k < model->GlobalParameterSize() - 1; ++k)
             model->setGlobalParameter(truthBetas[k] - 0.5, k);
         Minimizer m(false);
         m.setModel(model);
         m.Minimize();
         const double sse = model->SSE();
         betas.clear();
-        for (int k = 0; k < model->GlobalParameterSize(); ++k)
+        for (int k = 0; k < model->GlobalParameterSize() - 1; ++k) // without lg K_SV
             betas << model->GlobalParameter(k);
         return sse;
     }
@@ -134,7 +134,7 @@ private slots:
         QVERIFY(model->DefineModel(def));
 
         QCOMPARE(model->InputParameterSize(), 2);
-        QCOMPARE(model->GlobalParameterSize(), 1); // AB
+        QCOMPARE(model->GlobalParameterSize(), 2); // lg beta(AB) and lg K_SV (the quenching constant, fitted only on request)
         QCOMPARE(model->LocalParameterSize(), 3); // phi A, phi B, phi AB
 
         model->InitialGuess();

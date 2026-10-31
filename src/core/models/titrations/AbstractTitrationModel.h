@@ -202,8 +202,10 @@ public:
 public slots:
     virtual void UpdateParameter() override;
 
-private:
+protected:
     virtual void DeclareSystemParameter() override;
+
+private:
 
 protected:
     /*
