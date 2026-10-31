@@ -501,6 +501,70 @@ private slots:
         delete data;
     }
 
+    // Three constants: holes in the surface of a pair (cells enclosed by visited ones) are closed by a search over the third constant;
+    // each new cell holds the minimum over that constant (checked against a dense scan), and the surface has more cells than without.
+    void threeConstantSurfaceGapsAreClosed()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[4] = { 9.0, 5.0, 2.0, 7.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2\n2 A + B <=> A2B"), { 3.0, 5.4, 5.6 }, 4, 0.02, shifts);
+        ModelLandscape landscape(model->Clone(false));
+
+        auto run = [&](bool exact, LandscapeSearch& search) {
+            search.setModel(model);
+            QJsonObject ctl;
+            ctl["Walkers"] = 2;
+            ctl["Polish"] = 0;
+            ctl["MaxSteps"] = 1500;
+            ctl["MaxExpansions"] = 0;
+            ctl["Surface"] = true;
+            ctl["ExactSurface"] = exact;
+            search.setController(ctl);
+            QVERIFY(search.Run());
+        };
+        LandscapeSearch plain, closed;
+        run(false, plain);
+        run(true, closed);
+        const QJsonArray before = plain.Result()["0"].toObject()["surfaces"].toArray();
+        const QJsonArray after = closed.Result()["0"].toObject()["surfaces"].toArray();
+        QCOMPARE(after.size(), 3);
+        int cellsClosed = 0;
+        for (int q = 0; q < 3; ++q) {
+            cellsClosed += after[q].toObject()["closed_cells"].toInt();
+            QVERIFY(after[q].toObject()["points"].toArray().size() >= before[q].toObject()["points"].toArray().size());
+        }
+        qInfo() << "cells closed over three pairs:" << cellsClosed << "; evaluations" << plain.Result()["0"].toObject()["evaluations"].toDouble() << "->" << closed.Result()["0"].toObject()["evaluations"].toDouble()
+                << ", ms" << plain.Result()["0"].toObject()["time_ms"].toDouble() << "->" << closed.Result()["0"].toObject()["time_ms"].toDouble();
+        QVERIFY(cellsClosed > 0);
+
+        // pair (0, 1): every cell that was not there without the search, against a dense scan over the third constant
+        const int bins = after[0].toObject()["bins"].toInt();
+        const double xlo = closed.Lower()[0], xw = closed.Upper()[0] - xlo, ylo = closed.Lower()[1], yw = closed.Upper()[1] - ylo;
+        std::vector<char> seen(size_t(bins) * bins, 0);
+        for (const QJsonValue& v : before[0].toObject()["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            seen[size_t(int((p[0].toDouble() - xlo) / xw * bins)) * bins + size_t(int((p[1].toDouble() - ylo) / yw * bins))] = 1;
+        }
+        int checked = 0;
+        double worstExcess = 0;
+        for (const QJsonValue& v : after[0].toObject()["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            if (seen[size_t(int((p[0].toDouble() - xlo) / xw * bins)) * bins + size_t(int((p[1].toDouble() - ylo) / yw * bins))])
+                continue;
+            if (checked++ % 3 != 0)
+                continue;
+            double lowest = INFINITY;
+            for (int n = 0; n <= 600; ++n)
+                lowest = std::min(lowest, landscape({ p[0].toDouble(), p[1].toDouble(), closed.Lower()[2] + n * (closed.Upper()[2] - closed.Lower()[2]) / 600 }));
+            worstExcess = std::max(worstExcess, (p[2].toDouble() - lowest) / lowest);
+            QVERIFY2(p[2].toDouble() >= lowest * (1 - 1e-6) - 1e-9 || p[2].toDouble() > lowest * 0.99, "a closed cell below the dense scan");
+        }
+        qInfo() << "closed cells of pair (0,1) checked" << checked / 3 << ", worst excess over the dense scan" << worstExcess;
+        QVERIFY(checked > 0);
+        QVERIFY2(worstExcess < 0.02, qPrintable(QString("a closed cell above the dense scan by %1").arg(worstExcess)));
+        delete data;
+    }
+
     // The minima search on a data set with two regions (1:1/2:1, lg beta (3.0, 4.5), noise 0.02, seed 6) whose blind fit stops on a
     // slope (SSE 8.6 times the optimum, no barrier to it: the SSE falls monotonically on the straight line). Each minimum comes with
     // the model to load it.

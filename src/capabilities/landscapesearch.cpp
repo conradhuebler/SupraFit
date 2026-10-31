@@ -551,6 +551,145 @@ bool LandscapeSearch::Execute()
         }
     }
 
+    // Pair surfaces from the points of the walkers: one value per pair of bins, the lowest SSE seen (at most MaxSurfacePairs pairs).
+    // Pairs of two constants are closed exactly above (the grid); for three the walkers leave holes in the surface, and a hole is a
+    // minimum over the third constant, found here by a one-dimensional search at the centre of the cell (cells enclosed by visited
+    // ones in their row or column only, and only as many as `ExactPairCells` allows).
+    std::vector<std::pair<int, int>> pairs;
+    std::vector<std::vector<double>> z;
+    std::vector<int> closedCells;
+    if (recordPoints) {
+        const int bins = settings.bins;
+        for (int j = 1; j < d && int(pairs.size()) < MaxSurfacePairs; ++j)
+            for (int i = 0; i < j && int(pairs.size()) < MaxSurfacePairs; ++i)
+                pairs.emplace_back(i, j);
+        z.assign(pairs.size(), std::vector<double>(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity()));
+        std::vector<int> bin(d);
+        for (const auto& p : m_points) {
+            if (int(p.size()) != d + 1)
+                continue;
+            bool inside = true;
+            for (int k = 0; k < d && inside; ++k) {
+                bin[k] = int((p[k] - m_lower[k]) / (m_upper[k] - m_lower[k]) * bins);
+                inside = bin[k] >= 0 && bin[k] < bins;
+            }
+            if (!inside)
+                continue;
+            for (size_t q = 0; q < pairs.size(); ++q) {
+                double& cell = z[q][size_t(bin[pairs[q].first]) * size_t(bins) + size_t(bin[pairs[q].second])];
+                cell = std::min(cell, p.back());
+            }
+        }
+        if (!exactGrid.empty() && pairs.size() == 1) // two constants: the cells evaluated exactly fill the gaps between the visited ones
+            for (size_t c = 0; c < z[0].size(); ++c)
+                z[0][c] = std::min(z[0][c], exactGrid[c]);
+
+        closedCells.assign(pairs.size(), 0);
+        if (d == 3 && !m_stop && AccessCI(m_controller, "ExactSurface").toBool(true)) {
+            struct Gap {
+                size_t q;
+                int a, b;
+            };
+            std::vector<Gap> gaps;
+            const int maxCells = AccessCI(m_controller, "ExactPairCells").toInt(3000);
+            for (size_t q = 0; q < pairs.size(); ++q)
+                for (int a = 0; a < bins; ++a)
+                    for (int b = 0; b < bins; ++b) {
+                        if (std::isfinite(z[q][size_t(a) * bins + b]))
+                            continue;
+                        bool left = false, right = false, down = false, up = false;
+                        for (int k = 0; k < bins; ++k) {
+                            if (!std::isfinite(z[q][size_t(a) * bins + k]))
+                                continue;
+                            (k < b ? left : right) |= k != b;
+                        }
+                        for (int k = 0; k < bins; ++k) {
+                            if (!std::isfinite(z[q][size_t(k) * bins + b]))
+                                continue;
+                            (k < a ? down : up) |= k != a;
+                        }
+                        if ((left && right) || (down && up))
+                            gaps.push_back(Gap{ q, a, b });
+                    }
+            if (int(gaps.size()) > maxCells)
+                gaps.resize(size_t(maxCells));
+            if (!gaps.empty()) {
+                emit Stage(tr("Closing %1 gaps of the surfaces by a search over the third constant").arg(gaps.size()));
+                const long cellsPerUnit = 10;
+                emit setMaximumSteps(int((long(gaps.size()) + cellsPerUnit - 1) / cellsPerUnit));
+                QElapsedTimer gapClock;
+                gapClock.start();
+                long cellsDone = 0, units = 0;
+                std::vector<double> at(d);
+                for (const Gap& g : gaps) {
+                    if (m_stop)
+                        break;
+                    const int i = pairs[g.q].first, j = pairs[g.q].second, k = 3 - i - j;
+                    at[i] = m_lower[i] + (g.a + 0.5) * (m_upper[i] - m_lower[i]) / bins;
+                    at[j] = m_lower[j] + (g.b + 0.5) * (m_upper[j] - m_lower[j]) / bins;
+                    auto value = [&](double t) {
+                        at[k] = t;
+                        ++exactEvaluations;
+                        const double v = base(at);
+                        return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+                    };
+                    const int coarse = 9;
+                    const double step = (m_upper[k] - m_lower[k]) / (coarse - 1);
+                    int bestIndex = 0;
+                    double best = std::numeric_limits<double>::infinity();
+                    for (int n = 0; n < coarse; ++n) {
+                        const double v = value(m_lower[k] + n * step);
+                        if (v < best) {
+                            best = v;
+                            bestIndex = n;
+                        }
+                    }
+                    if (best <= cut * 1.5) { // refine only where the cell can lie below the wall
+                        double lo = m_lower[k] + std::max(0, bestIndex - 1) * step, hi = m_lower[k] + std::min(coarse - 1, bestIndex + 1) * step;
+                        const double invphi = 0.6180339887498949;
+                        double c1 = hi - invphi * (hi - lo), c2 = lo + invphi * (hi - lo);
+                        double v1 = value(c1), v2 = value(c2);
+                        for (int it = 0; it < 14; ++it) {
+                            if (v1 < v2) {
+                                hi = c2;
+                                c2 = c1;
+                                v2 = v1;
+                                c1 = hi - invphi * (hi - lo);
+                                v1 = value(c1);
+                            } else {
+                                lo = c1;
+                                c1 = c2;
+                                v1 = v2;
+                                c2 = lo + invphi * (hi - lo);
+                                v2 = value(c2);
+                            }
+                        }
+                        best = std::min({ best, v1, v2 });
+                    }
+                    if (best <= cut) {
+                        z[g.q][size_t(g.a) * bins + g.b] = best;
+                        ++closedCells[g.q];
+                        // the profile of each of the two constants is a minimum over the cells of its row or column
+                        if (best < m_merged.profile[i][g.a]) {
+                            m_merged.profile[i][g.a] = best;
+                            m_merged.profileAt[i][g.a] = at[i];
+                        }
+                        if (best < m_merged.profile[j][g.b]) {
+                            m_merged.profile[j][g.b] = best;
+                            m_merged.profileAt[j][g.b] = at[j];
+                        }
+                    }
+                    if (++cellsDone / cellsPerUnit > units) {
+                        ++units;
+                        emit IncrementProgress(int(std::max<qint64>(1, gapClock.elapsed() / units)));
+                        QCoreApplication::processEvents();
+                    }
+                }
+                m_intervals = LandscapeIntervals(m_merged, m_level, m_lower, m_upper);
+            }
+        }
+    }
+
     QJsonObject out;
     out["confidence"] = confidence;
     out["sse_min"] = sseMin;
@@ -623,30 +762,6 @@ bool LandscapeSearch::Execute()
     // visited bin; the result page draws the one that is chosen
     if (recordPoints) {
         const int bins = settings.bins;
-        std::vector<std::pair<int, int>> pairs;
-        for (int j = 1; j < d && int(pairs.size()) < MaxSurfacePairs; ++j)
-            for (int i = 0; i < j && int(pairs.size()) < MaxSurfacePairs; ++i)
-                pairs.emplace_back(i, j);
-        std::vector<std::vector<double>> z(pairs.size(), std::vector<double>(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity()));
-        std::vector<int> bin(d);
-        for (const auto& p : m_points) {
-            if (int(p.size()) != d + 1)
-                continue;
-            bool inside = true;
-            for (int k = 0; k < d && inside; ++k) {
-                bin[k] = int((p[k] - m_lower[k]) / (m_upper[k] - m_lower[k]) * bins);
-                inside = bin[k] >= 0 && bin[k] < bins;
-            }
-            if (!inside)
-                continue;
-            for (size_t q = 0; q < pairs.size(); ++q) {
-                double& cell = z[q][size_t(bin[pairs[q].first]) * size_t(bins) + size_t(bin[pairs[q].second])];
-                cell = std::min(cell, p.back());
-            }
-        }
-        if (!exactGrid.empty() && pairs.size() == 1) // two constants: the cells evaluated exactly fill the gaps between the visited ones
-            for (size_t c = 0; c < z[0].size(); ++c)
-                z[0][c] = std::min(z[0][c], exactGrid[c]);
         QJsonArray surfaces;
         for (size_t q = 0; q < pairs.size(); ++q) {
             const int i = pairs[q].first, j = pairs[q].second;
@@ -668,6 +783,7 @@ bool LandscapeSearch::Execute()
             surface["bins"] = bins;
             surface["exact"] = exact && !exactGrid.empty(); // unvisited cells in the explored region were evaluated, no gaps
             surface["exact_evaluations"] = double(exactEvaluations);
+            surface["closed_cells"] = closedCells[q];
             surface["points"] = points;
             surfaces << surface;
         }
