@@ -143,6 +143,7 @@ private:
     // All model references are WEAK to prevent circular dependencies and enable proper cleanup
     QPointer<const DataTable> m_table;
     QList<QPointer<QXYSeries>> m_stored_series;
+    QList<bool> m_before_single; ///< visibility of the series before a single plot, empty without one
     QWeakPointer<DataClass> m_stored_data;   // WEAK: Allow model to be destroyed
     QWeakPointer<DataClass> m_stored_model;  // WEAK: Allow model to be destroyed  
     QWeakPointer<DataClass> m_working;       // WEAK: Allow model to be destroyed

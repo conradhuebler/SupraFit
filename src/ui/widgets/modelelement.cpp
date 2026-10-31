@@ -128,42 +128,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
 
-    // Claude Generated: Reactive binding to ChartWrapper state management
-    // Initialize checkbox state from ChartWrapper instead of hardcoded default
-    if (m_charts.data_wrapper) {
-        bool initialVisible = m_charts.data_wrapper->isSeriesVisible(m_no);
-        m_include->setChecked(initialVisible);
-    } else {
-        m_include->setChecked(true); // Fallback to visible
-    }
-
-    // === REACTIVE BINDING - NO MORE TIMERS ===
-
-    // ChartWrapper → UI: Automatic checkbox updates
-    if (m_charts.data_wrapper) {
-        connect(m_charts.data_wrapper.data(), &ChartWrapper::seriesVisibilityChanged,
-            this, [this](int index, bool visible) {
-                if (index == m_no) {
-                    // Block signals to prevent recursion
-                    m_include->blockSignals(true);
-                    m_include->setChecked(visible);
-                    m_include->blockSignals(false);
-
-                    // Update local series visibility to match
-                    DisableSignal(visible ? 1 : 0);
-                }
-            });
-    }
-
-    // UI → ChartWrapper: Immediate state updates
-    connect(m_include, &QCheckBox::toggled, this, [this](bool checked) {
-        if (m_charts.data_wrapper) {
-            m_charts.data_wrapper->setSeriesVisible(m_no, checked);
-        } else {
-            // Fallback to old behavior if no ChartWrapper
-            toggleActive();
-        }
-    });
+    // "Include" is a property of THIS model: whether the series takes part in its fit (ActiveSignals), and with it whether this model draws the curve.
+    // It must not touch the data series or the curves of the other models (those have the same series index): the data series have their own
+    // controls on the data page, and every model its own ones.
+    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals(m_no));
+    connect(m_include, &QCheckBox::clicked, this, &ModelElement::toggleActive);
 
     head->addWidget(m_include);
 
@@ -254,6 +223,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(showLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(showLine(int)));
+    connect(m_show, &QCheckBox::stateChanged, this, [this]() { emit ShownChanged(); });
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     toggleActive();
     Update();
@@ -293,6 +263,11 @@ void ModelElement::DisableSignal(int state)
 bool ModelElement::Include() const
 {
     return m_include->isChecked();
+}
+
+bool ModelElement::Shown() const
+{
+    return m_show->isChecked();
 }
 
 QVector<double> ModelElement::D() const
@@ -353,25 +328,17 @@ void ModelElement::chooseColor()
     ChangeColor(color);
 }
 
+/*! \brief Master switch of the model: shows or hides the curves of this model (signal and error) of every series that takes part in its fit.
+ * The data series and the other models are not touched. */
 void ModelElement::ToggleSeries(int i)
 {
-    // Claude Generated: Use ChartWrapper state management instead of direct setVisible() calls
-    if (m_charts.data_wrapper) {
-        m_charts.data_wrapper->setSeriesVisible(m_no, i != 0);
-    }
-    // Update local state to match
-    m_show->setChecked(i);
+    m_show->setChecked(i != 0 && m_include->isChecked());
 }
 
 void ModelElement::togglePlot()
 {
-    m_show->setChecked(true);
-
-    // Claude Generated: Use ChartWrapper state management instead of direct setVisible() calls
-    if (m_charts.data_wrapper) {
-        m_charts.data_wrapper->setSeriesVisible(m_no, true);
-    }
-
+    // "Single Plot": only this series in the data chart and in the model and error charts of every model; switched off, every series is
+    // back as it was (the wrappers remember it)
     if (m_toggle->isChecked())
         m_charts.data_wrapper->showSeries(m_no);
     else

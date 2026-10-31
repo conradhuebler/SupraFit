@@ -359,18 +359,24 @@ int ChartWrapper::seriesCount() const
     return m_stored_series.size();
 }
 
+/*! \brief "Single plot": only series \p i is visible, the others are hidden; -1 puts every series back as it was before. Claude Generated.
+ *
+ * The visibility before the first single plot is remembered, so that a series (or a model) the user had hidden stays hidden afterwards. The signal is
+ * emitted for the wrappers of the models that follow the data wrapper (`ChartWidget::addModel`).
+ */
 void ChartWrapper::showSeries(int i)
 {
-    // Claude Generated: Simplified showSeries - direct visibility control
-    if (i == -1) {
-        // Apply visibility to all series
-        for (int j = 0; j < m_stored_series.size(); ++j) {
-            if (m_stored_series[j] && !m_stored_series[j]->isVisible()) {
-                m_stored_series[j]->setVisible(true);
-            }
+    if (i >= 0 && i < m_stored_series.size()) {
+        if (m_before_single.isEmpty()) {
+            for (int j = 0; j < m_stored_series.size(); ++j)
+                m_before_single << (m_stored_series[j] && m_stored_series[j]->isVisible());
         }
-    } else if (i >= 0 && i < m_stored_series.size()) {
-        setSeriesVisible(i, true);
+        for (int j = 0; j < m_stored_series.size(); ++j)
+            setSeriesVisible(j, j == i);
+    } else if (i == -1 && !m_before_single.isEmpty()) {
+        for (int j = 0; j < m_stored_series.size() && j < m_before_single.size(); ++j)
+            setSeriesVisible(j, m_before_single[j]);
+        m_before_single.clear();
     }
 
     emit ShowSeries(i);
