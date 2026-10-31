@@ -136,6 +136,7 @@ public slots:
     void UpdateModel();
     void MakeSeries();
     void showSeries(int i);
+    void followSeries(int i);
     void SetBlocked(int blocked);
 
 private:
@@ -143,7 +144,9 @@ private:
     // All model references are WEAK to prevent circular dependencies and enable proper cleanup
     QPointer<const DataTable> m_table;
     QList<QPointer<QXYSeries>> m_stored_series;
-    QList<bool> m_before_single; ///< visibility of the series before a single plot, empty without one
+    int m_single = -1; ///< the series of a running single plot, -1 without one
+    QList<bool> m_wanted; ///< during a single plot: what the user wants shown (a series or a model he hid stays hidden)
+    void ApplySingle(int i, bool reveal);
     QWeakPointer<DataClass> m_stored_data;   // WEAK: Allow model to be destroyed
     QWeakPointer<DataClass> m_stored_model;  // WEAK: Allow model to be destroyed  
     QWeakPointer<DataClass> m_working;       // WEAK: Allow model to be destroyed
