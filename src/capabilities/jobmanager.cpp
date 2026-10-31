@@ -18,6 +18,7 @@
  */
 
 #include "globalsearch.h"
+#include "landscapesearch.h"
 #include "modelcomparison.h"
 #include "montecarlostatistics.h"
 #include "resampleanalyse.h"
@@ -41,6 +42,7 @@ JobManager::JobManager(QObject* parent)
     connect(this, SIGNAL(Interrupt()), m_montecarlo_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_montecarlo_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_montecarlo_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_montecarlo_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
     connect(m_montecarlo_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_gridsearch_handler = new WeakenedGridSearch(this);
@@ -48,24 +50,35 @@ JobManager::JobManager(QObject* parent)
     connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_gridsearch_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_gridsearch_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_gridsearch_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_resample_handler = new ResampleAnalyse();
     connect(this, SIGNAL(Interrupt()), m_resample_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_resample_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_resample_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_resample_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_resample_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_modelcomparison_handler = new ModelComparison(this);
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_modelcomparison_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_modelcomparison_handler, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     m_globalsearch = new GlobalSearch(this);
     connect(this, SIGNAL(Interrupt()), m_globalsearch, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_globalsearch, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_globalsearch, &AbstractSearchClass::Stage, this, &JobManager::Stage);
+
+    m_landscape = new LandscapeSearch(this);
+    connect(this, SIGNAL(Interrupt()), m_landscape, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_landscape, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_landscape, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
+    connect(m_landscape, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_landscape, &AbstractSearchClass::Stage, this, &JobManager::Stage);
 
     connect(this, &JobManager::Interrupt, this, [this]() {
         m_interrupt = true;
@@ -115,6 +128,17 @@ void JobManager::RunJobs()
         case SupraFit::Method::GlobalSearch:
             result = RunGlobalSearch(object);
             break;
+
+        case SupraFit::Method::LandscapeSampling:
+            result = RunLandscapeSearch(object);
+            break;
+        }
+        if (result.isEmpty()) { // nothing to store, e.g. a model the method cannot handle (the reason went out as a Message)
+            start++;
+            emit finished(start, m_jobs.size(), 0);
+            if (m_interrupt)
+                break;
+            continue;
         }
         start++;
         t1 = QDateTime::currentMSecsSinceEpoch();
@@ -231,6 +255,19 @@ QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
     m_last_multicore = m_globalsearch->MultiCoreTime();
 
     m_globalsearch->clear();
+    return result;
+}
+
+QJsonObject JobManager::RunLandscapeSearch(const QJsonObject& job)
+{
+    m_landscape->setController(job);
+    m_landscape->setModel(m_model);
+    const bool ok = m_landscape->Run();
+
+    QJsonObject result = ok ? m_landscape->Result() : QJsonObject();
+    m_last_multicore = m_landscape->MultiCoreTime();
+
+    m_landscape->clear();
     return result;
 }
 

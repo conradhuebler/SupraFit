@@ -150,7 +150,8 @@ enum Method {
     CrossValidation = 4,
     Reduction = 5,
     FastConfidence = 6,
-    GlobalSearch = 7
+    GlobalSearch = 7,
+    LandscapeSampling = 8
 };
 
 enum Model {
@@ -227,6 +228,10 @@ inline QString Method2Name(SupraFit::Method type)
 
     case SupraFit::Method::GlobalSearch:
         return ("Global Search");
+        break;
+
+    case SupraFit::Method::LandscapeSampling:
+        return ("Landscape Sampling");
         break;
     }
     return QString();

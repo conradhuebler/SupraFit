@@ -50,6 +50,16 @@ Core capabilities providing advanced analysis, search, and data generation funct
   - X/Y series generation for parameter-response mapping
   - Cutoff-based parameter importance ranking
 
+- **landscapesampler.cpp/h**: Well-tempered, metadynamics-like walker on a plain function f(theta) in a box (SSE as energy)
+  - Metropolis or Langevin (finite-difference gradient), both preconditioned with the chain covariance and with the step regulated; Langevin with Metropolis adjustment (`langevinCorrection`, MALA) samples exactly
+  - `addListener` records the accepted points (for 2D profiles) without per-step cost when off
+  - Wall at `sseCut`; stop by patience once the bias has converged; every control (`minSteps`, `patience`, `minHillFraction`, `hillWidth`, ...) is a setting
+  - `LandscapeConfidenceLevel` / `LandscapeIntervals`: F-test level and confidence stretches from the profile (edges marked Crossing/Box/Unsampled; needs `sseCut` above the level)
+  - Metropolis proposals adapt to the chain covariance (`adaptive`); `LandscapeResult::Merge` joins walkers
+  - Result: profile per variable, minimum candidates, free-energy estimate; no Qt/model dependency; plan: [roadmap/landscape_sampling.md](../../roadmap/landscape_sampling.md)
+
+- **landscapesearch.cpp/h**: `ModelLandscape` (SSE of a VarPro model over its enabled globals) and `LandscapeSearch` (parallel walkers on model clones, F-test intervals as JSON); `SupraFit::Method::LandscapeSampling` (8), run by `JobManager` (`LandscapeConfigBlock`), stored in `ModelStatisticsStore`; minima refitted with the minimiser; `Surface` records the walk and gives `surfaces`, the 2D profile of every pair (at most six); `Mode` "Minima" looks for other minima (wall = `SearchWall` x SSE, refitted minima merged by basin identity, each with its model); two constants: `ExactSurface` evaluates the explored region exactly (surface and profiles without gaps); progress: `Stage(text, restart)` + `setMaximumSteps`/`IncrementProgress` per stage (the waiting thread reads the walkers' counters), refits are `Minimizer::setQuiet`
+
 - **abstractsearchclass.cpp/h**: Base class for all search/analysis implementations
   - Common interface for parallel execution
   - Thread-safe result collection

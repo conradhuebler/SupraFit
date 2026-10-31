@@ -40,6 +40,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QRadioButton>
@@ -66,12 +67,14 @@
 #include "src/global.h"
 
 #include "src/capabilities/jobmanager.h"
+#include "src/core/minimizer.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
+#include "src/ui/widgets/scanwidget.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/addmodelbar.h"
@@ -80,6 +83,7 @@
 #include "src/ui/mainwindow/modelcatalog.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelusage.h"
+#include "src/ui/widgets/analysisparts.h"
 #include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/preparewidget.h"
@@ -128,6 +132,61 @@ public:
         emit ChartUpdated(chart);
     }
 };
+
+
+// Widgets of a dialog that lie on top of each other (the label "Choose parameter to be tested:" sat on a check box of the Model
+// Comparison). Only what is on screen counts: what a folded section or a scroll area clips away has an empty visible region.
+static QStringList overlappingWidgets(QWidget* root)
+{
+    QList<QWidget*> leaves;
+    for (QWidget* w : root->findChildren<QWidget*>()) {
+        if (!w->isVisibleTo(root) || w->visibleRegion().isEmpty())
+            continue;
+        const bool leaf = qobject_cast<QLabel*>(w) || qobject_cast<QAbstractButton*>(w) || qobject_cast<QAbstractSpinBox*>(w) || qobject_cast<QComboBox*>(w);
+        const QWidget* parent = w->parentWidget();
+        if (leaf && !qobject_cast<const QAbstractSpinBox*>(parent) && !qobject_cast<const QComboBox*>(parent))
+            leaves << w;
+    }
+    auto text = [](QWidget* w) {
+        if (auto* l = qobject_cast<QLabel*>(w))
+            return QStringLiteral("label \"%1\"").arg(l->text().left(40));
+        if (auto* b = qobject_cast<QAbstractButton*>(w))
+            return QStringLiteral("button \"%1\"").arg(b->text().left(40));
+        return QString::fromLatin1(w->metaObject()->className());
+    };
+    QStringList found;
+    for (int a = 0; a < leaves.size(); ++a)
+        for (int b = a + 1; b < leaves.size(); ++b) {
+            if (leaves[a]->isAncestorOf(leaves[b]) || leaves[b]->isAncestorOf(leaves[a]))
+                continue;
+            const QRect ra(leaves[a]->mapTo(root, QPoint(0, 0)), leaves[a]->size()), rb(leaves[b]->mapTo(root, QPoint(0, 0)), leaves[b]->size());
+            const QRect common = ra.intersected(rb);
+            if (common.width() > 2 && common.height() > 2)
+                found << QStringLiteral("%1 over %2").arg(text(leaves[a]), text(leaves[b]));
+        }
+    return found;
+}
+
+// A fitted two-constant model on the data of the fixture, for the tests of the analysis dialogs.
+static QSharedPointer<AbstractModel> twoConstantModel(DataClass* data)
+{
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, data);
+    QJsonObject reactions, definition;
+    reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+    definition["Reactions"] = reactions;
+    model->DefineModel(definition);
+    QJsonObject cfg = model->getOptimizerConfig();
+    cfg["FitSolver"] = QStringLiteral("VarPro");
+    model->setOptimizerConfig(cfg);
+    model->InitialGuess();
+    model->setGlobalParameter(3.0, 0);
+    model->setGlobalParameter(5.4, 1);
+    Minimizer minimizer(false);
+    minimizer.setModel(model);
+    minimizer.Minimize();
+    model->Calculate();
+    return model;
+}
 
 class TestModelWidgetLayout : public QObject {
     Q_OBJECT
@@ -547,6 +606,744 @@ private slots:
     }
     // Finished analyses are listed in the Statistics list next to the analyses to start, can be looked at, and
     // a result can be taken out of the pane into a window of its own; closing that window puts it back. Claude Generated.
+    // Landscape sampling is an analysis of the Statistics page: a tab to start it (only where the model can do it), a
+    // finished run in the list of results, and the result page with the intervals and the profile chart.
+    void landscapeSamplingIsStartedListedAndShown()
+    {
+        QSettings().remove(QStringLiteral("model"));
+
+        // a model without variable projection: the tab is there, the button is not usable
+        {
+            Charts charts = m_chart->addModel(m_model);
+            ModelWidget widget(m_model, charts);
+            widget.resize(1100, 700);
+            widget.show();
+            QTest::qWaitForWindowExposed(&widget);
+            StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+            QVERIFY(dialog);
+            QVERIFY(dialog->TabTitles().contains(QStringLiteral("Landscape Sampling")));
+            QVERIFY(!m_model->SupportsVarPro());
+            QPushButton* sample = nullptr;
+            for (QPushButton* b : dialog->findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("Sample"))
+                    sample = b;
+            QVERIFY(sample);
+            QVERIFY2(!sample->isEnabled(), "a model without variable projection must not offer to sample");
+        }
+
+        // a fitted reaction model: sample, list, show
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, m_data.data());
+        QJsonObject reactions, definition;
+        reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        definition["Reactions"] = reactions;
+        model->DefineModel(definition);
+        QJsonObject cfg = model->getOptimizerConfig();
+        cfg["FitSolver"] = QStringLiteral("VarPro");
+        model->setOptimizerConfig(cfg);
+        model->InitialGuess();
+        model->setGlobalParameter(3.0, 0);
+        model->setGlobalParameter(5.4, 1);
+        Minimizer minimizer(false);
+        minimizer.setModel(model);
+        minimizer.Minimize();
+        model->Calculate();
+        QVERIFY(model->SupportsVarPro());
+        QCOMPARE(model->GlobalParameterSize(), 2);
+
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QPushButton* sample = nullptr;
+        for (QPushButton* b : dialog->findChildren<QPushButton*>())
+            if (b->text() == QStringLiteral("Sample"))
+                sample = b;
+        QVERIFY(sample);
+        QVERIFY(sample->isEnabled());
+        {   // the settings page as the user sees it: a few fields, the rest behind "..more..", Langevin's only for Langevin
+            QSettings().remove(QStringLiteral("ui/more/landscape_more"));
+            QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Statistics page (the Results button) ...
+            QCoreApplication::processEvents();
+            dialog->setCurrentTab(dialog->TabTitles().indexOf(QStringLiteral("Landscape Sampling"))); // ... at the analysis to start
+            QCoreApplication::processEvents();
+            QCheckBox* surfaces = nullptr;
+            QToolButton* more = nullptr;
+            QCheckBox* correction = nullptr;
+            for (QCheckBox* c : dialog->findChildren<QCheckBox*>()) {
+                if (c->text() == QStringLiteral("2D surfaces of the pairs"))
+                    surfaces = c;
+                if (c->text() == QStringLiteral("Metropolis correction"))
+                    correction = c;
+            }
+            for (QToolButton* b : dialog->findChildren<QToolButton*>())
+                if (b->text() == QStringLiteral("..more.."))
+                    more = b;
+            QWidget* folded = dialog->findChild<QWidget*>(QStringLiteral("landscape_more"));
+            QVERIFY(surfaces && more && correction && folded);
+            QVERIFY2(surfaces->isChecked() && surfaces->isEnabled(), "the pair surfaces are on for two constants");
+            QCOMPARE(folded->maximumHeight(), 0); // folded away
+            QVERIFY2(!correction->isVisibleTo(dialog), "Langevin's settings are shown with Metropolis chosen");
+            const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab.png").arg(renderDir));
+            more->click();
+            QCoreApplication::processEvents();
+            QTRY_COMPARE_WITH_TIMEOUT(folded->maximumHeight(), QWIDGETSIZE_MAX, 3000); // the fold animation has finished
+            QComboBox* sampler = nullptr;
+            for (QComboBox* c : dialog->findChildren<QComboBox*>())
+                if (c->findText(QStringLiteral("Langevin")) >= 0)
+                    sampler = c;
+            QVERIFY(sampler);
+            sampler->setCurrentIndex(sampler->findText(QStringLiteral("Langevin")));
+            QCoreApplication::processEvents();
+            QVERIFY2(correction->isVisibleTo(dialog), "Langevin's settings are not shown with Langevin chosen");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab_more.png").arg(renderDir));
+            sampler->setCurrentIndex(0);
+            // the task: a search asks for a wall and not for a confidence
+            QComboBox* task = nullptr;
+            for (QComboBox* c : dialog->findChildren<QComboBox*>())
+                if (c->findText(QStringLiteral("Find other minima")) >= 0)
+                    task = c;
+            QVERIFY2(task, "no choice of the task");
+            QCOMPARE(dialog->RunLandscape()["Mode"].toString(), QStringLiteral("Confidence"));
+            task->setCurrentIndex(task->findText(QStringLiteral("Find other minima")));
+            QCoreApplication::processEvents();
+            const QJsonObject searching = dialog->RunLandscape();
+            QCOMPARE(searching["Mode"].toString(), QStringLiteral("Minima"));
+            QCOMPARE(searching["SearchWall"].toDouble(), 10.0);
+            QCOMPARE(searching["Polish"].toInt(), 10);
+            for (QLabel* l : dialog->findChildren<QLabel*>()) {
+                if (l->text() == QStringLiteral("Wall (x SSE of the fit):"))
+                    QVERIFY(l->isVisibleTo(dialog));
+                if (l->text() == QStringLiteral("Confidence:") || l->text() == QStringLiteral("Wall height:"))
+                    QVERIFY2(!l->isVisibleTo(dialog), qPrintable(l->text() + " is shown for a search"));
+            }
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/statistic_landscape_tab_search.png").arg(renderDir));
+            task->setCurrentIndex(0);
+            QCoreApplication::processEvents();
+            QCOMPARE(dialog->RunLandscape()["Mode"].toString(), QStringLiteral("Confidence"));
+            more->click(); // fold again, the state is a setting
+            QTRY_COMPARE(folded->maximumHeight(), 0);
+            QSettings().remove(QStringLiteral("ui/more/landscape_more"));
+        }
+        const QJsonObject controller = dialog->RunLandscape();
+        QCOMPARE(AccessCI(controller, "Method").toInt(), int(SupraFit::Method::LandscapeSampling));
+
+        QJsonObject job = LandscapeConfigBlock;
+        job["Walkers"] = 2;
+        job["MaxSteps"] = 20000; // the height lines need whole 2x2 blocks of visited bins: a short walk draws none
+        job["Polish"] = 2;
+        job["Surface"] = true;
+        JobManager jobs;
+        jobs.setModel(model);
+        jobs.AddSingleJob(job);
+        jobs.RunJobs();
+        QVERIFY2(model->LandscapeSize() >= 1, "the sampling left no result");
+        QCoreApplication::processEvents();
+
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Results button
+        QCoreApplication::processEvents();
+
+        QListWidget* list = nullptr;
+        for (QListWidget* l : widget.findChildren<QListWidget*>())
+            if (l->isVisible() && l->count() > 0) {
+                list = l;
+                break;
+            }
+        QVERIFY(list);
+        QStringList titles;
+        for (int i = 0; i < list->count(); ++i)
+            titles << list->item(i)->text();
+        QVERIFY2(titles.contains(QStringLiteral("Landscape Sampling")), qPrintable(titles.join(", "))); // to start
+        QVERIFY2(titles.contains(QStringLiteral("Landscape Sampling #1")), qPrintable(titles.join(", "))); // finished
+
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QVERIFY2(results->isVisible(), "the result is not shown on the page");
+        bool text = false;
+        for (QLabel* l : results->findChildren<QLabel*>())
+            if (l->isVisible() && l->text().contains(QStringLiteral("Landscape sampling")) && l->text().contains(QStringLiteral("<table>")))
+                text = true;
+        QVERIFY2(text, "the intervals are not written on the result page");
+
+        // one chart, one choice above it: all profiles, one per constant, one surface per pair
+        QWidget* chart = nullptr;
+        for (QWidget* w : results->findChildren<QWidget*>())
+            if (w->isVisible() && w->objectName() == QStringLiteral("landscapechart"))
+                chart = w;
+        QVERIFY2(chart, "no chart on the result page");
+        int chartCount = 0;
+        for (QWidget* w : results->findChildren<QWidget*>())
+            if (w->objectName() == QStringLiteral("landscapechart") || w->objectName() == QStringLiteral("landscapesurface"))
+                ++chartCount;
+        QCOMPARE(chartCount, 1); // not two plots over each other
+        QComboBox* choice = results->findChild<QComboBox*>(QStringLiteral("landscapeview"));
+        QVERIFY2(choice, "no choice above the chart of a two-constant result");
+        QStringList entries;
+        for (int i = 0; i < choice->count(); ++i)
+            entries << choice->itemText(i);
+        QCOMPARE(choice->count(), 4); // Profiles, Profile: A, Profile: B, Surface: A x B
+        QVERIFY2(entries[0] == QStringLiteral("Profiles") && entries[1].startsWith(QStringLiteral("Profile: ")) && entries.last().startsWith(QStringLiteral("Surface: ")),
+            qPrintable(entries.join(" | ")));
+        auto listRows = [chart]() {
+            int rows = 0;
+            for (QListWidget* l : chart->findChildren<QListWidget*>())
+                rows = qMax(rows, l->count());
+            return rows;
+        };
+        QCOMPARE(listRows(), 3); // the two profiles and the limit of the confidence region
+        choice->setCurrentIndex(1); // one profile: the curve and the limit
+        QCoreApplication::processEvents();
+        QCOMPARE(listRows(), 2);
+        choice->setCurrentIndex(3); // the surface: height lines and the fit
+        QCoreApplication::processEvents();
+        QVERIFY2(listRows() >= 2, qPrintable(QString("%1 entries for the surface").arg(listRows()))); // height lines and the fit
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_surface.png").arg(renderDir));
+        choice->setCurrentIndex(0);
+        QCoreApplication::processEvents();
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_page.png").arg(renderDir));
+
+        model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+        QCOMPARE(model->LandscapeSize(), 0);
+    }
+
+    // A result with three constants offers every pair: the choice lists Profiles, a profile per constant and a surface per pair,
+    // one chart changes with it, and the height lines of a correlated ellipse are drawn closed. The result is synthetic (an
+    // exact quadratic form), so what is drawn can be compared with what is known.
+    void landscapeResultOffersEveryPair()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        const QStringList names = { QStringLiteral("lg K1"), QStringLiteral("lg K2"), QStringLiteral("lg K3") };
+        const double centre[3] = { 3.0, 4.5, 5.5 };
+        QJsonArray variables, surfaces;
+        for (int i = 0; i < 3; ++i) {
+            QJsonObject v;
+            v["index"] = i;
+            v["name"] = names[i];
+            v["value"] = centre[i];
+            v["box_lower"] = centre[i] - 1.5;
+            v["box_upper"] = centre[i] + 1.5;
+            QJsonArray profile;
+            for (int k = 0; k < 60; ++k) {
+                const double x = centre[i] - 1.5 + (k + 0.5) * 3.0 / 60;
+                profile << QJsonArray({ x, 1.0 + 4.0 * (x - centre[i]) * (x - centre[i]) });
+            }
+            v["profile"] = profile;
+            variables << v;
+        }
+        const int pairs[3][2] = { { 0, 1 }, { 0, 2 }, { 1, 2 } };
+        for (const auto& pair : pairs) {
+            QJsonArray points;
+            for (int a = 0; a < 60; ++a)
+                for (int b = 0; b < 60; ++b) {
+                    const double x = centre[pair[0]] - 1.5 + (a + 0.5) * 3.0 / 60, y = centre[pair[1]] - 1.5 + (b + 0.5) * 3.0 / 60;
+                    const double dx = x - centre[pair[0]], dy = y - centre[pair[1]];
+                    const double sse = 1.0 + 6.0 * dx * dx + 6.0 * dy * dy - 5.0 * dx * dy; // a tilted ellipse
+                    if (sse <= 2.6) // what the walkers could reach below the wall
+                        points << QJsonArray({ x, y, sse });
+                }
+            QJsonObject s;
+            s["x"] = pair[0];
+            s["y"] = pair[1];
+            s["bins"] = 60;
+            s["points"] = points;
+            surfaces << s;
+        }
+        QJsonObject result;
+        result["variables"] = variables;
+        result["surfaces"] = surfaces;
+        result["sse_min"] = 1.0;
+        result["level"] = 1.3;
+        result["wall"] = 2.6;
+        result["contour_max"] = 2.6;
+        result["confidence"] = 95.0;
+        QJsonObject settings;
+        settings["bins"] = 60;
+        result["settings"] = settings;
+        QJsonObject controller;
+        controller["Method"] = int(SupraFit::Method::LandscapeSampling);
+        controller["timestamp"] = 1234567.0;
+        controller["title"] = QStringLiteral("synthetic");
+        QJsonObject statistic;
+        statistic["controller"] = controller;
+        statistic["0"] = result;
+        m_model->UpdateStatistic(statistic);
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the Results button: the page of the newest result
+        QCoreApplication::processEvents();
+        QVERIFY(results->ShowEntry(SupraFit::Method::LandscapeSampling, 0));
+        QCoreApplication::processEvents();
+        QVERIFY2(results->isVisible(), "the result is not shown on the page");
+
+        QComboBox* choice = results->findChild<QComboBox*>(QStringLiteral("landscapeview"));
+        QVERIFY2(choice, "no choice above the chart");
+        QStringList entries;
+        for (int i = 0; i < choice->count(); ++i)
+            entries << choice->itemText(i);
+        QCOMPARE(entries.size(), 7); // Profiles, three profiles, three surfaces
+        QCOMPARE(entries[0], QStringLiteral("Profiles"));
+        QCOMPARE(entries[4], QStringLiteral("Surface: lg K1 \u00d7 lg K2"));
+        QCOMPARE(entries[5], QStringLiteral("Surface: lg K1 \u00d7 lg K3"));
+        QCOMPARE(entries[6], QStringLiteral("Surface: lg K2 \u00d7 lg K3"));
+
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        auto rows = [&widget]() {
+            int count = 0;
+            for (QWidget* w : widget.findChildren<QWidget*>(QStringLiteral("landscapechart")))
+                for (QListWidget* l : w->findChildren<QListWidget*>())
+                    count = qMax(count, l->count());
+            return count;
+        };
+        QCOMPARE(rows(), 4); // three profiles and the limit
+        for (int s = 4; s < 7; ++s) {
+            choice->setCurrentIndex(s);
+            QCoreApplication::processEvents();
+            // the level lines are the limit (1.3) and ten steps up to 2.6: all of them exist in this ellipse, plus the fit
+            QVERIFY2(rows() >= 8, qPrintable(QString("surface %1: %2 entries").arg(s).arg(rows())));
+            if (!renderDir.isEmpty() && s == 4)
+                widget.grab().save(QStringLiteral("%1/modelwidget_landscape_pair.png").arg(renderDir));
+        }
+        m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // The result of a minima search lists its minima for the project: the choice shows them, "Load into model" and "Add as model" hand
+    // the chosen minimum's model over (the signals the Monte Carlo and global-search results use), the task of the settings page
+    // sets the mode of the job.
+    void landscapeMinimaCanBeLoaded()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QJsonObject variable;
+        variable["index"] = 0;
+        variable["name"] = QStringLiteral("lgK");
+        variable["value"] = 4.0;
+        variable["box_lower"] = -2.0;
+        variable["box_upper"] = 10.0;
+        QJsonArray profile;
+        for (int k = 0; k < 60; ++k) {
+            const double x = -2.0 + (k + 0.5) * 12.0 / 60;
+            profile << QJsonArray({ x, 1.0 + 0.2 * (x - 4.0) * (x - 4.0) });
+        }
+        variable["profile"] = profile;
+
+        const QJsonObject exported = m_model->ExportModel(false, false);
+        QVERIFY(!exported.isEmpty());
+        QJsonArray minima;
+        const double sse[3] = { 0.9, 1.0, 3.5 };
+        const double at[3] = { 5.5, 4.0, 1.0 };
+        for (int k = 0; k < 3; ++k) {
+            QJsonObject m;
+            m["sse"] = sse[k];
+            m["relative_sse"] = sse[k];
+            m["within_level"] = k < 2;
+            m["is_fit"] = k == 1;
+            m["parameters"] = QJsonArray({ at[k] });
+            m["model"] = exported;
+            minima << m;
+        }
+        QJsonObject result;
+        result["mode"] = QStringLiteral("Minima");
+        result["variables"] = QJsonArray({ variable });
+        result["minima"] = minima;
+        result["sse_min"] = 1.0;
+        result["level"] = 1.3;
+        result["wall"] = 10.0;
+        result["contour_max"] = 10.0;
+        result["contour_log"] = true;
+        result["confidence"] = 95.0;
+        QJsonObject controller;
+        controller["Method"] = int(SupraFit::Method::LandscapeSampling);
+        controller["timestamp"] = 7654321.0;
+        controller["title"] = QStringLiteral("synthetic minima");
+        QJsonObject statistic;
+        statistic["controller"] = controller;
+        statistic["0"] = result;
+        m_model->UpdateStatistic(statistic);
+
+        Charts charts = m_chart->addModel(m_model);
+        ModelWidget widget(m_model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        ResultsDialog* results = widget.findChild<ResultsDialog*>();
+        QVERIFY(results);
+        QSignalSpy loaded(results, &ResultsDialog::LoadModel), added(results, &ResultsDialog::AddModel);
+        QMetaObject::invokeMethod(&widget, "TogglePlot");
+        QCoreApplication::processEvents();
+        QVERIFY(results->ShowEntry(SupraFit::Method::LandscapeSampling, 0));
+        QCoreApplication::processEvents();
+
+        QComboBox* which = results->findChild<QComboBox*>(QStringLiteral("landscapeminima"));
+        QVERIFY2(which, "no list of the minima on the result page");
+        QCOMPARE(which->count(), 3);
+        QVERIFY2(which->itemText(0).contains(QStringLiteral("deeper than the fit")), qPrintable(which->itemText(0)));
+        QVERIFY2(which->itemText(1).contains(QStringLiteral("contains the fit")), qPrintable(which->itemText(1)));
+        QPushButton* load = results->findChild<QPushButton*>(QStringLiteral("landscapeminima_load"));
+        QPushButton* add = results->findChild<QPushButton*>(QStringLiteral("landscapeminima_add"));
+        QVERIFY(load && add);
+        // one constant: no choice of what to show, only the minima row
+        QVERIFY(!results->findChild<QComboBox*>(QStringLiteral("landscapeview")));
+        which->setCurrentIndex(2);
+        load->click();
+        add->click();
+        QCOMPARE(loaded.count(), 1);
+        QCOMPARE(added.count(), 1);
+        QVERIFY2(!loaded.first().first().toJsonObject().isEmpty(), "Load handed over an empty model");
+        QCOMPARE(loaded.first().first().toJsonObject(), exported);
+        QCOMPARE(added.first().first().toJsonObject(), exported);
+
+        const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+        if (!renderDir.isEmpty())
+            widget.grab().save(QStringLiteral("%1/modelwidget_landscape_minima.png").arg(renderDir));
+        m_model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // A landscape job through the real pane: the progress dialog shows what happens (the stage text, a bar that counts and ends at its
+    // maximum), the log gets one line for the whole analysis and none for the refits, and the stage texts are not messages.
+    void landscapeJobShowsItsStagesAndStaysQuiet()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::nmr_any, m_data.data());
+        QJsonObject reactions, definition;
+        reactions["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+        definition["Reactions"] = reactions;
+        model->DefineModel(definition);
+        QJsonObject cfg = model->getOptimizerConfig();
+        cfg["FitSolver"] = QStringLiteral("VarPro");
+        model->setOptimizerConfig(cfg);
+        model->InitialGuess();
+        model->setGlobalParameter(3.0, 0);
+        model->setGlobalParameter(5.4, 1);
+        Minimizer minimizer(false);
+        minimizer.setModel(model);
+        minimizer.Minimize();
+        model->Calculate();
+
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 700);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        QCoreApplication::processEvents();
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QProgressBar* bar = dialog->findChild<QProgressBar*>();
+        QVERIFY(bar);
+        QMetaObject::invokeMethod(&widget, "TogglePlot"); // the user is on the Statistics page when the job runs
+        QCoreApplication::processEvents();
+        dialog->setCurrentTab(dialog->TabTitles().indexOf(QStringLiteral("Landscape Sampling")));
+        QCoreApplication::processEvents();
+
+        QSignalSpy logged(model->Info(), &DataClassPrivateObject::Message), warned(model->Info(), &DataClassPrivateObject::Warning);
+        QStringList stagesSeen, labelsSeen;
+        bool barWithinMaximum = true;
+        int samplingMaximum = 0, samplingEnd = -1;
+        QMetaObject::Connection stage = QObject::connect(widget.Jobs(), &JobManager::Stage, [&](const QString& text, bool restart) {
+            // the dialog's own slot has run first (connected earlier): the label shows the text, a new stage starts the bar again
+            QLabel* shown = nullptr;
+            for (QLabel* l : dialog->findChildren<QLabel*>())
+                if (l->text() == text)
+                    shown = l;
+            labelsSeen << (shown ? QStringLiteral("shown") : QStringLiteral("NOT shown: ") + text);
+            if (restart) {
+                stagesSeen << text;
+                if (bar->value() != 0)
+                    barWithinMaximum = false;
+            }
+        });
+        QMetaObject::Connection counted = QObject::connect(widget.Jobs(), &JobManager::incremented, [&](int) {
+            if (bar->value() > bar->maximum())
+                barWithinMaximum = false;
+            if (!stagesSeen.isEmpty() && stagesSeen.last().startsWith(QStringLiteral("Sampling"))) {
+                samplingMaximum = bar->maximum();
+                samplingEnd = bar->value();
+                const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+                static bool rendered = false;
+                if (!renderDir.isEmpty() && !rendered && bar->value() * 2 >= bar->maximum()) {
+                    rendered = true; // what the user sees half way through the sampling
+                    widget.grab().save(QStringLiteral("%1/modelwidget_landscape_progress.png").arg(renderDir));
+                }
+            }
+        });
+
+        QJsonObject job = LandscapeConfigBlock;
+        job["Walkers"] = 2;
+        job["MaxSteps"] = 2000;
+        job["Polish"] = 3;
+        job["Surface"] = true;
+        widget.Jobs()->AddSingleJob(job);
+        widget.Jobs()->RunJobs();
+        QObject::disconnect(stage);
+        QObject::disconnect(counted);
+
+        qInfo().noquote() << "stages:" << stagesSeen.join(" | ");
+        QVERIFY2(stagesSeen.size() >= 4, qPrintable(stagesSeen.join(" | ")));
+        QVERIFY(stagesSeen[1].startsWith(QStringLiteral("Sampling")));
+        QVERIFY2(!labelsSeen.join(",").contains(QStringLiteral("NOT shown")), qPrintable(labelsSeen.join(", ")));
+        QVERIFY2(barWithinMaximum, "the bar went past its maximum or did not start again with a stage");
+        QCOMPARE(samplingMaximum, 2 * ((2000 + 499) / 500));
+        QCOMPARE(samplingEnd, samplingMaximum); // the sampling stage ends full
+        // the log: one line for the whole analysis (the job's own summary), none of the "Optimisation took ..." lines of the refits
+        QCOMPARE(logged.count(), 1);
+        QVERIFY2(logged.first().first().toString().contains(QStringLiteral("took")), qPrintable(logged.first().first().toString()));
+        QVERIFY2(!logged.first().first().toString().startsWith(QStringLiteral("Optimisation took")), "a refit logged its time");
+        QCOMPARE(warned.count(), 0);
+        QVERIFY(model->LandscapeSize() >= 1);
+        model->RemoveStatistic(SupraFit::Method::LandscapeSampling, 0);
+    }
+
+    // The tabs of the analyses: nothing lies on anything else (the Model Comparison had a label over a check box), and the lists a
+    // job carries are the ones the dialog always made: one flag per fitted parameter, a local parameter once for every series, the
+    // box scaling for every parameter of every series.
+    void analysisTabsDoNotOverlapAndMakeTheOldLists()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        {   // the check itself: two labels on top of each other are found, two side by side are not
+            QWidget probe;
+            QLabel *one = new QLabel(QStringLiteral("one"), &probe), *two = new QLabel(QStringLiteral("two"), &probe), *three = new QLabel(QStringLiteral("three"), &probe);
+            one->setGeometry(10, 10, 100, 30);
+            two->setGeometry(50, 15, 100, 30);
+            three->setGeometry(10, 100, 100, 30);
+            probe.resize(300, 200);
+            probe.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&probe));
+            const QStringList found = overlappingWidgets(&probe);
+            QCOMPARE(found.size(), 1);
+        }
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QMetaObject::invokeMethod(&widget, "TogglePlot");
+        QCoreApplication::processEvents();
+        const QStringList tabs = dialog->TabTitles();
+        QVERIFY(tabs.size() >= 5);
+        for (int i = 0; i < tabs.size(); ++i) {
+            dialog->setCurrentTab(i);
+            QCoreApplication::processEvents();
+            const QStringList overlaps = overlappingWidgets(dialog);
+            QVERIFY2(overlaps.isEmpty(), qPrintable(tabs[i] + ": " + overlaps.join("; ")));
+            // the tabs that test parameters show one check box for each of them: 2 constants and 3 local parameters of this model
+            if (tabs[i] == QStringLiteral("Weakened Grid Search") || tabs[i] == QStringLiteral("Model Comparison")) {
+                int visibleBoxes = 0;
+                for (QCheckBox* c : dialog->findChildren<QCheckBox*>())
+                    if (c->isVisibleTo(dialog) && !c->visibleRegion().isEmpty() && c->text().isEmpty())
+                        ++visibleBoxes; // the parameter boxes carry their name in a label beside them
+                QCOMPARE(visibleBoxes, model->GlobalParameterSize() + model->LocalParameterSize());
+            }
+            const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+            if (!renderDir.isEmpty())
+                widget.grab().save(QStringLiteral("%1/analysis_tab_%2.png").arg(renderDir).arg(i));
+        }
+        {   // the dialog of the project: no model, so no parameter to pick - a choice of the scope instead
+            StatisticDialog project;
+            project.resize(600, 700);
+            project.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&project));
+            const QStringList projectTabs = project.TabTitles();
+            for (int i = 0; i < projectTabs.size(); ++i) {
+                project.setCurrentTab(i);
+                QCoreApplication::processEvents();
+                const QStringList overlaps = overlappingWidgets(&project);
+                QVERIFY2(overlaps.isEmpty(), qPrintable(QStringLiteral("project, ") + projectTabs[i] + ": " + overlaps.join("; ")));
+                const QString renderDir = qEnvironmentVariable("SUPRAFIT_LAYOUT_RENDER_DIR");
+                if (!renderDir.isEmpty())
+                    project.grab().save(QStringLiteral("%1/analysis_project_%2.png").arg(renderDir).arg(i));
+            }
+        }
+
+        const int series = model->SeriesCount(), locals = model->LocalParameterSize(), globals = model->GlobalParameterSize();
+        QCOMPARE(globals, 2);
+        const QJsonObject wgs = dialog->RunGridSearch();
+        QCOMPARE(wgs["GlobalParameterList"].toString(), QStringLiteral("1 1")); // the globals ticked
+        QStringList zeros;
+        for (int k = 0; k < locals * series; ++k)
+            zeros << QStringLiteral("0");
+        QCOMPARE(wgs["LocalParameterList"].toString(), zeros.join(" ")); // the locals not, once per series
+        QVERIFY(!wgs.contains("GlobalParameterScalingList")); // the grid search has no box
+        QVERIFY(!wgs.contains("AllParameters"));
+        QVERIFY(std::abs(wgs["MaxParameter"].toDouble() - model->ErrorfTestThreshold(0.95)) < 1e-12 * model->ErrorfTestThreshold(0.95));
+
+        const QJsonObject moco = dialog->RunModelComparison();
+        QCOMPARE(moco["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QCOMPARE(moco["GlobalParameterScalingList"].toString().split(' ').size(), globals);
+        QCOMPARE(moco["LocalParameterScalingList"].toString().split(' ').size(), locals * series);
+        QCOMPARE(moco["GlobalParameterScalingList"].toString(), QStringLiteral("1.5 1.5"));
+        QVERIFY(std::abs(moco["MaxParameter"].toDouble() - model->ErrorfTestThreshold(0.95)) < 1e-12 * model->ErrorfTestThreshold(0.95));
+        QCOMPARE(moco["Method"].toInt(), int(SupraFit::Method::ModelComparison));
+        QCOMPARE(moco["MaxSteps"].toInt(), 20000);
+    }
+
+    // WP-S2: the noise of the Monte Carlo simulation is one choice (VarianceSource 1 user, 2 SEy, 3 sigma of the fit, 4 bootstrap);
+    // the keys of the cross validation jobs stay as they were. Claude Generated.
+    void monteCarloNoiseIsOneChoice()
+    {
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QComboBox* noise = nullptr;
+        for (QComboBox* c : dialog->findChildren<QComboBox*>())
+            if (c->findData(4) >= 0 && c->findData(3) >= 0)
+                noise = c;
+        QVERIFY2(noise, "no noise choice in the Monte Carlo tab");
+        const QList<QPair<int, int>> expected = { { 2, 2 }, { 3, 3 }, { 1, 1 }, { 4, 4 } };
+        for (const QPair<int, int>& e : expected) {
+            noise->setCurrentIndex(noise->findData(e.first));
+            QCOMPARE(dialog->RunMonteCarlo()["VarianceSource"].toInt(), e.second);
+        }
+        const QJsonObject cv = dialog->RunCrossValidation();
+        QCOMPARE(cv["Method"].toInt(), int(SupraFit::Method::CrossValidation));
+        QVERIFY(cv.contains("CXO"));
+        QVERIFY(dialog->RunReductionAnalyse().contains("Method"));
+    }
+
+    // WP-S4: Monte Carlo, Grid Search, Model Comparison and Scan say what they do (a stage text, shown in the dialog), the bar does not
+    // pass its maximum, and the log gets one line for the whole analysis. Claude Generated.
+    void analysesSayWhatTheyDo()
+    {
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        QProgressBar* bar = dialog->findChild<QProgressBar*>();
+        QVERIFY(bar);
+        ScanWidget* scan = dialog->findChild<ScanWidget*>();
+        QVERIFY(scan);
+
+        QJsonObject monte = dialog->RunMonteCarlo();
+        monte["MaxSteps"] = 40;
+        QJsonObject grid = dialog->RunGridSearch();
+        QJsonObject moco = dialog->RunModelComparison();
+        moco["MaxSteps"] = 400;
+        QJsonObject scanJob = scan->Job();
+        // two points of the first constant only
+        scanJob["0"] = QStringLiteral("%1 %2 1 1").arg(model->GlobalParameter(0) - 0.5).arg(model->GlobalParameter(0) + 0.5);
+        const QList<QPair<QString, QJsonObject>> jobs = { { "Monte Carlo", monte }, { "Grid Search", grid }, { "Model Comparison", moco }, { "Scan", scanJob } };
+        for (const QPair<QString, QJsonObject>& j : jobs) {
+            QSignalSpy logged(model->Info(), &DataClassPrivateObject::Message);
+            QStringList stages;
+            bool within = true;
+            QMetaObject::Connection stage = QObject::connect(widget.Jobs(), &JobManager::Stage, [&](const QString& text, bool) { stages << text; });
+            QMetaObject::Connection counted = QObject::connect(widget.Jobs(), &JobManager::incremented, [&](int) {
+                if (bar->value() > bar->maximum())
+                    within = false;
+            });
+            qInfo("analysis: %s", qPrintable(j.first));
+            widget.Jobs()->AddSingleJob(j.second);
+            widget.Jobs()->RunJobs();
+            QObject::disconnect(stage);
+            QObject::disconnect(counted);
+            QVERIFY2(!stages.isEmpty(), qPrintable(j.first + ": no stage text"));
+            QVERIFY2(within, qPrintable(j.first + ": the bar went past its maximum"));
+            QVERIFY2(logged.size() <= 1, qPrintable(j.first + QStringLiteral(": %1 lines in the log").arg(logged.size())));
+        }
+    }
+
+    // The dialog of the project has no model: its jobs carry no parameter lists, they are made for each model when the job runs on it
+    // (all parameters, global and local; or the global ones), together with the limit of the sum of squares of that model (the
+    // dialog used to send an uninitialised one).
+    void projectDialogJobsAreMadeForEachModel()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        StatisticDialog project;
+        const QJsonObject job = project.RunGridSearch();
+        QVERIFY(job["AllParameters"].toBool());
+        QVERIFY(job["AllLocalParameters"].toBool());
+        QVERIFY(job["GlobalParameterList"].toString().isEmpty()); // only the default of the block, nothing chosen
+        QVERIFY(project.RunModelComparison()["BoxScaling"].toBool());
+
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        const int series = model->SeriesCount(), locals = model->LocalParameterSize();
+        QJsonObject resolved = job;
+        ParameterSelector::ResolveFor(resolved, model);
+        QCOMPARE(resolved["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QStringList ones;
+        for (int k = 0; k < locals * series; ++k)
+            ones << QStringLiteral("1");
+        QCOMPARE(resolved["LocalParameterList"].toString(), ones.join(" ")); // all parameters
+        const double limit = model->ErrorfTestThreshold(job["confidence"].toDouble() / 100.0);
+        QVERIFY(std::abs(resolved["MaxParameter"].toDouble() - limit) < 1e-12 * limit);
+        QVERIFY(std::abs(resolved["f-value"].toDouble() - model->finv(job["confidence"].toDouble() / 100.0)) < 1e-12);
+        QVERIFY(resolved["MaxParameter"].toDouble() > model->SSE());
+
+        // the global ones only
+        QJsonObject globalOnly = job;
+        globalOnly["AllLocalParameters"] = false;
+        ParameterSelector::ResolveFor(globalOnly, model);
+        QCOMPARE(globalOnly["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QVERIFY(globalOnly["LocalParameterList"].toString().isEmpty());
+
+        // the box scaling of the Model Comparison for every parameter of every series
+        QJsonObject moco = project.RunModelComparison();
+        ParameterSelector::ResolveFor(moco, model);
+        QCOMPARE(moco["GlobalParameterScalingList"].toString(), QStringLiteral("1.5 1.5"));
+        QCOMPARE(moco["LocalParameterScalingList"].toString().split(' ').size(), locals * series);
+
+        // a job that already has its lists is left alone
+        QJsonObject own;
+        own["GlobalParameterList"] = QStringLiteral("1 0");
+        own["MaxParameter"] = 42.0;
+        QJsonObject copy = own;
+        ParameterSelector::ResolveFor(copy, model);
+        QCOMPARE(copy, own);
+    }
+
+    // The project job reaches the model: a grid search of the project dialog runs on the model through the pane and finds the limits of
+    // both constants.
+    void projectJobRunsOnTheModel()
+    {
+        QSettings().remove(QStringLiteral("model"));
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
+        widget.show();
+        QTest::qWaitForWindowExposed(&widget);
+
+        StatisticDialog project;
+        QJsonObject job = project.RunGridSearch();
+        job["MaxSteps"] = 400;
+        const int before = model->getWGStatisticResult();
+        widget.setJob(job);
+        QCOMPARE(model->getWGStatisticResult(), before + 1);
+        const QJsonObject result = model->getStatistic(SupraFit::Method::WeakenedGridSearch, before);
+        const QJsonObject controller = result["controller"].toObject();
+        QCOMPARE(controller["GlobalParameterList"].toString(), QStringLiteral("1 1"));
+        QVERIFY(controller["MaxParameter"].toDouble() > model->SSE());
+        QVERIFY(result.contains("0") && result.contains("1")); // the limits of both constants
+        model->RemoveStatistic(SupraFit::Method::WeakenedGridSearch, before);
+    }
+
     void finishedResultsAreListedAndDetachable()
     {
         QSettings().remove(QStringLiteral("model"));
@@ -883,7 +1680,7 @@ private slots:
         QCOMPARE(model->LocalParameterSize(), reference->LocalParameterSize());
         QCOMPARE(model->InputParameterSize(), reference->InputParameterSize());
     }
-    // WP6: advanced_ui is followed live (no restart): the simulation chips and the statistic strategy box
+    // WP6: advanced_ui is followed live (no restart): the simulation chips
     // appear and disappear when the setting changes. Claude Generated.
     void advancedUiIsFollowedLive()
     {
@@ -903,27 +1700,18 @@ private slots:
                     ++shown;
             return shown;
         };
-        auto strategyBoxShown = [&widget]() {
-            for (QGroupBox* box : widget.findChildren<QGroupBox*>())
-                if (box->title() == QStringLiteral("Map Calculation Strategy in LXO"))
-                    return !box->isHidden();
-            return false;
-        };
         const int basic = shownChips();
         QVERIFY2(basic >= 1, "no simulation chip at all without advanced_ui (the Bootstrap chip stays)");
-        QVERIFY(!strategyBoxShown());
 
         qApp->setProperty("advanced_ui", true);
         emit Instance::GlobalInstance()->ConfigurationChanged();
         QCoreApplication::processEvents();
         QVERIFY2(shownChips() > basic, "the advanced simulation chips did not appear");
-        QVERIFY2(strategyBoxShown(), "the statistic strategy box did not appear");
 
         qApp->setProperty("advanced_ui", false);
         emit Instance::GlobalInstance()->ConfigurationChanged();
         QCoreApplication::processEvents();
         QCOMPARE(shownChips(), basic);
-        QVERIFY(!strategyBoxShown());
         qApp->setProperty("advanced_ui", before);
     }
     // WP7: on a small screen the pane must not ask for more room than there is. The page list (the statistic
@@ -1053,41 +1841,60 @@ private slots:
         QSettings().remove(QStringLiteral("windows"));
     }
 
-    // WP3: the scan window of a model opens the same way: it comes up on the first call, once, and on the second
-    // call it is where it was left. Claude Generated.
-    void scanWindowKeepsItsPlace()
+    // WP-S3: the Scan is an analysis of the Statistics page, not a window of its own; "Global Search..." selects it. Its job keeps the
+    // format of the global search: ParameterSize and "min max step optimise" for each parameter. Claude Generated.
+    void scanIsAnAnalysisOfTheStatisticsPage()
     {
-        QSettings().remove(QStringLiteral("windows"));
-        Charts charts = m_chart->addModel(m_model);
-        ModelWidget widget(m_model, charts);
-        widget.resize(900, 600);
+        QSharedPointer<AbstractModel> model = twoConstantModel(m_data.data());
+        Charts charts = m_chart->addModel(model);
+        ModelWidget widget(model, charts);
+        widget.resize(1100, 800);
         widget.show();
         QTest::qWaitForWindowExposed(&widget);
         QCoreApplication::processEvents();
 
-        AdvancedSearch* scan = widget.findChild<AdvancedSearch*>();
-        QVERIFY(scan);
         const int windowsBefore = visibleTopLevels().size();
         QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
         QCoreApplication::processEvents();
-        QVERIFY(scan->isVisible());
-        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
-        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch"); // again: still one window
-        QCOMPARE(visibleTopLevels().size(), windowsBefore + 1);
+        QCOMPARE(visibleTopLevels().size(), windowsBefore); // no window
+        StatisticDialog* dialog = widget.findChild<StatisticDialog*>();
+        QVERIFY(dialog);
+        const QStringList tabs = dialog->TabTitles();
+        QVERIFY(tabs.contains(QStringLiteral("Scan")));
+        QVERIFY(!overlappingWidgets(dialog).size());
 
-        // a size of the user's own, above what the window needs at least
-        const QSize wanted(scan->minimumSizeHint().width() + 80, scan->minimumSizeHint().height() + 60);
-        scan->move(25, 35);
-        scan->resize(wanted);
-        QCoreApplication::processEvents();
-        scan->hide();
-        QMetaObject::invokeMethod(&widget, "OpenAdvancedSearch");
-        QCoreApplication::processEvents();
-        QVERIFY2(scan->size() == wanted, qPrintable(QStringLiteral("size %1x%2 instead of %3x%4").arg(scan->width()).arg(scan->height()).arg(wanted.width()).arg(wanted.height())));
-        QVERIFY2(scan->pos() == QPoint(25, 35), qPrintable(QStringLiteral("position %1,%2 instead of 25,35 (frame %3,%4)")
-                                                              .arg(scan->pos().x()).arg(scan->pos().y()).arg(scan->frameGeometry().x()).arg(scan->frameGeometry().y())));
-        scan->hide();
-        QSettings().remove(QStringLiteral("windows"));
+        ScanWidget* scan = dialog->findChild<ScanWidget*>();
+        QVERIFY(scan);
+        const QJsonObject job = scan->Job();
+        QCOMPARE(job["Method"].toInt(), int(SupraFit::Method::GlobalSearch));
+        const int size = job["ParameterSize"].toInt();
+        QVERIFY(size >= model->GlobalParameterSize());
+        for (int i = 0; i < size; ++i)
+            QCOMPARE(job[QString::number(i)].toString().split(' ').size(), 4);
+        QVERIFY(scan->Calculations() >= 1);
+
+        // the range of a logarithmic constant is the value +- 3, the others value/5 .. 5 value
+        double min, max, step;
+        ScanWidget::DefaultRange(QStringLiteral("lg K11"), 2.0, min, max, step);
+        QCOMPARE(min, -1.0);
+        QCOMPARE(max, 5.0);
+        ScanWidget::DefaultRange(QStringLiteral("K11"), 100.0, min, max, step);
+        QVERIFY(min > 0 && min <= 20.0); // rounded outwards
+        QVERIFY(max >= 500.0 && max < 1000.0);
+
+        // Fit is the optimisation flag of the model
+        QCheckBox* fit = nullptr;
+        for (QCheckBox* c : scan->findChildren<QCheckBox*>())
+            if (c->text() == QStringLiteral("Fit")) {
+                fit = c;
+                break;
+            }
+        QVERIFY(fit);
+        fit->setChecked(false);
+        QVERIFY(!model->GlobalTable()->isChecked(0, 0));
+        QVERIFY(scan->Job()["0"].toString().endsWith(QStringLiteral(" 0")));
+        fit->setChecked(true);
+        QVERIFY(model->GlobalTable()->isChecked(0, 0));
     }
     // The model's charts are listed one by one (no tabs): a chart that appears is an entry of the Charts page, the
     // page is chosen with the Charts button, an entry shows its chart, and Close chart removes it. Claude Generated.

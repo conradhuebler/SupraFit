@@ -31,6 +31,7 @@ class MonteCarloStatistics;
 class ModelComparison;
 class WeakenedGridSearch;
 class ResampleAnalyse;
+class LandscapeSearch;
 
 /* Standard Settings for Task are given here */
 
@@ -90,6 +91,66 @@ const QJsonObject ModelComparisonConfigBlock{
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool
+};
+
+/* Landscape Sampling Settings - every key is optional, see LandscapeSearch for the defaults derived from the fit */
+
+const QJsonObject LandscapeConfigBlock{
+    /* Set method */
+    { "Method", SupraFit::Method::LandscapeSampling }, // int
+
+    /* "Confidence": the confidence interval of every constant. "Minima": look for other minima - the wall is a multiple of the
+     * SSE of the fit (SearchWall), the box a fixed one (Range, 6 log10 units when 0), refitted minima come with their model */
+    { "Mode", "Confidence" },
+    { "SearchWall", 10.0 }, // double, Mode "Minima": wall as a multiple of the SSE of the fit
+
+    /* Confidence in % */
+    { "confidence", 95 }, // double (the search reads "Confidence" as well)
+
+    /* Walkers run in parallel, one per thread by default (0) */
+    { "Walkers", 0 }, // int
+
+    /* Steps per walker and round */
+    { "MaxSteps", 5e4 }, // int
+
+    /* "Metropolis" or "Langevin" */
+    { "Sampler", "Metropolis" },
+
+    /* Integration step of the sampler and finite-difference step of the gradient (Langevin), fractions of the
+     * sampled range; 0: the default of the sampler. Central differences cost twice the evaluations. */
+    { "StepSize", 0 }, // double
+    { "GradientStep", 1e-3 }, // double
+    { "CentralGradient", false }, // bool
+    { "LangevinCorrection", true }, // bool, Metropolis adjustment of the Langevin step
+
+    /* Wall at SSE_min + CutFactor (level - SSE_min): moves above it are rejected. A minimum behind a barrier higher than
+     * the wall is not found. */
+    { "CutFactor", 3.0 }, // double
+
+    /* Stopping: a walker stops after Patience hills (one per 20 steps) without a new region or a better minimum, but not
+     * before MinSteps, and only counts while the hill height at its position is below MinHillFraction of the first hill. */
+    { "MinSteps", 2000 }, // int
+    { "Patience", 100 }, // int
+    { "MinHillFraction", 0.1 }, // double
+
+    /* Bias: well-tempering temperature in units of the wall's excess (barriers up to ~2.3 times that are taken down),
+     * hill height in kT, hill width as a fraction of the sampled range */
+    { "BiasFactor", 0.5 }, // double
+    { "HillHeightFactor", 0.25 }, // double
+    { "HillWidth", 0.05 }, // double
+
+    /* Half width of the box in log10 units for every parameter, 0: derived from the fit and widened as needed */
+    { "Range", 0 }, // double
+
+    /* Minima found by the walkers that are polished with the minimiser */
+    { "Polish", 5 }, // int
+
+    /* Record the points of the walk and give the 2D profile of the first two parameters (surface with the interval levels);
+     * default on for two parameters, off for more (the recording costs memory and the result grows with it) */
+    { "Surface", false }, // bool, off by default; the GUI turns it on for two parameters
+    { "ExactSurface", true }, // bool, two parameters: evaluate the unvisited cells of the explored region (no gaps in the height lines)
+
+    { "Seed", 1 }, // int
 };
 
 /* Monte Carlo Settings */
@@ -240,12 +301,14 @@ private:
     QJsonObject RunResample(const QJsonObject& job);
     QJsonObject RunModelComparison(const QJsonObject& job);
     QJsonObject RunGlobalSearch(const QJsonObject& job);
+    QJsonObject RunLandscapeSearch(const QJsonObject& job);
 
     QPointer<MonteCarloStatistics> m_montecarlo_handler;
     QPointer<WeakenedGridSearch> m_gridsearch_handler;
     QPointer<ModelComparison> m_modelcomparison_handler;
     QPointer<ResampleAnalyse> m_resample_handler;
     QPointer<GlobalSearch> m_globalsearch;
+    QPointer<LandscapeSearch> m_landscape;
 
     bool m_working = false;
     bool m_interrupt = false;
@@ -260,4 +323,5 @@ signals:
     void ShowResult(SupraFit::Method type, int index);
     void Interrupt();
     void Message(const QString& str);
+    void Stage(const QString& text, bool restart);
 };

@@ -24,6 +24,9 @@
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/flowlayout.h"
+#include "src/ui/guitools/morelesstoggle.h"
+#include "src/ui/widgets/analysisparts.h"
+#include "src/ui/widgets/scanwidget.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
 
@@ -35,6 +38,8 @@
 #include <QPropertyAnimation>
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QFormLayout>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
@@ -125,10 +130,17 @@ void StatisticDialog::updateUI()
 {
     if (!m_model)
         return;
-    m_wgs_f_value->setToolTip(FOutput());
-    m_moco_f_value->setToolTip(FOutput());
-    m_wgs_f_value->setValue(m_model.toStrongRef().data()->finv(m_wgs_maxerror->value() / 100));
-    m_moco_f_value->setValue(m_model.toStrongRef().data()->finv(m_moco_maxerror->value() / 100));
+    updateLandscape();
+}
+
+/*! \brief Sampling needs variable projection: say so instead of offering a button that cannot work. Claude Generated. */
+void StatisticDialog::updateLandscape()
+{
+    if (!m_model || !m_ls_run)
+        return;
+    const bool usable = m_model.toStrongRef().data()->SupportsVarPro();
+    m_ls_run->setEnabled(usable);
+    m_ls_note->setVisible(!usable);
 }
 
 void StatisticDialog::setUi()
@@ -140,10 +152,16 @@ void StatisticDialog::setUi()
     m_tab_widget->addTab(GridSearchWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
+    if (m_model) // the project-wide dialog has no single model to sample
+        m_tab_widget->addTab(LandscapeWidget(), tr("Landscape Sampling"));
+    if (m_model && !m_model.toStrongRef()->isSimulation())
+        m_tab_widget->addTab(ScanTab(), tr("Scan"));
 
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
     m_message_box = new QLabel;
+    m_message_box->setWordWrap(true); // a stage text must not widen the pane on a small screen
+    m_time_info->setWordWrap(true);
     m_progress = new QProgressBar;
     m_main_progress = new QProgressBar;
     layout->addWidget(m_time_info);
@@ -181,169 +199,368 @@ void StatisticDialog::setUi()
     setMinimumWidth(1.5 * m_tab_widget->sizeHint().width());
 }
 
+/*! \brief Tab of the Monte Carlo simulation. In sight: the number of steps, where the noise comes from (and the standard deviation it
+ * gives), whether the original data are used; behind "..more.." the scatter of the independent variables. Claude Generated. */
 QWidget* StatisticDialog::MonteCarloWidget()
 {
-    QWidget* mc_widget = new QWidget;
-    QGridLayout* layout = new QGridLayout;
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
+    QFormLayout* form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
 
     m_mc_steps = new QSpinBox;
     m_mc_steps->setMinimum(2);
     m_mc_steps->setMaximum(1e9);
     m_mc_steps->setValue(2000);
     m_mc_steps->setSingleStep(1e2);
-    layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
-    layout->addWidget(m_mc_steps, 0, 1);
+    form->addRow(tr("Number of MC steps:"), m_mc_steps);
 
-    m_mc_std = new QRadioButton;
-    m_mc_std->setText(tr("%1 from fit").arg(Unicode_sigma));
-    m_mc_sey = new QRadioButton;
-    m_mc_sey->setText(tr("SE%1").arg(Unicode_Sub_y));
-    m_mc_user = new QRadioButton;
-    m_mc_user->setText(tr("%1 from user input").arg(Unicode_sigma));
+    // where the noise comes from; the data of the entries are the VarianceSource of the job
+    m_mc_noise = new QComboBox;
+    m_mc_noise->addItem(tr("SE%1 of the fit").arg(Unicode_Sub_y), 2);
+    m_mc_noise->addItem(tr("%1 of the fit").arg(Unicode_sigma), 3);
+    m_mc_noise->addItem(tr("%1 from user input").arg(Unicode_sigma), 1);
+    m_mc_noise->addItem(tr("Bootstrapping"), 4);
+    m_mc_noise->setItemData(3, tr("Using bootstrapping, no new errors will generated but rather the old error will randomly distributed on the model."), Qt::ToolTipRole);
+    form->addRow(tr("Noise:"), m_mc_noise);
 
     m_varianz_box = new QDoubleSpinBox;
     m_varianz_box->setDecimals(6);
     m_varianz_box->setSingleStep(1e-2);
     m_varianz_box->setMaximum(1e10);
+    m_varianz_box->setToolTip(tr("The standard deviation the noise has: given by the fit, or entered when it comes from user input."));
+    form->addRow(tr("Standard deviation %1:").arg(Unicode_sigma), m_varianz_box);
+    top->addLayout(form);
 
-    layout->addWidget(new QLabel(tr("Standard Deviation %1").arg(Unicode_sigma)), 1, 0);
-    layout->addWidget(m_varianz_box, 1, 1);
+    m_original = new QCheckBox(tr("Use original data"));
+    top->addWidget(m_original);
 
-    QHBoxLayout* hlayout = new QHBoxLayout;
-
-    hlayout->addWidget(new QLabel(tr("is taken as:")));
-
-#ifndef extended_f_test
-    hlayout->addWidget(m_mc_sey);
-    hlayout->addWidget(m_mc_std);
-    hlayout->addWidget(m_mc_user);
-#endif
-
-    m_mc_bootstrap = new QRadioButton;
-    m_mc_bootstrap->setText(tr("or use bootstrapping"));
-    m_mc_bootstrap->setToolTip(tr("Using bootstrapping, no new errors will generated but rather the old error will randomly distributed on the model."));
-    hlayout->addWidget(m_mc_bootstrap);
-
-    m_mc_sey->setChecked(true);
-    m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-    if (m_model)
-        m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-
-    connect(m_mc_std, &QRadioButton::toggled, m_mc_std, [this]() {
-        if (m_mc_std->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-        }
-    });
-
-    connect(m_mc_sey, &QRadioButton::toggled, m_mc_sey, [this]() {
-        if (m_mc_sey->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-        }
-    });
-
-    connect(m_mc_user, &QRadioButton::toggled, m_mc_user, [this]() {
-        if (m_mc_user->isChecked()) {
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+    // the value belongs to the source, only the user input can be edited, bootstrapping needs none
+    auto noiseChanged = [this]() {
+        const int source = m_mc_noise->currentData().toInt();
+        const QSharedPointer<AbstractModel> model = m_model.toStrongRef();
+        m_varianz_box->setReadOnly(source != 1);
+        m_varianz_box->setEnabled(source != 4);
+        if (source == 1)
             m_varianz_box->setValue(1e-3);
-        }
-    });
+        else if (model && source == 2)
+            m_varianz_box->setValue(model->SEy());
+        else if (model && source == 3)
+            m_varianz_box->setValue(model->StdDeviation());
+    };
+    connect(m_mc_noise, &QComboBox::currentIndexChanged, this, noiseChanged);
+    noiseChanged();
 
-    connect(m_mc_bootstrap, &QRadioButton::toggled, m_mc_bootstrap, [this]() {
-        if (m_mc_user->isChecked()) {
-            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
-            m_varianz_box->setValue(1e-3);
-        }
-    });
-
-    layout->addLayout(hlayout, 2, 0, 1, 2);
-
-    m_original = new QCheckBox;
-    m_original->setText(tr("Use Original Data"));
-    layout->addWidget(m_original, 3, 0);
-
-    QVBoxLayout* indep_layout = new QVBoxLayout;
-    if (m_model.toStrongRef().data()) {
-        QStringList header = m_model.toStrongRef().data()->IndependentModel()->header();
-
-        indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
-
-        for (int i = 0; i < m_model.toStrongRef().data()->IndependentVariableSize(); ++i) {
-
+    if (m_model && m_model.toStrongRef()->IndependentVariableSize() > 0) {
+        QWidget* more = new QWidget;
+        QVBoxLayout* inner = new QVBoxLayout;
+        inner->setContentsMargins(0, 0, 0, 0);
+        const QStringList header = m_model.toStrongRef()->IndependentModel()->header();
+        inner->addWidget(new QLabel(tr("Create random scatter of independent variables, e.g. input concentrations:")));
+        for (int i = 0; i < m_model.toStrongRef()->IndependentVariableSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox(header[i]);
             QDoubleSpinBox* var = new QDoubleSpinBox;
             var->setDecimals(5);
             var->setSingleStep(1e-4);
             var->setDisabled(true);
             connect(checkbox, &QCheckBox::stateChanged, var, &QDoubleSpinBox::setEnabled);
-            QHBoxLayout* layout = new QHBoxLayout;
-            layout->addWidget(checkbox);
-            layout->addWidget(var);
+            QHBoxLayout* row = new QHBoxLayout;
+            row->addWidget(checkbox);
+            row->addWidget(var, 1);
             m_indepdent_checkboxes << checkbox;
             m_indepdent_variance << var;
-            indep_layout->addLayout(layout);
+            inner->addLayout(row);
         }
+        more->setLayout(inner);
+        AddFolded(top, more, QStringLiteral("mc_more"));
     }
-    layout->addLayout(indep_layout, 4, 0, 1, 2);
-    m_mc = new QPushButton(tr("Simulate"));
-    layout->addWidget(m_mc, 5, 0, 1, 2);
 
+    m_mc = new QPushButton(tr("Simulate"));
+    top->addWidget(m_mc);
+    top->addStretch(1);
     connect(m_mc, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunMonteCarlo());
     });
-
-    mc_widget->setLayout(layout);
-    return mc_widget;
+    widget->setLayout(top);
+    return widget;
 }
 
+/*! \brief Tab of the landscape sampling: confidence region of every constant from the sum of squares itself, and other
+ * minima. The few things one usually sets are in sight, everything about the sampler's steps, its stopping and the bias is
+ * behind "..more.."; what only Langevin uses is shown only for Langevin. Claude Generated. */
+QWidget* StatisticDialog::LandscapeWidget()
+{
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
+    QGridLayout* layout = new QGridLayout;
+
+    QLabel* info = new QLabel;
+    info->setWordWrap(true);
+    top->addWidget(info);
+
+    m_ls_task = new QComboBox;
+    m_ls_task->addItem(tr("Confidence intervals"), QStringLiteral("Confidence"));
+    m_ls_task->addItem(tr("Find other minima"), QStringLiteral("Minima"));
+    m_ls_task->setToolTip(tr("Confidence intervals: samples the sum of squares around the fit and reads the interval of every constant from it. "
+                             "Find other minima: lets the walkers climb out of the basin of the fit, up to a multiple of its sum of squares, and "
+                             "refits the minima they find."));
+    layout->addWidget(new QLabel(tr("Task:")), 0, 0);
+    layout->addWidget(m_ls_task, 0, 1);
+
+    QLabel* confidenceLabel = new QLabel(tr("Confidence:"));
+    m_ls_confidence = new QDoubleSpinBox;
+    m_ls_confidence->setRange(50, 99.9);
+    m_ls_confidence->setDecimals(1);
+    m_ls_confidence->setValue(95);
+    m_ls_confidence->setSuffix(" %");
+    layout->addWidget(confidenceLabel, 1, 0);
+    layout->addWidget(m_ls_confidence, 1, 1);
+
+    m_ls_steps = new QSpinBox;
+    m_ls_steps->setRange(1000, 10000000);
+    m_ls_steps->setSingleStep(10000);
+    m_ls_steps->setValue(50000);
+    m_ls_steps->setToolTip(tr("Steps of one walker; it stops earlier when it finds nothing new."));
+    layout->addWidget(new QLabel(tr("Steps per walker:")), 2, 0);
+    layout->addWidget(m_ls_steps, 2, 1);
+
+    m_ls_sampler = new QComboBox;
+    m_ls_sampler->addItem(tr("Metropolis"), QStringLiteral("Metropolis"));
+    m_ls_sampler->addItem(tr("Langevin"), QStringLiteral("Langevin"));
+    m_ls_sampler->setToolTip(tr("Metropolis needs the sum of squares only; Langevin follows its numerical gradient."));
+    layout->addWidget(new QLabel(tr("Sampler:")), 3, 0);
+    layout->addWidget(m_ls_sampler, 3, 1);
+
+    m_ls_surface = new QCheckBox(tr("2D surfaces of the pairs"));
+    m_ls_surface->setToolTip(tr("Records the points of the walk and offers the sum of squares over every pair of constants (up to six pairs) as height "
+                               "lines on the result page: the shape of the confidence region and the correlation of the constants."));
+    layout->addWidget(m_ls_surface, 4, 0, 1, 2);
+    top->addLayout(layout);
+
+    // everything else, folded away
+    QWidget* more = new QWidget;
+    more->setObjectName(QStringLiteral("landscape_more"));
+    QGridLayout* grid = new QGridLayout;
+    grid->setContentsMargins(0, 0, 0, 0);
+    QList<QWidget*> langevinOnly;
+    int row = 0;
+    auto addRow = [&](const QString& label, QWidget* field, bool langevin = false) {
+        QLabel* l = new QLabel(label);
+        grid->addWidget(l, row, 0);
+        grid->addWidget(field, row, 1);
+        ++row;
+        if (langevin)
+            langevinOnly << l << field;
+    };
+    auto addHeading = [&](const QString& text) {
+        QLabel* l = new QLabel(QStringLiteral("<b>%1</b>").arg(text));
+        grid->addWidget(l, row++, 0, 1, 2);
+    };
+
+    addHeading(tr("Sampler"));
+    m_ls_walkers = new QSpinBox;
+    m_ls_walkers->setRange(0, 64);
+    m_ls_walkers->setSpecialValueText(tr("one per thread"));
+    m_ls_walkers->setToolTip(tr("Walkers sampling in parallel, each on its own copy of the model."));
+    addRow(tr("Walkers:"), m_ls_walkers);
+
+    m_ls_step = new QDoubleSpinBox;
+    m_ls_step->setRange(0, 1);
+    m_ls_step->setDecimals(4);
+    m_ls_step->setSingleStep(0.005);
+    m_ls_step->setSpecialValueText(tr("automatic"));
+    m_ls_step->setToolTip(tr("Step of the sampler (for Langevin the step of the integration) as a fraction of the sampled range; the start value, "
+                             "the walker adapts it to the shape of the surface. A step that is too large shows as nearly all moves being rejected."));
+    addRow(tr("Step size (integration):"), m_ls_step);
+
+    m_ls_gradient_step = new QDoubleSpinBox;
+    m_ls_gradient_step->setRange(1e-8, 0.1);
+    m_ls_gradient_step->setDecimals(8);
+    m_ls_gradient_step->setSingleStep(1e-4);
+    m_ls_gradient_step->setValue(1e-3);
+    m_ls_gradient_step->setToolTip(tr("Step of the finite differences that give the gradient of the sum of squares (Langevin), as a fraction of the sampled range. "
+                                      "Too small a step reads the noise of the fit, too large one smooths the surface."));
+    addRow(tr("Gradient step (finite differences):"), m_ls_gradient_step, true);
+
+    m_ls_central = new QCheckBox(tr("Central differences"));
+    m_ls_central->setToolTip(tr("Central instead of forward differences for the gradient: more accurate, twice the evaluations per step (Langevin)."));
+    grid->addWidget(m_ls_central, row++, 0, 1, 2);
+    langevinOnly << m_ls_central;
+
+    m_ls_correction = new QCheckBox(tr("Metropolis correction"));
+    m_ls_correction->setChecked(true);
+    m_ls_correction->setToolTip(tr("Accept or reject each Langevin step like a Metropolis move: the walk then samples the surface exactly and the step is "
+                                   "regulated to the acceptance. Without it the explicit step samples a broadened distribution (rougher profile) but needs "
+                                   "no gradient at rejected steps."));
+    grid->addWidget(m_ls_correction, row++, 0, 1, 2);
+    langevinOnly << m_ls_correction;
+
+    m_ls_range = new QDoubleSpinBox;
+    m_ls_range->setRange(0, 50);
+    m_ls_range->setDecimals(1);
+    m_ls_range->setSpecialValueText(tr("automatic"));
+    m_ls_range->setToolTip(tr("Half width of the sampled range around the fit, in log10 units of the constants. Automatic: derived from the fit, 6 when looking for other minima."));
+    addRow(tr("Range (log10):"), m_ls_range);
+
+    m_ls_polish = new QSpinBox;
+    m_ls_polish->setRange(0, 20);
+    m_ls_polish->setValue(5);
+    m_ls_polish->setToolTip(tr("How many minima found by the walkers are refitted."));
+    addRow(tr("Minima to refit:"), m_ls_polish);
+
+    addHeading(tr("Stopping and barriers"));
+    QList<QWidget*> searchOnly, confidenceOnly;
+    m_ls_search_wall = new QDoubleSpinBox;
+    m_ls_search_wall->setRange(1.5, 1000);
+    m_ls_search_wall->setDecimals(1);
+    m_ls_search_wall->setValue(10);
+    m_ls_search_wall->setToolTip(tr("Height of the wall as a multiple of the sum of squares of the fit. Moves above the wall are rejected: another "
+                                    "minimum behind a barrier higher than the wall is not found. A wrong basin of a titration fit lies at several times "
+                                    "the optimum."));
+    {
+        QLabel* l = new QLabel(tr("Wall (x SSE of the fit):"));
+        grid->addWidget(l, row, 0);
+        grid->addWidget(m_ls_search_wall, row, 1);
+        ++row;
+        searchOnly << l << m_ls_search_wall;
+    }
+    m_ls_wall = new QDoubleSpinBox;
+    m_ls_wall->setRange(1.1, 100);
+    m_ls_wall->setDecimals(1);
+    m_ls_wall->setValue(3.0);
+    m_ls_wall->setToolTip(tr("Height of the wall in units of how far the limit of the confidence region lies above the fit. Moves above the wall "
+                             "are rejected; another minimum behind a barrier higher than the wall is not found."));
+    {
+        QLabel* l = new QLabel(tr("Wall height:"));
+        grid->addWidget(l, row, 0);
+        grid->addWidget(m_ls_wall, row, 1);
+        ++row;
+        confidenceOnly << l << m_ls_wall;
+    }
+
+    m_ls_min_steps = new QSpinBox;
+    m_ls_min_steps->setRange(0, 10000000);
+    m_ls_min_steps->setSingleStep(1000);
+    m_ls_min_steps->setValue(2000);
+    m_ls_min_steps->setToolTip(tr("A walker does not stop before this many steps."));
+    addRow(tr("Minimum steps:"), m_ls_min_steps);
+
+    m_ls_patience = new QSpinBox;
+    m_ls_patience->setRange(1, 100000);
+    m_ls_patience->setValue(100);
+    m_ls_patience->setToolTip(tr("A walker stops after this many hills in a row (one per 20 steps) that opened up no new region and no better minimum."));
+    addRow(tr("Patience:"), m_ls_patience);
+
+    m_ls_converged = new QDoubleSpinBox;
+    m_ls_converged->setRange(0.001, 1);
+    m_ls_converged->setDecimals(3);
+    m_ls_converged->setSingleStep(0.01);
+    m_ls_converged->setValue(0.1);
+    m_ls_converged->setToolTip(tr("A walker only counts towards its patience while the hill height at its position is below this fraction of the "
+                                  "first hill, i.e. while the bias there has filled up. Smaller: longer runs, higher barriers are taken down."));
+    addRow(tr("Bias convergence:"), m_ls_converged);
+
+    m_ls_bias = new QDoubleSpinBox;
+    m_ls_bias->setRange(0, 10);
+    m_ls_bias->setDecimals(2);
+    m_ls_bias->setSingleStep(0.1);
+    m_ls_bias->setValue(0.5);
+    m_ls_bias->setToolTip(tr("Well-tempering temperature in units of the wall's height above the fit; barriers up to about 2.3 times this are taken "
+                             "down. 0 switches well-tempering off."));
+    addRow(tr("Bias strength:"), m_ls_bias);
+
+    m_ls_hill_width = new QDoubleSpinBox;
+    m_ls_hill_width->setRange(0.005, 0.5);
+    m_ls_hill_width->setDecimals(3);
+    m_ls_hill_width->setSingleStep(0.005);
+    m_ls_hill_width->setValue(0.05);
+    m_ls_hill_width->setToolTip(tr("Width of one hill as a fraction of the sampled range. Hills much wider than a narrow valley fill it too early."));
+    addRow(tr("Hill width:"), m_ls_hill_width);
+
+    more->setLayout(grid);
+    MoreLessToggle* toggle = new MoreLessToggle(more, QStringLiteral("landscape_more"));
+    top->addWidget(toggle, 0, Qt::AlignLeft);
+    top->addWidget(more);
+
+    // what only Langevin uses is shown for Langevin only
+    auto showLangevin = [this, langevinOnly]() {
+        const bool langevin = m_ls_sampler->currentData().toString() == QLatin1String("Langevin");
+        for (QWidget* w : langevinOnly)
+            w->setVisible(langevin);
+    };
+    connect(m_ls_sampler, &QComboBox::currentIndexChanged, this, showLangevin);
+
+    // what belongs to the task: the confidence is not asked for a search, the wall of a search is a multiple of the SSE
+    confidenceOnly << confidenceLabel << m_ls_confidence;
+    auto showTask = [this, info, searchOnly, confidenceOnly]() {
+        const bool search = m_ls_task->currentData().toString() == QLatin1String("Minima");
+        for (QWidget* w : searchOnly)
+            w->setVisible(search);
+        for (QWidget* w : confidenceOnly)
+            w->setVisible(!search);
+        info->setText(search ? tr("Lets the walkers climb out of the basin of the fit and refits the minima they find. Another minimum is only found "
+                                  "if the wall is higher than the barrier to it.")
+                             : tr("Samples the sum of squares over the global parameters (the linear parameters are fitted for each point) and reads "
+                                  "the confidence interval of every constant from it, also for correlated constants. Minima other than the fit are "
+                                  "refitted and listed."));
+        m_ls_polish->setValue(search ? 10 : 5);
+    };
+    connect(m_ls_task, &QComboBox::currentIndexChanged, this, showTask);
+
+    m_ls_note = new QLabel(tr("This model has no variable projection: the landscape can only be sampled for models that fit their linear parameters out."));
+    m_ls_note->setWordWrap(true);
+    top->addWidget(m_ls_note);
+
+    m_ls_run = new QPushButton(tr("Sample"));
+    top->addWidget(m_ls_run);
+    top->addStretch(1);
+
+    connect(m_ls_run, &QPushButton::clicked, this, [this]() {
+        clearMessages();
+        emit RunCalculation(RunLandscape());
+    });
+    if (m_model)
+        connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, &StatisticDialog::updateLandscape);
+
+    widget->setLayout(top);
+    // only now: setVisible(true) on a widget without a parent shows it as a window of its own
+    showLangevin();
+    showTask();
+    updateLandscape();
+    if (m_model) {
+        const int globals = m_model.toStrongRef().data()->GlobalParameterSize();
+        m_ls_surface->setChecked(globals >= 2 && globals <= 4);
+        m_ls_surface->setEnabled(globals >= 2);
+    } else
+        m_ls_surface->setEnabled(false);
+    return widget;
+}
+
+/*! \brief Tab of the Scan: a grid of start values, every point fitted (global search). Claude Generated. */
+QWidget* StatisticDialog::ScanTab()
+{
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
+    m_scan = new ScanWidget(m_model.toStrongRef());
+    top->addWidget(m_scan);
+    QPushButton* run = new QPushButton(tr("Scan"));
+    top->addWidget(run, 0, Qt::AlignLeft);
+    top->addStretch(1);
+    connect(run, &QPushButton::clicked, this, [this]() { emit RunCalculation(m_scan->Job()); });
+    widget->setLayout(top);
+    return widget;
+}
+
+/*! \brief Tab of the Weakened Grid Search: the confidence limits of single parameters. In sight what one sets: the parameters, the
+ * confidence; behind "..more.." the size of a step and when a search stops. Claude Generated. */
 QWidget* StatisticDialog::GridSearchWidget()
 {
-    QWidget* cv_widget = new QWidget;
-    QVBoxLayout* layout = new QVBoxLayout;
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
 
-    QWidget* parameter = new QWidget(this);
-    if (m_model) {
-        layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
-        FlowLayout* layout = new FlowLayout;
-        for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
-            QCheckBox* checkbox = new QCheckBox;
-            checkbox->setChecked(true);
-            m_grid_global << checkbox;
-            QHBoxLayout* hlayout = new QHBoxLayout;
-            hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->GlobalParameterName(i) + "</html>"));
-            hlayout->addStretch(100);
-            layout->addItem(hlayout);
-
-            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
-                if (m_model)
-                    checkbox->setEnabled(m_model.toStrongRef().data()->GlobalEnabled(i));
-            });
-        }
-
-        for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
-            QCheckBox* checkbox = new QCheckBox;
-            m_grid_local << checkbox;
-            QHBoxLayout* hlayout = new QHBoxLayout;
-            hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->LocalParameterName(i) + "</html>"));
-            hlayout->addStretch(100);
-            layout->addItem(hlayout);
-
-            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
-                if (m_model)
-                    checkbox->setEnabled(m_model.toStrongRef().data()->LocalEnabled(i));
-            });
-        }
-        parameter->setLayout(layout);
-    }
-    layout->addWidget(parameter);
-
-    m_store_wgsearch = new QCheckBox(tr("Store intermediate Models"));
-    m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
-    layout->addWidget(m_store_wgsearch);
+    m_wgs_parameters = new ParameterSelector(m_model.toStrongRef(), false);
+    top->addWidget(m_wgs_parameters);
 
     m_wgs_maxerror = new QDoubleSpinBox;
     m_wgs_maxerror->setMaximum(100);
@@ -351,227 +568,88 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_wgs_maxerror->setValue(95);
     m_wgs_maxerror->setDecimals(1);
     m_wgs_maxerror->setSuffix("%");
+    connect(m_wgs_maxerror, &QDoubleSpinBox::valueChanged, this, &StatisticDialog::CalculateError);
+    QHBoxLayout* row = new QHBoxLayout;
+    row->addWidget(new QLabel(tr("Confidence:")));
+    row->addWidget(m_wgs_maxerror, 1);
+    top->addLayout(row);
+    m_wgs_error_info = new QLabel; // F value and the limit of the sum of squares, once there is a model
+    m_wgs_error_info->setWordWrap(true);
+    top->addWidget(m_wgs_error_info);
 
-    m_wgs_f_value = new QDoubleSpinBox(this);
-    m_wgs_f_value->setMaximum(1000);
-    m_wgs_f_value->setMinimum(0);
-    m_wgs_f_value->setValue(m_f_value);
-    m_wgs_f_value->setDecimals(4);
-    m_wgs_f_value->setReadOnly(true);
+    QWidget* more = new QWidget;
+    QFormLayout* form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
 
-    connect(m_wgs_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
-
-    QHBoxLayout* hlayout = new QHBoxLayout;
-
-    hlayout->addWidget(new QLabel(tr("Define Confidence Interval")));
-    hlayout->addWidget(m_wgs_maxerror);
-
-    layout->addLayout(hlayout);
-    if (m_model) {
-        hlayout = new QHBoxLayout;
-        hlayout->addWidget(new QLabel(tr("F-Value:")));
-        hlayout->addWidget(m_wgs_f_value);
-        layout->addLayout(hlayout);
-
-        m_wgs_error_info = new QLabel;
-        layout->addWidget(m_wgs_error_info);
-    } else
-        m_wgs_f_value->hide();
-    hlayout = new QHBoxLayout;
-
-    m_radio_wgs_sse = new QRadioButton(tr("SSE"));
-    connect(m_radio_wgs_sse, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 0;
-            m_error_name = m_radio_wgs_sse->text();
-            CalculateError();
-        }
-    });
-    m_radio_wgs_ssy = new QRadioButton(tr("SEy"));
-    connect(m_radio_wgs_ssy, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 1;
-            m_error_name = m_radio_wgs_ssy->text();
-            CalculateError();
-        }
-    });
-    m_radio_wgs_chi = new QRadioButton(tr("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2));
-    connect(m_radio_wgs_chi, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 2;
-            m_error_name = m_radio_wgs_chi->text();
-            CalculateError();
-        }
-    });
-    m_radio_wgs_sigma = new QRadioButton(tr("%1").arg(Unicode_sigma));
-    connect(m_radio_wgs_sigma, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 3;
-            m_error_name = m_radio_wgs_sigma->text();
-            CalculateError();
-        }
-    });
-
-    hlayout->addWidget(m_radio_wgs_sse);
-    hlayout->addWidget(m_radio_wgs_ssy);
-    hlayout->addWidget(m_radio_wgs_chi);
-    hlayout->addWidget(m_radio_wgs_sigma);
-
-#ifndef extended_f_test
-    m_radio_wgs_sse->setHidden(true);
-    m_radio_wgs_ssy->setHidden(true);
-    m_radio_wgs_chi->setHidden(true);
-    m_radio_wgs_sigma->setHidden(true);
-#endif
-
-    m_ParameterIndex = 0;
-    m_error_name = "SSE";
-
-    layout->addLayout(hlayout);
+    m_store_wgsearch = new QCheckBox(tr("Store intermediate models"));
+    m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
+    form->addRow(m_store_wgsearch);
 
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
     m_gridScalingFactor->setMaximum(10);
     m_gridScalingFactor->setValue(-4);
-    m_gridScalingFactor->setToolTip(tr("Set the scaling factor for each step. The lower the value, the smaller the step and the more precise is the result. On the other hand, more steps are needed or \'Max SSE Convergency Counter\' has to be increased."));
-    hlayout = new QHBoxLayout;
-    hlayout->addWidget(new QLabel(tr("Scaling Factor for Single Steps:")));
-    hlayout->addWidget(m_gridScalingFactor);
+    m_gridScalingFactor->setToolTip(tr("Set the scaling factor for each step. The lower the value, the smaller the step and the more precise is the result. On the other hand, more steps are needed or the counters below have to be increased."));
+    form->addRow(tr("Scaling factor of a step:"), m_gridScalingFactor);
 
     m_wgs_steps = new QSpinBox;
     m_wgs_steps->setMaximum(1e7);
     m_wgs_steps->setValue(2e3);
     m_wgs_steps->setSingleStep(100);
     m_wgs_steps->setToolTip(tr("Define the maximal number of steps for the lower and upper limit seperatly."));
-    hlayout->addWidget(new QLabel(tr("Maximal steps:")));
-    hlayout->addWidget(m_wgs_steps);
-
-    layout->addLayout(hlayout);
-
-    hlayout = new QHBoxLayout;
+    form->addRow(tr("Maximal steps (each direction):"), m_wgs_steps);
 
     m_wgs_err_conv = new ScientificBox;
     m_wgs_err_conv->setDecimals(10);
     m_wgs_err_conv->setValue(1E-9);
     m_wgs_err_conv->setSingleStep(1e-9);
     m_wgs_err_conv->setToolTip(tr("Set the cutoff, where the difference between calculated SSE is considered as zero."));
+    form->addRow(tr("Change of the SSE counted as zero:"), m_wgs_err_conv);
 
     m_gridErrorConvergencyCounter = new QSpinBox;
     m_gridErrorConvergencyCounter->setRange(1, 1e8);
     m_gridErrorConvergencyCounter->setSingleStep(10);
     m_gridErrorConvergencyCounter->setValue(5);
-    m_gridErrorConvergencyCounter->setToolTip(tr("Set the maximal number of zero change in SSE ( <  \'SSE Convergence\'), before the stopping."));
-
-    hlayout->addWidget(new QLabel(tr("SSE Convergence:")));
-    hlayout->addWidget(m_wgs_err_conv);
-    hlayout->addWidget(new QLabel(tr("Max SSE Convergency Counter")));
-    hlayout->addWidget(m_gridErrorConvergencyCounter);
-
-    layout->addLayout(hlayout);
-
-    hlayout = new QHBoxLayout;
+    m_gridErrorConvergencyCounter->setToolTip(tr("Set the maximal number of zero change in SSE before the stopping."));
+    form->addRow(tr("Stop after steps without change:"), m_gridErrorConvergencyCounter);
 
     m_gridOvershotCounter = new QSpinBox;
     m_gridOvershotCounter->setRange(1, 1e8);
     m_gridOvershotCounter->setSingleStep(10);
     m_gridOvershotCounter->setValue(5);
     m_gridOvershotCounter->setToolTip(tr("Set the maximal number of allowed steps, where SSE > SSE(max). The procedure will stop after that number is reached."));
+    form->addRow(tr("Stop after steps above the limit:"), m_gridOvershotCounter);
+
     m_gridErrorDecreaseCounter = new QSpinBox;
     m_gridErrorDecreaseCounter->setRange(1, 1e8);
     m_gridErrorDecreaseCounter->setSingleStep(10);
     m_gridErrorDecreaseCounter->setValue(50);
-    m_gridErrorDecreaseCounter->setToolTip("Set the maximal number of allowed steps, where SSE < SSE(fit). The procedure will stop after that number is reached.");
+    m_gridErrorDecreaseCounter->setToolTip(tr("Set the maximal number of allowed steps, where SSE < SSE(fit). The procedure will stop after that number is reached."));
+    form->addRow(tr("Stop after steps below the fit:"), m_gridErrorDecreaseCounter);
 
-    hlayout->addWidget(new QLabel(tr("Max SSE Overshot Counter:")));
-    hlayout->addWidget(m_gridOvershotCounter);
-    hlayout->addWidget(new QLabel(tr("Max SSE Decrease Counter:")));
-    hlayout->addWidget(m_gridErrorDecreaseCounter);
-
-    layout->addLayout(hlayout);
-
-    hlayout = new QHBoxLayout;
+    more->setLayout(form);
+    AddFolded(top, more, QStringLiteral("wgs_more"));
 
     m_cv = new QPushButton(tr("Calculate"));
-    layout->addWidget(m_cv);
-
+    top->addWidget(m_cv);
+    top->addStretch(1);
     connect(m_cv, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunGridSearch());
     });
-    cv_widget->setLayout(layout);
-    return cv_widget;
+    widget->setLayout(top);
+    return widget;
 }
 
+/*! \brief Tab of the Model Comparison: confidence limits from random steps. In sight: parameters, confidence, steps; behind "..more..":
+ * the factor of the box of every parameter. Claude Generated. */
 QWidget* StatisticDialog::ModelComparison()
 {
-    QWidget* mo_widget = new QWidget;
-    QGridLayout* layout = new QGridLayout;
+    QWidget* widget = new QWidget;
+    QVBoxLayout* top = new QVBoxLayout;
 
-    QGroupBox* parameter = new QGroupBox(tr("Parameter"));
-    if (m_model) {
-        layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
-        FlowLayout* layout = new FlowLayout;
-        for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
-            QCheckBox* checkbox = new QCheckBox;
-            checkbox->setChecked(true);
-            m_moco_global << checkbox;
-
-            QDoubleSpinBox* doublespin = new QDoubleSpinBox;
-            doublespin->setMinimum(0);
-            doublespin->setMaximum(50);
-            doublespin->setValue(1.5);
-            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.toStrongRef().data()->GlobalParameterName(i)));
-            m_glob_box_scaling << doublespin;
-
-            QHBoxLayout* hlayout = new QHBoxLayout;
-            hlayout->addWidget(checkbox);
-            QLabel* label = new QLabel("<html>" + m_model.toStrongRef().data()->GlobalParameterName(i) + "</html>");
-            label->setFixedWidth(100);
-            hlayout->addWidget(label);
-            hlayout->addWidget(doublespin);
-            hlayout->addStretch(100);
-            layout->addItem(hlayout);
-
-            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
-                if (m_model) {
-                    checkbox->setEnabled(m_model.toStrongRef().data()->GlobalEnabled(i));
-                }
-            });
-        }
-
-        for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
-            QCheckBox* checkbox = new QCheckBox;
-            m_moco_local << checkbox;
-
-            QDoubleSpinBox* doublespin = new QDoubleSpinBox;
-            doublespin->setMinimum(0);
-            doublespin->setMaximum(50);
-            doublespin->setValue(1.50);
-            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.toStrongRef().data()->LocalParameterName(i)));
-
-            m_loc_box_scaling << doublespin;
-
-            QHBoxLayout* hlayout = new QHBoxLayout;
-            hlayout->addWidget(checkbox);
-            QLabel* label = new QLabel("<html>" + m_model.toStrongRef().data()->LocalParameterName(i) + "</html>");
-            label->setFixedWidth(100);
-            hlayout->addWidget(label);
-            hlayout->addWidget(doublespin);
-            hlayout->addStretch(100);
-            layout->addItem(hlayout);
-
-            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
-                if (m_model) {
-                    checkbox->setEnabled(m_model.toStrongRef().data()->LocalEnabled(i));
-                }
-            });
-        }
-        parameter->setLayout(layout);
-    }
-    layout->addWidget(parameter, 0, 0, 1, 3);
-
-    m_moco_global_settings = new QGroupBox(tr("Settings"));
-    QGridLayout* global_layout = new QGridLayout;
+    m_moco_parameters = new ParameterSelector(m_model.toStrongRef(), true);
+    top->addWidget(m_moco_parameters);
 
     m_moco_maxerror = new QDoubleSpinBox;
     m_moco_maxerror->setMaximum(100);
@@ -579,106 +657,53 @@ QWidget* StatisticDialog::ModelComparison()
     m_moco_maxerror->setValue(95);
     m_moco_maxerror->setDecimals(1);
     m_moco_maxerror->setSuffix("%");
-
-    m_moco_f_value = new QDoubleSpinBox(this);
-    m_moco_f_value->setMaximum(1000);
-    m_moco_f_value->setMinimum(0);
-    m_moco_f_value->setValue(m_f_value);
-    m_moco_f_value->setDecimals(4);
-    m_moco_f_value->setReadOnly(true);
-
-    connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
-
-    QHBoxLayout* hlayout = new QHBoxLayout;
-
-    m_radio_moco_sse = new QRadioButton(tr("SSE"));
-    m_radio_moco_sse->setChecked(true);
-
-    connect(m_radio_moco_sse, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 0;
-            m_error_name = m_radio_moco_sse->text();
-            CalculateError();
-        }
-    });
-    m_radio_moco_ssy = new QRadioButton(tr("SEy"));
-    connect(m_radio_moco_ssy, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 1;
-            m_error_name = m_radio_moco_ssy->text();
-            CalculateError();
-        }
-    });
-    m_radio_moco_chi = new QRadioButton(tr("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2));
-    connect(m_radio_moco_chi, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 2;
-            m_error_name = m_radio_moco_chi->text();
-            CalculateError();
-        }
-    });
-    m_radio_moco_sigma = new QRadioButton(tr("%1").arg(Unicode_sigma));
-    connect(m_radio_moco_sigma, &QRadioButton::toggled, this, [this](int state) {
-        if (state) {
-            m_ParameterIndex = 3;
-            m_error_name = m_radio_moco_sigma->text();
-            CalculateError();
-        }
-    });
-
-    hlayout->addWidget(m_radio_moco_sse);
-    hlayout->addWidget(m_radio_moco_ssy);
-    hlayout->addWidget(m_radio_moco_chi);
-    hlayout->addWidget(m_radio_moco_sigma);
-
-    m_radio_moco_sse->setHidden(true);
-    m_radio_moco_ssy->setHidden(true);
-    m_radio_moco_chi->setHidden(true);
-    m_radio_moco_sigma->setHidden(true);
-
-    global_layout->addLayout(hlayout, 0, 0, 1, 2);
-
-    global_layout->addWidget(new QLabel(tr("Confidence Interval")), 0, 0);
-    global_layout->addWidget(m_moco_maxerror, 0, 1);
-
-    if (m_model) {
-        global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
-        global_layout->addWidget(m_moco_f_value, 1, 1);
-        m_moco_error_info = new QLabel;
-        global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
-    } else
-        m_moco_f_value->hide();
-
-    m_moco_global_settings->setLayout(global_layout);
-    layout->addWidget(m_moco_global_settings, 1, 0, 1, 3);
-    m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
-    QGridLayout* monte_layout = new QGridLayout;
+    connect(m_moco_maxerror, &QDoubleSpinBox::valueChanged, this, &StatisticDialog::CalculateError);
+    QHBoxLayout* row = new QHBoxLayout;
+    row->addWidget(new QLabel(tr("Confidence:")));
+    row->addWidget(m_moco_maxerror, 1);
+    top->addLayout(row);
+    m_moco_error_info = new QLabel;
+    m_moco_error_info->setWordWrap(true);
+    top->addWidget(m_moco_error_info);
 
     m_moco_mc_steps = new QSpinBox;
-    m_moco_mc_steps->setMaximum(1e7);
+    m_moco_mc_steps->setMaximum(1e9);
+    m_moco_mc_steps->setMinimum(10);
+    m_moco_mc_steps->setSingleStep(1000);
     m_moco_mc_steps->setValue(20000);
-    m_moco_mc_steps->setSingleStep(100);
+    m_moco_mc_steps->setToolTip(tr("Number of random steps."));
+    row = new QHBoxLayout;
+    row->addWidget(new QLabel(tr("Steps:")));
+    row->addWidget(m_moco_mc_steps, 1);
+    top->addLayout(row);
 
-    monte_layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);
-    monte_layout->addWidget(m_moco_mc_steps, 1, 1, 1, 2);
-    m_moco_monte_carlo->setLayout(monte_layout);
-    layout->addWidget(m_moco_monte_carlo, 2, 0, 1, 3);
+    if (m_moco_parameters->ScalingWidget()) {
+        QWidget* more = new QWidget;
+        QVBoxLayout* inner = new QVBoxLayout;
+        inner->setContentsMargins(0, 0, 0, 0);
+        inner->addWidget(new QLabel(tr("Factor of the box of each parameter:")));
+        inner->addWidget(m_moco_parameters->ScalingWidget());
+        more->setLayout(inner);
+        AddFolded(top, more, QStringLiteral("moco_more"));
+    }
 
-    m_moco = new QPushButton(tr("Start ..."));
-    layout->addWidget(m_moco, 5, 0, 1, 3);
-
+    m_moco = new QPushButton(tr("Calculate"));
+    top->addWidget(m_moco);
+    top->addStretch(1);
     connect(m_moco, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunModelComparison());
     });
-    mo_widget->setLayout(layout);
-    return mo_widget;
+    widget->setLayout(top);
+    return widget;
 }
 
+/*! \brief Tab of Cross Validation and Reduction Analysis. In sight: how many points are left out; behind "..more..": how the map of the
+ * Leave-X-Out experiments is made. Claude Generated. */
 QWidget* StatisticDialog::CVWidget()
 {
     QWidget* widget = new QWidget;
-    QGridLayout* layout = new QGridLayout;
+    QVBoxLayout* top = new QVBoxLayout;
     m_radio_cv_loo = new QRadioButton(tr("Leave-One-Out"));
     m_radio_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
     m_radio_cv_lxo = new QRadioButton(tr("Leave-X-Out"));
@@ -687,31 +712,31 @@ QWidget* StatisticDialog::CVWidget()
     m_cv_lxo->setMinimum(1);
     m_cv_lxo->setPrefix(tr("X = "));
 
-
     m_cv_runs = new QSpinBox;
     m_cv_runs->setMinimum(1);
     m_cv_runs->setMaximum(10000000);
     m_cv_runs->setValue(10000);
     m_cv_runs->setSuffix(tr(" # steps"));
 
-
+    QLabel* max_runs = new QLabel;
+    max_runs->setWordWrap(true);
     if (m_model) {
         m_cv_lxo->setMaximum(m_model.toStrongRef().data()->DataPoints() - 1);
-        QLabel* max_runs = new QLabel;
-        connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this, layout](int value) {
+        connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this](int value) {
             int n = m_model.toStrongRef().data()->DataPoints();
             int k = value;
-            
+
             // Safety check to prevent overflow - Claude Generated
             if (k > n || k < 0 || n <= 0) {
                 max_runs->setText(tr("Invalid combination parameters"));
                 return;
             }
-            
+
             // Calculate binomial coefficient C(n,k) with overflow protection - Claude Generated
             long double maxsteps = 1.0;
-            if (k > n - k) k = n - k; // Take advantage of symmetry
-            
+            if (k > n - k)
+                k = n - k; // Take advantage of symmetry
+
             for (int i = 0; i < k; ++i) {
                 maxsteps = maxsteps * (n - i) / (i + 1);
                 // Check for overflow - Claude Generated
@@ -724,56 +749,47 @@ QWidget* StatisticDialog::CVWidget()
 
             max_runs->setText(tr("Maximal number of runs = %1").arg(QString::number(maxsteps, 'g')));
         });
-        max_runs->setMaximumHeight(10);
-        layout->addWidget(max_runs, 3, 1, 1, 2);
     }
     m_cv_lxo->setValue(3);
 
-
-    QGroupBox* cv_algo = new QGroupBox;
-
-    m_cv_premap = new QRadioButton(tr("Precalculation"));
-    m_cv_premap->setToolTip(tr("Precalculates the whole map systematically - more than # steps."));
-
-    m_cv_automap = new QRadioButton(tr("Automatic"));
-    m_cv_automap->setToolTip(tr("Automatically chooses between either full precalculation or random initialisation!"));
-
-    m_cv_randmap = new QRadioButton(tr("Random initialisation"));
-    m_cv_randmap->setToolTip(tr("Calculates only # steps of random LXO experiments!"));
-
-    cv_algo->setMaximumHeight(100);
-    QHBoxLayout* cv_algo_layout = new QHBoxLayout;
-    cv_algo->setTitle(tr("Map Calculation Strategy in LXO"));
-    cv_algo_layout->addWidget(m_cv_premap);
-    cv_algo_layout->addWidget(m_cv_automap);
-    cv_algo_layout->addWidget(m_cv_randmap);
-
-    m_cv_automap->setChecked(true);
-
-    cv_algo->setLayout(cv_algo_layout);
-
+    top->addWidget(m_radio_cv_loo);
+    top->addWidget(m_radio_cv_l2o);
+    QHBoxLayout* lxo = new QHBoxLayout;
+    lxo->addWidget(m_radio_cv_lxo);
+    lxo->addWidget(m_cv_lxo, 1);
+    lxo->addWidget(m_cv_runs, 1);
+    top->addLayout(lxo);
+    top->addWidget(max_runs);
     m_radio_cv_loo->setChecked(true);
-
-    layout->addWidget(m_radio_cv_loo, 0, 0);
-    layout->addWidget(m_radio_cv_l2o, 1, 0);
-    layout->addWidget(m_radio_cv_lxo, 2, 0);
-    layout->addWidget(m_cv_lxo, 2, 1);
-    layout->addWidget(m_cv_runs, 2, 2);
-    layout->addWidget(cv_algo, 4, 1, 1, 2);
-    // advanced_ui is followed live: the strategy box is always there and only shown while the setting is on
-    auto showAdvanced = [cv_algo]() { cv_algo->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
-    showAdvanced();
-    if (Instance::GlobalInstance())
-        connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, cv_algo, showAdvanced);
-
     connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
     connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
 
+    // the map of the Leave-X-Out experiments
+    QWidget* more = new QWidget;
+    QVBoxLayout* inner = new QVBoxLayout;
+    inner->setContentsMargins(0, 0, 0, 0);
+    QGroupBox* cv_algo = new QGroupBox(tr("Map calculation strategy in LXO"));
+    m_cv_premap = new QRadioButton(tr("Precalculation"));
+    m_cv_premap->setToolTip(tr("Precalculates the whole map systematically - more than # steps."));
+    m_cv_automap = new QRadioButton(tr("Automatic"));
+    m_cv_automap->setToolTip(tr("Automatically chooses between either full precalculation or random initialisation!"));
+    m_cv_randmap = new QRadioButton(tr("Random initialisation"));
+    m_cv_randmap->setToolTip(tr("Calculates only # steps of random LXO experiments!"));
+    QVBoxLayout* cv_algo_layout = new QVBoxLayout;
+    cv_algo_layout->addWidget(m_cv_premap);
+    cv_algo_layout->addWidget(m_cv_automap);
+    cv_algo_layout->addWidget(m_cv_randmap);
+    m_cv_automap->setChecked(true);
+    cv_algo->setLayout(cv_algo_layout);
+    inner->addWidget(cv_algo);
+    more->setLayout(inner);
+    AddFolded(top, more, QStringLiteral("cv_more"));
+
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
-
-    layout->addWidget(m_cross_validate, 5, 0, 1, 3);
-    layout->addWidget(m_reduction, 6, 0, 1, 3);
+    top->addWidget(m_cross_validate);
+    top->addWidget(m_reduction);
+    top->addStretch(1);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunCrossValidation());
@@ -782,7 +798,7 @@ QWidget* StatisticDialog::CVWidget()
         clearMessages();
         emit RunCalculation(RunReductionAnalyse());
     });
-    widget->setLayout(layout);
+    widget->setLayout(top);
     return widget;
 }
 
@@ -797,7 +813,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
 
     controller["MaxSteps"] = m_wgs_steps->value();
     controller["MaxParameter"] = m_wgs_max;
-    controller["f-value"] = m_wgs_f_value->value();
+    controller["f-value"] = m_wgs_f;
     controller["Method"] = SupraFit::Method::WeakenedGridSearch;
     controller["confidence"] = m_wgs_maxerror->value();
 
@@ -809,26 +825,9 @@ QJsonObject StatisticDialog::RunGridSearch() const
 
     controller["StoreRaw"] = m_store_wgsearch->isChecked();
 
-    controller["ParameterIndex"] = m_ParameterIndex;
+    controller["ParameterIndex"] = 0; // the sum of squares
 
-    QList<int> glob_param, local_param;
-    int max = 0;
-    for (int i = 0; i < m_grid_global.size(); ++i) {
-        if (m_model.toStrongRef().data()->GlobalTable()->isChecked(0, i))
-            glob_param << (m_grid_global[i]->isChecked() * m_grid_global[i]->isEnabled());
-        max += m_grid_global[i]->isChecked();
-    }
-
-    for (int i = 0; i < m_grid_local.size(); ++i) {
-        for (int j = 0; j < m_model.toStrongRef().data()->SeriesCount(); ++j) {
-            if (m_model.toStrongRef().data()->LocalTable()->isChecked(j, i))
-                local_param << (m_grid_local[i]->isChecked() * m_grid_local[i]->isEnabled());
-        }
-        max += m_model.toStrongRef().data()->SeriesCount() * m_grid_local[i]->isChecked();
-    }
-
-    controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
-    controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
+    m_wgs_parameters->AddTo(controller);
     return controller;
 }
 
@@ -838,35 +837,39 @@ QJsonObject StatisticDialog::RunModelComparison() const
 
     controller["MaxSteps"] = m_moco_mc_steps->value();
     controller["MaxParameter"] = m_moco_max;
-    controller["f-value"] = m_moco_f_value->value();
+    controller["f-value"] = m_moco_f;
     controller["Method"] = SupraFit::Method::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
 
-    QVector<double> glob_box, local_box;
-    QList<int> glob_param, local_param;
-    int max = 0;
-    for (int i = 0; i < m_moco_global.size(); ++i) {
-        if (m_model.toStrongRef().data()->GlobalTable()->isChecked(0, i))
-            glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
-        glob_box << m_glob_box_scaling[i]->value();
-        max += m_moco_global[i]->isChecked();
-    }
+    controller["ParameterIndex"] = 0; // the sum of squares
 
-    for (int i = 0; i < m_moco_local.size(); ++i) {
-        for (int j = 0; j < m_model.toStrongRef().data()->SeriesCount(); ++j) {
-            if (m_model.toStrongRef().data()->LocalTable()->isChecked(j, i))
-                local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
-            local_box << m_loc_box_scaling[i]->value();
-        }
-        max += m_model.toStrongRef().data()->SeriesCount() * m_moco_local[i]->isChecked();
-    }
-    controller["ParameterIndex"] = m_ParameterIndex;
+    m_moco_parameters->AddTo(controller);
+    return controller;
+}
 
-    controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
-    controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
-    controller["GlobalParameterScalingList"] = ToolSet::DoubleVec2String(glob_box);
-    controller["LocalParameterScalingList"] = ToolSet::DoubleVec2String(local_box);
-
+QJsonObject StatisticDialog::RunLandscape() const
+{
+    QJsonObject controller = LandscapeConfigBlock;
+    controller["Method"] = SupraFit::Method::LandscapeSampling;
+    controller["confidence"] = m_ls_confidence->value();
+    controller["Walkers"] = m_ls_walkers->value();
+    controller["MaxSteps"] = m_ls_steps->value();
+    controller["Sampler"] = m_ls_sampler->currentData().toString();
+    controller["StepSize"] = m_ls_step->value();
+    controller["GradientStep"] = m_ls_gradient_step->value();
+    controller["CentralGradient"] = m_ls_central->isChecked();
+    controller["LangevinCorrection"] = m_ls_correction->isChecked();
+    controller["Mode"] = m_ls_task->currentData().toString();
+    controller["SearchWall"] = m_ls_search_wall->value();
+    controller["CutFactor"] = m_ls_wall->value();
+    controller["MinSteps"] = m_ls_min_steps->value();
+    controller["Patience"] = m_ls_patience->value();
+    controller["MinHillFraction"] = m_ls_converged->value();
+    controller["BiasFactor"] = m_ls_bias->value();
+    controller["HillWidth"] = m_ls_hill_width->value();
+    controller["Range"] = m_ls_range->value();
+    controller["Polish"] = m_ls_polish->value();
+    controller["Surface"] = m_ls_surface->isChecked();
     return controller;
 }
 
@@ -876,14 +879,7 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     controller["MaxSteps"] = m_mc_steps->value();
     controller["Variance"] = m_varianz_box->value();
 
-    if (m_mc_std->isChecked())
-        controller["VarianceSource"] = 3;
-    else if (m_mc_sey->isChecked())
-        controller["VarianceSource"] = 2;
-    else if (m_mc_user->isChecked())
-        controller["VarianceSource"] = 1;
-    else
-        controller["VarianceSource"] = 4;
+    controller["VarianceSource"] = m_mc_noise->currentData().toInt(); // 1 user input, 2 SEy, 3 sigma of the fit, 4 bootstrapping
 
     controller["OriginalData"] = m_original->isChecked();
     controller["Method"] = SupraFit::Method::MonteCarlo;
@@ -1014,9 +1010,10 @@ void StatisticDialog::HideWidget()
 
 void StatisticDialog::Update()
 {
-    if (m_mc_sey->isChecked())
+    const int source = m_mc_noise->currentData().toInt();
+    if (source == 2)
         m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
-    else if (m_mc_std->isChecked())
+    else if (source == 3)
         m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
     CalculateError();
 }
@@ -1026,26 +1023,33 @@ void StatisticDialog::Message(const QString& str)
     m_message_box->setText(str);
 }
 
+void StatisticDialog::Stage(const QString& text, bool restart)
+{
+    m_message_box->setText(text);
+    if (restart) { // the time estimate belongs to the stage, the elapsed time to the whole job
+        QMutexLocker locker(&mutex);
+        m_time = 0;
+        m_progress->setValue(0);
+    }
+}
+
+/*! \brief F value and the limit of the sum of squares for the two confidences; the line under each says what they are. Claude Generated. */
 void StatisticDialog::CalculateError()
 {
-    if (!m_model.toStrongRef().data())
+    const QSharedPointer<AbstractModel> model = m_model.toStrongRef();
+    if (!model)
         return;
     updateUI();
-    qreal error = m_model.toStrongRef().data()->StatisticVector()[m_ParameterIndex];
-    qreal max_moco_error, max_wgs_error;
-    QString wgs_message, moco_message;
-
-    max_wgs_error = error * (m_wgs_f_value->value() * m_model.toStrongRef().data()->Parameter() / (m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + 1);
-    wgs_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_wgs_error) + ".";
-
-    max_moco_error = error * (m_moco_f_value->value() * m_model.toStrongRef().data()->Parameter() / (m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + 1);
-    moco_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_moco_error) + ".";
-
-    m_moco_max = max_moco_error;
-    m_wgs_max = max_wgs_error;
-
-    m_wgs_error_info->setText(wgs_message);
-    m_moco_error_info->setText(moco_message);
+    const double sse = model->SSE();
+    auto describe = [&](QDoubleSpinBox* confidence, QLabel* info, qreal& f, qreal& limit) {
+        const double p = confidence->value() / 100.0;
+        f = model->finv(p);
+        limit = model->ErrorfTestThreshold(p);
+        info->setText(tr("F = %1: the sum of squares may rise from %2 to %3.").arg(f, 0, 'g', 5).arg(sse, 0, 'g', 6).arg(limit, 0, 'g', 6));
+        info->setToolTip(FOutput());
+    };
+    describe(m_wgs_maxerror, m_wgs_error_info, m_wgs_f, m_wgs_max);
+    describe(m_moco_maxerror, m_moco_error_info, m_moco_f, m_moco_max);
 }
 
 #include "statisticdialog.moc"

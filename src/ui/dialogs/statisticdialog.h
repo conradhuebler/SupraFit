@@ -34,6 +34,7 @@
 #include "src/capabilities/resampleanalyse.h"
 
 class QCheckBox;
+class QComboBox;
 class QGroupBox;
 class QDoubleSpinBox;
 class QLabel;
@@ -44,6 +45,8 @@ class QRadioButton;
 class QTabWidget;
 
 class ScientificBox;
+class ParameterSelector;
+class ScanWidget;
 
 class WGSConfig;
 class MCConfig;
@@ -106,14 +109,11 @@ public:
     QJsonObject RunModelComparison() const;
     QJsonObject RunReductionAnalyse() const;
     QJsonObject RunCrossValidation() const;
+    QJsonObject RunLandscape() const;
 
     inline void setRuns(int runs) { m_main_steps = runs; }
     virtual void setVisible(bool visible) override;
     inline bool UseChecked() const { return m_use_checked->isChecked(); }
-    inline bool isMCStd() const { return m_mc_std->isChecked(); }
-    inline bool isMCSEy() const { return m_mc_sey->isChecked(); }
-    inline bool isMCUser() const { return m_mc_user->isChecked(); }
-    inline qreal MCStd() const { return m_varianz_box->value(); }
 
     void updateUI();
 
@@ -134,6 +134,8 @@ public slots:
     void ShowWidget();
     void Attention();
     void Message(const QString& str);
+    /*! \brief What the running analysis does now; with \p restart the progress starts again for this stage. Claude Generated. */
+    void Stage(const QString& text, bool restart);
     void reject() override;
 
 private:
@@ -145,36 +147,46 @@ private:
     QWidget* GridSearchWidget();
     QWidget* ModelComparison();
     QWidget* CVWidget();
+    QWidget* LandscapeWidget();
+    QWidget* ScanTab();
+    ScanWidget* m_scan = nullptr;
+    void updateLandscape();
 
     QWidget *m_hide_widget, *m_moco_widget;
     QTabWidget* m_tab_widget;
-    QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_wgs_f_value;
+    QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi;
     ScientificBox* m_wgs_err_conv;
     QSpinBox *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
     QCheckBox *m_original, *m_use_checked, *m_store_wgsearch;
-    QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
-    QVector<QDoubleSpinBox*> m_indepdent_variance, m_glob_box_scaling, m_loc_box_scaling;
+    QVector<QCheckBox*> m_indepdent_checkboxes;
+    QVector<QDoubleSpinBox*> m_indepdent_variance;
+    ParameterSelector *m_wgs_parameters = nullptr, *m_moco_parameters = nullptr;
     QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
+    QDoubleSpinBox *m_ls_confidence, *m_ls_range, *m_ls_step, *m_ls_gradient_step;
+    QCheckBox *m_ls_central = nullptr, *m_ls_correction = nullptr, *m_ls_surface = nullptr;
+    QComboBox* m_ls_task = nullptr;
+    QDoubleSpinBox *m_ls_search_wall = nullptr, *m_ls_wall, *m_ls_converged, *m_ls_bias, *m_ls_hill_width;
+    QSpinBox *m_ls_min_steps, *m_ls_patience;
+    QSpinBox *m_ls_walkers, *m_ls_steps, *m_ls_polish;
+    QComboBox* m_ls_sampler;
+    QLabel* m_ls_note = nullptr;
+    QPushButton* m_ls_run = nullptr;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
-    QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar *m_progress, *m_main_progress;
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
     QRadioButton *m_radio_cv_loo, *m_radio_cv_l2o, *m_radio_cv_lxo;
-    QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user, *m_mc_bootstrap;
-    QRadioButton *m_radio_moco_sse, *m_radio_moco_ssy, *m_radio_moco_chi, *m_radio_moco_sigma;
-    QRadioButton *m_radio_wgs_sse, *m_radio_wgs_ssy, *m_radio_wgs_chi, *m_radio_wgs_sigma;
+    QComboBox* m_mc_noise = nullptr;
 
     QRadioButton *m_cv_premap, *m_cv_automap, *m_cv_randmap;
     QMutex mutex;
 
     QWeakPointer<AbstractModel> m_model;
 
-    int m_time, m_main_steps = 0, m_ParameterIndex = 0;
+    int m_time, m_main_steps = 0;
     qint64 m_time_0;
-    qreal m_f_value = 1, m_moco_max, m_wgs_max;
+    qreal m_wgs_f = 1, m_moco_f = 1, m_moco_max = 0, m_wgs_max = 0; ///< F value and limit of the sum of squares of the two confidences
     bool m_hidden;
     bool m_embedded = false;
-    QString m_error_name = QString();
 
 private slots:
     void Update();

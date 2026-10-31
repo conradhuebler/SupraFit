@@ -82,6 +82,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::ModelComparison));
         SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::WeakenedGridSearch));
         SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::GlobalSearch));
+        SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::LandscapeSampling));
         SaveStatistic(statisticObject, m_stats.list(SupraFit::Method::Reduction));
 
         json["methods"] = statisticObject;

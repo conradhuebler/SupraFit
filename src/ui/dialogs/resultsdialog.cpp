@@ -351,6 +351,12 @@ void ResultsDialog::UpdateList()
         model->appendRow(item);
     }
 
+    for (int i = 0; i < m_model.toStrongRef().data()->LandscapeSize(); ++i) {
+        QStandardItem* item = new QStandardItem;
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::LandscapeSampling, i), i);
+        model->appendRow(item);
+    }
+
     m_itemmodel = model;
     m_results->setModel(m_itemmodel);
     m_load->setEnabled(m_itemmodel->rowCount());

@@ -16,6 +16,11 @@
 
 ---
 
+## Landscape sampling (roadmap/landscape_sampling.md)
+- [ ] Constrained-refit profile likelihood as the cheap interval method: the sampler needs 14-3000x the SSE evaluations for the same intervals (docs/landscape_sampling_measurement_2026-10-24.md); proposal, not decided
+- [ ] Landscape surfaces of three and more constants show only visited bins (gaps in the height lines); the profile of a pair is a minimum over the others, the bias is no marginal of it - see roadmap/landscape_sampling.md
+- [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
+
 ## UI Redesign (supersedes Phases 1–3 below)
 - [ ] Agent chats in projects: ChatLog drops unknown per-chat fields when a project chat is rewritten (blocks of newer versions survive only untouched); `ReferenceProjectsTest` fails 2 cases independent of WP11 (2:1 model SSE, CV mean)
 - [ ] LLM presets: hosted providers (OpenAI, Anthropic, Gemini, OpenRouter, Mistral, Groq, Together, DeepSeek) never contacted with a real key; OpenRouter/Mistral URLs only third-party-confirmed (`src/agent/llmpresets.cpp`)

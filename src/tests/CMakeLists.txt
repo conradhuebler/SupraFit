@@ -213,6 +213,64 @@ set_tests_properties(CubicSolverTest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# Metadynamics-like landscape sampler on analytic surfaces (Claude Generated 2026)
+add_executable(test_landscapesampler
+    test_landscapesampler.cpp
+)
+
+target_link_libraries(test_landscapesampler
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_landscapesampler ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_landscapesampler pthread dl)
+endif()
+
+add_test(NAME LandscapeSamplerTest COMMAND test_landscapesampler)
+
+set_tests_properties(LandscapeSamplerTest PROPERTIES
+    TIMEOUT 120
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Landscape search on fitted titration models (Claude Generated 2026)
+add_executable(test_landscapesearch
+    test_landscapesearch.cpp
+)
+
+target_link_libraries(test_landscapesearch
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_landscapesearch ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_landscapesearch pthread dl)
+endif()
+
+add_test(NAME LandscapeSearchTest COMMAND test_landscapesearch)
+
+set_tests_properties(LandscapeSearchTest PROPERTIES
+    TIMEOUT 600
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Reaction-equation parser test - arrow syntax -> components/stoichiometry (Claude Generated 2026)
 add_executable(test_reactionparser
     test_reactionparser.cpp
@@ -1015,6 +1073,19 @@ if(ML_NEURAL_NETWORKS)
 endif()
 if(UNIX)
     target_link_libraries(benchmark_varpro pthread dl)
+endif()
+
+# Landscape sampling vs profile likelihood vs Monte Carlo vs multistart (Claude Generated 2026) - manual measurement, not a ctest
+add_executable(benchmark_landscape benchmark_landscape.cpp)
+target_link_libraries(benchmark_landscape
+    Qt6::Core Qt6::Test Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(benchmark_landscape ml)
+endif()
+if(UNIX)
+    target_link_libraries(benchmark_landscape pthread dl)
 endif()
 
 # Dimer-model fit on clean 1:1/1:2 data: LevMar vs VarPro on the flat lg beta(A2) direction (Claude Generated 2026) - manual, not a ctest

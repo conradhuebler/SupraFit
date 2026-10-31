@@ -175,7 +175,7 @@ void ResampleAnalyse::CrossValidation()
         for (int i = 0; i < X; ++i)
             vector[i] = i;
 
-        emit Message(tr("Map generation!"));
+        emit Stage(tr("Map generation!"));
 
         if (algorithm == 2) {
             if ((maxsteps > 1e5 && ratio < 0.75) || X > 10)
@@ -215,7 +215,7 @@ void ResampleAnalyse::CrossValidation()
             //#endif
 
             for (int i = 0; i < vector_block.size(); ++i) {
-                emit Message(tr("Running %1 jobs!").arg(steps));
+                emit Stage(tr("Running %1 jobs!").arg(steps));
 
                 QVector<int> vector = vector_block[i];
 
@@ -277,7 +277,7 @@ void ResampleAnalyse::CrossValidation()
             //#endif
 
             if (vector_block.size() < steps) {
-                emit Message(tr("Running all jobs!"));
+                emit Stage(tr("Running all jobs!"));
 
                 for (int i = 0; i < vector_block.size(); ++i) {
                     QVector<int> vector = vector_block[i];
@@ -307,7 +307,7 @@ void ResampleAnalyse::CrossValidation()
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
                 }
             } else {
-                emit Message(tr("Running %1 jobs!").arg(steps));
+                emit Stage(tr("Running %1 jobs!").arg(steps));
 
                 while (used_indicies.size() < steps) {
                     int index = QRandomGenerator::global()->bounded(0, vector_block.size());
@@ -364,18 +364,15 @@ void ResampleAnalyse::CrossValidation()
     m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
 
     if (more_message)
-        emit Message(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
+        emit Stage(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
     bool left_out_points = m_controller["LeftOutPoints"].toBool();
     // NOTE: Parallelization candidate for future implementation - Claude Generated
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();
     QJsonObject chart_block;
-    int calculation = 0;
 
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
             QHash<int, QJsonObject> models = threads[i]->Models();
-            std::cout << "Thread " << i << " performed " << threads[i]->Counter() << " calculation in " << threads[i]->Timer() << " msecs." << std::endl;
-            calculation += threads[i]->Counter();
 
             for (const QJsonObject& model : models) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -398,7 +395,6 @@ void ResampleAnalyse::CrossValidation()
             delete threads[i];
         }
     }
-    std::cout << calculation << " in total" << std::endl;
 
     calc_model.clear();
     if (more_message && left_out_points) // this will be set to false, if LXO was apported

@@ -127,11 +127,9 @@ bool GlobalSearch::Run()
     QVector<QVector<double>> full_list = ParamList();
     m_models.clear();
     QVector<double> error;
-    std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list);
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
 
     return true;
 }
@@ -209,8 +207,8 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
     }
 
     m_max_count = m_input.size();
-    std::cout << "starting the scanning with " << m_max_count << " steps." << std::endl;
 
+    emit Stage(tr("Scanning %1 start values").arg(m_max_count));
     emit setMaximumSteps(m_max_count);
 
     QVector<QPointer<SearchBatch>> threads;

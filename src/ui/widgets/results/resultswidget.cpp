@@ -20,6 +20,7 @@
 #include <charts.h>
 
 #include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/landscapesearch.h"
 #include "src/core/toolset.h"
 
 #include "src/core/models/AbstractModel.h"
@@ -37,8 +38,13 @@
 #include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QPointer>
+#include <QtCore/QTimer>
 
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QHBoxLayout>
+#include <QtGui/QTextDocumentFragment>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
@@ -116,6 +122,11 @@ void ResultsWidget::setUi()
         setObjectName("Global Search for " + m_model.toStrongRef().data()->Name());
         break;
 
+    case SupraFit::Method::LandscapeSampling:
+        m_widget = LandscapeWidget();
+        setObjectName("Landscape Sampling for " + m_model.toStrongRef().data()->Name());
+        break;
+
     default:
         m_widget = new QWidget;
         break;
@@ -133,6 +144,327 @@ void ResultsWidget::setUi()
     layout->addWidget(m_detailed, 1, 3);
     setLayout(layout);
     WriteConfidence(m_data);
+}
+
+/*! \brief The result of a landscape sampling in one chart that shows what is chosen: the profile of the sum of squares
+ * of all sampled constants, of a single one, or the 2D profile (height lines) of a pair. One line above the chart holds
+ * the choice; with one sampled constant there is nothing to choose and no line. Claude Generated. */
+QWidget* ResultsWidget::LandscapeWidget()
+{
+    const QJsonObject result = m_data["0"].toObject();
+    const QJsonArray variables = result["variables"].toArray();
+    const double fit = result["sse_min"].toDouble() > 0 ? result["sse_min"].toDouble() : 1.0;
+    const double level = result["level"].toDouble() / fit;
+    const double hi = result["contour_max"].toDouble(4); // upper end of the height lines, above the level by construction
+    const bool logSpacing = result["contour_log"].toBool(); // a minima search spans the confidence limit up to the wall
+    const bool finder = result["mode"].toString() == QLatin1String("Minima");
+    const QJsonArray minima = result["minima"].toArray();
+    auto plain = [](const QString& html) { return QTextDocumentFragment::fromHtml(html).toPlainText(); };
+
+    // the 2D profiles: `surfaces` of the pairs, or the single `surface` of a result stored by an earlier version
+    QJsonArray surfaces = result["surfaces"].toArray();
+    if (surfaces.isEmpty() && !result["surface"].toArray().isEmpty()) {
+        QJsonObject old;
+        old["x"] = 0;
+        old["y"] = 1;
+        old["bins"] = result["settings"].toObject()["bins"].toInt(60);
+        old["points"] = result["surface"].toArray();
+        surfaces << old;
+    }
+
+    QPointer<ListChart> view = new ListChart;
+    view->setName(QStringLiteral("landscapechart"));
+    view->setObjectName(QStringLiteral("landscapechart")); // for the tests and findChild
+    connect(view, &ListChart::lastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    Instance::GlobalInstance()->MakeChartConnections(view);
+    view->chart()->setZoomStrategy(ZoomStrategy::None); // the region around the fit is the point, a free zoom over the box a trap
+
+    // all profiles, or the one of variable `only`
+    auto drawProfiles = [=](int only) {
+        double xmin = 0, xmax = 0;
+        bool first = true;
+        int index = 0;
+        for (int i = 0; i < variables.size(); ++i) {
+            if (only >= 0 && i != only)
+                continue;
+            const QJsonObject v = variables[i].toObject();
+            QList<QPointF> points;
+            for (const QJsonValue& p : v["profile"].toArray())
+                points << QPointF(p.toArray()[0].toDouble(), p.toArray()[1].toDouble() / fit);
+            std::sort(points.begin(), points.end(), [](const QPointF& a, const QPointF& b) { return a.x() < b.x(); });
+            if (points.isEmpty())
+                continue;
+            xmin = first ? points.first().x() : qMin(xmin, points.first().x());
+            xmax = first ? points.last().x() : qMax(xmax, points.last().x());
+            first = false;
+
+            const QColor color = ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(v["index"].toInt()));
+            LineSeries* serie = new LineSeries;
+            serie->append(points);
+            serie->setName(v["name"].toString());
+            serie->setColor(color);
+            serie->setLineWidth(3);
+            view->addSeries(serie, index, color, v["name"].toString());
+            view->setColor(index, color);
+            ++index;
+        }
+        LineSeries* limit = new LineSeries;
+        limit->setDashDotLine(true);
+        const double margin = 0.1 * (xmax - xmin);
+        limit->append(QPointF(xmin - margin, level));
+        limit->append(QPointF(xmax + margin, level));
+        limit->setName(tr("Limit of the confidence region"));
+        limit->setColor(Qt::gray);
+        view->addSeries(limit, index, Qt::gray, tr("Limit of the confidence region"));
+        view->setColor(index, Qt::gray);
+
+        view->setTitle(only >= 0 ? tr("Profile of %1").arg(plain(variables[only].toObject()["name"].toString()))
+                                 : tr("Profiles for %1").arg(m_data["controller"].toObject()["title"].toString()));
+        view->setXAxis(only >= 0 ? plain(variables[only].toObject()["name"].toString()) : tr("parameter value"));
+        view->setYAxis(tr("SSE / SSE of the fit"));
+    };
+
+    // the 2D profile of a pair as height lines: the limit of the confidence region thick, ten lines above it
+    auto drawSurface = [=](const QJsonObject& surface) -> QRectF {
+        const int xi = surface["x"].toInt(), yi = surface["y"].toInt(), bins = qMax(2, surface["bins"].toInt(60));
+        const QJsonObject vx = variables[xi].toObject(), vy = variables[yi].toObject();
+        const double xlo = vx["box_lower"].toDouble(), xw = vx["box_upper"].toDouble() - xlo;
+        const double ylo = vy["box_lower"].toDouble(), yw = vy["box_upper"].toDouble() - ylo;
+
+        std::vector<double> sse(size_t(bins) * size_t(bins), INFINITY);
+        for (const QJsonValue& v : surface["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            const int a = int((p[0].toDouble() - xlo) / xw * bins), b = int((p[1].toDouble() - ylo) / yw * bins);
+            if (a >= 0 && a < bins && b >= 0 && b < bins)
+                sse[size_t(a) * size_t(bins) + size_t(b)] = qMin(sse[size_t(a) * size_t(bins) + size_t(b)], p[2].toDouble() / fit);
+        }
+        auto at = [&](int a, int b) { return sse[size_t(a) * size_t(bins) + size_t(b)]; };
+        auto centre = [&](int a, int b) { return QPointF(xlo + (a + 0.5) * xw / bins, ylo + (b + 0.5) * yw / bins); };
+
+        auto hue = [](double t) { return QColor::fromHsv(int(220 * (1.0 - t)), 200, 220); }; // blue (low) to red (high)
+
+        // A height line is a set of segments, one per square it crosses; segments that meet on a grid edge are joined into
+        // polylines, otherwise a series would draw straight lines from the end of one segment to the start of the next.
+        struct Segment {
+            int id[2]; ///< grid edges the segment ends on (the same edge is the end of the neighbouring square's segment)
+            QPointF end[2];
+        };
+        double xmin = vx["value"].toDouble(), xmax = xmin, ymin = vy["value"].toDouble(), ymax = ymin;
+        int index = 0;
+        for (int k = 0; k <= 10; ++k) {
+            const double value = logSpacing && hi > level ? level * std::pow(hi / level, k / 10.0) : level + (hi - level) * k / 10.0;
+            const QColor color = hue(0.08 * k);
+
+            QList<Segment> segments;
+            auto edgeId = [bins](int a, int b, bool vertical) { return (b * (bins + 1) + a) * 2 + (vertical ? 1 : 0); };
+            for (int a = 0; a + 1 < bins; ++a)
+                for (int b = 0; b + 1 < bins; ++b) {
+                    const double v[4] = { at(a, b), at(a + 1, b), at(a + 1, b + 1), at(a, b + 1) };
+                    // squares with a corner nobody visited carry no information
+                    if (!std::isfinite(v[0]) || !std::isfinite(v[1]) || !std::isfinite(v[2]) || !std::isfinite(v[3]))
+                        continue;
+                    const QPointF corner[4] = { centre(a, b), centre(a + 1, b), centre(a + 1, b + 1), centre(a, b + 1) };
+                    const int edge[4] = { edgeId(a, b, false), edgeId(a + 1, b, true), edgeId(a, b + 1, false), edgeId(a, b, true) };
+                    Segment s;
+                    int found = 0;
+                    for (int e = 0; e < 4; ++e) {
+                        const double v0 = v[e], v1 = v[(e + 1) % 4];
+                        if ((v0 <= value) == (v1 <= value))
+                            continue;
+                        const double f = (value - v0) / (v1 - v0);
+                        const QPointF p0 = corner[e], p1 = corner[(e + 1) % 4];
+                        if (found < 2) {
+                            s.id[found] = edge[e];
+                            s.end[found] = QPointF(p0.x() + f * (p1.x() - p0.x()), p0.y() + f * (p1.y() - p0.y()));
+                        }
+                        ++found;
+                    }
+                    if (found == 2) // four crossings (a saddle) are left out: two segments would be ambiguous
+                        segments << s;
+                }
+            if (segments.isEmpty())
+                continue;
+
+            QHash<int, QList<int>> meeting; // grid edge -> the segments ending on it
+            for (int i = 0; i < segments.size(); ++i) {
+                meeting[segments[i].id[0]] << i;
+                meeting[segments[i].id[1]] << i;
+            }
+            QList<bool> used(segments.size(), false);
+            for (int first = 0; first < segments.size(); ++first) {
+                if (used[first])
+                    continue;
+                used[first] = true;
+                QList<QPointF> chain{ segments[first].end[0], segments[first].end[1] };
+                // grow at both ends: the end edge is shared with at most one unused segment
+                for (int side = 0; side < 2; ++side) {
+                    int edge = segments[first].id[side == 0 ? 1 : 0];
+                    while (true) {
+                        int next = -1;
+                        for (int candidate : meeting.value(edge))
+                            if (!used[candidate])
+                                next = candidate;
+                        if (next < 0)
+                            break;
+                        used[next] = true;
+                        const int arrive = segments[next].id[0] == edge ? 0 : 1;
+                        const QPointF far = segments[next].end[1 - arrive];
+                        if (side == 0)
+                            chain.append(far);
+                        else
+                            chain.prepend(far);
+                        edge = segments[next].id[1 - arrive];
+                    }
+                    if (side == 0) // the second pass grows from the start of the chain
+                        edge = segments[first].id[0];
+                }
+
+                LineSeries* line = new LineSeries;
+                line->setColor(color);
+                line->setLineWidth(k == 0 ? 4 : 2); // the limit of the confidence region stands out
+                line->setShowInLegend(false);
+                line->setName(QString::number(value, 'g', 3));
+                line->append(chain);
+                for (const QPointF& point : chain) {
+                    xmin = qMin(xmin, point.x());
+                    xmax = qMax(xmax, point.x());
+                    ymin = qMin(ymin, point.y());
+                    ymax = qMax(ymax, point.y());
+                }
+                view->addSeries(line, index, color, line->name()); // all lines of a level share one entry of the list
+            }
+            ++index;
+        }
+
+        QScatterSeries* marker = new QScatterSeries; // the fit
+        marker->setColor(Qt::white);
+        marker->setBorderColor(Qt::black);
+        marker->setMarkerSize(10);
+        marker->append(vx["value"].toDouble(), vy["value"].toDouble());
+        view->addSeries(marker, index, Qt::white, tr("Fit"));
+
+        if (finder && !minima.isEmpty()) { // the minima the search found, numbered as in the list
+            ++index;
+            QScatterSeries* found = new QScatterSeries;
+            found->setColor(QColor(220, 60, 40));
+            found->setBorderColor(Qt::black);
+            found->setMarkerSize(9);
+            for (const QJsonValue& m : minima) {
+                const QJsonArray at = m.toObject()["parameters"].toArray();
+                if (xi < at.size() && yi < at.size() && !m.toObject()["is_fit"].toBool()) {
+                    found->append(at[xi].toDouble(), at[yi].toDouble());
+                    xmin = qMin(xmin, at[xi].toDouble());
+                    xmax = qMax(xmax, at[xi].toDouble());
+                    ymin = qMin(ymin, at[yi].toDouble());
+                    ymax = qMax(ymax, at[yi].toDouble());
+                }
+            }
+            view->addSeries(found, index, QColor(220, 60, 40), tr("Minima found"));
+        }
+
+        // the axes follow the lines, not the box the walkers were allowed to explore (set by the caller once the chart has
+        // finished scaling itself)
+        const double padX = 0.05 * (xmax - xmin > 0 ? xmax - xmin : 1.0), padY = 0.05 * (ymax - ymin > 0 ? ymax - ymin : 1.0);
+        const QRectF bounds(xmin - padX, ymin - padY, xmax - xmin + 2 * padX, ymax - ymin + 2 * padY);
+
+        view->setTitle(tr("SSE / SSE of the fit over %1 and %2").arg(plain(vx["name"].toString()), plain(vy["name"].toString())));
+        view->setXAxis(plain(vx["name"].toString()));
+        view->setYAxis(plain(vy["name"].toString()));
+        return bounds;
+    };
+
+    // the choice: nothing to choose with one constant and no 2D profile
+    struct Entry {
+        QString text;
+        int kind; ///< 0 all profiles, 1 one profile, 2 surface
+        int index;
+    };
+    QList<Entry> entries;
+    entries << Entry{ variables.size() > 1 ? tr("Profiles") : tr("Profile"), 0, -1 };
+    if (variables.size() > 1)
+        for (int i = 0; i < variables.size(); ++i)
+            entries << Entry{ tr("Profile: %1").arg(plain(variables[i].toObject()["name"].toString())), 1, i };
+    for (int s = 0; s < surfaces.size(); ++s)
+        entries << Entry{ tr("Surface: %1 × %2").arg(plain(variables[surfaces[s].toObject()["x"].toInt()].toObject()["name"].toString()),
+                              plain(variables[surfaces[s].toObject()["y"].toInt()].toObject()["name"].toString())),
+            2, s };
+
+    auto show = [=](const Entry& entry) {
+        view->clear();
+        if (entry.kind == 2) {
+            const QRectF bounds = drawSurface(surfaces[entry.index].toObject());
+            // after the chart has scaled itself for the new series, which it does again when it is shown
+            QTimer::singleShot(0, view, [view, bounds]() {
+                view->chart()->setXRange(bounds.left(), bounds.right());
+                view->chart()->setYRange(bounds.top(), bounds.bottom());
+            });
+        } else
+            drawProfiles(entry.kind == 1 ? entry.index : -1);
+    };
+    show(entries.first());
+
+    const QJsonArray found = result["minima"].toArray();
+    const bool loadable = result["mode"].toString() == QLatin1String("Minima") && !found.isEmpty();
+    if (entries.size() == 1 && !loadable)
+        return view;
+
+    QWidget* host = new QWidget;
+    QVBoxLayout* box = new QVBoxLayout;
+    box->setContentsMargins(0, 0, 0, 0);
+    QComboBox* choice = new QComboBox;
+    choice->setObjectName(QStringLiteral("landscapeview"));
+    choice->setToolTip(tr("What the chart shows: the profile of the sum of squares of all constants or of one, or the sum of squares over a pair of "
+                          "constants as height lines."));
+    for (const Entry& e : entries)
+        choice->addItem(e.text);
+    connect(choice, &QComboBox::currentIndexChanged, this, [=](int row) {
+        if (row >= 0 && row < entries.size())
+            show(entries[row]);
+    });
+    if (entries.size() > 1) {
+        QHBoxLayout* row = new QHBoxLayout;
+        row->addWidget(new QLabel(tr("Show:")));
+        row->addWidget(choice, 1);
+        box->addLayout(row);
+    } else
+        delete choice;
+    box->addWidget(view, 1);
+
+    if (loadable) { // the minima of a search: choose one and put it into the project
+        QComboBox* which = new QComboBox;
+        which->setObjectName(QStringLiteral("landscapeminima"));
+        for (int k = 0; k < found.size(); ++k) {
+            const QJsonObject m = found[k].toObject();
+            QString note = m["is_fit"].toBool() ? tr("contains the fit") : (m["relative_sse"].toDouble() < 1.0 - 1e-3 ? tr("deeper than the fit") : QString());
+            which->addItem(tr("#%1  SSE %2%3").arg(k + 1).arg(QString::number(m["sse"].toDouble(), 'g', 5), note.isEmpty() ? QString() : QStringLiteral("  (%1)").arg(note)));
+        }
+        QPushButton* load = new QPushButton(tr("Load into model"));
+        load->setObjectName(QStringLiteral("landscapeminima_load"));
+        load->setToolTip(tr("Set the parameters of the model to the chosen minimum."));
+        QPushButton* add = new QPushButton(tr("Add as model"));
+        add->setObjectName(QStringLiteral("landscapeminima_add"));
+        add->setToolTip(tr("Add the chosen minimum as a new model."));
+        connect(load, &QPushButton::clicked, this, [=]() {
+            const QJsonObject model = found[which->currentIndex()].toObject()["model"].toObject();
+            if (!model.isEmpty())
+                emit LoadModel(model);
+        });
+        connect(add, &QPushButton::clicked, this, [=]() {
+            const QJsonObject model = found[which->currentIndex()].toObject()["model"].toObject();
+            if (!model.isEmpty())
+                emit AddModel(model);
+        });
+        QHBoxLayout* minimaRow = new QHBoxLayout;
+        minimaRow->addWidget(new QLabel(tr("Minima:")));
+        minimaRow->addWidget(which, 1);
+        minimaRow->addWidget(load);
+        minimaRow->addWidget(add);
+        box->addLayout(minimaRow);
+    }
+    host->setLayout(box);
+    return host;
 }
 
 QWidget* ResultsWidget::MonteCarloWidget()
@@ -346,6 +678,8 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     QJsonObject controller = m_data["controller"].toObject();
     if (AccessCI(controller, "Method").toInt() == SupraFit::Method::GlobalSearch) {
         text += Print::TextFromStatistic(data);
+    } else if (AccessCI(controller, "Method").toInt() == SupraFit::Method::LandscapeSampling) {
+        text += LandscapeSearch::Summary(data["0"].toObject());
     } else {
         text += Print::TextFromStatistic(controller["raw"].toObject());
         PhaseTiming::Mark(QStringLiteral("    confidence: TextFromStatistic(raw) -> %1 chars").arg(text.size()));
