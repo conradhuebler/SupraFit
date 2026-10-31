@@ -127,6 +127,7 @@ private:
 
     QVector<QPointer<SpinBox>> m_constants;
     QVector<QPointer<ModelElement>> m_model_elements;
+    void UpdateCurvesShown();
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
@@ -239,6 +240,8 @@ signals:
     void AddModel(const QJsonObject& json);
     void DuplicateScriptModel(const QJsonObject& json);
     void ToggleSeries(int);
+    /*! \brief Whether this model draws all (Qt::Checked), none (Qt::Unchecked) or some of its curves: the master checkbox of the tab follows. */
+    void CurvesShown(int state);
     void IncrementProgress(int value);
     void MaximumSteps(int value);
     void ColorChanged(const QColor& color);

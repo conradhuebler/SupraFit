@@ -20,8 +20,9 @@ Name labels exactly as written here. If something is not covered, say so instead
 - Left: the project tree (right-click: Duplicate, Add Up, Substract, Export, Delete; buttons Export Data, Export Projects, Close All) and the Log.
   Dropping files on the tree opens them. Dragging a model onto another project copies it.
 - Centre: per project a **Workspace** dock (tab **Overview** = the data, one closable tab per model) and a **Charts** dock.
-  The checkbox in a model tab ("Toggle Series in Charts") also decides which models **Optimise All**, **Analyse and Compare**
-  and the project-level **Statistics** use.
+  The checkbox in a model tab shows or hides the curves (model and error chart) of this model only; unchecked it also takes the model out of
+  **Optimise All**, **Analyse and Compare** and the project-level **Statistics**. It is partly checked when only some curves of the model are
+  hidden (with "Show in Plot" of a series), which leaves the model in use. The data series and the other models are not touched.
 - Dialogs that stay windows (a result opened in a window, the project-level Statistics) open centred on the main window the first time and
   afterwards where you left them, at the size you gave them.
 - Charts dock, "Tools and Chart Settings" button: Animation, Chart Theme, Export Diagram (PNG), Plot Settings, Rescale Axis, Lock Scaling.
@@ -53,7 +54,7 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
 - **Simulated data**: in New Table tick "Simulate Data with # Data Points" (columns by equation, default `X`; Store/Load Recipe), or in a fitted model's
   tab "Simulated Data" drag an entry (Ideal model, MC with model σfit, MC with model SEy, Bootstrap, MC with user σ) onto the project list.
 - **Excluding data**: in the data tab right-click a row of the signal table to toggle it; right-click in the independent table: Begin Data / End Data.
-  Per series: checkbox "Include" in the model's "Data series" box (or page). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
+  Per series: checkbox "Include" in the model's "Data series" box (or page) = the series takes part in the fit of this model (and its curve is drawn), "Show in Plot" shows or hides the curve of this series of this model, "Single Plot" shows only this series in the data chart and in every model chart (switched off, everything is back as before). Data tab buttons: Regression (linear regression), Hide Datapoints, Plot X Values, Show Raw Data.
 - **Edit Data** button (left of the tabs; its arrow opens the Data menu): **Edit Data** (make tables editable; thermogram/spectra projects reopen their dialog), **Split Data Set** (each signal column becomes its own project).
 
 ## 3. Adding a model (the models in the middle of the toolbar and the menu **Model**)

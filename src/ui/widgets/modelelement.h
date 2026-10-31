@@ -32,6 +32,8 @@ public:
     ~ModelElement();
     QVector<double> D() const;
     bool Include() const;
+    /*! \brief Whether this model draws the curves of this series (signal and error). */
+    bool Shown() const;
 
 public slots:
     void Update();
@@ -73,6 +75,8 @@ signals:
     void Minimize(int i);
     void SetColor();
     void ActiveSignalChanged();
+    /*! \brief The curves of this series of this model were shown or hidden. */
+    void ShownChanged();
     void ColorChanged(const QColor& color);
     void LocalCheckState(int state);
 };

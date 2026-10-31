@@ -501,6 +501,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 connect(el, &ModelElement::ActiveSignalChanged, this, &ModelWidget::CollectActiveSignals);
                 connect(this, &ModelWidget::Update, el, &ModelElement::Update);
                 connect(this, &ModelWidget::ToggleSeries, el, &ModelElement::ToggleSeries);
+                connect(el, &ModelElement::ShownChanged, this, &ModelWidget::UpdateCurvesShown);
 
                 if (!m_val_readonly)
                     connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
@@ -534,9 +535,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             connect(m_readonly, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::setReadOnly);
         m_local_parameter->setReadOnly(m_val_readonly);
         connect(this, &ModelWidget::ToggleSeries, this,
-            [this]() {
-                m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());
-                m_charts.error_wrapper->Series(0)->setVisible(!m_charts.error_wrapper->Series(0)->isVisible());
+            [this](int state) {
+                // a model without series has one curve: the master checkbox sets it (it does not flip it)
+                m_charts.signal_wrapper->setSeriesVisible(0, state != 0);
+                m_charts.error_wrapper->setSeriesVisible(0, state != 0);
             });
 
             connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
@@ -1613,10 +1615,33 @@ QList<int> ModelWidget::ActiveSignals()
     return active_signals;
 }
 
+/*! \brief Tells the master checkbox of the tab how many of the curves of this model are drawn (all, none, some). */
+void ModelWidget::UpdateCurvesShown()
+{
+    int shown = 0, total = 0;
+    for (const QPointer<ModelElement>& el : std::as_const(m_model_elements)) {
+        if (!el || !el->Include())
+            continue; // a series that does not take part has no curve to show
+        ++total;
+        shown += el->Shown();
+    }
+    if (total == 0)
+        return;
+    // The checkbox of the tab also says that the model is used by Optimise All, Compare and the project Statistics. Hiding the last curve of a model one by
+    // one must not take the model out of those: only the checkbox itself (Unchecked) does, the curves alone leave it partly checked.
+    int state = Qt::PartiallyChecked;
+    if (shown == total)
+        state = Qt::Checked;
+    else if (shown == 0 && m_toggled_box && m_toggled_box->checkState() == Qt::Unchecked)
+        state = Qt::Unchecked;
+    emit CurvesShown(state);
+}
+
 void ModelWidget::CollectActiveSignals()
 {
     QList<int> active_signals = ActiveSignals();
     m_model->setActiveSignals(active_signals);
+    UpdateCurvesShown();
 }
 
 void ModelWidget::NewGuess()

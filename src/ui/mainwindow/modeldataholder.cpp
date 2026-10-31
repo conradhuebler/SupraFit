@@ -105,8 +105,9 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 
     QCheckBox* hide = new QCheckBox;
     hide->setMaximumSize(20, 20);
+    hide->setObjectName(QStringLiteral("model_curves_toggle"));
     hide->setChecked(true);
-    hide->setToolTip(tr("Toggle Series in Charts"));
+    hide->setToolTip(tr("Show or hide the curves of this model in the charts (partly checked: some of its series are hidden)"));
 
     modelwidget->setCheckbox(hide);
 
@@ -139,6 +140,10 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     tools->setLayout(layout);
 
     connect(hide, &QCheckBox::stateChanged, modelwidget, &ModelWidget::ToggleSeries);
+    connect(modelwidget, &ModelWidget::CurvesShown, hide, [hide](int state) {
+        QSignalBlocker blocker(hide); // the checkbox follows the curves, it must not set them again
+        hide->setCheckState(Qt::CheckState(state));
+    });
     connect(color, &QPushButton::clicked, modelwidget, &ModelWidget::ChangeColor);
     connect(modelwidget, &ModelWidget::ColorChanged, color, &ToolButton::ChangeColor);
 

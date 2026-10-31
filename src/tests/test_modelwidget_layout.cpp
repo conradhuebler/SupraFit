@@ -75,6 +75,7 @@
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/core/models/titrations/fluorescence/fl_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
+#include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/scanwidget.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
@@ -2692,6 +2693,163 @@ private slots:
         bar.setWorkspace(nullptr);
         QVERIFY(!bar.isEnabled());
         QVERIFY(bar.findChildren<QToolButton*>().size() <= 1); // the gear is hidden
+        QSettings().remove(QStringLiteral("add_model_bar"));
+    }
+
+    // Showing and hiding: the master checkbox of a model, the "Show in Plot" of one of its series, "Include" and "Single Plot" are independent of the
+    // other models and of the data series. (Before, hiding one model hid every model and the data, "Include" did not reach the fit, and "Single Plot"
+    // did nothing.) Claude Generated.
+    void modelsAndSeriesAreShownAndHiddenOneByOne()
+    {
+        QSettings().remove(QStringLiteral("add_model_bar"));
+        BarFixture f(2);
+        for (const QString& key : QStringList{ "stoich:1:1", "stoich:2:1/1:1", "stoich:1:1/1:2" }) {
+            barButton(f.bar, key)->click();
+            QCoreApplication::processEvents();
+        }
+        QCOMPARE(f.holder.ModelCount(), 3);
+        const QList<ModelWidget*> widgets = f.holder.findChildren<ModelWidget*>();
+        QCOMPARE(widgets.size(), 3);
+        QList<QCheckBox*> masters;
+        for (ModelWidget* w : widgets) { // the master checkbox of the tab of each model
+            QCheckBox* master = nullptr;
+            for (QCheckBox* c : f.holder.findChildren<QCheckBox*>(QStringLiteral("model_curves_toggle")))
+                if (!masters.contains(c) && !master)
+                    master = c;
+            QVERIFY(master);
+            masters << master;
+            Q_UNUSED(w);
+        }
+        // which master belongs to which widget: the tab order is the order of the models
+        auto visible = [&](ModelWidget* w, bool error, int series) {
+            Charts ch = w->Chart();
+            return (error ? ch.error_wrapper : ch.signal_wrapper)->Series(series)->isVisible();
+        };
+        auto dataVisible = [&](int series) { return widgets[0]->Chart().data_wrapper->Series(series)->isVisible(); };
+        auto allShown = [&](ModelWidget* w) { return visible(w, false, 0) && visible(w, false, 1) && visible(w, true, 0) && visible(w, true, 1); };
+        auto noneShown = [&](ModelWidget* w) { return !visible(w, false, 0) && !visible(w, false, 1) && !visible(w, true, 0) && !visible(w, true, 1); };
+        auto elementsOf = [&](ModelWidget* w) { return w->findChildren<ModelElement*>(); };
+        auto box = [&](ModelElement* e, const QString& text) -> QCheckBox* {
+            for (QCheckBox* c : e->findChildren<QCheckBox*>())
+                if (c->text() == text)
+                    return c;
+            return nullptr;
+        };
+        for (ModelWidget* w : widgets)
+            QVERIFY(allShown(w));
+        QVERIFY(dataVisible(0) && dataVisible(1));
+
+        // 1. the master checkbox of one model hides this model, nothing else
+        for (int m = 0; m < 3; ++m) {
+            QCheckBox* master = masters[m];
+            // find the widget this master belongs to: hiding it must hide exactly one model
+            master->setChecked(false);
+            QCoreApplication::processEvents();
+            int hidden = 0, hiddenIndex = -1;
+            for (int k = 0; k < 3; ++k)
+                if (noneShown(widgets[k])) {
+                    ++hidden;
+                    hiddenIndex = k;
+                }
+            QVERIFY2(hidden == 1, qPrintable(QString("hiding model %1 hid %2 models").arg(m).arg(hidden)));
+            for (int k = 0; k < 3; ++k)
+                if (k != hiddenIndex)
+                    QVERIFY2(allShown(widgets[k]), "another model was hidden");
+            QVERIFY2(dataVisible(0) && dataVisible(1), "hiding a model hid the data series");
+            QVERIFY2(!widgets[hiddenIndex]->isChecked(), "the unchecked master box does not take the model out of the analyses");
+            master->setChecked(true);
+            QVERIFY(widgets[hiddenIndex]->isChecked());
+            QCoreApplication::processEvents();
+            for (ModelWidget* w : widgets)
+                QVERIFY(allShown(w));
+        }
+
+        ModelWidget* second = widgets[1];
+        const QList<ModelElement*> els = elementsOf(second);
+        QCOMPARE(els.size(), 2);
+
+        // 2. "Show in Plot" of one series of one model: only that curve (signal and error); the master checkbox becomes partly checked
+        QCheckBox* show0 = box(els[0], QStringLiteral("Show in Plot"));
+        QVERIFY(show0);
+        show0->setChecked(false);
+        QCoreApplication::processEvents();
+        QVERIFY(!visible(second, false, 0) && !visible(second, true, 0));
+        QVERIFY(visible(second, false, 1) && visible(second, true, 1));
+        QVERIFY(allShown(widgets[0]) && allShown(widgets[2]));
+        QVERIFY(dataVisible(0) && dataVisible(1));
+        int partly = 0;
+        for (QCheckBox* c : masters)
+            partly += c->checkState() == Qt::PartiallyChecked;
+        QCOMPARE(partly, 1);
+        show0->setChecked(true);
+        QCoreApplication::processEvents();
+        QVERIFY(allShown(second));
+        for (QCheckBox* c : masters)
+            QCOMPARE(c->checkState(), Qt::Checked);
+
+        // hiding the curves one by one leaves the model in use (Optimise All, Compare, Statistics): the master box is partly checked, not unchecked
+        QCheckBox* show1 = box(els[1], QStringLiteral("Show in Plot"));
+        show0->setChecked(false);
+        show1->setChecked(false);
+        QCoreApplication::processEvents();
+        QVERIFY(noneShown(second));
+        QVERIFY2(second->isChecked(), "hiding every curve one by one took the model out of the analyses");
+        show0->setChecked(true);
+        show1->setChecked(true);
+        QCoreApplication::processEvents();
+        QVERIFY(allShown(second));
+
+        // 3. "Include" belongs to the fit of this model: ActiveSignals follow, the curves of this series of this model go, nothing else
+        QCheckBox* include1 = box(els[1], QStringLiteral("Include"));
+        QVERIFY(include1);
+        QVERIFY(second->Model()->ActiveSignals(1));
+        include1->click();
+        QCoreApplication::processEvents();
+        QVERIFY2(!second->Model()->ActiveSignals(1), "Include did not reach the fit of the model");
+        QVERIFY(second->Model()->ActiveSignals(0));
+        QVERIFY(!visible(second, false, 1) && !visible(second, true, 1));
+        QVERIFY(visible(second, false, 0) && visible(second, true, 0));
+        QVERIFY(widgets[0]->Model()->ActiveSignals(1) && widgets[2]->Model()->ActiveSignals(1));
+        QVERIFY(allShown(widgets[0]) && allShown(widgets[2]));
+        QVERIFY2(dataVisible(0) && dataVisible(1), "Include hid a data series");
+        // the master checkbox only counts the series that take part: this model shows all of them
+        for (QCheckBox* c : masters)
+            QCOMPARE(c->checkState(), Qt::Checked);
+        include1->click();
+        QCoreApplication::processEvents();
+        QVERIFY(second->Model()->ActiveSignals(1));
+        QVERIFY(allShown(second));
+
+        // 4. "Single Plot": only this series in the data chart and every model chart; switched off, as it was before (also the model that was hidden)
+        masters[2]->setChecked(false); // a hidden model stays hidden through a single plot
+        QCoreApplication::processEvents();
+        ModelWidget* hiddenModel = nullptr;
+        for (ModelWidget* w : widgets)
+            if (noneShown(w))
+                hiddenModel = w;
+        QVERIFY(hiddenModel);
+        QPushButton* single = nullptr;
+        for (QPushButton* b : els[0]->findChildren<QPushButton*>())
+            if (b->text() == QStringLiteral("Single Plot"))
+                single = b;
+        QVERIFY(single);
+        single->click();
+        QCoreApplication::processEvents();
+        QVERIFY(dataVisible(0) && !dataVisible(1));
+        for (ModelWidget* w : widgets) {
+            QVERIFY(!visible(w, false, 1) && !visible(w, true, 1)); // the other series is gone everywhere
+            if (w != hiddenModel)
+                QVERIFY(visible(w, false, 0) && visible(w, true, 0));
+        }
+        single->click();
+        QCoreApplication::processEvents();
+        QVERIFY(dataVisible(0) && dataVisible(1));
+        for (ModelWidget* w : widgets) {
+            if (w == hiddenModel)
+                QVERIFY2(noneShown(w), "a hidden model came back with the single plot");
+            else
+                QVERIFY2(allShown(w), "a series did not come back after the single plot");
+        }
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 
