@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <random>
 
 namespace {
@@ -565,7 +566,9 @@ bool LandscapeSearch::Execute()
                 pairs.emplace_back(i, j);
         z.assign(pairs.size(), std::vector<double>(size_t(bins) * size_t(bins), std::numeric_limits<double>::infinity()));
         std::vector<int> bin(d);
-        for (const auto& p : m_points) {
+        std::vector<std::vector<int>> source(pairs.size(), std::vector<int>(size_t(bins) * size_t(bins), -1)); // the point that set a cell
+        for (size_t pointIndex = 0; pointIndex < m_points.size(); ++pointIndex) {
+            const auto& p = m_points[pointIndex];
             if (int(p.size()) != d + 1)
                 continue;
             bool inside = true;
@@ -576,8 +579,11 @@ bool LandscapeSearch::Execute()
             if (!inside)
                 continue;
             for (size_t q = 0; q < pairs.size(); ++q) {
-                double& cell = z[q][size_t(bin[pairs[q].first]) * size_t(bins) + size_t(bin[pairs[q].second])];
-                cell = std::min(cell, p.back());
+                const size_t at = size_t(bin[pairs[q].first]) * size_t(bins) + size_t(bin[pairs[q].second]);
+                if (p.back() < z[q][at]) {
+                    z[q][at] = p.back();
+                    source[q][at] = int(pointIndex);
+                }
             }
         }
         if (!exactGrid.empty() && pairs.size() == 1) // two constants: the cells evaluated exactly fill the gaps between the visited ones
@@ -585,7 +591,7 @@ bool LandscapeSearch::Execute()
                 z[0][c] = std::min(z[0][c], exactGrid[c]);
 
         closedCells.assign(pairs.size(), 0);
-        if (d == 3 && !m_stop && AccessCI(m_controller, "ExactSurface").toBool(true)) {
+        if (d >= 3 && !m_stop && AccessCI(m_controller, "ExactSurface").toBool(true)) {
             struct Gap {
                 size_t q;
                 int a, b;
@@ -614,7 +620,7 @@ bool LandscapeSearch::Execute()
             if (int(gaps.size()) > maxCells)
                 gaps.resize(size_t(maxCells));
             if (!gaps.empty()) {
-                emit Stage(tr("Closing %1 gaps of the surfaces by a search over the third constant").arg(gaps.size()));
+                emit Stage(tr("Closing %1 gaps of the surfaces by a search over the other constants").arg(gaps.size()));
                 const long cellsPerUnit = 10;
                 emit setMaximumSteps(int((long(gaps.size()) + cellsPerUnit - 1) / cellsPerUnit));
                 QElapsedTimer gapClock;
@@ -624,47 +630,130 @@ bool LandscapeSearch::Execute()
                 for (const Gap& g : gaps) {
                     if (m_stop)
                         break;
-                    const int i = pairs[g.q].first, j = pairs[g.q].second, k = 3 - i - j;
+                    const int i = pairs[g.q].first, j = pairs[g.q].second;
                     at[i] = m_lower[i] + (g.a + 0.5) * (m_upper[i] - m_lower[i]) / bins;
                     at[j] = m_lower[j] + (g.b + 0.5) * (m_upper[j] - m_lower[j]) / bins;
-                    auto value = [&](double t) {
-                        at[k] = t;
-                        ++exactEvaluations;
-                        const double v = base(at);
-                        return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
-                    };
-                    const int coarse = 9;
-                    const double step = (m_upper[k] - m_lower[k]) / (coarse - 1);
-                    int bestIndex = 0;
                     double best = std::numeric_limits<double>::infinity();
-                    for (int n = 0; n < coarse; ++n) {
-                        const double v = value(m_lower[k] + n * step);
-                        if (v < best) {
-                            best = v;
-                            bestIndex = n;
-                        }
-                    }
-                    if (best <= cut * 1.5) { // refine only where the cell can lie below the wall
-                        double lo = m_lower[k] + std::max(0, bestIndex - 1) * step, hi = m_lower[k] + std::min(coarse - 1, bestIndex + 1) * step;
-                        const double invphi = 0.6180339887498949;
-                        double c1 = hi - invphi * (hi - lo), c2 = lo + invphi * (hi - lo);
-                        double v1 = value(c1), v2 = value(c2);
-                        for (int it = 0; it < 14; ++it) {
-                            if (v1 < v2) {
-                                hi = c2;
-                                c2 = c1;
-                                v2 = v1;
-                                c1 = hi - invphi * (hi - lo);
-                                v1 = value(c1);
-                            } else {
-                                lo = c1;
-                                c1 = c2;
-                                v1 = v2;
-                                c2 = lo + invphi * (hi - lo);
-                                v2 = value(c2);
+                    if (d == 3) { // one other constant: a scan of the box and a golden section around its lowest point
+                        const int k = 3 - i - j;
+                        auto value = [&](double t) {
+                            at[k] = t;
+                            ++exactEvaluations;
+                            const double v = base(at);
+                            return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+                        };
+                        const int coarse = 9;
+                        const double step = (m_upper[k] - m_lower[k]) / (coarse - 1);
+                        int bestIndex = 0;
+                        for (int n = 0; n < coarse; ++n) {
+                            const double v = value(m_lower[k] + n * step);
+                            if (v < best) {
+                                best = v;
+                                bestIndex = n;
                             }
                         }
-                        best = std::min({ best, v1, v2 });
+                        if (best <= cut * 1.5) { // refine only where the cell can lie below the wall
+                            double lo = m_lower[k] + std::max(0, bestIndex - 1) * step, hi = m_lower[k] + std::min(coarse - 1, bestIndex + 1) * step;
+                            const double invphi = 0.6180339887498949;
+                            double c1 = hi - invphi * (hi - lo), c2 = lo + invphi * (hi - lo);
+                            double v1 = value(c1), v2 = value(c2);
+                            for (int it = 0; it < 14; ++it) {
+                                if (v1 < v2) {
+                                    hi = c2;
+                                    c2 = c1;
+                                    v2 = v1;
+                                    c1 = hi - invphi * (hi - lo);
+                                    v1 = value(c1);
+                                } else {
+                                    lo = c1;
+                                    c1 = c2;
+                                    v1 = v2;
+                                    c2 = lo + invphi * (hi - lo);
+                                    v2 = value(c2);
+                                }
+                            }
+                            best = std::min({ best, v1, v2 });
+                        }
+                    } else { // several other constants: Nelder-Mead from the other coordinates of the nearest visited cell
+                        std::vector<int> others;
+                        for (int k = 0; k < d; ++k)
+                            if (k != i && k != j)
+                                others.push_back(k);
+                        int from = -1;
+                        for (int ring = 1; ring <= 8 && from < 0; ++ring)
+                            for (int da = -ring; da <= ring && from < 0; ++da)
+                                for (int db = -ring; db <= ring && from < 0; ++db) {
+                                    const int aa = g.a + da, bb = g.b + db;
+                                    if (std::max(std::abs(da), std::abs(db)) != ring || aa < 0 || bb < 0 || aa >= bins || bb >= bins)
+                                        continue;
+                                    from = source[g.q][size_t(aa) * bins + bb];
+                                }
+                        const int n = int(others.size());
+                        if (from >= 0) {
+                            auto value = [&](const std::vector<double>& y) {
+                                for (int m = 0; m < n; ++m)
+                                    at[others[m]] = std::min(std::max(y[m], m_lower[others[m]]), m_upper[others[m]]);
+                                ++exactEvaluations;
+                                const double v = base(at);
+                                return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+                            };
+                            std::vector<std::vector<double>> simplex(n + 1, std::vector<double>(n));
+                            std::vector<double> fv(n + 1);
+                            for (int m = 0; m < n; ++m)
+                                simplex[0][m] = m_points[from][others[m]];
+                            fv[0] = value(simplex[0]);
+                            for (int v = 1; v <= n; ++v) {
+                                simplex[v] = simplex[0];
+                                const int k = others[v - 1];
+                                simplex[v][v - 1] += 0.05 * (m_upper[k] - m_lower[k]) * (simplex[0][v - 1] + 0.05 * (m_upper[k] - m_lower[k]) > m_upper[k] ? -1 : 1);
+                                fv[v] = value(simplex[v]);
+                            }
+                            for (int iteration = 0; iteration < 40 * n; ++iteration) {
+                                std::vector<int> order(n + 1);
+                                std::iota(order.begin(), order.end(), 0);
+                                std::sort(order.begin(), order.end(), [&](int x, int y) { return fv[x] < fv[y]; });
+                                const int lowest = order[0], worst = order[n], second = order[n - 1];
+                                if (std::abs(fv[worst] - fv[lowest]) <= 1e-7 * std::max(1.0, std::abs(fv[lowest])))
+                                    break;
+                                std::vector<double> centroid(n, 0.0);
+                                for (int v = 0; v <= n; ++v)
+                                    if (v != worst)
+                                        for (int m = 0; m < n; ++m)
+                                            centroid[m] += simplex[v][m] / n;
+                                auto along = [&](double t) {
+                                    std::vector<double> y(n);
+                                    for (int m = 0; m < n; ++m)
+                                        y[m] = centroid[m] + t * (simplex[worst][m] - centroid[m]);
+                                    return y;
+                                };
+                                std::vector<double> reflected = along(-1.0);
+                                const double fr = value(reflected);
+                                if (fr < fv[lowest]) {
+                                    std::vector<double> expanded = along(-2.0);
+                                    const double fe = value(expanded);
+                                    simplex[worst] = fe < fr ? expanded : reflected;
+                                    fv[worst] = std::min(fe, fr);
+                                } else if (fr < fv[second]) {
+                                    simplex[worst] = reflected;
+                                    fv[worst] = fr;
+                                } else {
+                                    std::vector<double> contracted = along(fr < fv[worst] ? -0.5 : 0.5);
+                                    const double fc = value(contracted);
+                                    if (fc < std::min(fr, fv[worst])) {
+                                        simplex[worst] = contracted;
+                                        fv[worst] = fc;
+                                    } else {
+                                        for (int v = 0; v <= n; ++v)
+                                            if (v != lowest) {
+                                                for (int m = 0; m < n; ++m)
+                                                    simplex[v][m] = simplex[lowest][m] + 0.5 * (simplex[v][m] - simplex[lowest][m]);
+                                                fv[v] = value(simplex[v]);
+                                            }
+                                    }
+                                }
+                            }
+                            best = *std::min_element(fv.begin(), fv.end());
+                        }
                     }
                     if (best <= cut) {
                         z[g.q][size_t(g.a) * bins + g.b] = best;

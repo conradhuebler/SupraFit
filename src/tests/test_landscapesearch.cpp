@@ -565,6 +565,69 @@ private slots:
         delete data;
     }
 
+    // Four constants: the holes of a pair surface are closed by a local search (Nelder-Mead) over the two others, started from the nearest
+    // visited cell. A cell is an upper bound of the profile; compared with a grid over the two others (60 x 60, a coarse upper bound too).
+    void fourConstantSurfaceGapsAreClosed()
+    {
+        DataClass* data = makeData(4, 4.0, 30);
+        const double shifts[4] = { 9.0, 5.0, 2.0, 7.0 };
+        auto model = fittedModel(data, QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2\n2 A + B <=> A2B\n2 A + 2 B <=> A2B2"), { 3.0, 5.4, 5.6, 8.0 }, 4, 0.02, shifts);
+        ModelLandscape landscape(model->Clone(false));
+
+        auto run = [&](bool exact, LandscapeSearch& search) {
+            search.setModel(model);
+            QJsonObject ctl;
+            ctl["Walkers"] = 2;
+            ctl["Polish"] = 0;
+            ctl["MaxSteps"] = 1500;
+            ctl["MaxExpansions"] = 0;
+            ctl["Surface"] = true;
+            ctl["ExactSurface"] = exact;
+            ctl["ExactPairCells"] = 600;
+            search.setController(ctl);
+            QVERIFY(search.Run());
+        };
+        LandscapeSearch plain, closed;
+        run(false, plain);
+        run(true, closed);
+        const QJsonArray before = plain.Result()["0"].toObject()["surfaces"].toArray();
+        const QJsonArray after = closed.Result()["0"].toObject()["surfaces"].toArray();
+        QCOMPARE(after.size(), 6);
+        int cellsClosed = 0;
+        for (int q = 0; q < 6; ++q)
+            cellsClosed += after[q].toObject()["closed_cells"].toInt();
+        qInfo() << "cells closed over six pairs:" << cellsClosed << "; evaluations" << plain.Result()["0"].toObject()["evaluations"].toDouble() << "->" << closed.Result()["0"].toObject()["evaluations"].toDouble()
+                << ", ms" << plain.Result()["0"].toObject()["time_ms"].toDouble() << "->" << closed.Result()["0"].toObject()["time_ms"].toDouble();
+        QVERIFY(cellsClosed > 0);
+
+        const int bins = after[0].toObject()["bins"].toInt();
+        const double xlo = closed.Lower()[0], xw = closed.Upper()[0] - xlo, ylo = closed.Lower()[1], yw = closed.Upper()[1] - ylo;
+        std::vector<char> seen(size_t(bins) * bins, 0);
+        for (const QJsonValue& v : before[0].toObject()["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            seen[size_t(int((p[0].toDouble() - xlo) / xw * bins)) * bins + size_t(int((p[1].toDouble() - ylo) / yw * bins))] = 1;
+        }
+        int checked = 0;
+        double worstAbove = 0, worstBelow = 0;
+        for (const QJsonValue& v : after[0].toObject()["points"].toArray()) {
+            const QJsonArray p = v.toArray();
+            if (seen[size_t(int((p[0].toDouble() - xlo) / xw * bins)) * bins + size_t(int((p[1].toDouble() - ylo) / yw * bins))])
+                continue;
+            if (checked++ % 8 != 0)
+                continue;
+            double lowest = INFINITY;
+            for (int m = 0; m <= 60; ++m)
+                for (int n = 0; n <= 60; ++n)
+                    lowest = std::min(lowest, landscape({ p[0].toDouble(), p[1].toDouble(), closed.Lower()[2] + m * (closed.Upper()[2] - closed.Lower()[2]) / 60, closed.Lower()[3] + n * (closed.Upper()[3] - closed.Lower()[3]) / 60 }));
+            worstAbove = std::max(worstAbove, (p[2].toDouble() - lowest) / lowest);
+            worstBelow = std::max(worstBelow, (lowest - p[2].toDouble()) / lowest);
+        }
+        qInfo() << "closed cells of pair (0,1) checked" << (checked + 7) / 8 << ": worst above the grid" << worstAbove << ", worst below" << worstBelow;
+        QVERIFY(checked > 0);
+        QVERIFY2(worstAbove < 0.05, qPrintable(QString("a closed cell above the grid by %1").arg(worstAbove)));
+        delete data;
+    }
+
     // The minima search on a data set with two regions (1:1/2:1, lg beta (3.0, 4.5), noise 0.02, seed 6) whose blind fit stops on a
     // slope (SSE 8.6 times the optimum, no barrier to it: the SSE falls monotonically on the straight line). Each minimum comes with
     // the model to load it.
