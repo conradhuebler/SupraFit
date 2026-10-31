@@ -130,6 +130,43 @@ private slots:
         }
     }
 
+    // Error 1: row 0 has its own free coefficient ("A0") in the fixed models, so the first point never constrains the fit: a wrong first
+    // point is fitted exactly. In a model of the host fluorescence ("A") the first point (no guest) measures the same coefficient as the others.
+    void firstPointConstrainsTheFit()
+    {
+        DataClass* data = makeSignal(2, "A + B <=> AB\nA + 2 B <=> AB2", { 4.0, 7.0 }, { 2e8, 0.0, 6e8, 9e8 });
+        Eigen::MatrixXd dep = data->DependentModel()->Table();
+        dep.row(0) *= 1.5; // the first point is 50 % too high in every series
+        data->setDependentTable(new DataTable(dep));
+        data->setDataBegin(0);
+        data->setDataEnd(N);
+        for (const SupraFit::Model id : { SupraFit::fl_any, SupraFit::fl_ItoI_ItoII }) {
+            QSharedPointer<AbstractModel> model = CreateModel(id, data);
+            if (id == SupraFit::fl_any) {
+                QJsonObject def, r;
+                r["value"] = QStringLiteral("A + B <=> AB\nA + 2 B <=> AB2");
+                def["Reactions"] = r;
+                model->DefineModel(def);
+            }
+            model->InitialGuess();
+            model->setGlobalParameter(4.0, 0);
+            model->setGlobalParameter(id == SupraFit::fl_any ? 7.0 : 3.0, 1);
+            Minimizer m(false);
+            m.setModel(model);
+            m.Minimize();
+            double spread = 0;
+            for (int c = 0; c < model->DependentModel()->columnCount(); ++c)
+                for (int r = 0; r < N; ++r)
+                    spread += std::pow(model->DependentModel()->data(r, c), 2);
+            const double rel = model->SSE() / spread;
+            qInfo().noquote() << QString("%1: a first point 50 % too high leaves SSE/signal^2 = %2").arg(model->Name()).arg(rel, 0, 'g', 3);
+            if (id == SupraFit::fl_ItoI_ItoII)
+                QEXPECT_FAIL("", "the fixed models fit the first point with a coefficient of its own, a wrong first point costs nothing", Continue);
+            QVERIFY2(rel > 1e-4, "a 50 % wrong first point did not show in the sum of squares");
+        }
+        delete data;
+    }
+
     void fixedModelsOnTextbookData()
     {
         // 1:1, truth lg K = 4; molar fluorescence per series: host 2e8, guest 0 (silent), complex 6e8
