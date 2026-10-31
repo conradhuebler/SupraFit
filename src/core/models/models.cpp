@@ -97,6 +97,11 @@ const QHash<int, ModelFactory>& modelFactories()
 
 } // namespace
 
+bool ModelIdKnown(int model)
+{
+    return modelFactories().contains(model);
+}
+
 QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> data)
 {
     QSharedPointer<AbstractModel> t;

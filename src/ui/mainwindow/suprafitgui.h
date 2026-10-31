@@ -145,6 +145,7 @@ public slots:
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
 
 private:
+    void ShowLoadReport(const QString& file, const SupraFit::LoadReport& report);
     // This will become an improved data load mechanism somedays
 
     // QVector<QJsonObject> ProjectFromFile(const QString& file);

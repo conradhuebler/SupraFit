@@ -599,11 +599,29 @@ void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
     } else {
         // Direct ProjectManager delegation for .json/.suprafit/.itc files
         qDebug() << "LoadFile: Delegating to ProjectManager for" << suffix << "file";
-        if (!SupraFit::ProjectManager::instance().loadProject(file)) {
-            qWarning() << "LoadFile: ProjectManager failed to load" << file;
-            QMessageBox::warning(this, tr("Loading Error"), tr("SupraFit could not load the specified file: %1").arg(file));
-        }
+        const bool loaded = SupraFit::ProjectManager::instance().loadProject(file);
+        const SupraFit::LoadReport report = SupraFit::ProjectManager::instance().lastLoadReport();
+        if (!loaded)
+            qWarning() << "LoadFile: ProjectManager failed to load" << file << ":" << report.Summary();
+        if (!loaded || report.HasProblems())
+            ShowLoadReport(file, report);
     }
+}
+
+/*! \brief Tells why a project file did not open, or what of it is missing (Claude Generated). The details list every issue; the log gets one line. */
+void SupraFitGui::ShowLoadReport(const QString& file, const SupraFit::LoadReport& report)
+{
+    const QString name = QFileInfo(file).fileName();
+    QString summary = report.Summary();
+    if (summary.isEmpty())
+        summary = tr("The file could not be read.");
+    Warning(tr("%1: %2").arg(name, summary));
+
+    QMessageBox box(report.loaded ? QMessageBox::Warning : QMessageBox::Critical, report.loaded ? tr("Project loaded with problems") : tr("Loading Error"), QString(), QMessageBox::Ok, this);
+    box.setText(report.loaded ? tr("<b>%1</b> was opened, but not everything could be read.").arg(name.toHtmlEscaped()) : tr("<b>%1</b> could not be opened.").arg(name.toHtmlEscaped()));
+    box.setInformativeText(summary.toHtmlEscaped());
+    box.setDetailedText(tr("File: %1\n\n%2").arg(file, report.Details()));
+    box.exec();
 }
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)

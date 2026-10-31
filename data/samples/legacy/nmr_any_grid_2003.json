@@ -1,0 +1,4034 @@
+{
+ "data": {
+  "DataType": 1,
+  "SupraFit": 2003,
+  "colors": "#209fdf|#99ca53|#f6a625|#6d5fd5|#bf593e|#209fdf|#99ca53",
+  "content": "",
+  "dependent": {
+   "checked": {
+    "0": "1 1 1 1 1 1 1",
+    "1": "1 1 1 1 1 1 1",
+    "10": "1 1 1 1 1 1 1",
+    "11": "1 1 1 1 1 1 1",
+    "12": "1 1 1 1 1 1 1",
+    "13": "1 1 1 1 1 1 1",
+    "14": "1 1 1 1 1 1 1",
+    "15": "1 1 1 1 1 1 1",
+    "16": "1 1 1 1 1 1 1",
+    "17": "1 1 1 1 1 1 1",
+    "18": "1 1 1 1 1 1 1",
+    "19": "1 1 1 1 1 1 1",
+    "2": "1 1 1 1 1 1 1",
+    "3": "1 1 1 1 1 1 1",
+    "4": "1 1 1 1 1 1 1",
+    "5": "1 1 1 1 1 1 1",
+    "6": "1 1 1 1 1 1 1",
+    "7": "1 1 1 1 1 1 1",
+    "8": "1 1 1 1 1 1 1",
+    "9": "1 1 1 1 1 1 1"
+   },
+   "cols": 7,
+   "data": {
+    "0": "6.31089 6.06753 2.33626 2.21989 4.27553 4.38816 3.18396",
+    "1": "6.31029 6.06437 2.35431 2.23115 4.27764 4.5373 3.19356",
+    "10": "6.28738 6.06441 2.30589 2.23145 4.24054 5.32411 3.21061",
+    "11": "6.28272 6.0771 2.28548 2.24687 4.23072 5.44857 3.20526",
+    "12": "6.30671 6.09437 2.30338 2.22418 4.22633 5.56041 3.17695",
+    "13": "6.28353 6.09485 2.30865 2.24026 4.21481 5.61639 3.16723",
+    "14": "6.27874 6.08267 2.29097 2.24426 4.23568 5.70704 3.18613",
+    "15": "6.2823 6.1013 2.28724 2.24487 4.2154 5.76081 3.19464",
+    "16": "6.27506 6.07874 2.30684 2.24697 4.20821 5.81674 3.18491",
+    "17": "6.28437 6.10161 2.27204 2.23286 4.20622 5.88297 3.19551",
+    "18": "6.27937 6.10588 2.2899 2.2214 4.20326 5.91015 3.20034",
+    "19": "6.28307 6.09401 2.30132 2.23542 4.20054 6.00653 3.18862",
+    "2": "6.32069 6.05198 2.31877 2.2374 4.29292 4.6446 3.19081",
+    "3": "6.30601 6.07392 2.34381 2.23919 4.2769 4.75025 3.18029",
+    "4": "6.29577 6.06591 2.32809 2.23419 4.26087 4.84077 3.2078",
+    "5": "6.3051 6.06696 2.31104 2.22901 4.26447 4.94552 3.19748",
+    "6": "6.30531 6.0563 2.31408 2.22908 4.28415 5.03601 3.18298",
+    "7": "6.30815 6.08816 2.32333 2.23622 4.24706 5.10218 3.20917",
+    "8": "6.30866 6.06644 2.31794 2.24207 4.25695 5.19311 3.18977",
+    "9": "6.28962 6.0709 2.3253 2.25208 4.24898 5.26287 3.19054"
+   },
+   "header": "1|2|3|4|5|6|7",
+   "rows": 20
+  },
+  "git_commit": "e14d7b1",
+  "independent": {
+   "checked": {
+    "0": "1 1",
+    "1": "1 1",
+    "10": "1 1",
+    "11": "1 1",
+    "12": "1 1",
+    "13": "1 1",
+    "14": "1 1",
+    "15": "1 1",
+    "16": "1 1",
+    "17": "1 1",
+    "18": "1 1",
+    "19": "1 1",
+    "2": "1 1",
+    "3": "1 1",
+    "4": "1 1",
+    "5": "1 1",
+    "6": "1 1",
+    "7": "1 1",
+    "8": "1 1",
+    "9": "1 1"
+   },
+   "cols": 2,
+   "data": {
+    "0": "0.00100009 0",
+    "1": "0.00100009 0.00013264",
+    "10": "0.00100009 0.00132637",
+    "11": "0.00100009 0.00159165",
+    "12": "0.00100009 0.00185692",
+    "13": "0.00100009 0.0021222",
+    "14": "0.00100009 0.00238747",
+    "15": "0.00100009 0.00265275",
+    "16": "0.00100009 0.00291802",
+    "17": "0.00100009 0.00318329",
+    "18": "0.00100009 0.00344857",
+    "19": "0.00100009 0.00397912",
+    "2": "0.00100009 0.00026527",
+    "3": "0.00100009 0.00039791",
+    "4": "0.00100009 0.00053055",
+    "5": "0.00100009 0.00066319",
+    "6": "0.00100009 0.00079582",
+    "7": "0.00100009 0.00092846",
+    "8": "0.00100009 0.0010611",
+    "9": "0.00100009 0.00119374"
+   },
+   "header": "Host (A)|Guest (B)",
+   "rows": 20
+  },
+  "raw": {},
+  "system": {
+   "1024": null,
+   "4": null
+  },
+  "timestamp": 1630920167231,
+  "title": "1_1",
+  "uuid": "{65080ac3-3926-47dc-96c7-89fdfa3603b2}",
+  "xaxis": false
+ },
+ "model_2": {
+  "ModelDefinition": {
+   "ModelDefinition": {
+    "MaxA": 1,
+    "MaxB": 2
+   }
+  },
+  "SAE": 1.055840340081157,
+  "SSE": 0.011888130810861736,
+  "SupraFit": 2003,
+  "colors": "#209fdf|#99ca53|#f6a625|#6d5fd5|#bf593e|#209fdf|#99ca53",
+  "converged": true,
+  "data": {
+   "active_series": "1 1 1 1 1 1 1",
+   "globalParameter": {
+    "checked": {
+     "0": "1 1"
+    },
+    "cols": 2,
+    "data": {
+     "0": "3.38346 5.82297"
+    },
+    "header": "lg K\u2081\u2081|lg K\u2081\u2082",
+    "rows": 1
+   },
+   "localParameter": {
+    "checked": {
+     "0": "1 1 1",
+     "1": "1 1 1",
+     "2": "1 1 1",
+     "3": "1 1 1",
+     "4": "1 1 1",
+     "5": "1 1 1",
+     "6": "1 1 1"
+    },
+    "cols": 3,
+    "data": {
+     "0": "6.31512 6.28745 6.25582",
+     "1": "6.06189 6.0719 6.15392",
+     "2": "2.34479 2.28778 2.27981",
+     "3": "2.2257 2.25597 2.20251",
+     "4": "4.28655 4.23775 4.12078",
+     "5": "4.40129 5.73139 6.69772",
+     "6": "3.18995 3.1999 3.17099"
+    },
+    "header": "\u03b4 A|\u03b4 AB|\u03b4 AB\u2082",
+    "rows": 7
+   },
+   "locked": "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1",
+   "methods": {
+    "0": {
+     "0": {
+      "confidence": {
+       "error": 0.95,
+       "lower": 3.3476099023437547,
+       "upper": 3.420372109374996
+      },
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "confidence": {
+       "error": 0.95,
+       "lower": 2.390727773437505,
+       "upper": 2.4865549218749945
+      },
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "controller": {
+      "BoxScalingFactor": 1.5,
+      "ErrorConvergency": 1e-10,
+      "FastConfidenceScaling": -4,
+      "FastConfidenceSteps": 100,
+      "GlobalParameterList": "",
+      "GlobalParameterScalingList": "",
+      "IncludeSeries": false,
+      "LightWeight": false,
+      "LocalParameterList": "",
+      "LocalParameterScalingList": "",
+      "MaxParameter": 0.015678673006558595,
+      "MaxSteps": 10000,
+      "MaxStepsFastConfidence": 1000,
+      "ParameterIndex": 0,
+      "StoreRaw": true,
+      "confidence": 0.95,
+      "f_value": 1.621981087700513,
+      "method": 6,
+      "timestamp": 1630326103287,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "1": {
+     "0": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.88965,
+       "lower_whisker": 2.45241,
+       "mean": 3.1913275299999984,
+       "median": 3.064895,
+       "stddev": 0.36241550271518896,
+       "upper_quantile": 3.47493,
+       "upper_whisker": 3.94044
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.7122,
+       "upper": 3.94648
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 0.3670935,
+       "lower_whisker": -1.02709,
+       "mean": 1.3724458376227997,
+       "median": 2.10224,
+       "stddev": 1.390330201695571,
+       "upper_quantile": 2.48367,
+       "upper_whisker": 2.81848
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -2.795105,
+       "upper": 2.6717649999999997
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.2596100000000003,
+       "lower_whisker": 1.13029,
+       "mean": 1422.9108405993,
+       "median": 2.2936199999999998,
+       "stddev": 34126.62979649913,
+       "upper_quantile": 3.04262,
+       "upper_whisker": 3.45528
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -5.0573250000000005,
+       "upper": 232.7125
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.22156,
+       "lower_whisker": 2.21309,
+       "mean": 2.2258899900000113,
+       "median": 2.22574,
+       "stddev": 0.006194513523982277,
+       "upper_quantile": 2.2301,
+       "upper_whisker": 2.23851
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.21417,
+       "upper": 2.23816
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.2489850000000002,
+       "lower_whisker": 2.22445,
+       "mean": 2.2619590250000035,
+       "median": 2.260055,
+       "stddev": 0.018845794949882616,
+       "upper_quantile": 2.27323,
+       "upper_whisker": 2.29631
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.23053,
+       "upper": 2.302765
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": -1.572135,
+       "lower_whisker": -3.51082,
+       "mean": -4540.588582943986,
+       "median": 2.15871,
+       "stddev": 64254.71176365813,
+       "upper_quantile": 2.21183,
+       "upper_whisker": 7.8053
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -3868.205,
+       "upper": 2.46945
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.282835,
+       "lower_whisker": 4.27417,
+       "mean": 4.2871484449999935,
+       "median": 4.287275,
+       "stddev": 0.006402318687339944,
+       "upper_quantile": 4.29158,
+       "upper_whisker": 4.30028
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 4.2744,
+       "upper": 4.299175
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.19444,
+       "lower_whisker": 4.14954,
+       "mean": 4.216588270000001,
+       "median": 4.220705000000001,
+       "stddev": 0.03050387516377393,
+       "upper_quantile": 4.2421050000000005,
+       "upper_whisker": 4.28184
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 4.153454999999999,
+       "upper": 4.26137
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 0.648467,
+       "lower_whisker": -1.13519,
+       "mean": -4868.565915311857,
+       "median": 4.07547,
+       "stddev": 65363.11152409799,
+       "upper_quantile": 4.13213,
+       "upper_whisker": 8.80669
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -2836.55,
+       "upper": 4.59428
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.39489,
+       "lower_whisker": 4.38431,
+       "mean": 4.400346515000003,
+       "median": 4.399785,
+       "stddev": 0.007945214579993176,
+       "upper_quantile": 4.405285,
+       "upper_whisker": 4.41534
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 4.386085,
+       "upper": 4.4169
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 5.644755,
+       "lower_whisker": 5.2439,
+       "mean": 6.1773165150000064,
+       "median": 6.2216450000000005,
+       "stddev": 0.5639157462898706,
+       "upper_quantile": 6.64176,
+       "upper_whisker": 7.68712
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 5.3617550000000005,
+       "upper": 7.232925
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 5.910605,
+       "lower_whisker": 5.09864,
+       "mean": -9149.274578311137,
+       "median": 6.664705,
+       "stddev": 234197.65953959047,
+       "upper_quantile": 6.9906500000000005,
+       "upper_whisker": 8.21942
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -498.727,
+       "upper": 60.4746
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.31105,
+       "lower_whisker": 6.30276,
+       "mean": 6.315427559999981,
+       "median": 6.31557,
+       "stddev": 0.006216352577362629,
+       "upper_quantile": 6.31959,
+       "upper_whisker": 6.32822
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.303615000000001,
+       "upper": 6.32821
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 3.18578,
+       "lower_whisker": 3.17742,
+       "mean": 3.18999877999999,
+       "median": 3.189895,
+       "stddev": 0.006110058356362801,
+       "upper_quantile": 3.19414,
+       "upper_whisker": 3.20242
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 3.178355,
+       "upper": 3.20208
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 3.19035,
+       "lower_whisker": 3.16965,
+       "mean": 3.2010752300000105,
+       "median": 3.2001150000000003,
+       "stddev": 0.01696320799140834,
+       "upper_quantile": 3.21073,
+       "upper_whisker": 3.23042
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 3.16926,
+       "upper": 3.2382999999999997
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.009735,
+       "lower_whisker": 1.39775,
+       "mean": -4060.189287610151,
+       "median": 3.1575699999999998,
+       "stddev": 60110.28958143498,
+       "upper_quantile": 3.19097,
+       "upper_whisker": 4.90324
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -564.282,
+       "upper": 7.91691
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.2638300000000005,
+       "lower_whisker": 6.2384,
+       "mean": 6.276876344999991,
+       "median": 6.28027,
+       "stddev": 0.020835907484708493,
+       "upper_quantile": 6.29176,
+       "upper_whisker": 6.32143
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.22894,
+       "upper": 6.309345
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.119295,
+       "lower_whisker": 5.99561,
+       "mean": -852.4753813348468,
+       "median": 6.252845,
+       "stddev": 27177.086840260356,
+       "upper_quantile": 6.292355000000001,
+       "upper_whisker": 6.51113
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -152.121,
+       "upper": 18.4831
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.05683,
+       "lower_whisker": 6.04791,
+       "mean": 6.061353804999982,
+       "median": 6.06131,
+       "stddev": 0.006339566051460892,
+       "upper_quantile": 6.06578,
+       "upper_whisker": 6.07473
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.04881,
+       "upper": 6.073695
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.066635,
+       "lower_whisker": 6.04144,
+       "mean": 6.079602289999991,
+       "median": 6.07771,
+       "stddev": 0.018926172570278947,
+       "upper_quantile": 6.090845,
+       "upper_whisker": 6.11401
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.046805,
+       "upper": 6.121684999999999
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.14166,
+       "lower_whisker": 1.54656,
+       "mean": 3330.65743119617,
+       "median": 6.198065,
+       "stddev": 39261.70475126698,
+       "upper_quantile": 9.261334999999999,
+       "upper_whisker": 10.8759
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 5.157145,
+       "upper": 5267.84
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.34021,
+       "lower_whisker": 2.33184,
+       "mean": 2.344470409999999,
+       "median": 2.344355,
+       "stddev": 0.006101838136678401,
+       "upper_quantile": 2.348555,
+       "upper_whisker": 2.35678
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.33249,
+       "upper": 2.356575
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.252945,
+       "lower_whisker": 2.21562,
+       "mean": 2.27145761,
+       "median": 2.27482,
+       "stddev": 0.026935243536305324,
+       "upper_quantile": 2.29245,
+       "upper_whisker": 2.32649
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.21472,
+       "upper": 2.312535
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "EntropyBins": 30,
+      "IndependentRowVariance": "",
+      "LightWeight": false,
+      "MaxSteps": 2000,
+      "OriginalData": false,
+      "PlotBins": 30,
+      "StoreRaw": true,
+      "Variance": 0.010080077164803398,
+      "VarianceSource": 2,
+      "confidence": 95,
+      "method": 1,
+      "timestamp": 1630337471573,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "2": {
+     "0": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": -4095120,
+       "lower_whisker": -4095120,
+       "mean": -1194552.0929055002,
+       "median": 2.87755,
+       "stddev": 1865590.8621998313,
+       "upper_quantile": 3.37101,
+       "upper_whisker": 35628.2
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -4095120,
+       "upper": 35628.2
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 0.8878429999999999,
+       "lower_whisker": -10.5702,
+       "mean": 1198302.443231559,
+       "median": 2.6020399999999997,
+       "stddev": 1863155.0310827524,
+       "upper_quantile": 4095130,
+       "upper_whisker": 4095130
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -6.90447,
+       "upper": 4095130
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.28536,
+       "lower_whisker": -0.753953,
+       "mean": 1202622453.047031,
+       "median": 2.28536,
+       "stddev": 20413004540.525093,
+       "upper_quantile": 4.327680000000001,
+       "upper_whisker": 5.34464
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -3.169845,
+       "upper": 1352085
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.225565,
+       "lower_whisker": 2.21372,
+       "mean": -2127.2593657234156,
+       "median": 2.23418,
+       "stddev": 94813.47112951445,
+       "upper_quantile": 2.23921,
+       "upper_whisker": 2.24718
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.215305,
+       "upper": 5193.64
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.2588749999999997,
+       "lower_whisker": 2.19136,
+       "mean": 1108.6663080560054,
+       "median": 2.2940199999999997,
+       "stddev": 3880.4549302299392,
+       "upper_quantile": 2.77665,
+       "upper_whisker": 2.79494
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.234285,
+       "upper": 11169
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": -3.64067,
+       "lower_whisker": -6.60995,
+       "mean": -2706374983.6221337,
+       "median": 2.206445,
+       "stddev": 33208635908.714176,
+       "upper_quantile": 2.23784,
+       "upper_whisker": 10.6922
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -24262250,
+       "upper": 2.26736
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.283165,
+       "lower_whisker": 4.27808,
+       "mean": -23902.281947932184,
+       "median": 4.28968,
+       "stddev": 390745.9071350139,
+       "upper_quantile": 4.2909,
+       "upper_whisker": 4.30127
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -333109,
+       "upper": 4.297575
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.21117,
+       "lower_whisker": -3.2596e+36,
+       "mean": 6.565067843420679e+42,
+       "median": 4.254205,
+       "stddev": 1.0196031929365511e+43,
+       "upper_quantile": 2.23987e+43,
+       "upper_whisker": 2.23987e+43
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 4.15854,
+       "upper": 2.23987e+43
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": -2.00441,
+       "lower_whisker": -5.1534,
+       "mean": -2489796921.76326,
+       "median": 4.12643,
+       "stddev": 30866509774.30671,
+       "upper_quantile": 4.20069,
+       "upper_whisker": 12.2411
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -11460300,
+       "upper": 4.211155
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.39503,
+       "lower_whisker": 4.32342,
+       "mean": 68995.45635142627,
+       "median": 4.404815,
+       "stddev": 11290424.859915305,
+       "upper_quantile": 4.5318,
+       "upper_whisker": 4.53819
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -2406850,
+       "upper": 4.5318
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 1.97364,
+       "lower_whisker": 1.94682,
+       "mean": -9721.04545621065,
+       "median": 5.442515,
+       "stddev": 174103.2695498431,
+       "upper_quantile": 6.424455,
+       "upper_whisker": 7.92456
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -139713,
+       "upper": 7.093285
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.441929999999999,
+       "lower_whisker": 2.60937,
+       "mean": -1628229895.86617,
+       "median": 5.95819,
+       "stddev": 48613337830.965546,
+       "upper_quantile": 6.682024999999999,
+       "upper_whisker": 9.31662
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -140246.5,
+       "upper": 4476.41
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.30927,
+       "lower_whisker": 6.30095,
+       "mean": -41062.911950493406,
+       "median": 6.31042,
+       "stddev": 166351.67857553696,
+       "upper_quantile": 6.31559,
+       "upper_whisker": 6.3199
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -424066,
+       "upper": 6.32556
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.18641,
+       "lower_whisker": 3.18332,
+       "mean": -16903.031352999304,
+       "median": 3.19003,
+       "stddev": 121644.78126202493,
+       "upper_quantile": 3.1908849999999997,
+       "upper_whisker": 3.19674
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -131717,
+       "upper": 3.2005350000000004
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.1993549999999997,
+       "lower_whisker": -5.06168e+40,
+       "mean": 1.0511656988308189e+42,
+       "median": 3.22536,
+       "stddev": 1.632552078465925e+42,
+       "upper_quantile": 3.58639e+42,
+       "upper_whisker": 3.58639e+42
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 3.171725,
+       "upper": 3.58639e+42
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 1.215525,
+       "lower_whisker": 0.217946,
+       "mean": -1168459569.5361936,
+       "median": 3.18661,
+       "stddev": 21202626294.777008,
+       "upper_quantile": 3.19533,
+       "upper_whisker": 6.1439
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -624013,
+       "upper": 8.508669999999999
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.27168,
+       "lower_whisker": 6.15111,
+       "mean": 579.643315058006,
+       "median": 6.29584,
+       "stddev": 3303.65742341831,
+       "upper_quantile": 6.54978,
+       "upper_whisker": 6.5697
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.237215,
+       "upper": 4719.08
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 5.794335,
+       "lower_whisker": 5.55396,
+       "mean": -577826871.2301909,
+       "median": 6.27216,
+       "stddev": 21892504506.319252,
+       "upper_quantile": 6.273255,
+       "upper_whisker": 6.99002
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -71707.35,
+       "upper": 162.005
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.05378,
+       "lower_whisker": 6.042,
+       "mean": -27355.079603991322,
+       "median": 6.05397,
+       "stddev": 239304.1629009205,
+       "upper_quantile": 6.06202,
+       "upper_whisker": 6.06633
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -200578,
+       "upper": 6.071655
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.52706,
+       "lower_whisker": 4.52229,
+       "mean": -1013.0765089129388,
+       "median": 6.056015,
+       "stddev": 6155.759058437285,
+       "upper_quantile": 6.080165,
+       "upper_whisker": 6.17446
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -8278.72,
+       "upper": 6.115305
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.09943,
+       "lower_whisker": 5.51424,
+       "mean": 2671339983.6943955,
+       "median": 6.109945,
+       "stddev": 34043004708.466297,
+       "upper_quantile": 6.531245,
+       "upper_whisker": 6.75639
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 3.04297,
+       "upper": 15928250
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.3286,
+       "lower_whisker": 2.3211,
+       "mean": -7241.27562659362,
+       "median": 2.336365,
+       "stddev": 194466.56272077386,
+       "upper_quantile": 2.3453049999999998,
+       "upper_whisker": 2.3614
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -121808,
+       "upper": 2.35509
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.25702,
+       "lower_whisker": -2.01822e+42,
+       "mean": 1.5030026545813533e+42,
+       "median": 2.2958,
+       "stddev": 2.3348082590366886e+42,
+       "upper_quantile": 5.12864e+42,
+       "upper_whisker": 5.12864e+42
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.16194,
+       "upper": 5.12864e+42
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "EntropyBins": 30,
+      "IndependentRowVariance": "",
+      "LightWeight": false,
+      "MaxSteps": 10000,
+      "OriginalData": false,
+      "PlotBins": 30,
+      "StoreRaw": true,
+      "Variance": 0.010080077164803398,
+      "VarianceSource": 2,
+      "confidence": 95,
+      "method": 1,
+      "timestamp": 1630337606194,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "3": {
+     "0": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.812785,
+       "lower_whisker": 2.55614,
+       "mean": -22748.146648660037,
+       "median": 2.975175,
+       "stddev": 50373.31630122405,
+       "upper_quantile": 3.41159,
+       "upper_whisker": 3.87187
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -134223,
+       "upper": 3.88204
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 0.012493,
+       "lower_whisker": -2.61519,
+       "mean": -202.45723425431504,
+       "median": 1.004575,
+       "stddev": 451.521522706793,
+       "upper_quantile": 2.4537,
+       "upper_whisker": 2.73428
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -1201.66,
+       "upper": 2.64059
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.26891,
+       "lower_whisker": -5.92989,
+       "mean": 76.79424060962106,
+       "median": 2.3145350000000002,
+       "stddev": 810.248642239551,
+       "upper_quantile": 7.996785,
+       "upper_whisker": 10.9028
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -1.16419,
+       "upper": 183.118
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.2227550000000003,
+       "lower_whisker": 2.21136,
+       "mean": 21870.56913633,
+       "median": 2.22745,
+       "stddev": 48418.29019461737,
+       "upper_quantile": 2.23353,
+       "upper_whisker": 2.24236
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.2148000000000003,
+       "upper": 129019
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.24174,
+       "lower_whisker": 2.21473,
+       "mean": -4338.202645805007,
+       "median": 2.25592,
+       "stddev": 9610.14212868075,
+       "upper_quantile": 2.269655,
+       "upper_whisker": 2.29763
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -25605.2,
+       "upper": 2.30058
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": -0.000868581,
+       "lower_whisker": -1.12311,
+       "mean": -57.24646896883243,
+       "median": 2.18836,
+       "stddev": 1582.0031294748733,
+       "upper_quantile": 2.23135,
+       "upper_whisker": 5.06907
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -18.2324,
+       "upper": 322.289
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.284055,
+       "lower_whisker": 4.2729,
+       "mean": 14155.742552594918,
+       "median": 4.288505,
+       "stddev": 31332.473262833595,
+       "upper_quantile": 4.294505,
+       "upper_whisker": 4.30298
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 4.276225,
+       "upper": 83493.7
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.176645,
+       "lower_whisker": 4.12941,
+       "mean": -861.9474482049962,
+       "median": 4.211835000000001,
+       "stddev": 1917.7595470907124,
+       "upper_quantile": 4.238525,
+       "upper_whisker": 4.26911
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -5105.9,
+       "upper": 4.25841
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 1.74495,
+       "lower_whisker": 0.535422,
+       "mean": 17.85252955708997,
+       "median": 4.107995000000001,
+       "stddev": 1138.0773329072688,
+       "upper_quantile": 4.154434999999999,
+       "upper_whisker": 7.53698
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -18.436149999999998,
+       "upper": 584.045
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 4.391215000000001,
+       "lower_whisker": 4.38002,
+       "mean": -472382.67547284573,
+       "median": 4.39838,
+       "stddev": 1045903.4006164725,
+       "upper_quantile": 4.4039649999999995,
+       "upper_whisker": 4.41747
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -2786940,
+       "upper": 4.41381
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 5.47177,
+       "lower_whisker": 5.26691,
+       "mean": -33498.08201799001,
+       "median": 5.833625,
+       "stddev": 74181.12334057651,
+       "upper_quantile": 6.583015,
+       "upper_whisker": 7.48087
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -197659,
+       "upper": 7.0966249999999995
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": -12.131450000000001,
+       "lower_whisker": -21.8554,
+       "mean": -1050.2718609656697,
+       "median": 6.57299,
+       "stddev": 7984.003304644142,
+       "upper_quantile": 6.82822,
+       "upper_whisker": 34.8006
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -4760.84,
+       "upper": 39.96445
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.31225,
+       "lower_whisker": 6.30199,
+       "mean": 67597.776632725,
+       "median": 6.31648,
+       "stddev": 149652.99254392728,
+       "upper_quantile": 6.322155,
+       "upper_whisker": 6.33044
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.304785,
+       "upper": 398776
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 3.18278,
+       "lower_whisker": 3.17504,
+       "mean": -34990.62553725497,
+       "median": 3.18888,
+       "stddev": 77479.15375342678,
+       "upper_quantile": 3.1931849999999997,
+       "upper_whisker": 3.20426
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -206450,
+       "upper": 3.20038
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 3.18275,
+       "lower_whisker": 3.15978,
+       "mean": -1543.0746981800153,
+       "median": 3.197295,
+       "stddev": 3423.5803694912443,
+       "upper_quantile": 3.20781,
+       "upper_whisker": 3.23481
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -9119.37,
+       "upper": 3.2316200000000004
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.79237,
+       "lower_whisker": 2.26611,
+       "mean": -40.33768911028344,
+       "median": 3.1689249999999998,
+       "stddev": 1048.4052739507515,
+       "upper_quantile": 3.3999550000000003,
+       "upper_whisker": 4.07257
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -9.564879999999999,
+       "upper": 125.499
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.27056,
+       "lower_whisker": 6.2401,
+       "mean": 4799.86080626,
+       "median": 6.285705,
+       "stddev": 10613.381009491975,
+       "upper_quantile": 6.300965,
+       "upper_whisker": 6.32572
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 6.23881,
+       "upper": 28287
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.30133,
+       "lower_whisker": 0.289264,
+       "mean": -52.17859395975049,
+       "median": 6.23738,
+       "stddev": 1152.8505485586384,
+       "upper_quantile": 6.27358,
+       "upper_whisker": 11.9529
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -73.1297,
+       "upper": 12.0756
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.05439,
+       "lower_whisker": 6.04576,
+       "mean": -33125.43585472506,
+       "median": 6.060015,
+       "stddev": 73355.82959122545,
+       "upper_quantile": 6.064355,
+       "upper_whisker": 6.07453
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -195460,
+       "upper": 6.07257
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.05964,
+       "lower_whisker": 6.03482,
+       "mean": -510.77658522999565,
+       "median": 6.072955,
+       "stddev": 1144.3618836173537,
+       "upper_quantile": 6.086535,
+       "upper_whisker": 6.11284
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -3043.22,
+       "upper": 6.117884999999999
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 6.12228,
+       "lower_whisker": 3.25021,
+       "mean": 79.61852530625015,
+       "median": 6.163895,
+       "stddev": 1616.9719846373198,
+       "upper_quantile": 8.258405,
+       "upper_whisker": 9.35103
+      },
+      "confidence": {
+       "error": 95,
+       "lower": -164.246,
+       "upper": 24.368000000000002
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.34177,
+       "lower_whisker": 2.33102,
+       "mean": 208612.377283615,
+       "median": 2.34625,
+       "stddev": 461879.57633821084,
+       "upper_quantile": 2.352055,
+       "upper_whisker": 2.35977
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.334365,
+       "upper": 1230740
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 2000,
+       "lower_quantile": 2.258705,
+       "lower_whisker": 2.21771,
+       "mean": 929.5853016949947,
+       "median": 2.28238,
+       "stddev": 2053.148443909136,
+       "upper_quantile": 2.3020050000000003,
+       "upper_whisker": 2.32728
+      },
+      "confidence": {
+       "error": 95,
+       "lower": 2.2168,
+       "upper": 5473.15
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "EntropyBins": 30,
+      "IndependentRowVariance": "",
+      "LightWeight": false,
+      "MaxSteps": 2000,
+      "OriginalData": false,
+      "PlotBins": 30,
+      "StoreRaw": true,
+      "Variance": 0,
+      "VarianceSource": 4,
+      "confidence": 95,
+      "method": 1,
+      "timestamp": 1630919820504,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "4": {
+     "0": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 3.26794,
+       "lower_whisker": 3.03038,
+       "mean": 3.4392313457172374,
+       "median": 3.37149,
+       "stddev": 0.2855091007930164,
+       "upper_quantile": 3.4953649999999996,
+       "upper_whisker": 3.70688
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.382565,
+       "lower_whisker": 2.14642,
+       "mean": 2.4693455184726507,
+       "median": 2.45196,
+       "stddev": 0.17265688666795287,
+       "upper_quantile": 2.586715,
+       "upper_whisker": 2.75706
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.26861,
+       "lower_whisker": 2.24719,
+       "mean": 2.282184895768834,
+       "median": 2.2789,
+       "stddev": 0.11697827093961315,
+       "upper_quantile": 2.28975,
+       "upper_whisker": 2.3106
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.224385,
+       "lower_whisker": 2.22164,
+       "mean": 2.2259718679050504,
+       "median": 2.22556,
+       "stddev": 0.0025685620133780716,
+       "upper_quantile": 2.227,
+       "upper_whisker": 2.22948
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.249695,
+       "lower_whisker": 2.23752,
+       "mean": 2.256657131062945,
+       "median": 2.25575,
+       "stddev": 0.01050525920471517,
+       "upper_quantile": 2.261945,
+       "upper_whisker": 2.27412
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.1906,
+       "lower_whisker": 2.16016,
+       "mean": 2.1961128629514963,
+       "median": 2.20264,
+       "stddev": 0.1349105419088203,
+       "upper_quantile": 2.218935,
+       "upper_whisker": 2.24484
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 4.2849,
+       "lower_whisker": 4.28164,
+       "mean": 4.286805170278626,
+       "median": 4.2863,
+       "stddev": 0.00405524401260379,
+       "upper_quantile": 4.28801,
+       "upper_whisker": 4.29096
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 4.23288,
+       "lower_whisker": 4.2214,
+       "mean": 4.238133777089812,
+       "median": 4.23888,
+       "stddev": 0.00861406970236318,
+       "upper_quantile": 4.2445450000000005,
+       "upper_whisker": 4.25609
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 4.1086849999999995,
+       "lower_whisker": 4.07527,
+       "mean": 4.119064980392161,
+       "median": 4.12164,
+       "stddev": 0.06787907464022946,
+       "upper_quantile": 4.13972,
+       "upper_whisker": 4.16805
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 4.39941,
+       "lower_whisker": 4.3975,
+       "mean": 4.405001081527348,
+       "median": 4.40052,
+       "stddev": 0.012530648490655463,
+       "upper_quantile": 4.40145,
+       "upper_whisker": 4.40299
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 5.6299150000000004,
+       "lower_whisker": 5.38539,
+       "mean": 5.7478585159958735,
+       "median": 5.74787,
+       "stddev": 0.31512775355525624,
+       "upper_quantile": 5.87194,
+       "upper_whisker": 6.11089
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.6091999999999995,
+       "lower_whisker": 6.46262,
+       "mean": 6.650240912280697,
+       "median": 6.68685,
+       "stddev": 0.2848693026607545,
+       "upper_quantile": 6.758850000000001,
+       "upper_whisker": 6.9102
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.31376,
+       "lower_whisker": 6.31106,
+       "mean": 6.315089638802862,
+       "median": 6.31508,
+       "stddev": 0.0024182162501212145,
+       "upper_quantile": 6.31644,
+       "upper_whisker": 6.3191
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 3.18822,
+       "lower_whisker": 3.18499,
+       "mean": 3.189943042311652,
+       "median": 3.1897,
+       "stddev": 0.0025964888934815783,
+       "upper_quantile": 3.19136,
+       "upper_whisker": 3.19441
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 3.195355,
+       "lower_whisker": 3.18532,
+       "mean": 3.2010639195046466,
+       "median": 3.20029,
+       "stddev": 0.011777325929184403,
+       "upper_quantile": 3.205365,
+       "upper_whisker": 3.21529
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 3.1606050000000003,
+       "lower_whisker": 3.14204,
+       "mean": 3.16850548813211,
+       "median": 3.17193,
+       "stddev": 0.07826965126852582,
+       "upper_quantile": 3.1805649999999996,
+       "upper_whisker": 3.20158
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.283775,
+       "lower_whisker": 6.27497,
+       "mean": 6.2877962662538645,
+       "median": 6.28897,
+       "stddev": 0.007554935073377576,
+       "upper_quantile": 6.29312,
+       "upper_whisker": 6.30295
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.250815,
+       "lower_whisker": 6.23909,
+       "mean": 6.258560596491222,
+       "median": 6.25724,
+       "stddev": 0.07273704876159526,
+       "upper_quantile": 6.26292,
+       "upper_whisker": 6.27535
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.0605,
+       "lower_whisker": 6.05732,
+       "mean": 6.061948328173372,
+       "median": 6.06182,
+       "stddev": 0.0026950166898075207,
+       "upper_quantile": 6.0635,
+       "upper_whisker": 6.0663
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.06717,
+       "lower_whisker": 6.05933,
+       "mean": 6.070918431372534,
+       "median": 6.07134,
+       "stddev": 0.007007949674863745,
+       "upper_quantile": 6.07518,
+       "upper_whisker": 6.08334
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 6.13893,
+       "lower_whisker": 6.11241,
+       "mean": 6.157923442724442,
+       "median": 6.15099,
+       "stddev": 0.09209896180433684,
+       "upper_quantile": 6.165265,
+       "upper_whisker": 6.19046
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.342175,
+       "lower_whisker": 2.3373,
+       "mean": 2.3446887203302267,
+       "median": 2.34477,
+       "stddev": 0.004920485864722226,
+       "upper_quantile": 2.34716,
+       "upper_whisker": 2.35224
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 4845,
+       "lower_quantile": 2.28207,
+       "lower_whisker": 2.26764,
+       "mean": 2.288538262125897,
+       "median": 2.28907,
+       "stddev": 0.013410717730028353,
+       "upper_quantile": 2.29638,
+       "upper_whisker": 2.31047
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 1,
+      "CXO": 3,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 4845,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 4,
+      "method": 4,
+      "timestamp": 1630331677169,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "5": {
+     "0": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 3.35762,
+       "lower_whisker": 3.30242,
+       "mean": 3.4076252631578945,
+       "median": 3.38433,
+       "stddev": 0.13705064701977157,
+       "upper_quantile": 3.41612,
+       "upper_whisker": 3.45934
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.41906,
+       "lower_whisker": 2.4041,
+       "mean": 2.4405468421052627,
+       "median": 2.43905,
+       "stddev": 0.06387845951080606,
+       "upper_quantile": 2.45655,
+       "upper_whisker": 2.47511
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.27703,
+       "lower_whisker": 2.27322,
+       "mean": 2.280378947368421,
+       "median": 2.28089,
+       "stddev": 0.006959235186855285,
+       "upper_quantile": 2.28363,
+       "upper_whisker": 2.28599
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.22506,
+       "lower_whisker": 2.22435,
+       "mean": 2.2257931578947363,
+       "median": 2.22578,
+       "stddev": 0.0012498535586734543,
+       "upper_quantile": 2.2262,
+       "upper_whisker": 2.22649
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.25412,
+       "lower_whisker": 2.25197,
+       "mean": 2.2555915789473686,
+       "median": 2.2556,
+       "stddev": 0.003987348413221685,
+       "upper_quantile": 2.25717,
+       "upper_whisker": 2.25944
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.19675,
+       "lower_whisker": 2.19513,
+       "mean": 2.202651052631579,
+       "median": 2.20351,
+       "stddev": 0.00989434849617404,
+       "upper_quantile": 2.20478,
+       "upper_whisker": 2.21162
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 4.28597,
+       "lower_whisker": 4.28562,
+       "mean": 4.286638947368421,
+       "median": 4.28652,
+       "stddev": 0.0018125883725179349,
+       "upper_quantile": 4.28675,
+       "upper_whisker": 4.28733
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 4.23543,
+       "lower_whisker": 4.23336,
+       "mean": 4.238061052631578,
+       "median": 4.23764,
+       "stddev": 0.00377321539087882,
+       "upper_quantile": 4.23979,
+       "upper_whisker": 4.24388
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 4.11693,
+       "lower_whisker": 4.11121,
+       "mean": 4.120623157894737,
+       "median": 4.12084,
+       "stddev": 0.010430080990753739,
+       "upper_quantile": 4.1235,
+       "upper_whisker": 4.12533
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 4.40095,
+       "lower_whisker": 4.40045,
+       "mean": 4.402252631578947,
+       "median": 4.40108,
+       "stddev": 0.006704602765683774,
+       "upper_quantile": 4.40142,
+       "upper_whisker": 4.40151
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 5.69719,
+       "lower_whisker": 5.65722,
+       "mean": 5.7197505263157895,
+       "median": 5.73252,
+       "stddev": 0.10175071675825548,
+       "upper_quantile": 5.75819,
+       "upper_whisker": 5.77449
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.69375,
+       "lower_whisker": 6.64513,
+       "mean": 6.703860000000001,
+       "median": 6.70169,
+       "stddev": 0.040426244775722944,
+       "upper_quantile": 6.73245,
+       "upper_whisker": 6.752
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.31472,
+       "lower_whisker": 6.31435,
+       "mean": 6.315157894736843,
+       "median": 6.31508,
+       "stddev": 0.001044017767767962,
+       "upper_quantile": 6.31554,
+       "upper_whisker": 6.31611
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 3.1893,
+       "lower_whisker": 3.18884,
+       "mean": 3.1899431578947373,
+       "median": 3.18984,
+       "stddev": 0.0011280861503329773,
+       "upper_quantile": 3.19026,
+       "upper_whisker": 3.19122
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 3.19891,
+       "lower_whisker": 3.19645,
+       "mean": 3.19994,
+       "median": 3.19989,
+       "stddev": 0.0035493958797393884,
+       "upper_quantile": 3.20143,
+       "upper_whisker": 3.20306
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 3.16672,
+       "lower_whisker": 3.1648,
+       "mean": 3.1706173684210524,
+       "median": 3.17143,
+       "stddev": 0.0074033969996551985,
+       "upper_quantile": 3.1745,
+       "upper_whisker": 3.18101
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.286,
+       "lower_whisker": 6.28288,
+       "mean": 6.28754052631579,
+       "median": 6.28739,
+       "stddev": 0.0035077413969109707,
+       "upper_quantile": 6.29016,
+       "upper_whisker": 6.29132
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.2524,
+       "lower_whisker": 6.24922,
+       "mean": 6.256295789473685,
+       "median": 6.25607,
+       "stddev": 0.004343478273086165,
+       "upper_quantile": 6.25982,
+       "upper_whisker": 6.26403
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.06143,
+       "lower_whisker": 6.06105,
+       "mean": 6.061834736842105,
+       "median": 6.06177,
+       "stddev": 0.0011320255612594862,
+       "upper_quantile": 6.06222,
+       "upper_whisker": 6.06265
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.07048,
+       "lower_whisker": 6.0686,
+       "mean": 6.072045263157896,
+       "median": 6.07242,
+       "stddev": 0.0025131573068797675,
+       "upper_quantile": 6.0734,
+       "upper_whisker": 6.07657
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 6.14869,
+       "lower_whisker": 6.14605,
+       "mean": 6.153421578947368,
+       "median": 6.1527,
+       "stddev": 0.009268140927786458,
+       "upper_quantile": 6.15622,
+       "upper_whisker": 6.16119
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.34456,
+       "lower_whisker": 2.34446,
+       "mean": 2.344866842105263,
+       "median": 2.34488,
+       "stddev": 0.0021879342175556136,
+       "upper_quantile": 2.34556,
+       "upper_whisker": 2.34569
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 19,
+       "lower_quantile": 2.28496,
+       "lower_whisker": 2.2809,
+       "mean": 2.288138421052632,
+       "median": 2.28751,
+       "stddev": 0.004725611380972531,
+       "upper_quantile": 2.29025,
+       "upper_whisker": 2.29479
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 1,
+      "CXO": 3,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 19,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 1,
+      "method": 4,
+      "timestamp": 1630331578133,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "6": {
+     "0": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 3.31729,
+       "lower_whisker": 3.2211,
+       "mean": 3.4096155263157883,
+       "median": 3.3737500000000002,
+       "stddev": 0.19851521204485464,
+       "upper_quantile": 3.42906,
+       "upper_whisker": 3.53067
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.40494,
+       "lower_whisker": 2.34582,
+       "mean": 2.454691526315789,
+       "median": 2.441055,
+       "stddev": 0.09617236559981998,
+       "upper_quantile": 2.47817,
+       "upper_whisker": 2.53709
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.27179,
+       "lower_whisker": 2.25922,
+       "mean": 2.2793937368421076,
+       "median": 2.27925,
+       "stddev": 0.011086100847181275,
+       "upper_quantile": 2.28592,
+       "upper_whisker": 2.29987
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.22467,
+       "lower_whisker": 2.22318,
+       "mean": 2.225823842105262,
+       "median": 2.225815,
+       "stddev": 0.0017335062417774183,
+       "upper_quantile": 2.22646,
+       "upper_whisker": 2.22836
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.2531,
+       "lower_whisker": 2.248,
+       "mean": 2.2562778947368427,
+       "median": 2.256205,
+       "stddev": 0.0065671547469465415,
+       "upper_quantile": 2.25912,
+       "upper_whisker": 2.26517
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.19578,
+       "lower_whisker": 2.1841,
+       "mean": 2.202089263157894,
+       "median": 2.20158,
+       "stddev": 0.014276090511787583,
+       "upper_quantile": 2.20839,
+       "upper_whisker": 2.22002
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 4.28573,
+       "lower_whisker": 4.28473,
+       "mean": 4.286650000000001,
+       "median": 4.28644,
+       "stddev": 0.0025893201493787355,
+       "upper_quantile": 4.28736,
+       "upper_whisker": 4.28866
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 4.23421,
+       "lower_whisker": 4.22791,
+       "mean": 4.23793694736842,
+       "median": 4.2378800000000005,
+       "stddev": 0.005437892151874335,
+       "upper_quantile": 4.24144,
+       "upper_whisker": 4.2485
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 4.11351,
+       "lower_whisker": 4.1009,
+       "mean": 4.121468473684212,
+       "median": 4.121175,
+       "stddev": 0.015004780553442796,
+       "upper_quantile": 4.12716,
+       "upper_whisker": 4.13991
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 4.40023,
+       "lower_whisker": 4.39949,
+       "mean": 4.403044105263158,
+       "median": 4.400945,
+       "stddev": 0.008993729266907424,
+       "upper_quantile": 4.40134,
+       "upper_whisker": 4.40208
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 5.68975,
+       "lower_whisker": 5.59553,
+       "mean": 5.736460789473686,
+       "median": 5.7433250000000005,
+       "stddev": 0.16900676574825516,
+       "upper_quantile": 5.80366,
+       "upper_whisker": 5.90959
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.65435,
+       "lower_whisker": 6.56959,
+       "mean": 6.674914421052636,
+       "median": 6.70246,
+       "stddev": 0.12094427219227065,
+       "upper_quantile": 6.74311,
+       "upper_whisker": 6.82002
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.31445,
+       "lower_whisker": 6.31339,
+       "mean": 6.315103736842106,
+       "median": 6.315045,
+       "stddev": 0.0015131715297776447,
+       "upper_quantile": 6.31605,
+       "upper_whisker": 6.31741
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 3.18884,
+       "lower_whisker": 3.18655,
+       "mean": 3.1899418947368376,
+       "median": 3.18981,
+       "stddev": 0.0015981721005370864,
+       "upper_quantile": 3.19105,
+       "upper_whisker": 3.19279
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 3.19608,
+       "lower_whisker": 3.19069,
+       "mean": 3.200268473684213,
+       "median": 3.2005549999999996,
+       "stddev": 0.0051053319245814265,
+       "upper_quantile": 3.20331,
+       "upper_whisker": 3.21072
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 3.1647,
+       "lower_whisker": 3.1513,
+       "mean": 3.1702731578947363,
+       "median": 3.1709199999999997,
+       "stddev": 0.010504620224434259,
+       "upper_quantile": 3.1778,
+       "upper_whisker": 3.18857
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.28527,
+       "lower_whisker": 6.28049,
+       "mean": 6.287593578947371,
+       "median": 6.28836,
+       "stddev": 0.004873626012488753,
+       "upper_quantile": 6.29064,
+       "upper_whisker": 6.29599
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.25187,
+       "lower_whisker": 6.2436,
+       "mean": 6.256327526315789,
+       "median": 6.256695000000001,
+       "stddev": 0.006225508176010069,
+       "upper_quantile": 6.26076,
+       "upper_whisker": 6.26922
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.06109,
+       "lower_whisker": 6.05976,
+       "mean": 6.061925894736843,
+       "median": 6.06177,
+       "stddev": 0.0016799285036039164,
+       "upper_quantile": 6.06253,
+       "upper_whisker": 6.06392
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.06908,
+       "lower_whisker": 6.06442,
+       "mean": 6.071445631578948,
+       "median": 6.071955,
+       "stddev": 0.004198153457907419,
+       "upper_quantile": 6.07416,
+       "upper_whisker": 6.0791
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 6.14622,
+       "lower_whisker": 6.12993,
+       "mean": 6.153953368421054,
+       "median": 6.152235,
+       "stddev": 0.013594735956853433,
+       "upper_quantile": 6.16119,
+       "upper_whisker": 6.17452
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.34316,
+       "lower_whisker": 2.34111,
+       "mean": 2.344744684210524,
+       "median": 2.344925,
+       "stddev": 0.0031509341279349723,
+       "upper_quantile": 2.3458,
+       "upper_whisker": 2.34884
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 190,
+       "lower_quantile": 2.28344,
+       "lower_whisker": 2.2751,
+       "mean": 2.2883194736842114,
+       "median": 2.28772,
+       "stddev": 0.006693746646383515,
+       "upper_quantile": 2.29223,
+       "upper_whisker": 2.30056
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 1,
+      "CXO": 3,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 190,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 2,
+      "method": 4,
+      "timestamp": 1630331584772,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "7": {
+     "0": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 3.2928100000000002,
+       "lower_whisker": 3.13399,
+       "mean": 3.424536149122804,
+       "median": 3.372125,
+       "stddev": 0.24413412779236032,
+       "upper_quantile": 3.4516400000000003,
+       "upper_whisker": 3.58964
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.39371,
+       "lower_whisker": 2.25525,
+       "mean": 2.4626917017543883,
+       "median": 2.4448100000000004,
+       "stddev": 0.12455207596122143,
+       "upper_quantile": 2.52107,
+       "upper_whisker": 2.63552
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.27033,
+       "lower_whisker": 2.25236,
+       "mean": 2.2791326052631593,
+       "median": 2.27919,
+       "stddev": 0.014606578062852576,
+       "upper_quantile": 2.28824,
+       "upper_whisker": 2.30603
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.22462,
+       "lower_whisker": 2.22243,
+       "mean": 2.2258956315789526,
+       "median": 2.22554,
+       "stddev": 0.0021680874117096824,
+       "upper_quantile": 2.2267,
+       "upper_whisker": 2.22862
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.251545,
+       "lower_whisker": 2.24223,
+       "mean": 2.256422754385962,
+       "median": 2.256005,
+       "stddev": 0.008402260646888501,
+       "upper_quantile": 2.26077,
+       "upper_whisker": 2.26978
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.19279,
+       "lower_whisker": 2.16884,
+       "mean": 2.2015870877193007,
+       "median": 2.201415,
+       "stddev": 0.02039809731205122,
+       "upper_quantile": 2.214735,
+       "upper_whisker": 2.234
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 4.28539,
+       "lower_whisker": 4.28292,
+       "mean": 4.286718938596496,
+       "median": 4.2863500000000005,
+       "stddev": 0.003333335026943033,
+       "upper_quantile": 4.28768,
+       "upper_whisker": 4.28975
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 4.23346,
+       "lower_whisker": 4.22359,
+       "mean": 4.238063657894731,
+       "median": 4.2380949999999995,
+       "stddev": 0.006934322471281155,
+       "upper_quantile": 4.24313,
+       "upper_whisker": 4.25251
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 4.11156,
+       "lower_whisker": 4.0886,
+       "mean": 4.121570649122813,
+       "median": 4.1210450000000005,
+       "stddev": 0.020078116963247784,
+       "upper_quantile": 4.133435,
+       "upper_whisker": 4.15381
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 4.39986,
+       "lower_whisker": 4.39855,
+       "mean": 4.404010017543861,
+       "median": 4.40072,
+       "stddev": 0.01091911384034967,
+       "upper_quantile": 4.401345,
+       "upper_whisker": 4.4023
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 5.668229999999999,
+       "lower_whisker": 5.50663,
+       "mean": 5.739487105263162,
+       "median": 5.746335,
+       "stddev": 0.22460015741773126,
+       "upper_quantile": 5.840165,
+       "upper_whisker": 6.00046
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.636,
+       "lower_whisker": 6.52384,
+       "mean": 6.662718350877191,
+       "median": 6.69703,
+       "stddev": 0.15404079799340148,
+       "upper_quantile": 6.751895,
+       "upper_whisker": 6.87031
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.31415,
+       "lower_whisker": 6.31184,
+       "mean": 6.315095561403511,
+       "median": 6.31507,
+       "stddev": 0.0019629784085410528,
+       "upper_quantile": 6.316305,
+       "upper_whisker": 6.31825
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 3.1885250000000003,
+       "lower_whisker": 3.18578,
+       "mean": 3.18994020175439,
+       "median": 3.18976,
+       "stddev": 0.0020773586198503655,
+       "upper_quantile": 3.191225,
+       "upper_whisker": 3.19381
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 3.19584,
+       "lower_whisker": 3.18752,
+       "mean": 3.2005474473684172,
+       "median": 3.20035,
+       "stddev": 0.007277205253762776,
+       "upper_quantile": 3.204425,
+       "upper_whisker": 3.21314
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 3.16264,
+       "lower_whisker": 3.14642,
+       "mean": 3.1697363508771885,
+       "median": 3.1715400000000002,
+       "stddev": 0.014341124673792551,
+       "upper_quantile": 3.179395,
+       "upper_whisker": 3.19647
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.284465,
+       "lower_whisker": 6.27737,
+       "mean": 6.287697499999998,
+       "median": 6.288615,
+       "stddev": 0.006194307249069381,
+       "upper_quantile": 6.292085,
+       "upper_whisker": 6.2999
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.25134,
+       "lower_whisker": 6.24113,
+       "mean": 6.256588894736842,
+       "median": 6.25686,
+       "stddev": 0.007965292138243133,
+       "upper_quantile": 6.2619299999999996,
+       "upper_whisker": 6.2727
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.060755,
+       "lower_whisker": 6.05843,
+       "mean": 6.061939578947358,
+       "median": 6.06181,
+       "stddev": 0.002177688805121907,
+       "upper_quantile": 6.063015,
+       "upper_whisker": 6.06516
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.067945,
+       "lower_whisker": 6.06132,
+       "mean": 6.071198850877198,
+       "median": 6.071524999999999,
+       "stddev": 0.0053085779470315436,
+       "upper_quantile": 6.07477,
+       "upper_whisker": 6.08174
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 6.14274,
+       "lower_whisker": 6.12269,
+       "mean": 6.154285236842104,
+       "median": 6.15207,
+       "stddev": 0.019591139408294638,
+       "upper_quantile": 6.16303,
+       "upper_whisker": 6.18245
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.3427749999999996,
+       "lower_whisker": 2.33943,
+       "mean": 2.344715903508773,
+       "median": 2.34492,
+       "stddev": 0.004048383300530258,
+       "upper_quantile": 2.34644,
+       "upper_whisker": 2.35038
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 1140,
+       "lower_quantile": 2.2827450000000002,
+       "lower_whisker": 2.27074,
+       "mean": 2.2885567719298248,
+       "median": 2.2883750000000003,
+       "stddev": 0.009158781444183455,
+       "upper_quantile": 2.294535,
+       "upper_whisker": 2.30605
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 1,
+      "CXO": 3,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 1140,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 3,
+      "method": 4,
+      "timestamp": 1630331604322,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "8": {
+     "0": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.24302,
+       "lower_whisker": 2.76897,
+       "mean": 3.449534535000009,
+       "median": 3.371695,
+       "stddev": 0.3275840282647511,
+       "upper_quantile": 3.64581,
+       "upper_whisker": 3.97586
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.369835,
+       "lower_whisker": 2.08226,
+       "mean": 2.4642579769200093,
+       "median": 2.46097,
+       "stddev": 0.2608659016383321,
+       "upper_quantile": 2.622675,
+       "upper_whisker": 2.8394
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.266765,
+       "lower_whisker": 2.2416,
+       "mean": 2.290810215400009,
+       "median": 2.2791050000000004,
+       "stddev": 0.22340606337103677,
+       "upper_quantile": 2.291785,
+       "upper_whisker": 2.31663
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.2242,
+       "lower_whisker": 2.22081,
+       "mean": 2.226089467999991,
+       "median": 2.22562,
+       "stddev": 0.0029646557431417856,
+       "upper_quantile": 2.22742,
+       "upper_whisker": 2.23045
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.2482249999999997,
+       "lower_whisker": 2.23299,
+       "mean": 2.257059386999996,
+       "median": 2.25539,
+       "stddev": 0.013368446968577401,
+       "upper_quantile": 2.26317,
+       "upper_whisker": 2.27778
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.188245,
+       "lower_whisker": 2.15579,
+       "mean": 2.175198499368217,
+       "median": 2.2044949999999996,
+       "stddev": 0.297427761044867,
+       "upper_quantile": 2.22072,
+       "upper_whisker": 2.25281
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.28438,
+       "lower_whisker": 4.2798,
+       "mean": 4.286962740999982,
+       "median": 4.28626,
+       "stddev": 0.004802807563599485,
+       "upper_quantile": 4.28869,
+       "upper_whisker": 4.29272
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.23215,
+       "lower_whisker": 4.21941,
+       "mean": 4.237683190000015,
+       "median": 4.23952,
+       "stddev": 0.011950455868436414,
+       "upper_quantile": 4.24557,
+       "upper_whisker": 4.25884
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.105964999999999,
+       "lower_whisker": 4.06604,
+       "mean": 4.110051700399996,
+       "median": 4.123255,
+       "stddev": 0.18117201554886544,
+       "upper_quantile": 4.144145,
+       "upper_whisker": 4.17954
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 4.39895,
+       "lower_whisker": 4.39538,
+       "mean": 4.406015579000017,
+       "median": 4.40033,
+       "stddev": 0.013934437215001129,
+       "upper_quantile": 4.40225,
+       "upper_whisker": 4.40489
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 5.51117,
+       "lower_whisker": 5.23719,
+       "mean": 5.769168074999982,
+       "median": 5.748044999999999,
+       "stddev": 0.4362574719847112,
+       "upper_quantile": 5.90591,
+       "upper_whisker": 6.34009
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.5797,
+       "lower_whisker": 6.40198,
+       "mean": 6.636415678600005,
+       "median": 6.67725,
+       "stddev": 0.7879091528935919,
+       "upper_quantile": 6.76379,
+       "upper_whisker": 6.95315
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.31338,
+       "lower_whisker": 6.31013,
+       "mean": 6.315110834999981,
+       "median": 6.31507,
+       "stddev": 0.0029090230240185924,
+       "upper_quantile": 6.31668,
+       "upper_whisker": 6.32
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.18795,
+       "lower_whisker": 3.18426,
+       "mean": 3.1899925399999653,
+       "median": 3.18969,
+       "stddev": 0.0032362855811618723,
+       "upper_quantile": 3.19157,
+       "upper_whisker": 3.19512
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.19476,
+       "lower_whisker": 3.18301,
+       "mean": 3.201783362999997,
+       "median": 3.200275,
+       "stddev": 0.017586119221111772,
+       "upper_quantile": 3.20629,
+       "upper_whisker": 3.21755
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 3.15869,
+       "lower_whisker": 3.1373,
+       "mean": 3.166878039194982,
+       "median": 3.17203,
+       "stddev": 0.13463765872166666,
+       "upper_quantile": 3.181845,
+       "upper_whisker": 3.20674
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.28297,
+       "lower_whisker": 6.27287,
+       "mean": 6.287677382999963,
+       "median": 6.28926,
+       "stddev": 0.009549764613943567,
+       "upper_quantile": 6.29392,
+       "upper_whisker": 6.30567
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.250535,
+       "lower_whisker": 6.23738,
+       "mean": 6.2619856570000065,
+       "median": 6.2577549999999995,
+       "stddev": 0.11347197833322135,
+       "upper_quantile": 6.26412,
+       "upper_whisker": 6.27813
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.06023,
+       "lower_whisker": 6.05625,
+       "mean": 6.061914111999976,
+       "median": 6.06186,
+       "stddev": 0.003269729613382497,
+       "upper_quantile": 6.06397,
+       "upper_whisker": 6.06747
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.06643,
+       "lower_whisker": 6.05737,
+       "mean": 6.070822095000008,
+       "median": 6.07108,
+       "stddev": 0.009558651722039537,
+       "upper_quantile": 6.075595,
+       "upper_whisker": 6.08482
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 6.13601,
+       "lower_whisker": 6.10183,
+       "mean": 6.168730265000014,
+       "median": 6.14968,
+       "stddev": 0.18635941232713757,
+       "upper_quantile": 6.168195,
+       "upper_whisker": 6.19794
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.34143,
+       "lower_whisker": 2.33515,
+       "mean": 2.3447147769999845,
+       "median": 2.3447,
+       "stddev": 0.00578563629940647,
+       "upper_quantile": 2.3478,
+       "upper_whisker": 2.3542
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 10000,
+       "lower_quantile": 2.28116,
+       "lower_whisker": 2.26482,
+       "mean": 2.2879575659999922,
+       "median": 2.28985,
+       "stddev": 0.019093698906430836,
+       "upper_quantile": 2.29787,
+       "upper_whisker": 2.3149
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 1,
+      "CXO": 3,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 10000,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 5,
+      "method": 4,
+      "timestamp": 1630331909662,
+      "title": "\u00b9H 1:1/1:2-Model"
+     }
+    },
+    "9": {
+     "0": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.56317,
+       "lower_whisker": 2.40163,
+       "mean": 3.476943125,
+       "median": 3.266445,
+       "stddev": 1.295014231662951,
+       "upper_quantile": 3.55002,
+       "upper_whisker": 4.45426
+      },
+      "index": "0",
+      "name": "lg K\u2081\u2081",
+      "type": "Global Parameter",
+      "value": 3.38346
+     },
+     "1": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 3.98049,
+       "lower_whisker": 2.53709,
+       "mean": 4.225402937499999,
+       "median": 4.2628,
+       "stddev": 1.724773867839896,
+       "upper_quantile": 6.065205,
+       "upper_whisker": 6.065205
+      },
+      "index": "1",
+      "name": "lg K\u2081\u2082",
+      "type": "Global Parameter",
+      "value": 2.43951
+     },
+     "10": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.287485,
+       "lower_whisker": 2.287485,
+       "mean": 3.6029093125000005,
+       "median": 2.282655,
+       "stddev": 6.254311784259952,
+       "upper_quantile": 2.228905,
+       "upper_whisker": 2.228905
+      },
+      "index": "2|2",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.27981
+     },
+     "11": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.225535,
+       "lower_whisker": 2.225535,
+       "mean": 2.2232975,
+       "median": 2.22432,
+       "stddev": 0.0027541738023104598,
+       "upper_quantile": 2.220035,
+       "upper_whisker": 2.220035
+      },
+      "index": "0|3",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.2257
+     },
+     "12": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.35834,
+       "lower_whisker": 2.25363,
+       "mean": 2.6832724999999997,
+       "median": 2.3207500000000003,
+       "stddev": 0.8197712388912735,
+       "upper_quantile": 3.88392,
+       "upper_whisker": 3.88392
+      },
+      "index": "1|3",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.25597
+     },
+     "13": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.230925,
+       "lower_whisker": 2.230925,
+       "mean": 0.462403125,
+       "median": 2.232295,
+       "stddev": 4.922805723115927,
+       "upper_quantile": 2.149025,
+       "upper_whisker": 2.149025
+      },
+      "index": "2|3",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 2.20251
+     },
+     "14": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 4.283145,
+       "lower_whisker": 4.283145,
+       "mean": 4.278891875,
+       "median": 4.2768250000000005,
+       "stddev": 0.004349791134832521,
+       "upper_quantile": 4.276385,
+       "upper_whisker": 4.276385
+      },
+      "index": "0|4",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.28655
+     },
+     "15": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 4.25648,
+       "lower_whisker": 4.20385,
+       "mean": 4.57843,
+       "median": 4.426785,
+       "stddev": 0.6055052536408472,
+       "upper_quantile": 4.871845,
+       "upper_whisker": 4.91966
+      },
+      "index": "1|4",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 4.23775
+     },
+     "16": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 4.1924600000000005,
+       "lower_whisker": 4.1924600000000005,
+       "mean": 0.7604281249999998,
+       "median": 4.16678,
+       "stddev": 10.18009019566999,
+       "upper_quantile": 4.19102,
+       "upper_whisker": 4.19102
+      },
+      "index": "2|4",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 4.12078
+     },
+     "17": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 4.391045,
+       "lower_whisker": 4.391045,
+       "mean": 4.391878125,
+       "median": 4.38866,
+       "stddev": 0.004669542759557223,
+       "upper_quantile": 4.388730000000001,
+       "upper_whisker": 4.388730000000001
+      },
+      "index": "0|5",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 4.40129
+     },
+     "18": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 9.010265,
+       "lower_whisker": 5.47432,
+       "mean": 8.071890625,
+       "median": 6.70756,
+       "stddev": 2.307381240244645,
+       "upper_quantile": 11.274415000000001,
+       "upper_whisker": 11.274415000000001
+      },
+      "index": "1|5",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 5.73139
+     },
+     "19": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 5.7764050000000005,
+       "lower_whisker": 5.7764050000000005,
+       "mean": 0.7666068749999999,
+       "median": 5.687695,
+       "stddev": 20.2708776019118,
+       "upper_quantile": 5.72622,
+       "upper_whisker": 5.72622
+      },
+      "index": "2|5",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.69772
+     },
+     "2": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 6.31245,
+       "lower_whisker": 6.31245,
+       "mean": 6.3120875000000005,
+       "median": 6.310225,
+       "stddev": 0.001845060071289475,
+       "upper_quantile": 6.3123450000000005,
+       "upper_whisker": 6.3123450000000005
+      },
+      "index": "0|0",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.31512
+     },
+     "20": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 3.1830249999999998,
+       "lower_whisker": 3.1830249999999998,
+       "mean": 3.18512875,
+       "median": 3.18675,
+       "stddev": 0.0026462574200809136,
+       "upper_quantile": 3.1847399999999997,
+       "upper_whisker": 3.18832
+      },
+      "index": "0|6",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 3.18995
+     },
+     "21": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 3.45248,
+       "lower_whisker": 3.13563,
+       "mean": 3.373283125,
+       "median": 3.216335,
+       "stddev": 0.32325441849455044,
+       "upper_quantile": 3.8795349999999997,
+       "upper_whisker": 3.8795349999999997
+      },
+      "index": "1|6",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 3.1999
+     },
+     "22": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 3.1505400000000003,
+       "lower_whisker": 3.1505400000000003,
+       "mean": 0.16045750000000059,
+       "median": 3.20831,
+       "stddev": 9.931294072426144,
+       "upper_quantile": 3.18426,
+       "upper_whisker": 3.22901
+      },
+      "index": "2|6",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 3.17099
+     },
+     "3": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 6.305275,
+       "lower_whisker": 6.20889,
+       "mean": 6.385715,
+       "median": 6.3795,
+       "stddev": 0.26302430696293716,
+       "upper_quantile": 6.454255,
+       "upper_whisker": 6.454255
+      },
+      "index": "1|0",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.28745
+     },
+     "4": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 6.27029,
+       "lower_whisker": 6.24505,
+       "mean": 4.3760568750000015,
+       "median": 6.25384,
+       "stddev": 7.787465237027788,
+       "upper_quantile": 6.285665,
+       "upper_whisker": 6.285665
+      },
+      "index": "2|0",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.25582
+     },
+     "5": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 6.066129999999999,
+       "lower_whisker": 6.06319,
+       "mean": 6.066016875,
+       "median": 6.064575,
+       "stddev": 0.0019700718049519305,
+       "upper_quantile": 6.067235,
+       "upper_whisker": 6.067235
+      },
+      "index": "0|1",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 6.06189
+     },
+     "6": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 5.9299800000000005,
+       "lower_whisker": 5.9299800000000005,
+       "mean": 5.883041875,
+       "median": 6.050135,
+       "stddev": 0.286039498256651,
+       "upper_quantile": 5.6891549999999995,
+       "upper_whisker": 5.6891549999999995
+      },
+      "index": "1|1",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 6.0719
+     },
+     "7": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 6.119845,
+       "lower_whisker": 6.119845,
+       "mean": 10.120336250000001,
+       "median": 6.082875,
+       "stddev": 13.378930057879256,
+       "upper_quantile": 6.116155,
+       "upper_whisker": 6.116155
+      },
+      "index": "2|1",
+      "name": "\u03b4 AB\u2082",
+      "type": "Local Parameter",
+      "value": 6.15392
+     },
+     "8": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.342675,
+       "lower_whisker": 2.342675,
+       "mean": 2.3418193749999996,
+       "median": 2.34077,
+       "stddev": 0.002186795124529675,
+       "upper_quantile": 2.33946,
+       "upper_whisker": 2.33946
+      },
+      "index": "0|2",
+      "name": "\u03b4 A",
+      "type": "Local Parameter",
+      "value": 2.34479
+     },
+     "9": {
+      "boxplot": {
+       "count": 16,
+       "lower_quantile": 2.203805,
+       "lower_whisker": 2.10394,
+       "mean": 2.5099631249999996,
+       "median": 2.299155,
+       "stddev": 0.6823780920644972,
+       "upper_quantile": 3.241185,
+       "upper_whisker": 3.241185
+      },
+      "index": "1|2",
+      "name": "\u03b4 AB",
+      "type": "Local Parameter",
+      "value": 2.28778
+     },
+     "controller": {
+      "Algorithm": 2,
+      "CXO": 1,
+      "EntropyBins": 30,
+      "LeftOutPoints": false,
+      "LightWeight": false,
+      "MaxSteps": 10000,
+      "PlotBins": 30,
+      "ReductionRuntype": 1,
+      "StoreRaw": true,
+      "X": 3,
+      "cutoff": 2,
+      "method": 5,
+      "timestamp": 1630332128983,
+      "title": "\u00b9H 1:1/1:2-Model",
+      "x": "3.44826 3.183 2.91776 2.65251 2.38726 2.12201 1.85675 1.59151 1.32625 1.19363 1.061 0.928376 0.795748 0.66313 0.530502 0.397874",
+      "xlabel": "[G\u2080]/[H\u2080]"
+     }
+    }
+   }
+  },
+  "keys": "1|2|3|4|5|6|7",
+  "mean_error": 1.5034935206032733e-07,
+  "model": 34,
+  "name": "\u00b9H 1:1/1:2-Model",
+  "options": {},
+  "standard_error": 0.0007816014737095138,
+  "valid": true,
+  "variance": 8.552612091868376e-05
+ }
+}
