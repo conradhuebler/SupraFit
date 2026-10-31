@@ -22,20 +22,37 @@ Claude Generated. Branch `feature/project-load-diagnostics`. Tool: `test_project
 
 ## What is reproduced
 
-Loaded fit against stored fit (sum of squares, tolerance 1e-3 of max(stored, 1e-6 x spread of the data)), 432 models of the 90 files, after the fixes above:
+Loaded fit against stored fit (sum of squares, tolerance 1e-3 of max(stored, 1e-6 x spread of the data)), 432 models of the 90 files:
 
 | File version | same | lower | worse |
 |---|---|---|---|
 | before 1600 | 1 | 22 | 0 |
-| 1600-1609 | 75 | 15 | 31 |
-| 1700 | 33 | 15 | 31 |
-| 2001 | 0 | 0 | 4 |
-| 2002 | 8 | 0 | 3 |
-| 2003 | 39 | 5 | 32 |
-| 2004 | 83 | 8 | 27 |
-| all | 239 | 65 | 128 |
+| 1600-1609 | 95 | 20 | 6 |
+| 1700 | 73 | 1 | 5 |
+| 2001 | 4 | 0 | 0 |
+| 2002 | 10 | 0 | 1 |
+| 2003 | 67 | 5 | 4 |
+| 2004 | 96 | 1 | 21 |
+| all | 346 | 49 | 37 |
 
-"Lower": the model finds a better sum of squares from the stored parameters (linear parameters are projected out); noted in the report. "Worse" is a warning in the report ("Read, but the fit of the file is not reproduced").
-Current-format files (2003/2004) that are **worse** point to defects, not to age; the families seen: fluorescence 20-23 and UV-Vis 30-32 (the stored local table has 5 columns, the model 4), kinetic models 107/108 of 2003 (up to 1e8 times the stored SSE),
-`TianModel` 109, ITC 10-13, script models with ChaiScript equations (`var x = ...`, `def Calculate(int i, int j)`; ExprTk cannot compile them: "The model equation could not be compiled").
-Open items are in `TODO.md` ("Older project files").
+(First pass of the same corpus, before the fixes below: 239 / 65 / 128.) "Lower": the model finds a better sum of squares from the stored parameters (linear parameters are projected out); noted in the
+report. "Worse" is a warning in the report ("Read, but the fit of the file is not reproduced").
+
+## Why models did not reproduce, and what was done
+
+| Family | Cause | Now |
+|---|---|---|
+| bimolecular kinetics 107 (2003) | files before the scale factor q have four parameters, the model has five, the fifth was 0 | `AdaptStoredModel`: q = 1 (the older formula equals the current one with q = 1); exact |
+| flexible kinetics 108 (2003) | another parameterisation until September 2022 (`(cA0-cAeq)[(cA0-cAeq)^(n-1) k t (n-1) + 1]^(1/(n-1)) + cAeq`), no version bump | option "Formula" (`current`, `2022-08`), chosen at import by which gives the stored sum of squares; exact (0.0019221040623138 = stored) |
+| ITC 10-13 | **the check marks of the data rows were lost on every load**: `DataClass::ImportData` sets the data range, which marks every row as used | `ImportData` keeps the stored marks of the cells (a first injection left out of the fit stays left out); all ITC models of 1605-2001 reproduce |
+| ITC, older files | `Cell Volume constant` (system parameter 5) is `null` in files before 2001: the fit is the one with the volume not constant | `AbstractItcModel::AdaptStoredModel` tries both, keeps the one that matches |
+| fits that left out the first points | the stored SSE is over the rows after the first one or two | after loading, up to four first rows are unchecked one by one; kept only if more stored fits come out to 1e-6 (noted in the report) |
+| meta models in multi-project files | the Open path never rebuilt them (they became empty projects) | reported as left out per meta model; rebuilding them is GUI work (`SupraFitGui::LoadMetaModels`) |
+
+## What is still not reproduced (causes known or probable)
+
+- NMR 2:1/1:1 (12 models, 1-10 %, one file 2.6x): stored by the earlier speciation solver; the closed-form solver of today gives the exact value (`TODO.md`, "Regenerate the 2:1/1:1 reference data").
+- Fluorescence 20-23, UV-Vis 32 (2003/2004): the models were reworked in September 2024 (new local columns, options "Host only", "Guest (dynamic)"; before, `value = (host_0*L0 && i == 0) + ...` used a logical AND); the old numbers are not reproducible by a mapping.
+- Script models with ChaiScript equations (`var x = ...`, `def Calculate(int i, int j)`): ExprTk cannot compile them ("The model equation could not be compiled").
+- `TianModel` 109 (2023-04 file, before the model of May 2023), ITC 11/12 of 1605/1609 (4 models), `itc_n_1_1` 15 (1).
+- NMR 1:1/1:1.2 UV/VIS option (2002, `044_LegacyTest`): the method "UV/VIS" of the NMR models was dead code since 2022; the file's numbers belong to the UV-Vis model, whose parameter layout differs (not mapped).

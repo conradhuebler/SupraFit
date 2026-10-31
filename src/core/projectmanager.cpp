@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #endif
 
 Q_LOGGING_CATEGORY(projectManager, "suprafit.core.projectmanager")
@@ -131,7 +132,11 @@ bool ProjectManager::loadProject(const QString& filePath)
                 ++number;
                 const QJsonObject single = projectData[key].toObject();
                 m_scope = key;
-                if (!single.contains("data")) {
+                const QJsonObject block = single["data"].toObject();
+                if (block.contains("model") && block["model"].toInt() == int(SupraFit::MetaModel)) {
+                    // a meta model compares the models of other projects of the file; it is not a project of its own, and the load of a file does not rebuild it yet
+                    addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\" (it compares models of other projects of the file; meta models are not restored when a file is opened yet).").arg(block["name"].toString()));
+                } else if (!single.contains("data")) {
                     addIssue(LoadIssue::Warning, "file", tr("Left out: the entry holds no data."));
                 } else {
                     const QString id = loadProjectFromJson(single, QStringLiteral("%1-%2").arg(base).arg(number));
@@ -930,6 +935,12 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
 
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
+        struct Reproduce {
+            QString key;
+            QSharedPointer<AbstractModel> model;
+            double stored;
+        };
+        QList<Reproduce> reproduce;
 #ifdef DEBUG_ON
         SFDebugPrint("DEBUG ProjectManager: Scanning for models in JSON keys: {}\n",
             jsonData.keys().join(", ").toStdString());
@@ -965,6 +976,7 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                     // Create model using the factory function
                     // the oldest files name the model ("1:1-Model"), the others number it
                     const int modelId = modelObject["model"].isString() ? int(Name2Model(modelObject["model"].toString())) : modelObject["model"].toInt();
+
                     const int modelVersion = modelObject["SupraFit"].toInt();
 #ifdef DEBUG_ON
                     SFDebugPrint("DEBUG ProjectManager: Creating model ID {} for project {}\n",
@@ -993,26 +1005,10 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                         qDebug() << "DEBUG ProjectManager: After ImportModel, UUID:" << model->ModelUUID() << "ImportSuccess:" << importSuccess;
 #endif
                         if (importSuccess) {
-                            // The fit as stored must come out of the stored parameters. If it does not, the model has changed since the file was
-                            // written (or the equation cannot be calculated here): the model is there, its numbers are not those of the file.
+                            // the stored fit must come out of the stored parameters: checked after all models of the project are read
                             const QJsonValue storedValue = modelObject.contains("SSE") ? modelObject["SSE"] : modelObject["sum_of_squares"];
-                            if (storedValue.isDouble() && storedValue.toDouble() > 0) {
-                                const double stored = storedValue.toDouble(), now = model->SSE();
-                                double spread = 0; // the scale of an SSE: the data around their column means; below a millionth of it an SSE is rounding
-                                const DataTable* dependent = model->DependentModel();
-                                for (int c = 0; c < dependent->columnCount(); ++c) {
-                                    double mean = 0;
-                                    for (int row = 0; row < dependent->rowCount(); ++row)
-                                        mean += dependent->data(row, c) / dependent->rowCount();
-                                    for (int row = 0; row < dependent->rowCount(); ++row)
-                                        spread += (dependent->data(row, c) - mean) * (dependent->data(row, c) - mean);
-                                }
-                                const double scale = std::max(stored, 1e-6 * spread);
-                                if (!std::isfinite(now) || (now - stored) / scale > 1e-3)
-                                    addIssue(LoadIssue::Warning, key, tr("Read, but the fit of the file is not reproduced: the stored parameters give a sum of squares of %1 here, the file says %2. The model may have changed since the file was written; fit it again before using its numbers.").arg(now, 0, 'g', 4).arg(stored, 0, 'g', 4));
-                                else if ((stored - now) / scale > 1e-3) // lower: the model finds a better description of the same parameters (linear parameters are projected out)
-                                    addIssue(LoadIssue::Note, key, tr("The sum of squares of the model is %1 here, the file says %2.").arg(now, 0, 'g', 4).arg(stored, 0, 'g', 4));
-                            }
+                            if (storedValue.isDouble() && storedValue.toDouble() > 0)
+                                reproduce.append(Reproduce{ key, model, storedValue.toDouble() });
                             // Claude Generated - Remove incorrect duplicate detection
                             // Models loaded from JSON are unique by definition (model_1, model_2, etc.)
                             // Each JSON model key represents a unique model to be loaded
@@ -1051,6 +1047,74 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                         QString("Exception loading model %1: %2").arg(key, e.what()));
                 }
             }
+        }
+
+
+        // The fit as stored must come out of the stored parameters. If it does not, the model has changed since the file was written (or its
+        // equation cannot be calculated here): the model is there, its numbers are not those of the file. Older fits often left out the
+        // first points of the data (the first injection of a titration): if the same first points left out make the stored fits come out, the
+        // data range of the project is set so.
+        auto deviation = [](const Reproduce& r) {
+            double spread = 0; // the scale of an SSE: the data around their column means; below a millionth of it an SSE is rounding
+            const DataTable* dependent = r.model->DependentModel();
+            for (int c = 0; c < dependent->columnCount(); ++c) {
+                double mean = 0;
+                for (int row = 0; row < dependent->rowCount(); ++row)
+                    mean += dependent->data(row, c) / dependent->rowCount();
+                for (int row = 0; row < dependent->rowCount(); ++row)
+                    spread += (dependent->data(row, c) - mean) * (dependent->data(row, c) - mean);
+            }
+            const double now = r.model->SSE();
+            if (!std::isfinite(now))
+                return std::numeric_limits<double>::infinity();
+            return (now - r.stored) / std::max(r.stored, 1e-6 * spread); // positive: worse than the file says
+        };
+        auto matching = [&](double tolerance) {
+            int n = 0;
+            for (const Reproduce& r : std::as_const(reproduce))
+                n += std::abs(deviation(r)) <= tolerance;
+            return n;
+        };
+        int firstSkipped = 0;
+        if (!reproduce.isEmpty() && !project->isSimulation() && matching(1e-3) < reproduce.size()) {
+            // leave out the first rows one more at a time (the check marks of the data tables, as the data table of the GUI does), keep the
+            // number that makes the most stored fits come out exactly, and put every mark back if none does better than the rows as they are
+            const Eigen::MatrixXd independentMarks = project->IndependentModel()->CheckedTable(), dependentMarks = project->DependentModel()->CheckedTable();
+            const int rows = int(std::min(independentMarks.rows(), dependentMarks.rows())); // a simulation has no tables
+            auto restore = [&](int skip) {
+                Eigen::MatrixXd independent = independentMarks, dependent = dependentMarks;
+                for (int row = 0; row < skip && row < rows; ++row) {
+                    independent.row(row).setZero();
+                    dependent.row(row).setZero();
+                }
+                project->IndependentModel()->setCheckedTable(independent);
+                project->DependentModel()->setCheckedTable(dependent);
+                for (const Reproduce& r : std::as_const(reproduce))
+                    r.model->Calculate();
+            };
+            int best = matching(1e-6), bestSkip = 0;
+            for (int skip = 1; skip <= 4 && skip < rows - 3; ++skip) {
+                restore(skip);
+                const int n = matching(1e-6);
+                if (n > best) {
+                    best = n;
+                    bestSkip = skip;
+                }
+            }
+            restore(bestSkip);
+            firstSkipped = bestSkip;
+            if (firstSkipped > 0)
+                addIssue(LoadIssue::Note, "data", tr("The fits of the file leave out the first %1 data points; they are unchecked in the data table (check them there to use them).").arg(firstSkipped));
+        }
+        for (const Reproduce& r : std::as_const(reproduce)) {
+            const double d = deviation(r);
+            if (std::abs(d) <= 1e-3)
+                continue;
+            const double now = r.model->SSE();
+            if (d > 0)
+                addIssue(LoadIssue::Warning, r.key, tr("Read, but the fit of the file is not reproduced: the stored parameters give a sum of squares of %1 here, the file says %2. The model may have changed since the file was written; fit it again before using its numbers.").arg(now, 0, 'g', 4).arg(r.stored, 0, 'g', 4));
+            else // lower: the model finds a better description of the same parameters (linear parameters are projected out)
+                addIssue(LoadIssue::Note, r.key, tr("The sum of squares of the model is %1 here, the file says %2.").arg(now, 0, 'g', 4).arg(r.stored, 0, 'g', 4));
         }
 
         // Store source file info for debugging

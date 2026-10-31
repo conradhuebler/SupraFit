@@ -347,12 +347,25 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     d->m_root_dir = topjson["root_dir"].toString(); // Claude Generated - Fix missing RootDir import
     m_plot_x = topjson["xaxis"].toBool();
 
+    // The check marks of the cells (a point the user left out of the fit) come with the tables; setting the data range marks every row of the
+    // range as used, so the stored marks are kept and put back afterwards (within the range).
+    const Eigen::MatrixXd independentMarks = d->m_independent_model->CheckedTable(), dependentMarks = d->m_dependent_model->CheckedTable();
     setDataBegin(topjson["begin_data"].toInt());
     setDataEnd(topjson["end_data"].toInt());
     if (DataBegin() == DataEnd()) {
         setDataBegin(0);
         setDataEnd(DataPoints() /*- 1*/);
     }
+    auto putBack = [this](DataTable* table, const Eigen::MatrixXd& marks) {
+        Eigen::MatrixXd now = table->CheckedTable();
+        if (marks.rows() != now.rows() || marks.cols() != now.cols())
+            return;
+        for (int row = DataBegin(); row < std::min<int>(DataEnd(), int(now.rows())); ++row)
+            now.row(row) = marks.row(row);
+        table->setCheckedTable(now);
+    };
+    putBack(d->m_independent_model, independentMarks);
+    putBack(d->m_dependent_model, dependentMarks);
     if (forceUUID) {
         if (!topjson["uuid"].toString().isEmpty())
             d->m_uuid = topjson["uuid"].toString();

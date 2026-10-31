@@ -21,7 +21,7 @@
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
 ## Older project files
-- [ ] Models of current-format files (2003/2004) whose stored fit is not reproduced after loading (`test_project_compat` corpus, [docs/project_compat_corpus_2026-10-31.md](docs/project_compat_corpus_2026-10-31.md)): fl 20-23, uvvis 30-32 (stored local table has 5 columns, model 4), kinetics 107/108 (2003), 109, itc 10-13. Find the cause per family (changed parameter layout without a version bump?), add a migration keyed by file version.
+- [ ] Remaining models whose stored fit is not reproduced after loading (fl 20-23, uvvis 32, ChaiScript script models, Tian 109, few ITC): causes in [docs/project_compat_corpus_2026-10-31.md](docs/project_compat_corpus_2026-10-31.md); meta models of multi-project files are reported but not rebuilt on Open (`SupraFitGui::LoadMetaModels` is only called by the old `LoadProject`).
 - [ ] ChaiScript-era script models (`var x = ...`, `def Calculate(int i, int j) {...}`) are read but cannot be calculated by ExprTk; convert the simple forms (`return <expr>;`, `NAME[j]` -> `NAME`) on import or say which equation line fails.
 - [ ] `suprafit_cli` prints the load report of `ProjectManager` (reason of a failure, models left out); only the GUI shows it so far.
 

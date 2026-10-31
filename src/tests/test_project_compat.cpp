@@ -239,6 +239,24 @@ private slots:
         QVERIFY2(r.Details().contains("not reproduced") || r.Details().contains("could not be compiled"), qPrintable(r.Details()));
     }
 
+    // Models that changed after files were written are read as the file had them: the bimolecular model before its scale factor (four
+    // parameters), the flexible model of August 2022 (another formula), and an ITC fit that left out its first two points.
+    void changedModelsReproduceTheFile()
+    {
+        const QString dir = QStringLiteral(SUPRAFIT_SOURCE_DIR) + QStringLiteral("/data/samples/legacy/");
+
+        LoadReport r = load(dir + "kinetics_2003.json");
+        QVERIFY2(r.loaded && !r.HasProblems(), qPrintable(r.Details()));
+        QCOMPARE(r.projectsLoaded, 2);
+        QCOMPARE(r.modelsLoaded, 2);
+
+        r = load(dir + "itc_first_points.json");
+        QVERIFY2(r.loaded && r.modelsLoaded == 1, qPrintable(r.Details()));
+        QVERIFY2(!r.Details().contains("Warning"), qPrintable(r.Details())); // reproduced, no warning
+        QVERIFY2(r.Details().contains("leave out the first 2 data points"), qPrintable(r.Details()));
+        QVERIFY2(std::abs(firstModelSSE() - 0.0912966) < 1e-5, qPrintable(QString::number(firstModelSSE())));
+    }
+
     // A model whose stored fit is not reproduced (a changed model, an equation that cannot be calculated) is read, and the report says so.
     void unreproducedFitIsSaid()
     {
@@ -276,7 +294,8 @@ private slots:
         if (r.loaded && JsonHandler::ReadFile(file, json)) {
             QList<double> stored;
             QList<QPair<int, int>> info; // model version and number of each
-            const QStringList topKeys = json.contains("data") ? QStringList{ QString() } : json.keys();
+            QStringList topKeys = json.contains("data") ? QStringList{ QString() } : json.keys();
+            std::sort(topKeys.begin(), topKeys.end(), [](const QString& a, const QString& b) { return a.mid(8).toInt() < b.mid(8).toInt(); }); // project_2 before project_10, as the loader reads them
             for (const QString& top : topKeys) {
                 const QJsonObject block = top.isEmpty() ? json : json[top].toObject();
                 if (!top.isEmpty() && !block.contains("data"))
@@ -289,6 +308,7 @@ private slots:
                         info << qMakePair(m["SupraFit"].toInt(), m["model"].isString() ? -1 : m["model"].toInt());
                     }
             }
+            QList<int> unchecked; // rows excluded from the fit
             QList<double> loadedSSE, spread; // spread: the sum of squares of the data around their column means, the scale of an SSE
             for (const QWeakPointer<DataClass>& weak : ProjectManager::instance().getAllProjects())
                 if (const QSharedPointer<DataClass> project = weak.toStrongRef())
@@ -302,6 +322,10 @@ private slots:
                                     g << QString::number(model->GlobalParameter(k), 'g', 6);
                                 for (int k = 0; k < model->LocalParameterSize(); ++k)
                                     l << QString::number(model->LocalParameter(k, 0), 'g', 6);
+                                QStringList sys;
+                                for (int index : model->getSystemParameterList())
+                                    sys << QStringLiteral("%1=%2").arg(index).arg(model->getSystemParameter(index).value().toString());
+                                fprintf(stderr, "DEBUG data %d..%d of %d rows, %d independent cols, system [%s] options %s\n", model->DataBegin(), model->DataEnd(), model->DataPoints(), model->IndependentModel()->columnCount(), qPrintable(sys.join(' ')), "");
                                 fprintf(stderr, "DEBUG model %s id %d SSE %g global [%s] local0 [%s] converged %d\n", qPrintable(model->Name()), int(model->SFModel()), model->SSE(), qPrintable(g.join(' ')), qPrintable(l.join(' ')), int(model->isConverged()));
                             }
                             double total = 0;
@@ -314,6 +338,10 @@ private slots:
                                     total += (dep->data(row, c) - mean) * (dep->data(row, c) - mean);
                             }
                             spread << total;
+                            int off = 0;
+                            for (int row = 0; model->DependentModel()->columnCount() && model->IndependentModel()->columnCount() && row < std::min(model->DependentModel()->rowCount(), model->IndependentModel()->rowCount()); ++row)
+                                off += !model->DependentModel()->isChecked(row, 0) || !model->IndependentModel()->isChecked(row, 0);
+                            unchecked << off;
                         }
             double worst = 0;
             int compared = 0;
@@ -325,7 +353,7 @@ private slots:
                     }
             if (qEnvironmentVariableIsSet("SUPRAFIT_PROJECT_ROWS") && stored.size() == loadedSSE.size())
                 for (int i = 0; i < stored.size(); ++i)
-                    fprintf(stderr, "MODELROW\t%s\t%d\t%d\t%g\t%g\t%g\n", qPrintable(QFileInfo(file).fileName()), info[i].first, info[i].second, stored[i], loadedSSE[i], spread[i]);
+                    fprintf(stderr, "MODELROW\t%s\t%d\t%d\t%g\t%g\t%g\t%d\n", qPrintable(QFileInfo(file).fileName()), info[i].first, info[i].second, stored[i], loadedSSE[i], spread[i], unchecked[i]);
             QStringList pairs;
             for (int i = 0; i < std::min<int>(stored.size(), 8) && stored.size() == loadedSSE.size(); ++i)
                 pairs << QStringLiteral("%1/%2").arg(stored[i], 0, 'g', 4).arg(loadedSSE[i], 0, 'g', 4);

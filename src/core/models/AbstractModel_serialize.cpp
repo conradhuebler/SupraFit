@@ -411,8 +411,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
     emit ParameterChanged();
 
-    if (SFModel() != SupraFit::MetaModel)
+    if (SFModel() != SupraFit::MetaModel) {
         Calculate();
+        AdaptStoredModel(topjson);
+    }
 
 #ifdef DEBUG_ON
     // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
@@ -637,8 +639,10 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     */
-    if (SFModel() != SupraFit::MetaModel)
+    if (SFModel() != SupraFit::MetaModel) {
         Calculate();
+        AdaptStoredModel(topjson);
+    }
 
 #ifdef DEBUG_ON
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();

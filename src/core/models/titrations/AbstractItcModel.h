@@ -118,6 +118,9 @@ public:
 
     virtual void UpdateOption(int index, const QString& str) override;
 
+    /*! \brief Files before the option "Cell Volume constant" do not store it (null): the fit is the one with the volume not constant. Tries both, keeps the one that gives the stored sum of squares. */
+    void AdaptStoredModel(const QJsonObject& block) override;
+
     virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const override;
 
     inline virtual QString RandomExportSuffix() const override { return QString("Peak Files(*.dH)"); }

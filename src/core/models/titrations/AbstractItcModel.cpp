@@ -38,6 +38,9 @@
 #include <libpeakpick/nxlinregress.h>
 #include <libpeakpick/peakpick.h>
 
+#include <cmath>
+#include <limits>
+
 #include "AbstractItcModel.h"
 
 AbstractItcModel::AbstractItcModel(DataClass* data)
@@ -351,6 +354,31 @@ qreal AbstractItcModel::PrintOutIndependent(int i) const
             return i;
     } else
         return i;
+}
+
+void AbstractItcModel::AdaptStoredModel(const QJsonObject& block)
+{
+    const double stored = StoredSSE(block);
+    if (!(stored > 0))
+        return;
+    const bool original = getSystemParameter(Reservoir).Bool();
+    double best = std::numeric_limits<double>::infinity();
+    bool choice = original;
+    for (const bool reservoir : { original, !original }) {
+        setSystemParameterValue(Reservoir, reservoir);
+        UpdateParameter();
+        Calculate();
+        const double difference = std::abs(SSE() - stored) / stored;
+        if (std::isfinite(difference) && difference < best) {
+            best = difference;
+            choice = reservoir;
+        }
+        if (best < 1e-6)
+            break;
+    }
+    setSystemParameterValue(Reservoir, choice);
+    UpdateParameter();
+    Calculate();
 }
 
 void AbstractItcModel::UpdateParameter()
