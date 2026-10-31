@@ -173,7 +173,8 @@ void SignalElement::setMarkerShape(int shape)
 
 void SignalElement::togglePlot()
 {
-    m_data_series->setVisible(true);
+    if (m_toggle->isChecked())
+        m_show->setChecked(true); // the series that is asked for is shown, and its checkbox says so
     if (m_toggle->isChecked())
         m_wrapper.toStrongRef().data()->showSeries(m_index);
     else

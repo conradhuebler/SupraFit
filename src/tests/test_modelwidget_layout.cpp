@@ -2820,36 +2820,50 @@ private slots:
         QVERIFY(second->Model()->ActiveSignals(1));
         QVERIFY(allShown(second));
 
-        // 4. "Single Plot": only this series in the data chart and every model chart; switched off, as it was before (also the model that was hidden)
-        masters[2]->setChecked(false); // a hidden model stays hidden through a single plot
+        // 4. "Single Plot": only this series in the data chart and in every model chart; nothing that was hidden comes back (a hidden model, a series
+        // that was unchecked), and when it is switched off everything is as it was
+        masters[2]->setChecked(false);
         QCoreApplication::processEvents();
         ModelWidget* hiddenModel = nullptr;
         for (ModelWidget* w : widgets)
             if (noneShown(w))
                 hiddenModel = w;
         QVERIFY(hiddenModel);
+        ModelWidget* thirdModel = nullptr; // a visible model of which one series is unchecked
+        for (ModelWidget* w : widgets)
+            if (w != hiddenModel && w != second)
+                thirdModel = w;
+        QVERIFY(thirdModel);
+        QCheckBox* thirdShow0 = box(elementsOf(thirdModel)[0], QStringLiteral("Show in Plot"));
+        thirdShow0->setChecked(false); // series 0 of the third model is off
+        QCoreApplication::processEvents();
         QPushButton* single = nullptr;
         for (QPushButton* b : els[0]->findChildren<QPushButton*>())
             if (b->text() == QStringLiteral("Single Plot"))
                 single = b;
         QVERIFY(single);
-        single->click();
+        single->click(); // series 0 of the second model's card
         QCoreApplication::processEvents();
         QVERIFY(dataVisible(0) && !dataVisible(1));
-        for (ModelWidget* w : widgets) {
-            QVERIFY(!visible(w, false, 1) && !visible(w, true, 1)); // the other series is gone everywhere
-            if (w != hiddenModel)
-                QVERIFY(visible(w, false, 0) && visible(w, true, 0));
-        }
+        QVERIFY(noneShown(hiddenModel)); // the hidden model stays hidden
+        QVERIFY2(!visible(thirdModel, false, 0) && !visible(thirdModel, true, 0), "an unchecked series came back with the single plot");
+        QVERIFY(!visible(thirdModel, false, 1) && !visible(thirdModel, true, 1)); // series 1 is not the single one
+        QVERIFY(visible(second, false, 0) && visible(second, true, 0) && !visible(second, false, 1) && !visible(second, true, 1));
+        // a model switched on during the single plot shows the one series only, and stays so afterwards
+        for (QCheckBox* c : masters)
+            if (c->checkState() == Qt::Unchecked)
+                c->setChecked(true);
+        QCoreApplication::processEvents();
+        QVERIFY(visible(hiddenModel, false, 0) && visible(hiddenModel, true, 0));
+        QVERIFY2(!visible(hiddenModel, false, 1) && !visible(hiddenModel, true, 1), "a model switched on during the single plot shows another series");
         single->click();
         QCoreApplication::processEvents();
         QVERIFY(dataVisible(0) && dataVisible(1));
-        for (ModelWidget* w : widgets) {
-            if (w == hiddenModel)
-                QVERIFY2(noneShown(w), "a hidden model came back with the single plot");
-            else
-                QVERIFY2(allShown(w), "a series did not come back after the single plot");
-        }
+        QVERIFY(allShown(hiddenModel) && allShown(second));
+        QVERIFY2(!visible(thirdModel, false, 0) && visible(thirdModel, false, 1), "the unchecked series of a model is not as it was after the single plot");
+        thirdShow0->setChecked(true);
+        QCoreApplication::processEvents();
+        QVERIFY(allShown(thirdModel));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
 

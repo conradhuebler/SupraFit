@@ -335,7 +335,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
 #endif
 
     connect(m_data_mapper.data(), &ChartWrapper::ModelChanged, signal_wrapper.data(), &ChartWrapper::UpdateModel);
-    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, signal_wrapper.data(), &ChartWrapper::showSeries);
+    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, signal_wrapper.data(), &ChartWrapper::followSeries);
 
     DataTable* modelTable = model->ModelTable();
     if (!modelTable) {
@@ -347,7 +347,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
     QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(parent), &QObject::deleteLater);
 
     connect(m_data_mapper.data(), &ChartWrapper::ModelChanged, error_wrapper.data(), &ChartWrapper::UpdateModel);
-    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, error_wrapper.data(), &ChartWrapper::showSeries);
+    connect(m_data_mapper.data(), &ChartWrapper::ShowSeries, error_wrapper.data(), &ChartWrapper::followSeries);
 
     DataTable* errorTable = model->ErrorTable();
     if (!errorTable) {

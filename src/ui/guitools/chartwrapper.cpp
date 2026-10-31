@@ -319,6 +319,12 @@ void ChartWrapper::setSeriesVisible(int index, bool visible)
     if (index < 0 || index >= m_stored_series.size())
         return;
 
+    // During a single plot the wish of the user (a model or a series shown or hidden) is kept, and what is drawn is the wish for the one series only
+    if (m_single >= 0 && index < m_wanted.size()) {
+        m_wanted[index] = visible;
+        visible = visible && index == m_single;
+    }
+
     if (m_stored_series[index]) {
         m_stored_series[index]->setVisible(visible);
         emit seriesVisibilityChanged(index, visible);
@@ -359,27 +365,48 @@ int ChartWrapper::seriesCount() const
     return m_stored_series.size();
 }
 
-/*! \brief "Single plot": only series \p i is visible, the others are hidden; -1 puts every series back as it was before. Claude Generated.
+/*! \brief "Single plot" of the wrapper whose series was clicked: only series \p i is drawn, -1 puts every series back as it was. Claude Generated.
  *
- * The visibility before the first single plot is remembered, so that a series (or a model) the user had hidden stays hidden afterwards. The signal is
- * emitted for the wrappers of the models that follow the data wrapper (`ChartWidget::addModel`).
+ * The series that was clicked is shown (the data series is the one the user asks for). The signal `ShowSeries` goes to the wrappers of the models
+ * (`ChartWidget::addModel`), which call `followSeries`.
  */
 void ChartWrapper::showSeries(int i)
 {
-    if (i >= 0 && i < m_stored_series.size()) {
-        if (m_before_single.isEmpty()) {
-            for (int j = 0; j < m_stored_series.size(); ++j)
-                m_before_single << (m_stored_series[j] && m_stored_series[j]->isVisible());
-        }
-        for (int j = 0; j < m_stored_series.size(); ++j)
-            setSeriesVisible(j, j == i);
-    } else if (i == -1 && !m_before_single.isEmpty()) {
-        for (int j = 0; j < m_stored_series.size() && j < m_before_single.size(); ++j)
-            setSeriesVisible(j, m_before_single[j]);
-        m_before_single.clear();
-    }
-
+    ApplySingle(i, true);
     emit ShowSeries(i);
+}
+
+/*! \brief The single plot of another wrapper (the data) in this one (the curves of a model): only series \p i is drawn, and only if this wrapper
+ * had it drawn: a hidden model, or a series that was unchecked, does not come back. -1 puts every series back. Claude Generated. */
+void ChartWrapper::followSeries(int i)
+{
+    ApplySingle(i, false);
+}
+
+void ChartWrapper::ApplySingle(int i, bool reveal)
+{
+    if (i >= 0 && i < m_stored_series.size()) {
+        if (m_single < 0) { // the first single plot: remember what was wanted
+            m_wanted.clear();
+            for (int j = 0; j < m_stored_series.size(); ++j)
+                m_wanted << (m_stored_series[j] && m_stored_series[j]->isVisible());
+        }
+        m_single = i;
+        if (reveal)
+            m_wanted[i] = true;
+        for (int j = 0; j < m_stored_series.size(); ++j)
+            if (m_stored_series[j]) {
+                const bool visible = m_wanted[j] && j == i;
+                m_stored_series[j]->setVisible(visible);
+                emit seriesVisibilityChanged(j, visible);
+            }
+    } else if (i == -1 && m_single >= 0) {
+        const QList<bool> wanted = m_wanted;
+        m_single = -1;
+        m_wanted.clear();
+        for (int j = 0; j < m_stored_series.size() && j < wanted.size(); ++j)
+            setSeriesVisible(j, wanted[j]);
+    }
 }
 
 // === POINT HIDING API - Claude Generated ===
