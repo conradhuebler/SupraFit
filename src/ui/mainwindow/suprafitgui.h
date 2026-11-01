@@ -144,8 +144,10 @@ public slots:
     void LoadFile(const QString& file, int overwrite_type = 0);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
 
-private:
+    /*! \brief The dialog (and the log) for a project file that did not open or opened without something. */
     void ShowLoadReport(const QString& file, const SupraFit::LoadReport& report);
+
+private:
     // This will become an improved data load mechanism somedays
 
     // QVector<QJsonObject> ProjectFromFile(const QString& file);

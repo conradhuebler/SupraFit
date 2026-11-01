@@ -75,6 +75,8 @@
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/core/models/titrations/fluorescence/fl_any_Model.h"
 #include "src/ui/dialogs/advancedsearch.h"
+#include <QtWidgets/QSystemTrayIcon>
+#include "src/ui/widgets/messagedock.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/scanwidget.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
@@ -1246,6 +1248,83 @@ private slots:
         QCoreApplication::processEvents();
         const QStringList overlaps = overlappingWidgets(&widget);
         QVERIFY2(overlaps.isEmpty(), qPrintable(overlaps.join("; ")));
+    }
+
+    // The report of a project file that could not be read completely: a dialog whose text has the room it needs (no fixed size, no scrolling for a
+    // short report, resizable), and the same in the log, one line per issue. Claude Generated.
+    void loadReportDialogFitsItsTextAndGoesToTheLog()
+    {
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings; // fresh settings start the first-start dialog (modal)
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        SupraFitGui gui;
+        gui.resize(1200, 700);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+
+        SupraFit::LoadReport report;
+        report.file = QStringLiteral("/tmp/project.suprafit");
+        report.loaded = true;
+        report.modelsInFile = 4;
+        report.modelsLoaded = 2;
+        report.issues << SupraFit::LoadIssue{ SupraFit::LoadIssue::Warning, QStringLiteral("model_2"), QStringLiteral("Left out: model number 99999 is not known to this SupraFit.") }
+                      << SupraFit::LoadIssue{ SupraFit::LoadIssue::Warning, QStringLiteral("model_3"), QStringLiteral("Left out: the entry has no \"model\" field.") }
+                      << SupraFit::LoadIssue{ SupraFit::LoadIssue::Note, QStringLiteral("data"), QStringLiteral("The fits of the file leave out the first 2 data points.") };
+
+        QSize shortSize, longSize;
+        bool scrollbarOnShort = true, resizable = false, textShown = false;
+        QTimer poll;
+        poll.setInterval(50);
+        QSize* sizeOut = nullptr;
+        bool* scrollOut = nullptr;
+        QObject::connect(&poll, &QTimer::timeout, [&]() {
+            QDialog* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            if (!dialog || !sizeOut)
+                return;
+            QPlainTextEdit* text = dialog->findChild<QPlainTextEdit*>();
+            if (!text || !dialog->isVisible())
+                return;
+            QCoreApplication::processEvents();
+            *sizeOut = dialog->size();
+            textShown = text->toPlainText().contains(QStringLiteral("99999")) && text->toPlainText().contains(QStringLiteral("first 2 data points"));
+            *scrollOut = text->verticalScrollBar()->isVisible();
+            resizable = dialog->minimumSize() != dialog->maximumSize() && dialog->maximumSize().height() > 5000;
+            sizeOut = nullptr;
+            dialog->close();
+        });
+        poll.start();
+        auto inspect = [&](QSize* size, bool* scroll) {
+            sizeOut = size;
+            scrollOut = scroll;
+        };
+        inspect(&shortSize, &scrollbarOnShort);
+        gui.ShowLoadReport(report.file, report);
+        QVERIFY2(textShown, "the dialog does not show the issues");
+        QVERIFY2(resizable, "the dialog has a fixed size");
+        QVERIFY2(!scrollbarOnShort, "a short report needs no scrolling");
+
+        // a long report: the dialog is not taller than the screen asks, the text scrolls
+        for (int i = 0; i < 60; ++i)
+            report.issues << SupraFit::LoadIssue{ SupraFit::LoadIssue::Warning, QStringLiteral("model_%1").arg(10 + i), QStringLiteral("Left out: a model that cannot be read.") };
+        bool scrollbarOnLong = false;
+        inspect(&longSize, &scrollbarOnLong);
+        gui.ShowLoadReport(report.file, report);
+        QVERIFY2(scrollbarOnLong, "a long report does not scroll");
+        QVERIFY2(longSize.height() < 900, qPrintable(QStringLiteral("the dialog is %1 px high").arg(longSize.height())));
+        QVERIFY(longSize.height() > shortSize.height());
+
+        // the log has the issues, one line each (and the notes as messages)
+        MessageDock* dock = gui.findChild<MessageDock*>();
+        QVERIFY(dock);
+        QTextEdit* log = dock->findChild<QTextEdit*>();
+        QVERIFY(log);
+        QVERIFY2(log->toPlainText().contains(QStringLiteral("model_2")) && log->toPlainText().contains(QStringLiteral("model_3")), qPrintable(log->toPlainText().left(400)));
+        QVERIFY(log->toPlainText().contains(QStringLiteral("first 2 data points")));
     }
 
     // WP-S4: Monte Carlo, Grid Search, Model Comparison and Scan say what they do (a stage text, shown in the dialog), the bar does not
