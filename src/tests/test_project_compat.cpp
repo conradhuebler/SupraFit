@@ -87,6 +87,7 @@ private slots:
         system["2"] = "0.1";
         system["3"] = "1.0";
         system["4"] = "298";
+        system["1024"] = "Number";
         data["system"] = system;
         DataClass project;
         QVERIFY(project.ImportData(data));
@@ -94,6 +95,8 @@ private slots:
         QCOMPARE(project.getSystemParameter(2).Name(), QStringLiteral("Cell concentration"));
         QCOMPARE(project.getSystemParameter(3).Name(), QStringLiteral("Syringe concentration"));
         QCOMPARE(project.getSystemParameter(4).Name(), QStringLiteral("Temperature"));
+        QCOMPARE(project.getSystemParameter(1024).Name(), QStringLiteral("Plot Mode"));
+        QCOMPARE(project.getSystemParameter(1024).getString(), QStringLiteral("Number"));
     }
 
     // A file that cannot be read says why, in words, with the place where JSON broke.
