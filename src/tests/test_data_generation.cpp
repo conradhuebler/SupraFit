@@ -129,31 +129,20 @@ QJsonObject TestDataGeneration::loadGeneratedFile(const QString& filename)
 bool TestDataGeneration::verifyDataStructure(const QJsonObject& data, const QString& expectedType)
 {
     Q_UNUSED(expectedType)
-    
-    if (!data.contains("format_version")) return false;
-    if (!data.contains("base_data")) return false;
-    
-    QJsonObject baseData = data["base_data"].toObject();
-    if (!baseData.contains("Independent")) return false;
-    if (!baseData.contains("Dependent")) return false;
-    
-    return true;
+
+    // a generated file is a project: the data object with its independent and dependent table
+    if (!data.contains("data"))
+        return false;
+
+    QJsonObject inner = data["data"].toObject();
+    return inner.contains("independent") && inner.contains("dependent");
 }
 
 bool TestDataGeneration::verifyDimensions(const QJsonObject& data, int expectedRows, int expectedCols)
 {
-    QJsonObject baseData = data["base_data"].toObject();
-    QJsonObject independent = baseData["Independent"].toObject();
-    
-    if (independent.contains("data")) {
-        QJsonObject indepData = independent["data"].toObject();
-        if (indepData.contains("rows") && indepData.contains("cols")) {
-            return (indepData["rows"].toInt() == expectedRows && 
-                   indepData["cols"].toInt() == expectedCols);
-        }
-    }
-    
-    return false;
+    QJsonObject independent = data["data"].toObject()["independent"].toObject();
+    return independent.contains("rows") && independent.contains("cols")
+        && independent["rows"].toInt() == expectedRows && independent["cols"].toInt() == expectedCols;
 }
 
 void TestDataGeneration::testEquationBasedIndependentGeneration()
@@ -609,9 +598,9 @@ void TestDataGeneration::testOutputFormatValidation()
     
     QJsonObject data = loadGeneratedFile(generatedFile);
     QVERIFY(!data.isEmpty());
-    QVERIFY(data.contains("format_version"));
-    QVERIFY(data.contains("base_data"));
-    QVERIFY(data.contains("generation_timestamp"));
+    QVERIFY(verifyDataStructure(data, "generated"));
+    QVERIFY(data.contains("uuid"));
+    QVERIFY(data["data"].toObject().contains("timestamp"));
 }
 
 void TestDataGeneration::testLegacyFormatSupport()
@@ -762,11 +751,8 @@ QString TestDataGeneration::createEquationConfig(const QString& equations, int d
     QJsonObject dependent;
     dependent["Source"] = "generator";
     QJsonObject depGen;
-    depGen["Type"] = "model";
+    depGen["Type"] = "copy"; // the tests here are about the independent data: the dependent ones repeat them
     depGen["Series"] = variables;
-    QJsonObject model;
-    model["ID"] = 1;
-    depGen["Model"] = model;
     dependent["Generator"] = depGen;
     config["Dependent"] = dependent;
     

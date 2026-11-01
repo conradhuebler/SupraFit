@@ -891,9 +891,8 @@ void TestPipeline::testInvalidConfiguration()
     
     QVector<QJsonObject> data = cli->GenerateData();
     
-    // Should handle gracefully - modern DataGenerator provides partial success
-    QVERIFY(!data.isEmpty());  // DataGenerator still produces output even with invalid model
-    QVERIFY(data.size() >= 1);  // At least some data should be generated
+    // Without an input file (and with a model that does not exist) nothing can be generated: no data, no crash
+    QVERIFY(data.isEmpty());
     
     delete cli;
 }
@@ -919,9 +918,8 @@ void TestPipeline::testMissingFiles()
     
     QVector<QJsonObject> data = cli->GenerateData();
     
-    // Should handle missing files gracefully - modern DataGenerator provides partial success
-    QVERIFY(!data.isEmpty());  // DataGenerator still produces output even with missing files
-    QVERIFY(data.size() >= 1);  // At least some data should be generated
+    // A missing input file gives no data (and the message says that the file is not there), no crash
+    QVERIFY(data.isEmpty());
     
     delete cli;
 }

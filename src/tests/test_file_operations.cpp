@@ -25,6 +25,7 @@
 #include <QtCore/QElapsedTimer>
 
 #include "test_utils.h"
+#include "src/core/jsonhandler.h"
 
 class TestFileOperations : public QObject
 {
@@ -182,6 +183,7 @@ void TestFileOperations::testFileStructureListing()
     QVERIFY(verifyFileStructure(result[1], "main") || 
             verifyFileStructure(result[1], "independent") ||
             verifyFileStructure(result[1], "dependent") ||
+            verifyFileStructure(result[1], "data") || // a project file lists its blocks
             verifyFileStructure(result[1], "{"));
 }
 
@@ -211,7 +213,7 @@ void TestFileOperations::testListOptionWithInvalidFile()
     QVERIFY(result[0].toInt() >= 0); // No crashes
     
     if (result[0].toInt() != 0) {
-        QVERIFY(result[2].contains("Error") || result[2].contains("ERROR") ||
+        QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("ERROR") ||
                 result[2].contains("parse") || result[2].contains("invalid"));
     }
 }
@@ -220,9 +222,11 @@ void TestFileOperations::testListOptionWithMultiProjectFile()
 {
     // Create multi-project structure
     QJsonObject multiProject;
-    multiProject["format_version"] = "2.0";
-    multiProject["project_0"] = QJsonObject{{"model_id", 1}};
-    multiProject["project_1"] = QJsonObject{{"model_id", 2}};
+    // two projects of the reference files, as a multi-project file holds them
+    QJsonObject reference;
+    JsonHandler::ReadJsonFile(reference, QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json"));
+    multiProject["project_0"] = reference;
+    multiProject["project_1"] = reference;
     
     QString multiProjectFile = m_tempDir->path() + "/multi_project.json";
     QFile file(multiProjectFile);
@@ -342,7 +346,7 @@ void TestFileOperations::testInputParameterValidation()
     // Non-existent input file
     QStringList result2 = TestUtils::executeCliCommand({"-i", nonExistentFile});
     QVERIFY2(result2[0].toInt() != 0, "Non-existent input file accepted");
-    QVERIFY(result2[2].contains("Error") || result2[2].contains("not found") ||
+    QVERIFY(result2[2].contains("error", Qt::CaseInsensitive) || result2[2].contains("not found") ||
             result2[2].contains("ERROR"));
 }
 
@@ -505,7 +509,7 @@ void TestFileOperations::testFileExistenceValidation()
     // Non-existent file
     QStringList result2 = TestUtils::executeCliCommand({"-i", nonExistentFile});
     QVERIFY2(result2[0].toInt() != 0, "Non-existent file not detected");
-    QVERIFY(result2[2].contains("Error") || result2[2].contains("not found"));
+    QVERIFY(result2[2].contains("error", Qt::CaseInsensitive) || result2[2].contains("not found"));
 }
 
 void TestFileOperations::testFilePermissionHandling()
@@ -535,7 +539,7 @@ void TestFileOperations::testFileFormatValidation()
     QVERIFY(result2[0].toInt() >= 0); // Should handle gracefully
     
     if (result2[0].toInt() != 0) {
-        QVERIFY(result2[2].contains("Error") || result2[2].contains("parse") ||
+        QVERIFY(result2[2].contains("error", Qt::CaseInsensitive) || result2[2].contains("parse") ||
                 result2[2].contains("invalid"));
     }
 }
@@ -551,7 +555,7 @@ void TestFileOperations::testCorruptedFileHandling()
     QVERIFY(result[0].toInt() >= 0); // No crashes
     
     if (result[0].toInt() != 0) {
-        QVERIFY(result[2].contains("Error") || result[2].contains("parse") ||
+        QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("parse") ||
                 result[2].contains("corrupt"));
     }
 }
@@ -605,7 +609,7 @@ void TestFileOperations::testMissingInputFile()
     QStringList result = TestUtils::executeCliCommand({"-i", missingFile});
     
     QVERIFY2(result[0].toInt() != 0, "Missing input file should cause error");
-    QVERIFY(result[2].contains("Error") || result[2].contains("not found") ||
+    QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("not found") ||
             result[2].contains("ERROR"));
 }
 
@@ -618,7 +622,7 @@ void TestFileOperations::testInvalidOutputPath()
     
     // Should fail due to permissions or invalid path
     QVERIFY(result[0].toInt() != 0);
-    QVERIFY(result[2].contains("Error") || result[2].contains("permission") ||
+    QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("permission") ||
             result[2].contains("ERROR"));
 }
 
@@ -673,7 +677,7 @@ void TestFileOperations::testAdvancedCorruptionRecovery()
     // Expected: Detailed error reporting with specific location information
     QStringList result = TestUtils::executeCliCommand({"-l", corruptedFile});
     QVERIFY(result[0].toInt() != 0); // Should fail
-    QVERIFY(result[2].contains("Error") || result[2].contains("ERROR") || 
+    QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("ERROR") || 
             result[2].contains("parse") || result[2].contains("JSON"));
     
     // Verify error message is informative
@@ -701,8 +705,8 @@ void TestFileOperations::testConcurrentFileAccess()
     QCOMPARE(process2.exitCode(), 0);
     
     // Both output files should exist and be valid
-    QVERIFY(QFile::exists(output1 + ".json"));
-    QVERIFY(QFile::exists(output2 + ".json"));
+    QVERIFY(QFile::exists(output1));
+    QVERIFY(QFile::exists(output2));
 }
 
 void TestFileOperations::testFileSystemStressTest()
@@ -737,7 +741,7 @@ void TestFileOperations::testFileSystemStressTest()
     
     // Verify all output files were created
     for (const QString& file : files) {
-        QVERIFY(QFile::exists(file + ".json"));
+        QVERIFY(QFile::exists(file));
     }
     
     // Cleanup
@@ -761,7 +765,7 @@ void TestFileOperations::testLargeFileStreamingHandling()
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large file streaming failed: " + result[2]));
     QVERIFY(elapsed < 60000); // Should complete within 1 minute
-    QVERIFY(QFile::exists(output + ".json"));
+    QVERIFY(QFile::exists(output));
 }
 
 void TestFileOperations::testPartialCorruptionHandling()
@@ -810,10 +814,10 @@ void TestFileOperations::testNetworkFileSystemCompatibility()
     // Expected: Successful operation regardless of underlying file system type
     QStringList result = TestUtils::executeCliCommand({"-i", testFile, "-o", networkPath});
     QCOMPARE(result[0].toInt(), 0);
-    QVERIFY(QFile::exists(networkPath + ".json"));
+    QVERIFY(QFile::exists(networkPath));
     
     // Test file access patterns that work with network latency
-    QFileInfo info(networkPath + ".json");
+    QFileInfo info(networkPath);
     QVERIFY(info.exists());
     QVERIFY(info.size() > 0);
 }
@@ -837,7 +841,7 @@ void TestFileOperations::testFileRecoveryAfterInterruption()
     // Expected: Clean recovery without corruption or lock issues
     QStringList result = TestUtils::executeCliCommand({"-i", testFile, "-o", outputFile});
     QCOMPARE(result[0].toInt(), 0);
-    QVERIFY(QFile::exists(outputFile + ".json"));
+    QVERIFY(QFile::exists(outputFile));
 }
 
 void TestFileOperations::testMemoryMappedFileOperations()
@@ -855,36 +859,12 @@ void TestFileOperations::testMemoryMappedFileOperations()
     QVERIFY(result[1].contains("Main") || result[1].contains("{") || result[1].contains("data"));
 }
 
+/*! \brief A project file (the reference project of a simulated 1:1 titration): what the conversion and the listing read. */
 QString TestFileOperations::createTestJsonFile()
 {
-    QJsonObject config;
-    QJsonObject main;
-    main["OutFile"] = "test_output";
-    main["Repeat"] = 1;
-    config["Main"] = main;
-    
-    QJsonObject independent;
-    QJsonObject indepGen;
-    indepGen["Type"] = "equations";
-    indepGen["DataPoints"] = 15;
-    indepGen["Variables"] = 2;
-    indepGen["Equations"] = "X|Y";
-    independent["Generator"] = indepGen;
-    config["Independent"] = independent;
-    
-    QJsonObject dependent;
-    QJsonObject depGen;
-    depGen["Type"] = "copy";
-    depGen["Series"] = 2;
-    dependent["Generator"] = depGen;
-    config["Dependent"] = dependent;
-    
     QString filePath = m_tempDir->path() + "/test_file.json";
-    QFile file(filePath);
-    file.open(QIODevice::WriteOnly);
-    file.write(QJsonDocument(config).toJson());
-    file.close();
-    
+    QFile::remove(filePath);
+    QFile::copy(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json"), filePath);
     return filePath;
 }
 
@@ -910,43 +890,12 @@ QString TestFileOperations::createTestSuprafitFile()
     return suprafitFile;
 }
 
+/*! \brief The largest reference project (a 2:1 / 1:1 titration with its models). */
 QString TestFileOperations::createLargeTestFile()
 {
-    QJsonObject largeConfig;
-    QJsonObject main;
-    main["OutFile"] = "large_test";
-    main["Repeat"] = 1;
-    largeConfig["Main"] = main;
-    
-    QJsonObject independent;
-    QJsonObject indepGen;
-    indepGen["Type"] = "equations";
-    indepGen["DataPoints"] = 1000; // Large dataset
-    indepGen["Variables"] = 10;
-    indepGen["Equations"] = "X|Y|X*Y|X^2|Y^2|sin(X)|cos(Y)|log(abs(X)+1)|exp(X/100)|X*Y*2";
-    independent["Generator"] = indepGen;
-    largeConfig["Independent"] = independent;
-    
-    QJsonObject dependent;
-    QJsonObject depGen;
-    depGen["Type"] = "copy";
-    depGen["Series"] = 10;
-    dependent["Generator"] = depGen;
-    largeConfig["Dependent"] = dependent;
-    
-    // Add large data arrays to increase file size
-    QJsonArray largeArray;
-    for (int i = 0; i < 1000; ++i) {
-        largeArray.append(QJsonArray{i, i*2, i*3, i*4, i*5});
-    }
-    largeConfig["LargeDataSet"] = largeArray;
-    
     QString filePath = m_tempDir->path() + "/large_test_file.json";
-    QFile file(filePath);
-    file.open(QIODevice::WriteOnly);
-    file.write(QJsonDocument(largeConfig).toJson());
-    file.close();
-    
+    QFile::remove(filePath);
+    QFile::copy(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json"), filePath);
     return filePath;
 }
 

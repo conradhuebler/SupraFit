@@ -208,6 +208,7 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
         int progress = (i * 100) / models.size();
         emit analysisProgress(QString("Fitting model %1 of %2").arg(i+1).arg(models.size()), progress);
         
+        fmt::print("   Fitting {} ({} of {})\n", modelConfig["model_name"].toString().toStdString(), i + 1, models.size());
         QJsonObject modelResult = fitSingleModel(modelConfig, data, globalAnalysisConfig);
         results.append(modelResult);
     }
@@ -922,6 +923,8 @@ QJsonObject AnalysisManager::runPostFitAnalysis(QSharedPointer<AbstractModel> mo
     for (int methodIndex = 0; methodIndex < methods.size(); ++methodIndex) {
         QJsonObject methodConfig = methods[methodIndex].toObject();
         int methodId = methodConfig["Method"].toInt();
+
+        fmt::print("        Analysis: {} (Method {})\n", SupraFit::Method2Name(methodId).toStdString(), methodId);
 
         // Create JobManager for this analysis run with error handling
         JobManager jobManager;

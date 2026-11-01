@@ -50,6 +50,24 @@ QJsonObject JsonUtils::getPostFitAnalysis(const QJsonObject& object)
     return QJsonObject();
 }
 
+/*! \brief The entry of a "methods" object that holds the analysis \p method. An exported model numbers its analyses one after
+ * the other (0 fast confidence, then every run of every method), so the key is not the method: the controller of an entry
+ * says which method it is. Entries without controller (the older files) are taken by their key as the method.
+ * Claude Generated. */
+static QString MethodEntryKey(const QJsonObject& methods, SupraFit::Method method)
+{
+    for (auto it = methods.begin(); it != methods.end(); ++it) {
+        const QJsonObject entry = it.value().toObject();
+        if (entry.contains("controller") && entry["controller"].toObject().contains("Method")
+            && entry["controller"].toObject()["Method"].toInt() == int(method))
+            return it.key();
+    }
+    const QString byKey = QString::number(method);
+    if (methods.contains(byKey) && !methods[byKey].toObject().contains("controller"))
+        return byKey;
+    return QString();
+}
+
 QJsonObject JsonUtils::getStatisticalMethod(const QJsonObject& modelObject, SupraFit::Method method)
 {
     QJsonObject postFitAnalysis = getPostFitAnalysis(modelObject);
@@ -58,9 +76,9 @@ QJsonObject JsonUtils::getStatisticalMethod(const QJsonObject& modelObject, Supr
     }
 
     QJsonObject methods = postFitAnalysis["methods"].toObject();
-    QString methodId = QString::number(method);
+    const QString methodId = MethodEntryKey(methods, method);
 
-    if (methods.contains(methodId)) {
+    if (!methodId.isEmpty()) {
         QJsonObject methodData = methods[methodId].toObject();
         
         // Handle both "results" sub-object and direct access patterns
@@ -96,8 +114,18 @@ QStringList JsonUtils::getAvailableStatisticalMethods(const QJsonObject& modelOb
         return QStringList();
     }
 
+    // the method ids of the entries (see MethodEntryKey), every method once
     QJsonObject methods = postFitAnalysis["methods"].toObject();
-    return methods.keys();
+    QStringList ids;
+    for (auto it = methods.begin(); it != methods.end(); ++it) {
+        const QJsonObject entry = it.value().toObject();
+        QString id = it.key();
+        if (entry.contains("controller") && entry["controller"].toObject().contains("Method"))
+            id = QString::number(entry["controller"].toObject()["Method"].toInt());
+        if (!entry.isEmpty() && !ids.contains(id))
+            ids << id;
+    }
+    return ids;
 }
 
 QJsonObject JsonUtils::extractCompactMLFeatures(const QJsonObject& statisticalMethodData, int entropyBins)
@@ -168,11 +196,13 @@ QJsonObject JsonUtils::extractCompactMLFeatures(const QJsonObject& statisticalMe
                 parameterFeatures["confidence_range"] = range;
                 
                 // Calculate confidence score (narrower range = higher confidence) - Claude Generated
+                // the range is taken relative to the best fit; a best fit of exactly zero uses the mean of the
+                // samples, and without a scale the range itself
                 if (paramData.contains("value")) {
-                    double bestFit = paramData["value"].toDouble();
-                    if (bestFit != 0.0) {
-                        parameterFeatures["confidence_score"] = 1.0 / (1.0 + std::abs(range / bestFit));
-                    }
+                    const double bestFit = paramData["value"].toDouble();
+                    const double mean = paramData["boxplot"].toObject()["mean"].toDouble();
+                    const double scale = bestFit != 0.0 ? std::abs(bestFit) : (mean != 0.0 ? std::abs(mean) : 1.0);
+                    parameterFeatures["confidence_score"] = 1.0 / (1.0 + std::abs(range / scale));
                 }
                 
                 parameterFeatures["confidence_lower"] = lower;
@@ -216,6 +246,7 @@ QJsonObject JsonUtils::extractCompactMLFeatures(const QJsonObject& statisticalMe
     // Add global method information
     if (statisticalMethodData.contains("controller")) {
         QJsonObject controller = statisticalMethodData["controller"].toObject();
+        controller.remove("raw"); // the raw samples are what the compact form leaves out
         compactFeatures["method_config"] = controller;
     }
     

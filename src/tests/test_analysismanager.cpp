@@ -215,7 +215,8 @@ void TestAnalysisManager::testAnalyzeFileValidInput()
 
     QVERIFY(!result.isEmpty());
     QVERIFY(result.contains("fileInfo"));
-    QVERIFY(result.contains("dataStructure"));
+    QVERIFY(result.contains("dataAnalysis")); // the analysis of the data class of the file
+    QVERIFY(result["dataAnalysis"].toObject().contains("dataStructure"));
 
     // Verify file information
     QJsonObject fileInfo = result["fileInfo"].toObject();
@@ -257,7 +258,8 @@ void TestAnalysisManager::testAnalyzeDataClassValid()
     QJsonObject result = m_analysisManager->analyzeDataClass(m_testData);
 
     QVERIFY(!result.isEmpty());
-    QVERIFY(result.contains("dataType") || result.contains("structure"));
+    QVERIFY(result.contains("dataStructure"));
+    QVERIFY(result["dataStructure"].toObject().contains("dataType"));
 }
 
 void TestAnalysisManager::testAnalyzeDataClassNull()

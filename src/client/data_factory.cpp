@@ -82,6 +82,8 @@ QJsonObject DataFactory::generateIndependentDataTable(const QJsonObject& indepen
     fmt::print("🔧 Generating independent data table...\n");
     
     QString source = independentConfig["Source"].toString();
+    if (source.isEmpty()) // the source follows from the section that is present
+        source = independentConfig.contains("Generator") ? QStringLiteral("generator") : independentConfig.contains("File") ? QStringLiteral("file") : QString();
     
     if (source == "generator") {
         QJsonObject generatorConfig = independentConfig["Generator"].toObject();

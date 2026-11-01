@@ -208,6 +208,7 @@ protected:
 
     /* Controller json */
     QJsonObject m_main, m_jobs, m_models, m_analyse;
+    QStringList m_config_sections; ///< top-level sections of a configuration file (listed by -l)
 
     /* Sub json */
     QJsonObject m_prepare, m_simulation;
