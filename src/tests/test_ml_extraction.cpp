@@ -143,6 +143,8 @@ bool TestMLExtraction::verifyCompactFeatures(const QJsonObject& features)
 {
     // Check for compact statistical features (not raw data)
     for (auto it = features.begin(); it != features.end(); ++it) {
+        if (it.key() == "method_config") // the settings of the analysis, not a parameter
+            continue;
         QJsonObject paramFeatures = it.value().toObject();
         
         // Should have analyzed features
@@ -281,7 +283,7 @@ void TestMLExtraction::testCompactFeatureExtraction()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/compact_features_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Compact feature extraction failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -311,7 +313,7 @@ void TestMLExtraction::testShannonEntropyCalculation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/entropy_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Shannon entropy test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -397,7 +399,7 @@ void TestMLExtraction::testConfidenceScoreCalculation()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/confidence_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Confidence score test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -441,7 +443,7 @@ void TestMLExtraction::testParameterDistributionFeatures()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/distribution_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter distribution test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -461,7 +463,7 @@ void TestMLExtraction::testJsonUtilsFeatureExtraction()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/jsonutils_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("JsonUtils feature extraction test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -512,7 +514,7 @@ void TestMLExtraction::testParameterFilteringLogic()
     QString mlDataFile = createMLDataFile();
     QString outputFile = m_tempDir->path() + "/filtering_test.json";
     
-    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile});
+    QStringList result = TestUtils::executeCliCommand({"--export-ml-training", mlDataFile, "--ml-output", outputFile, "--exclude-raw-data"});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Parameter filtering test failed: " + result[2]));
     
     QJsonObject exportData = loadMLExportFile(outputFile);
@@ -849,8 +851,8 @@ void TestMLExtraction::testMissingRequiredFields()
     QVERIFY(result[0].toInt() >= 0);
     
     if (result[0].toInt() != 0) {
-        QVERIFY(result[2].contains("Error") || result[2].contains("WARNING") ||
-                result[1].contains("Error") || result[1].contains("WARNING"));
+        QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("warning", Qt::CaseInsensitive) ||
+                result[1].contains("error", Qt::CaseInsensitive) || result[1].contains("warning", Qt::CaseInsensitive));
     }
 }
 

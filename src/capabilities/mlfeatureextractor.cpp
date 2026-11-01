@@ -102,8 +102,26 @@ QJsonObject MLFeatureExtractor::parseMLPipelineData(const QString& filename)
         QRegularExpressionMatch match = multiProjectPattern.match(key);
         if (match.hasMatch()) {
             QJsonObject projectData = it.value().toObject();
-            
-            // Convert project data to fitted model format
+
+            // The models of a project are the blocks "model_N" of its data object: {"model": id, "name": name,
+            // "data": {... "methods": statistics}}; the statistics are read from there (Claude Generated)
+            const QJsonObject inner = projectData["data"].toObject();
+            bool foundModel = false;
+            for (auto m = inner.begin(); m != inner.end(); ++m) {
+                if (!multiProjectPattern.match(m.key()).hasMatch() || !m.value().isObject())
+                    continue;
+                const QJsonObject entry = m.value().toObject();
+                QJsonObject fittedModel;
+                fittedModel["model_name"] = entry["name"];
+                fittedModel["model_id"] = entry["model"];
+                fittedModel["post_fit_analysis"] = SupraFit::JsonUtils::getPostFitAnalysis(entry); // the statistics of data.methods
+                fittedModels.append(fittedModel);
+                foundModel = true;
+            }
+            if (foundModel)
+                continue;
+
+            // Convert project data to fitted model format (flat entries of the earlier pipeline files)
             QJsonObject fittedModel;
             fittedModel["model_name"] = projectData["model_name"];
             fittedModel["model_id"] = projectData["model_id"];
@@ -111,21 +129,13 @@ QJsonObject MLFeatureExtractor::parseMLPipelineData(const QString& filename)
             fittedModel["sse"] = projectData["sse"];
             fittedModel["fitted_parameters"] = projectData["fitted_parameters"];
             fittedModel["timestamp"] = projectData["timestamp"];
-            
-            // Include post-fit analysis data
-            if (projectData.contains("post_fit_analysis")) {
+            if (projectData.contains("post_fit_analysis"))
                 fittedModel["post_fit_analysis"] = projectData["post_fit_analysis"];
-            }
-            
-            // Include ML features if available
-            if (projectData.contains("ml_features")) {
+            if (projectData.contains("ml_features"))
                 fittedModel["ml_features"] = projectData["ml_features"];
-            }
-            
+
             fittedModels.append(fittedModel);
-            QString projectType = match.captured(1); // "project" or "model"
-            QString projectIndex = match.captured(2); // "0", "1", etc.
-            qDebug() << "MLFeatureExtractor: Added" << projectType << "entry" << key << "as fitted model";
+            qDebug() << "MLFeatureExtractor: Added entry" << key << "as fitted model";
         }
     }
     
@@ -535,6 +545,10 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
         return features;
     }
     
+    // the Calculate*Metrics of analyse.cpp read the statistics of a model, so they get it as such (Claude Generated)
+    QJsonObject modelObject;
+    modelObject["post_fit_analysis"] = postFitAnalysis;
+
     // Get available statistical methods for this model - Claude Generated
     QStringList availableMethods = SupraFit::JsonUtils::getAvailableStatisticalMethods(postFitAnalysis);
     qDebug() << "MLFeatureExtractor: Available statistical methods:" << availableMethods;
@@ -561,7 +575,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
                 // Monte Carlo: Extract parameter features (with optional raw data) - Claude Generated
                 if (m_includeRawData) {
                     // Use full StatisticTool analysis with raw data included
-                    QVector<QJsonObject> modelVector = {methodData};
+                    QVector<QJsonObject> modelVector = {modelObject};
                     methodFeatures = StatisticTool::CalculateMCMetrics(modelVector, 1);
                 } else {
                     // Use compact features without raw data
@@ -585,7 +599,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
             
             case SupraFit::Method::WeakenedGridSearch: {
                 // Weakened Grid Search: Use CalculateWGSMetrics from analyse.cpp
-                QVector<QJsonObject> modelVector = {methodData};
+                QVector<QJsonObject> modelVector = {modelObject};
                 methodFeatures = StatisticTool::CalculateWGSMetrics(modelVector);
                 if (!methodFeatures.isEmpty()) {
                     features["weakened_grid_search"] = methodFeatures;
@@ -595,7 +609,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
             
             case SupraFit::Method::ModelComparison: {
                 // Model Comparison: Use CalculateModelComparisonMetrics from analyse.cpp
-                QVector<QJsonObject> modelVector = {methodData};
+                QVector<QJsonObject> modelVector = {modelObject};
                 methodFeatures = StatisticTool::CalculateModelComparisonMetrics(modelVector);
                 if (!methodFeatures.isEmpty()) {
                     features["model_comparison"] = methodFeatures;
@@ -605,7 +619,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
             
             case SupraFit::Method::Reduction: {
                 // Reduction Analysis: Use CalculateReductionMetrics from analyse.cpp
-                QVector<QJsonObject> modelVector = {methodData};
+                QVector<QJsonObject> modelVector = {modelObject};
                 double cutoff = 0.1; // Default cutoff
                 if (methodData.contains("configuration")) {
                     QJsonObject config = methodData["configuration"].toObject();
@@ -620,7 +634,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
             
             case SupraFit::Method::FastConfidence: {
                 // Fast Confidence: Use CalculateFastConfidenceMetrics from analyse.cpp
-                QVector<QJsonObject> modelVector = {methodData};
+                QVector<QJsonObject> modelVector = {modelObject};
                 methodFeatures = StatisticTool::CalculateFastConfidenceMetrics(modelVector);
                 if (!methodFeatures.isEmpty()) {
                     features["fast_confidence"] = methodFeatures;
@@ -630,7 +644,7 @@ QJsonObject MLFeatureExtractor::extractStatisticalFeatures(const QJsonObject& po
             
             case SupraFit::Method::GlobalSearch: {
                 // Global Search: Use CalculateGlobalSearchMetrics from analyse.cpp
-                QVector<QJsonObject> modelVector = {methodData};
+                QVector<QJsonObject> modelVector = {modelObject};
                 methodFeatures = StatisticTool::CalculateGlobalSearchMetrics(modelVector);
                 if (!methodFeatures.isEmpty()) {
                     features["global_search"] = methodFeatures;

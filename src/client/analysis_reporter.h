@@ -52,6 +52,7 @@ public:
     static void validateGenerateDataConfig(const QJsonObject& config);
 
     /** Print fitted parameters of the current project's models (project loaded via ProjectManager). */
+    static bool ExtractModelParameters(const QJsonObject& projectJson, const QString& modelIndexStr);
     static bool ExtractModelParameters(const QString& modelIndexStr = QString());
 
 private:

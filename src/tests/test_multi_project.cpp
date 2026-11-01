@@ -25,6 +25,7 @@
 #include <QtCore/QUuid>
 
 #include "test_utils.h"
+#include "src/core/jsonhandler.h"
 
 class TestMultiProject : public QObject
 {
@@ -112,25 +113,20 @@ void TestMultiProject::cleanupTestCase()
 
 QJsonObject TestMultiProject::loadProjectFile(const QString& filename)
 {
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)) {
+    // .suprafit files are compressed, .json files are plain: JsonHandler knows both
+    QJsonObject object;
+    QString error;
+    if (!JsonHandler::ReadFile(filename, object, &error)) {
+        qDebug() << "Cannot read" << filename << ":" << error;
         return QJsonObject();
     }
-    
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    if (error.error != QJsonParseError::NoError) {
-        qDebug() << "JSON parsing error:" << error.errorString();
-        return QJsonObject();
-    }
-    
-    return doc.object();
+    return object;
 }
 
 bool TestMultiProject::verifyProjectStructure(const QJsonObject& project, int expectedProjects)
 {
     // Single project extract: CLI can return different formats ✅
-    if (expectedProjects == 1 && !project.contains("format_version") && !project.contains("project_0")) {
+    if ((expectedProjects == 1 || expectedProjects < 0) && !project.contains("format_version") && !project.contains("project_0")) {
         // Format 1: Direct project object {model_id, uuid, title}
         if (project.contains("model_id") || project.contains("uuid") || project.contains("title")) {
             return true;
@@ -264,6 +260,8 @@ int TestMultiProject::countProjects(const QJsonObject& data)
             count++;
         }
     }
+    if (count == 0 && data.contains("data")) // an extracted project is the project itself
+        count = 1;
     return count;
 }
 
@@ -423,7 +421,7 @@ void TestMultiProject::testInvalidUUIDMatching()
     
     if (result[0].toInt() != 0) {
         // Might fail with invalid UUID
-        QVERIFY(result[2].contains("Error") || result[2].contains("not found"));
+        QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("not found"));
     }
 }
 
@@ -504,8 +502,8 @@ void TestMultiProject::testMultipleTitleMatching()
             for (auto it = matchedData.begin(); it != matchedData.end(); ++it) {
                 if (it.key().startsWith("project_")) {
                     QJsonObject project = it.value().toObject();
-                    if (project.contains("title")) {
-                        QString title = project["title"].toString();
+                    if (project["data"].toObject().contains("title")) {
+                        QString title = project["data"].toObject()["title"].toString();
                         if (title.contains("Test", Qt::CaseInsensitive)) {
                             testProjects++;
                         }
@@ -777,7 +775,7 @@ void TestMultiProject::testCorruptedMultiProjectFile()
     QVERIFY(result[0].toInt() >= 0); // No crashes
     
     if (result[0].toInt() != 0) {
-        QVERIFY(result[2].contains("Error") || result[2].contains("parsing"));
+        QVERIFY(result[2].contains("error", Qt::CaseInsensitive) || result[2].contains("damaged"));
     }
 }
 
@@ -820,6 +818,25 @@ void TestMultiProject::testConflictingParameters()
     }
 }
 
+/*! \brief A project as the files hold it: the data object with title and uuid (and the table sizes) under "data". */
+static QJsonObject projectObject(const QString& title, const QString& uuid, int modelId, int rows = 20, int cols = 2)
+{
+    QJsonObject data;
+    data["title"] = title;
+    data["uuid"] = uuid;
+    data["model_id"] = modelId;
+    data["DataType"] = 1;
+    QJsonObject independent;
+    independent["rows"] = rows;
+    independent["cols"] = cols;
+    data["independent"] = independent;
+    QJsonObject project;
+    project["data"] = data;
+    project["uuid"] = uuid;
+    project["DataType"] = 1;
+    return project;
+}
+
 QString TestMultiProject::createMultiProjectFile(int projectCount)
 {
     QJsonObject multiProject;
@@ -833,17 +850,8 @@ QString TestMultiProject::createMultiProjectFile(int projectCount)
     baseData["Independent"] = independent;
     multiProject["base_data"] = baseData;
     
-    for (int i = 0; i < projectCount; ++i) {
-        QJsonObject project;
-        project["model_id"] = i + 1;
-        project["model_name"] = QString("model_%1").arg(i + 1);
-        project["sse"] = 0.05 * (i + 1);
-        project["convergence"] = true;
-        project["title"] = QString("Test Project %1").arg(i + 1);
-        project["uuid"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        
-        multiProject[QString("project_%1").arg(i)] = project;
-    }
+    for (int i = 0; i < projectCount; ++i)
+        multiProject[QString("project_%1").arg(i)] = projectObject(QString("Test Project %1").arg(i + 1), QUuid::createUuid().toString(QUuid::WithoutBraces), i + 1);
     
     QString filePath = m_tempDir->path() + QString("/multi_project_%1.json").arg(projectCount);
     QFile file(filePath);
@@ -856,14 +864,7 @@ QString TestMultiProject::createMultiProjectFile(int projectCount)
 
 QString TestMultiProject::createSingleProjectFile()
 {
-    QJsonObject singleProject;
-    singleProject["format_version"] = "1.0";
-    singleProject["model_id"] = 1;
-    singleProject["model_name"] = "nmr_1_1";
-    singleProject["sse"] = 0.05;
-    singleProject["convergence"] = true;
-    singleProject["title"] = "Single Project";
-    singleProject["uuid"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QJsonObject singleProject = projectObject("Single Project", QUuid::createUuid().toString(QUuid::WithoutBraces), 1);
     
     QString filePath = m_tempDir->path() + QString("/single_project_%1.json").arg(QTime::currentTime().msec());
     QFile file(filePath);
@@ -876,14 +877,7 @@ QString TestMultiProject::createSingleProjectFile()
 
 QString TestMultiProject::createProjectWithUUID(const QString& uuid, const QString& title)
 {
-    QJsonObject project;
-    project["format_version"] = "1.0";
-    project["model_id"] = 1;
-    project["model_name"] = "nmr_1_1";
-    project["sse"] = 0.05;
-    project["convergence"] = true;
-    project["title"] = title;
-    project["uuid"] = uuid;
+    QJsonObject project = projectObject(title, uuid, 1);
     
     QString filePath = m_tempDir->path() + QString("/uuid_project_%1.json").arg(uuid.left(8));
     QFile file(filePath);

@@ -300,6 +300,7 @@ private:
     QJsonObject RunGridSearch(const QJsonObject& job);
     QJsonObject RunResample(const QJsonObject& job);
     QJsonObject RunModelComparison(const QJsonObject& job);
+    void AllParametersIfUnset(QJsonObject& block) const;
     QJsonObject RunGlobalSearch(const QJsonObject& job);
     QJsonObject RunLandscapeSearch(const QJsonObject& job);
 

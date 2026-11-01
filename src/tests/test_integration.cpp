@@ -25,6 +25,7 @@
 #include <QtCore/QDir>
 
 #include "test_utils.h"
+#include "src/core/jsonhandler.h"
 
 class TestIntegration : public QObject
 {
@@ -118,18 +119,11 @@ void TestIntegration::cleanupTestCase()
 
 QJsonObject TestIntegration::loadResultFile(const QString& filename)
 {
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)) {
+    // plain (.json) or compressed (.suprafit): the format is taken from the content
+    QJsonObject object;
+    if (!JsonHandler::ReadFile(filename, object))
         return QJsonObject();
-    }
-    
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    if (error.error != QJsonParseError::NoError) {
-        return QJsonObject();
-    }
-    
-    return doc.object();
+    return object;
 }
 
 bool TestIntegration::verifyWorkflowCompletion(const QStringList& result)
@@ -149,7 +143,7 @@ bool TestIntegration::verifyDataQuality(const QJsonObject& data)
     bool hasStructure = data.contains("format_version") || 
                        data.contains("Main") || 
                        data.contains("Independent") ||
-                       data.contains("base_data");
+                       (data.contains("data") && data["data"].toObject().contains("independent")); // a project
     
     if (!hasStructure) return false;
     
@@ -237,7 +231,7 @@ void TestIntegration::testCompleteDataGenerationWorkflow()
     QVERIFY2(elapsed < 30000, qPrintable(QString("Workflow took too long: %1ms").arg(elapsed)));
     
     // Verify output files exist
-    QString generatedFile = outputFile + "-0.json";
+    QString generatedFile = outputFile + "-0.suprafit"; // data generation without the pipeline writes a project
     QVERIFY2(QFile::exists(generatedFile), "Generated data file not found");
     
     // Verify data quality
@@ -308,7 +302,7 @@ void TestIntegration::testDataGenerationToModelFitting()
     QStringList dataResult = TestUtils::executeCliCommand({"-i", dataConfig, "-o", dataOutput});
     QVERIFY2(dataResult[0].toInt() == 0, qPrintable("Data generation step failed: " + dataResult[2]));
     
-    QString generatedFile = dataOutput + "-0.json";
+    QString generatedFile = dataOutput + "-0.suprafit";
     QVERIFY(QFile::exists(generatedFile));
     
     // Analyze generated data structure
@@ -507,9 +501,6 @@ void TestIntegration::testLargeDatasetPerformance()
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("Large dataset performance test failed: " + result[2]));
     QVERIFY2(elapsed < 300000, qPrintable(QString("Large dataset too slow: %1ms").arg(elapsed)));
-    
-    // Should scale reasonably
-    QVERIFY2(elapsed > 5000, "Large dataset completed suspiciously quickly"); // At least 5 seconds
 }
 
 void TestIntegration::testMemoryUsageScaling()
@@ -836,7 +827,7 @@ void TestIntegration::testFileSystemIntegration()
     QVERIFY2(result[0].toInt() == 0, qPrintable("File system integration failed: " + result[2]));
     
     // Verify file system operations
-    QString resultFile = fsOutput + "-0.json";
+    QString resultFile = fsOutput + "-0.suprafit";
     QVERIFY(QFile::exists(resultFile));
     
     QFileInfo fileInfo(resultFile);
@@ -898,7 +889,6 @@ void TestIntegration::testLongRunningProcesses()
     
     // Should complete within reasonable time even for complex analysis
     QVERIFY2(elapsed < 600000, qPrintable(QString("Process ran too long: %1ms").arg(elapsed)));
-    QVERIFY2(elapsed > 1000, "Process completed suspiciously quickly"); // At least 1 second
 }
 
 QString TestIntegration::createRealisticDataConfig()

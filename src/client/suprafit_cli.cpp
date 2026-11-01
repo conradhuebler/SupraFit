@@ -58,6 +58,8 @@
 
 #include "suprafit_cli.h"
 
+#include <algorithm>
+
 #include "analysis_reporter.h"
 #include "data_factory.h"
 
@@ -101,6 +103,11 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 {
     // Store original configuration for ML Pipeline - Claude Generated
     m_original_config = control;
+
+    // The output name: -o (set afterwards) before the OutFile of the configuration before the name of the input file
+    for (const QString& key : control.keys())
+        if (key.compare("main", Qt::CaseInsensitive) == 0 && control[key].toObject().contains("OutFile") && (m_outfile.isEmpty() || m_outfile == m_infile))
+            m_outfile = control[key].toObject()["OutFile"].toString();
     
     QStringList keys = control.keys();
 #ifdef DEBUG_ON
@@ -214,6 +221,13 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
     ParseMain();
 }
 
+/*! \brief True for a file with several projects (keys \c project_0, \c project_1, ...). Claude Generated. */
+static bool HasProjectKeys(const QJsonObject& file)
+{
+    const QStringList keys = file.keys();
+    return std::any_of(keys.begin(), keys.end(), [](const QString& key) { return key.startsWith(QLatin1String("project_")); });
+}
+
 bool SupraFitCli::LoadFile()
 {
     // Check if filename is valid
@@ -221,6 +235,11 @@ bool SupraFitCli::LoadFile()
 #ifdef DEBUG_ON
         SFDebugPrint("❌ DEBUG LoadFile: Input file is empty or null!\n");
 #endif
+        return false;
+    }
+
+    if (!QFileInfo::exists(m_infile)) {
+        fmt::print(stderr, "Error: File not found: '{}'\n", m_infile.toStdString());
         return false;
     }
 
@@ -234,6 +253,7 @@ bool SupraFitCli::LoadFile()
     if (fileData.contains("Main") || (fileData.contains("Independent") && fileData.contains("Dependent"))) {
 
         // This is a configuration file - use FileHandler logic
+        m_config_sections = fileData.keys();
         m_main = fileData["Main"].toObject();
         m_models = fileData["models"].toObject();
         m_analyse = fileData["controller"].toObject();
@@ -256,7 +276,7 @@ bool SupraFitCli::LoadFile()
         delete handler;
         return true;
 
-    } else if (fileData.contains("datatype") || fileData.contains("data")) {
+    } else if (fileData.contains("datatype") || fileData.contains("data") || HasProjectKeys(fileData)) {
 
         // This is a project file - use ProjectManager
         delete handler;
@@ -332,6 +352,8 @@ void SupraFitCli::ParseMain()
     m_guess = m_main["Guess"].toBool(false);
     m_fit = m_main["Fit"].toBool(false);
     m_extension = m_main["extension"].toString("suprafit");
+    if (!m_extension.startsWith(QLatin1Char('.'))) // always with the dot: it is appended to the name
+        m_extension.prepend(QLatin1Char('.'));
     // Only use OutFile from JSON if not already set via -o option
     if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
         m_outfile = m_main["OutFile"].toString();
@@ -340,6 +362,13 @@ void SupraFitCli::ParseMain()
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 {
+    // Results of the jobs (models, statistics) are no project: they are written as they are - Claude Generated
+    if (!data.contains("data") && !data.contains("model_0") && data.contains("models")) {
+        const bool written = JsonHandler::WriteJsonFile(data, file);
+        std::cout << (written ? file.toStdString() + " successfully written to disk" : "Error: Failed to save " + file.toStdString()) << std::endl;
+        return written;
+    }
+
     // Use ProjectManager exclusively for JSON structure compliance - Claude Generated
     SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
     QString tempProjectId = projectManager.createProjectFromJson(data, "Temporary CLI Project");
@@ -369,7 +398,7 @@ bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& pro
     // Option 1: Save as individual files (preserve existing behavior)
     bool allSuccess = true;
     for (int i = 0; i < projects.size(); ++i) {
-        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension;
+        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + m_extension;
         bool success = SaveFile(individualFile, projects[i]);
         allSuccess = allSuccess && success;
     }
@@ -445,27 +474,28 @@ void SupraFitCli::PrintFileContent(int index)
     }
 }
 
+/*! \brief Lists what the input file holds (-l): the sections of a configuration file, or the projects of a project file
+ * (several of them: "project_N" with the title) and the blocks of each. Claude Generated. */
 void SupraFitCli::PrintFileStructure()
 {
-    // MIGRATED: Use ProjectManager for project JSON structure
-    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    if (!m_config_sections.isEmpty()) {
+        for (const QString& key : m_config_sections)
+            std::cout << key.toStdString() << std::endl;
+        return;
+    }
 
-    // Get current project and export to JSON to see structure
-    auto weakProject = projectManager.getCurrentProject();
-    auto strongProject = weakProject.toStrongRef();
-    if (!strongProject) {
+    SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    const QStringList ids = projectManager.getLoadedProjectIds();
+    if (ids.isEmpty()) {
         std::cout << "No project loaded" << std::endl;
         return;
     }
-
-    const QJsonObject projectJson = projectManager.getProjectAsJson();
-    if (projectJson.isEmpty()) {
-        std::cout << "No project structure available" << std::endl;
-        return;
-    }
-
-    for (const QString& key : projectJson.keys()) {
-        std::cout << key.toStdString() << std::endl;
+    for (int i = 0; i < ids.size(); ++i) {
+        const QJsonObject projectJson = projectManager.getProjectFileJson(ids[i]);
+        if (ids.size() > 1)
+            std::cout << "project_" << i << ": " << (projectManager.getProjectData(ids[i]) ? projectManager.getProjectData(ids[i])->ProjectTitle().toStdString() : std::string()) << std::endl;
+        for (const QString& key : projectJson.keys())
+            std::cout << (ids.size() > 1 ? "  " : "") << key.toStdString() << std::endl;
     }
 }
 
@@ -659,7 +689,7 @@ QVector<QJsonObject> SupraFitCli::GenerateDataOnly()
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
     
     // Claude Generated - Add missing fields expected by tests
-    export_object["uuid"] = dataObject["uuid"];
+    export_object["uuid"] = dataObject.contains("uuid") ? dataObject["uuid"].toString() : project->UUID();
     export_object["DataType"] = dataObject["DataType"];
     
     project_list << export_object;
@@ -783,7 +813,7 @@ QVector<QJsonObject> SupraFitCli::GenerateInputData()
     export_object["data"] = dataObject;  // Wrap data in "data" field for proper SupraFit project structure
     
     // Claude Generated - Add missing fields expected by tests
-    export_object["uuid"] = dataObject["uuid"];
+    export_object["uuid"] = dataObject.contains("uuid") ? dataObject["uuid"].toString() : dataClass->UUID();
     export_object["DataType"] = dataObject["DataType"];
     
     project_list << export_object;
@@ -1445,7 +1475,9 @@ QVector<QJsonObject> SupraFitCli::GenerateDataWithDataGenerator()
         // Wrap in correct SupraFit project structure - no fields outside "data" object
         QJsonObject project_object;
         project_object["data"] = data_object;
-        
+        project_object["uuid"] = data_object.contains("uuid") ? data_object["uuid"].toString() : dataClass->UUID(); // as the other generators do
+        project_object["DataType"] = data_object["DataType"];
+
         project_list << project_object;
         fmt::print("Generated dataset {}/{} with DataGenerator\n", i+1, repeat);
     }
@@ -1684,12 +1716,31 @@ QJsonObject SupraFitCli::generateDependentDataTable(const QJsonObject& dependent
     }
     
     QString source = dependentConfig["Source"].toString();
+    if (source.isEmpty()) // the source follows from the section that is present
+        source = dependentConfig.contains("Generator") ? QStringLiteral("generator") : dependentConfig.contains("File") ? QStringLiteral("file") : QString();
     
     if (source == "generator") {
         QJsonObject generatorConfig = dependentConfig["Generator"].toObject();
         QString type = generatorConfig["Type"].toString();
         
-        if (type == "equations") {
+        if (type == "copy") {
+            // The dependent table repeats the columns of the independent one ("Series" columns, taken in turn) - Claude Generated
+            DataTable independent;
+            independent.ImportTable(independentTableJson);
+            const int series = generatorConfig["Series"].toInt(independent.columnCount());
+            if (independent.columnCount() == 0 || series <= 0) {
+                fmt::print("❌ ERROR: Nothing to copy for the dependent data\n");
+                return QJsonObject();
+            }
+            Eigen::MatrixXd table(independent.rowCount(), series);
+            for (int j = 0; j < series; ++j)
+                for (int i = 0; i < independent.rowCount(); ++i)
+                    table(i, j) = independent.data(i, j % independent.columnCount());
+            DataTable dependent(table);
+            fmt::print("✅ Copied dependent data table: {} rows x {} cols\n", dependent.rowCount(), dependent.columnCount());
+            return dependent.ExportTable(false);
+
+        } else if (type == "equations") {
             // Generate dependent data using equations with careful memory management
             fmt::print("🔧 Setting up DataGenerator for dependent data...\n");
             

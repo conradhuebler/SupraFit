@@ -43,24 +43,24 @@
                         "RandomSeed": 12345
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 1,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 2,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 3,
                         "X": 3,
                         "MaxSteps": 30,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 6,
+                        "Method": 5,
                         "ReductionRuntype": 3
                     }
                 ]
@@ -82,24 +82,24 @@
                         "RandomSeed": 12345
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 1,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 2,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 3,
                         "X": 3,
                         "MaxSteps": 30,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 6,
+                        "Method": 5,
                         "ReductionRuntype": 3
                     }
                 ]
@@ -121,24 +121,24 @@
                         "RandomSeed": 12345
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 1,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 2,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 3,
                         "X": 3,
                         "MaxSteps": 30,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 6,
+                        "Method": 5,
                         "ReductionRuntype": 3
                     }
                 ]
@@ -160,24 +160,24 @@
                         "RandomSeed": 12345
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 1,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 2,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 2,
+                        "Method": 4,
                         "CXO": 3,
                         "X": 3,
                         "MaxSteps": 30,
                         "Algorithm": 2
                     },
                     {
-                        "Method": 6,
+                        "Method": 5,
                         "ReductionRuntype": 3
                     }
                 ]
@@ -195,24 +195,24 @@
                 "EntropyBins": 50
             },
             {
-                "Method": 2,
+                "Method": 4,
                 "CXO": 1,
                 "Algorithm": 2
             },
             {
-                "Method": 2,
+                "Method": 4,
                 "CXO": 2,
                 "Algorithm": 2
             },
             {
-                "Method": 2,
+                "Method": 4,
                 "CXO": 3,
                 "X": 3,
                 "MaxSteps": 30,
                 "Algorithm": 2
             },
             {
-                "Method": 6,
+                "Method": 5,
                 "ReductionRuntype": 3
             },
             {

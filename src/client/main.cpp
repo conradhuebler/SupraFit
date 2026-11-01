@@ -53,6 +53,7 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
+#include <algorithm>
 #include <iostream>
 
 #ifndef _WIN32
@@ -272,7 +273,7 @@ bool performFileJoin(const QStringList& inputFiles, const QString& outputFile)
         // Load input file
         QJsonObject fileData = JsonHandler::LoadFile(inputFile);
         if (fileData.isEmpty()) {
-            std::cout << "   ERROR: Could not load file: " << inputFile.toStdString() << std::endl;
+            std::cerr << "   ERROR: Could not load file: " << inputFile.toStdString() << std::endl;
             continue;
         }
 
@@ -311,7 +312,7 @@ bool performFileJoin(const QStringList& inputFiles, const QString& outputFile)
     }
 
     if (joinedData.isEmpty()) {
-        std::cout << "ERROR: No valid projects found to join." << std::endl;
+        std::cerr << "ERROR: No valid projects found to join." << std::endl;
         return false;
     }
 
@@ -321,7 +322,7 @@ bool performFileJoin(const QStringList& inputFiles, const QString& outputFile)
                   << outputFile.toStdString() << std::endl;
         return true;
     } else {
-        std::cout << "ERROR: Failed to write joined file: " << outputFile.toStdString() << std::endl;
+        std::cerr << "ERROR: Failed to write joined file: " << outputFile.toStdString() << std::endl;
         return false;
     }
 }
@@ -335,14 +336,14 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
     // Load input file
     QJsonObject inputData = JsonHandler::LoadFile(inputFile);
     if (inputData.isEmpty()) {
-        std::cout << "ERROR: Could not load input file: " << inputFile.toStdString() << std::endl;
+        std::cerr << "ERROR: Could not load input file: " << inputFile.toStdString() << std::endl;
         return false;
     }
 
     // Verify it's a simple project file
     FileConfigType type = detectConfigType(inputData);
     if (type != SimpleProject) {
-        std::cout << "ERROR: File is not a simple project file. Use -i for task execution instead." << std::endl;
+        std::cerr << "ERROR: File is not a simple project file. Use -i for task execution instead." << std::endl;
         return false;
     }
 
@@ -368,7 +369,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
             bool ok;
             int index = projectIndex.toInt(&ok);
             if (!ok) {
-                std::cout << "ERROR: Invalid project index '" << projectIndex.toStdString()
+                std::cerr << "ERROR: Invalid project index '" << projectIndex.toStdString()
                           << "'. Must be a number." << std::endl;
                 return false;
             }
@@ -377,7 +378,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
             if (inputData.contains(targetProjectKey)) {
                 matchingProjects << targetProjectKey;
             } else {
-                std::cout << "ERROR: Project " << targetProjectKey.toStdString()
+                std::cerr << "ERROR: Project " << targetProjectKey.toStdString()
                           << " not found in file." << std::endl;
                 std::cout << "Available projects: ";
                 QStringList availableProjects;
@@ -432,7 +433,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
             }
 
             if (matchingProjects.isEmpty()) {
-                std::cout << "ERROR: No projects match the specified filters." << std::endl;
+                std::cerr << "ERROR: No projects match the specified filters." << std::endl;
                 return false;
             }
         } else {
@@ -456,7 +457,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
                               << " -> " << outputFile.toStdString() << std::endl;
                     return true;
                 } else {
-                    std::cout << "ERROR: Failed to write project "
+                    std::cerr << "ERROR: Failed to write project "
                               << projectKey.toStdString() << std::endl;
                     return false;
                 }
@@ -472,7 +473,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
                     std::cout << "   Projects: " << matchingProjects.join(", ").toStdString() << std::endl;
                     return true;
                 } else {
-                    std::cout << "ERROR: Failed to write merged projects file." << std::endl;
+                    std::cerr << "ERROR: Failed to write merged projects file." << std::endl;
                     return false;
                 }
             }
@@ -499,7 +500,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
                               << " -> " << projectOutputFile.toStdString() << std::endl;
                     projectCount++;
                 } else {
-                    std::cout << "   ERROR: Failed to write " << projectKey.toStdString() << std::endl;
+                    std::cerr << "   ERROR: Failed to write " << projectKey.toStdString() << std::endl;
                 }
             }
 
@@ -512,7 +513,7 @@ bool performGenericConversion(const QString& inputFile, const QString& outputFil
             std::cout << "Conversion completed successfully." << std::endl;
             return true;
         } else {
-            std::cout << "ERROR: Could not write output file: " << outputFile.toStdString() << std::endl;
+            std::cerr << "ERROR: Could not write output file: " << outputFile.toStdString() << std::endl;
             return false;
         }
     }
@@ -525,7 +526,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
 
     QJsonObject config = JsonHandler::LoadFile(inputFile);
     if (config.isEmpty()) {
-        std::cout << "ERROR: Could not load configuration file: " << inputFile.toStdString() << std::endl;
+        std::cerr << "ERROR: Could not load configuration file: " << inputFile.toStdString() << std::endl;
         return false;
     }
 
@@ -555,7 +556,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
             }
 
             if (!core->LoadFile()) {
-                std::cout << "ERROR: Could not process input data for ProcessMLPipeline." << std::endl;
+                std::cerr << "ERROR: Could not process input data for ProcessMLPipeline." << std::endl;
                 delete core;
                 return false;
             }
@@ -609,7 +610,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
     // Handle Task Configuration
     if (type == TaskConfig) {
         SupraFitCli* core = new SupraFitCli;
-        core->setInFile(inputFile); // Claude Generated - Fix missing setInFile call
+        core->setInFile(QFileInfo(inputFile).absoluteFilePath()); // absolute: the output directory may become the working directory below
         core->setControlJson(config);
 
         // Override output file if specified
@@ -629,7 +630,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
         }
 
         if (!core->LoadFile()) {
-            std::cout << "ERROR: Could not process input data." << std::endl;
+            std::cerr << "ERROR: Could not process input data." << std::endl;
             delete core;
             return false;
         }
@@ -660,7 +661,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
         } else {
             std::cout << "No specific task detected. Running standard processing..." << std::endl;
             if (!core->SaveFile()) {
-                std::cout << "ERROR: Could not save output file." << std::endl;
+                std::cerr << "ERROR: Could not save output file." << std::endl;
                 delete core;
                 return false;
             }
@@ -671,7 +672,21 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
         return true;
     }
 
-    std::cout << "ERROR: Unrecognized configuration format." << std::endl;
+    // A project file is no task: it is read (so a damaged one is reported) and what it holds is told - Claude Generated
+    if (type == SimpleProject) {
+        SupraFitCli* core = new SupraFitCli;
+        core->setInFile(inputFile);
+        const bool loaded = core->LoadFile();
+        if (loaded) {
+            std::cout << "Project file read: " << inputFile.toStdString() << " (use -o to convert it, -l to list it)" << std::endl;
+        } else {
+            std::cerr << "ERROR: Could not load project file: " << inputFile.toStdString() << std::endl;
+        }
+        delete core;
+        return loaded;
+    }
+
+    std::cerr << "ERROR: Unrecognized configuration format." << std::endl;
     return false;
 }
 
@@ -904,7 +919,7 @@ int main(int argc, char** argv)
               << std::endl;
 
     // Parse command line arguments - Claude Generated
-    const QString inputFile = parser.value("input");
+    QString inputFile = parser.value("input");
     const QStringList inputFiles = parser.values("input"); // For multiple -i options
     const QString outputFile = parser.value("output");
     const QString projectIndex = parser.value("project");
@@ -917,7 +932,7 @@ int main(int argc, char** argv)
     const QString batchConfigFile = parser.value("batch-config");
     
     // ML Training Data Export Parameters - Claude Generated
-    const bool exportMLTrainingMode = parser.isSet("export-ml-training");
+    const bool exportMLTrainingMode = parser.isSet("export-ml-training") || parser.isSet("export-ml-batch"); // a batch directory alone asks for the export
     const QString mlOutputFile = parser.value("ml-output");
     const bool autoExportMLMode = parser.isSet("auto-export-ml");
     const QString exportMLBatchDirectory = parser.value("export-ml-batch");
@@ -933,14 +948,14 @@ int main(int argc, char** argv)
         
         // Validate thread count
         if (!ok || threadCount <= 0 || threadCount > 256) {
-            std::cout << "ERROR: Invalid thread count '" << threadCountStr.toStdString() 
+            std::cerr << "ERROR: Invalid thread count '" << threadCountStr.toStdString() 
                       << "'. Must be a positive integer between 1 and 256." << std::endl;
             return 1;
         }
     }
     
     // Claude Generated: Parameter extraction parameters
-    const bool extractParametersMode = parser.isSet("extract-parameters");
+    const bool extractParametersMode = parser.isSet("extract-parameters") || parser.isSet("extract-model"); // a model index alone asks for the extraction
     const QString modelIndex = parser.value("extract-model");
 
     // Set thread count
@@ -959,7 +974,7 @@ int main(int argc, char** argv)
 
         QJsonObject batchConfig = JsonHandler::LoadFile(batchConfigFile);
         if (batchConfig.isEmpty()) {
-            std::cout << "ERROR: Could not load batch configuration file." << std::endl;
+            std::cerr << "ERROR: Could not load batch configuration file." << std::endl;
             return 1;
         }
 
@@ -988,7 +1003,7 @@ int main(int argc, char** argv)
             SupraFitCli cli;
             cli.setInFile(f);
             if (!cli.LoadFile()) {
-                std::cout << "ERROR: Could not load " << f.toStdString() << std::endl;
+                std::cerr << "ERROR: Could not load " << f.toStdString() << std::endl;
                 return 1;
             }
         }
@@ -1025,6 +1040,12 @@ int main(int argc, char** argv)
     }
 #endif
 
+    // the value of --export-ml-training is the file to export from (-i does the same)
+    if (inputFile.isEmpty() && exportMLTrainingMode && !parser.value("export-ml-training").isEmpty())
+        inputFile = parser.value("export-ml-training");
+    else if (inputFile.isEmpty() && parser.isSet("export-ml-batch"))
+        inputFile = parser.value("export-ml-batch");
+
     // Show help if no arguments
     if (inputFile.isEmpty() && parser.positionalArguments().isEmpty()) {
         showComprehensiveHelp();
@@ -1038,7 +1059,7 @@ int main(int argc, char** argv)
     }
 
     if (actualInputFile.isEmpty()) {
-        std::cout << "ERROR: No input file specified." << std::endl;
+        std::cerr << "ERROR: No input file specified." << std::endl;
         showComprehensiveHelp();
         return 1;
     }
@@ -1049,7 +1070,7 @@ int main(int argc, char** argv)
         
         // Check if file exists before attempting to load
         if (!QFile::exists(actualInputFile)) {
-            std::cout << "ERROR: Could not load file for listing." << std::endl;
+            std::cerr << "ERROR: Could not load file for listing." << std::endl;
             return 1;
         }
 
@@ -1058,7 +1079,7 @@ int main(int argc, char** argv)
         if (cli->LoadFile()) {
             cli->PrintFileStructure();
         } else {
-            std::cout << "ERROR: Could not load file for listing." << std::endl;
+            std::cerr << "ERROR: Could not load file for listing." << std::endl;
             delete cli;
             return 1;
         }
@@ -1070,11 +1091,17 @@ int main(int argc, char** argv)
     if (extractParametersMode) {
         std::cout << "Extracting model parameters from: " << actualInputFile.toStdString() << std::endl;
         
+        // a plain file of models (model_0, model_1, ...) needs no project
+        const QJsonObject plain = JsonHandler::LoadFile(actualInputFile);
+        const QStringList plainKeys = plain.keys();
+        if (!plain.contains("data") && std::any_of(plainKeys.begin(), plainKeys.end(), [](const QString& k) { return k.startsWith("model_"); }))
+            return AnalysisReporter::ExtractModelParameters(plain, modelIndex) ? 0 : 1;
+
         SupraFitCli* cli = new SupraFitCli;
         cli->setInFile(actualInputFile);
         
         if (!cli->LoadFile()) {
-            std::cout << "ERROR: Could not load file for parameter extraction." << std::endl;
+            std::cerr << "ERROR: Could not load file for parameter extraction." << std::endl;
             delete cli;
             return 1;
         }
@@ -1111,7 +1138,7 @@ int main(int argc, char** argv)
         if (success) {
             std::cout << "ML training data export completed successfully!" << std::endl;
         } else {
-            std::cout << "ERROR: ML training data export failed." << std::endl;
+            std::cerr << "ERROR: ML training data export failed." << std::endl;
             delete cli;
             return 1;
         }
@@ -1134,7 +1161,7 @@ int main(int argc, char** argv)
     // Load and analyze input file
     QJsonObject config = JsonHandler::LoadFile(actualInputFile);
     if (config.isEmpty()) {
-        std::cout << "ERROR: Could not load input file: " << actualInputFile.toStdString() << std::endl;
+        std::cerr << "ERROR: Could not load input file: " << actualInputFile.toStdString() << std::endl;
         return 1;
     }
 
@@ -1185,7 +1212,7 @@ int main(int argc, char** argv)
             if (cli->LoadFile()) {
                 cli->AnalyzeFile();
             } else {
-                std::cout << "ERROR: Could not analyze file." << std::endl;
+                std::cerr << "ERROR: Could not analyze file." << std::endl;
                 delete cli;
                 return 1;
             }
@@ -1219,7 +1246,7 @@ int main(int argc, char** argv)
         }
     }
 
-    std::cout << "ERROR: Invalid command line arguments." << std::endl;
+    std::cerr << "ERROR: Invalid command line arguments." << std::endl;
     showComprehensiveHelp();
     return 1;  // Claude Generated - Fix: Invalid arguments should return failure code
 }

@@ -24,6 +24,7 @@
 #include "resampleanalyse.h"
 #include "weakenedgridsearch.h"
 
+#include "src/core/toolset.h"
 #include "src/core/models/models.h"
 
 #include "src/global.h"
@@ -172,12 +173,26 @@ void JobManager::AddSingleJob(const QJsonObject& job)
     }
 }
 
+/*! \brief A job that names no parameters (the CLI, agents) tests all of them: the lists of the global and the local
+ * parameters (one entry per local parameter and series) are filled with 1 where they are missing. Claude Generated. */
+void JobManager::AllParametersIfUnset(QJsonObject& block) const
+{
+    if (!m_model)
+        return;
+    auto all = [](int count) { return ToolSet::IntVec2String(QVector<int>(count, 1)); };
+    if (block["GlobalParameterList"].toString().isEmpty())
+        block["GlobalParameterList"] = all(m_model->GlobalParameterSize());
+    if (block["LocalParameterList"].toString().isEmpty())
+        block["LocalParameterList"] = all(m_model->LocalParameterSize() * m_model->SeriesCount());
+}
+
 QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 {
     QJsonObject block = QJsonObject(ModelComparisonConfigBlock);
 
     for (const QString& key : job.keys())
         block[key] = job[key];
+    AllParametersIfUnset(block);
 
     m_modelcomparison_handler->setModel(m_model);
     m_modelcomparison_handler->setController(block);
@@ -215,6 +230,7 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 
     for (const QString& key : job.keys())
         block[key] = job[key];
+    AllParametersIfUnset(block);
 
     m_gridsearch_handler->setModel(m_model);
     m_gridsearch_handler->setController(block);

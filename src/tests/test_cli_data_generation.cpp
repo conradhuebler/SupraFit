@@ -124,7 +124,8 @@ void TestCliDataGeneration::testBasicModularStructure()
     // Verify that we have actual data, not just graceful failure
     QJsonObject data = loadJsonFile(jsonOutput);
     QVERIFY(!data.isEmpty());
-    QVERIFY(data.contains("base_data")); // Actual SupraFit JSON structure ✅
+    QVERIFY(data.contains("project_0")); // the ML pipeline writes the multi-project format
+    QVERIFY(data["project_0"].toObject().contains("data"));
 }
 
 void TestCliDataGeneration::testIndependentDataGeneration()
@@ -145,7 +146,8 @@ void TestCliDataGeneration::testIndependentDataGeneration()
     // Verify scientific data integrity
     QJsonObject data = loadJsonFile(jsonOutput);
     QVERIFY(!data.isEmpty());
-    QVERIFY(data.contains("base_data")); // Actual SupraFit JSON structure ✅
+    QVERIFY(data.contains("project_0")); // the ML pipeline writes the multi-project format
+    QVERIFY(data["project_0"].toObject().contains("data"));
 }
 
 void TestCliDataGeneration::testDependentDataGeneration()
@@ -166,13 +168,14 @@ void TestCliDataGeneration::testDependentDataGeneration()
     // Verify scientific integrity: dependent data should be based on model
     QJsonObject data = loadJsonFile(jsonOutput);
     QVERIFY(!data.isEmpty());
-    QVERIFY(data.contains("base_data")); // Actual SupraFit JSON structure ✅
+    QVERIFY(data.contains("project_0")); // the ML pipeline writes the multi-project format
+    QVERIFY(data["project_0"].toObject().contains("data"));
     
-    // Verify model information is included for dependent data generation
-    QJsonObject baseData = data["base_data"].toObject();
-    QVERIFY(baseData.contains("content")); // Should contain model parameters and configuration
-    QString content = baseData["content"].toString();
-    QVERIFY(content.contains("Model")); // Model information should be documented
+    // The model of the generated dependent data is documented as the ground truth of the file
+    QJsonObject truth = data["ground_truth"].toObject();
+    QVERIFY(truth.contains("model_id"));
+    QVERIFY(!truth["model_name"].toString().isEmpty());
+    QVERIFY(data["project_0"].toObject()["data"].toObject().contains("dependent"));
 }
 
 void TestCliDataGeneration::testModularWithNoise()

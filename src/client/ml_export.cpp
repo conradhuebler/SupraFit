@@ -20,6 +20,7 @@
  */
 
 #include "ml_export.h"
+#include "src/core/jsonhandler.h"
 
 #include "src/capabilities/mlfeatureextractor.h"
 #include "src/core/projectmanager.h"
@@ -64,12 +65,8 @@ bool MlExport::exportMLTrainingData(const QVector<QString>& inputFiles, const QS
     // Export in neural network format
     QJsonObject neuralNetData = extractor->exportNeuralNetFormat(trainingSamples);
     
-    // Save to file via ProjectManager (mirrors SupraFitCli::SaveFile) - Claude Generated
-    SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
-    QString tempProjectId = pm.createProjectFromJson(neuralNetData, "Temporary CLI Project");
-    bool success = !tempProjectId.isEmpty() && pm.saveProject(outputFile, tempProjectId);
-    if (!tempProjectId.isEmpty())
-        pm.removeProject(tempProjectId);
+    // The training data are no project (metadata and samples): written as they are - Claude Generated
+    const bool success = JsonHandler::WriteJsonFile(neuralNetData, outputFile);
     
     if (success) {
         fmt::print("✅ ML training data exported: {} samples → {}\n", trainingSamples.size(), outputFile.toStdString());

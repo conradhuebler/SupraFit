@@ -680,6 +680,10 @@ target_link_libraries(test_file_operations
     ${TEST_COMMON_LIBS}
 )
 
+target_compile_definitions(test_file_operations PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
 add_test(NAME FileOperationsTest COMMAND test_file_operations)
 
 set_tests_properties(FileOperationsTest PROPERTIES
@@ -712,6 +716,10 @@ add_executable(test_comprehensive_real_data
 
 target_link_libraries(test_comprehensive_real_data
     ${TEST_COMMON_LIBS}
+)
+
+target_compile_definitions(test_comprehensive_real_data PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
 add_test(NAME ComprehensiveRealDataTest COMMAND test_comprehensive_real_data)

@@ -475,7 +475,12 @@ void AnalysisReporter::validateGenerateDataConfig(const QJsonObject& config)
 bool AnalysisReporter::ExtractModelParameters(const QString& modelIndexStr)
 {
     // Migrated: read the current project from ProjectManager - Claude Generated
-    QJsonObject projectJson = SupraFit::ProjectManager::instance().getProjectAsJson();
+    return ExtractModelParameters(SupraFit::ProjectManager::instance().getProjectAsJson(), modelIndexStr);
+}
+
+/*! \brief The same for a JSON object that holds the models (\c model_0, \c model_1, ...): a project or a plain file of models. */
+bool AnalysisReporter::ExtractModelParameters(const QJsonObject& projectJson, const QString& modelIndexStr)
+{
     if (projectJson.isEmpty()) {
         fmt::print("❌ ERROR: No data loaded. File structure is empty.\n");
         return false;
