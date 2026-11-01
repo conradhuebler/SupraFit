@@ -77,6 +77,9 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
+#include <QtWidgets/QDialogButtonBox>
+#include <QtGui/QClipboard>
+#include <QtGui/QGuiApplication>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QSplashScreen>
@@ -608,20 +611,53 @@ void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
     }
 }
 
-/*! \brief Tells why a project file did not open, or what of it is missing (Claude Generated). The details list every issue; the log gets one line. */
+/*! \brief Tells why a project file did not open, or what of it is missing (Claude Generated). The log gets the same, one line per issue; the dialog
+ * shows the issues at once in a text that takes the room it needs and can be resized. */
 void SupraFitGui::ShowLoadReport(const QString& file, const SupraFit::LoadReport& report)
 {
     const QString name = QFileInfo(file).fileName();
     QString summary = report.Summary();
     if (summary.isEmpty())
         summary = tr("The file could not be read.");
-    Warning(tr("%1: %2").arg(name, summary));
 
-    QMessageBox box(report.loaded ? QMessageBox::Warning : QMessageBox::Critical, report.loaded ? tr("Project loaded with problems") : tr("Loading Error"), QString(), QMessageBox::Ok, this);
-    box.setText(report.loaded ? tr("<b>%1</b> was opened, but not everything could be read.").arg(name.toHtmlEscaped()) : tr("<b>%1</b> could not be opened.").arg(name.toHtmlEscaped()));
-    box.setInformativeText(summary.toHtmlEscaped());
-    box.setDetailedText(tr("File: %1\n\n%2").arg(file, report.Details()));
-    box.exec();
+    // the log: the summary, then every issue with its place in the file
+    Warning(tr("%1: %2").arg(name, summary));
+    for (const SupraFit::LoadIssue& issue : report.issues) {
+        const QString line = tr("%1 [%2]: %3").arg(name, issue.scope, issue.message);
+        if (issue.severity == SupraFit::LoadIssue::Note)
+            Message(line);
+        else
+            Warning(line);
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(report.loaded ? tr("Project loaded with problems") : tr("Loading Error"));
+    QVBoxLayout* layout = new QVBoxLayout;
+    QLabel* head = new QLabel(report.loaded ? tr("<b>%1</b> was opened, but not everything could be read.").arg(name.toHtmlEscaped()) : tr("<b>%1</b> could not be opened.").arg(name.toHtmlEscaped()));
+    head->setWordWrap(true);
+    layout->addWidget(head);
+    QLabel* reason = new QLabel(summary.toHtmlEscaped());
+    reason->setWordWrap(true);
+    layout->addWidget(reason);
+
+    QPlainTextEdit* details = new QPlainTextEdit;
+    details->setReadOnly(true);
+    details->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+    details->setPlainText(tr("File: %1\n\n%2").arg(file, report.Details()));
+    // as high as the text, up to about a screen: a short report does not leave an empty field, a long one scrolls
+    const int lines = std::min(int(details->document()->blockCount()) + 2, 22);
+    details->setMinimumHeight(lines * details->fontMetrics().lineSpacing() + 12);
+    details->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    layout->addWidget(details, 1);
+
+    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Close);
+    QPushButton* copy = buttons->addButton(tr("Copy"), QDialogButtonBox::ActionRole);
+    connect(copy, &QPushButton::clicked, &dialog, [details]() { QGuiApplication::clipboard()->setText(details->toPlainText()); });
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    layout->addWidget(buttons);
+    dialog.setLayout(layout);
+    dialog.resize(std::max(560, dialog.sizeHint().width()), dialog.sizeHint().height());
+    dialog.exec();
 }
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
