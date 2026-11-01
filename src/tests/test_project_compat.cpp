@@ -99,6 +99,83 @@ private slots:
         QCOMPARE(project.getSystemParameter(1024).getString(), QStringLiteral("Number"));
     }
 
+    // Data that do not say their model family keep placeholders (1 is the cell volume of ITC, a volume of BET, the temperature of
+    // TIAN); the model attached to them declares the names and the stored values stay. Claude Generated.
+    void modelNamesPlaceholders()
+    {
+        QJsonObject json;
+        QVERIFY(JsonHandler::ReadJsonFile(json, sample(QStringLiteral("reference/simulated_1_1.json"))));
+        QJsonObject data = json["data"].toObject();
+        data["DataType"] = 1; // table
+        QJsonObject system;
+        system["1"] = "1.4";
+        system["5"] = "false";
+        data["system"] = system;
+        QSharedPointer<DataClass> project(new DataClass);
+        QVERIFY(project->ImportData(data));
+        QVERIFY(project->getSystemParameter(1).isPlaceholder());
+        QSharedPointer<DataClass> table(new DataClass);
+        QVERIFY(table->ImportData(data));
+        // an ITC model needs one independent column: the table of an NMR titration has two, so take the first
+        DataTable* independent = new DataTable(table->IndependentModel()->rowCount(), 1, nullptr); // owned by the data of the project
+        for (int i = 0; i < independent->rowCount(); ++i)
+            independent->data(i, 0) = table->IndependentModel()->data(i, 0);
+        project->setIndependentTable(independent);
+        QSharedPointer<AbstractModel> model = CreateModel(SupraFit::itc_ItoI, project.data());
+        QVERIFY(model);
+        QVERIFY(!project->getSystemParameter(1).isPlaceholder());
+        QCOMPARE(project->getSystemParameter(1).Name(), QStringLiteral("Cell Volume"));
+        QCOMPARE(project->getSystemParameter(1).Double(), 1.4);
+        QVERIFY(project->getSystemParameter(5).isBool());
+        QCOMPARE(project->getSystemParameter(5).Bool(), false);
+    }
+
+    // After a load no system parameter of a titration or ITC project is a nameless placeholder ("ImportedParamN"): the project files of
+    // the repository and, when SUPRAFIT_PROJECT_CORPUS names a directory, every project file below it. Exempt is index 6, the heat unit
+    // of the ITC models before 2018, which no model declares any more; the placeholders of other families (e.g. the initial
+    // concentrations of the kinetics of 2018) are listed, not counted. Claude Generated.
+    void systemParametersAreNamed()
+    {
+        QStringList roots{ sample(QString()) };
+        if (!qEnvironmentVariable("SUPRAFIT_PROJECT_CORPUS").isEmpty())
+            roots << qEnvironmentVariable("SUPRAFIT_PROJECT_CORPUS");
+        auto titrationFamily = [](int model) { return (model >= 1 && model <= 4) || (model >= 10 && model <= 17) || (model >= 20 && model <= 36); };
+        QStringList unnamed, other;
+        int projects = 0;
+        for (const QString& root : std::as_const(roots)) {
+            QDirIterator it(root, QStringList{ "*.json", "*.suprafit", "*.jdat" }, QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                const QString file = it.next();
+                if (!load(file).loaded)
+                    continue; // not a project file (model definitions, CLI scripts)
+                const auto hash = ProjectManager::instance().getProjectHash();
+                for (auto p = hash.begin(); p != hash.end(); ++p) {
+                    const QSharedPointer<DataClass> data = p.value().toStrongRef();
+                    if (!data)
+                        continue;
+                    ++projects;
+                    bool titration = data->DataType() == DataClassPrivate::Thermogram || data->getSystemObject().contains("1024") || data->getSystemObject().contains("1025");
+                    for (int i = 0; i < data->ChildrenSize(); ++i)
+                        if (data->Children(i))
+                            titration = titration || titrationFamily(data->Children(i)->SFModel());
+                    for (int index : data->getSystemParameterList()) {
+                        if (!data->getSystemParameter(index).isPlaceholder())
+                            continue;
+                        const QString entry = QStringLiteral("%1 (data type %2): %3").arg(QFileInfo(file).fileName()).arg(int(data->DataType())).arg(index);
+                        (titration && index != 6 ? unnamed : other) << entry;
+                    }
+                }
+            }
+        }
+        unnamed.removeDuplicates();
+        other.removeDuplicates();
+        qInfo("%d projects", projects);
+        for (const QString& entry : std::as_const(other))
+            qInfo().noquote() << "declared by no model:" << entry;
+        QVERIFY(projects > 0);
+        QVERIFY2(unnamed.isEmpty(), qPrintable("nameless: " + unnamed.join(", ")));
+    }
+
     // A file that cannot be read says why, in words, with the place where JSON broke.
     void failuresHaveReasons()
     {

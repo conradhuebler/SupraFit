@@ -114,18 +114,24 @@ AbstractItcModel::~AbstractItcModel()
 
 void AbstractItcModel::DeclareSystemParameter()
 {
+    DeclareSystemParameterOn(this);
+    m_plotmode = getSystemParameter(PlotMode).getList();
+}
+
+void AbstractItcModel::DeclareSystemParameterOn(DataClass* data)
+{
     const QChar mu = QChar(956);
     const QString sub_char = QChar(0x2080);
 
-    addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
-    addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
-    addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mmol/L", SystemParameter::Scalar);
+    data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
+    data->addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
+    data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mmol/L", SystemParameter::Scalar);
 
-    addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mmol/L", SystemParameter::Scalar);
-    setSystemParameterValue(Temperature, 298);
+    data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mmol/L", SystemParameter::Scalar);
+    data->setSystemParameterValue(Temperature, 298);
 
-    addSystemParameter(Reservoir, "Cell Volume constant", "Keep the volume in cell constant", SystemParameter::Boolean);
-    setSystemParameterValue(Reservoir, true);
+    data->addSystemParameter(Reservoir, "Cell Volume constant", "Keep the volume in cell constant", SystemParameter::Boolean);
+    data->setSystemParameterValue(Reservoir, true);
 
     /*addSystemParameter(InptUnit, "Unit", "Observed heat in", SystemParameter::List);
     QStringList units = QStringList() << QString(mu) + " cal" << QString(mu) + "J"
@@ -134,12 +140,12 @@ void AbstractItcModel::DeclareSystemParameter()
     setSystemParameterList(InptUnit, units);
     setSystemParameterValue(InptUnit, 0);*/
 
-    addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    m_plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
-                               << QString("[G%1]").arg(sub_char)
-                               << "Number";
-    setSystemParameterList(PlotMode, m_plotmode);
-    setSystemParameterValue(PlotMode, m_plotmode[0]);
+    data->addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
+    const QStringList plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
+                                               << QString("[G%1]").arg(sub_char)
+                                               << "Number";
+    data->setSystemParameterList(PlotMode, plotmode);
+    data->setSystemParameterValue(PlotMode, plotmode[0]);
 }
 
 void AbstractItcModel::DeclareOptions()
