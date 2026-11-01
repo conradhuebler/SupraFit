@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,7 +77,19 @@ public:
 
     inline void setList(const QStringList& list) { m_list = list; }
 
+    /*! \brief A parameter read from a file whose index nothing has declared yet: a value without name, description or type.
+     * The first declaration of the index (a model, DataClass::addSystemParameter) replaces it and keeps the value. Claude Generated. */
+    static inline SystemParameter Placeholder(int index)
+    {
+        SystemParameter parameter(index, QString("ImportedParam%1").arg(index), QString("Imported parameter %1").arg(index), Scalar);
+        parameter.m_placeholder = true;
+        return parameter;
+    }
+    /*! \brief True while no declaration has named this parameter (see Placeholder). Claude Generated. */
+    inline bool isPlaceholder() const { return m_placeholder; }
+
 private:
+    bool m_placeholder = false;
     Type m_type;
     QString m_name, m_description;
     QVariant m_value;
@@ -343,6 +355,10 @@ public:
     /*! \brief load previously cached system parameter
      */
     void LoadSystemParameter();
+
+    /*! \brief Give the placeholders of a file (indices no declaration has named yet) the declaration of their model family, if the
+     * data say which family it is (see the implementation); the value stays. A model attached later declares the rest. Claude Generated. */
+    void NameSystemParameters();
 
     /*! \brief write system parameterto json internal
      */

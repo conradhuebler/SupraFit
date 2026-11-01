@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,11 @@ public:
     enum {
         HostGuestAssignment = 1025
     };
+
+    /*! \brief Declare the system parameters of this model family on \a data (the one place their names, descriptions, types and
+     * lists are written); the models declare through it, and DataClass names the parameters of a file with it before a model is
+     * attached. Claude Generated. */
+    static void DeclareSystemParameterOn(DataClass* data);
 
     AbstractTitrationModel(DataClass* data);
     AbstractTitrationModel(AbstractTitrationModel* other);

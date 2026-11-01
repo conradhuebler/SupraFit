@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 #include "src/core/models/datatable.h"
 #include "src/core/models/AbstractModel.h"
+#include "src/core/models/titrations/AbstractItcModel.h"
+#include "src/core/models/titrations/AbstractTitrationModel.h"
 #include "src/core/toolset.h"
 
 #include <Eigen/Dense>
@@ -489,29 +491,50 @@ void DataClass::LoadSystemParameter()
         
         if (it.value().toString().isEmpty()) continue;
         
-        // Create parameter if it doesn't exist (this happens after import)
-        if (!d->m_system_parameter.contains(index)) {
-            // We need parameter type info, but we don't have it in JSON
-            // Default to Scalar type for imported parameters
-            // the parameters of a thermogram are the ones of the ITC models (indices of AbstractItcModel)
-            if (d->m_datatype == DataClassPrivate::Thermogram && index >= 1 && index <= 5) {
-                static const char* names[] = { "Cell Volume", "Cell concentration", "Syringe concentration", "Temperature", "Cell Volume constant" };
-                static const char* comments[] = { "Volume of the cell in \u03bcL", "Concentration in cell in mmol/L", "Concentration in syringe in mmol/L", "Temperature in K", "Keep the volume in cell constant" };
-                addSystemParameter(index, QString::fromUtf8(names[index - 1]), QString::fromUtf8(comments[index - 1]),
-                    index == 5 ? SystemParameter::Boolean : SystemParameter::Scalar);
-            } else if (index == 1024) { // AbstractModel::PlotMode: the x axis of the titration charts
-                const QString sub = QChar(0x2080);
-                addSystemParameter(index, QStringLiteral("Plot Mode"), QStringLiteral("x-Axis Plot Mode"), SystemParameter::List);
-                setSystemParameterList(index, QStringList() << QString("[G%1]/[H%2]").arg(sub).arg(sub) << QString("[G%1]").arg(sub) << QStringLiteral("Number"));
-            } else
-                addSystemParameter(index, QString("ImportedParam%1").arg(index),
-                    QString("Imported parameter %1").arg(index),
-                    SystemParameter::Scalar);
-        }
+        // An index nothing has declared yet (data read before their model): a placeholder until a declaration names it
+        if (!d->m_system_parameter.contains(index))
+            d->m_system_parameter.insert(index, SystemParameter::Placeholder(index));
         setSystemParameterValue(index, it.value().toVariant());
     }
+    NameSystemParameters();
 
     emit Info()->SystemParameterLoaded();
+}
+
+void DataClass::NameSystemParameters()
+{
+    QList<int> placeholders;
+    for (auto it = d->m_system_parameter.cbegin(); it != d->m_system_parameter.cend(); ++it)
+        if (it->isPlaceholder())
+            placeholders << it.key();
+    if (placeholders.isEmpty())
+        return;
+
+    // The meaning of an index depends on the model family (1 is the cell volume of ITC, the temperature of TIAN, a volume of BET).
+    // Evidence, the keys of the stored system object (also those stored without a value):
+    //  - a thermogram, or 1024 (Plot Mode) together with 1, 2, 3 or 5: ITC — only the ITC models declare 1024 and 1-5;
+    //  - 1024 or 1025 (Host Assignment) otherwise: the titration models (NMR, UV-Vis, fluorescence); 1024 and 4 mean the same in both;
+    //  - anything else (kinetics, thermodynamics, scripts) stays a placeholder until its model is attached and declares it.
+    auto stored = [this](int index) { return d->m_systemObject.contains(QString::number(index)); };
+    const bool plotmode = stored(AbstractModel::PlotMode);
+    const bool itc = d->m_datatype == DataClassPrivate::Thermogram
+        || (plotmode && (stored(AbstractItcModel::CellVolume) || stored(AbstractItcModel::CellConcentration) || stored(AbstractItcModel::SyringeConcentration) || stored(AbstractItcModel::Reservoir)));
+    const bool titration = !itc && (plotmode || stored(AbstractTitrationModel::HostGuestAssignment));
+    if (!itc && !titration)
+        return;
+
+    DataClass declaration; // the declarations alone, so that the data get no parameter they did not have
+    if (itc)
+        AbstractItcModel::DeclareSystemParameterOn(&declaration);
+    else
+        AbstractTitrationModel::DeclareSystemParameterOn(&declaration);
+    for (int index : std::as_const(placeholders)) {
+        if (!declaration.getSystemParameterList().contains(index))
+            continue; // e.g. 6, the heat unit of the ITC models before 2018: declared by no model any more
+        SystemParameter parameter = declaration.getSystemParameter(index);
+        parameter.setValue(d->m_system_parameter[index].value());
+        d->m_system_parameter[index] = parameter;
+    }
 }
 
 void DataClass::setSystemObject(const QJsonObject& object)
@@ -567,9 +590,13 @@ void DataClass::OverrideCheckedTable(DataTable* table)
 
 void DataClass::addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type)
 {
-    if (d->m_system_parameter.contains(index))
+    // a declared parameter stays as it is; a placeholder (read from a file before anything declared the index) takes the declaration
+    // and keeps its value
+    if (d->m_system_parameter.contains(index) && !d->m_system_parameter[index].isPlaceholder())
         return;
     SystemParameter parameter(index, str, description, type);
+    if (d->m_system_parameter.contains(index))
+        parameter.setValue(d->m_system_parameter[index].value());
     d->m_system_parameter.insert(index, parameter);
 }
 
