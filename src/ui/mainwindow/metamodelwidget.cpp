@@ -42,6 +42,10 @@
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/statisticspage.h"
+#include "src/ui/dialogs/statisticdialog.h"
+#include "src/ui/guitools/guitools.h"
+#include "src/ui/guitools/sectionstack.h"
 
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QFileDialog>
@@ -60,11 +64,9 @@ MetaModelWidget::MetaModelWidget(QWidget* parent)
 
 void MetaModelWidget::setUi()
 {
-    m_dialogs = new ModalDialog;
-    m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-
     m_results = new ResultsDialog(m_model, new ChartWrapper(this), this);
     connect(m_results, &ResultsDialog::LoadModel, this, &MetaModelWidget::LoadJson);
+    m_statistic_dialog = new StatisticDialog(m_model, this);
 
     m_statistic_widget = new StatisticWidget(m_model, this);
 
@@ -109,19 +111,53 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_type, 1, 4);
 
     m_actions = new ModelActions;
+    m_actions->setPageNavigation(true); // Statistics, Results and Detailed are pages of the list, as in the model pane
     m_metamodelparameter = new MetaModelParameter(m_model, &m_linked_charts);
-    layout->addWidget(new ExportSimulationWidget(m_model, this), 2, 0, 1, 5);
-    layout->addWidget(m_metamodelparameter, 3, 0, 1, 5);
+    layout->addWidget(m_actions, 2, 0, 1, 5);
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
 
-    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
-        if (type != SupraFit::Method::FastConfidence) {
-            this->m_results->Attention();
-            this->m_results->ShowResult(type, index);
-        }
+    // The pages of the meta model: the same list as in the model pane (parameters, statistics with the analyses to
+    // start and the finished results, the summary and the detailed text), the Statistics page is the shared class.
+    SectionStack* pages = m_pages = new SectionStack;
+    QWidget* parameters = new QWidget;
+    QVBoxLayout* parameter_layout = new QVBoxLayout;
+    parameter_layout->setContentsMargins(0, 0, 0, 0);
+    parameter_layout->addWidget(new ExportSimulationWidget(m_model, this));
+    parameter_layout->addWidget(m_metamodelparameter, 1);
+    parameters->setLayout(parameter_layout);
+    pages->addPage(parameters, tr("Parameters"), nullptr, Icon("kspread"));
 
+    m_statistics = new StatisticsPage(m_statistic_dialog, m_results, pages, this);
+    m_statistics->Install(Icon("applications-education-science"));
+    pages->addPage(m_statistic_widget, tr("Summary"), nullptr, Icon("view-list-text"));
+    m_detailed_text = new QTextEdit;
+    m_detailed_text->setReadOnly(true);
+    m_detailed_text->setFontFamily(QStringLiteral("monospace"));
+    pages->addPage(m_detailed_text, tr("Detailed"), nullptr, Icon("configure"));
+    pages->onPageChanged([this, pages](int) {
+        if (pages->currentTitle() == tr("Detailed"))
+            Detailed();
+    });
+    layout->addWidget(pages, 3, 0, 1, 5);
+    layout->setRowStretch(3, 1);
+
+    connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
+    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
+    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
+    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message);
+    connect(m_jobmanager, &JobManager::Stage, m_statistic_dialog, &StatisticDialog::Stage);
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
+    connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        m_jobmanager->AddSingleJob(job);
+        m_jobmanager->RunJobs();
+    });
+    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
+        if (type != SupraFit::Method::FastConfidence)
+            m_statistics->ShowResult(type, index);
         QApplication::restoreOverrideCursor();
     });
 
@@ -129,16 +165,6 @@ void MetaModelWidget::setUi()
     connect(m_actions, &ModelActions::OptimizerSettings, this, &MetaModelWidget::OptimizerSettings);
     connect(m_actions, &ModelActions::ImportConstants, this, &MetaModelWidget::ImportConstants);
     connect(m_actions, &ModelActions::ExportConstants, this, &MetaModelWidget::ExportConstants);
-    connect(m_actions, &ModelActions::OpenAdvancedSearch, this, &MetaModelWidget::OpenAdvancedSearch);
-    connect(m_actions, &ModelActions::TogglePlot, this, &MetaModelWidget::TogglePlot);
-    connect(m_actions, &ModelActions::ToggleStatisticDialog, this, &MetaModelWidget::ToggleStatisticDialog);
-    //  connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    //connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
-    //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
-    connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
-
-    layout->addWidget(m_actions, 4, 0, 1, 5);
-    layout->addWidget(m_statistic_widget, 5, 0, 1, 5);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
     connect(m_calculate, &QPushButton::clicked, this, &MetaModelWidget::Calculate);
     connect(m_history, &QPushButton::clicked, this, &MetaModelWidget::History);
@@ -237,29 +263,6 @@ void MetaModelWidget::History()
     dialog.exec();
 }
 
-void MetaModelWidget::ToggleStatisticDialog()
-{
-    StatisticDialog* statistic_dialog = new StatisticDialog(m_model, this);
-
-    connect(m_jobmanager, &JobManager::prepare, statistic_dialog, &StatisticDialog::MaximumSteps);
-    connect(m_jobmanager, &JobManager::incremented, statistic_dialog, &StatisticDialog::IncrementProgress);
-
-    connect(m_jobmanager, &JobManager::started, statistic_dialog, &StatisticDialog::ShowWidget);
-    connect(m_jobmanager, &JobManager::finished, statistic_dialog, &StatisticDialog::HideWidget);
-    connect(m_jobmanager, &JobManager::Message, statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
-
-    connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt);
-    connect(statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddSingleJob(job);
-        this->m_jobmanager->RunJobs();
-    });
-
-    statistic_dialog->exec();
-
-    delete statistic_dialog;
-}
-
 void MetaModelWidget::FastConfidence()
 {
     Waiter wait;
@@ -280,29 +283,10 @@ void MetaModelWidget::FastConfidence()
     m_jobmanager->RunJobs();
 }
 
-void MetaModelWidget::OpenAdvancedSearch()
-{
-    AdvancedSearch* advancedsearch = new AdvancedSearch(this);
-    advancedsearch->setModel(m_model);
-
-    connect(advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddSingleJob(job);
-        this->m_jobmanager->RunJobs();
-    });
-
-    connect(advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt);
-
-    advancedsearch->exec();
-    delete advancedsearch;
-}
-
+/*! \brief Fill the page "Detailed": data, model and statistics as text (refreshed when the page is shown). */
 void MetaModelWidget::Detailed()
 {
-    QTextEdit* text = new QTextEdit;
-    text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
-    m_dialogs->setWidget(text, tr("Detailed Information on Calculation Results"));
-    m_dialogs->Attention();
+    m_detailed_text->setPlainText(m_model->Data2Text() + "\n" + m_model->Model2Text() + "\n" + m_statistic_widget->Statistic());
 }
 
 void MetaModelWidget::NewGuess()
@@ -313,9 +297,8 @@ void MetaModelWidget::NewGuess()
 void MetaModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
-    m_results->Attention();
     SupraFit::Method type = SupraFit::Method(AccessCI(data["controller"].toObject(), "Method").toInt());
-    m_results->ShowResult(type, index);
+    m_statistics->ShowResult(type, index);
 }
 
 void MetaModelWidget::ImportConstants()
@@ -347,11 +330,6 @@ void MetaModelWidget::ExportConstants()
         QJsonObject gameObject = m_model->ExportModel();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
-}
-
-void MetaModelWidget::TogglePlot()
-{
-    m_results->Attention();
 }
 
 void MetaModelWidget::OptimizerSettings()

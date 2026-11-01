@@ -72,6 +72,7 @@
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/mainwindow/metamodelwidget.h"
+#include "src/ui/guitools/sectionstack.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/core/models/titrations/fluorescence/fl_any_Model.h"
@@ -1327,6 +1328,11 @@ private slots:
             button->click();
             QVERIFY2(std::isfinite(overview->Model()->SSE()), qPrintable(label + QStringLiteral(": SSE is not finite")));
         }
+        // the Statistics page is the one of the model pane: a list with the analyses to start
+        SectionStack* pages = overview->Pages();
+        QVERIFY2(pages, "the meta overview has no page list");
+        pages->setCurrentTitle(QStringLiteral("Statistics"), true);
+        QCOMPARE(pages->currentTitle(), QStringLiteral("Statistics"));
         if (!qEnvironmentVariable("SUPRAFIT_SHOT_DIR").isEmpty()) {
             metaWindow->show();
             metaWindow->setCurrentTab(0);
