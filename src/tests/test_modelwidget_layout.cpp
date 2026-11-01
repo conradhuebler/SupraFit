@@ -101,6 +101,10 @@
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
+#include <charts.h>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QXYSeries>
+
 // Counts widgets that were shown as their own window while the filter is installed. A parentless
 // widget that gets setHidden(false) before its layout adopts it is shown, then hidden again on
 // reparenting - invisible in the final state, so the end state alone cannot catch the flicker.
@@ -3351,6 +3355,127 @@ private slots:
         QVERIFY(!ModelUsage::Pin(title->EntryKeyOf(nmrPreset), 2));
         QSettings().remove(QStringLiteral("add_model_bar"));
     }
+    // What is wrong with the scaling of one chart: series that are not attached to the chart's axes (Qt then scales them
+    // on their own), series outside the shown axis range, and measured points whose x values do not span the x values
+    // of the model curves (points and curves on different x mappings). Empty when the chart is consistent. Claude Generated.
+    static QString chartScalingProblems(QChart* chart)
+    {
+        QStringList problems;
+        QValueAxis* axisX = chart->axes(Qt::Horizontal).isEmpty() ? nullptr : qobject_cast<QValueAxis*>(chart->axes(Qt::Horizontal).first());
+        QValueAxis* axisY = chart->axes(Qt::Vertical).isEmpty() ? nullptr : qobject_cast<QValueAxis*>(chart->axes(Qt::Vertical).first());
+        if (!axisX || !axisY || chart->axes(Qt::Horizontal).size() != 1 || chart->axes(Qt::Vertical).size() != 1)
+            return QStringLiteral("the chart has not exactly one x and one y value axis");
+        auto range = [](const QXYSeries* series) {
+            QRectF r;
+            bool first = true;
+            for (const QPointF& p : series->points()) {
+                if (first)
+                    r = QRectF(p, p);
+                r.setLeft(qMin(r.left(), p.x()));
+                r.setRight(qMax(r.right(), p.x()));
+                r.setTop(qMin(r.top(), p.y()));
+                r.setBottom(qMax(r.bottom(), p.y()));
+                first = false;
+            }
+            return r;
+        };
+        qreal curveMin = 0, curveMax = 0;
+        bool curves = false;
+        QList<QPair<QString, QRectF>> points;
+        for (QAbstractSeries* abstract : chart->series()) {
+            QXYSeries* series = qobject_cast<QXYSeries*>(abstract);
+            if (!series || !series->isVisible() || series->points().isEmpty())
+                continue;
+            const QRectF r = range(series);
+            if (!series->attachedAxes().contains(axisX) || !series->attachedAxes().contains(axisY))
+                problems << QStringLiteral("'%1' is not attached to the chart axes").arg(series->name());
+            const qreal tolX = 1e-9 * qMax(1.0, qAbs(axisX->max() - axisX->min()));
+            const qreal tolY = 1e-9 * qMax(1.0, qAbs(axisY->max() - axisY->min()));
+            if (r.left() < axisX->min() - tolX || r.right() > axisX->max() + tolX || r.top() < axisY->min() - tolY || r.bottom() > axisY->max() + tolY)
+                problems << QStringLiteral("'%1' [%2,%3]x[%4,%5] lies outside the axes [%6,%7]x[%8,%9]")
+                                .arg(series->name())
+                                .arg(r.left()).arg(r.right()).arg(r.top()).arg(r.bottom())
+                                .arg(axisX->min()).arg(axisX->max()).arg(axisY->min()).arg(axisY->max());
+            if (qobject_cast<LineSeries*>(series)) {
+                curveMin = curves ? qMin(curveMin, r.left()) : r.left();
+                curveMax = curves ? qMax(curveMax, r.right()) : r.right();
+                curves = true;
+            } else if (qobject_cast<ScatterSeries*>(series))
+                points << qMakePair(series->name(), r);
+        }
+        if (curves) {
+            const qreal tol = 0.05 * qMax(curveMax - curveMin, 1e-12);
+            for (const auto& p : points)
+                if (p.second.left() < curveMin - tol || p.second.right() > curveMax + tol)
+                    problems << QStringLiteral("data '%1' spans x [%2,%3], the model curves [%4,%5]")
+                                    .arg(p.first)
+                                    .arg(p.second.left())
+                                    .arg(p.second.right())
+                                    .arg(curveMin)
+                                    .arg(curveMax);
+        }
+        return problems.join(QStringLiteral("; "));
+    }
+
+    // After a project with models is opened, the measured points and the model curves of the Model chart share one
+    // scale: the points take the x values of the model ([G0]/[H0]) and every series lies within the shown axes. A second
+    // synchronisation of the project after load (ChartWidget::setRawData on the existing data wrapper) used to put the
+    // points back on the row number while the curves stayed on [G0]/[H0]. Claude Generated.
+    void modelChartScalesDataAndCurvesAlikeAfterLoad()
+    {
+        const QString project = QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json");
+        if (!QFileInfo::exists(project))
+            QSKIP("sample project not found");
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+
+        SupraFitGui gui;
+        gui.resize(1500, 900);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+        gui.LoadFile(project);
+
+        auto modelCharts = [&gui]() {
+            QList<QChart*> charts;
+            for (ChartView* view : gui.findChildren<ChartView*>()) {
+                QChart* chart = view->chart();
+                if (!chart || chart->title() != QStringLiteral("Model"))
+                    continue;
+                bool hasCurve = false;
+                for (QAbstractSeries* s : chart->series())
+                    if (qobject_cast<LineSeries*>(s) && !qobject_cast<LineSeries*>(s)->points().isEmpty())
+                        hasCurve = true;
+                if (hasCurve)
+                    charts << chart;
+            }
+            return charts;
+        };
+        QTRY_VERIFY2(!modelCharts().isEmpty(), "no Model chart with model curves after loading the project");
+        QTest::qWait(200); // queued synchronisation and the deferred formatAxis() of the chart
+        for (QChart* chart : modelCharts()) {
+            int points = 0;
+            for (QAbstractSeries* s : chart->series())
+                if (qobject_cast<ScatterSeries*>(s) && s->isVisible() && !qobject_cast<ScatterSeries*>(s)->points().isEmpty())
+                    ++points;
+            QVERIFY2(points > 0, "the Model chart shows no measured points");
+            const QString problems = chartScalingProblems(chart);
+            QVERIFY2(problems.isEmpty(), qPrintable(problems));
+        }
+    }
+
     // Data (left) and Evaluation (right) sit next to the tabs and use the project's actions. Claude Generated.
     void dataAndEvaluationSitNextToTheTabs()
     {

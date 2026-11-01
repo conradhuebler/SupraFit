@@ -1,6 +1,6 @@
 /*
  * <ChartWrapper - Simplified drop-in replacement for legacy complex visibility system>
- * Copyright (C) 2017 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,15 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     // Claude Generated: Store as weak reference to allow model destruction
     m_stored_data = model.toWeakRef();
-    m_working = model.toWeakRef();
+    // Claude Generated: keep the model transformation. The data points take their x values from the model they
+    // were transformed to (PrintOutIndependent: [G0]/[H0], [G0], ...); the raw DataClass plots the row number. A
+    // repeated setData() on the same data (ChartWidget::setRawData while a project is synchronised after load)
+    // used to reset m_working to the raw data, so the points were drawn over the row number while the model curves
+    // stayed on the model's x axis. While the transforming model lives, it stays the working set.
+    if (m_transformed && !m_stored_model.isNull())
+        m_working = m_stored_model;
+    else
+        m_working = model.toWeakRef();
 
 #ifdef DEBUG_ON
     qDebug() << "🔧 NEW ChartWrapper::setData: Data set as WEAK reference, calling InitaliseSeries() and UpdateModel()";
@@ -99,9 +107,9 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     // Claude Generated: Safe signal connections with null checking
     if (auto strongData = m_stored_data.toStrongRef()) {
         if (qobject_cast<AbstractModel*>(strongData.data())) {
-            connect(qobject_cast<AbstractModel*>(strongData.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
+            connect(qobject_cast<AbstractModel*>(strongData.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel, Qt::UniqueConnection);
         }
-        connect(strongData.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+        connect(strongData.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel, Qt::UniqueConnection); // setData() runs again on every project sync
         
         // Claude Generated: Connect to model destruction for cleanup
         connect(strongData.data(), &QObject::destroyed, this, [this]() {
