@@ -499,6 +499,10 @@ void DataClass::LoadSystemParameter()
                 static const char* comments[] = { "Volume of the cell in \u03bcL", "Concentration in cell in mmol/L", "Concentration in syringe in mmol/L", "Temperature in K", "Keep the volume in cell constant" };
                 addSystemParameter(index, QString::fromUtf8(names[index - 1]), QString::fromUtf8(comments[index - 1]),
                     index == 5 ? SystemParameter::Boolean : SystemParameter::Scalar);
+            } else if (index == 1024) { // AbstractModel::PlotMode: the x axis of the titration charts
+                const QString sub = QChar(0x2080);
+                addSystemParameter(index, QStringLiteral("Plot Mode"), QStringLiteral("x-Axis Plot Mode"), SystemParameter::List);
+                setSystemParameterList(index, QStringList() << QString("[G%1]/[H%2]").arg(sub).arg(sub) << QString("[G%1]").arg(sub) << QStringLiteral("Number"));
             } else
                 addSystemParameter(index, QString("ImportedParam%1").arg(index),
                     QString("Imported parameter %1").arg(index),
