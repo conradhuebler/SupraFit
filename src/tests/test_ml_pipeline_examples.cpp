@@ -77,6 +77,16 @@ private:
     QVector<QString> getExpectedOutputFiles(const QString& baseName, int iteration);
 };
 
+/*! \brief How many entries of a "methods" object belong to \p method (the controller of an entry says which). */
+static int runsOfMethod(const QJsonObject& methods, int method)
+{
+    int runs = 0;
+    for (auto it = methods.begin(); it != methods.end(); ++it)
+        if (it.value().toObject()["controller"].toObject()["Method"].toInt() == method)
+            ++runs;
+    return runs;
+}
+
 void TestMLPipelineExamples::initTestCase()
 {
     qDebug() << "\n========== ML Pipeline Example Tests ==========\n";
@@ -145,7 +155,7 @@ void TestMLPipelineExamples::testOutputFileGeneration()
 
     QVector<QString> expectedFiles = {
         "ml_pipeline_results-0.json",
-        "ml_pipeline_results-0suprafit",
+        "ml_pipeline_results-0.suprafit",
         "ml_pipeline_results-project-0.suprafit",
         "ml_pipeline_results-ml-features-0.json"
     };
@@ -308,10 +318,11 @@ void TestMLPipelineExamples::testMonteCarloExecution()
     QJsonObject project = data["project_0"].toObject()["data"].toObject();
     QJsonObject model = project["model_0"].toObject()["data"].toObject();
 
-    // MC method has ID 1
+    // An exported model numbers its analyses (0 fast confidence, then every run); each entry says its method in its controller.
+    // The example runs Monte Carlo twice.
     QVERIFY(model.contains("methods"));
     QJsonObject methods = model["methods"].toObject();
-    QVERIFY(methods.contains("1"));  // Method ID 1 = MonteCarlo
+    QCOMPARE(runsOfMethod(methods, 1), 2);  // Method ID 1 = MonteCarlo
 
     qDebug() << "✓ Monte Carlo execution validated";
 }
@@ -327,10 +338,10 @@ void TestMLPipelineExamples::testCrossValidationExecution()
     QJsonObject project = data["project_0"].toObject()["data"].toObject();
     QJsonObject model = project["model_0"].toObject()["data"].toObject();
 
-    // CV method has ID 4
+    // CV method has ID 4; the example runs it twice (leave one out, leave two out)
     QVERIFY(model.contains("methods"));
     QJsonObject methods = model["methods"].toObject();
-    QVERIFY(methods.contains("4"));  // Method ID 4 = CrossValidation
+    QCOMPARE(runsOfMethod(methods, 4), 2);  // Method ID 4 = CrossValidation
 
     qDebug() << "✓ Cross-validation execution validated";
 }
@@ -380,11 +391,10 @@ void TestMLPipelineExamples::testProjectFileStructure()
     QString projFile = m_tempDir->path() + "/ml_pipeline_results-project-0.suprafit";
     QJsonObject data = loadJsonFile(projFile);
 
-    QVERIFY(data.contains("project_0"));
-    QJsonObject project = data["project_0"].toObject();
-
-    QVERIFY(project.contains("data"));
-    QJsonObject projectData = project["data"].toObject();
+    // the file of the fitted project: its data and the fitted models (model_0, ...)
+    QVERIFY(data.contains("data"));
+    QVERIFY(data.contains("model_0"));
+    QJsonObject projectData = data["data"].toObject();
 
     QVERIFY(projectData.contains("DataType"));
     QVERIFY(projectData.contains("SupraFit"));

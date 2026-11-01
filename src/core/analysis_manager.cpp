@@ -208,7 +208,7 @@ QVector<QJsonObject> AnalysisManager::fitModelsToData(QPointer<DataClass> data,
         int progress = (i * 100) / models.size();
         emit analysisProgress(QString("Fitting model %1 of %2").arg(i+1).arg(models.size()), progress);
         
-        fmt::print("   Fitting {} ({} of {})\n", modelConfig["model_name"].toString().toStdString(), i + 1, models.size());
+        fmt::print("   Model fitting: {} ({} of {})\n", modelConfig["model_name"].toString().toStdString(), i + 1, models.size());
         QJsonObject modelResult = fitSingleModel(modelConfig, data, globalAnalysisConfig);
         results.append(modelResult);
     }

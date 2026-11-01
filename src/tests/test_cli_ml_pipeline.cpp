@@ -24,6 +24,7 @@
 #include <QtCore/QElapsedTimer>
 
 #include "test_utils.h"
+#include "src/core/jsonhandler.h"
 
 class TestCliMLPipeline : public QObject
 {
@@ -100,6 +101,9 @@ private:
     bool verifyModelFitQuality(const QJsonObject& modelData);
     bool verifyStatisticalResults(const QJsonObject& statisticalData);
     double extractModelFitnessMeetic(const QJsonObject& modelData, const QString& metric);
+    /*! \\brief What the pipeline writes for "-o X.json": X-project-0.suprafit (the fitted project: data and models) and X-ml-features-0.json. */
+    static QString projectFile(const QString& output) { return QFileInfo(output).absolutePath() + "/" + QFileInfo(output).completeBaseName() + "-project-0.suprafit"; }
+    static QString featuresFile(const QString& output) { return QFileInfo(output).absolutePath() + "/" + QFileInfo(output).completeBaseName() + "-ml-features-0.json"; }
 };
 
 void TestCliMLPipeline::initTestCase()
@@ -150,11 +154,11 @@ void TestCliMLPipeline::testBasicMLPipelineWorkflow()
     qDebug() << "ML Pipeline workflow completed in" << timer.elapsed() << "ms";
     
     QVERIFY2(result[0].toInt() == 0, qPrintable("ML pipeline workflow failed: " + result[2]));
-    QVERIFY(QFile::exists(output));
-    QVERIFY(validateMLPipelineOutput(output));
+    QVERIFY(QFile::exists(projectFile(output)));
+    QVERIFY(validateMLPipelineOutput(projectFile(output)));
     
     // Verify pipeline stages completed
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     QVERIFY(data.contains("data")); // Data generation
     QVERIFY(data.contains("model_0")); // Model fitting
 }
@@ -169,7 +173,7 @@ void TestCliMLPipeline::testDataGenerationToModelFitting()
     QStringList result = runCliCommand({"-i", config, "-o", output}, 180000);
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     QVERIFY(verifyModelFitQuality(data));
 }
 
@@ -183,7 +187,7 @@ void TestCliMLPipeline::testModelFittingToStatisticalAnalysis()
     QStringList result = runCliCommand({"-i", config, "-o", output}, 240000);
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     QVERIFY(verifyStatisticalResults(data));
 }
 
@@ -198,7 +202,7 @@ void TestCliMLPipeline::testEndToEndPipelineIntegration()
     QCOMPARE(result[0].toInt(), 0);
     
     // Comprehensive validation
-    QVERIFY(validateMLPipelineOutput(output));
+    QVERIFY(validateMLPipelineOutput(projectFile(output)));
 }
 
 void TestCliMLPipeline::testPipelineWithMultipleModels()
@@ -211,7 +215,7 @@ void TestCliMLPipeline::testPipelineWithMultipleModels()
     QStringList result = runCliCommand({"-i", config, "-o", output}, 300000);
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     // Should contain multiple model entries
     QVERIFY(data.contains("model_0"));
     QVERIFY(data.contains("model_1"));
@@ -228,7 +232,7 @@ void TestCliMLPipeline::testMultiModelFitting()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     for (int i = 0; i < 3; ++i) {
         QString modelKey = QString("model_%1").arg(i);
         if (data.contains(modelKey)) {
@@ -247,7 +251,7 @@ void TestCliMLPipeline::testModelComparisonMetrics()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     // Verify comparison metrics are present
     bool foundAIC = false;
     for (auto it = data.begin(); it != data.end(); ++it) {
@@ -272,7 +276,7 @@ void TestCliMLPipeline::testStatisticalModelEvaluation()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QVERIFY(verifyStatisticalResults(loadJsonFile(output)));
+    QVERIFY(verifyStatisticalResults(loadJsonFile(projectFile(output))));
 }
 
 void TestCliMLPipeline::testModelParameterExtraction()
@@ -286,7 +290,7 @@ void TestCliMLPipeline::testModelParameterExtraction()
     
     // Input: Fitted model file with parameter extraction flag
     // Expected: Extracted global and local parameters in tabular format
-    QStringList result2 = runCliCommand({"-x", output});
+    QStringList result2 = runCliCommand({"-x", projectFile(output)});
     QCOMPARE(result2[0].toInt(), 0);
     QVERIFY(result2[1].contains("Parameter") || result2[1].contains("Global") || result2[1].contains("Model"));
 }
@@ -301,7 +305,7 @@ void TestCliMLPipeline::testModelPerformanceAnalysis()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     QVERIFY(verifyModelFitQuality(data));
 }
 
@@ -316,7 +320,7 @@ void TestCliMLPipeline::testMLFeatureGeneration()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QVERIFY(validateFeatureData(output));
+    QVERIFY(validateFeatureData(featuresFile(output)));
 }
 
 void TestCliMLPipeline::testFeatureExtractionFromFittedModels()
@@ -330,7 +334,7 @@ void TestCliMLPipeline::testFeatureExtractionFromFittedModels()
     QCOMPARE(result[0].toInt(), 0);
     
     // Features should be extractable from the result
-    QVERIFY(validateMLPipelineOutput(output));
+    QVERIFY(validateMLPipelineOutput(projectFile(output)));
 }
 
 void TestCliMLPipeline::testCompactMLDatasetCreation()
@@ -343,7 +347,7 @@ void TestCliMLPipeline::testCompactMLDatasetCreation()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(featuresFile(output));
     QVERIFY(!data.isEmpty());
 }
 
@@ -369,7 +373,7 @@ void TestCliMLPipeline::testTrainingDataExport()
     QStringList result = runCliCommand({"-i", config, "-o", output});
     QCOMPARE(result[0].toInt(), 0);
     
-    QVERIFY(QFile::exists(output));
+    QVERIFY(QFile::exists(featuresFile(output)));
 }
 
 // Statistical Analysis Integration Tests - Claude Generated
@@ -383,7 +387,7 @@ void TestCliMLPipeline::testMonteCarloIntegration()
     QStringList result = runCliCommand({"-i", config, "-o", output}, 300000);
     QCOMPARE(result[0].toInt(), 0);
     
-    QJsonObject data = loadJsonFile(output);
+    QJsonObject data = loadJsonFile(projectFile(output));
     QVERIFY(verifyStatisticalResults(data));
 }
 
@@ -602,6 +606,54 @@ void TestCliMLPipeline::testStatisticalAnalysisFailureHandling()
 }
 
 // Helper Methods Implementation - Claude Generated
+/*! \brief The pipeline configuration as the CLI reads it now: "Models" become "AddModels" (fitted by the ML pipeline),
+ * "Jobs" the methods of "PostFitAnalysis"; the pipeline is switched on. */
+static void ModernizeConfig(QJsonObject& config)
+{
+    QJsonObject main = config["Main"].toObject();
+    main["ProcessMLPipeline"] = true;
+    main["FitModels"] = true;
+    config["Main"] = main;
+
+    if (config.contains("Models")) {
+        QJsonObject addModels;
+        const QJsonObject models = config["Models"].toObject();
+        for (auto it = models.begin(); it != models.end(); ++it) {
+            const int id = it.value().toObject()["ID"].toInt(1);
+            QJsonObject entry;
+            entry["ID"] = id;
+            QJsonObject options;
+            options["FastMode"] = true;
+            entry["Options"] = options;
+            addModels[QString("model_%1").arg(id)] = entry;
+        }
+        config["AddModels"] = addModels;
+        config.remove("Models");
+    }
+    if (config.contains("Jobs")) {
+        QJsonArray methods;
+        const QJsonObject jobs = config["Jobs"].toObject();
+        for (auto it = jobs.begin(); it != jobs.end(); ++it) {
+            const QString type = it.value().toObject()["Type"].toString();
+            QJsonObject method;
+            if (type == "MonteCarlo") {
+                method["Method"] = 1;
+                method["MaxSteps"] = 100;
+            } else if (type == "CrossValidation") {
+                method["Method"] = 4;
+            } else
+                continue; // e.g. the feature extraction is part of the pipeline
+            methods.append(method);
+        }
+        if (!methods.isEmpty()) {
+            QJsonObject postFit;
+            postFit["methods"] = methods;
+            config["PostFitAnalysis"] = postFit;
+        }
+        config.remove("Jobs");
+    }
+}
+
 QString TestCliMLPipeline::createMLPipelineConfig()
 {
     QString filePath = m_tempDir->path() + "/ml_pipeline.json";
@@ -667,6 +719,8 @@ QString TestCliMLPipeline::createMLPipelineConfig()
     jobs["MonteCarlo"] = mcJob;
     config["Jobs"] = jobs;
     
+    ModernizeConfig(config);
+    
     QJsonDocument doc(config);
     file.write(doc.toJson());
     file.close();
@@ -717,6 +771,8 @@ QString TestCliMLPipeline::createMultiModelConfig()
         models[QString::number(i-1)] = modelConfig;
     }
     config["Models"] = models;
+    
+    ModernizeConfig(config);
     
     QJsonDocument doc(config);
     file.write(doc.toJson());
@@ -769,6 +825,8 @@ QString TestCliMLPipeline::createLargeScaleConfig()
         models[QString::number(i-1)] = modelConfig;
     }
     config["Models"] = models;
+    
+    ModernizeConfig(config);
     
     QJsonDocument doc(config);
     file.write(doc.toJson());
@@ -834,6 +892,8 @@ QString TestCliMLPipeline::createStatisticalAnalysisConfig()
     
     config["Jobs"] = jobs;
     
+    ModernizeConfig(config);
+    
     QJsonDocument doc(config);
     file.write(doc.toJson());
     file.close();
@@ -860,8 +920,8 @@ QString TestCliMLPipeline::createFeatureExtractionConfig()
     QJsonObject indepGen;
     indepGen["Type"] = "equations";
     indepGen["DataPoints"] = 40;
-    indepGen["Variables"] = 3;
-    indepGen["Equations"] = "X|Y|Z";
+    indepGen["Variables"] = 2; // host and guest: what the 1:1 model of the dependent data needs
+    indepGen["Equations"] = "X|X*1.5";
     independent["Generator"] = indepGen;
     config["Independent"] = independent;
     
@@ -890,6 +950,8 @@ QString TestCliMLPipeline::createFeatureExtractionConfig()
     featureJob["CompactFormat"] = true;
     jobs["Features"] = featureJob;
     config["Jobs"] = jobs;
+    
+    ModernizeConfig(config);
     
     QJsonDocument doc(config);
     file.write(doc.toJson());
@@ -1017,20 +1079,11 @@ bool TestCliMLPipeline::validateFeatureData(const QString& filename)
 
 QJsonObject TestCliMLPipeline::loadJsonFile(const QString& filename)
 {
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)) {
+    // .suprafit files are compressed, .json files are plain: JsonHandler reads both
+    QJsonObject object;
+    if (!JsonHandler::ReadFile(filename, object))
         return QJsonObject();
-    }
-    
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    file.close();
-    
-    if (error.error != QJsonParseError::NoError) {
-        return QJsonObject();
-    }
-    
-    return doc.object();
+    return object;
 }
 
 bool TestCliMLPipeline::verifyModelFitQuality(const QJsonObject& modelData)

@@ -103,6 +103,11 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 {
     // Store original configuration for ML Pipeline - Claude Generated
     m_original_config = control;
+
+    // The output name: -o (set afterwards) before the OutFile of the configuration before the name of the input file
+    for (const QString& key : control.keys())
+        if (key.compare("main", Qt::CaseInsensitive) == 0 && control[key].toObject().contains("OutFile") && (m_outfile.isEmpty() || m_outfile == m_infile))
+            m_outfile = control[key].toObject()["OutFile"].toString();
     
     QStringList keys = control.keys();
 #ifdef DEBUG_ON
@@ -347,6 +352,8 @@ void SupraFitCli::ParseMain()
     m_guess = m_main["Guess"].toBool(false);
     m_fit = m_main["Fit"].toBool(false);
     m_extension = m_main["extension"].toString("suprafit");
+    if (!m_extension.startsWith(QLatin1Char('.'))) // always with the dot: it is appended to the name
+        m_extension.prepend(QLatin1Char('.'));
     // Only use OutFile from JSON if not already set via -o option
     if (m_main.contains("OutFile") && m_outfile.isEmpty()) {
         m_outfile = m_main["OutFile"].toString();
@@ -391,7 +398,7 @@ bool SupraFitCli::SaveFiles(const QString& file, const QVector<QJsonObject>& pro
     // Option 1: Save as individual files (preserve existing behavior)
     bool allSuccess = true;
     for (int i = 0; i < projects.size(); ++i) {
-        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + "." + m_extension;
+        QString individualFile = m_outfile + "_" + file + "_" + QString::number(i) + m_extension;
         bool success = SaveFile(individualFile, projects[i]);
         allSuccess = allSuccess && success;
     }

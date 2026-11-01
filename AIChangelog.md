@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-11-02: CLI tests repaired (all but `ReferenceProjectsTest` green): CLI reads multi-project files and plain tables, `-l` lists configuration sections and projects, `"Type": "copy"` for dependent data, `Source` follows from `Generator`/`File`, ML export reads `project_N -> data -> model_K` and the numbered analyses of exported models (`JsonUtils` finds them by their controller), jobs without parameter lists test all parameters (Model Comparison no longer crashes), errors go to stderr, `OutFile` of the configuration names the outputs, extension always with the dot; tests moved to the formats of today.
 - 2026-11-02: Statistics page of the model pane is one class, `StatisticsPage` (`widgets/statisticspage.*`: list "New analysis"/"Results", titles, icons), used by `ModelWidget` and by the meta model, whose overview is now a page list (Parameters, Statistics, Summary, Detailed) instead of modal Scan/Statistic/Results dialogs.
 - 2026-11-02: The meta model window shows the meta overview again (project title, calculate, minimise, history, connection strategy, parameter table, statistics): the meta model, not its base data, is the data of its window; test clicks calculate and minimise.
 - 2026-11-02: `ChartWidget::addModel` connected `Recalculated` with the model as context and captured `this`: a model that outlived its chart wrote into the freed widget (intermittent abort of `test_modelwidget_layout`, ASan heap errors); the chart is now the receiver.

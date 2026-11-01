@@ -1,0 +1,71 @@
+{
+    "Main": {
+        "OutFile": "ml_pipeline_multirun_results",
+        "Repeat": 1,
+        "UseModularStructure": true,
+        "ProcessMLPipeline": true,
+        "FitModels": true,
+        "PostFitAnalysis": true
+    },
+    "Independent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "equations",
+            "DataPoints": 20,
+            "Variables": 2,
+            "Equations": "0.001|(X - 1) * 0.0001"
+        }
+    },
+    "Dependent": {
+        "Source": "generator",
+        "Generator": {
+            "Type": "model",
+            "Series": 1,
+            "Model": {
+                "ID": 1
+            },
+            "GlobalRandomLimits": "[1 15]",
+            "LocalRandomLimits": "[0.1 2.0]"
+        },
+        "Noise": {
+            "Type": "gaussian",
+            "Std": [
+                0.001
+            ],
+            "RandomSeed": 12345
+        }
+    },
+    "AddModels": {
+        "nmr_1_1": {
+            "ID": 1,
+            "Options": {
+                "FastMode": true
+            }
+        }
+    },
+    "PostFitAnalysis": {
+        "enabled": true,
+        "methods": [
+            {
+                "Method": 1,
+                "MaxSteps": 100,
+                "VarianceSource": 2
+            },
+            {
+                "Method": 1,
+                "MaxSteps": 200,
+                "VarianceSource": 2
+            },
+            {
+                "Method": 4,
+                "CVType": 1,
+                "MaxSteps": 50
+            },
+            {
+                "Method": 4,
+                "CVType": 2,
+                "MaxSteps": 50
+            }
+        ]
+    }
+}

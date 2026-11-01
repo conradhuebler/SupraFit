@@ -610,7 +610,7 @@ bool executeTaskConfiguration(const QString& inputFile, const QString& outputOve
     // Handle Task Configuration
     if (type == TaskConfig) {
         SupraFitCli* core = new SupraFitCli;
-        core->setInFile(inputFile); // Claude Generated - Fix missing setInFile call
+        core->setInFile(QFileInfo(inputFile).absoluteFilePath()); // absolute: the output directory may become the working directory below
         core->setControlJson(config);
 
         // Override output file if specified

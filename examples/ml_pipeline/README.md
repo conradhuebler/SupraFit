@@ -20,6 +20,7 @@ The entire pipeline is defined in a single JSON file and executed with a single 
 ## Files
 
 *   `ml_pipeline_example.json`: The single configuration file for the entire workflow.
+*   `ml_pipeline_multirun_test.json`: One model with every analysis run twice (Monte Carlo, Cross Validation), used by `test_ml_pipeline_examples`.
 
 ## How to Run
 
@@ -35,6 +36,6 @@ This command will:
 *   Execute the complete workflow described above.
 *   Save the results into three files with the prefix `ml_pipeline_example.json-0`:
     - `-0.json`: Multi-project dataset with all fitted models and data (4 projects for 4 models)
-    - `-models-0.json`: Project file containing all fitted models (SupraFit format)
-    - `-0-ml.json`: ML-optimized dataset with statistical features extracted for machine learning
-    - `-0suprafit`: Compressed project file in SupraFit binary format
+    - `-project-0.suprafit`: Project file containing the data and all fitted models (SupraFit format)
+    - `-ml-features-0.json`: ML-optimized dataset with statistical features extracted for machine learning
+    - `-0.suprafit`: The generated data as a project
