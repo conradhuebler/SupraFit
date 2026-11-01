@@ -44,6 +44,7 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/gripsplitter.h"
 #include "src/ui/guitools/sectionstack.h"
+#include "src/ui/widgets/statisticspage.h"
 #include "src/ui/guitools/windowhost.h"
 #include "src/ui/guitools/guitools.h"
 
@@ -567,7 +568,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // Statistic tools and the model's own charts (e.g. concentration profiles) are pages of the list, no
     // windows of their own. Both dialogs are used as plain widgets here. Claude Generated (WP1b).
     m_statistic_dialog->setEmbedded(true);
-    connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() { OpenStatistics(false); });
+    if (m_model->isSimulation()) // the Statistics page connects them otherwise
+        connect(m_statistic_dialog, &StatisticDialog::AttentionRequested, this, [this]() { OpenStatistics(false); });
     m_charts_dialogs = new ModalDialog(this);
     m_charts_dialogs->setEmbedded(true);
     m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -615,51 +617,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"), nullptr, Icon("kspread"));
 
     if (!m_model->isSimulation()) {
-        // One page for everything about statistics: the analyses to start and the finished results. The list
-        // replaces the page list while the page is shown (SectionStack group page); the page itself switches
-        // between the statistic dialog and the results view.
-        m_results->setEmbedded(true);
-        connect(m_results, &ResultsDialog::AttentionRequested, this, [this]() { OpenStatistics(true); });
-        m_statistic_stack = new QStackedWidget;
-        m_statistic_stack->addWidget(m_statistic_dialog);
-        m_statistic_stack->addWidget(m_results);
-        m_stat_page = model_tab->addGroupPage(
-            m_statistic_stack, tr("Statistics"),
-            [this]() {
-                QList<SectionStack::SubEntry> rows;
-                for (const StatEntry& e : StatisticEntries())
-                    rows << SectionStack::SubEntry{ e.title, e.kind == 0, e.icon, e.tooltip };
-                return rows;
-            },
-            [this](int row) {
-                const QList<StatEntry> entries = StatisticEntries();
-                if (row < 0 || row >= entries.size())
-                    return;
-                const StatEntry& e = entries[row];
-                if (e.kind == 1) {
-                    m_statistic_stack->setCurrentIndex(0);
-                    m_statistic_dialog->setCurrentTab(e.index);
-                } else if (e.kind == 2) {
-                    m_statistic_stack->setCurrentIndex(1);
-                    m_results->ShowEntry(e.type, e.result);
-                }
-            },
-            [this](int row, const QPoint& pos) {
-                const QList<StatEntry> entries = StatisticEntries();
-                if (row < 0 || row >= entries.size() || entries[row].kind != 2)
-                    return;
-                const StatEntry e = entries[row];
-                QMenu menu;
-                menu.addAction(tr("Open in window"), this, [this, e]() { m_results->DetachEntry(e.type, e.result); });
-                menu.addSeparator();
-                menu.addAction(tr("Save data"), this, [this, e]() { m_results->SaveEntry(e.type, e.result); });
-                menu.addAction(tr("Drop raw data"), this, [this, e]() { m_results->DropRawDataOf(e.type, e.result); });
-                menu.addAction(tr("Remove"), this, [this, e]() { m_results->RemoveEntry(e.type, e.result); });
-                menu.exec(pos);
-            },
-            Icon("applications-education-science"));
-        connect(m_results, &ResultsDialog::ListChanged, this, [this]() { m_pages->refreshGroup(m_stat_page); });
-        m_statistic_dialog->show(); // hidden by its constructor; a layout does not show an explicitly hidden widget
+        // the same Statistics page as the meta model has (shared class)
+        m_statistics = new StatisticsPage(m_statistic_dialog, m_results, model_tab, this);
+        m_stat_page = m_statistics->Install(Icon("applications-education-science"));
     }
     // The model's own charts (concentration profiles, heat charts): one entry per chart in the list that replaces the
     // page list, like the statistic tools; no tabs inside. The page is listed once there is a chart.
@@ -1457,126 +1417,25 @@ void ModelWidget::LoadStatistic(const QJsonObject& data)
     ShowStatisticResult(type, index);
 }
 
-/*! \brief Rows of the Statistics list: the analyses to start, then the finished results (if any).
- * Claude Generated. */
-QList<ModelWidget::StatEntry> ModelWidget::StatisticEntries() const
-{
-    // The list is narrow: short names, the full ones are the tooltips; one icon per method for the analysis
-    // to start and for its results.
-    struct Analysis {
-        const char* tab; ///< start of the tab title in the statistic dialog
-        const char* shortName;
-        SupraFit::Method method;
-    };
-    static const Analysis analyses[] = {
-        { "Cross", QT_TR_NOOP("Cross Validation"), SupraFit::Method::CrossValidation },
-        { "Monte", QT_TR_NOOP("Monte Carlo"), SupraFit::Method::MonteCarlo },
-        { "Weakened", QT_TR_NOOP("Grid Search"), SupraFit::Method::WeakenedGridSearch },
-        { "Model", QT_TR_NOOP("Model Comparison"), SupraFit::Method::ModelComparison },
-        { "Landscape", QT_TR_NOOP("Landscape Sampling"), SupraFit::Method::LandscapeSampling },
-        { "Scan", QT_TR_NOOP("Scan"), SupraFit::Method::GlobalSearch },
-    };
-
-    QList<StatEntry> rows;
-    rows << StatEntry{ tr("New analysis"), 0, -1, SupraFit::Method::MonteCarlo, -1, QIcon(), QString() };
-    const QStringList tabs = m_statistic_dialog->TabTitles();
-    for (int i = 0; i < tabs.size(); ++i) {
-        QString title = tabs[i];
-        QIcon icon;
-        for (const Analysis& a : analyses)
-            if (tabs[i].startsWith(QLatin1String(a.tab))) {
-                title = tr(a.shortName);
-                icon = MethodIcon(a.method);
-            }
-        rows << StatEntry{ title, 1, i, SupraFit::Method::MonteCarlo, -1, icon, title == tabs[i] ? QString() : tabs[i] };
-    }
-    const QList<ResultsDialog::Entry> results = m_results->Entries();
-    if (!results.isEmpty())
-        rows << StatEntry{ tr("Results"), 0, -1, SupraFit::Method::MonteCarlo, -1, QIcon(), QString() };
-    for (const ResultsDialog::Entry& e : results)
-        rows << StatEntry{ ResultListTitle(e.type, e.index), 2, -1, e.type, e.index, MethodIcon(e.type), e.title };
-    return rows;
-}
-
-/*! \brief Short, numbered name of a finished analysis as listed on the Statistics page ("Monte Carlo #1"). */
-QString ModelWidget::ResultListTitle(SupraFit::Method type, int index)
-{
-    QString name;
-    switch (type) {
-    case SupraFit::Method::MonteCarlo:
-        name = tr("Monte Carlo");
-        break;
-    case SupraFit::Method::CrossValidation:
-        name = tr("Cross Validation");
-        break;
-    case SupraFit::Method::WeakenedGridSearch:
-        name = tr("Grid Search");
-        break;
-    case SupraFit::Method::ModelComparison:
-        name = tr("Model Comparison");
-        break;
-    case SupraFit::Method::Reduction:
-        name = tr("Reduction");
-        break;
-    case SupraFit::Method::GlobalSearch:
-        name = tr("Scan");
-        break;
-    case SupraFit::Method::LandscapeSampling:
-        name = tr("Landscape Sampling");
-        break;
-    default:
-        name = SupraFit::Method2Name(type);
-    }
-    return tr("%1 #%2").arg(name).arg(index + 1);
-}
-
-/*! \brief Icon of an analysis method; the project only ships a few, so some are shared. */
-QIcon ModelWidget::MethodIcon(SupraFit::Method type)
-{
-    switch (type) {
-    case SupraFit::Method::MonteCarlo:
-        return Icon("applications-education-science");
-    case SupraFit::Method::CrossValidation:
-    case SupraFit::Method::Reduction:
-        return Icon("split");
-    case SupraFit::Method::WeakenedGridSearch:
-    case SupraFit::Method::GlobalSearch:
-        return Icon("kspread");
-    case SupraFit::Method::ModelComparison:
-        return Icon("fork");
-    case SupraFit::Method::LandscapeSampling:
-        return Icon("charts");
-    default:
-        return QIcon();
-    }
-}
-
 /*! \brief Show the Statistics page with its list; \p results selects the newest finished analysis. */
 void ModelWidget::OpenStatistics(bool results)
 {
-    if (m_stat_page < 0) { // simulations have no statistic page: the old window
+    if (!m_statistics) { // simulations have no statistic page: the old window
         m_results->Attention();
         return;
     }
-    m_pages->setCurrentTitle(tr("Statistics"), true);
-    if (!results)
-        return;
-    const QList<ResultsDialog::Entry> entries = m_results->Entries();
-    if (!entries.isEmpty())
-        m_pages->selectSub(ResultListTitle(entries.last().type, entries.last().index));
+    m_statistics->Open(results);
 }
 
 /*! \brief A finished analysis: list it and show it on the Statistics page. */
 void ModelWidget::ShowStatisticResult(SupraFit::Method type, int index)
 {
-    m_results->ShowResult(type, index); // opens the result tab
-    if (m_stat_page < 0) {
+    if (!m_statistics) {
+        m_results->ShowResult(type, index);
         m_results->Attention();
         return;
     }
-    m_pages->setCurrentTitle(tr("Statistics"), true);
-    m_pages->refreshGroup(m_stat_page);
-    m_pages->selectSub(ResultListTitle(type, index));
+    m_statistics->ShowResult(type, index);
 }
 
 void ModelWidget::LocalMinimize()

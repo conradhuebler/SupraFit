@@ -71,6 +71,7 @@ class QStackedWidget;
 class SectionStack;
 class TextWidget;
 class StatisticDialog;
+class StatisticsPage;
 class SystemParameterWidget;
 
 struct ModelHistoryElement;
@@ -171,22 +172,8 @@ private:
     QString SeriesStateKey() const;
     int m_charts_page = -1; ///< index of the Charts page, hidden while the model has no chart
     int m_stat_page = -1; ///< index of the Statistics page (new analyses + finished results), -1 for simulations
-    QStackedWidget* m_statistic_stack = nullptr; ///< [0] statistic dialog (start), [1] results of finished analyses
-
-    /*! \brief One row of the Statistics list: heading, analysis to start (a tab of the statistic dialog) or result. */
-    struct StatEntry {
-        QString title;
-        int kind; ///< 0 heading, 1 analysis, 2 result
-        int index; ///< tab of the statistic dialog (analysis)
-        SupraFit::Method type; ///< method and number of the result
-        int result;
-        QIcon icon;
-        QString tooltip;
-    };
-    QList<StatEntry> StatisticEntries() const;
+    StatisticsPage* m_statistics = nullptr; ///< the Statistics page: new analyses and finished results (not for simulations)
     void OpenStatistics(bool results);
-    static QString ResultListTitle(SupraFit::Method type, int index);
-    static QIcon MethodIcon(SupraFit::Method type);
     void ShowStatisticResult(SupraFit::Method type, int index);
     ResultsDialog* m_results;
 

@@ -34,7 +34,11 @@ class MetaModelParameter;
 class ModalDialog;
 class ModelActions;
 class ResultsDialog;
+class SectionStack;
 class StatisticWidget;
+class StatisticDialog;
+class StatisticsPage;
+class QTextEdit;
 
 class QComboBox;
 class QLineEdit;
@@ -52,6 +56,7 @@ public:
         Model()->setFast(false);
         Model()->Calculate();
     }
+    SectionStack* Pages() const { return m_pages; } ///< the page list (test access)
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
     void LinkModel(QSharedPointer<AbstractModel> model, QColor color)
@@ -64,6 +69,7 @@ public:
         m_linked_charts[model] = color;
     }
 public slots:
+    void Detailed();
     void LoadJson(const QJsonObject& object);
 
 private:
@@ -76,9 +82,13 @@ private:
     QPushButton *m_minimize, *m_calculate, *m_history;
     QComboBox* m_type;
     ModelActions* m_actions;
-    ModalDialog *m_dialogs, *m_table_result;
+    ModalDialog* m_table_result;
     StatisticWidget* m_statistic_widget;
     ResultsDialog* m_results;
+    StatisticDialog* m_statistic_dialog = nullptr;
+    StatisticsPage* m_statistics = nullptr;
+    SectionStack* m_pages = nullptr;
+    QTextEdit* m_detailed_text = nullptr;
     MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
     JobManager* m_jobmanager;
@@ -92,13 +102,9 @@ private:
 private slots:
     void Calculate();
     void Minimize();
-    void OpenAdvancedSearch();
     void NewGuess();
     void ImportConstants();
     void ExportConstants();
-    void ToggleStatisticDialog();
-    void TogglePlot();
-    void Detailed();
     void OptimizerSettings();
 
 signals:
