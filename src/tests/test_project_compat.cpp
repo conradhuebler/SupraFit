@@ -35,6 +35,8 @@
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models/AbstractModel.h"
+#include "src/core/models/meta_model.h"
+#include "src/core/models/models.h"
 #include "src/core/projectmanager.h"
 
 #ifndef SUPRAFIT_SOURCE_DIR
@@ -255,6 +257,98 @@ private slots:
         QVERIFY2(!r.Details().contains("Warning"), qPrintable(r.Details())); // reproduced, no warning
         QVERIFY2(r.Details().contains("leave out the first 2 data points"), qPrintable(r.Details()));
         QVERIFY2(std::abs(firstModelSSE() - 0.0912966) < 1e-5, qPrintable(QString::number(firstModelSSE())));
+    }
+
+    // A meta model (it compares models of other projects) is stored as a project of its own in a multi-project file, and is rebuilt on loading from the
+    // projects before it: same models, same fits, as a project of the manager again (so that it is saved the next time). Claude Generated.
+    void metaModelsSurviveSavingAndLoading()
+    {
+        ProjectManager& pm = ProjectManager::instance();
+        pm.clearAllProjects();
+        QVERIFY(pm.loadProject(sample("reference/simulated_1_1.json")));
+        QVERIFY(pm.loadProject(sample("reference/simulated_2_1_1_1.json")));
+        QStringList ids = pm.getLoadedProjectIds();
+        QCOMPARE(ids.size(), 2);
+
+        // the meta model of one model of each project, made as the program makes it
+        QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
+        base->setProjectTitle(QStringLiteral("Meta for test"));
+        base->NewUUID();
+        QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
+        ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
+        QVERIFY(meta);
+        QList<double> sse;
+        for (const QString& id : ids) {
+            QSharedPointer<DataClass> project = pm.getProjectData(id);
+            QVERIFY(project && project->ChildrenSize() >= 1);
+            AbstractModel* model = qobject_cast<AbstractModel*>(project->Children(0).data());
+            QVERIFY(model);
+            sse << model->SSE();
+            meta->addModel(model);
+        }
+        QCOMPARE(meta->ModelSize(), 2);
+        QVERIFY(pm.registerExistingProject(created.staticCast<DataClass>()));
+        QCOMPARE(pm.getLoadedProjectIds().size(), 3);
+
+        // saved like the program saves several projects
+        QJsonObject file;
+        const QStringList all = pm.getLoadedProjectIds();
+        for (int i = 0; i < all.size(); ++i)
+            file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("with_meta.suprafit"));
+        QVERIFY(JsonHandler::WriteJsonFile(file, path));
+
+        const LoadReport r = load(path); // clears the manager first
+        QVERIFY2(r.loaded, qPrintable(r.Details()));
+        QCOMPARE(r.projectsInFile, 3);
+        QCOMPARE(r.projectsLoaded, 3);
+        QVERIFY2(!r.Details().contains("Warning"), qPrintable(r.Details()));
+        QVERIFY2(r.Details().contains("rebuilt"), qPrintable(r.Details()));
+        const QVector<QWeakPointer<DataClass>> projects = pm.getAllProjects();
+        QCOMPARE(projects.size(), 3);
+        ::MetaModel* restored = nullptr;
+        for (const QWeakPointer<DataClass>& weak : projects)
+            if (QSharedPointer<DataClass> p = weak.toStrongRef())
+                if (::MetaModel* m = qobject_cast<::MetaModel*>(p.data()))
+                    restored = m;
+        QVERIFY2(restored, "the meta model is not a project of the manager after loading");
+        QCOMPARE(restored->ModelSize(), 2);
+        QCOMPARE(restored->ProjectTitle(), QStringLiteral("Meta for test"));
+        // the models the meta model was built from are not left behind as models of the projects they were made on (the meta model keeps copies)
+        for (const QWeakPointer<DataClass>& weak : projects)
+            if (QSharedPointer<DataClass> p = weak.toStrongRef())
+                if (!qobject_cast<::MetaModel*>(p.data()))
+                    QCOMPARE(p->ChildrenSize(), 4);
+        QCoreApplication::processEvents(); // the temporary models are deleted later
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        for (const QWeakPointer<DataClass>& weak : projects)
+            if (QSharedPointer<DataClass> p = weak.toStrongRef())
+                if (!qobject_cast<::MetaModel*>(p.data()))
+                    QCOMPARE(p->ChildrenSize(), 4);
+        for (int i = 0; i < 2; ++i)
+            QVERIFY2(std::abs(restored->Models()[i]->SSE() - sse[i]) < 1e-6 * std::max(1.0, sse[i]) + 1e-12, qPrintable(QStringLiteral("model %1: SSE %2, was %3").arg(i).arg(restored->Models()[i]->SSE()).arg(sse[i])));
+
+        // and it is saved again (the manager writes it as a project of its own)
+        const QStringList again = pm.getLoadedProjectIds();
+        QCOMPARE(again.size(), 3);
+        int metaBlocks = 0;
+        for (const QString& id : again)
+            if (pm.getProjectFileJson(id)["data"].toObject()["model"].toInt() == int(SupraFit::MetaModel))
+                ++metaBlocks;
+        QCOMPARE(metaBlocks, 1);
+
+        // a meta model whose projects are not in the file is left out and the report says which
+        QJsonObject onlyMeta;
+        for (const QString& id : again)
+            if (pm.getProjectFileJson(id)["data"].toObject()["model"].toInt() == int(SupraFit::MetaModel)) {
+                onlyMeta[QStringLiteral("project_0")] = pm.getProjectFileJson(id);
+                onlyMeta[QStringLiteral("project_1")] = pm.getProjectFileJson(again.first() == id ? again.last() : again.first());
+            }
+        const LoadReport lonely = load(write(dir, QStringLiteral("lonely.json"), QJsonDocument(onlyMeta).toJson()));
+        QVERIFY(lonely.loaded);
+        QVERIFY(lonely.HasProblems());
+        QVERIFY2(lonely.Details().contains("is not in the file"), qPrintable(lonely.Details()));
     }
 
     // A model whose stored fit is not reproduced (a changed model, an equation that cannot be calculated) is read, and the report says so.

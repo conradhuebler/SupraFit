@@ -168,20 +168,45 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
     /* lets connect the meta model, that when ever a new model is added 
      * when then connect the associated model widget after the color changed with something about changing the scater series color */
 
-    connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, this, [this]() {
-        int series = this->m_model_dataholder->getChartWrapper().toStrongRef()->SeriesSize();
-        if (qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().toStrongRef()->Series(series - 1))) {
-            ScatterSeries* serie = qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().toStrongRef()->Series(series - 1));
-            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, serie, &ScatterSeries::setColor);
-            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ToggleSeries, serie, [serie]() {
-                serie->setVisible(!serie->isVisible());
-            });
-            serie->setColor(this->m_model_dataholder->RecentModel()->ActiveColor());
-        }
-    });
+    connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, this, &MainWindow::ConnectMetaSeries);
     m_meta_model = true;
 
     return model;
+}
+
+/*! \brief The data series of the model that was added last follows its colour and the master checkbox of its tab. */
+void MainWindow::ConnectMetaSeries()
+{
+    QSharedPointer<ChartWrapper> wrapper = m_model_dataholder->getChartWrapper().toStrongRef();
+    if (!wrapper || !m_model_dataholder->RecentModel())
+        return;
+    const int series = wrapper->SeriesSize();
+    if (ScatterSeries* serie = qobject_cast<ScatterSeries*>(wrapper->Series(series - 1))) {
+        connect(m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, serie, &ScatterSeries::setColor);
+        connect(m_model_dataholder->RecentModel(), &ModelWidget::ToggleSeries, serie, [serie](int state) { serie->setVisible(state != 0); });
+        serie->setColor(m_model_dataholder->RecentModel()->ActiveColor());
+    }
+}
+
+void MainWindow::AdoptMetaModel(QSharedPointer<DataClass> base, QSharedPointer<AbstractModel> metaModel, const QList<QWeakPointer<ChartWrapper>>& sources)
+{
+    MetaModel* meta = qobject_cast<MetaModel*>(metaModel.data());
+    if (!meta || !base)
+        return;
+    m_data = base; // stored as a weak pointer: the ProjectManager keeps the meta model and its data
+    QSharedPointer<ChartWrapper> w = m_charts->setRawWrapper(QWeakPointer<ChartWrapper>());
+    m_model_dataholder->setData(base, w);
+    connect(meta, &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
+    connect(meta, &MetaModel::ModelAdded, this, &MainWindow::ConnectMetaSeries);
+    m_meta_model = true;
+
+    const QVector<QSharedPointer<AbstractModel>> models = meta->Models();
+    for (int k = 0; k < models.size(); ++k) {
+        if (k < sources.size() && sources[k])
+            w->addWrapper(sources[k]); // the data series of the project of this model
+        m_model_dataholder->addMetaModel(models[k]);
+        ConnectMetaSeries();
+    }
 }
 
 void MainWindow::setCurrentTab(int index)

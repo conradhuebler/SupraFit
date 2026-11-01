@@ -21,7 +21,8 @@
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
 ## Older project files
-- [ ] Remaining models whose stored fit is not reproduced after loading (fl 20-23, uvvis 32, ChaiScript script models, Tian 109, few ITC): causes in [docs/project_compat_corpus_2026-10-31.md](docs/project_compat_corpus_2026-10-31.md); meta models of multi-project files are reported but not rebuilt on Open (`SupraFitGui::LoadMetaModels` is only called by the old `LoadProject`).
+- [ ] `test_modelwidget_layout` (full run, also on master) aborts intermittently in `ChartWidget::Repaint` from `ModelWidget::ModelWidget` (test `mainToolbarHasThreeZones`); alone it passes, so state of an earlier test is involved; ASan also reports a use-after-free in `~nmr_any_Model` (`SearchBatch::setModel` clone).
+- [ ] Remaining models whose stored fit is not reproduced after loading (fl 20-23, uvvis 32, ChaiScript script models, Tian 109, few ITC): causes in [docs/project_compat_corpus_2026-10-31.md](docs/project_compat_corpus_2026-10-31.md); interactive meta models (project tree: drag a model onto a meta model, `SupraFitGui::AddMetaModel`) still use `m_data_list`/`m_hashed_*` of the old load path, are not registered with the `ProjectManager` (so they are not saved) and are untested.
 - [ ] ChaiScript-era script models (`var x = ...`, `def Calculate(int i, int j) {...}`) are read but cannot be calculated by ExprTk; convert the simple forms (`return <expr>;`, `NAME[j]` -> `NAME`) on import or say which equation line fails.
 - [ ] `suprafit_cli` prints the load report of `ProjectManager` (reason of a failure, models left out); only the GUI shows it so far.
 

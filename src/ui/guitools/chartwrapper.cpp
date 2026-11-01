@@ -125,9 +125,45 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     UpdateModel();
 }
 
+/*! \brief Takes over the data series of another wrapper as series of this one (a meta model draws the data of the projects of its models). Claude Generated.
+ *
+ * Every series of \p wrapper gets a copy here, which follows the source when it changes (`ModelChanged`); `SeriesAdded` tells the chart to draw it.
+ * (The simplified wrapper of 2025-09 only remembered the wrapper: a meta model had no data series to put its models onto, and `ChartWidget::addModel` read
+ * a series that did not exist.)
+ */
 void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 {
+    const QSharedPointer<ChartWrapper> source = wrapper.toStrongRef();
+    if (!source || m_stored_wrapper.contains(wrapper))
+        return;
     m_stored_wrapper << wrapper;
+
+    for (int i = 0; i < source->SeriesSize(); ++i) {
+        ScatterSeries* original = qobject_cast<ScatterSeries*>(source->Series(i));
+        if (!original)
+            continue;
+        QPointer<ScatterSeries> series = new ScatterSeries;
+        for (const QPointF& point : original->points())
+            series->append(point);
+        series->setMarkerSize(original->markerSize() * 0.75);
+        series->setMarkerShape(original->markerShape());
+
+        connect(source.data(), &ChartWrapper::ModelChanged, series, [series, wrapper, i]() {
+            const QSharedPointer<ChartWrapper> now = wrapper.toStrongRef();
+            if (!now || !series || !now->Series(i))
+                return;
+            series->clear();
+            for (const QPointF& point : now->Series(i)->points())
+                series->append(point);
+        });
+
+        const int index = m_stored_series.size();
+        m_stored_series << series.data();
+        if (m_pointData.size() <= index)
+            m_pointData.resize(index + 1);
+        connect(series, &ScatterSeries::visibilityChangeRequested, this, [this, index](bool visible) { setSeriesVisible(index, visible); });
+        emit SeriesAdded(index);
+    }
 }
 
 void ChartWrapper::UpdateModel()

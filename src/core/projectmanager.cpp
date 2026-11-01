@@ -22,13 +22,15 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QStandardPaths>
 
-#ifdef DEBUG_ON
-#include "fmt/core.h"
+#include "src/core/models/meta_model.h"
 #include "src/version.h"
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
+
+#ifdef DEBUG_ON
+#include "fmt/core.h"
 #endif
 
 Q_LOGGING_CATEGORY(projectManager, "suprafit.core.projectmanager")
@@ -128,14 +130,15 @@ bool ProjectManager::loadProject(const QString& filePath)
             m_report.projectsInFile = int(projectKeys.size());
             const QString base = fileInfo.completeBaseName();
             int number = 0;
+            QList<QPair<QString, QJsonObject>> metaBlocks;
             for (const QString& key : projectKeys) {
                 ++number;
                 const QJsonObject single = projectData[key].toObject();
                 m_scope = key;
                 const QJsonObject block = single["data"].toObject();
                 if (block.contains("model") && block["model"].toInt() == int(SupraFit::MetaModel)) {
-                    // a meta model compares the models of other projects of the file; it is not a project of its own, and the load of a file does not rebuild it yet
-                    addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\" (it compares models of other projects of the file; meta models are not restored when a file is opened yet).").arg(block["name"].toString()));
+                    // a meta model compares the models of other projects of the file: it is rebuilt when they are all there (below)
+                    metaBlocks << qMakePair(key, block);
                 } else if (!single.contains("data")) {
                     addIssue(LoadIssue::Warning, "file", tr("Left out: the entry holds no data."));
                 } else {
@@ -147,6 +150,16 @@ bool ProjectManager::loadProject(const QString& filePath)
                         if (projectId.isEmpty())
                             projectId = id;
                     }
+                }
+                m_scope.clear();
+            }
+            for (const auto& meta : std::as_const(metaBlocks)) {
+                m_scope = meta.first;
+                const QString id = restoreMetaModel(meta.second);
+                if (!id.isEmpty()) {
+                    ++m_report.projectsLoaded;
+                    if (projectId.isEmpty())
+                        projectId = id;
                 }
                 m_scope.clear();
             }
@@ -845,6 +858,7 @@ void ProjectManager::clearAllProjects()
 
     m_projects.clear();
     m_projectHash.clear();
+    m_metaBases.clear();
     m_currentProjectId.clear();
 
     emit projectsCleared();
@@ -1198,6 +1212,78 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
     }
 }
 
+bool ProjectManager::isMetaModel(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    const QSharedPointer<DataClass> project = m_projectHash.value(projectId).toStrongRef();
+    return project && qobject_cast<::MetaModel*>(project.data());
+}
+
+QSharedPointer<DataClass> ProjectManager::metaModelBase(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_metaBases.value(projectId);
+}
+
+QString ProjectManager::restoreMetaModel(const QJsonObject& block)
+{
+    const QString name = block["name"].toString();
+    const QString label = name.isEmpty() ? tr("MetaModel") : name;
+    const int size = block["size"].toInt();
+    const QJsonObject uuids = block["uuids"].toObject(), raw = block["raw"].toObject();
+
+    QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
+    base->setProjectTitle(label);
+    if (base->UUID().isEmpty())
+        base->NewUUID();
+    QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
+    ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
+    if (!meta) {
+        addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\" could not be created.").arg(label));
+        return QString();
+    }
+
+    int found = 0;
+    for (int i = 0; i < size; ++i) {
+        const QString uuid = uuids[QString::number(i)].toString();
+        const QSharedPointer<DataClass> source = m_projectHash.value(uuid).toStrongRef();
+        const QJsonObject modelBlock = raw[QString::number(i)].toObject();
+        if (!source) {
+            addIssue(LoadIssue::Warning, "file", tr("The meta model \"%1\" lacks its model %2: the project %3 it belongs to is not in the file.").arg(label).arg(i + 1).arg(uuid));
+            continue;
+        }
+        const int id = modelBlock["model"].isString() ? int(Name2Model(modelBlock["model"].toString())) : modelBlock["model"].toInt();
+        QSharedPointer<AbstractModel> model = CreateModel(id, source.data());
+        if (!model) {
+            addIssue(LoadIssue::Warning, "file", tr("The meta model \"%1\" lacks its model %2: model number %3 does not fit the data of its project.").arg(label).arg(i + 1).arg(id));
+            continue;
+        }
+        const bool imported = modelBlock["SupraFit"].toInt() < 2002 ? model->LegacyImportModel(modelBlock) : model->ImportModel(modelBlock);
+        if (!imported) {
+            addIssue(LoadIssue::Warning, "file", tr("The meta model \"%1\" lacks its model %2: it could not be read.").arg(label).arg(i + 1));
+            continue;
+        }
+        meta->addModel(model.data()); // the meta model keeps a copy
+        source->RemoveChild(model.data()); // the model made here is not a model of the project
+        ++found;
+    }
+    if (!found) {
+        addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\": none of its models is in the file.").arg(label));
+        return QString();
+    }
+    meta->ImportModel(block);
+    meta->setProjectTitle(label);
+
+    QSharedPointer<DataClass> project = created.staticCast<DataClass>();
+    const QString projectId = project->UUID();
+    m_projects.append(project);
+    m_projectHash[projectId] = project.toWeakRef();
+    m_metaBases[projectId] = base;
+    addIssue(LoadIssue::Note, "file", tr("The meta model \"%1\" was rebuilt from %2 of %3 models.").arg(label).arg(found).arg(size));
+    emit projectAdded(projectId, label);
+    return projectId;
+}
+
 QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project) const
 {
     if (!project) {
@@ -1207,6 +1293,11 @@ QJsonObject ProjectManager::saveProjectAsJson(QSharedPointer<DataClass> project)
     try {
         // Wrap project data in correct JSON structure for GUI compatibility - Claude Generated
         QJsonObject wrappedProject;
+        if (::MetaModel* meta = qobject_cast<::MetaModel*>(project.data())) {
+            // a meta model is stored as a project whose "data" is the model itself (it names the projects of its models by UUID), as it always was
+            wrappedProject["data"] = meta->ExportModel();
+            return wrappedProject;
+        }
         wrappedProject["data"] = project->ExportData();
         // Include serialized models (model_0, model_1, ...) so the JSON view exposes the
         // full project, matching the structure loadProjectFromJson() reads back - Claude Generated
