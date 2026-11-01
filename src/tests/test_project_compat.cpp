@@ -75,6 +75,27 @@ private:
     }
 
 private slots:
+    // The system parameters of a thermogram carry the names of the ITC model, not "Imported parameter".
+    void thermogramSystemParametersAreNamed()
+    {
+        QJsonObject json;
+        QVERIFY(JsonHandler::ReadJsonFile(json, sample(QStringLiteral("reference/simulated_1_1.json"))));
+        QJsonObject data = json["data"].toObject();
+        data["DataType"] = 2; // thermogram
+        QJsonObject system;
+        system["1"] = "1.4";
+        system["2"] = "0.1";
+        system["3"] = "1.0";
+        system["4"] = "298";
+        data["system"] = system;
+        DataClass project;
+        QVERIFY(project.ImportData(data));
+        QCOMPARE(project.getSystemParameter(1).Name(), QStringLiteral("Cell Volume"));
+        QCOMPARE(project.getSystemParameter(2).Name(), QStringLiteral("Cell concentration"));
+        QCOMPARE(project.getSystemParameter(3).Name(), QStringLiteral("Syringe concentration"));
+        QCOMPARE(project.getSystemParameter(4).Name(), QStringLiteral("Temperature"));
+    }
+
     // A file that cannot be read says why, in words, with the place where JSON broke.
     void failuresHaveReasons()
     {

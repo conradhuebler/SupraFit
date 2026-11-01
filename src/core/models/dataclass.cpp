@@ -306,7 +306,8 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 
     d->m_systemObject = topjson["system"].toObject();
 
-    // Claude Generated - Load system parameters after importing JSON
+    // Claude Generated - Load system parameters after importing JSON (the type first: it names them)
+    d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
     LoadSystemParameter();
 
     d->m_independent_model->ImportTable(topjson["independent"].toObject());
@@ -492,9 +493,16 @@ void DataClass::LoadSystemParameter()
         if (!d->m_system_parameter.contains(index)) {
             // We need parameter type info, but we don't have it in JSON
             // Default to Scalar type for imported parameters
-            addSystemParameter(index, QString("ImportedParam%1").arg(index), 
-                              QString("Imported parameter %1").arg(index), 
-                              SystemParameter::Scalar);
+            // the parameters of a thermogram are the ones of the ITC models (indices of AbstractItcModel)
+            if (d->m_datatype == DataClassPrivate::Thermogram && index >= 1 && index <= 5) {
+                static const char* names[] = { "Cell Volume", "Cell concentration", "Syringe concentration", "Temperature", "Cell Volume constant" };
+                static const char* comments[] = { "Volume of the cell in \u03bcL", "Concentration in cell in mmol/L", "Concentration in syringe in mmol/L", "Temperature in K", "Keep the volume in cell constant" };
+                addSystemParameter(index, QString::fromUtf8(names[index - 1]), QString::fromUtf8(comments[index - 1]),
+                    index == 5 ? SystemParameter::Boolean : SystemParameter::Scalar);
+            } else
+                addSystemParameter(index, QString("ImportedParam%1").arg(index),
+                    QString("Imported parameter %1").arg(index),
+                    SystemParameter::Scalar);
         }
         setSystemParameterValue(index, it.value().toVariant());
     }
