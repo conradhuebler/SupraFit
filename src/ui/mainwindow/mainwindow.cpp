@@ -161,7 +161,7 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
     QSharedPointer<AbstractModel> model = CreateModel(SupraFit::MetaModel, strongData);
     QSharedPointer<ChartWrapper> w = m_charts->setRawWrapper(wrapper);
 
-    m_model_dataholder->setData(strongData, w);
+    m_model_dataholder->setData(model, w); // the meta model is the data of its window: it gets the meta overview tab
 
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
 
@@ -195,7 +195,7 @@ void MainWindow::AdoptMetaModel(QSharedPointer<DataClass> base, QSharedPointer<A
         return;
     m_data = base; // stored as a weak pointer: the ProjectManager keeps the meta model and its data
     QSharedPointer<ChartWrapper> w = m_charts->setRawWrapper(QWeakPointer<ChartWrapper>());
-    m_model_dataholder->setData(base, w);
+    m_model_dataholder->setData(metaModel, w); // the meta model is the data of its window: it gets the meta overview tab
     connect(meta, &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
     connect(meta, &MetaModel::ModelAdded, this, &MainWindow::ConnectMetaSeries);
     m_meta_model = true;

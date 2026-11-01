@@ -88,9 +88,9 @@ void MetaModelWidget::setUi()
     m_minimize = new QPushButton(tr("Minimize"));
     layout->addWidget(m_minimize, 1, 1);
     m_minimize->setStyleSheet("background-color: #77d740; color: black;");
-    layout->addWidget(new QLabel(tr("Connection Strategy for Parameters:")), 1, 2);
     m_history = new QPushButton(tr("Optimisation History"));
     layout->addWidget(m_history, 1, 2);
+    layout->addWidget(new QLabel(tr("Connection Strategy for Parameters:")), 1, 3);
     m_history->setStyleSheet("background-color: #77d740; color: black;");
 
     m_type = new QComboBox;

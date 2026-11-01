@@ -71,6 +71,7 @@
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/core/models/titrations/fluorescence/fl_any_Model.h"
@@ -1313,6 +1314,25 @@ private slots:
         QVERIFY2(metaWindow, "no window of the meta model");
         QCOMPARE(metaWindow->ModelCount(), 2);
         QVERIFY(metaWindow->getChartWrapper().toStrongRef()->SeriesSize() >= 2); // the data series of both projects
+        // the meta model itself has its overview (parameters, minimise, statistics), not only its models
+        MetaModelWidget* overview = metaWindow->findChild<MetaModelWidget*>();
+        QVERIFY2(overview, "the meta model has no overview widget");
+        // its buttons work: calculate and minimise leave a finite fit
+        for (const QString& label : { QStringLiteral("Calculate"), QStringLiteral("Minimize") }) {
+            QPushButton* button = nullptr;
+            for (QPushButton* b : overview->findChildren<QPushButton*>())
+                if (b->text() == label)
+                    button = b;
+            QVERIFY2(button, qPrintable(label + QStringLiteral(" button missing")));
+            button->click();
+            QVERIFY2(std::isfinite(overview->Model()->SSE()), qPrintable(label + QStringLiteral(": SSE is not finite")));
+        }
+        if (!qEnvironmentVariable("SUPRAFIT_SHOT_DIR").isEmpty()) {
+            metaWindow->show();
+            metaWindow->setCurrentTab(0);
+            QTest::qWait(300);
+            metaWindow->grab().save(qEnvironmentVariable("SUPRAFIT_SHOT_DIR") + QStringLiteral("/meta_window.png"));
+        }
         QVERIFY2(dialogs.isEmpty(), qPrintable(QStringLiteral("a modal dialog came up: %1").arg(dialogs.join(", "))));
         QDir(dirPath).removeRecursively();
     }
