@@ -628,6 +628,15 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
     return models;
 }
 
+void DataClass::RemoveChild(const DataClass* child)
+{
+    for (auto it = d->m_children.begin(); it != d->m_children.end(); ++it)
+        if (it->data() == child) {
+            d->m_children.erase(it);
+            return;
+        }
+}
+
 void DataClass::AddChildren(QPointer<DataClass> data)
 {
     // Avoid registering the same child twice: an AbstractModel self-registers in its

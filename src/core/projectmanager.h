@@ -114,6 +114,10 @@ public:
      * - .itc/.dh (specialized formats)
      */
     bool loadProject(const QString& filePath);
+    /*! \brief Whether the project is a meta model (it compares models of other projects; it has no data of its own). */
+    bool isMetaModel(const QString& projectId) const;
+    /*! \brief The plain data object a restored meta model was made on (it shares the data of the meta model), null for other projects. */
+    QSharedPointer<DataClass> metaModelBase(const QString& projectId) const;
     /*! \brief What the last `loadProject` (or `loadProjectFromJson`) found: why it failed, which models it left out. */
     const LoadReport& lastLoadReport() const { return m_report; }
 
@@ -425,6 +429,9 @@ private:
     QString projectJsonProblem(const QJsonObject& projectJson) const;
     void addIssue(LoadIssue::Severity severity, const QString& scope, const QString& message);
     QString loadProjectFromJsonImpl(const QJsonObject& jsonData, const QString& sourceFile);
+    /*! \brief Rebuilds a meta model of a multi-project file from the projects loaded before it (the models of other projects, by their UUID) and registers it
+     * as a project of its own. Empty if no model of it can be found (the reasons are issues of the report). */
+    QString restoreMetaModel(const QJsonObject& block);
     LoadReport m_report;
     QString m_scope; ///< the project of a multi-project file that is read, prefix of the scope of an issue
     bool m_reportOpen = false; ///< `loadProject` keeps one report over the file read and the project made from it
@@ -434,6 +441,7 @@ private:
     // Project storage and management
     QVector<QSharedPointer<DataClass>> m_projects; ///< All managed projects
     QHash<QString, QWeakPointer<DataClass>> m_projectHash; ///< UUID-based project access
+    QHash<QString, QSharedPointer<DataClass>> m_metaBases; ///< the plain data object a restored meta model was made on (it shares the data of the meta model)
     QString m_currentProjectId; ///< Currently active project UUID
 
     // Thread safety and synchronization

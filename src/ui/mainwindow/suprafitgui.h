@@ -146,8 +146,18 @@ public slots:
 
     /*! \brief The dialog (and the log) for a project file that did not open or opened without something. */
     void ShowLoadReport(const QString& file, const SupraFit::LoadReport& report);
+    /*! \brief Test access: the windows of the projects by their UUID. */
+    QList<MainWindow*> ProjectWindows() const
+    {
+        QList<MainWindow*> windows;
+        for (const QPointer<MainWindow>& w : m_project_windows)
+            if (w)
+                windows << w.data();
+        return windows;
+    }
 
 private:
+    void ShowMetaModel(const QString& projectId, QSharedPointer<DataClass> projectData);
     // This will become an improved data load mechanism somedays
 
     // QVector<QJsonObject> ProjectFromFile(const QString& file);

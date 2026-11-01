@@ -427,6 +427,9 @@ public:
 
     inline QString RootDir() const { return d->m_root_dir; }
 
+    /*! \brief Takes a model out of the children of the project again (a model made on the data only to be copied elsewhere does not belong to the project). Claude Generated. */
+    void RemoveChild(const DataClass* child);
+
 private:
     QMutex m_lock;
     bool m_plot_x = false;

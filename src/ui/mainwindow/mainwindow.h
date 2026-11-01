@@ -53,6 +53,8 @@ public:
     // SetData() removed - use setDataFromProjectManager() instead
     void setDataFromProjectManager(const QString& projectId, QSharedPointer<ChartWrapper> wrapper);
     QSharedPointer<AbstractModel> CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper = QWeakPointer<ChartWrapper>());
+    /*! \brief Shows a meta model that already exists (restored from a file): its models, and the data series of the projects they belong to (\p sources, one wrapper per model). */
+    void AdoptMetaModel(QSharedPointer<DataClass> base, QSharedPointer<AbstractModel> meta, const QList<QWeakPointer<ChartWrapper>>& sources);
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
     inline QJsonObject SaveModel(int index) const { return m_model_dataholder->SaveModel(index); }
@@ -92,6 +94,7 @@ public slots:
     // void LoadFile(const QString& file);
 
 private:
+    void ConnectMetaSeries();
     void ReadGeometry();
     void WriteSettings();
 

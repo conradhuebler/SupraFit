@@ -504,6 +504,10 @@ SupraFitGui::SupraFitGui()
 
 SupraFitGui::~SupraFitGui()
 {
+    // the title bars of the project windows are destroyed with the window, after the members of this object: they must not call back into it
+    for (QObject* bar : std::as_const(m_connected_bars))
+        disconnect(bar, nullptr, this, nullptr);
+    m_connected_bars.clear();
 #ifdef USE_LLM
     // the dock stores its chat through the host: it must go first
     delete m_chat_dock;
@@ -2586,6 +2590,12 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
         return;
     }
     
+    // a meta model (restored from a file) has its models and the data series of other projects, not data of its own
+    if (SupraFit::ProjectManager::instance().isMetaModel(projectId)) {
+        ShowMetaModel(projectId, projectData);
+        return;
+    }
+
     // Create new MainWindow for this project
     MainWindow* window = new MainWindow;
     ConnectProjectWindow(window);
@@ -2615,6 +2625,35 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
     window->getModelDataHolder()->syncModelsWithProjectManager();
     
     // Update project tree
+    m_project_tree->UpdateStructure();
+}
+
+/*! \brief The window of a meta model that the ProjectManager restored: its models, and the data series of the projects they belong to (Claude Generated). */
+void SupraFitGui::ShowMetaModel(const QString& projectId, QSharedPointer<DataClass> projectData)
+{
+    ::MetaModel* meta = qobject_cast<::MetaModel*>(projectData.data());
+    const QSharedPointer<DataClass> base = SupraFit::ProjectManager::instance().metaModelBase(projectId);
+    if (!meta || !base) {
+        qWarning() << "SupraFitGui::ShowMetaModel: no meta model or no data for" << projectId;
+        return;
+    }
+    QList<QWeakPointer<ChartWrapper>> sources;
+    for (const QSharedPointer<AbstractModel>& model : meta->Models()) {
+        MainWindow* source = m_project_windows.value(model->UUID()).data(); // the model of a project has the UUID of the project
+        sources << (source ? source->getChartWrapper() : QWeakPointer<ChartWrapper>());
+    }
+
+    MainWindow* window = new MainWindow;
+    ConnectProjectWindow(window);
+    window->setObjectName(QString("mainwindow_%1").arg(projectId));
+    connect(meta, &MetaModel::Message, m_messages_widget, &MessageDock::Message);
+    connect(meta, &MetaModel::Warning, m_messages_widget, &MessageDock::Warning);
+    m_project_windows[projectId] = window;
+    const int index = m_stack_widget->addWidget(window);
+    m_stack_widget->setCurrentIndex(index);
+    connect(window, &MainWindow::ModelsChanged, m_project_tree, [this]() { m_project_tree->UpdateStructure(); });
+    window->AdoptMetaModel(base, projectData.objectCast<AbstractModel>(), sources);
+    setActionEnabled(true);
     m_project_tree->UpdateStructure();
 }
 

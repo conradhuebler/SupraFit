@@ -74,6 +74,8 @@
 #include "src/ui/guitools/flowlayout.h"
 #include "src/core/models/titrations/nmr/nmr_any_Model.h"
 #include "src/core/models/titrations/fluorescence/fl_any_Model.h"
+#include "src/core/jsonhandler.h"
+#include "src/core/models/meta_model.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include <QtWidgets/QSystemTrayIcon>
 #include "src/ui/widgets/messagedock.h"
@@ -1248,6 +1250,114 @@ private slots:
         QCoreApplication::processEvents();
         const QStringList overlaps = overlappingWidgets(&widget);
         QVERIFY2(overlaps.isEmpty(), qPrintable(overlaps.join("; ")));
+    }
+
+    // A meta model in a multi-project file is rebuilt and shown: a window of its own with the models it compares (as copies, read only) and the data series
+    // of the projects they belong to. Claude Generated.
+    void metaModelOfAFileIsShown()
+    {
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        // a file with two projects and a meta model of one model of each, made through the manager
+        const QString dirPath = QDir::tempPath() + QStringLiteral("/suprafit_meta_test_%1").arg(QCoreApplication::applicationPid());
+        QDir().mkpath(dirPath);
+        const QString path = dirPath + QStringLiteral("/with_meta.suprafit");
+        {
+            SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+            pm.clearAllProjects();
+            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json")));
+            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json")));
+            QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
+            base->setProjectTitle(QStringLiteral("Meta for the window"));
+            base->NewUUID();
+            QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
+            ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
+            QVERIFY(meta);
+            for (const QString& id : pm.getLoadedProjectIds())
+                meta->addModel(qobject_cast<AbstractModel*>(pm.getProjectData(id)->Children(0).data()));
+            QVERIFY(pm.registerExistingProject(created.staticCast<DataClass>()));
+            QJsonObject file;
+            const QStringList all = pm.getLoadedProjectIds();
+            for (int i = 0; i < all.size(); ++i)
+                file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+            QVERIFY(JsonHandler::WriteJsonFile(file, path));
+            pm.clearAllProjects();
+        }
+
+        QStringList dialogs;
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, [&dialogs]() {
+            if (QWidget* w = QApplication::activeModalWidget()) {
+                dialogs << w->windowTitle();
+                w->close();
+            }
+        });
+        closer.start();
+        SupraFitGui gui;
+        gui.resize(1500, 700);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+        gui.LoadFile(path);
+        QTRY_COMPARE_WITH_TIMEOUT(gui.ProjectWindows().size(), 3, 20000);
+        MainWindow* metaWindow = nullptr;
+        for (MainWindow* w : gui.ProjectWindows())
+            if (w->isMetaModel())
+                metaWindow = w;
+        QVERIFY2(metaWindow, "no window of the meta model");
+        QCOMPARE(metaWindow->ModelCount(), 2);
+        QVERIFY(metaWindow->getChartWrapper().toStrongRef()->SeriesSize() >= 2); // the data series of both projects
+        QVERIFY2(dialogs.isEmpty(), qPrintable(QStringLiteral("a modal dialog came up: %1").arg(dialogs.join(", "))));
+        QDir(dirPath).removeRecursively();
+    }
+
+    // A real file with meta models (SUPRAFIT_META_TEST_FILE, skipped if unset): every meta model of it gets a window with models. Claude Generated.
+    void metaModelsOfARealFile()
+    {
+        const QString path = qEnvironmentVariable("SUPRAFIT_META_TEST_FILE");
+        if (path.isEmpty())
+            QSKIP("SUPRAFIT_META_TEST_FILE is not set");
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QStringList dialogs;
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, [&dialogs]() {
+            if (QWidget* w = QApplication::activeModalWidget()) {
+                dialogs << w->windowTitle();
+                w->close();
+            }
+        });
+        closer.start();
+        SupraFit::ProjectManager::instance().clearAllProjects();
+        SupraFitGui gui;
+        gui.resize(1500, 700);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+        gui.LoadFile(path);
+        QTest::qWait(3000);
+        int metas = 0, models = 0;
+        for (MainWindow* w : gui.ProjectWindows())
+            if (w->isMetaModel()) {
+                ++metas;
+                models += w->ModelCount();
+                qInfo().noquote() << QString("meta window '%1': %2 models").arg(w->Name()).arg(w->ModelCount());
+            }
+        qInfo() << "windows" << gui.ProjectWindows().size() << "meta windows" << metas << "models in them" << models << "dialogs" << dialogs;
+        QVERIFY(metas >= 1);
+        QVERIFY(models >= metas);
     }
 
     // The report of a project file that could not be read completely: a dialog whose text has the room it needs (no fixed size, no scrolling for a

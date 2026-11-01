@@ -679,7 +679,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         QString dataUuid = data->UUID();
         
         // Check if this data is managed by ProjectManager
-        if (projectManager.hasProject(dataUuid)) {
+        if (projectManager.hasProject(dataUuid) && !projectManager.isMetaModel(dataUuid)) { // the models of a meta model are copies, not models of a project
             m_currentProjectId = dataUuid;
             qDebug() << "ModelDataHolder::setData: Data is managed by ProjectManager, project ID:" << m_currentProjectId;
         } else {
