@@ -440,11 +440,14 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
     charts.error_wrapper = error_wrapper;
     charts.signal_wrapper = signal_wrapper;
     charts.data_wrapper = m_data_mapper;
-    connect(model.data(), &AbstractModel::Recalculated, model.data(), [model, this]() {
-        m_signal_x = model->XLabel();
-        m_signal_y = model->YLabel();
-        m_error_x = model->XLabel();
-        m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
+    // the widget is the receiver: the model may outlive this chart (shared with the project) and must not call into it then;
+    // the raw pointer is safe, the signal comes from that model
+    AbstractModel* source = model.data();
+    connect(source, &AbstractModel::Recalculated, this, [source, this]() {
+        m_signal_x = source->XLabel();
+        m_signal_y = source->YLabel();
+        m_error_x = source->XLabel();
+        m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(source->YLabel());
         Repaint();
     });
 
