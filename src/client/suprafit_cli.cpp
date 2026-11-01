@@ -284,6 +284,24 @@ bool SupraFitCli::LoadFile()
 
         return success;
 
+    } else if (fileData.contains("DataType") && fileData.contains("independent") && fileData.contains("dependent")) {
+
+        // A plain table (.dat, .csv, .itc ...): FileHandler hands over the data object itself, it becomes a project of its own.
+        // Claude Generated
+        delete handler;
+
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        QJsonObject project;
+        project["data"] = fileData;
+        const QString id = projectManager.loadProjectFromJson(project, m_infile);
+        if (id.isEmpty()) {
+            fmt::print(stderr, "Error: Could not make a project of the table '{}'\n", m_infile.toStdString());
+            return false;
+        }
+        m_data_vector.clear();
+        m_data_vector = projectManager.getAllProjectsAsJson();
+        return true;
+
     } else {
 
         fmt::print(stderr, "Error: Unknown file format in '{}' (keys: {})\n",
