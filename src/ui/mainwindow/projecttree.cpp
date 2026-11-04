@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/loadtiming.h"
 #include <QtCore/QJsonDocument>
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 
@@ -64,6 +65,7 @@ QSize ProjectTreeEntry::sizeHint(const QStyleOptionViewItem& option, const QMode
 // Claude Generated - ProjectManager Integration for UpdateStructure (CRASH FIX)
 void ProjectTree::UpdateStructure()
 {
+    LoadTiming::Scope loadTiming("tree.UpdateStructure");
     // Clear existing UUID mappings
     m_uuids.clear();
     m_ptr_uuids.clear();

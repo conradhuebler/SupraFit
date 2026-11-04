@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/loadtiming.h"
 #include "src/global.h"
 #include "src/core/models/meta_model.h" // MetaModel class (was transitive via models.h)
 #include "src/core/models/scriptmodel.h"
@@ -96,7 +97,10 @@ TabWidget::TabWidget(QWidget* parent)
 void TabWidget::setHeight(int height)
 {
     m_height = qMax(height, m_height);
-    setStyleSheet(QString("QTabBar::tab { height: %1px;}").arg(m_height));
+    // a new style sheet polishes every widget below the tabs again: set it only when the height changes, not once per model added
+    const QString sheet = QString("QTabBar::tab { height: %1px;}").arg(m_height);
+    if (sheet != styleSheet())
+        setStyleSheet(sheet);
 }
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
@@ -706,8 +710,11 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         auto dataRef = m_data.toStrongRef();
         if (dataRef && dataRef->IndependentModel()) {
             m_TitleBarWidget->addToMenu(dataRef->IndependentModel()->columnCount());
-            const bool dialog_edit = dataRef->ExportData()["SupraFit"].toInt() >= 1602
-                && (dataRef->DataType() == DataClassPrivate::Thermogram || dataRef->DataType() == DataClassPrivate::Spectrum);
+            // ExportData()["SupraFit"] is the version of this program (qint_version), never that of the file, so the check was always
+            // true; ExportData() copied every table (seconds for a large project) to say so. What it did on the way, the system
+            // object following the parameters, is kept.
+            dataRef->WriteSystemParameter();
+            const bool dialog_edit = dataRef->DataType() == DataClassPrivate::Thermogram || dataRef->DataType() == DataClassPrivate::Spectrum;
             m_TitleBarWidget->setEditDataToggles(!dialog_edit);
             m_TitleBarWidget->setEditDataChecked(dataRef->DependentModel()->isEditable());
             m_TitleBarWidget->setIndependentCount(dataRef->IndependentModel()->columnCount());
@@ -1020,6 +1027,7 @@ void ModelDataHolder::Json2Model(const QJsonObject& object)
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object, bool readonly)
 {
+    LoadTiming::Scope loadTiming("mdh.ActiveModel");
     // Claude Generated - Add comprehensive safety checks
     if (!t) {
         qWarning() << "ModelDataHolder::ActiveModel: Invalid model provided";
@@ -1237,6 +1245,9 @@ void ModelDataHolder::syncModelsWithProjectManager()
     
     qDebug() << "🔍 DEBUG ModelDataHolder::syncModelsWithProjectManager: Found" << models.size() << "models to sync";
 
+    // the chart repaints once for all models, not once (and again for the first calculation) per model added
+    if (m_charts)
+        m_charts->BeginRepaintBatch();
     // Claude Generated FIX: Prevent widget duplication on project reload
     // Create ModelWidgets for all models - check for existing widgets first
     for (auto& model : models) {
@@ -1257,6 +1268,8 @@ void ModelDataHolder::syncModelsWithProjectManager()
             createModelWidgetFromModel(model);
         }
     }
+    if (m_charts)
+        m_charts->EndRepaintBatch();
 
     // Claude Generated: Fix for LineSeries visibility issue in project loading
     // Claude Generated: Clean replacement for timer hack - immediate state application

@@ -1,12 +1,14 @@
 /*
  * SupraFit Project Manager - Centralized Project Management Implementation
- * Copyright (C) 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2025 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * Implementation of centralized project management for CLI/GUI integration
  * Claude Generated - Educational-First Design Implementation
  */
 
 #include "projectmanager.h"
+
+#include "src/core/loadtiming.h"
 
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
@@ -76,6 +78,7 @@ ProjectManager::~ProjectManager()
 
 bool ProjectManager::loadProject(const QString& filePath)
 {
+    LoadTiming::Scope loadTiming("pm.loadProject");
     QMutexLocker locker(&m_projectsMutex);
 
     m_report = LoadReport();
@@ -97,21 +100,19 @@ bool ProjectManager::loadProject(const QString& filePath)
         return fail("file", tr("The file does not exist."));
 
     try {
-        // Use existing FileHandler infrastructure
-        FileHandler* handler = new FileHandler(filePath, this);
-        handler->LoadFile();
-
+        // A project file (.suprafit/.json) is read once, by JsonHandler; FileHandler would read and parse it a second time only to say
+        // that it is one (its type of a project file is the suffix alone). Other formats go through FileHandler.
         QJsonObject projectData;
-        if (handler->Type() == FileHandler::SupraFit) {
+        const QString suffix = fileInfo.suffix().toLower();
+        if (suffix == QLatin1String("suprafit") || suffix == QLatin1String("json")) {
             // Load SupraFit project file: the reason of a failure is part of the report
             QString reason;
-            delete handler;
             if (!JsonHandler::ReadFile(filePath, projectData, &reason, &m_report.format))
                 return fail("file", reason);
         } else {
-            // Use handler data for other formats
-            projectData = handler->getJsonData();
-            delete handler;
+            FileHandler handler(filePath);
+            handler.LoadFile();
+            projectData = handler.getJsonData();
         }
 
         // Validate and create project
@@ -906,6 +907,7 @@ void ProjectManager::addIssue(LoadIssue::Severity severity, const QString& scope
 
 QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, const QString& sourceFile)
 {
+    LoadTiming::Scope loadTiming("pm.loadProjectFromJson");
     try {
         // Phase 2: Complete JSON handling - Extract data part for DataClass creation
         QJsonObject dataObject = jsonData.contains("data") ? jsonData["data"].toObject() : jsonData;
@@ -1227,6 +1229,7 @@ QSharedPointer<DataClass> ProjectManager::metaModelBase(const QString& projectId
 
 QString ProjectManager::restoreMetaModel(const QJsonObject& block)
 {
+    LoadTiming::Scope loadTiming("pm.restoreMetaModel");
     const QString name = block["name"].toString();
     const QString label = name.isEmpty() ? tr("MetaModel") : name;
     const int size = block["size"].toInt();

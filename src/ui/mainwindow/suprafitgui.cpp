@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/loadtiming.h"
 #include "src/global.h"
 #include "src/global_config.h"
 #ifdef USE_LLM
@@ -82,6 +83,8 @@
 #include <QtGui/QGuiApplication>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QProgressBar>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QSplashScreen>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
@@ -517,6 +520,8 @@ SupraFitGui::~SupraFitGui()
 #endif
     if (m_instance)
         delete m_instance;
+    for (; m_load_depth > 0; --m_load_depth) // a load whose end did not come (window closed while it ran)
+        QApplication::restoreOverrideCursor();
 }
 
 void SupraFitGui::Message(const QString& str)
@@ -586,8 +591,12 @@ void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
         if (dialog.exec() == QDialog::Accepted) {
             QJsonObject projectJson = dialog.getProject();
             if (!projectJson.isEmpty()) {
+                // the wait cursor covers the window of the new project, which is built by a queued signal
+                const QStringList before = SupraFit::ProjectManager::instance().getLoadedProjectIds();
+                BeginLoad(file);
                 QString projectId = SupraFit::ProjectManager::instance()
                                    .createProjectFromJson(projectJson, fileInfo.baseName());
+                EndLoad(file, before, SupraFit::LoadReport(), false);
                 if (projectId.isEmpty()) {
                     qWarning() << "LoadFile: Failed to create project from ImportData dialog";
                     QMessageBox::warning(this, tr("Loading Error"), 
@@ -606,13 +615,138 @@ void SupraFitGui::LoadFile(const QString& file, int overwrite_type)
     } else {
         // Direct ProjectManager delegation for .json/.suprafit/.itc files
         qDebug() << "LoadFile: Delegating to ProjectManager for" << suffix << "file";
-        const bool loaded = SupraFit::ProjectManager::instance().loadProject(file);
-        const SupraFit::LoadReport report = SupraFit::ProjectManager::instance().lastLoadReport();
+        SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+        const QStringList before = projectManager.getLoadedProjectIds();
+        BeginLoad(file);
+        bool loaded = false;
+        try {
+            loaded = projectManager.loadProject(file);
+        } catch (...) {
+            EndLoad(file, before, projectManager.lastLoadReport(), true); // the cursor must not stay on
+            throw;
+        }
+        const SupraFit::LoadReport report = projectManager.lastLoadReport();
         if (!loaded)
             qWarning() << "LoadFile: ProjectManager failed to load" << file << ":" << report.Summary();
-        if (!loaded || report.HasProblems())
-            ShowLoadReport(file, report);
+        // the report comes when the windows of the file are built and the cursor is back
+        EndLoad(file, before, report, !loaded || report.HasProblems());
     }
+}
+
+/*! \brief Start of opening a file (Claude Generated): the wait cursor and the clock of the progress.
+ *
+ * ProjectManager::loadProject() reads the file synchronously, but the project windows and their model widgets are built afterwards by the
+ * queued projectAdded/projectLoaded signals. The cursor therefore stays until EndLoad(), which is queued behind those signals. Each
+ * BeginLoad() is matched by one EndLoad(); the override cursor is a stack, so files opened one after another nest correctly. */
+void SupraFitGui::BeginLoad(const QString& file)
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    if (m_load_depth++ == 0) {
+        m_load_timer.start();
+        m_load_progress_shown = false;
+        m_load_projects_total = m_load_projects_done = m_load_models_total = m_load_models_done = 0;
+    }
+    m_load_name = QFileInfo(file).fileName();
+}
+
+/*! \brief End of opening a file (Claude Generated): counts what the file brought (the projects not in \p projectsBefore and their
+ * models) for the progress, and queues the end behind the signals that build their windows. There the window to show is shown, the
+ * progress hidden, the cursor restored and, if \p showReport, the load report shown (a modal dialog, never under a wait cursor). */
+void SupraFitGui::EndLoad(const QString& file, const QStringList& projectsBefore, const SupraFit::LoadReport& report, bool showReport)
+{
+    const SupraFit::ProjectManager& projectManager = SupraFit::ProjectManager::instance();
+    for (const QString& id : projectManager.getLoadedProjectIds()) {
+        if (projectsBefore.contains(id))
+            continue;
+        ++m_load_projects_total;
+        const QSharedPointer<DataClass> project = projectManager.getProjectData(id);
+        if (::MetaModel* meta = qobject_cast<::MetaModel*>(project.data()))
+            m_load_models_total += int(meta->Models().size());
+        else if (project)
+            m_load_models_total += project->ChildrenSize();
+    }
+    QMetaObject::invokeMethod(this, [this, file, report, showReport]() {
+        if (--m_load_depth == 0) {
+            if (m_pending_window && m_stack_widget->indexOf(m_pending_window) != -1)
+                m_stack_widget->setCurrentWidget(m_pending_window);
+            m_pending_window.clear();
+            if (m_load_progress && m_load_progress->isVisible()) {
+                m_load_progress->hide();
+                if (!m_load_statusbar_was_visible)
+                    statusBar()->hide();
+            }
+        }
+        QApplication::restoreOverrideCursor();
+        if (showReport)
+            ShowLoadReport(file, report);
+    }, Qt::QueuedConnection);
+}
+
+/*! \brief One project window (\p project) or one model widget built during a load (Claude Generated): "project n of m" and a bar
+ * over the models. */
+void SupraFitGui::LoadProgressStep(bool project)
+{
+    if (m_load_depth == 0)
+        return;
+    if (project)
+        ++m_load_projects_done;
+    else
+        ++m_load_models_done;
+    if (m_load_projects_total + m_load_models_total < 2)
+        return; // one project with one model at most: nothing to count
+    const int projects = std::max(m_load_projects_total, m_load_projects_done);
+    const QString text = tr("Opening %1: project %2 of %3").arg(m_load_name).arg(m_load_projects_done).arg(projects);
+    if (m_load_models_total > 0)
+        ShowLoadProgress(text, m_load_models_done, std::max(m_load_models_total, m_load_models_done), tr("%v of %m models"));
+    else
+        ShowLoadProgress(text, m_load_projects_done, projects, tr("%v of %m projects"));
+}
+
+/*! \brief The progress of a load in the status bar (Claude Generated): put there only when the load has run longer than
+ * m_load_progress_delay, so a fast load does not flicker, and painted at once, because the event loop does not run between the queued
+ * signals that build the windows. Not while the file is read: ProjectManager::loadProject() holds its lock, and a status bar that
+ * appears lays out the project list, which asks the manager. */
+void SupraFitGui::ShowLoadProgress(const QString& text, int value, int maximum, const QString& format)
+{
+    if (!m_load_progress_shown) {
+        if (m_load_timer.elapsed() < m_load_progress_delay)
+            return;
+        if (!m_load_progress) {
+            QWidget* progress = new QWidget;
+            QHBoxLayout* layout = new QHBoxLayout(progress);
+            layout->setContentsMargins(0, 0, 0, 0);
+            m_load_label = new QLabel;
+            m_load_bar = new QProgressBar;
+            m_load_bar->setMaximumWidth(200);
+            m_load_bar->setTextVisible(true);
+            layout->addWidget(m_load_label);
+            layout->addWidget(m_load_bar);
+            m_load_statusbar_was_visible = statusBar()->isVisible();
+            statusBar()->addPermanentWidget(progress);
+            m_load_progress = progress;
+        } else
+            m_load_statusbar_was_visible = statusBar()->isVisible();
+        statusBar()->show();
+        m_load_progress->show();
+        m_load_progress_shown = true;
+    }
+    m_load_label->setText(text);
+    m_load_bar->setRange(0, maximum);
+    m_load_bar->setValue(value);
+    m_load_bar->setFormat(format);
+    statusBar()->repaint();
+}
+
+/*! \brief Puts a project window on screen (Claude Generated). During a load only the window shown last is put on screen, at the end:
+ * a window on screen lays out every model widget added to it, and a file of many projects would otherwise lay out each window once. */
+void SupraFitGui::ShowProjectWindow(QWidget* window)
+{
+    if (!window)
+        return;
+    if (m_load_depth > 0)
+        m_pending_window = window;
+    else
+        m_stack_widget->setCurrentWidget(window);
 }
 
 /*! \brief Tells why a project file did not open, or what of it is missing (Claude Generated). The log gets the same, one line per issue; the dialog
@@ -885,6 +1019,7 @@ void SupraFitGui::ConnectProjectWindow(MainWindow* window)
     connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
     connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
     connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
+    connect(window, &MainWindow::ModelsChanged, this, [this]() { LoadProgressStep(false); });
 }
 
 void SupraFitGui::LoadJson(const QJsonObject& str)
@@ -2518,6 +2653,7 @@ void SupraFitGui::LicenseInfo()
 // Claude Generated - ProjectManager Integration Slot Implementations
 void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& filePath)
 {
+    LoadTiming::Scope loadTiming("gui.onProjectLoaded");
     // Save writes back to the project file it came from (it asked for a name every time before)
     const QString suffix = QFileInfo(filePath).suffix().toLower();
     if (m_supr_file.isEmpty() && (suffix == QLatin1String("suprafit") || suffix == QLatin1String("json")) && QFileInfo::exists(filePath))
@@ -2531,7 +2667,7 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
     if (projectData && m_project_windows.contains(projectId) && m_project_windows[projectId]) {
         // projectAdded precedes projectLoaded and has already created the window: a second one would
         // overwrite the map entry and stay in the stack as an orphan that no close path reaches
-        m_stack_widget->setCurrentWidget(m_project_windows[projectId]);
+        ShowProjectWindow(m_project_windows[projectId]);
         setActionEnabled(true);
     } else if (projectData) {
         qDebug() << "onProjectLoaded: Creating MainWindow for project" << projectId;
@@ -2552,7 +2688,7 @@ void SupraFitGui::onProjectLoaded(const QString& projectId, const QString& fileP
         
         // Add to stack widget and show
         m_stack_widget->addWidget(window);
-        m_stack_widget->setCurrentWidget(window);
+        ShowProjectWindow(window);
         setActionEnabled(true); // a project is open: Save/Save As become available
 
         qDebug() << "onProjectLoaded: MainWindow created and activated for project" << projectId;
@@ -2574,6 +2710,7 @@ void SupraFitGui::onProjectSaved(const QString& projectId, const QString& filePa
 
 void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projectTitle)
 {
+    LoadTiming::Scope loadTiming("gui.onProjectAdded");
     Info(tr("Project added: %1 (%2)").arg(projectTitle, projectId));
     qDebug() << "SupraFitGui::onProjectAdded: Creating MainWindow for project" << projectId << "title:" << projectTitle;
     
@@ -2612,10 +2749,10 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
     
     // Add MainWindow to the stack widget (correct widget structure)
     QString windowTitle = projectTitle.isEmpty() ? QString("Project %1").arg(projectId) : projectTitle;
-    int index = m_stack_widget->addWidget(window);
-    
+    m_stack_widget->addWidget(window);
+
     // Switch to the newly added project window
-    m_stack_widget->setCurrentIndex(index);
+    ShowProjectWindow(window);
     setActionEnabled(true); // a project is open: Save/Save As become available
 
     qDebug() << "SupraFitGui::onProjectAdded: Successfully created MainWindow for project" << projectId;
@@ -2626,11 +2763,13 @@ void SupraFitGui::onProjectAdded(const QString& projectId, const QString& projec
     
     // Update project tree
     m_project_tree->UpdateStructure();
+    LoadProgressStep(true);
 }
 
 /*! \brief The window of a meta model that the ProjectManager restored: its models, and the data series of the projects they belong to (Claude Generated). */
 void SupraFitGui::ShowMetaModel(const QString& projectId, QSharedPointer<DataClass> projectData)
 {
+    LoadTiming::Scope loadTiming("gui.ShowMetaModel");
     ::MetaModel* meta = qobject_cast<::MetaModel*>(projectData.data());
     const QSharedPointer<DataClass> base = SupraFit::ProjectManager::instance().metaModelBase(projectId);
     if (!meta || !base) {
@@ -2649,16 +2788,18 @@ void SupraFitGui::ShowMetaModel(const QString& projectId, QSharedPointer<DataCla
     connect(meta, &MetaModel::Message, m_messages_widget, &MessageDock::Message);
     connect(meta, &MetaModel::Warning, m_messages_widget, &MessageDock::Warning);
     m_project_windows[projectId] = window;
-    const int index = m_stack_widget->addWidget(window);
-    m_stack_widget->setCurrentIndex(index);
+    m_stack_widget->addWidget(window);
+    ShowProjectWindow(window);
     connect(window, &MainWindow::ModelsChanged, m_project_tree, [this]() { m_project_tree->UpdateStructure(); });
     window->AdoptMetaModel(base, projectData.objectCast<AbstractModel>(), sources);
     setActionEnabled(true);
     m_project_tree->UpdateStructure();
+    LoadProgressStep(true);
 }
 
 void SupraFitGui::onModelAdded(const QString& projectId, const QString& modelId)
 {
+    LoadTiming::Scope loadTiming("gui.onModelAdded");
     Info(tr("Model added to project %1: %2").arg(projectId, modelId));
     m_project_tree->UpdateStructure();
     
@@ -2706,7 +2847,7 @@ void SupraFitGui::onCurrentProjectChanged(const QString& projectId)
         MainWindow* window = m_project_windows[projectId];
         int widgetIndex = m_stack_widget->indexOf(window);
         if (widgetIndex != -1) {
-            m_stack_widget->setCurrentIndex(widgetIndex);
+            ShowProjectWindow(window);
         }
     }
 }
