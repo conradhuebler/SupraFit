@@ -1246,7 +1246,8 @@ QString ProjectManager::restoreMetaModel(const QJsonObject& block)
         return QString();
     }
 
-    int found = 0;
+    // the models are read first and added together: the meta model is prepared once, not once per model (Claude Generated)
+    QVector<QPair<QSharedPointer<DataClass>, QSharedPointer<AbstractModel>>> read;
     for (int i = 0; i < size; ++i) {
         const QString uuid = uuids[QString::number(i)].toString();
         const QSharedPointer<DataClass> source = m_projectHash.value(uuid).toStrongRef();
@@ -1266,10 +1267,15 @@ QString ProjectManager::restoreMetaModel(const QJsonObject& block)
             addIssue(LoadIssue::Warning, "file", tr("The meta model \"%1\" lacks its model %2: it could not be read.").arg(label).arg(i + 1));
             continue;
         }
-        meta->addModel(model.data()); // the meta model keeps a copy
-        source->RemoveChild(model.data()); // the model made here is not a model of the project
-        ++found;
+        read << qMakePair(source, model);
     }
+    QVector<QPointer<AbstractModel>> models;
+    for (const auto& entry : std::as_const(read))
+        models << entry.second.data();
+    meta->addModels(models); // the meta model keeps copies
+    for (const auto& entry : std::as_const(read))
+        entry.first->RemoveChild(entry.second.data()); // the models made here are not models of the projects
+    const int found = int(read.size());
     if (!found) {
         addIssue(LoadIssue::Warning, "file", tr("Left out: the meta model \"%1\": none of its models is in the file.").arg(label));
         return QString();

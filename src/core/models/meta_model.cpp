@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -489,6 +489,38 @@ QList<double> MetaModel::getCalculatedModel()
 
 void MetaModel::addModel(const QPointer<AbstractModel> model)
 {
+    QSharedPointer<AbstractModel> t = appendModel(model, true);
+    prepareModels();
+    emit ModelAdded(t);
+}
+
+/* Claude Generated: rebuilding a meta model of n models through addModel prepared it n times, and two of the steps
+ * (sliced table, model table) grow with the models already there. Everything prepareModels() computes is rebuilt
+ * from m_models and the counters, so preparing once after the last model leaves the meta model as n addModel calls do
+ * (pinned by test_meta_restore). The per-model model-table append of addModel is left out: prepareModels() rebuilds
+ * that table from all copies. */
+void MetaModel::addModels(const QVector<QPointer<AbstractModel>>& models)
+{
+    QVector<QSharedPointer<AbstractModel>> added;
+    for (const QPointer<AbstractModel>& model : models)
+        if (model)
+            added << appendModel(model, false);
+    if (added.isEmpty())
+        return;
+    prepareModels();
+    UpdateCalculated();
+    for (const QSharedPointer<AbstractModel>& t : std::as_const(added))
+        emit ModelAdded(t);
+}
+
+void MetaModel::prepareModels()
+{
+    CollectOptimizationParameters_Private();
+    UpdateSlicedTable();
+}
+
+QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractModel>& model, bool modelTable)
+{
     /* We will create a copy of that model
      */
     QSharedPointer<AbstractModel> t = model->Clone();
@@ -509,7 +541,8 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
 
     DataClass::IndependentModel()->append(model->IndependentModel());
     DataClass::DependentModel()->append(model->DependentModel());
-    ModelTable()->append(model->ModelTable());
+    if (modelTable)
+        ModelTable()->append(model->ModelTable());
     /*
         DataClass::IndependentModel()->ImportTable(model->IndependentModel()->ExportTable(true));
         DataClass::DependentModel()->ImportTable(model->DependentModel()->ExportTable(true));
@@ -527,15 +560,12 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_dep_var += model->DataPoints();
     m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
     m_series_count += model->SeriesCount();
-    CollectOptimizationParameters_Private();
-    UpdateSlicedTable();
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
     connect(this, &DataClass::Warning, model, &DataClass::Warning);
     connect(t.data(), &AbstractModel::ParameterChanged, this, &MetaModel::DemandResortParameter);
     connect(t.data(), &AbstractModel::Recalculated, this, &AbstractModel::Recalculated);
-
-    emit ModelAdded(t);
+    return t;
 }
 
 void MetaModel::RemoveModel(const AbstractModel* model)

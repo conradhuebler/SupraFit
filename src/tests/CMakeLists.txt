@@ -764,6 +764,22 @@ target_compile_definitions(test_project_compat PRIVATE
 
 add_test(NAME ProjectCompatTest COMMAND test_project_compat)
 
+# Restoring meta models from a file is identical to adding their models one by one (Claude Generated 2026);
+# SUPRAFIT_META_TEST_FILE / SUPRAFIT_META_CORPUS add files, SUPRAFIT_META_TIMING=<n> prints the restore time.
+add_executable(test_meta_restore
+    test_meta_restore.cpp
+)
+target_link_libraries(test_meta_restore
+    ${TEST_COMMON_LIBS}
+)
+target_compile_definitions(test_meta_restore PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_test(NAME MetaRestoreTest COMMAND test_meta_restore)
+set_tests_properties(MetaRestoreTest PROPERTIES
+    TIMEOUT 300
+)
+
 set_tests_properties(ProjectCompatTest PROPERTIES
     TIMEOUT 300
 )
