@@ -468,6 +468,39 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
     return charts;
 }
 
+/*! \brief \p model is the one shown in the window (its tab became the current one): the measured points take its x
+ * mapping, the axes its labels. Claude Generated. */
+void ChartWidget::showModel(QSharedPointer<AbstractModel> model)
+{
+    if (!m_data_mapper || !model || m_data_mapper->BoundModel() == model)
+        return;
+    m_data_mapper->TransformModel(model);
+    FollowBoundModel();
+}
+
+/*! \brief \p model left the window (its tab was closed): the points go to the model shown last of the remaining ones,
+ * or to the raw data after the last one. Claude Generated. */
+void ChartWidget::removeModel(const AbstractModel* model)
+{
+    if (!m_data_mapper)
+        return;
+    m_data_mapper->ReleaseModel(model);
+    FollowBoundModel();
+}
+
+/*! \brief Axis labels of the model the points follow (a model without a data table, as in a meta model window, too). Claude Generated. */
+void ChartWidget::FollowBoundModel()
+{
+    AbstractModel* model = qobject_cast<AbstractModel*>(m_data_mapper->BoundModel().data());
+    if (!model)
+        return;
+    m_signal_x = model->XLabel();
+    m_signal_y = model->YLabel();
+    m_error_x = model->XLabel();
+    m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
+    Repaint();
+}
+
 void ChartWidget::Repaint()
 {
     if (m_repaint_batch > 0) {

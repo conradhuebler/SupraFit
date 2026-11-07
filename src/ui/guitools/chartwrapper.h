@@ -1,6 +1,6 @@
 /*
  * <ChartWrapper - Simplified drop-in replacement for legacy complex visibility system>
- * Copyright (C) 2017 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,6 +87,9 @@ public:
     // === VISUAL API - Claude Generated ===
     QColor color(int i) const;
     void TransformModel(QSharedPointer<DataClass> model);
+    void ReleaseModel(const DataClass* model);
+    /*! \brief The model whose x mapping the points are drawn with, null while they are drawn over the raw data. Claude Generated. */
+    inline QSharedPointer<DataClass> BoundModel() const { return m_transformed ? m_working.toStrongRef() : QSharedPointer<DataClass>(); }
     QString ColorList() const;
     bool setColorList(const QString& str);
     QList<QPointer<QScatterSeries>> CloneSeries(bool swap = false) const;
@@ -148,7 +151,7 @@ private:
     QList<bool> m_wanted; ///< during a single plot: what the user wants shown (a series or a model he hid stays hidden)
     void ApplySingle(int i, bool reveal);
     QWeakPointer<DataClass> m_stored_data;   // WEAK: Allow model to be destroyed
-    QWeakPointer<DataClass> m_stored_model;  // WEAK: Allow model to be destroyed  
+    QList<QWeakPointer<DataClass>> m_bound_models; ///< models the points were transformed to, the one they follow last (WEAK)
     QWeakPointer<DataClass> m_working;       // WEAK: Allow model to be destroyed
 
     // === POINT HIDING STORAGE - Claude Generated ===

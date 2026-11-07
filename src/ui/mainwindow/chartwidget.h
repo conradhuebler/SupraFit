@@ -86,6 +86,8 @@ public:
     QSharedPointer<ChartWrapper> setRawData(QSharedPointer<DataClass> rawdata);
     QSharedPointer<ChartWrapper> setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper);
     Charts addModel(QSharedPointer<AbstractModel> model, QObject* wrapperParent = nullptr);
+    void showModel(QSharedPointer<AbstractModel> model);
+    void removeModel(const AbstractModel* model);
     inline ChartDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
     inline QColor RecentColor() const { return m_recent_color; }
 
@@ -98,6 +100,7 @@ public:
     void EndRepaintBatch();
 
 private:
+    void FollowBoundModel();
     qreal max_shift, min_shift;
 
     bool m_empty = true;
