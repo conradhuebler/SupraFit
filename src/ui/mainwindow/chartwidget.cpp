@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/loadtiming.h"
 #include <charts.h>
 
 #include "src/core/models/AbstractModel.h"
@@ -310,6 +311,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapperParent)
 {
+    LoadTiming::Scope loadTiming("chart.addModel");
     if (!model) {
         qWarning() << "ChartWidget::addModel: Model is null";
         return Charts{};
@@ -324,7 +326,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
 
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_empty = false;
-    connect(model.data(), &AbstractModel::Recalculated, this, &ChartWidget::Repaint);
+    // Recalculated repaints once, through the connection below that also takes the axis labels (a second, plain connection repainted twice)
 
     // Claude Generated: Use provided parent (ModelWidget) instead of ChartWidget for proper cleanup
     QObject* parent = wrapperParent ? wrapperParent : this;
@@ -468,6 +470,11 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
 
 void ChartWidget::Repaint()
 {
+    if (m_repaint_batch > 0) {
+        m_repaint_pending = true;
+        return;
+    }
+    LoadTiming::Scope loadTiming("chart.Repaint");
     if (!m_data_mapper)
         return;
 
@@ -481,6 +488,14 @@ void ChartWidget::Repaint()
     m_data_mapper->UpdateModel();
 
     formatAxis();
+}
+
+void ChartWidget::EndRepaintBatch()
+{
+    if (m_repaint_batch == 0 || --m_repaint_batch > 0 || !m_repaint_pending)
+        return;
+    m_repaint_pending = false;
+    Repaint();
 }
 
 void ChartWidget::formatAxis()

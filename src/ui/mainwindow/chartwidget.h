@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,10 +92,17 @@ public:
     // Claude Generated: Accessor for data mapper to fix LineSeries visibility issue
     inline QSharedPointer<ChartWrapper> getDataWrapper() const { return m_data_mapper; }
 
+    /*! \brief Models added one after another (a project being opened): every repaint updates the series of all models of the chart,
+     * so the repaints asked for until EndRepaintBatch() are done once there. Batches nest. Claude Generated. */
+    void BeginRepaintBatch() { ++m_repaint_batch; }
+    void EndRepaintBatch();
+
 private:
     qreal max_shift, min_shift;
 
     bool m_empty = true;
+    int m_repaint_batch = 0;
+    bool m_repaint_pending = false;
 
     QPointer<ChartView> m_signalview, m_errorview;
     QPointer<QValueAxis> m_x_chart, m_y_chart, m_x_error, m_y_error;

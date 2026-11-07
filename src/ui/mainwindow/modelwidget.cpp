@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/core/loadtiming.h"
 #include <charts.h>
 #include "src/core/models/scriptmodel.h" // ScriptModel class (was transitive via models.h)
 
@@ -163,6 +164,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
+    LoadTiming::Scope loadTiming("modelwidget.ctor");
     // Claude Generated - Debug Messages for successful model loading
     if (model) {
         qDebug() << "✅ ModelWidget: Model successfully loaded -" 
@@ -181,7 +183,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_script_timer = new QTimer;
     m_script_timer->setSingleShot(true);
 
-    Data2Text();
+    // the text of the data for "Save to file" (m_logging) is made when it is saved: as text, the data of a large project take
+    // longer than building the whole widget
     m_minimizer->setModel(m_model);
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
@@ -799,7 +802,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     outer->setContentsMargins(0, 0, 0, 0);
     outer->addWidget(pane);
     setLayout(outer);
-    m_last_model = m_model->ExportModel(true, true);
+    // the state Restore() goes back to; the model table of ExportModel(true, true) is written out only when Restore() needs it
+    m_last_model = m_model->ExportModel(true, m_model->isLocked());
+    m_last_model_rows.clear();
+    if (!m_model->isLocked())
+        for (int i = 0; i < m_model->DataPoints(); ++i)
+            m_last_model_rows << m_model->ModelTable()->Row(i);
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
     connect(m_model.data(), &AbstractModel::ChartUpdated, this, &ModelWidget::ChartUpdated);
@@ -1331,6 +1339,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     m_optimisationhistory << history;
     json = m_minimizer->Parameter();
     m_last_model = json;
+    m_last_model_rows.clear();
     m_model->ImportModel(json, false);
     m_model->CollectOptimizationParameters();
     Repaint();
@@ -1638,6 +1647,8 @@ void ModelWidget::Save2File()
         QFile file(str);
         if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
             QTextStream stream(&file);
+            if (m_logging.isEmpty())
+                Data2Text();
             stream << m_logging << Qt::endl;
         }
     }
@@ -1674,6 +1685,14 @@ QColor ModelWidget::ActiveColor() const
 
 void ModelWidget::Restore()
 {
+    if (!m_last_model_rows.isEmpty()) { // as ExportModel(true, true) writes it
+        QJsonObject resultObject;
+        for (int i = 0; i < m_last_model_rows.size(); ++i)
+            resultObject[QString::number(i)] = ToolSet::DoubleList2String(m_last_model_rows[i]);
+        m_last_model["locked_model"] = true;
+        m_last_model["result"] = resultObject;
+        m_last_model_rows.clear();
+    }
     m_model->ImportModel(m_last_model, false);
     Repaint();
 }

@@ -183,6 +183,10 @@ private:
     QPointer<QCheckBox> m_toggled_box, m_global_box, m_local_box;
     QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;
+    /*! \brief The model table at the time of m_last_model, as numbers: Restore() writes it into m_last_model as the text
+     * ExportModel(.., locked = true) would have made (that text took 100 ms and more per model of a large project when the widget was
+     * built, and is only read by Restore). Empty when m_last_model is complete. Claude Generated. */
+    QVector<Vector> m_last_model_rows;
     QList<QJsonObject> m_fast_confidence;
 
     JobManager* m_jobmanager;

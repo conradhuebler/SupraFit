@@ -201,12 +201,14 @@ void MainWindow::AdoptMetaModel(QSharedPointer<DataClass> base, QSharedPointer<A
     m_meta_model = true;
 
     const QVector<QSharedPointer<AbstractModel>> models = meta->Models();
+    m_charts->BeginRepaintBatch(); // one repaint for all models of the meta model
     for (int k = 0; k < models.size(); ++k) {
         if (k < sources.size() && sources[k])
             w->addWrapper(sources[k]); // the data series of the project of this model
         m_model_dataholder->addMetaModel(models[k]);
         ConnectMetaSeries();
     }
+    m_charts->EndRepaintBatch();
 }
 
 void MainWindow::setCurrentTab(int index)

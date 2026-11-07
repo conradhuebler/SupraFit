@@ -48,6 +48,7 @@
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
+#include <QtWidgets/QStatusBar>
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QTabWidget>
@@ -1388,6 +1389,120 @@ private slots:
         qInfo() << "windows" << gui.ProjectWindows().size() << "meta windows" << metas << "models in them" << models << "dialogs" << dialogs;
         QVERIFY(metas >= 1);
         QVERIFY(models >= metas);
+    }
+
+    // Opening a file shows the wait cursor until the windows of the file are built (they are built by queued signals, after LoadFile has
+    // returned), and gives it back afterwards, also when the file is missing or no project file at all; the report of a failure comes
+    // without the wait cursor. Claude Generated.
+    void cursorIsRestoredAfterALoad()
+    {
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QStringList dialogs;
+        bool cursorOverDialog = false;
+        QTimer closer;
+        closer.setInterval(50);
+        QObject::connect(&closer, &QTimer::timeout, [&dialogs, &cursorOverDialog]() {
+            if (QWidget* w = QApplication::activeModalWidget()) {
+                dialogs << w->windowTitle();
+                cursorOverDialog = cursorOverDialog || QApplication::overrideCursor();
+                w->close();
+            }
+        });
+        closer.start();
+        SupraFit::ProjectManager::instance().clearAllProjects();
+        QCOMPARE(QApplication::overrideCursor(), nullptr);
+        SupraFitGui gui;
+        gui.resize(1200, 700);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+
+        gui.LoadFile(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json"));
+        // LoadFile has returned, the window of the project is not built yet: the cursor stays
+        QVERIFY(gui.isLoading());
+        QVERIFY(QApplication::overrideCursor());
+        QCOMPARE(QApplication::overrideCursor()->shape(), Qt::WaitCursor);
+        QTRY_VERIFY_WITH_TIMEOUT(!gui.isLoading(), 20000);
+        QCOMPARE(QApplication::overrideCursor(), nullptr);
+        QCOMPARE(gui.ProjectWindows().size(), 1);
+        QVERIFY(gui.ProjectWindows().first()->ModelCount() >= 1);
+        QVERIFY(dialogs.isEmpty());
+
+        QTemporaryDir dir;
+        const QString corrupt = dir.path() + QStringLiteral("/corrupt.suprafit");
+        {
+            QFile file(corrupt);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write("{ this is not a project");
+        }
+        for (const QString& path : { dir.path() + QStringLiteral("/missing.suprafit"), corrupt }) {
+            dialogs.clear();
+            gui.LoadFile(path);
+            QTRY_VERIFY_WITH_TIMEOUT(!gui.isLoading(), 20000);
+            QCOMPARE(QApplication::overrideCursor(), nullptr);
+            QTRY_VERIFY_WITH_TIMEOUT(!dialogs.isEmpty(), 5000); // the load report
+            QVERIFY2(!cursorOverDialog, qPrintable(path));
+            QCOMPARE(gui.ProjectWindows().size(), 1);
+        }
+        SupraFit::ProjectManager::instance().clearAllProjects();
+    }
+
+    // The progress of a load (status bar, "project n of m", models) comes only for a load that takes longer than its delay: a file of two
+    // projects with the delay at 0 shows it, with a delay of a minute it does not; it is hidden again when the load is done. Claude Generated.
+    void loadProgressOnlyForSlowLoads()
+    {
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QTemporaryDir dir;
+        const QString path = dir.path() + QStringLiteral("/two_projects.suprafit");
+        {
+            SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+            pm.clearAllProjects();
+            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json")));
+            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json")));
+            QJsonObject file;
+            const QStringList all = pm.getLoadedProjectIds();
+            for (int i = 0; i < all.size(); ++i)
+                file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+            QVERIFY(JsonHandler::WriteJsonFile(file, path));
+            pm.clearAllProjects();
+        }
+        QTimer closer;
+        closer.setInterval(50);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        for (const int delay : { 0, 60000 }) {
+            SupraFit::ProjectManager::instance().clearAllProjects();
+            SupraFitGui gui;
+            gui.resize(1200, 700);
+            gui.show();
+            QTest::qWaitForWindowExposed(&gui);
+            gui.setLoadProgressDelay(delay);
+            gui.LoadFile(path);
+            QTRY_VERIFY_WITH_TIMEOUT(!gui.isLoading(), 20000);
+            QCOMPARE(gui.ProjectWindows().size(), 2);
+            QCOMPARE(gui.LoadProgressWasShown(), delay == 0);
+            for (QProgressBar* bar : gui.findChildren<QProgressBar*>())
+                if (bar->parentWidget() && qobject_cast<QStatusBar*>(bar->parentWidget()->parentWidget()))
+                    QVERIFY2(!bar->isVisible(), "the progress of the load stays after it");
+            QCOMPARE(QApplication::overrideCursor(), nullptr);
+        }
+        SupraFit::ProjectManager::instance().clearAllProjects();
     }
 
     // The report of a project file that could not be read completely: a dialog whose text has the room it needs (no fixed size, no scrolling for a

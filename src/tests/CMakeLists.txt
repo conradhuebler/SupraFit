@@ -1,5 +1,5 @@
 # CMakeLists.txt for SupraFit Tests
-# Copyright (C) 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+# Copyright (C) 2024 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -1168,6 +1168,22 @@ if(BUILD_GUI)
     endif()
     if(UNIX)
         target_link_libraries(benchmark_mcwidget pthread dl)
+    endif()
+
+    # Offscreen wall time of opening project files in SupraFitGui, split by LoadTiming sections (Claude Generated) -
+    # manual perf tool, not a ctest: benchmark_projectload <file-or-dir> [...]
+    qt_add_resources(projectload_RES ${CMAKE_SOURCE_DIR}/files.qrc)
+    add_executable(benchmark_projectload benchmark_projectload.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${projectload_RES})
+    target_link_libraries(benchmark_projectload
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(benchmark_projectload ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(benchmark_projectload pthread dl)
     endif()
 endif()
 

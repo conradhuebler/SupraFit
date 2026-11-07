@@ -34,10 +34,15 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QHashFunctions>
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
 #include <QtCore/QString>
 #include <QtCore/QVector>
+
+#include <unordered_map>
 
 #include <Eigen/Dense>
 
@@ -460,8 +465,30 @@ QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& s
     return series;
 }
 
+/*! \brief Quantile of the F distribution with \p m and \p n degrees of freedom at \p p (the f value of an F test).
+ *
+ * Fisher_Dist::finv integrates the density numerically (about 10 ms a call). The value depends only on (p, m, n), and the models of a
+ * project share them (the same confidence, mostly the same number of parameters and points): every value computed is kept, so opening
+ * a project with many models, each with its statistics forms, computes it once per combination. Thread-safe (statistics jobs call it
+ * from worker threads). Claude Generated (memo). */
 qreal finv(qreal p, int m, int n)
 {
+    struct Key {
+        qreal p;
+        int m, n;
+        bool operator==(const Key& other) const { return p == other.p && m == other.m && n == other.n; }
+    };
+    struct KeyHash {
+        size_t operator()(const Key& key, size_t seed = 0) const { return qHashMulti(seed, key.p, key.m, key.n); }
+    };
+    static QMutex mutex;
+    static std::unordered_map<Key, qreal, KeyHash> known;
+    {
+        QMutexLocker locker(&mutex);
+        const auto it = known.find(Key{ p, m, n });
+        if (it != known.end())
+            return it->second;
+    }
     qreal f_value(1);
     try {
         f_value = Fisher_Dist::finv(p, m, n);
@@ -473,6 +500,8 @@ qreal finv(qreal p, int m, int n)
             qDebug() << "m or n are below 0";
             */
     }
+    QMutexLocker locker(&mutex);
+    known.emplace(Key{ p, m, n }, f_value);
     return f_value;
 }
 QPair<qreal, qreal> MinMax(const QList<qreal>& vector)

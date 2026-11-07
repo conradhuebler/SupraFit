@@ -26,6 +26,7 @@
 #include "src/core/projectmanager.h"
 
 #include <QtCore/QAbstractItemModel>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QMimeData>
@@ -156,8 +157,33 @@ public slots:
         return windows;
     }
 
+    /*! \brief Test access: a file is being opened (wait cursor on, project windows still being built). */
+    bool isLoading() const { return m_load_depth > 0; }
+    /*! \brief Test access: the progress of the last file load was put on screen. */
+    bool LoadProgressWasShown() const { return m_load_progress_shown; }
+    /*! \brief Test access: how long a load runs before its progress is shown (ms, default 300). */
+    void setLoadProgressDelay(int ms) { m_load_progress_delay = ms; }
+
 private:
     void ShowMetaModel(const QString& projectId, QSharedPointer<DataClass> projectData);
+
+    void BeginLoad(const QString& file);
+    void EndLoad(const QString& file, const QStringList& projectsBefore, const SupraFit::LoadReport& report, bool showReport);
+    void LoadProgressStep(bool project);
+    void ShowLoadProgress(const QString& text, int value, int maximum, const QString& format);
+    void ShowProjectWindow(QWidget* window);
+
+    int m_load_depth = 0; ///< files whose windows are still being built (LoadFile ... EndLoad)
+    int m_load_progress_delay = 300;
+    bool m_load_progress_shown = false;
+    int m_load_projects_total = 0, m_load_projects_done = 0, m_load_models_total = 0, m_load_models_done = 0;
+    QString m_load_name;
+    QElapsedTimer m_load_timer;
+    QPointer<QWidget> m_load_progress; ///< label and bar in the status bar, shown for a slow load
+    class QProgressBar* m_load_bar = nullptr;
+    QLabel* m_load_label = nullptr;
+    bool m_load_statusbar_was_visible = false;
+    QPointer<QWidget> m_pending_window; ///< the project window to show when the load is finished
     // This will become an improved data load mechanism somedays
 
     // QVector<QJsonObject> ProjectFromFile(const QString& file);
