@@ -25,6 +25,8 @@
 #include <QtCore/QPair>
 #include <QtCore/QVector>
 
+#include <optional>
+
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
@@ -125,6 +127,11 @@ public:
      *  ModelAdded is emitted for every copy after the preparation. Used when a meta model is rebuilt from a file. Claude Generated. */
     void addModels(const QVector<QPointer<AbstractModel>>& models);
 
+    /*! \brief Takes the \p models themselves instead of copies, otherwise as addModels. The models must belong to no project
+     *  (detached with DataClass::RemoveChild) and to nothing else: the meta model owns them from now on. Used when a meta model
+     *  is rebuilt from a file, the models read for it are not cloned again. Claude Generated. */
+    void adoptModels(const QVector<QSharedPointer<AbstractModel>>& models);
+
     inline const QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
 
     inline int ModelSize() const { return m_models.size(); }
@@ -134,6 +141,12 @@ public:
     virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) override;
 
     virtual bool ImportModel(const QJsonObject& topjson, bool override = true) override;
+
+    /*! \brief ImportModel for a meta model whose models already hold their blocks of \p topjson: \p imported[i] tells that
+     *  model i was read from block "raw"/i with AbstractModel::ImportModel, so it is not read again, only its stored name is
+     *  taken back (the one the import would set). Everything of the meta model itself (connect type, linked parameters,
+     *  parameter tables, statistics) is read as by ImportModel. An empty \p imported reads every model again. Claude Generated. */
+    bool ImportAdoptedModels(const QJsonObject& topjson, const QVector<bool>& imported, bool override = true);
 
     virtual QList<double> getSignals(QList<int> active_signal) override;
 
@@ -197,8 +210,12 @@ private:
     void ApplyConnectType();
 
     /*! \brief Appends a copy of \p model (tables, counters, names, connections) without preparing the meta model.
-     *  \p modelTable also appends its model table (rebuilding the one of the models before). Claude Generated. */
-    QSharedPointer<AbstractModel> appendModel(const QPointer<AbstractModel>& model, bool modelTable);
+     *  \p modelTable also appends its model table (rebuilding the one of the models before). With \p adopted (== \p model)
+     *  the model itself is taken instead of a copy. Claude Generated. */
+    QSharedPointer<AbstractModel> appendModel(const QPointer<AbstractModel>& model, bool modelTable, const QSharedPointer<AbstractModel>& adopted = {});
+
+    /*! \brief Prepares the meta model once after addModels/adoptModels appended \p added and emits ModelAdded for each. Claude Generated. */
+    void finishAdding(const QVector<QSharedPointer<AbstractModel>>& added);
 
     /*! \brief Prepares the meta model after models were appended: optimisation parameters (connect type) and sliced table. Claude Generated. */
     void prepareModels();
@@ -210,6 +227,10 @@ private:
     QStringList m_global_names, m_local_names, m_original_global, m_original_local;
 
     QVector<MMParameter> m_mmparameter;
+
+    /* Claude Generated: the parameters each model was calculated with when it was read (ImportAdoptedModels); the next
+     * CalculateVariables does not calculate a model again whose parameters it leaves at these values. Empty otherwise. */
+    QVector<std::optional<QVector<qreal>>> m_calculated_parameter;
 
     QVector<QVector<int>> m_indicies;
 

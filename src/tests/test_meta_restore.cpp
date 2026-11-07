@@ -339,6 +339,33 @@ private slots:
             compareFile(f);
     }
 
+    // The external files saved again by this version: their model blocks are current ones, which restoring reads only once
+    // (older blocks are read a second time, as before). Covers e.g. ITC models whose files are older. Claude Generated.
+    void externalFilesSavedAgainAreRestoredIdentically()
+    {
+        const QStringList files = externalFiles();
+        if (files.isEmpty())
+            QSKIP("SUPRAFIT_META_TEST_FILE / SUPRAFIT_META_CORPUS not set");
+        ProjectManager& pm = ProjectManager::instance();
+        int n = 0;
+        for (const QString& f : files) {
+            pm.clearAllProjects();
+            QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+            QVERIFY2(pm.loadProject(f), qPrintable(f));
+            QJsonObject file;
+            const QStringList all = pm.getLoadedProjectIds();
+            for (int i = 0; i < all.size(); ++i)
+                file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+            const QString saved = m_dir.filePath(QStringLiteral("saved_again_%1_%2").arg(n++).arg(QFileInfo(f).fileName()));
+            QVERIFY(JsonHandler::WriteJsonFile(file, saved));
+            pm.clearAllProjects();
+            QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+            if (metaBlocks(saved).isEmpty())
+                continue;
+            compareFile(saved);
+        }
+    }
+
     // SUPRAFIT_META_TIMING=<n>: the time of restoreMetaModel per file, n loads each. Claude Generated.
     void timing()
     {
