@@ -839,17 +839,18 @@ void TestIntegration::testTemporaryFileHandling()
 {
     QString tempConfig = createRealisticDataConfig();
     QString tempOutput = m_tempDir->path() + "/temp_handling";
-    
+
+    // the system temp directory holds files of other programs: only what the run adds counts
+    const QStringList filters = QStringList() << "*suprafit*" << "*tmp*";
+    QDir tempDir(QDir::tempPath());
+    const int before = tempDir.entryList(filters, QDir::Files).size();
+
     QStringList result = TestUtils::executeCliCommand({"-i", tempConfig, "-o", tempOutput});
     QVERIFY2(result[0].toInt() == 0, qPrintable("Temporary file handling failed: " + result[2]));
-    
+
     // Should not leave temporary files in system temp directory
-    QString systemTemp = QDir::tempPath();
-    QDir tempDir(systemTemp);
-    QStringList tempFiles = tempDir.entryList(QStringList() << "*suprafit*" << "*tmp*", QDir::Files);
-    
-    // Allow some temporary files but not excessive
-    QVERIFY2(tempFiles.size() < 100, qPrintable(QString("Too many temp files: %1").arg(tempFiles.size())));
+    const int added = tempDir.entryList(filters, QDir::Files).size() - before;
+    QVERIFY2(added < 10, qPrintable(QString("The run left %1 temporary files").arg(added)));
 }
 
 void TestIntegration::testResourceCleanup()
