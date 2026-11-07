@@ -32,6 +32,7 @@
 #include <QtWidgets/QWidget>
 
 #include "parameterwidget.h"
+#include "src/ui/guitools/guitools.h"
 
 LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
     : m_model(model)
@@ -61,11 +62,11 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
                             box->setValue(m_model.toStrongRef().data()->LocalParameter(i, 0));
                         }
                     if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
-                        box->setStyleSheet("background-color: " + included() + " color: black;");
+                        SetStyleSheetIfChanged(box, "background-color: " + included() + " color: black;");
                         check->setEnabled(true);
                         check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(0, i));
                     } else {
-                        box->setStyleSheet("background-color: " + excluded() + " color: black;");
+                        SetStyleSheetIfChanged(box, "background-color: " + excluded() + " color: black;");
                         check->setEnabled(false);
                     }
                 }

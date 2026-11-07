@@ -52,6 +52,7 @@
 #include "src/ui/guitools/flowlayout.h"
 
 #include "modelelement.h"
+#include "src/ui/guitools/guitools.h"
 
 ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget* parent)
     : QGroupBox(parent)
@@ -93,11 +94,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check, no]() {
             if (this->m_model.toStrongRef().data() && widget) {
                 if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
-                    constant->setStyleSheet("background-color: " + included() + " color: black;");
+                    SetStyleSheetIfChanged(constant, "background-color: " + included() + " color: black;");
                     check->setEnabled(true);
                     check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(no, i));
                 } else {
-                    constant->setStyleSheet("background-color: " + excluded() + " color: black;");
+                    SetStyleSheetIfChanged(constant, "background-color: " + excluded() + " color: black;");
                     check->setEnabled(false);
                 }
             }
@@ -300,10 +301,10 @@ void ModelElement::ChangeColor(const QColor& color)
     m_signal_series->setColor(color);
     m_error_series->setColor(color);
     // Card in the series colour with rounded corners; text in black or white, whichever is readable.
-    // An ancestor carries a style sheet, so the colours have to come from a style sheet as well
+    // The card carries a style sheet, so the colours of its children have to come from it as well
     // (palette changes are ignored below style sheets).
     const QString text = Appearance::ContrastText(color).name();
-    setStyleSheet(QString("ModelElement { background-color: %1; border: none; border-radius: 6px; }"
+    SetStyleSheetIfChanged(this, QString("ModelElement { background-color: %1; border: none; border-radius: 6px; }"
                           "QLabel, QCheckBox, QPushButton, QLineEdit { background-color: %1; color: %2; }")
                       .arg(color.name(), text));
 

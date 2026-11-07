@@ -84,4 +84,38 @@ private:
     QElapsedTimer m_timer;
 };
 
+/*! \brief Consecutive sections of one function: next() closes the running section and opens the
+ * next one, the destructor closes the last. Claude Generated. */
+class Phase {
+public:
+    explicit Phase(const char* name)
+    {
+        next(name);
+    }
+    ~Phase() { close(); }
+    void next(const char* name)
+    {
+        close();
+        if (!Enabled())
+            return;
+        m_name = name;
+        m_timer.start();
+    }
+    Phase(const Phase&) = delete;
+    Phase& operator=(const Phase&) = delete;
+
+private:
+    void close()
+    {
+        if (!m_name)
+            return;
+        auto& entry = Sections()[QString::fromLatin1(m_name)];
+        entry.first += m_timer.nsecsElapsed() / 1e6;
+        entry.second += 1;
+        m_name = nullptr;
+    }
+    const char* m_name = nullptr;
+    QElapsedTimer m_timer;
+};
+
 } // namespace LoadTiming

@@ -147,7 +147,9 @@ void StatisticWidget::Update()
     //overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->CovFit()) + "</b></td></tr>\n";
 
     overview += "</table></br>";
-    overview += m_model.toStrongRef().data()->ModelInfo() + "</br>";
+    // the model text (BC50 and the like) is the expensive part of an update: written once, used by the summary and the form
+    const QString info = m_model.toStrongRef().data()->ModelInfo();
+    overview += info + "</br>";
     // overview += m_model.toStrongRef().data()->AdditionalOutput();
 
     m_short = overview;
@@ -183,7 +185,7 @@ void StatisticWidget::Update()
         m_rows[i].second->setText(values[i]);
 
     // model-specific text and fast-confidence results below the form (the form holds the numbers)
-    const QString extra = model->ModelInfo() + overview;
+    const QString extra = info + overview;
     m_overview->setText(extra);
     m_overview->setHidden(extra.trimmed().isEmpty());
     m_overview->document()->setTextWidth(m_overview->viewport()->width());

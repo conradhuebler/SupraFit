@@ -48,6 +48,12 @@
 #include "src/core/projectmanager.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/mainwindow.h"
+#include "src/ui/mainwindow/modeldataholder.h"
+#include "src/ui/mainwindow/modelwidget.h"
+#include "src/ui/guitools/sectionstack.h"
+#include "src/core/models/AbstractModel.h"
+
+#include <QtWidgets/QStackedWidget>
 #include "src/ui/mainwindow/suprafitgui.h"
 
 namespace {
@@ -58,6 +64,73 @@ struct Result {
     int windows = 0, models = 0;
     QMap<QString, QPair<double, int>> sections;
 };
+
+/*! \brief Let what is posted run (three rounds of the queue) and the timers due in the next 10 ms. */
+void Settle()
+{
+    for (int round = 0; round < 3; ++round) {
+        bool reached = false;
+        QTimer::singleShot(0, [&reached]() { reached = true; });
+        while (!reached)
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
+    }
+    QElapsedTimer settle;
+    settle.start();
+    while (settle.elapsed() < 10)
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
+}
+
+/*! \brief SUPRAFIT_LOAD_GRAB=<dir>: the tab widget of every project window with each of its tabs on screen, saved as PNG, so two
+ * builds can be compared pixel by pixel. The tabs only: the log has times and ids, and the charts fit their axes on a timer.
+ * Claude Generated. */
+void GrabModelTabs(SupraFitGui* gui, const QString& dir, const QString& file)
+{
+    // the windows come in the order of their (random) project ids: sorted by what they show, the names are the same in every run
+    QList<QPair<QString, MainWindow*>> windows;
+    for (MainWindow* window : gui->ProjectWindows()) {
+        QString key = window->windowTitle();
+        for (TabWidget* tabs : window->findChildren<TabWidget*>())
+            for (int i = 0; i < tabs->count(); ++i)
+                key += QLatin1Char('|') + tabs->widget(i)->metaObject()->className() + tabs->tabText(i) + tabs->tabToolTip(i);
+        for (ModelWidget* model : window->findChildren<ModelWidget*>())
+            key += QLatin1Char('|') + model->Model()->Name() + QString::number(model->Model()->SSE(), 'g', 12);
+        windows << qMakePair(key, window);
+    }
+    std::stable_sort(windows.begin(), windows.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    int w = 0;
+    for (const auto& entry : std::as_const(windows)) {
+        MainWindow* window = entry.second;
+        if (auto* stack = qobject_cast<QStackedWidget*>(window->parentWidget()))
+            stack->setCurrentWidget(window);
+        Settle();
+        int t = 0;
+        for (TabWidget* tabs : window->findChildren<TabWidget*>()) {
+            for (int i = 0; i < tabs->count(); ++i) {
+                tabs->setCurrentIndex(i);
+                Settle();
+                tabs->grab().save(QStringLiteral("%1/%2_w%3_t%4_%5.png").arg(dir, file).arg(w).arg(t).arg(i));
+                // SUPRAFIT_LOAD_GRAB_PAGES=1: every page of the model pane as well (Statistics, Detailed, Charts, ...)
+                SectionStack* pages = nullptr; // no Q_OBJECT: found by dynamic_cast, the first one is the page list of the pane
+                if (qobject_cast<ModelWidget*>(tabs->widget(i)))
+                    for (QWidget* child : tabs->widget(i)->findChildren<QWidget*>())
+                        if ((pages = dynamic_cast<SectionStack*>(child)))
+                            break;
+                if (pages && qEnvironmentVariableIntValue("SUPRAFIT_LOAD_GRAB_PAGES") == 1) {
+                    const int shown = pages->currentIndex();
+                    for (int p = 0; p < pages->count(); ++p) {
+                        pages->setCurrentIndex(p);
+                        Settle();
+                        tabs->grab().save(QStringLiteral("%1/%2_w%3_t%4_%5_p%6.png").arg(dir, file).arg(w).arg(t).arg(i).arg(p));
+                    }
+                    pages->setCurrentIndex(shown);
+                    Settle();
+                }
+            }
+            ++t;
+        }
+        ++w;
+    }
+}
 
 } // namespace
 
@@ -74,6 +147,9 @@ int main(int argc, char** argv)
         QSettings settings;
         settings.beginGroup(QStringLiteral("main"));
         settings.setValue(QStringLiteral("advanced_ui"), false);
+        // SUPRAFIT_LOAD_APPEARANCE=<0 system, 1 light, 2 dark>: compare the grabs in either colour scheme
+        if (qEnvironmentVariableIsSet("SUPRAFIT_LOAD_APPEARANCE"))
+            settings.setValue(QStringLiteral("appearance"), qEnvironmentVariableIntValue("SUPRAFIT_LOAD_APPEARANCE"));
     }
     app.setProperty("threads", QThread::idealThreadCount());
     app.setProperty("lineWidth", 20);
@@ -103,11 +179,17 @@ int main(int argc, char** argv)
     });
     closer.start();
 
+    const QString grabDir = qEnvironmentVariable("SUPRAFIT_LOAD_GRAB");
+    if (!grabDir.isEmpty())
+        QDir().mkpath(grabDir);
+
     QList<Result> results;
     for (const QString& file : std::as_const(files)) {
         Instance::setInstance(new Instance);
         SupraFit::ProjectManager::instance().clearAllProjects();
         auto* gui = new SupraFitGui;
+        if (!grabDir.isEmpty())
+            gui->setLoadProgressDelay(1 << 30); // the progress in the status bar takes height: a slower run would be laid out otherwise
         gui->resize(1500, 700);
         gui->show();
         QCoreApplication::processEvents();
@@ -140,6 +222,8 @@ int main(int argc, char** argv)
         }
         std::printf("%9.1f ms total %9.1f ms sync %3d windows %4d models  %s\n", r.total, r.sync, r.windows, r.models, qPrintable(QFileInfo(file).fileName()));
         std::fflush(stdout);
+        if (!grabDir.isEmpty())
+            GrabModelTabs(gui, grabDir, QFileInfo(file).fileName());
         results << r;
         delete gui;
         SupraFit::ProjectManager::instance().clearAllProjects();
