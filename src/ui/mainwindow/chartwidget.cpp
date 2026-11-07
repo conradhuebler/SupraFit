@@ -322,7 +322,10 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model, QObject* wrapp
         return Charts{};
     }
 
-    m_data_mapper->TransformModel(model);
+    // inside a repaint batch the points are redrawn once at its end (Repaint), not once per model added
+    m_data_mapper->TransformModel(model, m_repaint_batch == 0);
+    if (m_repaint_batch > 0)
+        m_repaint_pending = true;
 
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_empty = false;

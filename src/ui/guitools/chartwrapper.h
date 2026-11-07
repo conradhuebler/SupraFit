@@ -86,7 +86,7 @@ public:
 
     // === VISUAL API - Claude Generated ===
     QColor color(int i) const;
-    void TransformModel(QSharedPointer<DataClass> model);
+    void TransformModel(QSharedPointer<DataClass> model, bool update = true);
     void ReleaseModel(const DataClass* model);
     /*! \brief The model whose x mapping the points are drawn with, null while they are drawn over the raw data. Claude Generated. */
     inline QSharedPointer<DataClass> BoundModel() const { return m_transformed ? m_working.toStrongRef() : QSharedPointer<DataClass>(); }
@@ -170,11 +170,13 @@ private:
     bool m_blocked = false;
     bool m_transformed = false;
     bool m_flipable = false;
+    bool m_curves = false; ///< the series are the curves of a model (setData with an AbstractModel), not measured points
 
     // === PRIVATE METHODS - Claude Generated ===
     void InitaliseSeries();
     void CheckWorking();
     void updateSeriesDisplay(int seriesIndex); // Rebuild series with visible points only
+    static bool SamePoints(const QList<QPointF>& a, const QList<QPointF>& b);
 
 signals:
     void ModelChanged();

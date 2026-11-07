@@ -146,6 +146,26 @@ int main(int argc, char** argv)
         QCoreApplication::processEvents();
     }
 
+    // the sections summed over all files: where the time of a whole corpus goes (Claude Generated)
+    if (results.size() > 1) {
+        QMap<QString, QPair<double, int>> all;
+        double total = 0;
+        for (const Result& r : std::as_const(results)) {
+            total += r.total;
+            for (auto it = r.sections.begin(); it != r.sections.end(); ++it) {
+                all[it.key()].first += it.value().first;
+                all[it.key()].second += it.value().second;
+            }
+        }
+        std::printf("\n=== sections summed over %lld files (%.1f ms) ===\n", static_cast<long long>(results.size()), total);
+        QList<QPair<QString, QPair<double, int>>> rows;
+        for (auto it = all.begin(); it != all.end(); ++it)
+            rows << qMakePair(it.key(), it.value());
+        std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) { return a.second.first > b.second.first; });
+        for (const auto& row : rows)
+            std::printf("  %-36s %10.1f ms %7d calls\n", qPrintable(row.first), row.second.first, row.second.second);
+    }
+
     std::sort(results.begin(), results.end(), [](const Result& a, const Result& b) { return a.total > b.total; });
     const int shown = std::min<int>(3, results.size());
     for (int k = 0; k < shown; ++k) {

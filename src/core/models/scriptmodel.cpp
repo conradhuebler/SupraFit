@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -666,13 +666,14 @@ QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
 
 qreal ScriptModel::PrintOutIndependent(int i) const
 {
-    QJSEngine engine;
-
+    // the JavaScript engine is built only for a value that is not cached yet: one QJSEngine per call cost ~35 us, and the
+    // charts ask for every row on every redraw (Claude Generated)
     if (m_calculate_print.isEmpty() || m_calculate_print.isNull())
         return IndependentModel()->data(i);
     else {
         if (i < m_x_printout.size())
             return m_x_printout[i];
+        QJSEngine engine;
         QString term = m_calculate_print;
 
         for (int cols = 0; cols < IndependentModel()->columnCount(); ++cols) {
