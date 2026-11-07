@@ -21,6 +21,7 @@
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
+#include "src/core/loadtiming.h"
 #include "src/core/toolset.h"
 
 #include <QtCharts/QAbstractSeries>
@@ -90,6 +91,7 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     // Claude Generated: Store as weak reference to allow model destruction
     m_stored_data = model.toWeakRef();
+    m_curves = qobject_cast<AbstractModel*>(model.data()) != nullptr;
     // Claude Generated: keep the model transformation. The data points take their x values from the model they
     // were transformed to (PrintOutIndependent: [G0]/[H0], [G0], ...); the raw DataClass plots the row number. A
     // repeated setData() on the same data (ChartWidget::setRawData while a project is synchronised after load)
@@ -177,7 +179,8 @@ void ChartWrapper::UpdateModel()
     if (QCoreApplication::closingDown()) {
         return;  // Don't update during application shutdown
     }
-    
+    LoadTiming::Scope loadTiming(m_curves ? "wrapper.UpdateModel(model)" : "wrapper.UpdateModel(data)");
+
     CheckWorking();
     MakeSeries();
     emit ModelChanged();
@@ -202,6 +205,7 @@ void ChartWrapper::MakeSeries()
         return;
     }
 
+    LoadTiming::Scope loadTiming(m_curves ? "wrapper.MakeSeries(model)" : "wrapper.MakeSeries(data)");
     QVector<QList<QPointF>> series(m_stored_series.size());
     int rows = workingData->DataPoints();
     int cols = workingData->SeriesCount();
@@ -229,11 +233,14 @@ void ChartWrapper::MakeSeries()
     }
 
     // Claude Generated: Update series data following RegressionDialog pattern
+    LoadTiming::Scope replaceTiming(m_curves ? "wrapper.replace(model)" : "wrapper.replace(data)");
     for (int j = 0; j < qMin(series.size(), m_stored_series.size()); ++j) {
         if (m_stored_series[j]) {
             QXYSeries* xySeries = qobject_cast<QXYSeries*>(m_stored_series[j]);
             if (xySeries) {
-                xySeries->replace(series[j]);
+                // a series that already holds exactly these points is left alone: replace() makes the chart rebuild its item
+                if (!SamePoints(xySeries->points(), series[j]))
+                    xySeries->replace(series[j]);
 
                 // Update point data for selective hiding feature
                 if (j >= m_pointData.size()) {
@@ -661,18 +668,31 @@ bool ChartWrapper::setColorList(const QString& str)
 
 /*! \brief The points take their x values from \p model (PrintOutIndependent: [G0]/[H0], [G0], ...): a model added or
  * shown in the window. The models stay remembered (weakly), so the points can go back to one of them when \p model
- * goes (ReleaseModel). Nothing is redrawn when the points follow \p model already. */
-void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
+ * goes (ReleaseModel). Nothing is redrawn when the points follow \p model already, nor without \p update: the caller
+ * redraws later (ChartWidget::addModel inside a repaint batch, whose end calls UpdateModel once for all models). */
+void ChartWrapper::TransformModel(QSharedPointer<DataClass> model, bool update)
 {
     if (!model)
         return;
+    LoadTiming::Scope loadTiming("wrapper.TransformModel");
     const bool unchanged = m_transformed && m_working.toStrongRef() == model;
     m_bound_models.removeIf([&model](const QWeakPointer<DataClass>& bound) { return bound.isNull() || bound == model; });
     m_bound_models << model.toWeakRef();
     m_working = model.toWeakRef();
     m_transformed = true;
-    if (!unchanged)
+    if (!unchanged && update)
         UpdateModel();
+}
+
+/*! \brief Whether \p a and \p b hold the same points, bit for bit (QPointF::operator== compares fuzzily). Claude Generated. */
+bool ChartWrapper::SamePoints(const QList<QPointF>& a, const QList<QPointF>& b)
+{
+    if (a.size() != b.size())
+        return false;
+    for (qsizetype i = 0; i < a.size(); ++i)
+        if (!(a[i].x() == b[i].x() && a[i].y() == b[i].y()))
+            return false;
+    return true;
 }
 
 /*! \brief \p model leaves the window (its tab is closed); the points follow the model shown last of the remaining ones,

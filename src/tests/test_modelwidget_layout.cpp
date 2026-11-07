@@ -3591,6 +3591,131 @@ private slots:
         }
     }
 
+    // Every series of the Model and Errors charts of all windows of \p gui: "window/chart/index/name" -> points. Claude Generated.
+    static QList<QPair<QString, QList<QPointF>>> chartSeriesDump(SupraFitGui& gui)
+    {
+        QList<QPair<QString, QList<QPointF>>> dump;
+        const QList<MainWindow*> windows = gui.ProjectWindows();
+        for (int w = 0; w < windows.size(); ++w)
+            for (ChartView* view : windows[w]->findChildren<ChartView*>()) {
+                QChart* chart = view->chart();
+                if (!chart || (chart->title() != QStringLiteral("Model") && chart->title() != QStringLiteral("Errors")))
+                    continue;
+                const QList<QAbstractSeries*> series = chart->series();
+                for (int s = 0; s < series.size(); ++s)
+                    if (QXYSeries* xy = qobject_cast<QXYSeries*>(series[s]))
+                        dump << qMakePair(QStringLiteral("%1/%2/%3/%4").arg(w).arg(chart->title()).arg(s).arg(xy->name()), xy->points());
+            }
+        return dump;
+    }
+
+    // Empty when \p a and \p b hold the same series with the same points, bit for bit (NaN equals NaN). Claude Generated.
+    static QString seriesDumpDifference(const QList<QPair<QString, QList<QPointF>>>& a, const QList<QPair<QString, QList<QPointF>>>& b)
+    {
+        if (a.size() != b.size())
+            return QStringLiteral("%1 series, the full redraw has %2").arg(a.size()).arg(b.size());
+        auto same = [](qreal x, qreal y) { return x == y || (std::isnan(x) && std::isnan(y)); };
+        for (int i = 0; i < a.size(); ++i) {
+            if (a[i].first != b[i].first)
+                return QStringLiteral("series %1 is '%2', in the full redraw '%3'").arg(i).arg(a[i].first, b[i].first);
+            if (a[i].second.size() != b[i].second.size())
+                return QStringLiteral("'%1' has %2 points, in the full redraw %3").arg(a[i].first).arg(a[i].second.size()).arg(b[i].second.size());
+            for (int p = 0; p < a[i].second.size(); ++p)
+                if (!same(a[i].second[p].x(), b[i].second[p].x()) || !same(a[i].second[p].y(), b[i].second[p].y()))
+                    return QStringLiteral("'%1' point %2 is (%3, %4), in the full redraw (%5, %6)")
+                        .arg(a[i].first)
+                        .arg(p)
+                        .arg(a[i].second[p].x(), 0, 'g', 17)
+                        .arg(a[i].second[p].y(), 0, 'g', 17)
+                        .arg(b[i].second[p].x(), 0, 'g', 17)
+                        .arg(b[i].second[p].y(), 0, 'g', 17);
+        }
+        return QString();
+    }
+
+    // The reference: every series of every chart wrapper emptied and computed again from the models as they are now (what
+    // the wrappers drew when every addition and recalculation redrew all series). Claude Generated.
+    static void redrawAllSeries(SupraFitGui& gui)
+    {
+        const QList<ChartWrapper*> wrappers = gui.findChildren<ChartWrapper*>();
+        for (ChartWrapper* wrapper : wrappers)
+            for (int i = 0; i < wrapper->SeriesSize(); ++i)
+                if (wrapper->Series(i))
+                    wrapper->Series(i)->clear();
+        for (ChartWrapper* wrapper : wrappers)
+            wrapper->UpdateModel();
+    }
+
+    // Opening a project draws the same points as redrawing every series of every chart from scratch: the redraws left out
+    // while the models are added (one at the end of the batch instead of one per model) and the series left alone because
+    // their points did not change must not change what is drawn. Fixtures: the four reference projects (4 models, up to 7
+    // data series), four projects in one file, a script model, and a titration whose plot mode was switched. Claude Generated.
+    void chartSeriesMatchFullRedrawAfterLoad()
+    {
+        const QStringList projects = {
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json"),
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1_1_2.json"),
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json"),
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1_1_2.json"),
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/NMR titrations/projects.suprafit"),
+            QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/ScriptModel.json"),
+        };
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+
+        for (int k = 0; k <= projects.size(); ++k) {
+            const bool switchPlotMode = k == projects.size(); // the last round: simulated_1_1 again, plot mode [G0]
+            const QString project = switchPlotMode ? projects.first() : projects[k];
+            if (!QFileInfo::exists(project))
+                QSKIP(qPrintable(QStringLiteral("sample project not found: %1").arg(project)));
+            // a project left loaded would be reused by the next load of the same file (with its plot mode switched)
+            struct ClearProjects {
+                ClearProjects() { SupraFit::ProjectManager::instance().clearAllProjects(); }
+                ~ClearProjects() { SupraFit::ProjectManager::instance().clearAllProjects(); }
+            } clearProjects;
+            SupraFitGui gui;
+            gui.resize(1500, 900);
+            gui.show();
+            QTest::qWaitForWindowExposed(&gui);
+            gui.LoadFile(project);
+            QTRY_VERIFY_WITH_TIMEOUT(!gui.ProjectWindows().isEmpty(), 20000);
+            QTRY_VERIFY_WITH_TIMEOUT(gui.ProjectWindows().first()->ModelCount() >= 1, 20000);
+            QTest::qWait(200);
+            if (switchPlotMode) {
+                QSharedPointer<AbstractModel> model;
+                for (ModelWidget* widget : gui.ProjectWindows().first()->findChildren<ModelWidget*>())
+                    if (widget->Model())
+                        model = widget->Model();
+                QVERIFY(model);
+                SystemParameter plotMode = model->getSystemParameter(AbstractModel::PlotMode);
+                const QStringList modes = plotMode.getList();
+                QVERIFY(modes.size() > 1);
+                plotMode.setValue(modes[1]);
+                model->setSystemParameter(plotMode);
+                model->Calculate();
+                QTest::qWait(100);
+            }
+
+            const auto drawn = chartSeriesDump(gui);
+            int points = 0;
+            for (const auto& series : drawn)
+                points += series.second.size();
+            QVERIFY2(points > 0, qPrintable(QStringLiteral("no points drawn for %1").arg(project)));
+            redrawAllSeries(gui);
+            const auto reference = chartSeriesDump(gui);
+            const QString difference = seriesDumpDifference(drawn, reference);
+            QVERIFY2(difference.isEmpty(), qPrintable(QStringLiteral("%1%2: %3").arg(QFileInfo(project).fileName(), switchPlotMode ? QStringLiteral(" (plot mode switched)") : QString(), difference)));
+        }
+    }
+
     // The measured points of a Model chart whose x values are not those of \p model (PrintOutIndependent of its checked
     // rows): points drawn with the x mapping of another model, or over the row number. Empty when they agree. Claude Generated.
     static QString pointsOffModel(QChart* chart, const AbstractModel* model)
