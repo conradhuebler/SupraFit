@@ -388,6 +388,8 @@ private slots:
             meta->addModel(model);
         }
         QCOMPARE(meta->ModelSize(), 2);
+        meta->Calculate(); // its sum of squares is what the file stores
+        QVERIFY(meta->SSE() > 0);
         QVERIFY(pm.registerExistingProject(created.staticCast<DataClass>()));
         QCOMPARE(pm.getLoadedProjectIds().size(), 3);
 
@@ -450,6 +452,23 @@ private slots:
         QVERIFY(lonely.loaded);
         QVERIFY(lonely.HasProblems());
         QVERIFY2(lonely.Details().contains("is not in the file"), qPrintable(lonely.Details()));
+
+        // a stored sum of squares that the restored meta model does not give back is said (a model of a project is checked the same way)
+        QJsonObject changed = file;
+        for (const QString& key : changed.keys()) {
+            QJsonObject project = changed[key].toObject();
+            QJsonObject data = project["data"].toObject();
+            if (data["model"].toInt() == int(SupraFit::MetaModel) && data["SSE"].toDouble() > 0) {
+                data["SSE"] = data["SSE"].toDouble() / 100;
+                project["data"] = data;
+                changed[key] = project;
+            }
+        }
+        const QString changedPath = dir.filePath(QStringLiteral("meta_sse_changed.suprafit"));
+        QVERIFY(JsonHandler::WriteJsonFile(changed, changedPath));
+        const LoadReport warned = load(changedPath);
+        QVERIFY2(warned.loaded, qPrintable(warned.Details()));
+        QVERIFY2(warned.Details().contains("meta model is not reproduced"), qPrintable(warned.Details()));
     }
 
     // A model whose stored fit is not reproduced (a changed model, an equation that cannot be calculated) is read, and the report says so.

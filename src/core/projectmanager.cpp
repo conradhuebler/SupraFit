@@ -1282,6 +1282,18 @@ QString ProjectManager::restoreMetaModel(const QJsonObject& block)
     meta->ImportAdoptedModels(block, readOnce);
     meta->setProjectTitle(label);
 
+    // The sum of squares of a meta model is the sum of those of its models: the file stores it, the restored one must give it
+    // back, as it is checked for the models of a project (Claude Generated)
+    const double storedSSE = AbstractModel::StoredSSE(block);
+    if (storedSSE > 0) {
+        const double nowSSE = meta->SSE();
+        const double relative = (nowSSE - storedSSE) / storedSSE;
+        if (relative > 1e-3)
+            addIssue(LoadIssue::Warning, label, tr("Read, but the fit of the meta model is not reproduced: its stored parameters give a sum of squares of %1 here, the file says %2. Fit it again before using its numbers.").arg(nowSSE, 0, 'g', 4).arg(storedSSE, 0, 'g', 4));
+        else if (relative < -1e-3)
+            addIssue(LoadIssue::Note, label, tr("The sum of squares of the meta model is %1 here, the file says %2.").arg(nowSSE, 0, 'g', 4).arg(storedSSE, 0, 'g', 4));
+    }
+
     QSharedPointer<DataClass> project = created.staticCast<DataClass>();
     const QString projectId = project->UUID();
     m_projects.append(project);
