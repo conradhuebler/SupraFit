@@ -9,6 +9,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **models/dataclass.cpp/h**: Main project container with metadata and system parameters
   - System parameters read before their model are placeholders; the model declaration names them (`addSystemParameter`), data-only projects get their family's names in `NameSystemParameters`; declarations of ITC/titrations live only in `DeclareSystemParameterOn`
 - **models/datatable.cpp/h**: Core data structure using Eigen::MatrixXd for numerical operations
+- **models/meta_model.cpp/h**: `addModel` prepares the whole meta model per call; adding several at once (file restore) goes through `addModels` (one preparation, `test_meta_restore` pins the identity)
 - **models/AbstractModel.cpp/h**: Base class for all analytical models
   - **models/AbstractModel_serialize.cpp**: split-out JSON (de)serialization TU (`ExportModel`/`ExportStatistic`/`ImportModel`/`LegacyImportModel`, incl. legacy SupraFit 1/2 import); still `AbstractModel::` members, header/facade unchanged
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,7 +118,12 @@ public:
     virtual QString GlobalParameterName(int i = 0) const override;
     virtual QString LocalParameterName(int i = 0) const override;
 
+    /*! \brief Adds a copy of \p model and prepares the meta model again (parameters, sliced table, model table); emits ModelAdded. */
     void addModel(const QPointer<AbstractModel> model);
+
+    /*! \brief Adds copies of all \p models and prepares the meta model once, as n addModel calls would leave it.
+     *  ModelAdded is emitted for every copy after the preparation. Used when a meta model is rebuilt from a file. Claude Generated. */
+    void addModels(const QVector<QPointer<AbstractModel>>& models);
 
     inline const QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
 
@@ -190,6 +195,13 @@ private slots:
 
 private:
     void ApplyConnectType();
+
+    /*! \brief Appends a copy of \p model (tables, counters, names, connections) without preparing the meta model.
+     *  \p modelTable also appends its model table (rebuilding the one of the models before). Claude Generated. */
+    QSharedPointer<AbstractModel> appendModel(const QPointer<AbstractModel>& model, bool modelTable);
+
+    /*! \brief Prepares the meta model after models were appended: optimisation parameters (connect type) and sliced table. Claude Generated. */
+    void prepareModels();
 
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
