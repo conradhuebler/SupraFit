@@ -191,7 +191,7 @@ class TestMetaRestore : public QObject {
             QVERIFY2(fast->SSE() == reference->SSE(), qPrintable(QStringLiteral("%1: SSE after Calculate %2 vs %3").arg(what).arg(fast->SSE(), 0, 'g', 17).arg(reference->SSE(), 0, 'g', 17)));
             QVERIFY2(compact(fast->ExportModel()) == compact(reference->ExportModel()), qPrintable(QStringLiteral("%1: ExportModel after Calculate differs").arg(what)));
             QVERIFY2(fast->CombinedParameter() == reference->CombinedParameter(), qPrintable(what));
-            fmt::print("  identical: {} ({} models, connect type {}, SSE {:.10g})\n", what.toStdString(), fast->ModelSize(), int(fast->ConnectionType()), fast->SSE());
+            fmt::print("  identical: {} ({} models, connect type {}, SSE {:.17g})\n", what.toStdString(), fast->ModelSize(), int(fast->ConnectionType()), fast->SSE());
         }
         pm.clearAllProjects();
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -293,6 +293,104 @@ private slots:
         QCOMPARE(connect.value("Meta all", -1), int(::MetaModel::All));
         QCOMPARE(connect.value("Meta custom", -1), int(::MetaModel::Custom));
         compareFile(m_generated);
+    }
+
+    /* Connect type All of models with different parameter sets (1:1 and 1:1/1:2, four series each): every parameter of every model is
+     * linked exactly once, all members of a link carry the same name, the number of links is the number of distinct names, and the meta
+     * model computes the sum of squares its models give with the linked values. Restoring a file with it is identical to the reference.
+     * The old ApplyConnectType sized its table from the names of the previous connect type and named entries by their position in the
+     * index list instead of their parameter: it wrote past the end of the table (ASan) and linked parameters of different names. Claude Generated. */
+    void connectAllWithDifferentParameters()
+    {
+        ProjectManager& pm = ProjectManager::instance();
+        pm.clearAllProjects();
+        QVERIFY(pm.loadProject(sample("reference/simulated_1_1.json")));
+        QVERIFY(pm.loadProject(sample("reference/simulated_1_1_1_2.json")));
+        const QStringList ids = pm.getLoadedProjectIds();
+        QCOMPARE(ids.size(), 2);
+        QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
+        base->setProjectTitle("Meta all mixed");
+        base->NewUUID();
+        QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
+        ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
+        QVERIFY(meta);
+        // the 1:1 model of the 1:1 project and the 1:1/1:2 model of the 1:1/1:2 project
+        meta->addModel(qobject_cast<AbstractModel*>(pm.getProjectData(ids[0])->Children(0).data()));
+        meta->addModel(qobject_cast<AbstractModel*>(pm.getProjectData(ids[1])->Children(1).data()));
+        QVERIFY(meta->Models()[0]->GlobalParameterSize() != meta->Models()[1]->GlobalParameterSize());
+        QMap<QString, double> start; // the value of every member in its model before the linking
+        for (int m = 0; m < meta->ModelSize(); ++m) {
+            const QSharedPointer<AbstractModel> model = meta->Models()[m];
+            for (int p = 0; p < model->GlobalParameterSize(); ++p)
+                start[QStringLiteral("%1 0 %2 0").arg(m).arg(p)] = model->GlobalParameter(p);
+            for (int p = 0; p < model->LocalParameterSize(); ++p)
+                for (int s = 0; s < model->SeriesCount(); ++s)
+                    start[QStringLiteral("%1 1 %2 %3").arg(m).arg(p).arg(s)] = model->LocalParameter(p, s);
+        }
+        meta->setConnectType(::MetaModel::All);
+        // a combined parameter starts at the mean of its members (it was divided by the number of members once more)
+        for (const MMParameter& link : meta->CombinedParameter()) {
+            double mean = 0;
+            for (const QVector<int>& member : link.second)
+                mean += start.value(QStringLiteral("%1 %2 %3 %4").arg(member[0]).arg(member[1]).arg(member[2]).arg(member[3])) / link.second.size();
+            QVERIFY2(std::abs(link.first - mean) <= 1e-12 * std::max(1.0, std::abs(mean)), qPrintable(QStringLiteral("%1 instead of the mean %2").arg(link.first).arg(mean)));
+        }
+        meta->Calculate();
+
+        QSet<QString> names;
+        QMap<QString, int> expected; // every (model, global/local, parameter, series) of the models
+        for (int m = 0; m < meta->ModelSize(); ++m) {
+            const QSharedPointer<AbstractModel> model = meta->Models()[m];
+            for (int p = 0; p < model->GlobalParameterSize(); ++p) {
+                expected[QStringLiteral("%1 0 %2 0").arg(m).arg(p)] = 0;
+                names << model->GlobalParameterName(p);
+            }
+            for (int p = 0; p < model->LocalParameterSize(); ++p) {
+                names << model->LocalParameterName(p);
+                for (int s = 0; s < model->SeriesCount(); ++s)
+                    expected[QStringLiteral("%1 1 %2 %3").arg(m).arg(p).arg(s)] = 0;
+            }
+        }
+        const QVector<MMParameter> links = meta->CombinedParameter();
+        QCOMPARE(links.size(), names.size());
+        for (const MMParameter& link : links) {
+            QSet<QString> linkNames;
+            for (const QVector<int>& member : link.second) {
+                QCOMPARE(member.size(), 4);
+                const QSharedPointer<AbstractModel> model = meta->Models()[member[0]];
+                linkNames << (member[1] == 0 ? model->GlobalParameterName(member[2]) : model->LocalParameterName(member[2]));
+                const QString key = QStringLiteral("%1 %2 %3 %4").arg(member[0]).arg(member[1]).arg(member[2]).arg(member[3]);
+                QVERIFY2(expected.contains(key), qPrintable(key));
+                ++expected[key];
+            }
+            QCOMPARE(linkNames.size(), 1);
+        }
+        for (auto it = expected.cbegin(); it != expected.cend(); ++it)
+            QVERIFY2(it.value() == 1, qPrintable(QStringLiteral("%1 linked %2 times").arg(it.key()).arg(it.value())));
+        double sum = 0;
+        for (const QSharedPointer<AbstractModel>& model : meta->Models())
+            sum += model->SSE();
+        QCOMPARE(meta->SSE(), sum);
+
+        QVERIFY(pm.registerExistingProject(created.staticCast<DataClass>()));
+        QJsonObject file;
+        const QStringList all = pm.getLoadedProjectIds();
+        for (int i = 0; i < all.size(); ++i)
+            file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+        const QString path = m_dir.filePath(QStringLiteral("generated_meta_all_mixed.suprafit"));
+        QVERIFY(JsonHandler::WriteJsonFile(file, path));
+        const double before = meta->SSE();
+        created.clear();
+        pm.clearAllProjects();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        compareFile(path);
+        QVERIFY(pm.loadProject(path));
+        const QList<::MetaModel*> restored = restoredMetaModels();
+        QCOMPARE(restored.size(), 1);
+        // the fit of the file comes back (the parameters are written with a limited number of digits)
+        QVERIFY2(std::abs(restored.first()->SSE() - before) <= 1e-6 * before, qPrintable(QStringLiteral("SSE %1 restored, %2 saved").arg(restored.first()->SSE(), 0, 'g', 17).arg(before, 0, 'g', 17)));
+        pm.clearAllProjects();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
 
     // addModels emits ModelAdded once per model with its copy, as addModel does, and only after the meta model is prepared. Claude Generated.
