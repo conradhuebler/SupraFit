@@ -165,6 +165,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_val_readonly(readonly)
 {
     LoadTiming::Scope loadTiming("modelwidget.ctor");
+    LoadTiming::Phase phase("mw.head");
     // Claude Generated - Debug Messages for successful model loading
     if (model) {
         qDebug() << "✅ ModelWidget: Model successfully loaded -" 
@@ -187,18 +188,27 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // longer than building the whole widget
     m_minimizer->setModel(m_model);
 
+    phase.next("mw.StatisticDialog");
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
     connect(this, &ModelWidget::ToggleSeries, m_charts.error_wrapper.data(), &ChartWrapper::SetBlocked);
     connect(this, &ModelWidget::ToggleSeries, m_charts.signal_wrapper.data(), &ChartWrapper::SetBlocked);
 
 
+    phase.next("mw.StatisticWidget");
     m_statistic_widget = new StatisticWidget(m_model, this);
+    // a recalculation while the pane is being built makes the fit results written just now stale (see Repaint)
+    connect(m_model.data(), &AbstractModel::Recalculated, this, [this]() {
+        if (!m_SetUpFinished)
+            m_initial_stale = true;
+    });
 
+    phase.next("mw.ResultsDialog");
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper.data(), this);
     connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
     connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
+    phase.next("mw.globals");
     m_global_box = new QCheckBox(tr("Global Parameter"));
     m_global_box->setChecked(true);
 
@@ -257,12 +267,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             [i, constant, this, check]() {
                 if (this->m_model && constant) {
                     if (this->m_model->GlobalEnabled(i)) {
-                        constant->setStyleSheet("background-color: " + included() + " color: black;");
+                        SetStyleSheetIfChanged(constant, "background-color: " + included() + " color: black;");
                         check->setEnabled(true);
                         check->setChecked(m_model->GlobalTable()->isChecked(0, i));
                     } else {
                         check->setEnabled(false);
-                        constant->setStyleSheet("background-color: " + excluded() + " color: black;");
+                        SetStyleSheetIfChanged(constant, "background-color: " + excluded() + " color: black;");
                     }
                 }
             });
@@ -288,6 +298,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         const_layout->addWidget(group, i / const_columns, i % const_columns);
     }
 
+    phase.next("mw.fitmenu+header");
     m_local_box = new QCheckBox(tr("Local Parameter"));
     m_local_box->setChecked(true);
 
@@ -460,8 +471,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_layout->addLayout(fit_row);
     m_layout->addLayout(const_layout);
 
+    phase.next("mw.ExportSimulationWidget");
     m_simulation_export = new ExportSimulationWidget(m_model, this);
 
+    phase.next("mw.OptionsWidget");
     m_model_options_widget = new OptionsWidget(m_model);
     //m_layout->addWidget(m_model_options_widget);
     if (m_model->getAllOptions().size() == 0)
@@ -507,6 +520,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         UpdateCurvesShown();
     });
 
+    phase.next("mw.ModelElements");
     if (m_model->SupportSeries()) {
         if (m_model->LocalParameterSize()) {
             for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
@@ -556,6 +570,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
             connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
     }
+    phase.next("mw.series scroll");
     QWidget* scroll = new QWidget;
     scroll->setLayout(m_sign_layout);
     QScrollArea* area = new QScrollArea;
@@ -583,6 +598,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QWidget* series_host = nullptr;
     int series_page = -1;
     QToolButton* series_pin = nullptr;
+    phase.next("mw.series box");
     if (m_model->LocalParameterSize()) {
         series_box = new QGroupBox(tr("Data series"));
         series_box->setObjectName("series_box");
@@ -609,6 +625,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         series_page = model_tab->addPage(series_host, tr("Data series"), nullptr, Icon("view-list-text"));
     }
 
+    phase.next("mw.pages options/system/script");
     if (m_model->OptionsCount())
         model_tab->addPage(m_model_options, tr("Model Options"), nullptr, Icon("configure"));
     if (m_model->SystemParameterCount())
@@ -616,9 +633,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->SFModel() == SupraFit::ScriptModel)
         AddScriptModelTab(model_tab);
     // Scalable table view for models with many species (additive: the classic view is unchanged).
+    phase.next("mw.DynamicModelWidget");
     if (m_model->UseDynamicParameterWidget())
         model_tab->addPage(new DynamicModelWidget(m_model, this), tr("Parameter Table"), nullptr, Icon("kspread"));
 
+    phase.next("mw.StatisticsPage");
     if (!m_model->isSimulation()) {
         // the same Statistics page as the meta model has (shared class)
         m_statistics = new StatisticsPage(m_statistic_dialog, m_results, model_tab, this);
@@ -626,6 +645,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     }
     // The model's own charts (concentration profiles, heat charts): one entry per chart in the list that replaces the
     // page list, like the statistic tools; no tabs inside. The page is listed once there is a chart.
+    phase.next("mw.charts page");
     m_charts_page = model_tab->addGroupPage(
         m_charts_dialogs, tr("Charts"),
         [this]() {
@@ -655,6 +675,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     // The detailed data (input data, model, parameters and statistics as text) is a page like the others; it is
     // written when the page is chosen and follows a recalculation while it is shown.
+    phase.next("mw.detailed page");
     m_detailed_text = new TextWidget;
     m_detailed_timer = new QTimer(this);
     m_detailed_timer->setSingleShot(true);
@@ -680,6 +701,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     detailed_tools_layout->addWidget(m_detailed_statistics);
     model_tab->addPage(m_detailed_text, tr("Detailed"), detailed_tools, Icon("help-about"));
 
+    phase.next("mw.simulated page");
     // Simulated data sets from this model (drag an entry onto the project list).
     {
         QWidget* page = new QWidget;
@@ -702,6 +724,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         model_tab->addPage(page, tr("Simulated Data"), nullptr, Icon("window-duplicate"));
     }
 
+    phase.next("mw.ModelActions");
     m_actions = new ModelActions;
     m_actions->setPageNavigation(true); // Statistics, Results and Charts are pages of the list, the global search is in the Fit menu
 
@@ -723,6 +746,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
      * top; below it the model tabs (options, system parameters, simulated data, …) and the data series
      * (beside each other when there is room), and the fit results across the bottom. Both splitters are
      * user-adjustable and stored per model type. Claude Generated. */
+    phase.next("mw.splitters");
     m_layout->addWidget(m_actions);
     QWidget* header = new QWidget;
     header->setLayout(m_layout);
@@ -766,6 +790,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     }
     m_splitter->addWidget(m_series_splitter);
 
+    phase.next("mw.results box");
     QGroupBox* results_box = new QGroupBox(tr("Fit results"));
     results_box->setToolTip(tr("Goodness of fit and statistics of the current model"));
     QVBoxLayout* results_layout = new QVBoxLayout;
@@ -803,6 +828,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     outer->addWidget(pane);
     setLayout(outer);
     // the state Restore() goes back to; the model table of ExportModel(true, true) is written out only when Restore() needs it
+    phase.next("mw.ExportModel(last)");
     m_last_model = m_model->ExportModel(true, m_model->isLocked());
     m_last_model_rows.clear();
     if (!m_model->isLocked())
@@ -816,10 +842,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     // if (m_model->SFModel() != SupraFit::ScriptModel)
     // m_model->Calculate();
 
+    phase.next("mw.ModelChartWidgets");
     for (const QString& str : m_model->Charts()) {
         ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
         m_charts_dialogs->setWidget(w, str);
     }
+    phase.next("mw.JobManager+connects");
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
 
@@ -873,6 +901,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         for (int i = 0; i < splitter->count(); ++i)
             splitter->setCollapsible(i, false);
 
+    phase.next("mw.settings restore");
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value(SplitterSettingsKey()).toByteArray());
@@ -891,7 +920,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
     if (model_tab->currentTitle() == tr("Detailed"))
         RefreshDetailed(true); // restored as the last page
+    phase.next("mw.Recalculated");
+    m_initial_repaint = true;
     emit m_model->Recalculated();
+    m_initial_repaint = false;
 }
 
 ModelWidget::~ModelWidget()
@@ -1171,7 +1203,10 @@ void ModelWidget::Repaint()
     m_pending = false;
     m_minimize_all->setEnabled(true);
 
-    QTimer::singleShot(1, m_statistic_widget, &StatisticWidget::Update);
+    // the fit results were written by the constructor of the statistic widget: the recalculation the constructor of this
+    // pane announces changes nothing there
+    if (!m_initial_repaint || m_initial_stale)
+        QTimer::singleShot(1, m_statistic_widget, &StatisticWidget::Update);
 
     // Status chip next to the Fit button; the fixed colours carry the meaning in light and dark mode.
     QString text, colour;
@@ -1189,7 +1224,7 @@ void ModelWidget::Repaint()
         m_converged_label->setToolTip(tr("The last optimisation converged."));
     }
     m_converged_label->setText(text);
-    m_converged_label->setStyleSheet(QString("QLabel { background: %1; color: white; border-radius: 9px; padding: 2px 10px; font-weight: bold; }").arg(colour));
+    SetStyleSheetIfChanged(m_converged_label, QString("QLabel { background: %1; color: white; border-radius: 9px; padding: 2px 10px; font-weight: bold; }").arg(colour));
 
     /* Model2Text();
     QTextDocument doc;

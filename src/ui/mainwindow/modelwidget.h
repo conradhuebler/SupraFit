@@ -178,6 +178,8 @@ private:
     ResultsDialog* m_results;
 
     bool m_statistic, m_val_readonly, m_SetUpFinished = false;
+    bool m_initial_repaint = false; ///< the constructor announces the model once: the statistic widget is up to date (Claude Generated)
+    bool m_initial_stale = false; ///< the model was recalculated while the pane was built (Claude Generated)
     Charts m_charts;
     QString m_logging;
     QPointer<QCheckBox> m_toggled_box, m_global_box, m_local_box;

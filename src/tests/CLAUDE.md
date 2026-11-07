@@ -15,7 +15,7 @@ Comprehensive test suite for SupraFit functionality using Qt Test framework. Ens
 - **test_datagenerator.cpp**: DataGenerator comprehensive testing ✅ **PASSED** (0.04s)
 - **test_project_compat.cpp**: load reports (reasons of failures, models left out), files of older versions (`data/samples/legacy/`, made by `make_legacy_fixtures.py`); `SUPRAFIT_PROJECT_CORPUS=<dir>` runs every project file below a directory and prints a table by file version
 - **test_meta_restore.cpp**: `restoreMetaModel` must equal adding the models one by one (`addModel`) — ExportModel JSON, SSE, parameters; `SUPRAFIT_META_TEST_FILE`/`SUPRAFIT_META_CORPUS` add files, `SUPRAFIT_META_TIMING=<n>` prints the restore time per file
-- **benchmark_projectload.cpp**: manual perf tool (not a ctest) — opens files/dirs in an offscreen `SupraFitGui`, prints the time until the windows are built and rendered, plus the `LoadTiming` sections of the three slowest
+- **benchmark_projectload.cpp**: manual perf tool (not a ctest) — opens files/dirs in an offscreen `SupraFitGui`, prints the time until the windows are built and rendered, plus the `LoadTiming` sections of the three slowest; `SUPRAFIT_LOAD_GRAB=<dir>` (+`_GRAB_PAGES=1`, `SUPRAFIT_LOAD_APPEARANCE=2`) saves every tab and model page as PNG to compare two builds pixel by pixel
 - **test_pipeline.cpp**: ML pipeline integration tests ❌ **FAILED** (17/35) - API mismatches; links since 2026-07-17
 
 ### Comprehensive CLI Testing Suite (Claude Generated - 2025-09-04) ✅ **CLI MIGRATION COMPLETED**

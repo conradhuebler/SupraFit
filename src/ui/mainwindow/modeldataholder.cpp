@@ -85,7 +85,7 @@
 
 void ToolButton::ChangeColor(const QColor& color)
 {
-    setStyleSheet("background-color:" + color.name() + ";");
+    SetStyleSheetIfChanged(this, "background-color:" + color.name() + ";");
 }
 
 TabWidget::TabWidget(QWidget* parent)
@@ -1064,8 +1064,10 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
         return;
     }
     
+    LoadTiming::Phase phase("mdh.chart.addModel");
     Charts charts = m_charts->addModel(t);
-    
+    phase.next("mdh.ModelWidget");
+
     // Claude Generated - Verify charts creation was successful 
     if (!charts.signal_wrapper || !charts.error_wrapper || !charts.data_wrapper) {
         qWarning() << "❌ ModelDataHolder::ActiveModel: Chart creation failed - one or more wrappers are null";
@@ -1108,6 +1110,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
         qWarning() << "ModelDataHolder::ActiveModel: Unknown exception creating ModelWidget for model" << t->Name();
         return;
     }
+    phase.next("mdh.colors+connects");
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     connect(modelwidget, &ModelWidget::AddModel, this, [this](const QJsonObject& object) { this->Json2Model(object); });
@@ -1130,12 +1133,15 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt, Qt::DirectConnection);
 
+    phase.next("mdh.addModelsTab");
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
     m_models << t;
     m_model_widgets << modelwidget;
 
+    phase.next("mdh.ActiveBatch");
     ActiveBatch();
+    phase.next("mdh.metamodel+pm");
 
     m_ReductionCutoff = qMax(m_ReductionCutoff, t->ReductionCutOff());
     m_last_modelwidget = modelwidget;
@@ -1164,7 +1170,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
         }
     }
     
+    phase.next("mdh.emit ModelAdded");
     emit ModelAdded();
+    phase.next("mdh.setAllSeriesVisible");
 
     // Claude Generated: Fix for LineSeries visibility issue in individual model addition
     // Claude Generated: Clean replacement for timer hack - immediate state application

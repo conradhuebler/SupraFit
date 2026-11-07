@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2025 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -122,6 +122,10 @@ void StatisticDialog::Attention()
 
 void StatisticDialog::setVisible(bool visible)
 {
+    if (visible && !m_embedded && !m_window_width_set) {
+        m_window_width_set = true;
+        setMinimumWidth(1.5 * m_tab_widget->sizeHint().width());
+    }
     updateUI();
     QDialog::setVisible(visible);
 }
@@ -196,7 +200,8 @@ void StatisticDialog::setUi()
     updateUI();
     CalculateError();
     setWindowTitle("Statistic Tools");
-    setMinimumWidth(1.5 * m_tab_widget->sizeHint().width());
+    // the minimum width of the window comes with its first show (setVisible): the size hint of all tabs polishes and lays out
+    // every form, and an embedded dialog (a page of a model pane) has no minimum width at all
 }
 
 /*! \brief Tab of the Monte Carlo simulation. In sight: the number of steps, where the noise comes from (and the standard deviation it

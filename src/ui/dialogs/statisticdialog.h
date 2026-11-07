@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -187,6 +187,7 @@ private:
     qreal m_wgs_f = 1, m_moco_f = 1, m_moco_max = 0, m_wgs_max = 0; ///< F value and limit of the sum of squares of the two confidences
     bool m_hidden;
     bool m_embedded = false;
+    bool m_window_width_set = false; ///< the minimum width of the window is set on its first show (Claude Generated)
 
 private slots:
     void Update();
