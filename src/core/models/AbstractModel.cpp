@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -487,8 +487,12 @@ void AbstractModel::Calculate()
                     y << ModelTable()->data(i, j);
                 }
             }
-        PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x), ToolSet::QVector2DoubleEigVec(y));
-        m_squared = regression.R;
+        if (x.isEmpty()) // no checked point: no regression (the conversion would index an empty vector)
+            m_squared = 0;
+        else {
+            PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x), ToolSet::QVector2DoubleEigVec(y));
+            m_squared = regression.R;
+        }
     }
     //FIXME sometimes ...
     m_covfit = 0; //CalculateCovarianceFit();

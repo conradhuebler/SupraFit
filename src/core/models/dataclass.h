@@ -90,11 +90,11 @@ public:
 
 private:
     bool m_placeholder = false;
-    Type m_type;
+    Type m_type = String; // a default-constructed parameter (DataClass::getSystemParameter of an unknown index) is copied: no garbage
     QString m_name, m_description;
     QVariant m_value;
     QStringList m_list;
-    int m_index;
+    int m_index = -1;
 };
 
 
