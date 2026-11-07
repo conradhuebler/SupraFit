@@ -19,6 +19,7 @@
 
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
+#include "src/core/loadtiming.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 
@@ -27,6 +28,7 @@
 #include <QDebug>
 #include <QtMath>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
@@ -510,6 +512,23 @@ void MetaModel::addModels(const QVector<QPointer<AbstractModel>>& models)
     for (const QPointer<AbstractModel>& model : models)
         if (model)
             added << appendModel(model, false);
+    finishAdding(added);
+}
+
+/* Claude Generated: a meta model rebuilt from a file used to copy every model it had just read (Clone() = ExportModel +
+ * ImportModel of the whole model). The copy of a model that belongs to no project is the model itself: both share the data of
+ * the project and hold the same imported state, so the meta model takes it. test_meta_restore pins the identity. */
+void MetaModel::adoptModels(const QVector<QSharedPointer<AbstractModel>>& models)
+{
+    QVector<QSharedPointer<AbstractModel>> added;
+    for (const QSharedPointer<AbstractModel>& model : models)
+        if (model)
+            added << appendModel(model.data(), false, model);
+    finishAdding(added);
+}
+
+void MetaModel::finishAdding(const QVector<QSharedPointer<AbstractModel>>& added)
+{
     if (added.isEmpty())
         return;
     prepareModels();
@@ -520,15 +539,20 @@ void MetaModel::addModels(const QVector<QPointer<AbstractModel>>& models)
 
 void MetaModel::prepareModels()
 {
+    LoadTiming::Scope loadTiming("meta.prepareModels");
     CollectOptimizationParameters_Private();
     UpdateSlicedTable();
 }
 
-QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractModel>& model, bool modelTable)
+QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractModel>& model, bool modelTable, const QSharedPointer<AbstractModel>& adopted)
 {
-    /* We will create a copy of that model
+    /* We will create a copy of that model, unless it is handed over (adoptModels)
      */
-    QSharedPointer<AbstractModel> t = model->Clone();
+    QSharedPointer<AbstractModel> t = adopted;
+    if (!t) {
+        LoadTiming::Scope loadTimingClone("meta.appendModel.clone");
+        t = model->Clone();
+    }
 
     for (int i = 0; i < model->GlobalParameterSize(); ++i)
         m_original_global << model->GlobalParameterName(i);
@@ -556,7 +580,9 @@ QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractMode
     m_models << t;
     QString name = QString("%1 from %2").arg(t->Name()).arg(t->ProjectTitle());
     t->setName(name);
-    connect(model, &DataClass::ProjectTitleChanged, t.data(), &DataClass::setProjectTitle);
+    // the copy follows its original; an adopted model is its own original (Claude Generated)
+    if (!adopted)
+        connect(model, &DataClass::ProjectTitleChanged, t.data(), &DataClass::setProjectTitle);
     m_glob_param += model->GlobalParameterSize();
     m_inp_param += model->InputParameterSize();
     m_loc_param += model->LocalParameterSize();
@@ -566,8 +592,10 @@ QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractMode
     m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
     m_series_count += model->SeriesCount();
     //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
-    connect(this, &DataClass::Message, model, &DataClass::Message);
-    connect(this, &DataClass::Warning, model, &DataClass::Warning);
+    if (!adopted) {
+        connect(this, &DataClass::Message, model, &DataClass::Message);
+        connect(this, &DataClass::Warning, model, &DataClass::Warning);
+    }
     connect(t.data(), &AbstractModel::ParameterChanged, this, &MetaModel::DemandResortParameter);
     connect(t.data(), &AbstractModel::Recalculated, this, &AbstractModel::Recalculated);
     return t;
@@ -689,7 +717,9 @@ void MetaModel::CalculateVariables()
     }
 
     for (int i = 0; i < m_models.size(); ++i) {
-        m_models[i].data()->Calculate();
+        // a model just read and calculated with the same parameters would be calculated to the same result (Claude Generated)
+        if (i >= m_calculated_parameter.size() || !m_calculated_parameter[i] || *m_calculated_parameter[i] != m_models[i].data()->AllParameter())
+            m_models[i].data()->Calculate();
         m_sum_squares += m_models[i].data()->SSE();
         m_used_variables += m_models[i].data()->Points();
         m_sum_absolute += m_models[i].data()->SAE();
@@ -729,9 +759,15 @@ void MetaModel::PrepareTables()
 
 bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
 {
+    return ImportAdoptedModels(topjson, {}, override);
+}
+
+bool MetaModel::ImportAdoptedModels(const QJsonObject& topjson, const QVector<bool>& imported, bool override)
+{
     if (topjson["model"].toInt() != SFModel())
         return false;
 
+    LoadTiming::Scope loadTiming("meta.ImportModel");
     AbstractModel::ImportModel(topjson, override);
     int size = topjson["size"].toInt();
     if (size != m_models.size()) {
@@ -740,9 +776,34 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     }
     QJsonObject raw = topjson["raw"].toObject();
     bool result = true;
+    // restoring a file (imported given): the models are calculated now, the meta model's Calculate below need not repeat that
+    const bool restoring = !imported.isEmpty();
+    m_calculated_parameter = QVector<std::optional<QVector<qreal>>>(restoring ? m_models.size() : 0);
     for (int i = 0; i < size && i < m_models.size(); ++i) {
-        bool import = m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
+        const QJsonObject block = raw[QString::number(i)].toObject();
+        if (i < imported.size() && imported[i]) {
+            // read from this block already: reading it again would change nothing but the name, which appendModel extended (Claude Generated)
+            if (block.contains("name") && !qApp->instance()->property("UnsafeCopy").toBool())
+                m_models[i]->setName(block["name"].toString());
+            // and the optimisation parameters: ImportModel collects them in setOptions, before it reads the parameter tables, so
+            // only a second read collects them with the stored checked state (e.g. a fixed fx of an ITC model); the locks it
+            // resets are read afterwards
+            const QJsonObject options = block["options"].toObject();
+            for (int index : m_models[i]->getAllOptions())
+                if (!options[QString::number(index)].toString().isEmpty()) {
+                    const QList<int> locked = m_models[i]->LockedParameters();
+                    m_models[i]->CollectOptimizationParameters();
+                    m_models[i]->setLockedParameter(locked);
+                    break;
+                }
+            m_calculated_parameter[i] = m_models[i]->AllParameter();
+            continue;
+        }
+        bool import = m_models[i]->ImportModel(block, override);
         result = result && import;
+        // a model read successfully was calculated at the end of its ImportModel, with these parameters (Claude Generated)
+        if (import && restoring)
+            m_calculated_parameter[i] = m_models[i]->AllParameter();
     }
     m_connect_type = static_cast<ConnectType>(topjson["connecttype"].toInt());
     if (m_connect_type == ConnectType::Custom) {
@@ -759,7 +820,11 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     ApplyConnectType();
     CollectParameter();
     CollectOptimizationParameters_Private();
-    Calculate();
+    {
+        LoadTiming::Scope loadTimingCalc("meta.ImportModel.calculate");
+        Calculate();
+    }
+    m_calculated_parameter.clear();
     // emit ParameterMoved();
     DataClass::setProjectTitle(topjson["name"].toString());
 
