@@ -115,8 +115,12 @@ void MetaModel::ApplyConnectType()
     m_mmparameter.clear();
 
     if (m_connect_type == ConnectType::All) {
-
-        m_mmparameter.resize(m_local_names.size() + m_global_names.size());
+        /* Connect type All links every parameter of the same name over all models (and, for local parameters, all series): one slot per
+         * distinct global name of the models, then one per distinct local name. The table is sized from those name lists, not from
+         * m_global_names/m_local_names: these are the names of the combined parameters as the previous CollectParameter() left them and
+         * shrink when a previous All has already merged parameters (sizing from them wrote past the end of the table). An entry of the
+         * index lists is (parameter, series) - its name is that of its parameter, not of its position in the list (Claude Generated fix). */
+        m_mmparameter.resize(m_original_global.size() + m_original_local.size());
 
         for (int i = 0; i < m_models.size(); ++i) {
             for (int j = 0; j < m_global_index[i].size(); ++j) {
@@ -126,13 +130,12 @@ void MetaModel::ApplyConnectType()
                 param[2] = m_global_index[i][j].first;
                 param[3] = m_global_index[i][j].second;
 
-                QString name = m_models[i]->GlobalParameterName(j);
-#pragma message("maybe remove, once it is fully tested")
-                if (!m_original_global.contains(name))
+                const int slot = m_original_global.indexOf(m_models[i]->GlobalParameterName(param[2]));
+                if (slot < 0)
                     continue;
 
-                m_mmparameter[m_original_global.indexOf(name)].second << param;
-                m_mmparameter[m_original_global.indexOf(name)].first += m_models[i]->GlobalParameter(j);
+                m_mmparameter[slot].second << param;
+                m_mmparameter[slot].first += m_models[i]->GlobalParameter(param[2]);
             }
         }
 
@@ -144,10 +147,13 @@ void MetaModel::ApplyConnectType()
                 param[2] = m_local_index[i][j].first;
                 param[3] = m_local_index[i][j].second;
 
-                QString name = m_models[i]->LocalParameterName(j);
+                const int name = m_original_local.indexOf(m_models[i]->LocalParameterName(param[2]));
+                if (name < 0)
+                    continue;
+                const int slot = m_original_global.size() + name;
 
-                m_mmparameter[m_original_global.size() + m_original_local.indexOf(name)].second << param;
-                m_mmparameter[m_original_global.size() + m_original_local.indexOf(name)].first += m_models[i]->LocalParameter(m_local_index[i][j]);
+                m_mmparameter[slot].second << param;
+                m_mmparameter[slot].first += m_models[i]->LocalParameter(m_local_index[i][j]);
             }
         }
 
@@ -185,11 +191,10 @@ void MetaModel::ApplyConnectType()
             m_mmparameter.remove(i);
     }
     m_series_count = 1;
+    /* ResortParameter() sets the value of every combined parameter to the mean of its members in the models. Dividing the value by the
+     * number of members once more afterwards (as was done here) left a parameter shared by n models at mean/n: an All meta model never
+     * started from the parameters of its models, and a restored file did not give its stored fit (Claude Generated fix). */
     ResortParameter();
-
-    for (int i = 0; i < m_mmparameter.size(); ++i) {
-        m_mmparameter[i].first /= double(m_mmparameter[i].second.size());
-    }
 }
 
 void MetaModel::ResortParameter()
@@ -534,7 +539,7 @@ QSharedPointer<AbstractModel> MetaModel::appendModel(const QPointer<AbstractMode
     t->ReleaseLocks();
 
     m_original_global.removeDuplicates();
-    m_local_names.removeDuplicates();
+    m_original_local.removeDuplicates();
 
 #pragma message("replace append with an replacing function for the tables!")
     /* We shall not use the derived functions but the base functions of DataClass since at the moment, we dont have real data yet */
@@ -613,14 +618,14 @@ void MetaModel::RemoveModel(const AbstractModel* model)
         m_loc_param += models[l].data()->LocalParameterSize();
         m_size += models[l].data()->Size();
         m_indep_var += models[l].data()->IndependentVariableSize();
-        m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
+        m_max_indep_var = qMax(m_max_indep_var, models[l].data()->DataPoints());
 
         m_dep_var += models[l].data()->DataPoints();
         m_series_count += models[l].data()->SeriesCount();
     }
 
     m_original_global.removeDuplicates();
-    m_local_names.removeDuplicates();
+    m_original_local.removeDuplicates();
 
 #pragma message("in case it is custom, try to restore the structure")
     m_connect_type = ConnectType::None;
