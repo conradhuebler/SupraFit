@@ -3591,6 +3591,117 @@ private slots:
         }
     }
 
+    // The measured points of a Model chart whose x values are not those of \p model (PrintOutIndependent of its checked
+    // rows): points drawn with the x mapping of another model, or over the row number. Empty when they agree. Claude Generated.
+    static QString pointsOffModel(QChart* chart, const AbstractModel* model)
+    {
+        QList<qreal> xs;
+        for (int i = 0; i < model->DataPoints(); ++i)
+            if (model->IndependentModel()->isChecked(i))
+                xs << model->PrintOutIndependent(i);
+        QStringList problems;
+        for (QAbstractSeries* abstract : chart->series()) {
+            ScatterSeries* series = qobject_cast<ScatterSeries*>(abstract);
+            if (!series || !series->isVisible())
+                continue;
+            for (const QPointF& p : series->points()) {
+                bool found = false;
+                for (qreal x : xs)
+                    found = found || qAbs(x - p.x()) <= 1e-9 * qMax(1.0, qAbs(x));
+                if (!found) {
+                    problems << QStringLiteral("data '%1' has x = %2, not an x of the model '%3' (plot mode %4)")
+                                    .arg(series->name())
+                                    .arg(p.x())
+                                    .arg(model->Name())
+                                    .arg(model->getSystemParameter(AbstractModel::PlotMode).getString());
+                    break;
+                }
+            }
+        }
+        return problems.join(QStringLiteral("; "));
+    }
+
+    // The measured points follow the models of the window: a new plot mode redraws them with the new x mapping, switching
+    // the model tab keeps them on the x of the model shown, and closing a tab (the close button, as in the GUI) puts them
+    // onto a model that remains instead of the row number. Claude Generated.
+    void modelChartPointsFollowRemainingModel()
+    {
+        const QString project = QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json");
+        if (!QFileInfo::exists(project))
+            QSKIP("sample project not found");
+        QTimer closer;
+        closer.setInterval(100);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+
+        SupraFitGui gui;
+        gui.resize(1500, 900);
+        gui.show();
+        QTest::qWaitForWindowExposed(&gui);
+        gui.LoadFile(project);
+        QTRY_COMPARE_WITH_TIMEOUT(gui.ProjectWindows().size(), 1, 20000);
+        MainWindow* window = gui.ProjectWindows().first();
+        QTRY_VERIFY_WITH_TIMEOUT(window->ModelCount() >= 3, 20000);
+        QTest::qWait(200);
+
+        QTabWidget* tabs = nullptr;
+        for (QTabWidget* t : window->getModelDataHolder()->findChildren<QTabWidget*>())
+            if (t->tabsClosable() && t->count() > 1 && qobject_cast<ModelWidget*>(t->widget(1)))
+                tabs = t;
+        QVERIFY(tabs);
+        QChart* chart = nullptr;
+        for (ChartView* view : window->findChildren<ChartView*>())
+            if (view->chart() && view->chart()->title() == QStringLiteral("Model"))
+                chart = view->chart();
+        QVERIFY(chart);
+        auto modelOf = [tabs](int i) { return qobject_cast<ModelWidget*>(tabs->widget(i))->Model(); };
+
+        // another x mapping (the plot mode is a system parameter of the project, shared by its models): [G0]
+        QSharedPointer<AbstractModel> first = modelOf(1);
+        const qreal ratio = first->PrintOutIndependent(1);
+        SystemParameter plotMode = first->getSystemParameter(AbstractModel::PlotMode);
+        const QStringList modes = plotMode.getList();
+        QVERIFY(modes.size() > 1);
+        plotMode.setValue(modes[1]);
+        first->setSystemParameter(plotMode);
+        QTest::qWait(50);
+        QVERIFY(first->PrintOutIndependent(1) != ratio);
+        QCOMPARE(modelOf(2)->PrintOutIndependent(1), first->PrintOutIndependent(1));
+
+        for (int tab : { 1, 2, 1 }) {
+            tabs->setCurrentIndex(tab);
+            QTest::qWait(50);
+            const QString problems = pointsOffModel(chart, modelOf(tab).data());
+            QVERIFY2(problems.isEmpty(), qPrintable(QStringLiteral("tab %1: %2").arg(tab).arg(problems)));
+        }
+
+        // a model added in the window (not one of the loaded project) lives only as long as its tab
+        const int loaded = window->ModelCount();
+        window->getModelDataHolder()->AddToWorkspace(window->SaveModel(1));
+        QTRY_COMPARE(window->ModelCount(), loaded + 1);
+        QTest::qWait(50);
+        QCOMPARE(pointsOffModel(chart, modelOf(tabs->count() - 1).data()), QString());
+
+        // close the newest tab until one model is left; the points stay on the model now shown
+        while (tabs->count() > 2) {
+            emit tabs->tabCloseRequested(tabs->count() - 1);
+            QTest::qWait(50);
+            const int current = qobject_cast<ModelWidget*>(tabs->currentWidget()) ? tabs->currentIndex() : 1;
+            modelOf(current)->Calculate(); // the chart redraws (a fit, a changed parameter)
+            QTest::qWait(50);
+            const QString problems = pointsOffModel(chart, modelOf(current).data());
+            QVERIFY2(problems.isEmpty(), qPrintable(QStringLiteral("%1 tabs left: %2").arg(tabs->count()).arg(problems)));
+        }
+        const QString scaling = chartScalingProblems(chart);
+        QVERIFY2(scaling.isEmpty(), qPrintable(scaling));
+    }
+
     // Data (left) and Evaluation (right) sit next to the tabs and use the project's actions. Claude Generated.
     void dataAndEvaluationSitNextToTheTabs()
     {

@@ -78,7 +78,7 @@ ChartWrapper::~ChartWrapper()
 
     // Claude Generated: Clear all weak references
     m_stored_data.clear();
-    m_stored_model.clear();
+    m_bound_models.clear();
     m_working.clear();
 
 #ifdef DEBUG_ON
@@ -94,11 +94,8 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     // were transformed to (PrintOutIndependent: [G0]/[H0], [G0], ...); the raw DataClass plots the row number. A
     // repeated setData() on the same data (ChartWidget::setRawData while a project is synchronised after load)
     // used to reset m_working to the raw data, so the points were drawn over the row number while the model curves
-    // stayed on the model's x axis. While the transforming model lives, it stays the working set.
-    if (m_transformed && !m_stored_model.isNull())
-        m_working = m_stored_model;
-    else
-        m_working = model.toWeakRef();
+    // stayed on the model's x axis. While a transforming model lives, it stays the working set (CheckWorking picks it).
+    m_working.clear();
 
 #ifdef DEBUG_ON
     qDebug() << "🔧 NEW ChartWrapper::setData: Data set as WEAK reference, calling InitaliseSeries() and UpdateModel()";
@@ -346,13 +343,19 @@ void ChartWrapper::InitaliseSeries()
 #endif
 }
 
+/*! \brief Binds the points to the model they follow: the last of the models they were transformed to that still lives
+ * (TransformModel puts the model shown last at the end), or the raw data when none is left. Claude Generated.
+ *
+ * A model that is gone (its tab closed, nothing else holds it) must not leave the points over the row number of the raw
+ * data while the curves of the remaining models are drawn over [G0]/[H0]: x of points and curves come from the same model.
+ */
 void ChartWrapper::CheckWorking()
 {
-    // Claude Generated: Null check for weak references
-    if (m_working.isNull()) {
-        m_working = m_stored_data;  // Copy weak reference
-        m_transformed = false;
-    }
+    if (!m_working.isNull())
+        return;
+    m_bound_models.removeIf([](const QWeakPointer<DataClass>& model) { return model.isNull(); });
+    m_transformed = !m_bound_models.isEmpty();
+    m_working = m_transformed ? m_bound_models.last() : m_stored_data;
 }
 
 // === SIMPLIFIED VISIBILITY API - Claude Generated ===
@@ -656,12 +659,32 @@ bool ChartWrapper::setColorList(const QString& str)
     return success;
 }
 
+/*! \brief The points take their x values from \p model (PrintOutIndependent: [G0]/[H0], [G0], ...): a model added or
+ * shown in the window. The models stay remembered (weakly), so the points can go back to one of them when \p model
+ * goes (ReleaseModel). Nothing is redrawn when the points follow \p model already. */
 void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
 {
-    // Claude Generated: Store as weak reference to allow model destruction
-    m_stored_model = model.toWeakRef();
+    if (!model)
+        return;
+    const bool unchanged = m_transformed && m_working.toStrongRef() == model;
+    m_bound_models.removeIf([&model](const QWeakPointer<DataClass>& bound) { return bound.isNull() || bound == model; });
+    m_bound_models << model.toWeakRef();
     m_working = model.toWeakRef();
     m_transformed = true;
+    if (!unchanged)
+        UpdateModel();
+}
+
+/*! \brief \p model leaves the window (its tab is closed); the points follow the model shown last of the remaining ones,
+ * or the raw data after the last model. The model may live on elsewhere (the project), so its lifetime cannot tell
+ * this. Claude Generated. */
+void ChartWrapper::ReleaseModel(const DataClass* model)
+{
+    const bool followed = m_working.toStrongRef().data() == model;
+    m_bound_models.removeIf([model](const QWeakPointer<DataClass>& bound) { return bound.isNull() || bound.toStrongRef().data() == model; });
+    if (!followed)
+        return;
+    m_working.clear();
     UpdateModel();
 }
 

@@ -592,6 +592,11 @@ ModelDataHolder::ModelDataHolder()
     m_modelsWidget->setMovable(true);
     connect(m_modelsWidget, &QTabWidget::tabCloseRequested, this, &ModelDataHolder::RemoveTab);
     connect(m_modelsWidget, &QTabWidget::currentChanged, this, &ModelDataHolder::HideSubWindows);
+    // the measured points are drawn with the x mapping of the model shown. Claude Generated.
+    connect(m_modelsWidget, &QTabWidget::currentChanged, this, [this](int index) {
+        if (ModelWidget* widget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(index)); widget && m_charts)
+            m_charts->showModel(widget->Model());
+    });
 
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, this, &ModelDataHolder::RunJobs);
@@ -1311,6 +1316,9 @@ void ModelDataHolder::RemoveTab(int i)
         }
         m_modelsWidget->removeTab(i);
         m_models.remove(m_models.indexOf(modelPtr));
+        // the points leave the closed model (the project may keep it alive) for the one shown now. Claude Generated.
+        if (m_charts)
+            m_charts->removeModel(rawModel);
         
         // Delete ModelWidget first, then handle AbstractModel cleanup
         delete model;
