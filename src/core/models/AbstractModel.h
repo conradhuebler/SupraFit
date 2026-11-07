@@ -1009,8 +1009,9 @@ protected:
 
     ModelStatisticsStore m_stats; // post-processing results store (Claude Generated 2026, R2)
 
-    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
-    int m_used_variables;
+    // zero from the start: a model that was not calculated yet is exported with them (an uncalculated meta model saved junk)
+    qreal m_sum_absolute = 0, m_sum_squares = 0, m_variance = 0, m_mean = 0, m_stderror = 0, m_SEy = 0, m_chisquared = 0, m_covfit = 0, m_squared = 0;
+    int m_used_variables = 0;
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom, m_threads = 1;

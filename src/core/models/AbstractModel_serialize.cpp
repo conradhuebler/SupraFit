@@ -390,7 +390,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     //  qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
 
-    m_sum_squares = topjson["SSE"].toInt();
+    m_sum_squares = topjson["SSE"].toDouble();
     m_sum_absolute = topjson["SAE"].toInt();
     m_mean = topjson["mean_error"].toInt();
     m_variance = topjson["variance"].toInt();
@@ -625,7 +625,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
 
-    m_sum_squares = topjson["SSE"].toInt();
+    m_sum_squares = topjson["SSE"].toDouble();
     m_sum_absolute = topjson["SAE"].toInt();
     m_mean = topjson["mean_error"].toInt();
     m_variance = topjson["variance"].toInt();
