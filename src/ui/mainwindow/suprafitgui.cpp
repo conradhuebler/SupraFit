@@ -104,6 +104,7 @@
 
 SupraFitGui::SupraFitGui()
 {
+    m_previous_instance = Instance::GlobalInstance();
     m_instance = new Instance;
     Instance::setInstance(m_instance);
     ReadSettings();
@@ -507,6 +508,9 @@ SupraFitGui::SupraFitGui()
 
 SupraFitGui::~SupraFitGui()
 {
+    // A window still visible is hidden by ~QWidget, after the members of this object are gone: hiding the log dock then toggles its view
+    // action into the lambda above that writes m_alert (UBSan: member access on a QWidget). Hidden here, it runs on the whole object.
+    hide();
     // the title bars of the project windows are destroyed with the window, after the members of this object: they must not call back into it
     for (QObject* bar : std::as_const(m_connected_bars))
         disconnect(bar, nullptr, this, nullptr);
@@ -518,6 +522,16 @@ SupraFitGui::~SupraFitGui()
     delete m_chat_host;
     m_chat_host = nullptr;
 #endif
+    // The project windows are children of the stack: left to ~QWidget they would be destroyed after the members of this object, and
+    // their teardown (CloseAllForced -> ModelsChanged) calls back into it (UBSan: LoadProgressStep on a QWidget). They also use the
+    // Instance in their charts, so they go before it.
+    const QList<QPointer<MainWindow>> windows = m_project_windows.values();
+    for (const QPointer<MainWindow>& window : windows)
+        delete window.data();
+    m_project_windows.clear();
+    // the global Instance must not dangle: give back the one of the window opened before this one (if it still exists)
+    if (Instance::GlobalInstance() == m_instance.data())
+        Instance::setInstance(m_previous_instance);
     if (m_instance)
         delete m_instance;
     for (; m_load_depth > 0; --m_load_depth) // a load whose end did not come (window closed while it ran)

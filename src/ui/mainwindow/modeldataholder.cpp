@@ -656,15 +656,23 @@ ModelDataHolder::ModelDataHolder()
     ActiveBatch();
 }
 
+/*! \brief Takes the workspace down while this object is still whole.
+ *
+ * The tab widget is a child: left to ~QWidget (deleteChildren), it and its tabs (data overview, model panes) would be deleted after the
+ * members of this object are gone, and removing their tabs emits currentChanged into HideSubWindows of the half-destroyed holder (found
+ * by UBSan on every project window). So the tab widget is disconnected and deleted here, the model panes first (backwards, removeTab
+ * shifts the indices). Claude Generated (teardown order). */
 ModelDataHolder::~ModelDataHolder()
 {
-    for (int i = 0; i < m_modelsWidget->count(); ++i) {
-        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
-            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+    disconnect(m_modelsWidget, nullptr, this, nullptr);
+    for (int i = m_modelsWidget->count() - 1; i >= 0; --i) {
+        if (ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             m_modelsWidget->removeTab(i);
             delete model;
         }
     }
+    delete m_modelsWidget;
+    m_modelsWidget = nullptr;
     m_wrapper.clear();
     m_data.clear();
 }

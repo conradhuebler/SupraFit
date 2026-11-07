@@ -45,6 +45,7 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
@@ -261,6 +262,35 @@ private:
     QSharedPointer<DataClass> m_data;
     QSharedPointer<AbstractModel> m_model;
     ChartWidget* m_chart = nullptr;
+
+    /*! \brief Writes a file with two reference projects and a meta model of one model of each, made through the manager (which is left
+     * empty). Claude Generated. */
+    static bool writeMetaProjectFile(const QString& path)
+    {
+        SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
+        pm.clearAllProjects();
+        if (!pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json"))
+            || !pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json")))
+            return false;
+        QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
+        base->setProjectTitle(QStringLiteral("Meta for the window"));
+        base->NewUUID();
+        QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
+        ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
+        if (!meta)
+            return false;
+        for (const QString& id : pm.getLoadedProjectIds())
+            meta->addModel(qobject_cast<AbstractModel*>(pm.getProjectData(id)->Children(0).data()));
+        if (!pm.registerExistingProject(created.staticCast<DataClass>()))
+            return false;
+        QJsonObject file;
+        const QStringList all = pm.getLoadedProjectIds();
+        for (int i = 0; i < all.size(); ++i)
+            file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
+        const bool written = JsonHandler::WriteJsonFile(file, path);
+        pm.clearAllProjects();
+        return written;
+    }
 
 private slots:
     void initTestCase()
@@ -1275,27 +1305,7 @@ private slots:
         const QString dirPath = QDir::tempPath() + QStringLiteral("/suprafit_meta_test_%1").arg(QCoreApplication::applicationPid());
         QDir().mkpath(dirPath);
         const QString path = dirPath + QStringLiteral("/with_meta.suprafit");
-        {
-            SupraFit::ProjectManager& pm = SupraFit::ProjectManager::instance();
-            pm.clearAllProjects();
-            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_1_1.json")));
-            QVERIFY(pm.loadProject(QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json")));
-            QSharedPointer<DataClass> base = QSharedPointer<DataClass>::create();
-            base->setProjectTitle(QStringLiteral("Meta for the window"));
-            base->NewUUID();
-            QSharedPointer<AbstractModel> created = CreateModel(SupraFit::MetaModel, base);
-            ::MetaModel* meta = qobject_cast<::MetaModel*>(created.data());
-            QVERIFY(meta);
-            for (const QString& id : pm.getLoadedProjectIds())
-                meta->addModel(qobject_cast<AbstractModel*>(pm.getProjectData(id)->Children(0).data()));
-            QVERIFY(pm.registerExistingProject(created.staticCast<DataClass>()));
-            QJsonObject file;
-            const QStringList all = pm.getLoadedProjectIds();
-            for (int i = 0; i < all.size(); ++i)
-                file[QStringLiteral("project_%1").arg(i)] = pm.getProjectFileJson(all[i]);
-            QVERIFY(JsonHandler::WriteJsonFile(file, path));
-            pm.clearAllProjects();
-        }
+        QVERIFY(writeMetaProjectFile(path));
 
         QStringList dialogs;
         QTimer closer;
@@ -3605,6 +3615,161 @@ private slots:
         f.holder.TitleBarWidget()->HideModelTools();
         QVERIFY(!data->isEnabled());
         QVERIFY(!evaluation->isEnabled());
+    }
+
+    // Destroying the main window runs every callback on whole objects: the log dock, hidden on the way down, toggles its view action into
+    // a lambda of SupraFitGui, and the model tabs of each project window are taken down by ModelDataHolder itself (their tab changes go
+    // into HideSubWindows). Left to ~QWidget both ran on half-destroyed objects (UBSan, random crashes at teardown). Covers a window
+    // destroyed right after LoadFile, before the queued signals that build the project windows have run, and one with a meta model
+    // window. Claude Generated.
+    void teardownRunsOnWholeObjects_data()
+    {
+        QTest::addColumn<bool>("meta");
+        QTest::addColumn<bool>("settle");
+        QTest::addColumn<int>("windows");
+        QTest::newRow("settled") << false << true << 1;
+        QTest::newRow("destroyed right after LoadFile") << false << false << 0;
+        QTest::newRow("with a meta model window") << true << true << 3;
+    }
+
+    void teardownRunsOnWholeObjects()
+    {
+        QFETCH(bool, meta);
+        QFETCH(bool, settle);
+        QFETCH(int, windows);
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QTemporaryDir dir;
+        QString path = QStringLiteral(SUPRAFIT_SOURCE_DIR "/data/samples/reference/simulated_2_1_1_1.json");
+        if (meta) {
+            path = dir.path() + QStringLiteral("/with_meta.suprafit");
+            QVERIFY(writeMetaProjectFile(path));
+        }
+        QTimer closer;
+        closer.setInterval(50);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        SupraFit::ProjectManager::instance().clearAllProjects();
+
+        Instance* outer = Instance::GlobalInstance();
+        QVERIFY(outer);
+        auto* gui = new SupraFitGui;
+        gui->resize(1500, 900);
+        gui->show();
+        QVERIFY(QTest::qWaitForWindowExposed(gui));
+        gui->LoadFile(path);
+        if (settle) {
+            QTRY_VERIFY_WITH_TIMEOUT(!gui->isLoading(), 20000);
+            QTRY_COMPARE_WITH_TIMEOUT(int(gui->ProjectWindows().size()), windows, 20000);
+        }
+
+        int checks = 0;
+        QStringList broken;
+        QObject* guiObject = gui;
+        QDockWidget* log = gui->findChild<QDockWidget*>(QStringLiteral("log_panel"));
+        QVERIFY(log);
+        QVERIFY(log->isVisible());
+        QObject::connect(log->toggleViewAction(), &QAction::toggled, [&checks, &broken, guiObject]() {
+            ++checks;
+            if (!qobject_cast<SupraFitGui*>(guiObject))
+                broken << QStringLiteral("the log dock toggled its action into a half-destroyed SupraFitGui");
+        });
+        for (MainWindow* window : gui->ProjectWindows())
+            QObject::connect(window, &QObject::destroyed, [&checks, &broken, guiObject]() {
+                ++checks;
+                if (!qobject_cast<SupraFitGui*>(guiObject))
+                    broken << QStringLiteral("a project window outlived its SupraFitGui");
+            });
+        const QList<ModelDataHolder*> holders = gui->findChildren<ModelDataHolder*>();
+        QCOMPARE(int(holders.size()), windows);
+        for (ModelDataHolder* holder : holders) {
+            TabWidget* tabs = holder->findChild<TabWidget*>(QString(), Qt::FindDirectChildrenOnly);
+            QVERIFY(tabs);
+            QObject* holderObject = holder;
+            QObject::connect(tabs, &QObject::destroyed, [&checks, &broken, holderObject]() {
+                ++checks;
+                if (!qobject_cast<ModelDataHolder*>(holderObject))
+                    broken << QStringLiteral("the model tabs outlived their ModelDataHolder");
+            });
+        }
+        QVERIFY(Instance::GlobalInstance() != outer); // the window has its own
+        delete gui;
+        QCoreApplication::processEvents(); // the queued signals of the load, now for a window that is gone
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        QCOMPARE(checks, 1 + 2 * windows);
+        QVERIFY2(Instance::GlobalInstance() == outer, "the global Instance is not given back by the destroyed window");
+        QVERIFY2(broken.isEmpty(), qPrintable(broken.join(QStringLiteral("; "))));
+        QCOMPARE(QApplication::overrideCursor(), nullptr);
+        SupraFit::ProjectManager::instance().clearAllProjects();
+    }
+
+    // Probe for the teardown of the main window (SUPRAFIT_TEARDOWN_FILES, ':'-separated, skipped if unset): each file is opened in a
+    // fresh SupraFitGui, shown, and the window destroyed; SUPRAFIT_TEARDOWN_MODE=immediate destroys it right after LoadFile, before the
+    // queued signals ran. A crash is the finding: run it one file per process (and under ASan). Claude Generated.
+    void teardownAfterOpeningFiles()
+    {
+        const QString files = qEnvironmentVariable("SUPRAFIT_TEARDOWN_FILES");
+        if (files.isEmpty())
+            QSKIP("SUPRAFIT_TEARDOWN_FILES is not set");
+        const bool immediate = qEnvironmentVariable("SUPRAFIT_TEARDOWN_MODE") == QLatin1String("immediate");
+        struct ReinstallInstance {
+            ~ReinstallInstance() { Instance::setInstance(new Instance); }
+        } reinstallInstance;
+        {
+            QSettings settings;
+            settings.beginGroup(QStringLiteral("main"));
+            settings.setValue(QStringLiteral("advanced_ui"), false);
+        }
+        QTimer closer;
+        closer.setInterval(50);
+        QObject::connect(&closer, &QTimer::timeout, []() {
+            if (QWidget* w = QApplication::activeModalWidget())
+                w->close();
+        });
+        closer.start();
+        for (const QString& path : files.split(QLatin1Char(':'), Qt::SkipEmptyParts)) {
+            SupraFit::ProjectManager::instance().clearAllProjects();
+            auto* gui = new SupraFitGui;
+            gui->resize(1500, 900);
+            gui->show();
+            QVERIFY(QTest::qWaitForWindowExposed(gui));
+            gui->LoadFile(path);
+            if (!immediate) {
+                QTRY_VERIFY_WITH_TIMEOUT(!gui->isLoading(), 30000);
+                QTest::qWait(100);
+            }
+            if (qEnvironmentVariable("SUPRAFIT_TEARDOWN_MODE") == QLatin1String("visit")) {
+                // every project window and each of its tabs on screen once, like a user looking through the file
+                QStackedWidget* stack = nullptr;
+                for (MainWindow* w : gui->ProjectWindows()) {
+                    if (!stack)
+                        stack = qobject_cast<QStackedWidget*>(w->parentWidget());
+                    if (stack)
+                        stack->setCurrentWidget(w);
+                    for (int tab = 0; tab <= w->ModelCount(); ++tab) {
+                        w->setCurrentTab(tab);
+                        QTest::qWait(20);
+                        gui->grab();
+                    }
+                }
+            }
+            delete gui;
+            QCoreApplication::processEvents(); // whatever was still queued for the window
+            QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+            if (qEnvironmentVariable("SUPRAFIT_TEARDOWN_KEEP").isEmpty()) // else the projects stay until the manager goes at exit
+                SupraFit::ProjectManager::instance().clearAllProjects();
+            QCoreApplication::processEvents();
+            qInfo("teardown ok: %s", qPrintable(QFileInfo(path).fileName()));
+        }
     }
 };
 

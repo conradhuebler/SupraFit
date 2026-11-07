@@ -237,6 +237,7 @@ private:
     SupraFitChatHost* m_chat_host = nullptr;
     MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
+    QPointer<Instance> m_previous_instance; ///< the global Instance before this window set its own; restored by the destructor
     QTabWidget* m_central_widget;
     QWidget *m_project_holder, *m_recentWidget;
     QPropertyAnimation *m_show_tree, *m_show_dock;
