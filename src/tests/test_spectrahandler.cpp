@@ -24,6 +24,7 @@
 #include <cmath>
 
 #include <QtCore/QFile>
+#include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QTemporaryDir>
@@ -126,12 +127,48 @@ private slots:
             QList<QPointF> a = source.Data(source.getOrder()[s]);
             QList<QPointF> b = target.Data(target.getOrder()[s]);
             QCOMPARE(b.size(), a.size());
-            // ToolSet::DoubleList2String writes 6 significant digits
+            // raw data are written losslessly (TraceJson, WP1): bit for bit
             for (int i = 0; i < a.size(); ++i) {
-                QVERIFY(qAbs(b[i].x() - a[i].x()) <= 1e-5 * qAbs(a[i].x()));
-                QVERIFY(qAbs(b[i].y() - a[i].y()) <= 1e-5 * qAbs(a[i].y()));
+                QCOMPARE(b[i].x(), a[i].x());
+                QCOMPARE(b[i].y(), a[i].y());
             }
         }
+        // also through the serialised document
+        SpectraHandler parsed;
+        parsed.LoadData(QJsonDocument::fromJson(QJsonDocument(json).toJson()).object());
+        QCOMPARE(parsed.Data(parsed.getOrder()[2]), source.Data(source.getOrder()[2]));
+    }
+
+    void oldSixDigitFormatIsRead()
+    {
+        // block as written before WP1: ToolSet::DoubleList2String (6 significant digits)
+        SpectraHandler source;
+        fillHandler(source, 2);
+        QJsonObject json = source.getSpectraData();
+        QJsonObject data = json["Data"].toObject();
+        for (int i = 1; i <= 2; ++i) {
+            QJsonObject block = data[QString::number(i)].toObject();
+            Vector x, y;
+            QList<QPointF> points = source.Data(source.getOrder()[i - 1]);
+            x.resize(points.size());
+            y.resize(points.size());
+            for (int k = 0; k < points.size(); ++k) {
+                x(k) = points[k].x();
+                y(k) = points[k].y();
+            }
+            block["x"] = ToolSet::DoubleList2String(x);
+            block["y"] = ToolSet::DoubleList2String(y);
+            data[QString::number(i)] = block;
+        }
+        json["Data"] = data;
+        SpectraHandler target;
+        target.LoadData(json);
+        QCOMPARE(target.getOrder().size(), 2);
+        QList<QPointF> a = source.Data(source.getOrder()[1]);
+        QList<QPointF> b = target.Data(target.getOrder()[1]);
+        QCOMPARE(b.size(), a.size());
+        for (int k = 0; k < a.size(); ++k)
+            QVERIFY(qAbs(b[k].y() - a[k].y()) <= 1e-5 * qAbs(a[k].y()));
     }
 
     void rangeRoundtrip()
@@ -214,7 +251,7 @@ private slots:
         QCOMPARE(clustered, handler.XValues());
     }
 
-    void shortSpectrumIsReported()
+    void coarseSpectrumIsResampled()
     {
         SpectraHandler handler;
         fillHandler(handler, 3);
@@ -230,8 +267,88 @@ private slots:
                 stream << xi << " " << intensity(xi, 1) << "\n";
         }
         handler.addSpectrum(name);
-        QTest::ignoreMessage(QtWarningMsg, QRegularExpression("SpectraHandler.*coarse\\.dat.*26.*51"));
-        handler.VarCovarSelect(1, false, false);
+        // WP1: interpolated onto the axis of the first spectrum instead of being left out
+        Eigen::MatrixXd matrix = handler.SpectraMatrix();
+        QCOMPARE(matrix.rows(), Eigen::Index(4));
+        QCOMPARE(matrix.cols(), Eigen::Index(51));
+        const QVector<double> x = grid();
+        // the coarse file was written with 6 digits: take its values as read
+        const QList<QPointF> stored = handler.Data(handler.getOrder()[3]);
+        QCOMPARE(stored.size(), 26);
+        for (int i = 0; i < x.size(); ++i) {
+            QCOMPARE(matrix(0, i), intensity(x[i], 0));
+            const int k = i / 2; // coarse point at or below x[i]
+            const double expected = (i % 2 == 0) ? stored[k].y() : 0.5 * (stored[k].y() + stored[k + 1].y());
+            QVERIFY(qAbs(matrix(3, i) - expected) <= 1e-12 * qAbs(expected));
+        }
+        QVERIFY(!handler.VarCovarSelect(1, false, false).isEmpty());
+    }
+
+    void sameSamplingMatrixUnchanged()
+    {
+        SpectraHandler handler;
+        fillHandler(handler, 3);
+        Eigen::MatrixXd matrix = handler.SpectraMatrix();
+        QCOMPARE(matrix.rows(), Eigen::Index(3));
+        const QVector<double> x = grid();
+        for (int s = 0; s < 3; ++s)
+            for (int i = 0; i < x.size(); ++i)
+                QCOMPARE(matrix(s, i), intensity(x[i], s));
+    }
+
+    void varCovarSelectWithFewCandidates()
+    {
+        // [496, 504] holds 3 grid points, 3 * max_number = 6 are asked for: only the 3 in range,
+        // no repeated index 0 (x = 400, outside the range)
+        SpectraHandler handler;
+        fillHandler(handler, 4);
+        handler.setXRange(496.0, 504.0);
+        QVector<double> x = handler.VarCovarSelect(2, false, false);
+        QCOMPARE(x.size(), 3);
+        for (double d : x)
+            QVERIFY(d >= 496.0 && d <= 504.0);
+        // clustering to more clusters than candidates does not index out of the cluster storage
+        QVector<double> clustered = handler.VarCovarSelect(5, true, false);
+        QVERIFY(clustered.size() <= 3);
+        for (double d : clustered)
+            QVERIFY(d >= 496.0 && d <= 504.0);
+    }
+
+    void varCovarSelectWithEqualVariances()
+    {
+        // symmetric band: x = 500 - d and 500 + d have bit-identical variances
+        QStringList files;
+        for (int s = 0; s < 4; ++s) {
+            QString name = m_dir.filePath(QString("sym_%1.dat").arg(s));
+            QFile file(name);
+            QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+            QTextStream stream(&file);
+            for (double xi : grid())
+                stream << QString::number(xi, 'g', 17) << " "
+                       << QString::number(100.0 * (s + 1) * std::exp(-std::pow((xi - 500.0) / 30.0, 2)), 'g', 17) << "\n";
+            files << name;
+        }
+        SpectraHandler handler;
+        for (const QString& f : files)
+            handler.addSpectrum(f);
+        handler.setXRange(492.0, 508.0); // 492 496 500 504 508: variances pairwise equal
+        QVector<double> x = handler.VarCovarSelect(2, false, false);
+        QCOMPARE(x.size(), 5);
+        std::sort(x.begin(), x.end());
+        QCOMPARE(x, QVector<double>({ 492.0, 496.0, 500.0, 504.0, 508.0 }));
+    }
+
+    void clusteredSelectionTakesLargestVariance()
+    {
+        // one cluster: without averaging, its member of largest variance is the x of the band maximum
+        SpectraHandler handler;
+        fillHandler(handler, 4);
+        handler.setXRange(440.0, 560.0);
+        QVector<double> unclustered = handler.VarCovarSelect(1, false, false);
+        QVERIFY(!unclustered.isEmpty());
+        QCOMPARE(unclustered.first(), 500.0); // largest variance comes first
+        QVector<double> clustered = handler.VarCovarSelect(1, true, false);
+        QCOMPARE(clustered, QVector<double>({ 500.0 }));
     }
 
     void tableFileWithTrailingNewline()
@@ -248,10 +365,26 @@ private slots:
     {
         SpectraHandler handler;
         handler.setSpectrafromFile(writeTableFile("table_no_nl.txt", 3, false));
-        // setSpectrafromFile leaves out the last table row because LoadTableFile makes a garbage
-        // row from the empty line after a final newline; without that newline a spectrum is lost.
-        QEXPECT_FAIL("", "last spectrum lost without final newline (LoadTableFile keeps empty lines)", Continue);
         QCOMPARE(handler.getOrder().size(), 3);
+        QList<QPointF> last = handler.Data(handler.getOrder().last());
+        QCOMPARE(last[25].y(), intensity(500.0, 2));
+    }
+
+    void tableFileWithBlankLinesAndCrLf()
+    {
+        // empty lines (also "\r" of CRLF files) are skipped by ToolSet::LoadTableFile
+        QString path = m_dir.filePath("table_crlf.txt");
+        {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write("400 404 408\r\n1 2 3\r\n\r\n4 5 6\r\n\r\n");
+        }
+        SpectraHandler handler;
+        handler.setSpectrafromFile(path);
+        QCOMPARE(handler.getOrder().size(), 2);
+        QList<QPointF> last = handler.Data(handler.getOrder().last());
+        QCOMPARE(last.size(), 3);
+        QCOMPARE(last[2], QPointF(408, 6));
     }
 };
 

@@ -490,6 +490,30 @@ endif()
 
 add_test(NAME SpectraHandlerTest COMMAND test_spectrahandler)
 
+# Claude Generated: trace building blocks XYTrace/TraceSet/TraceOps (WP1 input data editing)
+add_executable(test_trace
+    test_trace.cpp
+)
+
+target_link_libraries(test_trace
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_trace ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_trace pthread dl)
+endif()
+
+add_test(NAME TraceTest COMMAND test_trace)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

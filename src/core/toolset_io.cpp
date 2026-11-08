@@ -91,6 +91,10 @@ DataTable* LoadTableFile(const QString& filename)
 
     filecontent = QString(blob).split("\n");
     for (const QString& line : filecontent) {
+        // an empty line (e.g. after the final newline, or "\r" of CRLF files) made a row of
+        // uninitialised values; skipped (Claude Generated, WP1 roadmap/input_data_editing.md)
+        if (line.trimmed().isEmpty())
+            continue;
         //qDebug() << line;
         auto vector = String2DoubleEigVec(QString(line).replace("\t", " ").replace(",", "."));
         //  std::cout << vector << std::endl;

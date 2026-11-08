@@ -29,12 +29,12 @@
 #include <QtCore/QList>
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
-#include <QtCore/QUuid>
 #include <QtCore/QVector>
 
 #include <src/core/models/dataclass.h>
 
 #include <src/core/toolset.h>
+#include <src/core/trace/tracejson.h>
 
 #include "spectrahandler.h"
 
@@ -50,10 +50,8 @@ SpectraHandler::~SpectraHandler()
 
 /*! \brief Reads a table of spectra: first row = x axis (wavelength), every further row = one spectrum.
  *
- * The table read is kept in m_table (owned by the handler, replaced on the next call).
- * The last row of the table is left out on purpose: ToolSet::LoadTableFile turns the empty line after
- * the final newline into an extra row (uninitialised values). A file WITHOUT final newline therefore
- * loses its last spectrum; the proper fix is to skip empty lines in LoadTableFile.
+ * The table read is kept in m_table (owned by the handler, replaced on the next call). Empty lines
+ * (also after the final newline) are skipped by ToolSet::LoadTableFile, so every row is a spectrum.
  */
 void SpectraHandler::setSpectrafromFile(const QString& file)
 {
@@ -67,15 +65,8 @@ void SpectraHandler::setSpectrafromFile(const QString& file)
     delete m_table;
     m_table = table;
     Vector first = table->Row(0);
-    for (int i = 1; i < table->rowCount() - 1; ++i) {
-        QPair<Vector, Vector> spec;
-        spec.first = first;
-        spec.second = table->Row(i);
-        Spectrum p = MakeSpectrum(spec, QString::number(index));
-        QUuid uuid;
-        QString id = uuid.createUuid().toString();
-        m_spectra.insert(id, p);
-        m_order << id;
+    for (int i = 1; i < table->rowCount(); ++i) {
+        m_spectra.add(MakeSpectrum(first, table->Row(i), QString::number(index)));
         index++;
     }
     ParseData();
@@ -90,11 +81,7 @@ void SpectraHandler::addSpectrum(const QString& file)
         spec = ToolSet::LoadAbsorbFile(file);
     else
         spec = ToolSet::LoadXYFile(file);
-    Spectrum p = MakeSpectrum(spec, file);
-    QUuid uuid;
-    QString id = uuid.createUuid().toString();
-    m_spectra.insert(id, p);
-    m_order << id;
+    m_spectra.add(MakeSpectrum(spec, file));
 
     ParseData();
 }
@@ -122,8 +109,9 @@ void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
 
 /*! \brief Table of intensities at the selected x values (rows = spectra, columns = x values).
  *
- * Sorts m_x. Each entry is the intensity of the data point nearest to x (nearest neighbour, no
- * tolerance: an x outside a spectrum takes its first/last point), divided by m_intensity_divisor.
+ * Sorts m_x. Each entry is the intensity of the data point nearest to x (XYTrace::nearestIndex, ties to
+ * the lower index; no tolerance: an x outside a spectrum takes its first/last point), divided by
+ * m_intensity_divisor; 0 for an empty spectrum.
  */
 DataTable* SpectraHandler::CompileSimpleTable()
 {
@@ -132,23 +120,17 @@ DataTable* SpectraHandler::CompileSimpleTable()
         m_x.end());
 
     int cols = m_x.size();
-    int rows = m_order.size();
+    int rows = m_spectra.size();
     QStringList header;
     DataTable* table = new DataTable(rows, cols, this);
 
     for (int i = 0; i < m_x.size(); ++i) {
         double x = m_x[i];
         header << QString::number(x);
-        for (int j = 0; j < m_order.size(); ++j) {
-            auto spec = m_spectra[m_order[j]];
-            double val = 0;
-            double diff = 1e10;
-            for (const auto& p : spec.m_xy) {
-                if (qAbs(x - p.x()) < diff) {
-                    diff = qAbs(x - p.x());
-                    val = p.y();
-                }
-            }
+        for (int j = 0; j < m_spectra.size(); ++j) {
+            const XYTrace& spec = m_spectra.at(j);
+            const Eigen::Index nearest = spec.nearestIndex(x);
+            const double val = (nearest >= 0 && nearest < spec.y().size()) ? spec.y()(nearest) : 0.0;
             table->data(j, i) = val / m_intensity_divisor;
         }
     }
@@ -157,13 +139,17 @@ DataTable* SpectraHandler::CompileSimpleTable()
     return table;
 }
 
+/*! \brief Common x range of all spectra [x_min, x_max] (TraceSet::commonRange; empty spectra are
+ * ignored); without spectra [-1e27, 1e27] as before. Resets the selected range to it. */
 void SpectraHandler::ParseData()
 {
     double min = -1e27, max = 1e27;
-    for (const auto& spec : m_spectra) {
-        min = qMax(min, spec.m_spectrum.XMin());
-        max = qMin(max, spec.m_spectrum.XMax());
-    }
+    double lo = 0, hi = 0;
+    if (m_spectra.commonRange(&lo, &hi)) {
+        min = lo;
+        max = hi;
+    } else if (!m_spectra.isEmpty())
+        qWarning() << "SpectraHandler: the spectra do not share an x range";
     x_min = min;
     x_max = max;
     resetRange();
@@ -184,55 +170,59 @@ void SpectraHandler::setXRange(double x_start, double x_end)
 /*! \brief Matrix of all spectra (rows) over the x range common to all spectra [x_min, x_max].
  *
  * The x values of the first spectrum in that range go to m_x_ranges. The selected range
- * [m_x_start, m_x_end] is applied later (VarCovarSelect). A spectrum with another number of points in
- * the common range (other sampling) is left out of the matrix with a warning.
+ * [m_x_start, m_x_end] is applied later (VarCovarSelect). Spectra on the same axis are copied as they
+ * are; if the sampling differs, all spectra are linearly interpolated onto the axis of the first one
+ * (TraceSet::resampleToCommonAxis; the first spectrum keeps its values bit for bit). Only if that is
+ * impossible (a spectrum with a non-monotone axis or non-finite values) a spectrum with another number
+ * of points is left out with a warning, as before. Spectra without a point in the range are left out.
  */
 Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
 {
-    int size = 0;
-    QVector<Vector> tmp_matrix;
-    for (const auto& spectra : m_order) {
-        auto spec = m_spectra[spectra];
-        auto vector = spec.m_spectrum.getRangedSpectrum(x_min, x_max);
-        if (size == 0) {
-            size = vector.size();
-
-            auto l = spec.m_spectrum.getRangedX(x_min, x_max);
-            m_x_ranges = QVector<double>(l.begin(), l.end());
+    TraceSet ranged;
+    for (int i = 0; i < m_spectra.size(); ++i) {
+        XYTrace part = m_spectra.at(i).range(x_min, x_max);
+        if (part.size() == 0) {
+            qWarning().noquote() << QString("SpectraHandler: spectrum %1 has no point in the common range; it is left out.").arg(part.name());
+            continue;
         }
-        if (size == vector.size())
-            tmp_matrix << vector;
-        else
-            qWarning().noquote() << QString("SpectraHandler: spectrum %1 has %2 points in the common range, the first spectrum %3; it is left out.")
-                                        .arg(spec.m_filename)
-                                        .arg(vector.size())
-                                        .arg(size);
+        ranged.add(part, m_spectra.idAt(i));
+    }
+    m_x_ranges.clear();
+    if (ranged.isEmpty())
+        return Eigen::MatrixXd();
+
+    if (!ranged.hasCommonAxis()) {
+        QString error;
+        TraceSet resampled = ranged.resampleToCommonAxis(&error);
+        if (!resampled.isEmpty())
+            ranged = resampled;
+        else {
+            qWarning().noquote() << QString("SpectraHandler: spectra not interpolated onto one axis (%1)").arg(error);
+            const Eigen::Index size = ranged.at(0).size();
+            TraceSet kept;
+            for (int i = 0; i < ranged.size(); ++i) {
+                if (ranged.at(i).size() == size && ranged.at(i).y().size() == size)
+                    kept.add(ranged.at(i), ranged.idAt(i));
+                else
+                    qWarning().noquote() << QString("SpectraHandler: spectrum %1 has %2 points in the common range, the first spectrum %3; it is left out.")
+                                                .arg(ranged.at(i).name())
+                                                .arg(ranged.at(i).size())
+                                                .arg(size);
+            }
+            ranged = kept;
+        }
     }
 
-    Eigen::MatrixXd matrix = Eigen::MatrixXd::Ones(tmp_matrix.size(), size);
-    for (int i = 0; i < tmp_matrix.size(); ++i)
-        for (int j = 0; j < size; ++j) {
-            matrix(i, j) = tmp_matrix[i](j);
-        }
-    /*
-    DataTable *tmp = new DataTable(matrix);
-    QFile file("export.txt");
-    if(file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QTextStream stream(&file);
-
-                 stream << tmp->ExportAsString();
-
-                 file.close();
-    }
-    delete tmp;
-    */
+    const Eigen::VectorXd& axis = ranged.at(0).x();
+    m_x_ranges = QVector<double>(axis.data(), axis.data() + axis.size());
+    Eigen::MatrixXd matrix(ranged.size(), axis.size());
+    for (int i = 0; i < ranged.size(); ++i)
+        matrix.row(i) = ranged.at(i).y().transpose();
     return matrix;
 }
 
 void SpectraHandler::clearFiles()
 {
-    m_order.clear();
     m_spectra.clear();
 }
 
@@ -260,19 +250,18 @@ QJsonObject SpectraHandler::getSpectraData() const
     QJsonObject spectradata, data;
 
     QStringList files;
-    int i = 1;
-    for (const auto& spectra : m_order) {
-        const auto spec = m_spectra[spectra];
-        files << spec.m_path + QDir::separator() + spec.m_filename;
+    for (int i = 0; i < m_spectra.size(); ++i) {
+        const XYTrace& spec = m_spectra.at(i);
+        files << spec.source() + QDir::separator() + spec.name();
+        // same keys as before WP1; x/y now lossless (TraceJson, still a blank-separated string)
         QJsonObject individual;
-        individual["x"] = ToolSet::DoubleList2String(spec.m_spectrum.x());
-        individual["y"] = ToolSet::DoubleList2String(spec.m_spectrum.y());
-        individual["name"] = spec.m_filename;
-        data[QString::number(i)] = individual;
-        ++i;
+        individual["x"] = TraceJson::vectorToString(spec.x());
+        individual["y"] = TraceJson::vectorToString(spec.y());
+        individual["name"] = spec.name();
+        data[QString::number(i + 1)] = individual;
     }
     spectradata["Files"] = files.join("||");
-    data["Count"] = m_spectra.count();
+    data["Count"] = m_spectra.size();
 
     if (qApp->instance()->property("StoreRawData").toBool()) {
         spectradata["Data"] = data;
@@ -299,12 +288,16 @@ void SpectraHandler::LoadData(const QJsonObject& data)
         if (count != 0) {
             for (int i = 1; i <= count; ++i) { // getSpectraData numbers the spectra 1..Count
                 QJsonObject block = raw[QString::number(i)].toObject();
-                Spectrum p = MakeSpectrum(ToolSet::String2DoubleEigVec(block["x"].toString()), ToolSet::String2DoubleEigVec(block["y"].toString()));
-                p.m_filename = block["name"].toString(QString::number(i));
-                QUuid uuid;
-                QString id = uuid.createUuid().toString();
-                m_spectra.insert(id, p);
-                m_order << id;
+                // lossless format and the old 6-digit strings are both read
+                XYTrace p;
+                QString error;
+                if (!XYTrace::fromJson(block, &p, &error)) {
+                    qWarning().noquote() << QString("SpectraHandler: stored spectrum %1 is not read: %2").arg(i).arg(error);
+                    continue;
+                }
+                p.setName(block["name"].toString(QString::number(i)));
+                p.setSource(QString());
+                m_spectra.add(p);
             }
         }
     }
@@ -318,23 +311,22 @@ void SpectraHandler::LoadData(const QJsonObject& data)
     m_intensity_divisor = data["IntensityDivisor"].toDouble(1000.0);
 }
 
-Spectrum SpectraHandler::MakeSpectrum(const Vector& x, const Vector& y, const QString& filename)
+/*! \brief Trace of one spectrum; name = file name, source = its directory (both empty without a file name). */
+XYTrace SpectraHandler::MakeSpectrum(const Vector& x, const Vector& y, const QString& filename) const
 {
-    QList<QPointF> xy;
-    for (int i = 0; i < x.size(); ++i)
-        xy << (QPointF(x[i], y[i]));
-    PeakPick::spectrum spectrum(x, y);
-    Spectrum p;
-    p.m_spectrum = spectrum;
+    XYTrace trace(x, y);
     if (!filename.isEmpty()) {
         QFileInfo info(filename);
-        p.m_filename = info.fileName();
-        p.m_path = info.path();
+        trace.setName(info.fileName());
+        trace.setSource(info.path());
     }
-    p.m_xy = xy;
-    return p;
+    QString reason;
+    if (!trace.isValid(&reason))
+        qWarning().noquote() << QString("SpectraHandler: spectrum %1: %2").arg(filename, reason);
+    return trace;
 }
-Spectrum SpectraHandler::MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename)
+
+XYTrace SpectraHandler::MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename) const
 {
     return MakeSpectrum(spect.first, spect.second, filename);
 }
@@ -361,9 +353,11 @@ Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
 
 /*! \brief Selects x values for the fit from the variance-covariance matrix of the spectra.
  *
- * Starts at the x of largest variance in [m_x_start, m_x_end] and adds 3*max_number x values of
- * least summed absolute correlation with the ones chosen; optionally clusters them down to max_number
- * (the x of a cluster or, with averaged, the cluster means). Result in XValues(); returns the same.
+ * Starts at the x of largest variance in [m_x_start, m_x_end] and adds x values of least summed
+ * absolute correlation with the ones chosen until 3*max_number are chosen or no candidate is left;
+ * optionally clusters them (by x) down to max_number: per cluster its x of largest variance or, with
+ * averaged, the cluster mean. With max_number or fewer x values there is nothing to cluster.
+ * Result in XValues(); returns the same.
  */
 QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clustering, bool averaged)
 {
@@ -383,50 +377,48 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
     if (diag.isEmpty())
         return x;
 
-    QVector<int> exclude_list;
-    index_x << diag.last();
-    int ex_counter = 0;
-    auto keys = diag.keys();
-    while (index_x.size() < number + exclude_list.size()) {
+    // candidates by decreasing variance; every index once, also for equal variances
+    // (QMultiMap::value(key) returned one index per variance, the others were unreachable)
+    QVector<int> candidates;
+    for (auto it = diag.constEnd(); it != diag.constBegin();) {
+        --it;
+        candidates << it.value();
+    }
+
+    index_x << candidates.first();
+    while (index_x.size() < number) {
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        double max_covar = 0;
-        int index = 0;
+        int index = -1;
         double min_cum_var = 1e27;
 
-        for (auto iter = keys.size() - 1; iter >= 0; --iter) {
-            int current = diag.value(keys[iter]);
+        for (int current : candidates) {
             if (index_x.contains(current))
                 continue;
             double cum_var = 0;
             for (auto curr_index : index_x) {
                 double cv = cov(curr_index, current) / sqrt(cov(curr_index, curr_index) * cov(current, current));
-                /* if (qAbs(cv) > thresh) {
-                    ex_counter++;
-                    cum_var += 1;
-                    continue;
-                }*/
                 cum_var += qAbs(cv);
-                max_covar = qMax(qAbs(cv), max_covar);
             }
             if (cum_var < min_cum_var) {
                 min_cum_var = cum_var;
                 index = current;
             }
         }
-
-        index_x << index;
-
-        if (ex_counter >= 1500000)
+        // all candidates chosen (or none comparable): stop instead of adding index 0 again and again
+        if (index < 0)
             break;
+        index_x << index;
     }
+    QVector<double> variance; // of the x values in x, for the cluster representative
     for (auto s_x : index_x) {
         if (s_x >= m_x_ranges.size())
             continue;
         x << m_x_ranges[s_x];
+        variance << cov(s_x, s_x);
     }
 
     m_x = x;
-    if (!do_clustering)
+    if (!do_clustering || max_number < 1 || m_x.size() <= max_number)
         return m_x;
 
     CxxClusterMatrix matrix;
@@ -443,16 +435,11 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
     CxxClusterMatrix local_matrix = storage[storage.size() - max_number];
     for (const auto& row : local_matrix) {
         if (!averaged) {
-            double var = 0;
-            int index = 0;
-            for (const auto d : row.first) {
-                for (auto iter = keys.size() - 1; iter >= 0; --iter) {
-                    if (var < keys[iter]) {
-                        index = d;
-                        var = keys[iter];
-                    }
-                }
-            }
+            // member of largest variance (was: always the first member)
+            int index = row.first.front();
+            for (const auto d : row.first)
+                if (variance[d] > variance[index])
+                    index = d;
             m_x.push_back(cached[index]);
         } else {
             for (auto d : row.second)

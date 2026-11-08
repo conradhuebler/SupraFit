@@ -27,25 +27,20 @@
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
 
-#include "libpeakpick/analyse.h"
-#include "libpeakpick/baseline.h"
-#include "libpeakpick/peakpick.h"
+#include <Eigen/Dense>
+
+#include "src/core/trace/traceset.h"
 
 class DataTable;
 
-struct Spectrum {
-    PeakPick::spectrum m_spectrum;
-    QList<QPointF> m_xy;
-    QString m_filename;
-    QString m_path;
-};
+typedef Eigen::VectorXd Vector;
 
 class SpectraHandler : public QObject {
     Q_OBJECT
 public:
     explicit SpectraHandler(QObject* parent = nullptr);
     virtual ~SpectraHandler();
-    inline QStringList getOrder() const { return m_order; }
+    inline QStringList getOrder() const { return m_spectra.ids(); }
 
     void setSpectrafromFile(const QString& file);
     void addSpectrum(const QString& file);
@@ -53,9 +48,11 @@ public:
 
     void clearFiles();
 
-    inline QList<QPointF> Data(const QString& hash) { return m_spectra.value(hash).m_xy; }
-    inline QString Name(const QString& hash) { return m_spectra.value(hash).m_filename; }
-    inline QString Path(const QString& hash) { return m_spectra.value(hash).m_path; }
+    inline QList<QPointF> Data(const QString& hash) const { return m_spectra.trace(hash).points(); }
+    inline QString Name(const QString& hash) const { return m_spectra.trace(hash).name(); }
+    inline QString Path(const QString& hash) const { return m_spectra.trace(hash).source(); }
+    /*! \brief The raw spectra (ids = getOrder()). Claude Generated */
+    inline const TraceSet& Spectra() const { return m_spectra; }
 
     inline void addXValue(double x) { m_x << x; }
     //inline void removeXValue()
@@ -64,6 +61,9 @@ public:
     DataTable* CompileSimpleTable();
 
     void PCA();
+    /*! \brief Matrix of the spectra (rows) over their common x range, as used by VarCovarSelect/PCA.
+     * Spectra of another sampling are interpolated onto the axis of the first one. Claude Generated */
+    inline Eigen::MatrixXd SpectraMatrix() const { return PrepareMatrix(); }
     QVector<double> VarCovarSelect(int max_number, bool do_clustering = true, bool averaged = false);
 
     QJsonObject getSpectraData() const;
@@ -92,14 +92,13 @@ signals:
     void Updated();
 
 private:
-    QHash<QString, Spectrum> m_spectra;
-    QStringList m_order;
+    TraceSet m_spectra; ///< raw spectra in titration order; name = file name, source = directory
     QVector<double> m_x;
     DataTable* m_table = nullptr; ///< table of the last setSpectrafromFile, owned by the handler
 
     Eigen::MatrixXd PrepareMatrix() const;
-    Spectrum MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString());
-    Spectrum MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename = QString());
+    XYTrace MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString()) const;
+    XYTrace MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename = QString()) const;
 
     Eigen::MatrixXd VarCovarMatrix() const;
 
