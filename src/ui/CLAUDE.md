@@ -30,6 +30,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ### Data Import/Export
 - **dialogs/importdata.cpp/h**: Data file import wizard
 - **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
+- **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
 - **dialogs/thermogram.cpp/h**: Thermogram data handling
 
 ### Analysis Configuration
@@ -63,7 +64,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Specialized Components
 - **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
-- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; smoke test `test_traceeditor`
+- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
 - **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration
 

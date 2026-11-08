@@ -28,6 +28,7 @@
 #include "src/ui/guitools/waiter.h"
 
 #include "src/ui/dialogs/generatedatadialog.h"
+#include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/thermogram.h"
 
@@ -171,6 +172,13 @@ void ImportData::setUi()
         ImportSpectra(m_filename);
     });
 
+    m_nmr = new QPushButton(tr("Import as NMR Spectra"));
+    m_nmr->setStyleSheet("background-color: #77d740; color: black;");
+    m_nmr->setToolTip(tr("Series of 1D NMR spectra: follow signals through the titration and import their chemical shifts."));
+    connect(m_nmr, &QPushButton::clicked, this, [this]() {
+        ImportNmr(m_filename);
+    });
+
     m_table = new DropTable;
 
     layout->addWidget(m_select, 0, 0);
@@ -185,7 +193,8 @@ void ImportData::setUi()
 
     layout->addWidget(m_thermogram, 7, 0);
     layout->addWidget(m_spectra, 7, 1);
-    layout->addWidget(m_buttonbox, 7, 2, 1, 2);
+    layout->addWidget(m_nmr, 7, 2);
+    layout->addWidget(m_buttonbox, 7, 3);
 
     connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
     connect(m_table->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
@@ -635,6 +644,28 @@ bool ImportData::ImportSpectra(const QString& filename)
         return true;
     }
     return false;
+}
+
+/*! \brief Opens the NMR import (with the selected file, if it can be read as spectra) and takes over
+ * its table of concentrations and chemical shifts; the raw block is stored as a Spectrum project with
+ * "Profile": "nmr". Claude Generated (WP3). */
+bool ImportData::ImportNmr(const QString& filename)
+{
+    NmrImport import(this);
+    if (!filename.isEmpty())
+        import.addFiles({ filename });
+    if (import.exec() != QDialog::Accepted)
+        return false;
+    setSpectraData(import.ProjectData());
+    DataTable* model = new DataTable(import.InputTable());
+    m_table->setModel(model);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        auto list = m_table->selectionModel()->selectedColumns();
+        m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+    });
+    NoChanged();
+    m_independent_rows->setValue(import.IndependentCount());
+    return true;
 }
 
 void ImportData::GenerateData()

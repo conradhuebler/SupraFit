@@ -786,6 +786,44 @@ private slots:
         copy.at(0)->enabled = true;
         QVERIFY(!identical(copy.apply(raw, &error).y(), raw.y()));
     }
+
+    /// Claude Generated (WP3): ShiftAxis moves x by the offset, keeps y and the orientation, round-trips in JSON
+    void shiftAxisReferencesTheScale()
+    {
+        Eigen::VectorXd x(5), y(5);
+        x << 8, 7.5, 7, 6.5, 6; // descending ppm
+        y << 0, 1, 3, 1, 0;
+        const XYTrace raw(x, y, "nmr");
+        ShiftAxisOp shift(-0.25);
+        QString error;
+        const XYTrace out = shift.apply(raw, &error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QCOMPARE(out.orientation(), XYTrace::Orientation::Descending);
+        QCOMPARE(out.name(), QString("nmr"));
+        for (Eigen::Index i = 0; i < x.size(); ++i) {
+            QCOMPARE(out.x()(i), x(i) - 0.25);
+            QCOMPARE(out.y()(i), y(i));
+        }
+        QVERIFY(identical(raw.x(), x)); // the input is unchanged
+
+        TraceOpList list;
+        list.append(shift);
+        list.append(PickPeaksOp());
+        QVector<TracePeak> peaks;
+        list.apply(raw, &error, &peaks);
+        QCOMPARE(peaks.size(), 1);
+        QCOMPARE(peaks[0].x, 6.75);
+
+        const QJsonObject json = list.toJson();
+        QCOMPARE(json["Operations"].toArray()[0].toObject()["Type"].toString(), QString("ShiftAxis"));
+        TraceOpList back;
+        QVERIFY2(TraceOpList::fromJson(json, &back, &error), qPrintable(error));
+        QCOMPARE(back.toJson(), json);
+
+        QVERIFY(!TraceOp::fromJson(QJsonObject{ { "Type", "ShiftAxis" } }, &error));
+        QVERIFY(error.contains("Offset"));
+        QVERIFY(!ShiftAxisOp(std::numeric_limits<double>::infinity()).validate(&error));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTrace)

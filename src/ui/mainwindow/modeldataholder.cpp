@@ -45,6 +45,7 @@
 #include "src/ui/dialogs/comparedialog.h"
 #include "src/ui/dialogs/genericwidgetdialog.h"
 #include "src/ui/dialogs/importdata.h"
+#include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
@@ -1668,6 +1669,12 @@ void ModelDataHolder::EditData()
             }
             emit m_data.toStrongRef()->Info()->Update();
 
+        } else if (m_data.toStrongRef()->DataType() == DataClassPrivate::Spectrum && NmrHandler::isNmrBlock(m_data.toStrongRef()->RawData())) {
+            // NMR titration: a Spectrum project whose raw block carries "Profile": "nmr" (Claude Generated, WP3)
+            NmrImport dialog(this);
+            dialog.setData(m_data.toStrongRef().data()->ExportData());
+            if (dialog.exec() == QDialog::Accepted)
+                SpectraEdited(dialog.InputTable(), dialog.ProjectData());
         } else if (m_data.toStrongRef()->DataType() == DataClassPrivate::Spectrum) {
             SpectraImport dialog;
             dialog.setData(m_data.toStrongRef().data()->ExportData());

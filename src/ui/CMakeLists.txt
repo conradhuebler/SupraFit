@@ -37,6 +37,7 @@ set(SFGui_SRC
                 guitools/flowlayout.cpp
                 dialogs/parameterdialog.cpp
                 dialogs/spectraimport.cpp
+                dialogs/nmrimport.cpp
                 dialogs/regressionanalysisdialog.cpp
                 dialogs/statisticdialog.cpp
                 dialogs/modaldialog.cpp

@@ -201,6 +201,26 @@ public:
     std::unique_ptr<TraceOp> clone() const override { return std::make_unique<BaselineOp>(*this); }
 };
 
+/*! \brief Shift of the x axis, x' = x + offset (Claude Generated, WP3).
+ *
+ * Referencing of NMR spectra: the chemical shift scale is fixed by a reference signal (TMS, the
+ * residual solvent signal) of known position; offset = known - observed position moves every point
+ * of the spectrum by the same amount. The orientation of the axis and the y values are unchanged.
+ * JSON: {"Type": "ShiftAxis", "Offset": offset}. */
+class ShiftAxisOp : public TraceOp {
+public:
+    ShiftAxisOp(double o = 0)
+        : offset(o)
+    {
+    }
+    double offset;
+    QString type() const override { return "ShiftAxis"; }
+    bool validate(QString* error = nullptr) const override;
+    XYTrace apply(const XYTrace& trace, QString* error = nullptr) const override;
+    QJsonObject toJson() const override;
+    std::unique_ptr<TraceOp> clone() const override { return std::make_unique<ShiftAxisOp>(*this); }
+};
+
 /*! \brief Peak picking (TraceOps::pickPeaks); apply() passes the trace through, pick() gives the peaks. */
 class PickPeaksOp : public TraceOp {
 public:

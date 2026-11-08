@@ -459,6 +459,11 @@ std::unique_ptr<TraceOp> TraceOp::fromJson(const QJsonObject& json, QString* err
             b->excluded << qMakePair(pair[0].toDouble(), pair[1].toDouble());
         }
         op = std::move(b);
+    } else if (type == "ShiftAxis") {
+        auto s = std::make_unique<ShiftAxisOp>();
+        if (!readNumber(json, "Offset", &s->offset, error, true))
+            return nullptr;
+        op = std::move(s);
     } else if (type == "PickPeaks") {
         auto p = std::make_unique<PickPeaksOp>();
         if (!readNumber(json, "Threshold", &p->threshold, error, false) || !readNumber(json, "MinDistance", &p->minDistance, error, false))
@@ -588,6 +593,33 @@ QJsonObject BaselineOp::toJson() const
     for (const auto& r : excluded)
         ranges.append(QJsonArray{ r.first, r.second });
     return QJsonObject{ { "Type", type() }, { "Degree", degree }, { "Excluded", ranges } };
+}
+
+// Claude Generated (WP3): referencing of a chemical shift scale
+bool ShiftAxisOp::validate(QString* error) const
+{
+    if (!std::isfinite(offset)) {
+        setError(error, "axis offset must be finite");
+        return false;
+    }
+    return true;
+}
+
+XYTrace ShiftAxisOp::apply(const XYTrace& trace, QString* error) const
+{
+    if (!validate(error))
+        return XYTrace();
+    XYTrace shifted = trace;
+    if (offset != 0) {
+        Eigen::VectorXd x = trace.x().array() + offset;
+        shifted.setData(x, trace.y());
+    }
+    return shifted;
+}
+
+QJsonObject ShiftAxisOp::toJson() const
+{
+    return QJsonObject{ { "Type", type() }, { "Offset", offset } };
 }
 
 bool PickPeaksOp::validate(QString* error) const

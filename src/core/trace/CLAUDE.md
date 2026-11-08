@@ -7,6 +7,8 @@ Basis for UV-Vis, NMR and (WP5) thermogram import; plan: [roadmap/input_data_edi
 - **traceset.h/cpp**: `TraceSet` ordered traces with stable ids (QUuid unless given); `commonRange`, `hasCommonAxis`, `resampleToCommonAxis`
 - **traceops.h/cpp**: algorithms in `namespace TraceOps` (trapezoid, Savitzky-Golay, polynomial baseline, normalise, pickPeaks) + parameter objects `RangeOp`/`SmoothOp`/`NormaliseOp`/`BaselineOp`/`PickPeaksOp` + pipeline `TraceOpList`
 - **tracejson.h/cpp**: lossless vector persistence (`vectorToString`/`vectorFromJson`)
+- **traceio.h/cpp**: ASCII/CSV readers (BOM, CRLF, decimal comma, tab/;/,/blank, header lines, matrix x + n columns, TopSpin totxt LEFT/RIGHT); `ToolSet::LoadXYFile`/`LoadCSVFile` stay for UV-Vis
+- `ShiftAxisOp` (`"ShiftAxis"`, `Offset`): x += offset, NMR referencing
 
 ## Rules
 - Raw data are never modified: `TraceOpList::apply(const XYTrace&)` works on a copy

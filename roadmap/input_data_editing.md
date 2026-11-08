@@ -45,6 +45,7 @@ Gauss-Lorentz-Fit des ganzen Signals (Lage, Breite, Fläche, Mischung).
 - **WP1 Core:** `XYTrace`, `TraceSet`, `TraceOps` + Tests; `SpectraHandler` zieht darauf um (Verhalten unverändert, Pin-Tests).
 - **WP2 GUI-Gerüst:** `TraceEditorWidget`; Spektren-Dialog zuerst darauf; `ImportData`-Zweig fürs Wiederöffnen (Spectrum).
 - **WP3 NMR Basis:** ASCII-Import (ppm-Achse, Referenz-Shift), Peak-Picking, Signalverfolgung (automatisch nächster Peak zum Vorgänger, manuelle Korrektur), δ-Tabelle für die bestehenden NMR-Modelle; Test mit simuliertem Spektrensatz.
+  - 🤖 ⚙️ ADDED 2026-11-08: `NmrHandler`, `TraceIO`, `ShiftAxisOp`, Dialog `NmrImport`; Ablage als Spectrum-Projekt mit `"Profile": "nmr"` (kein neuer `DataType`). Auswahlregel: Fenster um letzte Position und lineare Vorhersage, Kosten = Abstand zur Vorhersage/Fenster + |ln Höhenänderung|. Offen: Klick-Abnahme, echte Messdaten, CLI-Import (TODO.md).
 - **WP4 NMR Advanced:** `LineshapeFit` pro Spektrum (Startwerte aus Peak-Picking, Breite pro Signal frei oder über die Titration geteilt), Ausgabe δ/Breite/Fläche; Test an synthetischen Linien (Genauigkeit über Streuung der Breiten/Überlappung, schlechtester Fall).
 - **WP5 Thermogramm umziehen:** `ThermogramHandler` auf `TraceOps`; `thermogramwidget`/`setUi` aufteilen; erst nach der GUI-Abnahme in `TODO.md`.
 - **WP6 Doku:** `docs/ASSISTANT_HELP.md` (je WP, wo sichtbar), `AIChangelog.md`, CLAUDE.md der betroffenen Verzeichnisse.

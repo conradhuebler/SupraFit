@@ -325,10 +325,12 @@ set(core_SRC
     src/core/thermogramhandler.cpp
     src/core/itcprocessor.cpp
     src/core/spectrahandler.cpp
+    src/core/nmrhandler.cpp
     src/core/trace/xytrace.cpp
     src/core/trace/traceset.cpp
     src/core/trace/traceops.cpp
     src/core/trace/tracejson.cpp
+    src/core/trace/traceio.cpp
     src/core/concentrationalpolynomial.cpp
     src/core/concentrationsolver.cpp
     src/core/reactionparser.cpp

@@ -72,7 +72,7 @@ public:
     void setOperations(const TraceOpList& operations);
     inline const TraceOpList& operations() const { return m_operations; }
 
-    /*! \brief Appends a step of this JSON "Type" (Range, Smooth, Normalise, Baseline, PickPeaks) with
+    /*! \brief Appends a step of this JSON "Type" (Range, Smooth, Normalise, Baseline, ShiftAxis, PickPeaks) with
      * default parameters (a Range takes the selected range); returns its index or -1. */
     int addOperation(const QString& type);
     bool removeOperation(int index);
@@ -115,6 +115,8 @@ public:
 signals:
     void operationsChanged();
     void rangeChanged(double start, double end);
+    /*! \brief The chart was drawn again (its series were replaced); a host adds its own series here. */
+    void chartUpdated();
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;

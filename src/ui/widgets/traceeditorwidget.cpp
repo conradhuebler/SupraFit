@@ -172,6 +172,7 @@ void TraceEditorWidget::setupUi()
         { "Smooth", tr("Smoothing (Savitzky-Golay)") },
         { "Baseline", tr("Baseline") },
         { "Normalise", tr("Normalisation") },
+        { "ShiftAxis", tr("Shift of the x axis") },
         { "PickPeaks", tr("Peak picking") }
     };
     for (const auto& type : types) {
@@ -327,6 +328,8 @@ int TraceEditorWidget::addOperation(const QString& type)
         op = std::make_unique<BaselineOp>();
     else if (type == "PickPeaks")
         op = std::make_unique<PickPeaksOp>();
+    else if (type == "ShiftAxis")
+        op = std::make_unique<ShiftAxisOp>();
     if (!op) {
         setError(tr("Unknown processing step: %1").arg(type));
         return -1;
@@ -435,6 +438,8 @@ QString TraceEditorWidget::operationLabel(const TraceOp* op)
     }
     if (auto b = dynamic_cast<const BaselineOp*>(op))
         return b->excluded.isEmpty() ? tr("Baseline: degree %1").arg(b->degree) : tr("Baseline: degree %1, %2 excluded").arg(b->degree).arg(b->excluded.size());
+    if (auto a = dynamic_cast<const ShiftAxisOp*>(op))
+        return tr("Shift of the x axis by %1").arg(a->offset);
     if (auto p = dynamic_cast<const PickPeaksOp*>(op))
         return p->relative ? tr("Peak picking: above %1 of the span").arg(p->threshold) : tr("Peak picking: above %1").arg(p->threshold);
     return op->type();
@@ -559,6 +564,10 @@ void TraceEditorWidget::updateForm()
             rebuild();
         });
         m_form->addRow(take);
+    } else if (type == "ShiftAxis") {
+        QDoubleSpinBox* offset = number("Offset", json["Offset"].toDouble(), std::max(decimals, 4), -kLimit);
+        offset->setToolTip(tr("Added to every x value, e.g. known minus observed position of a reference signal."));
+        m_form->addRow(tr("Offset"), offset);
     } else if (type == "PickPeaks") {
         const bool relative = json["ThresholdMode"].toString() == "Relative";
         QDoubleSpinBox* threshold = number("Threshold", json["Threshold"].toDouble(), 4, -kLimit);
@@ -672,6 +681,7 @@ void TraceEditorWidget::updateChart()
         m_chart->axisX()->setReverse(!m_traces.isEmpty() && m_traces.at(0).orientation() == XYTrace::Orientation::Descending);
     updateError();
     refreshMarkers();
+    emit chartUpdated();
 }
 
 bool TraceEditorWidget::eventFilter(QObject* watched, QEvent* event)

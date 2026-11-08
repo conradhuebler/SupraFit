@@ -23,6 +23,8 @@
 ## Input data editing (roadmap/input_data_editing.md)
 - [ ] WP0–WP6: gemeinsame Trace-Pipeline (UV-Vis, NMR, später Thermogramm); NMR-Basis (Peak-Picking, Signalverfolgung) und Advanced (Pseudo-Voigt-Fit des ganzen Signals)
 - [ ] NMR-Loader Bruker `1r`, JEOL `jdf`, FID→FFT; echtes Voigt als Lineshape-Option; globaler Fit am Bindungsmodell
+- [ ] NMR-Import (WP3): CLI-Import einer Spektrenserie über `NmrHandler`; GUI-Abnahme per Klick und mit echten TopSpin/MestReNova-Exporten (TopSpin-totxt-Kopf nur synthetisch getestet)
+- [ ] NMR-Signalverfolgung: Nachbarlinie, die im Referenzspektrum nicht aufgelöst ist (< ~1 FWHM), wird still statt des Signals verfolgt; Erkennung/Warnung fehlt
 
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.

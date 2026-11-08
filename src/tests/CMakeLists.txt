@@ -514,6 +514,31 @@ endif()
 
 add_test(NAME TraceTest COMMAND test_trace)
 
+# Claude Generated: NMR import (NmrHandler: loaders, signal tracking, shift table, persistence; WP3 input data editing)
+add_executable(test_nmrhandler
+    test_nmrhandler.cpp
+)
+
+target_link_libraries(test_nmrhandler
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmrhandler ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmrhandler pthread dl)
+endif()
+
+add_test(NAME NmrHandlerTest COMMAND test_nmrhandler)
+set_tests_properties(NmrHandlerTest PROPERTIES TIMEOUT 300)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -1294,6 +1319,29 @@ if(BUILD_GUI)
     endif()
     add_test(NAME TraceEditorTest COMMAND test_traceeditor)
     set_tests_properties(TraceEditorTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen smoke test of the NMR import dialog (WP3 of roadmap/input_data_editing.md, Claude Generated 2026).
+# SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(nmrimport_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_nmrimport test_nmrimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${nmrimport_RES})
+    target_link_libraries(test_nmrimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_nmrimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_nmrimport pthread dl)
+    endif()
+    add_test(NAME NmrImportTest COMMAND test_nmrimport)
+    set_tests_properties(NmrImportTest PROPERTIES
         TIMEOUT 60
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
