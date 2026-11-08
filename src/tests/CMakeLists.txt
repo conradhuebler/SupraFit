@@ -1253,6 +1253,38 @@ endif()
 
 add_test(NAME QuadratureTest COMMAND test_quadrature)
 
+# F-distribution quantile (Claude Generated 2026) - pins ToolSet::FisherQuantile against an independent
+# long-double series reference over p, m 1..40, n 1..2000.
+add_executable(test_finv
+    test_finv.cpp
+)
+
+target_link_libraries(test_finv
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_finv ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_finv pthread dl)
+endif()
+
+# quadruple-precision reference where libquadmath exists (GCC), long double otherwise
+find_library(QUADMATH_LIBRARY quadmath)
+if(QUADMATH_LIBRARY)
+    target_compile_definitions(test_finv PRIVATE SUPRAFIT_FINV_QUAD)
+    target_link_libraries(test_finv ${QUADMATH_LIBRARY})
+endif()
+
+add_test(NAME FinvTest COMMAND test_finv)
+
 # BC50 integration accuracy at the configurable density (Claude Generated 2026) - pins what the
 # BC50IntegrationPoints setting actually buys, against an independent high-accuracy reference.
 add_executable(test_bc50_accuracy
