@@ -20,6 +20,10 @@
 - [ ] Constrained-refit profile likelihood as the cheap interval method: the sampler needs 14-3000x the SSE evaluations for the same intervals (docs/landscape_sampling_measurement_2026-10-24.md); proposal, not decided
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
+## Input data editing (roadmap/input_data_editing.md)
+- [ ] WP0–WP6: gemeinsame Trace-Pipeline (UV-Vis, NMR, später Thermogramm); NMR-Basis (Peak-Picking, Signalverfolgung) und Advanced (Pseudo-Voigt-Fit des ganzen Signals)
+- [ ] NMR-Loader Bruker `1r`, JEOL `jdf`, FID→FFT; echtes Voigt als Lineshape-Option; globaler Fit am Bindungsmodell
+
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.
 - [ ] System parameter index 6 (`InptUnit`, old heat unit, value "0") is stored in ITC projects of 2018 but declared by no model (`AbstractItcModel`: commented out): remove it on load or declare it again; it stays "Imported parameter 6".
