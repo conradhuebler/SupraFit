@@ -20,14 +20,15 @@
 - [ ] Constrained-refit profile likelihood as the cheap interval method: the sampler needs 14-3000x the SSE evaluations for the same intervals (docs/landscape_sampling_measurement_2026-10-24.md); proposal, not decided
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
-## Input data editing (roadmap/input_data_editing.md)
-- [ ] WP0–WP6: gemeinsame Trace-Pipeline (UV-Vis, NMR, später Thermogramm); NMR-Basis (Peak-Picking, Signalverfolgung) und Advanced (Pseudo-Voigt-Fit des ganzen Signals)
-- [ ] NMR-Loader Bruker `1r`, JEOL `jdf`, FID→FFT; echtes Voigt als Lineshape-Option; globaler Fit am Bindungsmodell
-- [ ] NMR-Import (WP3): CLI-Import einer Spektrenserie über `NmrHandler`; GUI-Abnahme per Klick und mit echten TopSpin/MestReNova-Exporten (TopSpin-totxt-Kopf nur synthetisch getestet)
-- [ ] NMR-Signalverfolgung: Nachbarlinie, die im Referenzspektrum nicht aufgelöst ist (< ~1 FWHM), wird still statt des Signals verfolgt; Erkennung/Warnung fehlt. WP4-Messung bei 0,5 FWHM: Peak-Picking 6,3 FWHM, Lineshape-Fit 12 FWHM Fehler in je 1 von 24 Fällen (falscher Startpeak); Fit-Lagen sollten in die Vorhersage der Verfolgung zurückfließen
-- [ ] NMR-Modellanpassung mit δ-Standardfehlern gewichten (`NmrHandler::shiftErrorTable`, WP4 liefert sie; Fehler bei geglätteten Spektren zu klein, da Rauschen korreliert)
-- [ ] Lineshape-Fit „Shared“: ein gemeinsamer Fit pro Gruppe; im Debug-Build bis 1,5 s je Serie (20 Spektren), jede Änderung im Dialog rechnet neu; Schur-Komplement oder Rechnen im Hintergrund prüfen
-- [ ] Lineshape-Fit: Nachbarlinien kommen nur aus dem Peak-Picking; eine nirgends aufgelöste Linie fehlt im Modell (Fit verbreitert dann das Signal); GUI-Abnahme mit echten Spektren steht aus
+## Input data editing (roadmap/input_data_editing.md, record: docs/input_data_editing_2026-11-08.md)
+- [ ] Click-through of the spectra, NMR and thermogram dialogs and a test with real TopSpin/MestReNova series (the totxt header is only rebuilt synthetically); all of WP0-WP5 is machine-tested only.
+- [ ] NMR tracking below 0.75 FWHM: a neighbour line not resolved in the reference spectrum is followed instead of the signal, without a warning (at 0.5 FWHM 1 of 24 cases wrong in both modes); feeding fit positions back into the tracking made it worse.
+- [ ] Weight the NMR fit with the δ errors (`NmrHandler::shiftErrorTable`; too small for smoothed spectra, noise is correlated).
+- [ ] Lineshape fit "Shared": up to 1.5 s per series (20 spectra, debug build) and every dialog change recomputes; neighbour lines come only from peak picking (a line resolved nowhere widens the signal).
+- [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r`, JEOL `jdf`, FID→FFT; true Voigt; global fit of the spectra against the binding model.
+- [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
+- [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
+- [ ] `ItcAnyTest` aborts after `testSelfAggregationSpecies` (`PeakPick::LeastSquares` reads an empty vector, `mathhelper.h:262`) and `LandscapeSearchTest` times out (600 s); both fail without this branch too.
 
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.
