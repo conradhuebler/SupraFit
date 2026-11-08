@@ -42,6 +42,8 @@
 #include <QtCore/QString>
 #include <QtCore/QVector>
 
+#include <cmath>
+#include <limits>
 #include <unordered_map>
 
 #include <Eigen/Dense>
@@ -465,12 +467,163 @@ QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& s
     return series;
 }
 
+/*! \brief Continued fraction of the regularised incomplete beta function (modified Lentz, DLMF 8.17.22).
+ *
+ * I_x(a, b) = x^a (1-x)^b / (a B(a, b)) * cf; converges quickly for x < (a + 1)/(a + b + 2). Claude Generated. */
+static long double IncompleteBetaFraction(long double x, long double a, long double b)
+{
+    const long double tiny = 1e-4000L;
+    const long double eps = 4 * std::numeric_limits<long double>::epsilon(); // a few ulp: the product d c settles there
+    long double c = 1;
+    long double d = 1 - (a + b) * x / (a + 1);
+    if (fabsl(d) < tiny)
+        d = tiny;
+    d = 1 / d;
+    long double h = d;
+    for (int k = 1; k < 100000; ++k) {
+        const long double m2 = 2 * k;
+        long double aa = k * (b - k) * x / ((a + m2 - 1) * (a + m2)); // even step
+        d = 1 + aa * d;
+        if (fabsl(d) < tiny)
+            d = tiny;
+        c = 1 + aa / c;
+        if (fabsl(c) < tiny)
+            c = tiny;
+        d = 1 / d;
+        h *= d * c;
+        aa = -(a + k) * (a + b + k) * x / ((a + m2) * (a + m2 + 1)); // odd step
+        d = 1 + aa * d;
+        if (fabsl(d) < tiny)
+            d = tiny;
+        c = 1 + aa / c;
+        if (fabsl(c) < tiny)
+            c = tiny;
+        d = 1 / d;
+        const long double delta = d * c;
+        h *= delta;
+        if (fabsl(delta - 1) < eps)
+            break;
+    }
+    return h;
+}
+
+/*! \brief Both tails of the regularised incomplete beta function, I_x(a, b) and 1 - I_x(a, b), each without cancellation where it
+ * is the small one (the fraction is evaluated on the side where it converges). Long double: the prefactor x^a (1-x)^b / B(a, b) is
+ * the difference of log-gamma values of size ~(a + b) log(a + b), which would cost ~1e-13 in double for a + b ~ 1000.
+ * Claude Generated. */
+void IncompleteBetaTails(long double x, long double a, long double b, long double& lower, long double& upper)
+{
+    if (x <= 0) {
+        lower = 0;
+        upper = 1;
+        return;
+    }
+    if (x >= 1) {
+        lower = 1;
+        upper = 0;
+        return;
+    }
+    const long double log_prefactor = lgammal(a + b) - lgammal(a) - lgammal(b) + a * logl(x) + b * log1pl(-x);
+    const long double prefactor = expl(log_prefactor);
+    if (x < (a + 1) / (a + b + 2)) {
+        lower = prefactor * IncompleteBetaFraction(x, a, b) / a;
+        upper = 1 - lower;
+    } else {
+        upper = prefactor * IncompleteBetaFraction(1 - x, b, a) / b;
+        lower = 1 - upper;
+    }
+}
+
+/*! \brief Solves I_t(a, b) = target for t (target <= 0.5, so the tail needed is the small one and is computed without cancellation).
+ *
+ * Halley iteration with the analytic derivative (the beta density) and its logarithmic derivative, started from the
+ * Abramowitz-Stegun 26.5.22 guess (as in Numerical Recipes' invbetai), kept inside a bracket that every residual shrinks; a step
+ * that leaves the bracket is replaced by bisection. Stops when the step is below 1e-19 relative to t and to 1 - t (the quantile
+ * needs 1 - t when t is close to 1, as for m = 1 and large n). Claude Generated. */
+static long double InverseIncompleteBeta(long double target, long double a, long double b)
+{
+    // Initial guess (AS 26.5.22 for a, b >= 1; power-law tails otherwise)
+    long double t;
+    if (a >= 1 && b >= 1) {
+        const long double s = sqrtl(-2 * logl(target));
+        const long double z = s - (2.30753L + s * 0.27061L) / (1 + s * (0.99229L + s * 0.04481L)); // normal quantile of target
+        const long double al = (z * z - 3) / 6;
+        const long double h = 2 / (1 / (2 * a - 1) + 1 / (2 * b - 1));
+        const long double w = z * sqrtl(al + h) / h - (1 / (2 * b - 1) - 1 / (2 * a - 1)) * (al + 5.0L / 6 - 2 / (3 * h));
+        t = a / (a + b * expl(2 * w));
+    } else {
+        const long double lna = logl(a / (a + b)), lnb = logl(b / (a + b));
+        const long double ta = expl(a * lna) / a, tb = expl(b * lnb) / b, w = ta + tb;
+        if (target < ta / w)
+            t = powl(a * w * target, 1 / a);
+        else
+            t = 1 - powl(b * w * (1 - target), 1 / b);
+    }
+    const long double log_beta = lgammal(a) + lgammal(b) - lgammal(a + b);
+    long double lo = 0, hi = 1;
+    if (!(t > 0 && t < 1))
+        t = 0.5;
+    for (int iter = 0; iter < 200; ++iter) {
+        long double lower, upper;
+        IncompleteBetaTails(t, a, b, lower, upper);
+        const long double residual = lower - target;
+        if (residual == 0)
+            return t;
+        if (residual < 0)
+            lo = t;
+        else
+            hi = t;
+        const long double density = expl((a - 1) * logl(t) + (b - 1) * log1pl(-t) - log_beta);
+        long double next;
+        if (density > 0 && std::isfinite(double(density))) {
+            const long double newton = residual / density;
+            const long double curvature = (a - 1) / t - (b - 1) / (1 - t); // (d density/dt) / density
+            const long double denominator = 1 - 0.5L * newton * curvature;
+            const long double step = (denominator > 0.5L && denominator < 2) ? newton / denominator : newton;
+            next = t - step;
+        } else
+            next = -1;
+        if (!(next > lo && next < hi)) // outside the bracket: bisect (geometrically when the bracket spans decades)
+            next = (lo > 0 && hi / lo > 4) ? sqrtl(lo * hi) : 0.5L * (lo + hi);
+        if (fabsl(next - t) <= 1e-19L * fminl(t, 1 - t)) // long double resolution, also of 1 - t
+            return next;
+        t = next;
+        if (hi - lo <= 1e-19L * fminl(t, 1 - t))
+            return t;
+    }
+    return t;
+}
+
+/*! \brief Quantile of the F distribution with \p m and \p n degrees of freedom at \p p, without the memo of finv.
+ *
+ * P(F <= x) = I_y(m/2, n/2) with y = m x / (m x + n). For p <= 0.5 the lower tail is solved for y, for p > 0.5 the upper tail
+ * I_z(n/2, m/2) = 1 - p for z = 1 - y = n / (m x + n) (1 - p is exact in double for p >= 0.5), so the small variable is the one
+ * solved for and the quantile keeps its relative accuracy far into the tail. Accuracy over p in {0.5 .. 0.999}, m 1..40, n 1..2000
+ * against an independent series reference: see test_finv. Returns 0 for p = 0, infinity for p = 1, NaN outside the domain.
+ * Claude Generated (replaces the Simpson stepping of Fisher_Dist::finv, which was accurate to ~1e-4 and capped m, n at 250). */
+qreal FisherQuantile(qreal p, qreal m, qreal n)
+{
+    if (!(p >= 0 && p <= 1) || !(m > 0) || !(n > 0))
+        return std::numeric_limits<qreal>::quiet_NaN();
+    if (p == 0)
+        return 0;
+    if (p == 1)
+        return std::numeric_limits<qreal>::infinity();
+    const long double a = 0.5L * m, b = 0.5L * n;
+    if (p <= 0.5) {
+        const long double y = InverseIncompleteBeta(p, a, b);
+        return qreal(n * y / (m * (1 - y)));
+    }
+    const long double z = InverseIncompleteBeta(1.0L - p, b, a);
+    return qreal(n * (1 - z) / (m * z));
+}
+
 /*! \brief Quantile of the F distribution with \p m and \p n degrees of freedom at \p p (the f value of an F test).
  *
- * Fisher_Dist::finv integrates the density numerically (about 10 ms a call). The value depends only on (p, m, n), and the models of a
- * project share them (the same confidence, mostly the same number of parameters and points): every value computed is kept, so opening
- * a project with many models, each with its statistics forms, computes it once per combination. Thread-safe (statistics jobs call it
- * from worker threads). Claude Generated (memo). */
+ * Computed by FisherQuantile (some microseconds). The value depends only on (p, m, n), and the models of a project share them
+ * (the same confidence, mostly the same number of parameters and points): every value computed is kept. Thread-safe (statistics
+ * jobs call it from worker threads). Out of the domain (p outside [0, 1], m or n <= 0) it returns 1, as the Fisher_Dist version
+ * did. Claude Generated (memo, FisherQuantile). */
 qreal finv(qreal p, int m, int n)
 {
     struct Key {
@@ -489,17 +642,9 @@ qreal finv(qreal p, int m, int n)
         if (it != known.end())
             return it->second;
     }
-    qreal f_value(1);
-    try {
-        f_value = Fisher_Dist::finv(p, m, n);
-    } catch (int i) {
-        /*
-        if (i == -1)
-            qDebug() << "p value out of range";
-        else if (i == -2)
-            qDebug() << "m or n are below 0";
-            */
-    }
+    qreal f_value = FisherQuantile(p, m, n);
+    if (std::isnan(f_value))
+        f_value = 1;
     QMutexLocker locker(&mutex);
     known.emplace(Key{ p, m, n }, f_value);
     return f_value;

@@ -107,6 +107,10 @@ void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractM
 QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& str);
 
 qreal finv(qreal p, int m, int n);
+/*! \brief Uncached F quantile (regularised incomplete beta, Halley); finv memoises it. Claude Generated. */
+qreal FisherQuantile(qreal p, qreal m, qreal n);
+/*! \brief Lower and upper tail of the regularised incomplete beta function I_x(a, b). Claude Generated. */
+void IncompleteBetaTails(long double x, long double a, long double b, long double& lower, long double& upper);
 QList<int> InvertLockedList(const QList<int>& locked);
 void ExportResults(const QString& filename, const QList<QJsonObject>& models);
 DataTable* LoadTableFile(const QString& file);

@@ -41,6 +41,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
   - **Human-readable formatting**: `FormatStatisticsString()` converts JSON results to console/HTML format
 - **pythonbridge.cpp/h**: Python integration for extended functionality
 - **toolset.cpp/h**: General utility functions (conversion/math/thermo); `namespace ToolSet` split across `toolset.cpp` (core + conversion), `toolset_io.cpp` (file loaders), `toolset_print.cpp` (`Print`), `toolset_statistics.cpp` (histograms/entropy/confidence/boxplots/model-parameter stats) — shared `toolset.h` facade
+  - `finv` (F quantile) = memo over `FisherQuantile` (inverse incomplete beta, Halley, ~5 µs, 6e-15 relative, pinned by `test_finv`); `external/fisher_dist` (submodule, ~20 ms, up to 4 % off) is no longer called
 
 ## Model System
 
