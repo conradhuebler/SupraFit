@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraHandler - import and preparation of spectra series (UV-Vis titrations)
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,12 +43,30 @@ SpectraHandler::SpectraHandler(QObject* parent)
 {
 }
 
+SpectraHandler::~SpectraHandler()
+{
+    delete m_table;
+}
+
+/*! \brief Reads a table of spectra: first row = x axis (wavelength), every further row = one spectrum.
+ *
+ * The table read is kept in m_table (owned by the handler, replaced on the next call).
+ * The last row of the table is left out on purpose: ToolSet::LoadTableFile turns the empty line after
+ * the final newline into an extra row (uninitialised values). A file WITHOUT final newline therefore
+ * loses its last spectrum; the proper fix is to skip empty lines in LoadTableFile.
+ */
 void SpectraHandler::setSpectrafromFile(const QString& file)
 {
     int index = 1;
     DataTable* table = ToolSet::LoadTableFile(file);
-    Vector first = table->Row(0);
+    if (table->rowCount() < 2) {
+        qWarning() << "SpectraHandler: no spectra found in" << file;
+        delete table;
+        return;
+    }
+    delete m_table;
     m_table = table;
+    Vector first = table->Row(0);
     for (int i = 1; i < table->rowCount() - 1; ++i) {
         QPair<Vector, Vector> spec;
         spec.first = first;
@@ -102,6 +120,11 @@ void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
         addSpectrum(f);
 }
 
+/*! \brief Table of intensities at the selected x values (rows = spectra, columns = x values).
+ *
+ * Sorts m_x. Each entry is the intensity of the data point nearest to x (nearest neighbour, no
+ * tolerance: an x outside a spectrum takes its first/last point), divided by m_intensity_divisor.
+ */
 DataTable* SpectraHandler::CompileSimpleTable()
 {
     std::sort(
@@ -126,7 +149,7 @@ DataTable* SpectraHandler::CompileSimpleTable()
                     val = p.y();
                 }
             }
-            table->data(j, i) = val / 1000.0;
+            table->data(j, i) = val / m_intensity_divisor;
         }
     }
     table->setHeader(header);
@@ -158,6 +181,12 @@ void SpectraHandler::setXRange(double x_start, double x_end)
     m_x_end = x_end;
 }
 
+/*! \brief Matrix of all spectra (rows) over the x range common to all spectra [x_min, x_max].
+ *
+ * The x values of the first spectrum in that range go to m_x_ranges. The selected range
+ * [m_x_start, m_x_end] is applied later (VarCovarSelect). A spectrum with another number of points in
+ * the common range (other sampling) is left out of the matrix with a warning.
+ */
 Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
 {
     int size = 0;
@@ -173,6 +202,11 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
         }
         if (size == vector.size())
             tmp_matrix << vector;
+        else
+            qWarning().noquote() << QString("SpectraHandler: spectrum %1 has %2 points in the common range, the first spectrum %3; it is left out.")
+                                        .arg(spec.m_filename)
+                                        .arg(vector.size())
+                                        .arg(size);
     }
 
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Ones(tmp_matrix.size(), size);
@@ -248,6 +282,7 @@ QJsonObject SpectraHandler::getSpectraData() const
     spectradata["SupraFit"] = qint_version;
     spectradata["XStart"] = m_x_start;
     spectradata["XEnd"] = m_x_end;
+    spectradata["IntensityDivisor"] = m_intensity_divisor;
 
     return spectradata;
 }
@@ -262,7 +297,7 @@ void SpectraHandler::LoadData(const QJsonObject& data)
         QJsonObject raw = data["Data"].toObject();
         int count = raw["Count"].toInt();
         if (count != 0) {
-            for (int i = 1; i < count; ++i) {
+            for (int i = 1; i <= count; ++i) { // getSpectraData numbers the spectra 1..Count
                 QJsonObject block = raw[QString::number(i)].toObject();
                 Spectrum p = MakeSpectrum(ToolSet::String2DoubleEigVec(block["x"].toString()), ToolSet::String2DoubleEigVec(block["y"].toString()));
                 p.m_filename = block["name"].toString(QString::number(i));
@@ -278,7 +313,9 @@ void SpectraHandler::LoadData(const QJsonObject& data)
 
     ParseData();
     m_x_start = data["XStart"].toDouble(m_x_start);
-    m_x_end = data["XStart"].toDouble(m_x_end);
+    m_x_end = data["XEnd"].toDouble(m_x_end);
+    // files written before the divisor was stored used a fixed 1/1000
+    m_intensity_divisor = data["IntensityDivisor"].toDouble(1000.0);
 }
 
 Spectrum SpectraHandler::MakeSpectrum(const Vector& x, const Vector& y, const QString& filename)
@@ -322,6 +359,12 @@ Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
     return cov;
 }
 
+/*! \brief Selects x values for the fit from the variance-covariance matrix of the spectra.
+ *
+ * Starts at the x of largest variance in [m_x_start, m_x_end] and adds 3*max_number x values of
+ * least summed absolute correlation with the ones chosen; optionally clusters them down to max_number
+ * (the x of a cluster or, with averaged, the cluster means). Result in XValues(); returns the same.
+ */
 QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clustering, bool averaged)
 {
     int number = 3 * max_number;
@@ -330,22 +373,23 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
     QVector<int> index_x;
     QMultiMap<double, int> diag;
 
-    for (int i = 0; i < cov.cols(); ++i) {
+    for (int i = 0; i < cov.cols() && i < m_x_ranges.size(); ++i) {
         if (m_x_ranges[i] > m_x_end || m_x_ranges[i] < m_x_start)
             continue;
         diag.insert(cov(i, i), i);
     }
-    if (diag.end().value() >= cov.cols())
+    // no spectra or no point in [m_x_start, m_x_end]: nothing to select
+    // (was diag.end().value(), a dereference of end())
+    if (diag.isEmpty())
         return x;
 
     QVector<int> exclude_list;
     index_x << diag.last();
-    double thresh = 0.95;
     int ex_counter = 0;
     auto keys = diag.keys();
     while (index_x.size() < number + exclude_list.size()) {
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        double min_covar = 1e27, max_covar = 0;
+        double max_covar = 0;
         int index = 0;
         double min_cum_var = 1e27;
 
@@ -376,7 +420,7 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
             break;
     }
     for (auto s_x : index_x) {
-        if (s_x > m_x_ranges.size())
+        if (s_x >= m_x_ranges.size())
             continue;
         x << m_x_ranges[s_x];
     }
@@ -415,5 +459,5 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
                 m_x.push_back(d);
         }
     }
-    return x;
+    return m_x; // the clustered selection, as XValues()
 }

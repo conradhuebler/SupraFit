@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraHandler - import and preparation of spectra series (UV-Vis titrations)
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  */
 
 #pragma once
+
+#include <cmath>
 
 #include <QtCore/QHash>
 #include <QtCore/QList>
@@ -42,7 +44,7 @@ class SpectraHandler : public QObject {
     Q_OBJECT
 public:
     explicit SpectraHandler(QObject* parent = nullptr);
-    virtual ~SpectraHandler() {}
+    virtual ~SpectraHandler();
     inline QStringList getOrder() const { return m_order; }
 
     void setSpectrafromFile(const QString& file);
@@ -76,6 +78,16 @@ public:
 
     void resetRange();
     void setXRange(double x_start, double x_end);
+
+    /*! \brief Unit conversion of the intensity: CompileSimpleTable divides every intensity by it.
+     * Default 1000 (the factor used before it was configurable); stored as "IntensityDivisor". Claude Generated */
+    inline double IntensityDivisor() const { return m_intensity_divisor; }
+    /*! \brief Sets the intensity divisor (see IntensityDivisor()); zero or non-finite values are ignored. Claude Generated */
+    inline void setIntensityDivisor(double divisor)
+    {
+        if (divisor != 0 && std::isfinite(divisor))
+            m_intensity_divisor = divisor;
+    }
 signals:
     void Updated();
 
@@ -83,7 +95,7 @@ private:
     QHash<QString, Spectrum> m_spectra;
     QStringList m_order;
     QVector<double> m_x;
-    DataTable* m_table;
+    DataTable* m_table = nullptr; ///< table of the last setSpectrafromFile, owned by the handler
 
     Eigen::MatrixXd PrepareMatrix() const;
     Spectrum MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString());
@@ -92,5 +104,6 @@ private:
     Eigen::MatrixXd VarCovarMatrix() const;
 
     mutable QVector<double> m_x_ranges;
+    double m_intensity_divisor = 1000.0;
     double x_min = 0, x_max = 0, y_min = 0, y_max = 0, m_x_start = 0, m_y_start = 0, m_x_end = 0, m_y_end = 0;
 };

@@ -466,6 +466,30 @@ endif()
 
 add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
 
+# Claude Generated: SpectraHandler persistence, CompileSimpleTable and VarCovarSelect (WP0 input data editing)
+add_executable(test_spectrahandler
+    test_spectrahandler.cpp
+)
+
+target_link_libraries(test_spectrahandler
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_spectrahandler ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_spectrahandler pthread dl)
+endif()
+
+add_test(NAME SpectraHandlerTest COMMAND test_spectrahandler)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
