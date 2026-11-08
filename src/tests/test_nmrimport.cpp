@@ -21,6 +21,8 @@
  * back. Set SUPRAFIT_TRACE_RENDER_DIR to write PNG renders (light, dark, 1366x768). Claude Generated.
  */
 
+#include <charts.h>
+
 #include <cmath>
 
 #include <QtCore/QDir>
@@ -28,6 +30,9 @@
 #include <QtCore/QTemporaryDir>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
 
@@ -65,6 +70,26 @@ XYTrace nmrSpectrum(int step, int steps, int vanish = 1000, bool cross = false)
     }
     return XYTrace(x, y, QString("step_%1.txt").arg(step));
 }
+
+/// WP4: H2 starts 0.7 FWHM above a static neighbour line G (7.093 ppm) and moves away; FWHM 0.01 ppm
+XYTrace overlapSpectrum(int step, int steps)
+{
+    const int n = 1501;
+    Eigen::VectorXd x(n), y(n);
+    const double f = 1.0 - std::exp(-1.5 * step / double(steps - 1));
+    const double pos[4] = { 7.60 - 0.30 * f, 7.10 + 0.12 * f, 6.95 - 0.15 * f, 7.093 };
+    const double height[4] = { 1.0, 0.8, 0.6, 0.6 };
+    for (int i = 0; i < n; ++i) {
+        x(i) = 8.0 - 0.001 * i;
+        double v = 0;
+        for (int s = 0; s < 4; ++s) {
+            const double u = (x(i) - pos[s]) / 0.005;
+            v += height[s] * (0.5 / (1 + u * u) + 0.5 * std::exp(-std::log(2.0) * u * u));
+        }
+        y(i) = v + 0.002 * std::sin(37.0 * i);
+    }
+    return XYTrace(x, y, QString("step_%1.txt").arg(step));
+}
 } // namespace
 
 class TestNmrImport : public QObject {
@@ -74,6 +99,14 @@ class TestNmrImport : public QObject {
     {
         for (int k = 0; k < steps; ++k)
             handler->addSpectrum(nmrSpectrum(k, steps, vanish, cross));
+    }
+
+    static void setOverlapSignals(NmrHandler* handler)
+    {
+        handler->addSignal(7.60, 0.08, "H1");
+        handler->addSignal(7.10, 0.08, "H2");
+        handler->addSignal(6.95, 0.08, "H3");
+        handler->addSignal(7.093, 0.012, "G");
     }
 
     static DataTable* concentrations(int steps)
@@ -195,6 +228,85 @@ private slots:
         QVERIFY(dialog.InputTable().isEmpty());
     }
 
+    /// WP4: the lineshape fit through the dialog controls; detail columns, fit curves, "fit failed" cells
+    void lineshapeFitMode()
+    {
+        const int steps = 10;
+        NmrImport dialog;
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(overlapSpectrum(k, steps));
+        setOverlapSignals(dialog.handler());
+        dialog.refresh();
+        QComboBox* method = dialog.findChild<QComboBox*>("nmrShiftMethod");
+        QCheckBox* details = dialog.findChild<QCheckBox*>("nmrFitDetails");
+        QVERIFY(method && details);
+        QVERIFY(!details->isEnabled());
+        // peak picking: H2 and G share one maximum in the first spectra
+        QCOMPARE(dialog.handler()->cell(0, 1).status, NmrCellStatus::Conflict);
+        method->setCurrentIndex(1);
+        QCOMPARE(dialog.handler()->fitSettings().method, NmrShiftMethod::LineshapeFit);
+        QVERIFY(details->isEnabled());
+        for (int k = 0; k < steps; ++k)
+            for (int s = 0; s < 4; ++s) {
+                const NmrCell cell = dialog.handler()->cell(k, s);
+                QVERIFY2(cell.status == NmrCellStatus::Ok, qPrintable(QString("%1 %2 %3 %4").arg(k).arg(s).arg(NmrHandler::statusName(cell.status), cell.fitMessage)));
+                QCOMPARE(cell.shift, cell.fitShift);
+            }
+        // H2 follows its own line, also where it shares G's maximum or the tracking hands it G's peak
+        for (int k = 0; k < steps; ++k) {
+            const double h2 = 7.10 + 0.12 * (1.0 - std::exp(-1.5 * k / double(steps - 1)));
+            QVERIFY2(std::abs(dialog.handler()->cell(k, 1).shift - h2) < 1e-3, qPrintable(QString("step %1: %2 / %3").arg(k).arg(dialog.handler()->cell(k, 1).shift, 0, 'f', 5).arg(h2, 0, 'f', 5)));
+            QVERIFY(std::abs(dialog.handler()->cell(k, 3).shift - 7.093) < 1e-3);
+        }
+        // the fit separates H2 from G in the first spectrum
+        QVERIFY2(std::abs(dialog.handler()->cell(0, 1).shift - 7.10) < 1e-3, qPrintable(QString::number(dialog.handler()->cell(0, 1).shift, 'f', 5)));
+        QVERIFY2(std::abs(dialog.handler()->cell(0, 3).shift - 7.093) < 1e-3, qPrintable(QString::number(dialog.handler()->cell(0, 3).shift, 'f', 5)));
+        QTableWidget* results = dialog.findChild<QTableWidget*>("nmrResults");
+        QCOMPARE(results->columnCount(), 4);
+        details->setChecked(true);
+        QCOMPARE(results->columnCount(), 20);
+        QCOMPARE(results->horizontalHeaderItem(2)->text(), QString("FWHM"));
+        QVERIFY(std::abs(results->item(3, 2)->text().toDouble() - 0.01) < 0.001);
+        QVERIFY(!(results->item(3, 1)->flags() & Qt::ItemIsEditable));
+        // a value typed into a δ column is still a manual shift
+        results->item(4, 5)->setText("7.2");
+        QCoreApplication::processEvents();
+        QCOMPARE(dialog.handler()->cell(4, 1).status, NmrCellStatus::Manual);
+        std::unique_ptr<DataTable> conc(concentrations(steps));
+        dialog.setConcentrations(conc.get());
+        QString error;
+        QVERIFY2(dialog.validate(&error), qPrintable(error));
+
+        // failed fits: no shift, refused table, own colour
+        QSpinBox* iterations = dialog.findChild<QSpinBox*>("nmrMaxIterations");
+        iterations->setValue(1);
+        results = dialog.findChild<QTableWidget*>("nmrResults");
+        QCOMPARE(dialog.handler()->cell(2, 0).status, NmrCellStatus::FitFailed);
+        QCOMPARE(results->item(2, 0)->background().color(), NmrImport::statusColor(NmrCellStatus::FitFailed));
+        QVERIFY(!dialog.validate(&error));
+        QVERIFY(error.contains("fit failed"));
+        // with the peak position as fallback the single lines are back; H2/G sharing one maximum stay in conflict
+        dialog.findChild<QCheckBox*>("nmrPeakFallback")->setChecked(true);
+        QVERIFY(!dialog.validate(&error));
+        QVERIFY2(error.contains("conflict") && !error.contains("fit failed"), qPrintable(error));
+        QCOMPARE(dialog.handler()->cell(2, 0).status, NmrCellStatus::Ok);
+        QCOMPARE(dialog.handler()->cell(2, 0).shift, dialog.handler()->cell(2, 0).peakShift);
+        iterations->setValue(200);
+        QVERIFY2(dialog.validate(&error), qPrintable(error));
+
+        // the settings come back with the project
+        QJsonObject project;
+        project["raw"] = dialog.ProjectData();
+        project["independent"] = conc->ExportTable(true);
+        NmrImport again;
+        again.setData(project);
+        QVERIFY(again.handler()->fitSettings() == dialog.handler()->fitSettings());
+        QCOMPARE(again.findChild<QComboBox*>("nmrShiftMethod")->currentIndex(), 1);
+        QCOMPARE(again.findChild<QSpinBox*>("nmrMaxIterations")->value(), 200);
+        QVERIFY(again.findChild<QCheckBox*>("nmrPeakFallback")->isChecked());
+        QCOMPARE(again.InputTable(), dialog.InputTable());
+    }
+
     void renderDialog()
     {
         if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
@@ -228,6 +340,25 @@ private slots:
                 dialog.refresh();
                 dialog.resize(1366, 768);
                 render(&dialog, "nmr_missing_conflict" + suffix);
+                dialog.hide();
+            }
+            {
+                // WP4: fit of the overlapping pair, details, fit curve and residual of spectrum 1
+                NmrImport dialog;
+                for (int k = 0; k < steps; ++k)
+                    dialog.handler()->addSpectrum(overlapSpectrum(k, steps));
+                setOverlapSignals(dialog.handler());
+                dialog.refresh();
+                dialog.resize(1366, 768);
+                dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+                dialog.findChild<QCheckBox*>("nmrFitDetails")->setChecked(true);
+                render(&dialog, "nmr_fit" + suffix);
+                // zoom on H2 and G: the fitted model over the two lines and the residual below
+                dialog.findChild<TraceEditorWidget*>()->chart()->setXMin(7.04);
+                dialog.findChild<TraceEditorWidget*>()->chart()->setXMax(7.16);
+                render(&dialog, "nmr_fit_zoom" + suffix);
+                dialog.findChild<QSpinBox*>("nmrMaxIterations")->setValue(2);
+                render(&dialog, "nmr_fit_failed" + suffix);
                 dialog.hide();
             }
         }

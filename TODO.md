@@ -24,7 +24,10 @@
 - [ ] WP0–WP6: gemeinsame Trace-Pipeline (UV-Vis, NMR, später Thermogramm); NMR-Basis (Peak-Picking, Signalverfolgung) und Advanced (Pseudo-Voigt-Fit des ganzen Signals)
 - [ ] NMR-Loader Bruker `1r`, JEOL `jdf`, FID→FFT; echtes Voigt als Lineshape-Option; globaler Fit am Bindungsmodell
 - [ ] NMR-Import (WP3): CLI-Import einer Spektrenserie über `NmrHandler`; GUI-Abnahme per Klick und mit echten TopSpin/MestReNova-Exporten (TopSpin-totxt-Kopf nur synthetisch getestet)
-- [ ] NMR-Signalverfolgung: Nachbarlinie, die im Referenzspektrum nicht aufgelöst ist (< ~1 FWHM), wird still statt des Signals verfolgt; Erkennung/Warnung fehlt
+- [ ] NMR-Signalverfolgung: Nachbarlinie, die im Referenzspektrum nicht aufgelöst ist (< ~1 FWHM), wird still statt des Signals verfolgt; Erkennung/Warnung fehlt. WP4-Messung bei 0,5 FWHM: Peak-Picking 6,3 FWHM, Lineshape-Fit 12 FWHM Fehler in je 1 von 24 Fällen (falscher Startpeak); Fit-Lagen sollten in die Vorhersage der Verfolgung zurückfließen
+- [ ] NMR-Modellanpassung mit δ-Standardfehlern gewichten (`NmrHandler::shiftErrorTable`, WP4 liefert sie; Fehler bei geglätteten Spektren zu klein, da Rauschen korreliert)
+- [ ] Lineshape-Fit „Shared“: ein gemeinsamer Fit pro Gruppe; im Debug-Build bis 1,5 s je Serie (20 Spektren), jede Änderung im Dialog rechnet neu; Schur-Komplement oder Rechnen im Hintergrund prüfen
+- [ ] Lineshape-Fit: Nachbarlinien kommen nur aus dem Peak-Picking; eine nirgends aufgelöste Linie fehlt im Modell (Fit verbreitert dann das Signal); GUI-Abnahme mit echten Spektren steht aus
 
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.

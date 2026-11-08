@@ -539,6 +539,31 @@ endif()
 add_test(NAME NmrHandlerTest COMMAND test_nmrhandler)
 set_tests_properties(NmrHandlerTest PROPERTIES TIMEOUT 300)
 
+# Claude Generated: pseudo-Voigt lineshape fit (LineshapeFit; WP4 input data editing)
+add_executable(test_lineshapefit
+    test_lineshapefit.cpp
+)
+
+target_link_libraries(test_lineshapefit
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_lineshapefit ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_lineshapefit pthread dl)
+endif()
+
+add_test(NAME LineshapeFitTest COMMAND test_lineshapefit)
+set_tests_properties(LineshapeFitTest PROPERTIES TIMEOUT 300)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

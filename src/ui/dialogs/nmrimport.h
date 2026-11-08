@@ -31,9 +31,11 @@
 
 class DataTable;
 class DropTable;
+class LineSeries;
 class ScatterSeries;
 class TraceEditorWidget;
 
+class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;
 class QDoubleSpinBox;
@@ -41,6 +43,7 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QPushButton;
+class QSpinBox;
 class QTabWidget;
 class QTableWidget;
 
@@ -52,6 +55,11 @@ class QTableWidget;
  * takes the position), the tracked shifts with a colour per status and manual values, and the drop
  * table of the concentrations. Every change tracks again. accept() refuses a table with missing or
  * conflicting cells or without concentrations (message box with the cells).
+ *
+ * WP4: "Shift from" switches between peak picking and the lineshape fit of NmrHandler (options: width free
+ * or shared, baseline, fit range, iterations, peak position where a fit fails); "Fit details" adds the
+ * columns ±δ, FWHM, area and η per signal to the result table; the chart shows the fitted model and its
+ * residual for the selected spectrum.
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -97,6 +105,10 @@ private:
     void updateTable();
     void retrack();
     void setStatus(const QString& text, bool error);
+    void applyFitSettings();
+    void updateFitControls();
+    /*! \brief Spectrum whose fit is drawn: the selected one, else the reference. */
+    int fitSpectrum() const;
 
     NmrHandler m_handler;
     QJsonObject m_input_table;
@@ -114,9 +126,15 @@ private:
     QDoubleSpinBox *m_offset, *m_window, *m_position;
     QPushButton *m_pick, *m_add, *m_remove_signal;
     QTableWidget* m_signal_table;
+    QComboBox *m_method, *m_width_mode, *m_baseline;
+    QDoubleSpinBox* m_fit_range;
+    QSpinBox* m_max_iterations;
+    QCheckBox *m_fallback, *m_details;
+    QWidget* m_fit_options;
     QLabel *m_status, *m_legend;
     DropTable *m_concentrations, *m_preview;
     QLabel* m_table_status;
     QDialogButtonBox* m_buttons;
     QList<QPointer<ScatterSeries>> m_markers; ///< tracked positions in the chart (deleted with clearChart)
+    QList<QPointer<LineSeries>> m_fit_lines; ///< fitted model and residual of the selected spectrum
 };

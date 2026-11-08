@@ -21,11 +21,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 #include <QtCore/QCollator>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 #include <QtCore/QVariant>
@@ -159,6 +161,7 @@ void NmrHandler::clear()
     m_manual.clear();
     m_excluded.clear();
     m_cells.clear();
+    m_fit_regions.clear();
     m_reference = 0;
 }
 
@@ -215,6 +218,12 @@ TraceSet NmrHandler::processedSpectra(QString* error) const
  * the default picking (relative threshold 0.05) on the processed spectrum if there is no such step. */
 QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error) const
 {
+    return peaks(error, nullptr);
+}
+
+/*! \brief peaks() and, if processed is given, the processed spectra they were picked on (one pass). */
+QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error, QVector<XYTrace>* processedSpectra) const
+{
     bool hasPick = false;
     for (int i = 0; i < m_operations.size(); ++i)
         hasPick = hasPick || (m_operations.at(i)->enabled && m_operations.at(i)->type() == "PickPeaks");
@@ -224,6 +233,8 @@ QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error) const
     QString first;
     PickPeaksOp fallback;
     fallback.threshold = 0.05;
+    if (processedSpectra)
+        processedSpectra->resize(referenced.size());
     for (int i = 0; i < referenced.size(); ++i) {
         QString reason;
         QVector<TracePeak> found;
@@ -233,6 +244,8 @@ QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error) const
         if (!reason.isEmpty() && first.isEmpty())
             first = QString("%1: %2").arg(referenced.at(i).name(), reason);
         result[i] = reason.isEmpty() ? found : QVector<TracePeak>();
+        if (processedSpectra)
+            (*processedSpectra)[i] = reason.isEmpty() ? processed : XYTrace();
     }
     setError(error, first);
     return result;
@@ -389,6 +402,7 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             if (best < 0)
                 continue; // Missing: NaN, the state stays
             cell.shift = found[best].x;
+            cell.peakShift = found[best].x;
             cell.height = found[best].height;
             cell.integral = found[best].integral;
             cell.status = NmrCellStatus::Ok;
@@ -413,17 +427,446 @@ void NmrHandler::track()
 {
     const int n = m_spectra.size();
     m_cells = QVector<QVector<NmrCell>>(n, QVector<NmrCell>(m_signals.size()));
+    m_fit_regions = QVector<QVector<NmrFitRegion>>(n);
+    m_fit_ms = 0;
     if (n == 0 || m_signals.isEmpty())
         return;
     setReferenceIndex(m_reference);
     QString error;
-    const QVector<QVector<TracePeak>> found = peaks(&error);
+    QVector<XYTrace> processed;
+    const QVector<QVector<TracePeak>> found = peaks(&error, &processed);
 #ifdef DEBUG_ON
     if (!error.isEmpty())
         qDebug() << "NmrHandler::track:" << error;
 #endif
     trackDirection(m_reference, +1, found);
     trackDirection(m_reference - 1, -1, found);
+    if (m_fit.method == NmrShiftMethod::LineshapeFit)
+        fitLineshapes(processed, found);
+}
+
+// ---------------------------------------------------------------------------------------------
+// lineshape fit (WP4)
+
+QJsonObject NmrFitSettings::toJson() const
+{
+    return QJsonObject{
+        { "Method", method == NmrShiftMethod::LineshapeFit ? "LineshapeFit" : "PeakPicking" },
+        { "WidthMode", widthMode == NmrWidthMode::Shared ? "Shared" : "Free" },
+        { "Baseline", LineshapeFit::baselineName(baseline) },
+        { "Range", range },
+        { "MaxIterations", maxIterations },
+        { "PeakFallback", peakFallback }
+    };
+}
+
+NmrFitSettings NmrFitSettings::fromJson(const QJsonObject& json)
+{
+    NmrFitSettings s;
+    s.method = json.value("Method").toString() == "LineshapeFit" ? NmrShiftMethod::LineshapeFit : NmrShiftMethod::PeakPicking;
+    s.widthMode = json.value("WidthMode").toString() == "Shared" ? NmrWidthMode::Shared : NmrWidthMode::Free;
+    s.baseline = LineshapeFit::baselineFromName(json.value("Baseline").toString(), s.baseline);
+    s.range = json.value("Range").toDouble(s.range);
+    s.maxIterations = json.value("MaxIterations").toInt(s.maxIterations);
+    s.peakFallback = json.value("PeakFallback").toBool(s.peakFallback);
+    return s;
+}
+
+void NmrHandler::setFitSettings(const NmrFitSettings& settings)
+{
+    m_fit = settings;
+    if (!(m_fit.range > 0) || !std::isfinite(m_fit.range))
+        m_fit.range = NmrFitSettings().range;
+    m_fit.maxIterations = std::clamp(m_fit.maxIterations, 1, 100000);
+}
+
+QVector<NmrFitRegion> NmrHandler::fitRegions(int spectrum) const
+{
+    return m_fit_regions.value(spectrum);
+}
+
+/*! \brief Lineshape fit of the tracked signals (class description, steps 5-7). Claude Generated. */
+void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& peaks)
+{
+    QElapsedTimer timer;
+    timer.start();
+    const int n = m_spectra.size(), ns = m_signals.size();
+    const double R = m_fit.range;
+    const LineshapeOptions options{ m_fit.baseline, m_fit.maxIterations, 1e-10 };
+
+    // position of the line of signal s in spectrum k: the picked δ (Ok), the manual δ, the shared peak
+    // (Conflict: the fit may separate the lines); NaN: no line
+    auto startPosition = [&](int k, int s) {
+        if (m_excluded.contains(m_spectra.idAt(k)) || !m_signals[s].enabled)
+            return kNaN;
+        const NmrCell& c = m_cells[k][s];
+        if (c.status == NmrCellStatus::Ok)
+            return c.peakShift;
+        if (c.status == NmrCellStatus::Manual || c.status == NmrCellStatus::Conflict)
+            return c.shift;
+        return kNaN;
+    };
+
+    // starts of signals that claim the same peak (Conflict): spread around the peak by ± 0.25 of its width
+    // at half height, in the order of their reference positions; the height is split between them
+    QVector<QVector<double>> conflictStart(n, QVector<double>(ns, kNaN)), conflictHeight(n, QVector<double>(ns, kNaN));
+    for (int k = 0; k < n; ++k) {
+        QMap<double, QVector<int>> byPeak;
+        for (int s = 0; s < ns; ++s)
+            if (m_cells[k][s].status == NmrCellStatus::Conflict && std::isfinite(startPosition(k, s)))
+                byPeak[m_cells[k][s].shift] << s;
+        const XYTrace& trace = processed.value(k);
+        for (auto it = byPeak.begin(); it != byPeak.end(); ++it) {
+            QVector<int> list = it.value();
+            std::sort(list.begin(), list.end(), [this](int a, int b) { return m_signals[a].position < m_signals[b].position; });
+            double w = trace.isEmpty() ? kNaN : LineshapeFit::estimateFwhm(trace.x(), trace.y(), trace.nearestIndex(it.key()), 0);
+            if (!std::isfinite(w) && trace.size() > 1)
+                w = 3 * std::abs(trace.x()(1) - trace.x()(0));
+            for (int i = 0; i < list.size(); ++i) {
+                conflictStart[k][list[i]] = it.key() + (i - 0.5 * (list.size() - 1)) * 0.5 * (std::isfinite(w) ? w : 0);
+                conflictHeight[k][list[i]] = m_cells[k][list[i]].height / list.size();
+            }
+        }
+    }
+
+    // groups: signals whose ranges overlap in any spectrum (union-find)
+    QVector<int> parent(ns);
+    for (int s = 0; s < ns; ++s)
+        parent[s] = s;
+    std::function<int(int)> find = [&](int s) { return parent[s] == s ? s : (parent[s] = find(parent[s])); };
+    for (int k = 0; k < n; ++k)
+        for (int s = 0; s < ns; ++s)
+            for (int t = s + 1; t < ns; ++t) {
+                const double a = startPosition(k, s), b = startPosition(k, t);
+                if (std::isfinite(a) && std::isfinite(b) && std::abs(a - b) < 2 * R)
+                    parent[find(t)] = find(s);
+            }
+    QMap<int, QVector<int>> groups;
+    for (int s = 0; s < ns; ++s)
+        groups[find(s)] << s;
+
+    // block of group in spectrum k; prevFwhm/prevEta: starts from the last fit of each signal (NaN: from the peak)
+    auto buildBlock = [&](int k, const QVector<int>& group, const QVector<double>& prevFwhm, const QVector<double>& prevEta,
+                          const QVector<double>& prevPosition, LineshapeBlock* block, NmrFitRegion* region) {
+        const XYTrace& trace = processed.value(k);
+        QVector<int> lineSignals;
+        double lo = std::numeric_limits<double>::infinity(), hi = -lo, minHeight = lo;
+        for (int s : group) {
+            const double p = startPosition(k, s);
+            if (!std::isfinite(p))
+                continue;
+            lineSignals << s;
+            lo = std::min(lo, p);
+            hi = std::max(hi, p);
+            if (m_cells[k][s].status == NmrCellStatus::Conflict) {
+                // the own line of a signal in conflict may lie anywhere in its window (around its last fitted
+                // position, else around the shared maximum): the range covers it
+                const double previous = prevPosition.value(s, kNaN);
+                const double centre = std::isfinite(previous) ? previous : p;
+                lo = std::min(lo, centre - m_signals[s].window + R);
+                hi = std::max(hi, centre + m_signals[s].window - R);
+            }
+            if (m_cells[k][s].status == NmrCellStatus::Ok)
+                minHeight = std::min(minHeight, m_cells[k][s].height);
+            else if (m_cells[k][s].status == NmrCellStatus::Conflict)
+                minHeight = std::min(minHeight, conflictHeight[k][s]);
+        }
+        if (lineSignals.isEmpty() || trace.isEmpty())
+            return false;
+        region->from = lo - R;
+        region->to = hi + R;
+        const XYTrace part = trace.range(region->from, region->to);
+        if (part.size() < 3) {
+            region->message = "no data in the fit range";
+            region->lineSignal = lineSignals;
+            return false;
+        }
+        const Eigen::Index last = part.size() - 1;
+        const double b0 = options.baseline == LineshapeBaseline::None ? 0.0 : std::min(part.y()(0), part.y()(last));
+        const double dx = std::abs(part.x()(last) - part.x()(0)) / double(last);
+        const double xmin = part.xMin(), xmax = part.xMax();
+        if (!std::isfinite(minHeight))
+            minHeight = part.y().maxCoeff();
+
+        auto line = [&](double position, double height, double window, double fwhm0, double eta0) {
+            LineshapeLineStart l;
+            l.position.value = position;
+            l.position.lower = std::max(xmin, position - window);
+            l.position.upper = std::min(xmax, position + window);
+            double w = std::isfinite(fwhm0) ? fwhm0 : LineshapeFit::estimateFwhm(part.x(), part.y(), part.nearestIndex(position), b0);
+            if (!std::isfinite(w) || !(w > 0))
+                w = 3 * dx;
+            l.fwhm.lower = 0.25 * dx;
+            l.fwhm.upper = xmax - xmin;
+            l.fwhm.value = std::clamp(w, l.fwhm.lower, l.fwhm.upper);
+            l.eta.value = std::isfinite(eta0) ? std::clamp(eta0, 0.0, 1.0) : 0.5;
+            l.area.lower = 0;
+            l.area.value = LineshapeFit::areaFromHeight(std::max(height - b0, 1e-12 * std::abs(height) + 1e-300), l.fwhm.value, l.eta.value);
+            return l;
+        };
+        block->x = part.x();
+        block->y = part.y();
+        block->lines.clear();
+        region->lineSignal.clear();
+
+        // peaks of the range no signal claims (candidates for a neighbour line)
+        QVector<TracePeak> unassigned;
+        for (const TracePeak& peak : peaks.value(k)) {
+            if (peak.x < xmin || peak.x > xmax || peak.height < m_min_height * minHeight)
+                continue;
+            bool assigned = false;
+            for (int s : lineSignals) {
+                const NmrCell& c = m_cells[k][s];
+                // the peak of a signal, also the one maximum two signals share (Conflict)
+                assigned = assigned || (c.status == NmrCellStatus::Ok && c.peakShift == peak.x) || (c.status == NmrCellStatus::Conflict && c.shift == peak.x);
+            }
+            if (!assigned)
+                unassigned << peak;
+        }
+        QMap<int, TracePeak> claimed; // signal in conflict -> peak that is its start
+        QVector<bool> taken(unassigned.size(), false);
+        // a signal in conflict whose own line is resolved here: an unclaimed peak within its window (around its
+        // last fitted position, else its reference position) is its start; the nearest signal gets it
+        for (int p = 0; p < unassigned.size(); ++p) {
+            int best = -1;
+            double bestDistance = std::numeric_limits<double>::infinity();
+            if (taken[p])
+                continue;
+            for (int s : lineSignals) {
+                if (m_cells[k][s].status != NmrCellStatus::Conflict || claimed.contains(s))
+                    continue;
+                const double previous = prevPosition.value(s, kNaN);
+                const double centre = std::isfinite(previous) ? previous : m_signals[s].position;
+                const double distance = std::abs(unassigned[p].x - centre);
+                if (distance <= m_signals[s].window && distance < bestDistance) {
+                    best = s;
+                    bestDistance = distance;
+                }
+            }
+            if (best >= 0) {
+                claimed[best] = unassigned[p];
+                taken[p] = true;
+            }
+        }
+        for (int s : lineSignals) {
+            const NmrCell& c = m_cells[k][s];
+            const bool manual = c.status == NmrCellStatus::Manual;
+            double position = manual ? c.shift : c.peakShift, height = manual ? part.interpolate(position) : c.height;
+            if (c.status == NmrCellStatus::Conflict) {
+                if (claimed.contains(s)) {
+                    position = claimed[s].x;
+                    height = claimed[s].height;
+                } else {
+                    // the shared maximum: alone if the partners found their own peaks, else spread around it;
+                    // the position of the last fit of the signal if it is near
+                    int partners = 0;
+                    for (int t : lineSignals)
+                        partners += t != s && m_cells[k][t].status == NmrCellStatus::Conflict && m_cells[k][t].shift == c.shift && !claimed.contains(t);
+                    const double previous = prevPosition.value(s, kNaN);
+                    if (partners == 0) {
+                        position = c.shift;
+                        height = c.height;
+                    } else {
+                        position = std::isfinite(previous) && std::abs(previous - c.shift) <= m_signals[s].window ? previous : conflictStart[k][s];
+                        height = conflictHeight[k][s];
+                    }
+                }
+                position = std::clamp(position, xmin, xmax);
+            }
+            LineshapeLineStart l = line(position, std::isfinite(height) ? height : b0, m_signals[s].window, prevFwhm.value(s, kNaN), prevEta.value(s, kNaN));
+            if (manual)
+                l.position.fixed = true;
+            if (m_fit.widthMode == NmrWidthMode::Shared)
+                l.shared = s;
+            block->lines << l;
+            region->lineSignal << s;
+        }
+        // neighbour lines: further picked peaks in the range, not much weaker than the signals
+        for (int p = 0; p < unassigned.size(); ++p) {
+            if (taken[p])
+                continue;
+            const TracePeak& peak = unassigned[p];
+            const double w = LineshapeFit::estimateFwhm(part.x(), part.y(), part.nearestIndex(peak.x), b0);
+            const double window = std::isfinite(w) ? w : R / 2;
+            block->lines << line(peak.x, peak.height, window, kNaN, kNaN);
+            region->lineSignal << -1;
+        }
+        return true;
+    };
+
+    // does the fit of signal line l of block b count? (step 7)
+    auto lineFailure = [&](const LineshapeResult& r, int b, int l, bool manual) -> QString {
+        if (!r.ok())
+            return r.message.isEmpty() ? LineshapeFit::statusName(r.status) : r.message;
+        const LineshapeBlockResult& br = r.blocks[b];
+        if (!manual && br.positionAtBound[l])
+            return "the line centre is at the limit of the search window";
+        if (br.fwhmAtBound[l])
+            return "the line width is at its limit";
+        if (br.areaAtBound[l])
+            return "the line area went to zero";
+        double largest = 0;
+        for (int i = 0; i < br.lines.size(); ++i)
+            largest = std::max(largest, br.lines[i].area);
+        if (br.lines[l].area < 0.01 * largest)
+            return "the line vanished (area below 1 % of the largest line of the range)";
+        if (!manual && !std::isfinite(br.errors[l].position))
+            return "no standard error of the position";
+        return QString();
+    };
+
+    auto store = [&](int k, const LineshapeResult& r, int b, const NmrFitRegion& base) {
+        NmrFitRegion region = base;
+        region.status = r.status;
+        region.message = r.message;
+        if (b < r.blocks.size())
+            region.block = r.blocks[b];
+        for (int l = 0; l < region.lineSignal.size() && b < r.blocks.size(); ++l) {
+            const int s = region.lineSignal[l];
+            if (s < 0)
+                continue;
+            NmrCell& c = m_cells[k][s];
+            const PseudoVoigtLine& fitted = r.blocks[b].lines[l];
+            const PseudoVoigtLine& error = r.blocks[b].errors[l];
+            c.fitShift = fitted.position;
+            c.shiftError = error.position;
+            c.fwhm = fitted.fwhm;
+            c.area = fitted.area;
+            c.eta = fitted.eta;
+            c.fitMessage = lineFailure(r, b, l, c.status == NmrCellStatus::Manual);
+            c.fitState = c.fitMessage.isEmpty() ? NmrFitState::Fitted : NmrFitState::Failed;
+        }
+        m_fit_regions[k] << region;
+    };
+
+    auto okLines = [&](int k, const LineshapeResult& r, const NmrFitRegion& region) {
+        int ok = 0;
+        for (int l = 0; l < region.lineSignal.size(); ++l) {
+            const int s = region.lineSignal[l];
+            ok += s >= 0 && lineFailure(r, 0, l, m_cells[k][s].status == NmrCellStatus::Manual).isEmpty();
+        }
+        return ok;
+    };
+
+    if (m_fit.widthMode == NmrWidthMode::Free) {
+        // titration order from the reference outwards; starts from the previous spectrum
+        QVector<int> order;
+        for (int k = m_reference; k < n; ++k)
+            order << k;
+        for (int k = m_reference - 1; k >= 0; --k)
+            order << k;
+        QVector<double> prevFwhm(ns, kNaN), prevEta(ns, kNaN), prevPosition(ns, kNaN), refFwhm(ns, kNaN), refEta(ns, kNaN), refPosition(ns, kNaN);
+        const QVector<double> none(ns, kNaN);
+        for (int k : order) {
+            if (k == m_reference - 1) { // backward walk: start again at the reference spectrum
+                prevFwhm = refFwhm;
+                prevEta = refEta;
+                prevPosition = refPosition;
+            }
+            if (m_excluded.contains(m_spectra.idAt(k)))
+                continue;
+            for (const QVector<int>& group : groups) {
+                LineshapeBlock block;
+                NmrFitRegion region;
+                if (!buildBlock(k, group, prevFwhm, prevEta, prevPosition, &block, &region))
+                    continue;
+                LineshapeResult r = LineshapeFit::fitSeries({ block }, options);
+                bool usedPrevious = false;
+                for (int s : region.lineSignal)
+                    usedPrevious = usedPrevious || (s >= 0 && std::isfinite(prevFwhm[s]));
+                if (usedPrevious && okLines(k, r, region) < int(std::count_if(region.lineSignal.begin(), region.lineSignal.end(), [](int s) { return s >= 0; }))) {
+                    // fall back to the starts from the peaks of this spectrum
+                    LineshapeBlock fresh;
+                    NmrFitRegion freshRegion;
+                    if (buildBlock(k, group, none, none, none, &fresh, &freshRegion)) {
+                        const LineshapeResult again = LineshapeFit::fitSeries({ fresh }, options);
+                        if (okLines(k, again, freshRegion) > okLines(k, r, region)) {
+                            r = again;
+                            region = freshRegion;
+                        }
+                    }
+                }
+                store(k, r, 0, region);
+                for (int l = 0; l < region.lineSignal.size(); ++l) {
+                    const int s = region.lineSignal[l];
+                    if (s >= 0 && m_cells[k][s].fitState == NmrFitState::Fitted) {
+                        prevFwhm[s] = m_cells[k][s].fwhm;
+                        prevEta[s] = m_cells[k][s].eta;
+                        prevPosition[s] = m_cells[k][s].fitShift;
+                        if (k == m_reference) {
+                            refFwhm[s] = prevFwhm[s];
+                            refEta[s] = prevEta[s];
+                            refPosition[s] = prevPosition[s];
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // one joint fit per group over the used spectra
+        const QVector<double> none(ns, kNaN);
+        for (const QVector<int>& group : groups) {
+            QVector<LineshapeBlock> blocks;
+            QVector<NmrFitRegion> regions;
+            QVector<int> spectra;
+            for (int k = 0; k < n; ++k) {
+                if (m_excluded.contains(m_spectra.idAt(k)))
+                    continue;
+                LineshapeBlock block;
+                NmrFitRegion region;
+                if (!buildBlock(k, group, none, none, none, &block, &region))
+                    continue;
+                blocks << block;
+                regions << region;
+                spectra << k;
+            }
+            if (blocks.isEmpty())
+                continue;
+            const LineshapeResult r = LineshapeFit::fitSeries(blocks, options);
+            for (int b = 0; b < blocks.size(); ++b)
+                store(spectra[b], r, b, regions[b]);
+        }
+    }
+
+    // step 7: the shift of the table
+    for (int k : includedSpectra())
+        for (int s : enabledSignals()) {
+            NmrCell& c = m_cells[k][s];
+            if (c.status == NmrCellStatus::Conflict && c.fitState == NmrFitState::Fitted) {
+                // the signals that shared the maximum have to end on separate lines
+                for (int t : enabledSignals()) {
+                    const NmrCell& o = m_cells[k][t];
+                    if (t == s || o.status != NmrCellStatus::Conflict || o.shift != c.shift || !std::isfinite(o.fitShift))
+                        continue;
+                    if (std::abs(o.fitShift - c.fitShift) < 0.25 * 0.5 * (o.fwhm + c.fwhm)) {
+                        c.fitState = NmrFitState::Failed;
+                        c.fitMessage = "the signals sharing one maximum were not separated";
+                    }
+                }
+            }
+            if (c.status == NmrCellStatus::Conflict && c.fitState == NmrFitState::Fitted) {
+                // the fit separated the lines that share one maximum
+                c.status = NmrCellStatus::Ok;
+                c.shift = c.fitShift;
+                continue;
+            }
+            if (c.status != NmrCellStatus::Ok)
+                continue;
+            if (c.fitState == NmrFitState::NotFitted) {
+                c.fitState = NmrFitState::Failed;
+                c.fitMessage = "no fit (no data in the fit range)";
+            }
+            if (c.fitState == NmrFitState::Fitted)
+                c.shift = c.fitShift;
+            else if (!m_fit.peakFallback) {
+                c.status = NmrCellStatus::FitFailed;
+                c.shift = kNaN;
+            }
+        }
+    m_fit_ms = timer.nsecsElapsed() * 1e-6;
+#ifdef DEBUG_ON
+    qDebug() << "NmrHandler::fitLineshapes:" << groups.size() << "groups," << m_fit_ms << "ms";
+#endif
 }
 
 NmrCell NmrHandler::cell(int spectrum, int signal) const
@@ -506,7 +949,7 @@ QStringList NmrHandler::problems() const
     for (int k : includedSpectra()) {
         for (int s : enabledSignals()) {
             const NmrCellStatus status = cell(k, s).status;
-            if (status == NmrCellStatus::Missing || status == NmrCellStatus::Conflict)
+            if (status == NmrCellStatus::Missing || status == NmrCellStatus::Conflict || status == NmrCellStatus::FitFailed)
                 list << QString("%1, signal %2: %3").arg(spectrumLabel(k), m_signals[s].name, statusName(status));
         }
     }
@@ -535,6 +978,31 @@ DataTable* NmrHandler::shiftTable(QString* error) const
         header << QString("δ %1 /ppm").arg(m_signals[columns[c]].name);
         for (int r = 0; r < rows.size(); ++r)
             matrix(r, c) = cell(rows[r], columns[c]).shift;
+    }
+    DataTable* table = new DataTable(matrix);
+    table->setHeader(header);
+    return table;
+}
+
+DataTable* NmrHandler::shiftErrorTable(QString* error) const
+{
+    const QVector<int> rows = includedSpectra(), columns = enabledSignals();
+    if (m_fit.method != NmrShiftMethod::LineshapeFit) {
+        setError(error, "the shifts are not fitted");
+        return nullptr;
+    }
+    if (rows.isEmpty() || columns.isEmpty()) {
+        setError(error, rows.isEmpty() ? QString("no spectrum is used") : QString("no signal is used"));
+        return nullptr;
+    }
+    Eigen::MatrixXd matrix(rows.size(), columns.size());
+    QStringList header;
+    for (int c = 0; c < columns.size(); ++c) {
+        header << QString("σ(δ) %1 /ppm").arg(m_signals[columns[c]].name);
+        for (int r = 0; r < rows.size(); ++r) {
+            const NmrCell cell = this->cell(rows[r], columns[c]);
+            matrix(r, c) = cell.fitState == NmrFitState::Fitted && cell.status == NmrCellStatus::Ok ? cell.shiftError : kNaN;
+        }
     }
     DataTable* table = new DataTable(matrix);
     table->setHeader(header);
@@ -593,6 +1061,8 @@ QString NmrHandler::statusName(NmrCellStatus status)
         return "conflict";
     case NmrCellStatus::Manual:
         return "manual";
+    case NmrCellStatus::FitFailed:
+        return "fit failed";
     }
     return QString();
 }
@@ -654,6 +1124,7 @@ QJsonObject NmrHandler::toJson() const
     }
     json["Manual"] = manual;
     json["Excluded"] = excluded;
+    json["LineshapeFit"] = m_fit.toJson();
     return json;
 }
 
@@ -720,6 +1191,8 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
     m_reference_offset = json.value("ReferenceOffset").toDouble(0);
     m_window = json.value("Window").toDouble(0.05);
     m_min_height = json.value("MinHeight").toDouble(0.3);
+    // without the key (projects before WP4): peak picking, as before
+    setFitSettings(NmrFitSettings::fromJson(json.value("LineshapeFit").toObject()));
     for (const QJsonValue& value : json.value("Signals").toArray()) {
         const QJsonObject s = value.toObject();
         NmrSignal signal;

@@ -32,6 +32,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QVector>
 
+#include "src/core/trace/lineshapefit.h"
 #include "src/core/trace/traceops.h"
 #include "src/core/trace/traceset.h"
 
@@ -51,15 +52,71 @@ enum class NmrCellStatus {
     Ok, ///< exactly this signal claims the peak found in its window
     Missing, ///< no peak in the window; the shift is NaN (never interpolated)
     Conflict, ///< another signal claims the same peak; the shift is that peak's position
-    Manual ///< set by the user (overrides the tracking and feeds it)
+    Manual, ///< set by the user (overrides the tracking and feeds it)
+    FitFailed ///< lineshape fit: the fit of this cell failed; the shift is NaN like a missing one (WP4)
+};
+
+/*! \brief Where the shift of the table comes from (Claude Generated, WP4). */
+enum class NmrShiftMethod {
+    PeakPicking, ///< δ = position of the picked maximum (parabola refinement)
+    LineshapeFit ///< δ = centre of a pseudo-Voigt fitted to the whole signal (LineshapeFit)
+};
+
+/*! \brief Width and η of the fitted lines over the series (Claude Generated, WP4). */
+enum class NmrWidthMode {
+    Free, ///< every spectrum is fitted on its own: width and η per spectrum
+    Shared ///< one width and one η per signal for all spectra: one joint fit of the series per group
+};
+
+/*! \brief Settings of the lineshape fit, stored as "LineshapeFit" (Claude Generated, WP4). */
+struct NmrFitSettings {
+    NmrShiftMethod method = NmrShiftMethod::PeakPicking;
+    NmrWidthMode widthMode = NmrWidthMode::Free;
+    LineshapeBaseline baseline = LineshapeBaseline::Constant;
+    double range = 0.03; ///< fit range ± range around each signal [ppm]; overlapping ranges are fitted together
+    int maxIterations = 200;
+    bool peakFallback = false; ///< a cell whose fit fails takes the peak-picking δ instead of "fit failed"
+    QJsonObject toJson() const;
+    static NmrFitSettings fromJson(const QJsonObject& json);
+    bool operator==(const NmrFitSettings& other) const
+    {
+        return method == other.method && widthMode == other.widthMode && baseline == other.baseline && range == other.range
+            && maxIterations == other.maxIterations && peakFallback == other.peakFallback;
+    }
+};
+
+/*! \brief Fit state of a cell (Claude Generated, WP4). */
+enum class NmrFitState {
+    NotFitted, ///< peak picking, or no start (missing/conflict/excluded)
+    Fitted, ///< converged, the line inside its bounds
+    Failed ///< see NmrCell::fitMessage
 };
 
 /*! \brief One cell of the shift table. Claude Generated. */
 struct NmrCell {
-    double shift = std::numeric_limits<double>::quiet_NaN(); ///< δ [ppm]
+    double shift = std::numeric_limits<double>::quiet_NaN(); ///< δ [ppm] of the table (peak-picking or fit δ, see NmrFitSettings::method)
     double height = std::numeric_limits<double>::quiet_NaN(); ///< peak height (processed spectrum)
     double integral = std::numeric_limits<double>::quiet_NaN(); ///< peak area (only with "Integrate" of the PickPeaks step)
     NmrCellStatus status = NmrCellStatus::Missing;
+    // ---- WP4: lineshape fit (NaN without a fit)
+    double peakShift = std::numeric_limits<double>::quiet_NaN(); ///< δ of the picked peak (the tracking result)
+    double fitShift = std::numeric_limits<double>::quiet_NaN(); ///< centre of the fitted line [ppm]
+    double shiftError = std::numeric_limits<double>::quiet_NaN(); ///< standard error of fitShift [ppm]
+    double fwhm = std::numeric_limits<double>::quiet_NaN(); ///< fitted full width at half maximum [ppm]
+    double area = std::numeric_limits<double>::quiet_NaN(); ///< fitted area [ppm · intensity]
+    double eta = std::numeric_limits<double>::quiet_NaN(); ///< fitted Lorentz fraction η of the pseudo-Voigt
+    NmrFitState fitState = NmrFitState::NotFitted;
+    QString fitMessage; ///< why the fit failed
+};
+
+/*! \brief One fitted range of one spectrum: the lines (signals and unassigned neighbour lines) with
+ * baseline and residuals, for drawing and inspection (Claude Generated, WP4). */
+struct NmrFitRegion {
+    double from = 0, to = 0; ///< ppm range
+    QVector<int> lineSignal; ///< per fitted line: index of the signal, -1 = neighbour line of no signal
+    LineshapeBlockResult block;
+    LineshapeStatus status = LineshapeStatus::Invalid;
+    QString message;
 };
 
 /*! \brief Import of an NMR titration: a series of 1D spectra -> table of chemical shifts δ [ppm]
@@ -95,10 +152,34 @@ struct NmrCell {
  * The shift table is released (shiftTable(), importTable()) only if every used cell is Ok or Manual;
  * a spectrum can be excluded (setSpectrumExcluded) and a signal switched off (NmrSignal::enabled).
  *
+ * Lineshape fit (WP4, fitSettings().method == LineshapeFit): after the tracking the picked peaks are the
+ * starts of a pseudo-Voigt fit of the whole signal (LineshapeFit), which gives δ also where overlapping
+ * lines pull the maxima together:
+ * 5. Groups: signals whose fit ranges (± range around the tracked δ) overlap in any spectrum are fitted
+ *    together. Per spectrum and group the range is [lowest δ - range, highest δ + range]; it holds one line per
+ *    signal with a start (Ok: the picked δ, position bounded by ± its search window; Manual: the position
+ *    fixed at the manual δ) and one line per further picked peak in the range at least minHeight() times as
+ *    high as the lowest signal of the group (a neighbour line, not reported). Signals in Conflict (one maximum
+ *    for two signals) get one line each and the range covers their search windows: an unclaimed peak within the window of such a signal (around its
+ *    last fitted position, else its reference position) is its start, else it starts at its last fitted
+ *    position or spread around the shared maximum; if the fit separates them (≥ 0.25 FWHM) the cells become
+ *    Ok. Missing cells get no line.
+ * 6. Free widths: the spectra are fitted in the order of the tracking (from the reference outwards);
+ *    width and η start from the last successful fit of the signal, area from the picked height; a failed
+ *    fit is repeated with the starts from the peak alone (width at half height, η = 0.5).
+ *    Shared widths: one joint fit per group over all used spectra (positions, areas, baselines per spectrum,
+ *    width and η per signal).
+ * 7. A cell's fit counts if the fit converged, its position, width and area are not at a bound and its area
+ *    is at least 1 % of the largest line of the range;
+ *    otherwise FitFailed (shift NaN), or with peakFallback the picked δ (status Ok, fitState Failed).
+ *    The table then holds the fitted δ; shiftErrorTable() their standard errors.
+ * Fit settings are stored ("LineshapeFit"); the results are not, they are recomputed on loading (the fit is
+ * deterministic: same spectra, steps and signals give the same numbers).
+ *
  * Persistence (toJson/fromJson): the raw block of a DataClass of type Spectrum with "Profile": "nmr";
  * the spectra as in SpectraHandler ("Data" only with the application property StoreRawData, else
  * read again from "Sources"), "TraceOps", "ReferenceOffset", "ReferenceSpectrum", "Signals", "Manual",
- * "Excluded", "Window", "MinHeight".
+ * "Excluded", "Window", "MinHeight", "LineshapeFit".
  */
 class NmrHandler {
 public:
@@ -172,8 +253,18 @@ public:
             m_min_height = fraction;
     }
 
+    // ---- lineshape fit (WP4)
+    inline const NmrFitSettings& fitSettings() const { return m_fit; }
+    /*! \brief Replaces the settings (invalid range/iterations are clamped); call track() afterwards. */
+    void setFitSettings(const NmrFitSettings& settings);
+    /*! \brief Fitted ranges of a spectrum of the last track() (empty for peak picking). */
+    QVector<NmrFitRegion> fitRegions(int spectrum) const;
+    /*! \brief Wall time of the fits of the last track() [ms]. */
+    inline double fitMilliseconds() const { return m_fit_ms; }
+
     // ---- tracking and table
-    /*! \brief Follows every signal through the series (class description, steps 3 and 4); fills cells(). */
+    /*! \brief Follows every signal through the series (class description, steps 3 and 4), then fits the
+     * lines if fitSettings().method is LineshapeFit (steps 5-7); fills cells(). */
     void track();
     /*! \brief Cells of the last track(): [spectrum][signal]. */
     inline const QVector<QVector<NmrCell>>& cells() const { return m_cells; }
@@ -204,6 +295,9 @@ public:
     /*! \brief Concentrations joined with shiftTable(): the rows of independent are those of all spectra
      * (the excluded ones are left out) or of the included spectra only; nullptr with *error otherwise. */
     DataTable* importTable(const DataTable* independent, QString* error = nullptr) const;
+    /*! \brief Standard errors of the fitted δ in the layout of shiftTable() (header "σ(δ) <name> /ppm"; NaN where
+     * there is no fit, e.g. manual cells); nullptr with *error without a lineshape fit or without rows/columns. */
+    DataTable* shiftErrorTable(QString* error = nullptr) const;
 
     // ---- persistence
     QJsonObject toJson() const;
@@ -217,6 +311,8 @@ public:
 
 private:
     void trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks);
+    QVector<QVector<TracePeak>> peaks(QString* error, QVector<XYTrace>* processed) const;
+    void fitLineshapes(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& peaks);
     QString spectrumLabel(int index) const;
 
     TraceSet m_spectra; ///< raw spectra in titration order; source = file, name = file name [column]
@@ -230,4 +326,7 @@ private:
     QMap<QString, QMap<int, double>> m_manual; ///< spectrum id -> signal -> δ
     QSet<QString> m_excluded; ///< spectrum ids
     QVector<QVector<NmrCell>> m_cells;
+    NmrFitSettings m_fit;
+    QVector<QVector<NmrFitRegion>> m_fit_regions; ///< [spectrum]
+    double m_fit_ms = 0;
 };

@@ -28,6 +28,7 @@
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QDoubleSpinBox>
@@ -41,6 +42,7 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
@@ -85,6 +87,8 @@ QColor NmrImport::statusColor(NmrCellStatus status)
         return QColor(232, 160, 40);
     case NmrCellStatus::Manual:
         return QColor(86, 140, 222);
+    case NmrCellStatus::FitFailed:
+        return QColor(156, 92, 204);
     case NmrCellStatus::Ok:
         break;
     }
@@ -146,11 +150,17 @@ void NmrImport::setupUi()
     m_results->verticalHeader()->setDefaultSectionSize(22);
     m_legend = new QLabel;
     m_legend->setWordWrap(true);
+    m_details = new QCheckBox(tr("Fit details"));
+    m_details->setObjectName("nmrFitDetails");
+    m_details->setToolTip(tr("Adds the columns ±δ (standard error), FWHM, area and η of the fitted lines per signal."));
     QWidget* results = new QWidget;
     QVBoxLayout* results_layout = new QVBoxLayout;
     results_layout->setContentsMargins(0, 0, 0, 0);
     results_layout->addWidget(m_results, 1);
-    results_layout->addWidget(m_legend);
+    QHBoxLayout* legend_row = new QHBoxLayout;
+    legend_row->addWidget(m_legend, 1);
+    legend_row->addWidget(m_details);
+    results_layout->addLayout(legend_row);
     results->setLayout(results_layout);
 
     QSplitter* center = new QSplitter(Qt::Vertical);
@@ -263,8 +273,12 @@ void NmrImport::setupUi()
     connect(m_results, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
         if (m_updating)
             return;
-        const int spectrum = item->row(), column = item->column();
+        const int spectrum = item->row();
+        const int per = m_details->isChecked() && m_handler.fitSettings().method == NmrShiftMethod::LineshapeFit ? 5 : 1;
         const QVector<int> columns = m_handler.enabledSignals();
+        if (item->column() % per != 0)
+            return;
+        const int column = item->column() / per;
         if (column < 0 || column >= columns.size())
             return;
         const int signal = columns[column];
@@ -278,6 +292,11 @@ void NmrImport::setupUi()
         QMetaObject::invokeMethod(this, [this]() { updateResults(); updateMarkers(); updateTable(); }, Qt::QueuedConnection);
     });
     connect(m_concentrations, &DropTable::Edited, this, &NmrImport::updateTable);
+    connect(m_details, &QCheckBox::toggled, this, [this]() { updateResults(); });
+    connect(m_spectra, &QListWidget::currentRowChanged, this, [this]() {
+        if (!m_updating)
+            updateMarkers();
+    });
 }
 
 QWidget* NmrImport::signalPanel()
@@ -304,7 +323,47 @@ QWidget* NmrImport::signalPanel()
     m_window->setKeyboardTracking(false);
     m_window->setToolTip(tr("Window of new signals: a signal is searched within this distance of its last position and of the position expected from its last two steps."));
     form->addRow(tr("Search window ±"), m_window);
+
+    m_method = new QComboBox;
+    m_method->setObjectName("nmrShiftMethod");
+    m_method->addItems({ tr("Peak picking"), tr("Lineshape fit") });
+    m_method->setToolTip(tr("Peak picking: δ is the position of the maximum. Lineshape fit: δ is the centre of a Gauss-Lorentz (pseudo-Voigt) line fitted to the whole signal, also where lines overlap."));
+    form->addRow(tr("Shift from"), m_method);
     layout->addLayout(form);
+
+    m_fit_options = new QWidget;
+    QFormLayout* fit_form = new QFormLayout;
+    fit_form->setContentsMargins(0, 0, 0, 0);
+    m_width_mode = new QComboBox;
+    m_width_mode->setObjectName("nmrWidthMode");
+    m_width_mode->addItems({ tr("Free per spectrum"), tr("Shared over the series") });
+    m_width_mode->setToolTip(tr("Free: width and Gauss-Lorentz mixing of each line are fitted in every spectrum. Shared: one width and mixing per signal for all spectra, fitted together."));
+    fit_form->addRow(tr("Line width"), m_width_mode);
+    m_baseline = new QComboBox;
+    m_baseline->setObjectName("nmrBaseline");
+    m_baseline->addItems({ tr("None"), tr("Constant"), tr("Linear") });
+    m_baseline->setToolTip(tr("Baseline under the lines of a fit range."));
+    fit_form->addRow(tr("Baseline"), m_baseline);
+    m_fit_range = new QDoubleSpinBox;
+    m_fit_range->setObjectName("nmrFitRange");
+    m_fit_range->setDecimals(4);
+    m_fit_range->setRange(0.001, 5);
+    m_fit_range->setSingleStep(0.005);
+    m_fit_range->setSuffix(tr(" ppm"));
+    m_fit_range->setKeyboardTracking(false);
+    m_fit_range->setToolTip(tr("Points within this distance of a signal are fitted; signals with overlapping ranges are fitted together, with further peaks in the range as neighbour lines."));
+    fit_form->addRow(tr("Fit range ±"), m_fit_range);
+    m_max_iterations = new QSpinBox;
+    m_max_iterations->setObjectName("nmrMaxIterations");
+    m_max_iterations->setRange(1, 10000);
+    m_max_iterations->setKeyboardTracking(false);
+    fit_form->addRow(tr("Max. iterations"), m_max_iterations);
+    m_fallback = new QCheckBox(tr("Peak position where the fit fails"));
+    m_fallback->setObjectName("nmrPeakFallback");
+    m_fallback->setToolTip(tr("A cell whose fit fails takes the position of the picked peak instead of \"fit failed\"."));
+    fit_form->addRow(m_fallback);
+    m_fit_options->setLayout(fit_form);
+    layout->addWidget(m_fit_options);
 
     m_pick = new QPushButton(tr("Pick from reference spectrum"));
     m_pick->setToolTip(tr("One signal per peak of the reference spectrum (peak picking of the processing steps, else peaks above 5 % of the intensity span); replaces the signals and the values set by hand."));
@@ -342,6 +401,13 @@ QWidget* NmrImport::signalPanel()
         refresh();
     });
     connect(m_window, &QDoubleSpinBox::valueChanged, this, [this](double window) { m_handler.setDefaultWindow(window); });
+    connect(m_method, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
+    connect(m_width_mode, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
+    connect(m_baseline, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
+    connect(m_fit_range, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFitSettings);
+    connect(m_max_iterations, &QSpinBox::valueChanged, this, &NmrImport::applyFitSettings);
+    connect(m_fallback, &QCheckBox::toggled, this, &NmrImport::applyFitSettings);
+    updateFitControls();
     connect(m_pick, &QPushButton::clicked, this, [this]() {
         QString error;
         const int n = m_handler.pickSignals(m_window->value(), &error);
@@ -381,6 +447,46 @@ QWidget* NmrImport::signalPanel()
         QMetaObject::invokeMethod(this, [this]() { retrack(); }, Qt::QueuedConnection);
     });
     return box;
+}
+
+/*! \brief Shows the fit settings of the handler in the controls (no tracking). Claude Generated. */
+void NmrImport::updateFitControls()
+{
+    const bool updating = m_updating;
+    m_updating = true;
+    const NmrFitSettings& fit = m_handler.fitSettings();
+    m_method->setCurrentIndex(fit.method == NmrShiftMethod::LineshapeFit ? 1 : 0);
+    m_width_mode->setCurrentIndex(fit.widthMode == NmrWidthMode::Shared ? 1 : 0);
+    m_baseline->setCurrentIndex(int(fit.baseline));
+    m_fit_range->setValue(fit.range);
+    m_max_iterations->setValue(fit.maxIterations);
+    m_fallback->setChecked(fit.peakFallback);
+    m_fit_options->setEnabled(fit.method == NmrShiftMethod::LineshapeFit);
+    m_details->setEnabled(fit.method == NmrShiftMethod::LineshapeFit);
+    m_updating = updating;
+}
+
+/*! \brief Passes the fit controls to the handler and tracks again. Claude Generated. */
+void NmrImport::applyFitSettings()
+{
+    if (m_updating)
+        return;
+    NmrFitSettings fit;
+    fit.method = m_method->currentIndex() == 1 ? NmrShiftMethod::LineshapeFit : NmrShiftMethod::PeakPicking;
+    fit.widthMode = m_width_mode->currentIndex() == 1 ? NmrWidthMode::Shared : NmrWidthMode::Free;
+    fit.baseline = LineshapeBaseline(std::clamp(m_baseline->currentIndex(), 0, 2));
+    fit.range = m_fit_range->value();
+    fit.maxIterations = m_max_iterations->value();
+    fit.peakFallback = m_fallback->isChecked();
+    m_handler.setFitSettings(fit);
+    updateFitControls();
+    retrack();
+}
+
+int NmrImport::fitSpectrum() const
+{
+    const int row = m_spectra->currentRow();
+    return row >= 0 && row < m_handler.spectrumCount() ? row : m_handler.referenceIndex();
 }
 
 bool NmrImport::addFiles(const QStringList& files, QString* error)
@@ -433,6 +539,7 @@ void NmrImport::setData(const QJsonObject& project)
     m_offset->setValue(m_handler.referenceOffset());
     m_window->setValue(m_handler.defaultWindow());
     m_updating = false;
+    updateFitControls();
     m_editor->setOperations(m_handler.operations());
     m_editor->setShowProcessed(!m_handler.operations().isEmpty());
     refresh();
@@ -521,27 +628,40 @@ void NmrImport::updateResults()
 {
     m_updating = true;
     const QVector<int> columns = m_handler.enabledSignals();
+    const bool fit = m_handler.fitSettings().method == NmrShiftMethod::LineshapeFit;
+    const int per = fit && m_details->isChecked() ? 5 : 1; ///< columns per signal: δ (, ±δ, FWHM, area, η)
     const int rows = m_handler.spectrumCount();
     m_results->clear();
     m_results->setRowCount(rows);
-    m_results->setColumnCount(columns.size());
+    m_results->setColumnCount(columns.size() * per);
     QStringList header;
-    for (int c : columns)
+    for (int c : columns) {
         header << m_handler.signalList()[c].name;
+        if (per > 1)
+            header << tr("±δ") << tr("FWHM") << tr("Area") << tr("η");
+    }
     m_results->setHorizontalHeaderLabels(header);
+    m_results->horizontalHeader()->setSectionResizeMode(per > 1 ? QHeaderView::ResizeToContents : QHeaderView::Stretch);
     QStringList vertical;
     for (int k = 0; k < rows; ++k)
         vertical << QString::number(k + 1);
     m_results->setVerticalHeaderLabels(vertical);
-    int missing = 0, conflict = 0, manual = 0;
+    int missing = 0, conflict = 0, manual = 0, failed = 0;
     QTableWidgetItem* first = nullptr; ///< first cell without a unique shift, scrolled into view
+    auto number = [](double v, char format, int precision) { return std::isfinite(v) ? QString::number(v, format, precision) : QString(); };
     for (int k = 0; k < rows; ++k) {
         const bool excluded = m_handler.isSpectrumExcluded(k);
         for (int c = 0; c < columns.size(); ++c) {
             const NmrCell cell = m_handler.cell(k, columns[c]);
             QTableWidgetItem* item = new QTableWidgetItem;
-            item->setText(std::isfinite(cell.shift) ? QString::number(cell.shift, 'f', 4) : (excluded ? QString() : tr("missing")));
-            item->setToolTip(tr("%1, spectrum %2: %3").arg(m_handler.signalList()[columns[c]].name).arg(k + 1).arg(NmrHandler::statusName(cell.status)));
+            const QString emptyText = cell.status == NmrCellStatus::FitFailed ? tr("fit failed") : tr("missing");
+            item->setText(std::isfinite(cell.shift) ? QString::number(cell.shift, 'f', 4) : (excluded ? QString() : emptyText));
+            QString tip = tr("%1, spectrum %2: %3").arg(m_handler.signalList()[columns[c]].name).arg(k + 1).arg(NmrHandler::statusName(cell.status));
+            if (fit && std::isfinite(cell.peakShift))
+                tip += tr("\npeak maximum %1 ppm").arg(cell.peakShift, 0, 'f', 4);
+            if (fit && cell.fitState == NmrFitState::Failed)
+                tip += tr("\nfit: %1").arg(cell.fitMessage);
+            item->setToolTip(tip);
             if (excluded) {
                 item->setFlags(item->flags() & ~Qt::ItemIsEditable);
                 item->setForeground(palette().color(QPalette::Disabled, QPalette::Text));
@@ -551,13 +671,30 @@ void NmrImport::updateResults()
                     item->setBackground(color);
                     item->setForeground(Appearance::ContrastText(color));
                 }
-                if (!first && (cell.status == NmrCellStatus::Missing || cell.status == NmrCellStatus::Conflict))
+                if (fit && cell.status == NmrCellStatus::Ok && cell.fitState == NmrFitState::Failed) {
+                    QFont font = item->font(); // peak position taken because the fit failed
+                    font.setItalic(true);
+                    item->setFont(font);
+                }
+                if (!first && (cell.status == NmrCellStatus::Missing || cell.status == NmrCellStatus::Conflict || cell.status == NmrCellStatus::FitFailed))
                     first = item;
                 missing += cell.status == NmrCellStatus::Missing;
                 conflict += cell.status == NmrCellStatus::Conflict;
                 manual += cell.status == NmrCellStatus::Manual;
+                failed += cell.status == NmrCellStatus::FitFailed || (cell.status == NmrCellStatus::Ok && cell.fitState == NmrFitState::Failed);
             }
-            m_results->setItem(k, c, item);
+            m_results->setItem(k, c * per, item);
+            if (per > 1) {
+                const bool shown = !excluded && cell.fitState != NmrFitState::NotFitted;
+                const QStringList values = { number(cell.shiftError, 'g', 2), number(cell.fwhm, 'f', 4), number(cell.area, 'g', 4), number(cell.eta, 'f', 2) };
+                for (int d = 0; d < 4; ++d) {
+                    QTableWidgetItem* detail = new QTableWidgetItem(shown ? values[d] : QString());
+                    detail->setFlags(detail->flags() & ~Qt::ItemIsEditable);
+                    if (cell.fitState == NmrFitState::Failed)
+                        detail->setForeground(palette().color(QPalette::Disabled, QPalette::Text));
+                    m_results->setItem(k, c * per + 1 + d, detail);
+                }
+            }
         }
     }
     if (first)
@@ -567,7 +704,10 @@ void NmrImport::updateResults()
         const QColor color = statusColor(status);
         return QString("<span style='background-color:%1; color:%2'>&nbsp;%3&nbsp;</span>").arg(color.name(), Appearance::ContrastText(color).name(), text);
     };
-    m_legend->setText(QString("%1 %2 %3").arg(chip(NmrCellStatus::Missing, tr("missing: %1").arg(missing)), chip(NmrCellStatus::Conflict, tr("conflict: %1").arg(conflict)), chip(NmrCellStatus::Manual, tr("set by hand: %1").arg(manual))));
+    QString legend = QString("%1 %2 %3").arg(chip(NmrCellStatus::Missing, tr("missing: %1").arg(missing)), chip(NmrCellStatus::Conflict, tr("conflict: %1").arg(conflict)), chip(NmrCellStatus::Manual, tr("set by hand: %1").arg(manual)));
+    if (fit)
+        legend += QString(" %1 %2").arg(chip(NmrCellStatus::FitFailed, tr("fit failed: %1").arg(failed)), tr("(fit %1 ms)").arg(m_handler.fitMilliseconds(), 0, 'f', 0));
+    m_legend->setText(legend);
 }
 
 /*! \brief Marks the tracked position of every signal on the drawn spectra (raw or processed, as the
@@ -587,6 +727,13 @@ void NmrImport::updateMarkers()
         return;
     const TraceSet shown = m_editor->showProcessed() ? m_handler.processedSpectra() : m_handler.referencedSpectra();
     const QVector<int> columns = m_handler.enabledSignals();
+    for (const QPointer<LineSeries>& series : m_fit_lines) {
+        if (series) {
+            chart->removeSeries(series);
+            delete series;
+        }
+    }
+    m_fit_lines.clear();
     for (int c : columns) {
         ScatterSeries* markers = new ScatterSeries;
         for (int k = 0; k < shown.size(); ++k) {
@@ -602,6 +749,34 @@ void NmrImport::updateMarkers()
         m_markers << markers;
         markers->setColor(palette().color(QPalette::Text));
         chart->privateView()->addVerticalLine(m_handler.signalList()[c].position);
+    }
+    // the fitted model (dashed) and its residual (thin, 10 % of the spectrum height below zero)
+    const int k = fitSpectrum();
+    const QVector<NmrFitRegion> regions = m_handler.fitRegions(k);
+    if (!regions.isEmpty() && k < shown.size() && !shown.at(k).isEmpty()) {
+        const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
+        const QColor model = palette().color(QPalette::Text); // dashed: distinct from the coloured spectra
+        QColor residual = palette().color(QPalette::Text);
+        residual.setAlpha(140);
+        for (const NmrFitRegion& region : regions) {
+            if (region.block.x.size() == 0)
+                continue;
+            LineSeries* curve = new LineSeries;
+            LineSeries* rest = new LineSeries;
+            for (Eigen::Index i = 0; i < region.block.x.size(); ++i) {
+                const double x = region.block.x(i);
+                curve->append(x, region.block.evaluate(x));
+                rest->append(x, offset + region.block.residuals(i));
+            }
+            chart->addSeries(curve, false);
+            chart->addSeries(rest, false);
+            curve->setColor(model);
+            curve->setLineWidth(2);
+            curve->setDashDotLine(true);
+            rest->setColor(residual);
+            rest->setLineWidth(1);
+            m_fit_lines << curve << rest;
+        }
     }
     m_editor->refreshMarkers();
 }

@@ -9,6 +9,7 @@ Basis for UV-Vis, NMR and (WP5) thermogram import; plan: [roadmap/input_data_edi
 - **tracejson.h/cpp**: lossless vector persistence (`vectorToString`/`vectorFromJson`)
 - **traceio.h/cpp**: ASCII/CSV readers (BOM, CRLF, decimal comma, tab/;/,/blank, header lines, matrix x + n columns, TopSpin totxt LEFT/RIGHT); `ToolSet::LoadXYFile`/`LoadCSVFile` stay for UV-Vis
 - `ShiftAxisOp` (`"ShiftAxis"`, `Offset`): x += offset, NMR referencing
+- **lineshapefit.h/cpp** (WP4): pseudo-Voigt (common FWHM, area exact) + baseline; own damped Gauss-Newton, analytic Jacobian, bounds by projection/active set, fixed parameters, covariance with rank check; `fitSeries` stacks blocks, `shared` index = one width/η over blocks; tests `test_lineshapefit` (LineshapeFitTest)
 
 ## Rules
 - Raw data are never modified: `TraceOpList::apply(const XYTrace&)` works on a copy
@@ -20,3 +21,4 @@ Basis for UV-Vis, NMR and (WP5) thermogram import; plan: [roadmap/input_data_edi
 - A switched-off step (`TraceOp::enabled = false`) stays in the list and its JSON (`"Enabled": false`, written only then); `apply` skips it
 - Do not route new code through `PeakPick::spectrum` (out-of-range reads, endless `XtoIndex`); the algorithms here are own Eigen code
 - Accuracy claims live in `test_trace` as worst case over a spread of widths/noise (printed with `qInfo`)
+- `LineshapeFit` never returns NaN parameters: bad input is `Invalid`, singular J^T J is `Degenerate` (errors NaN); J^T J is accumulated per block, never from the stacked J (series of 20 spectra stay fast)

@@ -23,6 +23,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **spectrahandler.cpp/h**: Spectral data import and processing on a `TraceSet`; JSON keeps all spectra (lossless since WP1, old 6-digit files readable), `XStart`/`XEnd`, `IntensityDivisor` (default 1000 for old files); other sampling is interpolated onto the first axis; pinned by `test_spectrahandler`
   - `Operations()` (`TraceOpList`, key `TraceOps` only when not empty) is applied to copies of the raw spectra before the table/matrix; a table file is stored as `TableFile` and read again without raw data
 - **nmrhandler.cpp/h**: NMR titration import (Claude Generated, WP3): spectra (`TraceIO`), referencing offset, `TraceOpList`, signals, tracking (`track()`, rules in the class doc), status per cell (ok/missing/conflict/manual), `shiftTable`/`importTable` refuse missing/conflict cells; raw block of a Spectrum project with `"Profile": "nmr"` (SpectraHandler keys kept, older SupraFit sees the spectra); pinned by `test_nmrhandler` (worst case over a spread)
+  - WP4 `NmrFitSettings` (`"LineshapeFit"`): δ from peak picking or `LineshapeFit` (free/shared width, groups of overlapping signals, neighbour lines, conflicts separated by the fit, `FitFailed` blocks the table unless `peakFallback`); fit results are not stored, recomputed on load; `shiftErrorTable` for σ(δ)
 - **trace/**: GUI-free `XYTrace`/`TraceSet`/`TraceOps` (range, Savitzky-Golay, baseline, normalise, peak picking, JSON pipeline) — see [trace/CLAUDE.md](trace/CLAUDE.md)
 
 ### Mathematical Operations

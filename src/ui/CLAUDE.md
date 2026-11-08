@@ -31,6 +31,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **dialogs/importdata.cpp/h**: Data file import wizard
 - **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
 - **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
+  - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
 - **dialogs/thermogram.cpp/h**: Thermogram data handling
 
 ### Analysis Configuration

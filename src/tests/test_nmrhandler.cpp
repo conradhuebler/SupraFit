@@ -33,6 +33,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
@@ -167,8 +168,8 @@ class TestNmrHandler : public QObject {
         return ops;
     }
 
-    /// handler -> table -> nmr_ItoI fit; errors against the truth
-    static Result runCase(const Case& c, unsigned seed)
+    /// handler -> table -> nmr_ItoI fit; errors against the truth; with fit: δ from the lineshape fit (WP4)
+    static Result runCase(const Case& c, unsigned seed, const NmrFitSettings* fit = nullptr, bool neighbourSignal = false)
     {
         std::mt19937 rng(seed);
         QVector<QVector<double>> truth;
@@ -176,9 +177,14 @@ class TestNmrHandler : public QObject {
         for (const XYTrace& t : titration(c, rng, &truth))
             handler.addSpectrum(t);
         handler.setOperations(pipeline(c));
+        if (fit)
+            handler.setFitSettings(*fit);
         // positions as a user would click them: a little off the true peaks
         for (int s = 0; s < 3; ++s)
             handler.addSignal(kFree[s] + 0.002, 0.05, QString("H%1").arg(s + 1));
+        // the static neighbour line as a signal of its own (WP4): unresolved from H2 in the first spectra
+        if (neighbourSignal)
+            handler.addSignal(kFree[1] - c.neighbour, 1.5 * c.neighbour, "G");
         handler.track();
 
         Result r;
@@ -187,7 +193,7 @@ class TestNmrHandler : public QObject {
                 const NmrCell cell = handler.cell(k, s);
                 if (cell.status != NmrCellStatus::Ok) {
                     r.allOk = false;
-                    r.problem = QString("step %1 signal %2: %3").arg(k).arg(s).arg(NmrHandler::statusName(cell.status));
+                    r.problem = QString("step %1 signal %2: %3 %4").arg(k).arg(s).arg(NmrHandler::statusName(cell.status)).arg(cell.fitMessage);
                     for (int kk = 0; kk < c.steps; ++kk) {
                         r.problem += QString("\n %1:").arg(kk);
                         for (int ss = 0; ss < 3; ++ss)
@@ -200,11 +206,11 @@ class TestNmrHandler : public QObject {
                 r.maxErrorFwhm = std::max(r.maxErrorFwhm, e / c.fwhm);
             }
         }
-        if (qEnvironmentVariableIsSet("NMR_DEBUG") && r.maxErrorFwhm > 1) {
+        if (qEnvironmentVariableIsSet("NMR_DEBUG") && r.maxErrorFwhm > qEnvironmentVariable("NMR_DEBUG_FWHM", "1").toDouble()) {
             for (int kk = 0; kk < c.steps; ++kk) {
                 QString line = QString(" %1:").arg(kk);
                 for (int ss = 0; ss < 3; ++ss)
-                    line += QString(" %1/%2 h %3").arg(handler.cell(kk, ss).shift, 0, 'f', 4).arg(truth[kk][ss], 0, 'f', 4).arg(handler.cell(kk, ss).height, 0, 'f', 3);
+                    line += QString(" %1/%2 (pick %4, w %5 eta %6) h %3").arg(handler.cell(kk, ss).shift, 0, 'f', 4).arg(truth[kk][ss], 0, 'f', 4).arg(handler.cell(kk, ss).height, 0, 'f', 3).arg(handler.cell(kk, ss).peakShift, 0, 'f', 4).arg(handler.cell(kk, ss).fwhm, 0, 'f', 4).arg(handler.cell(kk, ss).eta, 0, 'f', 2);
                 qInfo().noquote() << line;
             }
         }
@@ -224,7 +230,7 @@ class TestNmrHandler : public QObject {
         data->setIndependentTable(new DataTable(indep));
         data->setDataType(DataClassPrivate::Table);
         data->setSimulateDependent(3);
-        data->setDependentTable(new DataTable(shifts->Table()));
+        data->setDependentTable(new DataTable(Eigen::MatrixXd(shifts->Table().leftCols(3))));
         data->setDataBegin(0);
         data->setDataEnd(c.steps);
         {
@@ -749,6 +755,198 @@ private slots:
         QCOMPARE(older.Spectra().at(4).y(), handler.spectra().at(4).y());
     }
 
+    /// WP4: δ from the lineshape fit vs the picked maxima where a static neighbour line overlaps H2 (0.5-1.5 FWHM
+    /// at the start of the titration, unresolved at 0.5 FWHM) with noise 0-3 %; K recovered from both. Peak
+    /// picking runs with the three host signals (as in WP3: biased maxima, or a merged maximum); the fit gets
+    /// the neighbour as a fourth signal "G" (where it shares H2's maximum the cells are in conflict, which the
+    /// fit resolves). Peak picking with "G" is counted where its table is refused (conflict cells).
+    void lineshapeFitEndToEnd()
+    {
+        struct Worst {
+            double pos = 0, lgK = 0;
+            QString posLabel, kLabel;
+            int failed = 0;
+            QString failure;
+        } pick, fitFree, fitShared, pickClose, fitFreeClose, fitSharedClose; ///< *Close: neighbour 0.5 FWHM
+        int cases = 0, pickRefused = 0;
+        unsigned seed = 500;
+        double maxMs = 0;
+        for (double fwhm : { 0.01, 0.02 })
+            for (double neighbourFwhm : { 0.5, 0.75, 1.0, 1.5 })
+                for (double eta : { 1.0, 0.5 })
+                    for (double noise : { 0.0, 0.01, 0.03 })
+                        for (int steps : { 10, 20 }) {
+                            const Case c{ fwhm, eta, noise, neighbourFwhm * fwhm, steps };
+                            const QString label = QString("FWHM %1 ppm, neighbour %2 FWHM, eta %3, noise %4, %5 steps").arg(fwhm).arg(neighbourFwhm).arg(eta).arg(noise).arg(steps);
+                            if (qEnvironmentVariableIsSet("NMR_ONLY") && label != qEnvironmentVariable("NMR_ONLY")) {
+                                ++seed;
+                                continue;
+                            }
+                            NmrFitSettings settings;
+                            settings.method = NmrShiftMethod::LineshapeFit;
+                            settings.range = std::max(0.03, 3 * fwhm);
+                            const Result rp = runCase(c, seed);
+                            const Result rpg = runCase(c, seed, nullptr, true);
+                            const Result rf = runCase(c, seed, &settings, true);
+                            settings.widthMode = NmrWidthMode::Shared;
+                            QElapsedTimer timer;
+                            timer.start();
+                            const Result rs = runCase(c, seed, &settings, true);
+                            maxMs = std::max(maxMs, timer.nsecsElapsed() * 1e-6);
+                            ++seed;
+                            pickRefused += !rpg.allOk;
+                            auto keep = [&label](Worst* w, const Result& r) {
+                                if (!r.allOk) {
+                                    if (qEnvironmentVariableIsSet("NMR_DEBUG"))
+                                        qInfo().noquote() << label << r.problem;
+                                    if (w->failed++ == 0)
+                                        w->failure = label + ": " + r.problem.section('\n', 0, 0);
+                                    return;
+                                }
+                                if (r.maxErrorFwhm > w->pos) {
+                                    w->pos = r.maxErrorFwhm;
+                                    w->posLabel = label;
+                                }
+                                if (r.dLgK > w->lgK) {
+                                    w->lgK = r.dLgK;
+                                    w->kLabel = label;
+                                }
+                            };
+                            const bool close = neighbourFwhm < 0.6;
+                            keep(close ? &pickClose : &pick, rp);
+                            keep(close ? &fitFreeClose : &fitFree, rf);
+                            keep(close ? &fitSharedClose : &fitShared, rs);
+                            if (qEnvironmentVariableIsSet("NMR_DEBUG"))
+                                qInfo().noquote() << QString("%1: pos pick %2 free %3 shared %4 FWHM; dlgK %5 %6 %7; ok %8%9%10%11").arg(label).arg(rp.maxErrorFwhm, 0, 'g', 3).arg(rf.maxErrorFwhm, 0, 'g', 3).arg(rs.maxErrorFwhm, 0, 'g', 3).arg(rp.dLgK, 0, 'g', 3).arg(rf.dLgK, 0, 'g', 3).arg(rs.dLgK, 0, 'g', 3).arg(rp.allOk).arg(rpg.allOk).arg(rf.allOk).arg(rs.allOk);
+                            ++cases;
+                        }
+        qInfo().noquote() << QString("NMR lineshape fit vs peak picking over %1 cases (lg K %2, neighbour 0.5-1.5 FWHM, noise 0-3 %, FWHM 0.01/0.02 ppm):").arg(cases).arg(kLgK);
+        for (const auto& [name, w] : { std::pair<QString, Worst>{ "neighbour 0.75-1.5 FWHM, peak picking (H1-H3)", pick }, { "neighbour 0.75-1.5 FWHM, fit, free width (H1-H3 + G)", fitFree }, { "neighbour 0.75-1.5 FWHM, fit, shared width (H1-H3 + G)", fitShared },
+                 { "neighbour 0.5 FWHM, peak picking (H1-H3)", pickClose }, { "neighbour 0.5 FWHM, fit, free width (H1-H3 + G)", fitFreeClose }, { "neighbour 0.5 FWHM, fit, shared width (H1-H3 + G)", fitSharedClose } }) {
+            qInfo().noquote() << QString("  %1: worst position error %2 FWHM (%3)").arg(name).arg(w.pos, 0, 'g', 3).arg(w.posLabel);
+            qInfo().noquote() << QString("  %1: worst |lg K - true| %2 (%3)").arg(name).arg(w.lgK, 0, 'g', 3).arg(w.kLabel);
+            qInfo().noquote() << QString("  %1: no table in %2 cases %3").arg(name).arg(w.failed).arg(w.failure);
+        }
+        qInfo().noquote() << QString("  peak picking with G: table refused (conflict) in %1 of %2 cases").arg(pickRefused).arg(cases);
+        qInfo().noquote() << QString("  slowest shared-width case (tracking + fit + nmr_ItoI) %1 ms").arg(maxMs, 0, 'f', 1);
+        // pinned: neighbour >= 0.75 FWHM. At 0.5 FWHM the tracking (not the fit) can hand H2 the neighbour's
+        // maximum, then no fit start is right; the numbers above are reported, not pinned (TODO.md)
+        QVERIFY2(fitFree.failed == 0, qPrintable(fitFree.failure));
+        QVERIFY2(fitShared.failed == 0, qPrintable(fitShared.failure));
+        QVERIFY(fitFree.pos < pick.pos);
+        QVERIFY(fitFree.lgK < pick.lgK);
+        QVERIFY2(fitFree.pos < kPinFitPositionFwhm, qPrintable(QString::number(fitFree.pos)));
+        QVERIFY2(fitFree.lgK < kPinFitLgK, qPrintable(QString::number(fitFree.lgK)));
+        QVERIFY2(fitShared.pos < kPinFitPositionFwhm, qPrintable(QString::number(fitShared.pos)));
+        QVERIFY2(fitShared.lgK < kPinFitLgK, qPrintable(QString::number(fitShared.lgK)));
+    }
+
+    /// WP4: a failed fit is "fit failed" (no δ, table refused) unless the peak position is chosen as fallback
+    void lineshapeFitFailedCells()
+    {
+        NmrHandler handler;
+        fillHandler(&handler, 8);
+        NmrFitSettings settings;
+        settings.method = NmrShiftMethod::LineshapeFit;
+        settings.maxIterations = 1; // cannot converge
+        handler.setFitSettings(settings);
+        handler.track();
+        QCOMPARE(handler.cell(3, 0).status, NmrCellStatus::FitFailed);
+        QVERIFY(std::isnan(handler.cell(3, 0).shift));
+        QCOMPARE(handler.cell(3, 0).fitState, NmrFitState::Failed);
+        QVERIFY(!handler.cell(3, 0).fitMessage.isEmpty());
+        QVERIFY(std::isfinite(handler.cell(3, 0).peakShift));
+        QString error;
+        QVERIFY(!handler.shiftTable(&error));
+        QVERIFY2(error.contains("fit failed"), qPrintable(error));
+
+        settings.peakFallback = true;
+        handler.setFitSettings(settings);
+        handler.track();
+        QCOMPARE(handler.cell(3, 0).status, NmrCellStatus::Ok);
+        QCOMPARE(handler.cell(3, 0).fitState, NmrFitState::Failed);
+        QCOMPARE(handler.cell(3, 0).shift, handler.cell(3, 0).peakShift);
+        std::unique_ptr<DataTable> table(handler.shiftTable(&error));
+        QVERIFY2(table, qPrintable(error));
+
+        // a manual cell stays manual in the fit mode
+        settings = NmrFitSettings();
+        settings.method = NmrShiftMethod::LineshapeFit;
+        handler.setFitSettings(settings);
+        QVERIFY(handler.setManualShift(2, 1, 7.15));
+        QCOMPARE(handler.cell(2, 1).status, NmrCellStatus::Manual);
+        QCOMPARE(handler.cell(2, 1).shift, 7.15);
+        for (int k = 0; k < 8; ++k)
+            for (int s = 0; s < 3; ++s)
+                if (!(k == 2 && s == 1)) {
+                    QCOMPARE(handler.cell(k, s).status, NmrCellStatus::Ok);
+                    QCOMPARE(handler.cell(k, s).fitState, NmrFitState::Fitted);
+                    QCOMPARE(handler.cell(k, s).shift, handler.cell(k, s).fitShift);
+                }
+        // standard errors in the layout of the shift table
+        std::unique_ptr<DataTable> errors(handler.shiftErrorTable(&error));
+        QVERIFY2(errors, qPrintable(error));
+        QCOMPARE(errors->rowCount(), 8);
+        QCOMPARE(errors->header()[0], QString("σ(δ) H1 /ppm"));
+        QVERIFY(std::isfinite(errors->data(0, 0)) && errors->data(0, 0) > 0);
+        QVERIFY(std::isnan(errors->data(2, 1))); // manual
+        QVERIFY(!handler.fitRegions(0).isEmpty());
+        QVERIFY(handler.fitMilliseconds() > 0);
+        handler.setFitSettings(NmrFitSettings());
+        handler.track();
+        QVERIFY(!handler.shiftErrorTable(&error));
+        QVERIFY(handler.fitRegions(0).isEmpty());
+    }
+
+    /// WP4: the fit settings are stored, the results recomputed identically; a WP3 block without the key
+    /// loads with peak picking and the same cells as before
+    void lineshapeFitJson()
+    {
+        NmrHandler handler;
+        fillHandler(&handler, 8);
+        const QJsonObject before = handler.toJson();
+        NmrFitSettings settings;
+        settings.method = NmrShiftMethod::LineshapeFit;
+        settings.widthMode = NmrWidthMode::Shared;
+        settings.baseline = LineshapeBaseline::Linear;
+        settings.range = 0.04;
+        settings.maxIterations = 150;
+        settings.peakFallback = true;
+        handler.setFitSettings(settings);
+        handler.track();
+        const QJsonObject json = handler.toJson();
+        QCOMPARE(json.value("LineshapeFit").toObject().value("Method").toString(), QString("LineshapeFit"));
+        NmrHandler back;
+        QString error;
+        QVERIFY2(back.fromJson(json, &error), qPrintable(error));
+        QVERIFY(back.fitSettings() == settings);
+        QCOMPARE(back.toJson(), json);
+        for (int k = 0; k < 8; ++k)
+            for (int s = 0; s < 3; ++s) {
+                QCOMPARE(back.cell(k, s).fitShift, handler.cell(k, s).fitShift);
+                QCOMPARE(back.cell(k, s).shiftError, handler.cell(k, s).shiftError);
+                QCOMPARE(back.cell(k, s).shift, handler.cell(k, s).shift);
+            }
+
+        // a block as WP3 wrote it: no "LineshapeFit"
+        QJsonObject old = before;
+        old.remove("LineshapeFit");
+        NmrHandler legacy;
+        QVERIFY2(legacy.fromJson(old, &error), qPrintable(error));
+        QCOMPARE(legacy.fitSettings().method, NmrShiftMethod::PeakPicking);
+        NmrHandler reference;
+        fillHandler(&reference, 8);
+        for (int k = 0; k < 8; ++k)
+            for (int s = 0; s < 3; ++s) {
+                QCOMPARE(legacy.cell(k, s).status, reference.cell(k, s).status);
+                QCOMPARE(legacy.cell(k, s).shift, reference.cell(k, s).shift);
+                QCOMPARE(legacy.cell(k, s).fitState, NmrFitState::NotFitted);
+            }
+        QJsonObject withoutKey = legacy.toJson();
+        withoutKey.remove("LineshapeFit");
+        QCOMPARE(withoutKey, old);
+    }
+
 private:
     // pinned worst cases of endToEndSpread (measured values are printed by the test)
     // measured 2026-11-08 over 192 cases: 0.237 FWHM, 0.0085 lg K, 0.0022 ppm (all three: FWHM 0.02 ppm,
@@ -756,6 +954,11 @@ private:
     static constexpr double kPinPositionFwhm = 0.3;
     static constexpr double kPinLgK = 0.015;
     static constexpr double kPinLimit = 0.003;
+    // pinned worst cases of lineshapeFitEndToEnd (fit, free and shared width, neighbour >= 0.75 FWHM); measured
+    // 2026-11-08 over 72 cases: position 0.079 FWHM free / 0.043 shared (peak picking 0.185), lg K 0.0027 / 0.0028
+    // (peak picking 0.0056)
+    static constexpr double kPinFitPositionFwhm = 0.12;
+    static constexpr double kPinFitLgK = 0.005;
 };
 
 QTEST_GUILESS_MAIN(TestNmrHandler)
