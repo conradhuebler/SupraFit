@@ -165,7 +165,7 @@ void ImportData::setUi()
         ImportThermogram(m_filename);
     });
 
-    m_spectra = new QPushButton(tr("Import as Spectras"));
+    m_spectra = new QPushButton(tr("Import as Spectra"));
     m_spectra->setStyleSheet("background-color: #77d740; color: black;");
     connect(m_spectra, &QPushButton::clicked, this, [this]() {
         ImportSpectra(m_filename);

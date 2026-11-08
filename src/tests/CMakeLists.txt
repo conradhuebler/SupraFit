@@ -1276,6 +1276,29 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen smoke test of the TraceEditorWidget and the spectra dialog (WP2 of roadmap/input_data_editing.md,
+# Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(traceeditor_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_traceeditor test_traceeditor.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${traceeditor_RES})
+    target_link_libraries(test_traceeditor
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_traceeditor ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_traceeditor pthread dl)
+    endif()
+    add_test(NAME TraceEditorTest COMMAND test_traceeditor)
+    set_tests_properties(TraceEditorTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Quadrature regression tests (Claude Generated 2026) - pins SimpsonIntegrate against analytically
 # known integrals, including the endpoint singularities the BC50 integrands carry.
 add_executable(test_quadrature

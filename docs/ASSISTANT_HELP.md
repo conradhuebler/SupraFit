@@ -51,7 +51,9 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
   **Apply and Update** (finds peaks, fits baseline, integrates), "Peak Ranges" (Custom/Zero/Threshold), Calibration and "Scaling (raw heat unit)".
   Per-injection volumes are editable in the table. The result is a two-column table (volume, net heat).
   Reopen it later with the Edit Data button left of the tabs. The setting "Automatic open Thermogram Dialog" does it automatically.
-- **Spectra**: Open Spectra / "Import as Spectras" opens "Spectra Analysis and Import" (Load file, Open Directory).
+- **Spectra**: Open Spectra / "Import as Spectra" opens "Spectra Analysis and Import" (Load file, Open Directory). Tab "Spectra View": "Start"/"End" (or a drag with the right mouse button in the chart) select the x range of "VarCovar"; double-click in the chart adds an x value; "Zoom to range".
+  "Processing steps" (Add: Range, Smoothing (Savitzky-Golay), Baseline, Normalisation, Peak picking; Remove, Up, Down; untick to switch off) apply from top to bottom to every spectrum before the table is built; the raw spectra stay unchanged and the steps are stored with the project. "Show processed" draws the processed spectra (peaks as markers); an invalid parameter is refused with a message below "Parameters".
+  Edit Data on a spectra project reopens the dialog with its spectra, x values, range and steps; OK passes the result through the Import Table dialog as a new project.
 - **Simulated data**: in New Table tick "Simulate Data with # Data Points" (columns by equation, default `X`; Store/Load Recipe), or in a fitted model's
   tab "Simulated Data" drag an entry (Ideal model, MC with model σfit, MC with model SEy, Bootstrap, MC with user σ) onto the project list.
 - **Excluding data**: in the data tab right-click a row of the signal table to toggle it; right-click in the independent table: Begin Data / End Data.

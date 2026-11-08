@@ -386,6 +386,137 @@ private slots:
         QCOMPARE(last.size(), 3);
         QCOMPARE(last[2], QPointF(408, 6));
     }
+
+    // ---- processing steps (WP2), Claude Generated
+
+    void emptyOperationsChangeNothing()
+    {
+        SpectraHandler handler;
+        fillHandler(handler, 3);
+        QVERIFY(handler.Operations().isEmpty());
+        QJsonObject json = handler.getSpectraData();
+        QVERIFY(!json.contains("TraceOps")); // projects without steps are written as before
+        handler.setXValues({ 420.0, 500.0 });
+        DataTable* table = handler.CompileSimpleTable();
+        for (int s = 0; s < 3; ++s)
+            QCOMPARE(table->data(s, 1), intensity(500.0, s) / 1000.0);
+        const TraceSet processed = handler.ProcessedSpectra();
+        QCOMPARE(processed.ids(), handler.getOrder());
+        for (int s = 0; s < 3; ++s)
+            QCOMPARE(processed.at(s).y(), handler.Spectra().at(s).y());
+    }
+
+    void baselineOperationChangesTable()
+    {
+        SpectraHandler handler;
+        fillHandler(handler, 3);
+        handler.setXValues({ 500.0 });
+        // intensity() carries 10 * step + 0.01 x: a straight baseline fitted outside the band
+        // (|x - 500| > 120, where the Gaussian is below 1e-6 of its height) removes it
+        TraceOpList ops;
+        BaselineOp base(1);
+        base.excluded << qMakePair(380.0, 620.0);
+        ops.append(base);
+        // nothing outside [380, 620] is left on the 400..600 grid: the step fails, visibly
+        handler.setOperations(ops);
+        QString error;
+        handler.ProcessedSpectra(&error);
+        QVERIFY(!error.isEmpty());
+        DataTable* failed = handler.CompileSimpleTable();
+        QCOMPARE(failed->data(0, 0), 0.0); // empty spectrum, not the raw value
+
+        ops.clear();
+        base.excluded = { qMakePair(440.0, 560.0) };
+        ops.append(base);
+        handler.setOperations(ops);
+        handler.ProcessedSpectra(&error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        DataTable* table = handler.CompileSimpleTable();
+        for (int s = 0; s < 3; ++s) {
+            // the Gaussian at the fit points next to the band (436/564) is 1 % of its height: the
+            // fitted line takes a little of the band with it; the height is reproduced to 3 %
+            const double band = 100.0 * (s + 1) / 1000.0;
+            QVERIFY(qAbs(table->data(s, 0) - band) < 0.03 * band);
+            QVERIFY(qAbs(table->data(s, 0) - intensity(500.0, s) / 1000.0) > 0.005 * band); // offset is gone
+        }
+        // raw spectra unchanged
+        QCOMPARE(handler.Data(handler.getOrder()[1])[25].y(), intensity(500.0, 1));
+    }
+
+    void smoothOperationChangesTable()
+    {
+        SpectraHandler handler;
+        fillHandler(handler, 2);
+        handler.setXValues({ 500.0 });
+        TraceOpList ops;
+        ops.append(SmoothOp(11, 0)); // moving average over 40 nm lowers the band maximum
+        handler.setOperations(ops);
+        DataTable* table = handler.CompileSimpleTable();
+        for (int s = 0; s < 2; ++s) {
+            double mean = 0;
+            for (int k = -5; k <= 5; ++k)
+                mean += intensity(500.0 + 4.0 * k, s);
+            mean /= 11.0;
+            QVERIFY(qAbs(table->data(s, 0) - mean / 1000.0) <= 1e-12 * mean);
+            QVERIFY(table->data(s, 0) < intensity(500.0, s) / 1000.0);
+        }
+        // the matrix of VarCovarSelect uses the processed spectra too
+        Eigen::MatrixXd matrix = handler.SpectraMatrix();
+        QVERIFY(qAbs(matrix(0, 25) - table->data(0, 0) * 1000.0) <= 1e-12 * matrix(0, 25));
+    }
+
+    void operationsJsonRoundtrip()
+    {
+        SpectraHandler source;
+        fillHandler(source, 2);
+        TraceOpList ops;
+        ops.append(RangeOp(420, 580));
+        ops.append(SmoothOp(7, 2));
+        NormaliseOp norm(TraceOps::NormaliseMode::MinMax);
+        ops.append(norm);
+        ops.at(2)->enabled = false;
+        source.setOperations(ops);
+        QJsonObject json = source.getSpectraData();
+        QVERIFY(json.contains("TraceOps"));
+        QCOMPARE(json["TraceOps"].toObject(), ops.toJson());
+
+        SpectraHandler target;
+        target.LoadData(QJsonDocument::fromJson(QJsonDocument(json).toJson()).object());
+        QCOMPARE(target.Operations().size(), 3);
+        QCOMPARE(target.Operations().toJson(), ops.toJson());
+        QCOMPARE(target.Operations().at(2)->enabled, false);
+
+        // a project without the key loads with no steps
+        json.remove("TraceOps");
+        SpectraHandler old;
+        old.LoadData(json);
+        QVERIFY(old.Operations().isEmpty());
+    }
+
+    void tableFileIsReadAgainWithoutRawData()
+    {
+        SpectraHandler source;
+        source.setSpectrafromFile(writeTableFile("table_reopen.txt", 3, true));
+        qApp->setProperty("StoreRawData", false);
+        QJsonObject json = source.getSpectraData();
+        qApp->setProperty("StoreRawData", true);
+        QVERIFY(!json.contains("Data"));
+        SpectraHandler target;
+        target.LoadData(json);
+        QCOMPARE(target.getOrder().size(), 3);
+        QCOMPARE(target.Data(target.getOrder()[2])[25].y(), intensity(500.0, 2));
+    }
+
+    void removeSpectrumKeepsOthers()
+    {
+        SpectraHandler handler;
+        fillHandler(handler, 3);
+        const QString id = handler.getOrder()[1];
+        QVERIFY(handler.removeSpectrum(id));
+        QVERIFY(!handler.removeSpectrum(id));
+        QCOMPARE(handler.getOrder().size(), 2);
+        QCOMPARE(handler.Data(handler.getOrder()[1])[25].y(), intensity(500.0, 2));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSpectraHandler)

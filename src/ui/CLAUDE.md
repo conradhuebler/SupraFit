@@ -62,7 +62,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **widgets/systemparameterwidget.cpp/h**: System-level parameter configuration
 
 ### Specialized Components
-- **widgets/spectrawidget.cpp/h**: Spectral data visualization
+- **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
+- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; smoke test `test_traceeditor`
 - **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration
 

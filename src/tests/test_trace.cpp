@@ -756,6 +756,36 @@ private slots:
         QVERIFY(out.isEmpty());
         QVERIFY(error.contains("step 1") && error.contains("Smooth"));
     }
+
+    /// Claude Generated: a switched-off step is kept and stored, but not applied
+    void pipelineDisabledStep()
+    {
+        const Eigen::VectorXd x = grid(0, 20, 1);
+        Eigen::VectorXd y(x.size());
+        for (Eigen::Index i = 0; i < x.size(); ++i)
+            y(i) = std::sin(x(i)) + 2;
+        const XYTrace raw(x, y);
+
+        TraceOpList list;
+        list.append(SmoothOp(5, 2));
+        QCOMPARE(list.toJson()["Operations"].toArray()[0].toObject().contains("Enabled"), false);
+        list.at(0)->enabled = false;
+        QString error;
+        XYTrace out = list.apply(raw, &error);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QVERIFY(identical(out.y(), raw.y()));
+
+        const QJsonObject json = list.toJson();
+        QCOMPARE(json["Operations"].toArray()[0].toObject()["Enabled"].toBool(true), false);
+        TraceOpList back;
+        QVERIFY2(TraceOpList::fromJson(json, &back, &error), qPrintable(error));
+        QCOMPARE(back.at(0)->enabled, false);
+        QCOMPARE(back.toJson(), json);
+        TraceOpList copy = back;
+        QCOMPARE(copy.at(0)->enabled, false);
+        copy.at(0)->enabled = true;
+        QVERIFY(!identical(copy.apply(raw, &error).y(), raw.y()));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTrace)

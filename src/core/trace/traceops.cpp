@@ -480,6 +480,7 @@ std::unique_ptr<TraceOp> TraceOp::fromJson(const QJsonObject& json, QString* err
         setError(error, QString("%1: %2").arg(type, reason));
         return nullptr;
     }
+    op->enabled = json.value("Enabled").toBool(true);
     return op;
 }
 
@@ -683,6 +684,8 @@ XYTrace TraceOpList::apply(const XYTrace& raw, QString* error, QVector<TracePeak
     XYTrace current = raw;
     for (int i = 0; i < size(); ++i) {
         const TraceOp* op = m_ops[i].get();
+        if (!op->enabled)
+            continue;
         QString reason;
         if (auto pick = dynamic_cast<const PickPeaksOp*>(op)) {
             QVector<TracePeak> found;
@@ -707,8 +710,12 @@ XYTrace TraceOpList::apply(const XYTrace& raw, QString* error, QVector<TracePeak
 QJsonObject TraceOpList::toJson() const
 {
     QJsonArray ops;
-    for (const auto& op : m_ops)
-        ops.append(op->toJson());
+    for (const auto& op : m_ops) {
+        QJsonObject step = op->toJson();
+        if (!op->enabled) // only written when off: lists without switched-off steps keep their JSON
+            step["Enabled"] = false;
+        ops.append(step);
+    }
     return QJsonObject{ { "Version", Version }, { "Operations", ops } };
 }
 

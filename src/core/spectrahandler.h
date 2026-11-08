@@ -29,6 +29,7 @@
 
 #include <Eigen/Dense>
 
+#include "src/core/trace/traceops.h"
 #include "src/core/trace/traceset.h"
 
 class DataTable;
@@ -47,12 +48,23 @@ public:
     void addDirectory(const QString& dir, const QString& suffix);
 
     void clearFiles();
+    /*! \brief Removes the spectrum with this id (raw data of the others unchanged); false if there is none. Claude Generated */
+    bool removeSpectrum(const QString& id);
 
     inline QList<QPointF> Data(const QString& hash) const { return m_spectra.trace(hash).points(); }
     inline QString Name(const QString& hash) const { return m_spectra.trace(hash).name(); }
     inline QString Path(const QString& hash) const { return m_spectra.trace(hash).source(); }
     /*! \brief The raw spectra (ids = getOrder()). Claude Generated */
     inline const TraceSet& Spectra() const { return m_spectra; }
+
+    /*! \brief Processing steps applied to every raw spectrum before CompileSimpleTable, SpectraMatrix
+     * and VarCovarSelect use it; the raw spectra stay unchanged. Empty = the raw spectra. Claude Generated */
+    inline const TraceOpList& Operations() const { return m_operations; }
+    /*! \brief Replaces the processing steps (see Operations()). Claude Generated */
+    inline void setOperations(const TraceOpList& operations) { m_operations = operations; }
+    /*! \brief The spectra after Operations() (ids = getOrder()); a spectrum whose processing fails is
+     * empty, *error names the first failure. Without steps a copy of Spectra(). Claude Generated */
+    TraceSet ProcessedSpectra(QString* error = nullptr) const;
 
     inline void addXValue(double x) { m_x << x; }
     //inline void removeXValue()
@@ -78,6 +90,9 @@ public:
 
     void resetRange();
     void setXRange(double x_start, double x_end);
+    /*! \brief Selected range of VarCovarSelect (stored as "XStart"/"XEnd"). Claude Generated */
+    inline double XStart() const { return m_x_start; }
+    inline double XEnd() const { return m_x_end; }
 
     /*! \brief Unit conversion of the intensity: CompileSimpleTable divides every intensity by it.
      * Default 1000 (the factor used before it was configurable); stored as "IntensityDivisor". Claude Generated */
@@ -93,6 +108,8 @@ signals:
 
 private:
     TraceSet m_spectra; ///< raw spectra in titration order; name = file name, source = directory
+    TraceOpList m_operations; ///< processing of every spectrum, stored as "TraceOps" when not empty
+    QString m_table_file; ///< file of setSpectrafromFile (one spectrum per row), stored as "TableFile"
     QVector<double> m_x;
     DataTable* m_table = nullptr; ///< table of the last setSpectrafromFile, owned by the handler
 

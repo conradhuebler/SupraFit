@@ -50,6 +50,7 @@ set(SFGui_SRC
                 dialogs/generatedatadialog.cpp
                 widgets/DropTable.h
                 widgets/spectrawidget.cpp
+                widgets/traceeditorwidget.cpp
                 widgets/metamodelparameter.cpp
                 widgets/parameterwidget.cpp
                 widgets/analysisparts.cpp

@@ -15,5 +15,6 @@ Basis for UV-Vis, NMR and (WP5) thermogram import; plan: [roadmap/input_data_edi
 - Interpolation at a node returns the node value bit for bit (resampling on the same axis changes nothing)
 - Raw vectors in JSON: blank-separated string, shortest round-trip digits (`FloatingPointShortest`), still readable by old SupraFit; reading also takes the old 6-digit strings and JSON arrays
 - Pipeline JSON carries `"Version"`; a newer version is refused with a message
+- A switched-off step (`TraceOp::enabled = false`) stays in the list and its JSON (`"Enabled": false`, written only then); `apply` skips it
 - Do not route new code through `PeakPick::spectrum` (out-of-range reads, endless `XtoIndex`); the algorithms here are own Eigen code
 - Accuracy claims live in `test_trace` as worst case over a spread of widths/noise (printed with `qInfo`)

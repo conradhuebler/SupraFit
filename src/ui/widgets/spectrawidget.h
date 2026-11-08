@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraWidget - spectra import: spectra list, x values, chart with processing, concentrations
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <src/core/spectrahandler.h>
 
 class DropTable;
+class TraceEditorWidget;
 
 class QLineEdit;
 class QListWidget;
@@ -61,13 +62,12 @@ signals:
 private:
     QTabWidget* m_views;
     QListWidget *m_files, *m_xvalues;
-    ChartView* m_spectra_view;
+    TraceEditorWidget* m_editor; ///< chart, range and processing steps of the spectra
     DropTable *m_indep, *m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
     QLineEdit* m_add_xvalue;
     QPushButton *m_accept_x, *m_varcovar, *m_export_table;
     QSpinBox* m_values;
-    QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
     QCheckBox *m_cluster, *m_averaged;
@@ -77,6 +77,5 @@ private:
 
 private slots:
     void PointDoubleClicked(const QPointF& point);
-    void UpdateXRange(const QPointF& point1, const QPointF& point2);
     void SaveToFile();
 };

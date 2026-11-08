@@ -21,6 +21,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
 - **thermogramhandler.cpp/h**: Specialized thermogram data processing (one per ITC trace)
 - **itcprocessor.cpp/h**: GUI-free ITC import orchestrator (Claude Generated) — owns the experiment + optional dilution `ThermogramHandler`, the per-injection volumes and the shared cal→J factor; produces the (volume, net heat) table via the experiment−dilution join. Used by both `FileHandler::ReadITC` and the GUI import dialog. Volume-vector helpers (`injectionCount`/`setUniformInjectionVolume`/`padInjectionVolumes`), coupled `setScalingFactor`, and `setDilutionEnabled` (gates an already-integrated dilution into the join).
 - **spectrahandler.cpp/h**: Spectral data import and processing on a `TraceSet`; JSON keeps all spectra (lossless since WP1, old 6-digit files readable), `XStart`/`XEnd`, `IntensityDivisor` (default 1000 for old files); other sampling is interpolated onto the first axis; pinned by `test_spectrahandler`
+  - `Operations()` (`TraceOpList`, key `TraceOps` only when not empty) is applied to copies of the raw spectra before the table/matrix; a table file is stored as `TableFile` and read again without raw data
 - **trace/**: GUI-free `XYTrace`/`TraceSet`/`TraceOps` (range, Savitzky-Golay, baseline, normalise, peak picking, JSON pipeline) — see [trace/CLAUDE.md](trace/CLAUDE.md)
 
 ### Mathematical Operations

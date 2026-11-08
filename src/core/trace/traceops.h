@@ -121,6 +121,9 @@ bool pickPeaks(const XYTrace& trace, double threshold, bool relative, double min
 class TraceOp {
 public:
     virtual ~TraceOp() = default;
+    /*! \brief A switched-off step stays in the list (and in its JSON, "Enabled": false) but
+     * TraceOpList::apply skips it. Claude Generated */
+    bool enabled = true;
     /*! \brief JSON "Type" of the step. */
     virtual QString type() const = 0;
     virtual bool validate(QString* error = nullptr) const = 0;
@@ -128,7 +131,8 @@ public:
     virtual QJsonObject toJson() const = 0;
     virtual std::unique_ptr<TraceOp> clone() const = 0;
 
-    /*! \brief Step from its JSON; nullptr with *error for an unknown "Type" or invalid parameters. */
+    /*! \brief Step from its JSON; nullptr with *error for an unknown "Type" or invalid parameters.
+     * "Enabled" (default true) is read for every type. */
     static std::unique_ptr<TraceOp> fromJson(const QJsonObject& json, QString* error = nullptr);
 };
 
@@ -214,7 +218,8 @@ public:
 
 /*! \brief Ordered pipeline of steps, applied non-destructively to a raw trace (Claude Generated).
  *
- * JSON: {"Version": 1, "Operations": [ {"Type": ..., parameters}, ... ]}. Copies are deep.
+ * JSON: {"Version": 1, "Operations": [ {"Type": ..., parameters}, ... ]}; a switched-off step
+ * carries "Enabled": false. Copies are deep.
  */
 class TraceOpList {
 public:
@@ -237,7 +242,7 @@ public:
     TraceOp* at(int i);
     const TraceOp* at(int i) const;
 
-    /*! \brief Runs all steps on a copy of raw. On the first failing step: empty trace, *error names
+    /*! \brief Runs all enabled steps on a copy of raw. On the first failing step: empty trace, *error names
      * the step. peaks (optional) receives the result of the last PickPeaks step (applied to the
      * trace as it is at that step). */
     XYTrace apply(const XYTrace& raw, QString* error = nullptr, QVector<TracePeak>* peaks = nullptr) const;

@@ -52,6 +52,7 @@ SpectraHandler::~SpectraHandler()
  *
  * The table read is kept in m_table (owned by the handler, replaced on the next call). Empty lines
  * (also after the final newline) are skipped by ToolSet::LoadTableFile, so every row is a spectrum.
+ * The file name is stored as "TableFile", so a project without raw data reads the table again.
  */
 void SpectraHandler::setSpectrafromFile(const QString& file)
 {
@@ -64,6 +65,7 @@ void SpectraHandler::setSpectrafromFile(const QString& file)
     }
     delete m_table;
     m_table = table;
+    m_table_file = file;
     Vector first = table->Row(0);
     for (int i = 1; i < table->rowCount(); ++i) {
         m_spectra.add(MakeSpectrum(first, table->Row(i), QString::number(index)));
@@ -109,6 +111,7 @@ void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
 
 /*! \brief Table of intensities at the selected x values (rows = spectra, columns = x values).
  *
+ * Uses the processed spectra (ProcessedSpectra(); the raw ones without processing steps).
  * Sorts m_x. Each entry is the intensity of the data point nearest to x (XYTrace::nearestIndex, ties to
  * the lower index; no tolerance: an x outside a spectrum takes its first/last point), divided by
  * m_intensity_divisor; 0 for an empty spectrum.
@@ -124,11 +127,12 @@ DataTable* SpectraHandler::CompileSimpleTable()
     QStringList header;
     DataTable* table = new DataTable(rows, cols, this);
 
+    const TraceSet spectra = ProcessedSpectra();
     for (int i = 0; i < m_x.size(); ++i) {
         double x = m_x[i];
         header << QString::number(x);
-        for (int j = 0; j < m_spectra.size(); ++j) {
-            const XYTrace& spec = m_spectra.at(j);
+        for (int j = 0; j < spectra.size(); ++j) {
+            const XYTrace& spec = spectra.at(j);
             const Eigen::Index nearest = spec.nearestIndex(x);
             const double val = (nearest >= 0 && nearest < spec.y().size()) ? spec.y()(nearest) : 0.0;
             table->data(j, i) = val / m_intensity_divisor;
@@ -169,6 +173,7 @@ void SpectraHandler::setXRange(double x_start, double x_end)
 
 /*! \brief Matrix of all spectra (rows) over the x range common to all spectra [x_min, x_max].
  *
+ * The spectra are the processed ones (ProcessedSpectra()); the common range is that of the raw spectra.
  * The x values of the first spectrum in that range go to m_x_ranges. The selected range
  * [m_x_start, m_x_end] is applied later (VarCovarSelect). Spectra on the same axis are copied as they
  * are; if the sampling differs, all spectra are linearly interpolated onto the axis of the first one
@@ -178,14 +183,15 @@ void SpectraHandler::setXRange(double x_start, double x_end)
  */
 Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
 {
+    const TraceSet spectra = ProcessedSpectra();
     TraceSet ranged;
-    for (int i = 0; i < m_spectra.size(); ++i) {
-        XYTrace part = m_spectra.at(i).range(x_min, x_max);
+    for (int i = 0; i < spectra.size(); ++i) {
+        XYTrace part = spectra.at(i).range(x_min, x_max);
         if (part.size() == 0) {
             qWarning().noquote() << QString("SpectraHandler: spectrum %1 has no point in the common range; it is left out.").arg(part.name());
             continue;
         }
-        ranged.add(part, m_spectra.idAt(i));
+        ranged.add(part, spectra.idAt(i));
     }
     m_x_ranges.clear();
     if (ranged.isEmpty())
@@ -224,6 +230,41 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
 void SpectraHandler::clearFiles()
 {
     m_spectra.clear();
+    m_table_file.clear();
+}
+
+bool SpectraHandler::removeSpectrum(const QString& id)
+{
+    if (!m_spectra.remove(id))
+        return false;
+    ParseData();
+    return true;
+}
+
+/*! \brief Applies Operations() to a copy of every raw spectrum (TraceOpList::apply, non-destructive).
+ * Claude Generated */
+TraceSet SpectraHandler::ProcessedSpectra(QString* error) const
+{
+    if (m_operations.isEmpty())
+        return m_spectra;
+    TraceSet processed;
+    QString first;
+    for (int i = 0; i < m_spectra.size(); ++i) {
+        QString reason;
+        XYTrace trace = m_operations.apply(m_spectra.at(i), &reason);
+        if (!reason.isEmpty()) {
+            if (first.isEmpty())
+                first = QString("%1: %2").arg(m_spectra.at(i).name(), reason);
+            trace = XYTrace();
+            trace.setName(m_spectra.at(i).name());
+        }
+        processed.add(trace, m_spectra.idAt(i));
+    }
+    if (!first.isEmpty())
+        qWarning().noquote() << QString("SpectraHandler: processing failed (%1)").arg(first);
+    if (error)
+        *error = first;
+    return processed;
 }
 
 void SpectraHandler::PCA()
@@ -272,6 +313,11 @@ QJsonObject SpectraHandler::getSpectraData() const
     spectradata["XStart"] = m_x_start;
     spectradata["XEnd"] = m_x_end;
     spectradata["IntensityDivisor"] = m_intensity_divisor;
+    // optional keys: projects without them are written as before
+    if (!m_operations.isEmpty())
+        spectradata["TraceOps"] = m_operations.toJson();
+    if (!m_table_file.isEmpty())
+        spectradata["TableFile"] = m_table_file;
 
     return spectradata;
 }
@@ -279,9 +325,13 @@ QJsonObject SpectraHandler::getSpectraData() const
 void SpectraHandler::LoadData(const QJsonObject& data)
 {
     if (data.find("Data") == data.end()) {
-        QStringList files = data["Files"].toString().split("||");
-        for (const auto& file : files)
-            addSpectrum(file);
+        if (data.contains("TableFile"))
+            setSpectrafromFile(data["TableFile"].toString());
+        else {
+            QStringList files = data["Files"].toString().split("||");
+            for (const auto& file : files)
+                addSpectrum(file);
+        }
     } else {
         QJsonObject raw = data["Data"].toObject();
         int count = raw["Count"].toInt();
@@ -300,6 +350,7 @@ void SpectraHandler::LoadData(const QJsonObject& data)
                 m_spectra.add(p);
             }
         }
+        m_table_file = data["TableFile"].toString();
     }
     for (double d : ToolSet::String2DoubleVec(data["XValues"].toString()))
         addXValue(d);
@@ -309,6 +360,14 @@ void SpectraHandler::LoadData(const QJsonObject& data)
     m_x_end = data["XEnd"].toDouble(m_x_end);
     // files written before the divisor was stored used a fixed 1/1000
     m_intensity_divisor = data["IntensityDivisor"].toDouble(1000.0);
+    // no "TraceOps": the raw spectra, as before the processing steps existed
+    TraceOpList operations;
+    if (data.contains("TraceOps")) {
+        QString error;
+        if (!TraceOpList::fromJson(data["TraceOps"].toObject(), &operations, &error))
+            qWarning().noquote() << QString("SpectraHandler: stored processing steps are not read: %1").arg(error);
+    }
+    m_operations = operations;
 }
 
 /*! \brief Trace of one spectrum; name = file name, source = its directory (both empty without a file name). */

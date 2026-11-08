@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraImport - dialog of the spectra import and of editing a spectra project again
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,7 +81,9 @@ void SpectraImport::setUI()
 
     setLayout(layout);
     setWindowTitle(tr("Spectra Analysis and Import"));
-    setMinimumSize(1280, 800);
+    // fits a 1366x768 screen; opens larger where there is room
+    setMinimumSize(960, 600);
+    resize(1280, 800);
 }
 
 void SpectraImport::setDirectory()

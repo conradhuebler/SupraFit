@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraWidget - spectra import: spectra list, x values, chart with processing, concentrations
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,9 @@
 #include <src/core/spectrahandler.h>
 
 #include <src/ui/widgets/DropTable.h>
+#include <src/ui/widgets/traceeditorwidget.h>
 
+#include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/guitools/waiter.h"
 
@@ -65,20 +67,17 @@ void SpectraWidget::setUI()
     m_files = new QListWidget;
     m_files->setContextMenuPolicy(Qt::ActionsContextMenu);
 
-    QAction* action = new QAction("Remove spectra");
+    QAction* action = new QAction(tr("Remove spectrum"));
     action->setIcon(Icon("list-remove"));
     connect(action, &QAction::triggered, m_files, [this]() {
-        auto avl = m_files->currentRow();
-        if (avl < m_files->count() && avl >= 0) {
-            m_files->takeItem(avl);
-            m_handler->clearFiles();
-            QStringList files;
-            for (int i = 0; i < m_files->count(); ++i)
-                files << m_files->item(i)->data(Qt::UserRole + 1).toString() + QDir::separator() + m_files->item(i)->data(Qt::DisplayRole).toString();
-
-            for (const auto& file : files)
-                addFile(file);
-        }
+        QListWidgetItem* item = m_files->currentItem();
+        if (!item)
+            return;
+        // the handler drops the raw spectrum; the files are not read again
+        m_handler->removeSpectrum(item->data(Qt::UserRole).toString());
+        UpdateSpectra();
+        UpdateVerticaLines();
+        UpdateData();
     });
     m_files->addAction(action);
 
@@ -95,7 +94,7 @@ void SpectraWidget::setUI()
     m_cluster->setChecked(true);
 
     m_averaged = new QCheckBox;
-    m_averaged->setText("Cluster Average");
+    m_averaged->setText(tr("Cluster Average"));
     m_averaged->setChecked(false);
 
     m_values = new QSpinBox;
@@ -114,7 +113,7 @@ void SpectraWidget::setUI()
     xwidget->setLayout(xlayout);
     m_xvalues->setContextMenuPolicy(Qt::ActionsContextMenu);
 
-    action = new QAction("Remove wavelength");
+    action = new QAction(tr("Remove wavelength"));
     action->setIcon(Icon("list-remove"));
     connect(action, &QAction::triggered, m_xvalues, [this]() {
         auto avl = m_xvalues->currentRow();
@@ -126,7 +125,7 @@ void SpectraWidget::setUI()
     });
     m_xvalues->addAction(action);
 
-    action = new QAction("Clear List");
+    action = new QAction(tr("Clear List"));
     action->setIcon(Icon("list-remove"));
     connect(action, &QAction::triggered, m_xvalues, [this]() {
         m_xvalues->clear();
@@ -135,31 +134,15 @@ void SpectraWidget::setUI()
     });
     m_xvalues->addAction(action);
 
-    QWidget* chart_viewport = new QWidget;
-    QGridLayout* chart_layout = new QGridLayout;
-    chart_viewport->setLayout(chart_layout);
-
-    m_x_start = new QDoubleSpinBox;
-    m_x_end = new QDoubleSpinBox;
-    chart_layout->addWidget(new QLabel(tr("Start")), 0, 0);
-    chart_layout->addWidget(m_x_start, 0, 1);
-    chart_layout->addWidget(new QLabel(tr("Ende")), 0, 2);
-    chart_layout->addWidget(m_x_end, 0, 3);
-    chart_layout->addWidget(new QLabel(tr("# X Values")), 0, 4);
-    chart_layout->addWidget(m_values, 0, 5);
-    chart_layout->addWidget(m_cluster, 0, 6);
-    chart_layout->addWidget(m_averaged, 0, 7);
-    chart_layout->addWidget(m_varcovar, 0, 8);
-    m_spectra_view = new ChartView;
-    m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
-    m_spectra_view->setVerticalLineEnabled(true);
-    //m_spectra_view->setZoomStrategy(ZoomStrategy::Z_Horizontal);
-    m_spectra_view->setSelectStrategy(SelectStrategy::Horizontal);
-
-    m_spectra_view->privateView()->setVerticalLinePrec(0);
-    m_spectra_view->privateView()->setVerticalLinesPrec(-1);
-
-    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 9);
+    // chart, range (Start/End, right-button drag) and processing steps come from the trace editor;
+    // the x-value selection stays here
+    m_editor = new TraceEditorWidget;
+    m_editor->addToolWidget(new QLabel(tr("# X Values")));
+    m_editor->addToolWidget(m_values);
+    m_editor->addToolWidget(m_cluster);
+    m_editor->addToolWidget(m_averaged);
+    m_editor->addToolWidget(m_varcovar);
+    QWidget* chart_viewport = m_editor;
 
     m_datatable = new DropTable;
 
@@ -181,7 +164,7 @@ void SpectraWidget::setUI()
 
     QWidget* indep = new QWidget;
     QVBoxLayout* vlayout = new QVBoxLayout;
-    vlayout->addWidget(new QLabel("Drop table with independent data"));
+    vlayout->addWidget(new QLabel(tr("Drop table with independent data")));
     vlayout->addWidget(m_indep);
     indep->setLayout(vlayout);
 
@@ -196,7 +179,15 @@ void SpectraWidget::setUI()
 
     setLayout(layout);
 
-    connect(m_spectra_view, &ChartView::pointDoubleClicked, this, &SpectraWidget::PointDoubleClicked);
+    connect(m_editor->chart(), &ChartView::pointDoubleClicked, this, &SpectraWidget::PointDoubleClicked);
+    connect(m_editor, &TraceEditorWidget::rangeChanged, this, [this](double start, double end) {
+        m_handler->setXRange(start, end);
+        m_project = m_handler->getSpectraData();
+    });
+    connect(m_editor, &TraceEditorWidget::operationsChanged, this, [this]() {
+        m_handler->setOperations(m_editor->operations());
+        UpdateData();
+    });
     connect(m_handler, &SpectraHandler::Updated, this, &SpectraWidget::UpdateData);
 
     connect(m_accept_x, &QPushButton::clicked, this, [this]() {
@@ -208,7 +199,7 @@ void SpectraWidget::setUI()
 
     connect(m_varcovar, &QPushButton::clicked, this, [this]() {
         Waiter wait;
-        m_handler->setXRange(m_x_start->value(), m_x_end->value());
+        m_handler->setXRange(m_editor->rangeStart(), m_editor->rangeEnd());
         m_xvalues->clear();
         m_handler->VarCovarSelect(m_values->value(), m_cluster->isChecked(), m_averaged->isChecked());
         UpdateVerticaLines();
@@ -216,8 +207,6 @@ void SpectraWidget::setUI()
             m_xvalues->addItem(QString::number(d));
         UpdateData();
     });
-
-    connect(m_spectra_view, &ChartView::addRect, this, &SpectraWidget::UpdateXRange);
 
     connect(m_export_table, &QPushButton::clicked, this, &SpectraWidget::SaveToFile);
 }
@@ -244,41 +233,31 @@ void SpectraWidget::setDirectory(const QString& directry, const QString& type)
 void SpectraWidget::clear()
 {
     m_handler->clearFiles();
-    m_spectra_view->clearChart();
+    m_editor->setTraces(TraceSet());
     m_files->clear();
 }
 
+/*! \brief Shows the spectra of the handler: chart (trace editor, range = the handler's XStart/XEnd)
+ * and the list of spectra in the colours of the chart. */
 void SpectraWidget::UpdateSpectra()
 {
-    m_spectra_view->clearChart();
     m_files->clear();
-    for (const auto& string : m_handler->getOrder()) {
-        QList<QPointF> xy = m_handler->Data(string);
-        LineSeries* series = new LineSeries;
-        series->append(xy);
-        m_spectra_view->addSeries(series, false);
-        QPen pen = series->pen();
-        pen.setWidth(1);
-        series->setPen(pen);
-
+    m_editor->setTraces(m_handler->Spectra());
+    m_editor->setRange(m_handler->XStart(), m_handler->XEnd());
+    const QList<QColor>& colors = m_editor->traceColors();
+    const QStringList order = m_handler->getOrder();
+    for (int i = 0; i < order.size(); ++i) {
+        const QString& string = order[i];
         QListWidgetItem* item = new QListWidgetItem;
         item->setText(m_handler->Name(string));
         item->setData(Qt::UserRole, string);
         item->setData(Qt::UserRole + 1, m_handler->Path(string));
-        item->setData(Qt::BackgroundRole, series->color());
+        if (i < colors.size()) {
+            item->setData(Qt::BackgroundRole, colors[i]);
+            item->setData(Qt::ForegroundRole, Appearance::ContrastText(colors[i]));
+        }
         m_files->addItem(item);
     }
-    m_spectra_view->setXMin(m_handler->XMin());
-    m_spectra_view->setXMax(m_handler->XMax());
-
-    m_x_start->setMinimum(m_handler->XMin());
-    m_x_start->setMaximum(m_handler->XMax());
-
-    m_x_end->setMinimum(m_handler->XMin());
-    m_x_end->setMaximum(m_handler->XMax());
-
-    m_x_start->setValue(m_handler->XMin());
-    m_x_end->setValue(m_handler->XMax());
 }
 
 void SpectraWidget::PointDoubleClicked(const QPointF& point)
@@ -289,11 +268,15 @@ void SpectraWidget::PointDoubleClicked(const QPointF& point)
     UpdateVerticaLines();
 }
 
+/*! \brief Table of the selected x values (processed spectra), joined with the dropped concentrations
+ * if there are any; ProjectData() always holds the spectra block of the handler. */
 void SpectraWidget::UpdateData()
 {
     DataTable* data = qobject_cast<DataTable*>(m_handler->CompileSimpleTable());
     m_input_table = data->ExportTable(true);
     m_datatable->setModel(data);
+    // before the early returns: the dialog hands this over also without a concentration table
+    m_project = m_handler->getSpectraData();
     QPointer<DataTable> table = qobject_cast<DataTable*>(m_indep->model());
     if (!table)
         return;
@@ -303,15 +286,14 @@ void SpectraWidget::UpdateData()
     result->appendColumns(data);
     m_datatable->setModel(result);
     m_input_table = result->ExportTable(true);
-    m_project = m_handler->getSpectraData();
-    m_x_start->setValue(m_handler->XMin());
-    m_x_end->setValue(m_handler->XMax());
 }
 
 void SpectraWidget::setData(const QJsonObject& data)
 {
     m_indep->setModel(new DataTable(data["independent"].toObject()));
     m_handler->LoadData(data["raw"].toObject());
+    m_editor->setOperations(m_handler->Operations());
+    m_editor->setShowProcessed(!m_handler->Operations().isEmpty());
     UpdateSpectra();
     UpdateVerticaLines();
     for (auto d : m_handler->XValues())
@@ -329,15 +311,10 @@ void SpectraWidget::UpdateXValues()
 
 void SpectraWidget::UpdateVerticaLines()
 {
-    m_spectra_view->privateView()->removeAllVerticalLines();
+    m_editor->chart()->privateView()->removeAllVerticalLines();
     for (auto d : m_handler->XValues())
-        m_spectra_view->privateView()->addVerticalLine(d);
-}
-
-void SpectraWidget::UpdateXRange(const QPointF& point1, const QPointF& point2)
-{
-    m_x_start->setValue(point1.x());
-    m_x_end->setValue(point2.x());
+        m_editor->chart()->privateView()->addVerticalLine(d);
+    m_editor->refreshMarkers(); // places the lines on the current axes
 }
 
 void SpectraWidget::SaveToFile()
