@@ -26,16 +26,32 @@
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
 
+#include <optional>
+
+#include "src/core/trace/xytrace.h"
+
 #include "libpeakpick/analyse.h"
 #include "libpeakpick/baseline.h"
 #include "libpeakpick/peakpick.h"
 
+/*! \brief One ITC thermogram (experiment or dilution): peaks, baseline, integrals, calibration.
+ *
+ * The raw curve is held as an `XYTrace` (WP5 of roadmap/input_data_editing.md); the libpeakpick
+ * algorithms (peak ranges, baseline fit, numerical integration) run on a `PeakPick::spectrum` built
+ * from it whenever the trace is set, so their numbers are those of the trace bit for bit. The chart
+ * series are not stored here: ThermogramSeries()/Baseline*() compute them from the current state.
+ * The libpeakpick maths itself (peak end convention etc.) is Track B and deliberately untouched. */
 class ThermogramHandler : public QObject {
     Q_OBJECT
 public:
     ThermogramHandler();
 
-    inline void setThermogram(const PeakPick::spectrum& spectrum) { m_spectrum = spectrum; }
+    /*! \brief Set the raw thermogram (time, heat flow). Claude Generated (WP5) */
+    void setThermogram(const XYTrace& trace);
+    //! Same, from a libpeakpick spectrum (loaders, Python bindings); only its x and y are taken.
+    void setThermogram(const PeakPick::spectrum& spectrum);
+    //! The raw thermogram. Claude Generated (WP5)
+    inline const XYTrace& Trace() const { return m_trace; }
     inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list) { m_peak_list = QVector<PeakPick::Peak>(peak_list.begin(), peak_list.end()); }
     inline void setPeakList(const QVector<PeakPick::Peak>& peak_list) { m_peak_list = peak_list; }
 
@@ -43,6 +59,7 @@ public:
 
     void Initialise();
 
+    //! The libpeakpick view of Trace() the algorithms run on (index/time conversion for the GUI).
     inline const PeakPick::spectrum* Spectrum() const { return &m_spectrum; }
 
     inline const QVector<PeakPick::Peak>* Peaks() const { return &m_peak_list; }
@@ -90,10 +107,24 @@ public:
 
     qreal Calibration() const { return m_calibration_peak.integ_num; }
 
-    inline QList<QPointF> ThermogramSeries() const { return m_thermogram_series; }
-    inline QList<QPointF> BaselineSeries() const { return m_baseline_series; }
-    inline QList<QPointF> BaselineGrid() const { return m_baseline_grid; }
-    inline QList<QPointF> BaselineIgnored() const { return m_baseline_ignored_series; }
+    //! The last baseline fit (polynomial coefficients and grid points per peak), read-only. Claude Generated
+    inline const PeakPick::BaseLineResult& BaseLine() const { return m_baseline; }
+
+    //! Chart points of the raw thermogram. Claude Generated (WP5: computed, no longer stored)
+    inline QList<QPointF> ThermogramSeries() const { return m_trace.points(); }
+    //! Baseline inside the integration ranges, thinned to ~50 points per peak. Claude Generated (WP5)
+    QList<QPointF> BaselineSeries() const;
+    //! Grid points of the baseline fit. Claude Generated (WP5)
+    QList<QPointF> BaselineGrid() const;
+    //! Baseline between the end of an integration range and the end of its peak. Claude Generated (WP5)
+    QList<QPointF> BaselineIgnored() const;
+
+    /*! \brief Whether getThermogramParameter() writes the raw curve ("Thermogram").
+     *
+     * Unset (the default), the application property `StoreRawData` decides, as before; set, this
+     * handler follows the setter. The only place the handler reads that property. Claude Generated (WP5) */
+    inline void setStoreRawData(bool store) { m_store_raw_data = store; }
+    bool StoreRawData() const;
 
     void ConvertRules();
     void CompressRules();
@@ -110,12 +141,11 @@ public:
     void ApplyScaling();
 
 private:
-    /* Chart Series use QList */
-    QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid, m_baseline_ignored_series;
     QVector<QPointF> m_peak_rules;
     QVector<qreal> m_integrals_raw, m_integrals_scaled;
     QVector<PeakPick::Peak> m_peak_list;
-    PeakPick::spectrum m_spectrum;
+    XYTrace m_trace; //!< the raw thermogram (primary state)
+    PeakPick::spectrum m_spectrum; //!< built from m_trace in setThermogram(), input of libpeakpick
     PeakPick::Peak m_calibration_peak;
     PeakPick::BaseLineResult m_baseline;
 
@@ -125,12 +155,17 @@ private:
     qreal m_ThermogramBegin = 0, m_ThermogramEnd = 0, m_PeakDuration = 0, m_CalibrationStart = 0, m_constant_offset = 0, m_CalibrationHeat = 0, m_calibration_ratio = 0, m_scaling_factor = 1;
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1, m_integration_range_threshold = 0;
     bool m_initialised = false, m_cut_before = false, m_rules_imported = false, m_averaged = true;
+    std::optional<bool> m_store_raw_data; //!< unset: follow the application property StoreRawData
     QString m_current_integration_scheme = QString("Custom"), m_last_integration_scheme;
     QStringList m_integration_scheme = QStringList() << "Custom"
                                                      << "Zero"
                                                      << "Threshold";
 
     void LegacyLoad();
+    /*! \brief Raw curve of a stored block: lossless (TraceJson) and the old 6-digit strings. Claude Generated (WP5) */
+    void LoadStoredThermogram(const QJsonObject& thermogram);
+    /*! \brief The three baseline chart series in one pass (the former UpdateBaseLine body). Claude Generated (WP5) */
+    void BaselinePoints(QList<QPointF>* series, QList<QPointF>* grid, QList<QPointF>* ignored) const;
     void LoadParameter();
     void LoadBlock();
     double ResizeIntegrationRange(double threshold, int direction);

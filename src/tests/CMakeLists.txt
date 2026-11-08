@@ -466,6 +466,28 @@ endif()
 
 add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
 
+# Claude Generated: characterisation of ThermogramHandler/ItcProcessor (WP5 input data editing) - the numbers of
+# the implementation before the move onto XYTrace, frozen in data/samples/itc/thermogram_characterization.json
+add_executable(test_thermogram_characterization
+    test_thermogram_characterization.cpp
+)
+target_compile_definitions(test_thermogram_characterization PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+target_link_libraries(test_thermogram_characterization
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_thermogram_characterization ml)
+endif()
+if(UNIX)
+    target_link_libraries(test_thermogram_characterization pthread dl)
+endif()
+add_test(NAME ThermogramCharacterizationTest COMMAND test_thermogram_characterization)
+
 # Claude Generated: SpectraHandler persistence, CompileSimpleTable and VarCovarSelect (WP0 input data editing)
 add_executable(test_spectrahandler
     test_spectrahandler.cpp
@@ -1608,4 +1630,28 @@ if(USE_LLM)
         target_link_libraries(test_tools_inspect pthread dl)
     endif()
     add_test(NAME ToolsInspectTest COMMAND test_tools_inspect)
+endif()
+
+# Offscreen smoke test of the thermogram import dialog (WP5 of roadmap/input_data_editing.md, Claude Generated 2026).
+# SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(thermogramdialog_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the buttons
+    add_executable(test_thermogram_dialog test_thermogram_dialog.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${thermogramdialog_RES})
+    target_compile_definitions(test_thermogram_dialog PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+    target_link_libraries(test_thermogram_dialog
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_thermogram_dialog ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_thermogram_dialog pthread dl)
+    endif()
+    add_test(NAME ThermogramDialogTest COMMAND test_thermogram_dialog)
+    set_tests_properties(ThermogramDialogTest PROPERTIES
+        TIMEOUT 120
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
 endif()

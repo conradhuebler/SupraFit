@@ -1,0 +1,281 @@
+/*
+ * SupraFit - offscreen smoke test of the thermogram import dialog
+ * Copyright (C) 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/* Claude Generated (WP5 of roadmap/input_data_editing.md). Builds the Thermogram dialog offscreen, loads
+ * the samples of data/samples/itc through its public entry points (no file dialogs) and checks that the
+ * table it shows and the table it hands over are what the core ItcProcessor computes for the same calls:
+ * .itc experiment (volumes from the @-lines), .dat experiment + dilution (dilution column, net heat),
+ * the uniform-volume checkbox, clearing the dilution field and setRaw() of a stored block.
+ * Set SUPRAFIT_TRACE_RENDER_DIR to write PNG renders (light, 1366x768). */
+
+#include <charts.h>
+
+#include <cmath>
+
+#include <QtCore/QDir>
+#include <QtCore/QSettings>
+#include <QtCore/QTemporaryDir>
+#include <QtTest/QtTest>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QTabWidget>
+#include <QtWidgets/QTableWidget>
+
+#include <memory>
+
+#include "src/core/itcprocessor.h"
+#include "src/core/models/datatable.h"
+#include "src/core/thermogramhandler.h"
+#include "src/core/toolset.h"
+#include "src/global.h"
+#include "src/ui/dialogs/thermogram.h"
+#include "src/ui/guitools/appearance.h"
+#include "src/ui/instance.h"
+
+#ifndef SAMPLE_DIR
+#define SAMPLE_DIR "."
+#endif
+
+namespace {
+
+QString sample(const QString& name) { return QString(SAMPLE_DIR) + "/" + name; }
+
+/// fit block with one repeating peak rule over a .dat thermogram (~20 peaks), as a stored project has it
+QJsonObject ruleBlock(const QString& name)
+{
+    const QPair<Vector, Vector> xy = ToolSet::LoadXYFile(sample(name));
+    const qreal begin = xy.first(0), end = xy.first(xy.first.size() - 1);
+    const qreal duration = (end - begin) / 21.0;
+    QJsonObject fit;
+    fit["SupraFit"] = qint_version;
+    fit["ThermogramBegin"] = begin;
+    fit["ThermogramEnd"] = end;
+    fit["PeakRuleList"] = ToolSet::Points2String(QList<QPointF>{ QPointF(begin + duration, duration) });
+    return fit;
+}
+
+/// what the dialog runs on a handler when a file is set (setExperimentFile / setDilutionFile)
+void runLikeDialog(ThermogramHandler* handler, const QJsonObject& fit, const QString& name)
+{
+    const QPair<Vector, Vector> xy = ToolSet::LoadXYFile(sample(name));
+    handler->setThermogramParameter(fit);
+    handler->setThermogram(PeakPick::spectrum(xy.first, xy.second));
+    handler->Initialise();
+    handler->IntegrateThermogram();
+}
+
+QTableWidget* resultTable(Thermogram* dialog)
+{
+    return dialog->findChild<QTabWidget*>()->widget(0)->findChild<QTableWidget*>();
+}
+
+QGridLayout* grid(Thermogram* dialog) { return qobject_cast<QGridLayout*>(dialog->layout()); }
+
+QLineEdit* injectField(Thermogram* dialog) { return qobject_cast<QLineEdit*>(grid(dialog)->itemAtPosition(2, 1)->widget()); }
+QCheckBox* uniformBox(Thermogram* dialog) { return qobject_cast<QCheckBox*>(grid(dialog)->itemAtPosition(2, 2)->widget()); }
+QLineEdit* dilutionField(Thermogram* dialog)
+{
+    return qobject_cast<QLineEdit*>(grid(dialog)->itemAtPosition(0, 0)->layout()->itemAt(5)->widget());
+}
+
+bool near(double a, double b) { return std::abs(a - b) <= 1e-9 * std::max(std::abs(a), std::abs(b)) + 1e-300; }
+
+} // namespace
+
+class TestThermogramDialog : public QObject {
+    Q_OBJECT
+
+    void render(QWidget* widget, const QString& name)
+    {
+        const QString dir = qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR");
+        if (dir.isEmpty())
+            return;
+        QDir().mkpath(dir);
+        widget->show();
+        QCoreApplication::processEvents();
+        QTest::qWait(80);
+        QVERIFY(widget->grab().save(QDir(dir).filePath(name + ".png")));
+    }
+
+    /// the shown table (columns 0 and 3) and the handed-over table equal the core result
+    void compareWithCore(Thermogram* dialog, const ItcProcessor& core, bool dilution)
+    {
+        std::unique_ptr<DataTable> want(core.resultTable());
+        std::unique_ptr<DataTable> got(dialog->ResultTable());
+        QVERIFY(want->rowCount() > 0);
+        QCOMPARE(got->rowCount(), want->rowCount());
+        QCOMPARE(got->columnCount(), 2);
+        QTableWidget* table = resultTable(dialog);
+        QCOMPARE(table->rowCount(), want->rowCount());
+        QCOMPARE(table->columnCount(), 4);
+        for (int i = 0; i < want->rowCount(); ++i) {
+            QVERIFY2(near(got->data(i, 0), want->data(i, 0)), qPrintable(QString("volume %1").arg(i)));
+            QVERIFY2(near(got->data(i, 1), want->data(i, 1)), qPrintable(QString("net heat %1: %2 vs %3").arg(i).arg(got->data(i, 1), 0, 'g', 17).arg(want->data(i, 1), 0, 'g', 17)));
+            QCOMPARE(table->item(i, 0)->text(), QString::number(got->data(i, 0)));
+            QCOMPARE(table->item(i, 1)->text(), QString::number(core.experiment()->Integrals()[i]));
+            QCOMPARE(table->item(i, 3)->text(), QString::number(got->data(i, 1)));
+            if (dilution)
+                QCOMPARE(table->item(i, 2)->text(), QString::number(i < core.dilution()->Integrals().size() ? core.dilution()->Integrals()[i] : 0.0));
+            else
+                QCOMPARE(table->item(i, 2)->text(), QString("0"));
+        }
+    }
+
+private slots:
+    void initTestCase()
+    {
+        qApp->setProperty("StoreRawData", true);
+        qApp->setProperty("StoreFileName", true);
+        qApp->setProperty("StoreAbsolutePath", true);
+        qApp->setProperty("thermogram_guidelines", true);
+        qApp->setProperty("lineWidth", 20);
+    }
+
+    /*! \brief An .itc experiment: volumes from the file's @-lines, net heat from the core. */
+    void itcExperiment()
+    {
+        Thermogram dialog;
+        dialog.setExperimentFile(sample("synthetic.itc"));
+
+        QString file = sample("synthetic.itc");
+        std::vector<PeakPick::Peak> peaks;
+        QVector<qreal> inject;
+        qreal offset = 0, freq = 0;
+        QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(file, &peaks, offset, freq, inject);
+        ItcProcessor core;
+        core.setScalingFactor(cal2joule);
+        core.setInjectionVolumes(inject);
+        core.experiment()->setThermogram(pair.first);
+        core.experiment()->setPeakList(peaks);
+        core.experiment()->Initialise();
+        core.experiment()->IntegrateThermogram();
+        core.padInjectionVolumes(inject.isEmpty() ? 0.0 : inject.last()); // the dialog pads with the field's value
+
+        QVERIFY(!inject.isEmpty());
+        compareWithCore(&dialog, core, false);
+        QCOMPARE(injectField(&dialog)->text(), QString::number(inject.last()));
+        QVERIFY(!uniformBox(&dialog)->isChecked());
+    }
+
+    /*! \brief .dat experiment and dilution; the uniform volume; clearing the dilution; setRaw(). */
+    void datExperimentAndDilution()
+    {
+        Thermogram dialog;
+        dialog.setExperimentFit(ruleBlock("reaction.dat"));
+        dialog.setExperimentFile(sample("reaction.dat"));
+        dialog.setDilutionFit(ruleBlock("dilution.dat"));
+        dialog.setDilutionFile(sample("dilution.dat"));
+
+        ItcProcessor core;
+        core.setScalingFactor(cal2joule);
+        runLikeDialog(core.experiment(), ruleBlock("reaction.dat"), "reaction.dat");
+        runLikeDialog(core.dilution(), ruleBlock("dilution.dat"), "dilution.dat");
+        core.setDilutionEnabled(true);
+        core.padInjectionVolumes(0.0);
+        compareWithCore(&dialog, core, true);
+
+        // uniform volume: every row shows the field's value, and it is what is handed over
+        uniformBox(&dialog)->setChecked(true);
+        injectField(&dialog)->setText("2.5");
+        core.setUniformInjectionVolume(2.5);
+        compareWithCore(&dialog, core, true);
+
+        // setRaw() of the stored block runs what the core runs for the same block and files. That it is
+        // not the result before saving (one peak less) is measured, not asserted: see TODO.md.
+        const QJsonObject raw = dialog.Raw();
+        {
+            Thermogram again;
+            again.setRaw(raw);
+
+            ItcProcessor reload;
+            reload.fromJson(raw);
+            runLikeDialog(reload.dilution(), raw["dilution"].toObject()["fit"].toObject(), "dilution.dat");
+            reload.setDilutionEnabled(true);
+            runLikeDialog(reload.experiment(), raw["experiment"].toObject()["fit"].toObject(), "reaction.dat");
+            reload.setInjectionVolumes(ToolSet::String2DoubleVec(raw["InjectVolume"].toString()));
+            reload.padInjectionVolumes(0.0);
+            compareWithCore(&again, reload, true);
+
+            std::unique_ptr<DataTable> before(dialog.ResultTable());
+            qInfo("setRaw of the stored block: %d injections, %d before saving", int(reload.netHeat().size()), before->rowCount());
+        }
+
+        // emptying the dilution field stops the subtraction
+        QLineEdit* field = dilutionField(&dialog);
+        field->setFocus();
+        field->selectAll();
+        QTest::keyClick(field, Qt::Key_Delete);
+        QVERIFY(field->text().isEmpty());
+        core.setDilutionEnabled(false);
+        compareWithCore(&dialog, core, false);
+    }
+
+    void renderDialog()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        Appearance::Apply(Appearance::Light);
+        {
+            Thermogram dialog;
+            dialog.resize(1366, 768);
+            dialog.setExperimentFile(sample("synthetic.itc"));
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(0);
+            render(&dialog, "thermo_itc_table_light");
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(1);
+            render(&dialog, "thermo_itc_experiment_light");
+            dialog.hide();
+        }
+        {
+            Thermogram dialog;
+            dialog.resize(1366, 768);
+            dialog.setExperimentFit(ruleBlock("reaction.dat"));
+            dialog.setExperimentFile(sample("reaction.dat"));
+            dialog.setDilutionFit(ruleBlock("dilution.dat"));
+            dialog.setDilutionFile(sample("dilution.dat"));
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(0);
+            render(&dialog, "thermo_dat_table_light");
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(1);
+            render(&dialog, "thermo_dat_experiment_light");
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(2);
+            render(&dialog, "thermo_dat_dilution_light");
+            dialog.hide();
+        }
+    }
+};
+
+int main(int argc, char** argv)
+{
+    qputenv("QT_QPA_PLATFORM", "offscreen");
+    QApplication app(argc, argv);
+    QTemporaryDir settingsDir;
+    QSettings::setPath(QSettings::NativeFormat, QSettings::UserScope, settingsDir.path());
+    QCoreApplication::setOrganizationName(QStringLiteral("SupraFitThermogramDialogTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("test_thermogram_dialog"));
+    Instance* instance = new Instance;
+    Instance::setInstance(instance);
+    Appearance::Install();
+    TestThermogramDialog test;
+    const int result = QTest::qExec(&test, argc, argv);
+    delete instance;
+    return result;
+}
+
+#include "test_thermogram_dialog.moc"

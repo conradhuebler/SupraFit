@@ -1,6 +1,6 @@
 /*
  * <Class to handle thermogram import and manipulation.>
- * Copyright (C) 2020 - 2024 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+#include "src/core/trace/tracejson.h"
 
 #include "thermogramhandler.h"
 
@@ -38,6 +39,50 @@ static int baseline_step_size = 50;
 
 ThermogramHandler::ThermogramHandler()
 {
+}
+
+void ThermogramHandler::setThermogram(const XYTrace& trace)
+{
+    m_trace = trace;
+    /* libpeakpick reads the same doubles: the spectrum is a view of the trace, rebuilt whenever the
+     * trace changes. An empty trace gives libpeakpick's empty spectrum, as loading an empty file did;
+     * x and y of different lengths (a damaged project) are refused with a message instead of the
+     * exception PeakPick::spectrum throws. Claude Generated (WP5) */
+    if (trace.x().size() != trace.y().size()) {
+        emit Message(QString("<font color='red'>The thermogram has %1 time values but %2 heat values; it was not loaded.</font>").arg(trace.x().size()).arg(trace.y().size()));
+        m_trace = XYTrace();
+        m_spectrum = PeakPick::spectrum();
+    } else if (trace.isEmpty())
+        m_spectrum = PeakPick::spectrum();
+    else
+        m_spectrum = PeakPick::spectrum(trace.x(), trace.y());
+}
+
+void ThermogramHandler::setThermogram(const PeakPick::spectrum& spectrum)
+{
+    setThermogram(XYTrace(spectrum.x(), spectrum.y()));
+}
+
+bool ThermogramHandler::StoreRawData() const
+{
+    if (m_store_raw_data.has_value())
+        return m_store_raw_data.value();
+    return qApp && qApp->property("StoreRawData").toBool();
+}
+
+void ThermogramHandler::LoadStoredThermogram(const QJsonObject& thermogram)
+{
+    /* Files written since WP5 carry the curve lossless (TraceJson, shortest round-trip digits); older
+     * ones carry QString::number's 6 significant digits. Both are blank-separated numbers, so one
+     * reader takes both and an old file gives the doubles it always gave. Should a string not parse
+     * (a damaged file), the old tolerant reader takes over - it read such a token as 0, and that
+     * is kept so an old project loads exactly as before. Claude Generated (WP5) */
+    Vector x, y;
+    if (!TraceJson::vectorFromJson(thermogram["x"], &x) || !TraceJson::vectorFromJson(thermogram["y"], &y)) {
+        x = ToolSet::String2DoubleEigVec(thermogram["x"].toString());
+        y = ToolSet::String2DoubleEigVec(thermogram["y"].toString());
+    }
+    setThermogram(XYTrace(x, y));
 }
 
 void ThermogramHandler::Initialise()
@@ -54,11 +99,6 @@ void ThermogramHandler::Initialise()
         qWarning() << "No Thermogram found. ThermogramHandler is not initialised!";
         return;
     } else {
-        m_thermogram_series.resize(m_spectrum.x().size());
-        for (unsigned int i = 0; i < m_spectrum.x().size(); i++) {
-            m_thermogram_series[i] = (QPointF(m_spectrum.X(i), m_spectrum.Y(i)));
-        }
-
         if (qFuzzyCompare(m_ThermogramEnd, 0))
             m_ThermogramEnd = m_spectrum.XMax();
         if (qFuzzyCompare(m_ThermogramBegin, 0))
@@ -96,10 +136,7 @@ void ThermogramHandler::LoadParameter()
 {
     if (!m_thermogram_parameter.isEmpty()) {
         if (m_thermogram_parameter.contains("Thermogram")) {
-            Vector x, y;
-            x = ToolSet::String2DoubleEigVec(m_thermogram_parameter["Thermogram"].toObject()["x"].toString());
-            y = ToolSet::String2DoubleEigVec(m_thermogram_parameter["Thermogram"].toObject()["y"].toString());
-            m_spectrum.setSpectrum(x, y);
+            LoadStoredThermogram(m_thermogram_parameter["Thermogram"].toObject());
 
             m_frequency = m_spectrum.Step();
             m_ThermogramBegin = m_spectrum.XMax();
@@ -179,10 +216,7 @@ void ThermogramHandler::UpdateParameter(const QJsonObject& parameter)
 void ThermogramHandler::LegacyLoad()
 {
     if (m_thermogram_parameter.contains("thermogram")) {
-        Vector x, y;
-        x = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["x"].toString());
-        y = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["y"].toString());
-        m_spectrum.setSpectrum(x, y);
+        LoadStoredThermogram(m_thermogram_parameter["thermogram"].toObject());
 
         m_frequency = m_spectrum.Step();
 
@@ -386,10 +420,13 @@ void ThermogramHandler::FitBaseLine()
 
 void ThermogramHandler::UpdateBaseLine()
 {
-    m_baseline_grid.clear();
-    m_baseline_series.clear();
-    m_baseline_ignored_series.clear();
+    // The series are computed on request from the peaks and the baseline fit (BaselinePoints); this
+    // only tells the views that both changed. Claude Generated (WP5)
+    emit BaseLineChanged();
+}
 
+void ThermogramHandler::BaselinePoints(QList<QPointF>* series, QList<QPointF>* grid, QList<QPointF>* ignored) const
+{
     Vector baseline;
     int steps = 1;
 
@@ -397,33 +434,53 @@ void ThermogramHandler::UpdateBaseLine()
         baseline = m_baseline.baselines[0];
 
     for (int i = 0; i < int(m_peak_list.size()); ++i) {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        if (m_peak_list.size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
+        if (std::size_t(m_peak_list.size()) == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
             baseline = m_baseline.baselines[i];
-            for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j) {
-                m_baseline_grid << QPointF(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
-            }
+            if (grid)
+                for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j)
+                    *grid << QPointF(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
         }
 
         steps = (m_peak_list[i].end - m_peak_list[i].start) / baseline_step_size + 1;
 
-        for (int j = m_peak_list[i].int_start; j < int(m_peak_list[i].int_end) - 1; j += steps)
-            m_baseline_series << QPointF(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
-
-        for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
-            m_baseline_ignored_series.append(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
-
-        m_baseline_series << QPointF(m_spectrum.X(int(m_peak_list[i].int_end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].int_end) - 1), baseline));
-        m_baseline_ignored_series.append(QPointF(m_spectrum.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].end) - 1), baseline)));
-    }
-
-    if (m_baseline.x_grid_points.size() == 1) {
-        for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); j += steps) {
-            m_baseline_grid << QPointF(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
+        if (series) {
+            for (int j = m_peak_list[i].int_start; j < int(m_peak_list[i].int_end) - 1; j += steps)
+                *series << QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline));
+            *series << QPointF(m_spectrum.X(int(m_peak_list[i].int_end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].int_end) - 1), baseline));
+        }
+        if (ignored) {
+            for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
+                ignored->append(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
+            ignored->append(QPointF(m_spectrum.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].end) - 1), baseline)));
         }
     }
 
-    emit BaseLineChanged();
+    // steps of the last peak, as before
+    if (grid && m_baseline.x_grid_points.size() == 1) {
+        for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); j += steps)
+            *grid << QPointF(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
+    }
+}
+
+QList<QPointF> ThermogramHandler::BaselineSeries() const
+{
+    QList<QPointF> series;
+    BaselinePoints(&series, nullptr, nullptr);
+    return series;
+}
+
+QList<QPointF> ThermogramHandler::BaselineGrid() const
+{
+    QList<QPointF> grid;
+    BaselinePoints(nullptr, &grid, nullptr);
+    return grid;
+}
+
+QList<QPointF> ThermogramHandler::BaselineIgnored() const
+{
+    QList<QPointF> ignored;
+    BaselinePoints(nullptr, nullptr, &ignored);
+    return ignored;
 }
 
 void ThermogramHandler::CalibrateSystem()
@@ -481,10 +538,11 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
     fit["IntegrationRangeThreshold"] = m_integration_range_threshold;
     fit["Iterations"] = m_iterations; // the max-iterations setting, so it round-trips with UpdateParameter
 
-    if (qApp->instance()->property("StoreRawData").toBool()) {
+    if (StoreRawData()) {
         QJsonObject thermo;
-        thermo["x"] = ToolSet::DoubleList2String(m_spectrum.x());
-        thermo["y"] = ToolSet::DoubleList2String(m_spectrum.y());
+        // lossless since WP5 (older SupraFit read these strings too); was 6 significant digits
+        thermo["x"] = TraceJson::vectorToString(m_trace.x());
+        thermo["y"] = TraceJson::vectorToString(m_trace.y());
         fit["Thermogram"] = thermo;
     }
     return fit;

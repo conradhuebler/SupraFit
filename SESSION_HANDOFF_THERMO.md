@@ -191,3 +191,12 @@ Prinzip: **eine Zahl-Änderung pro Commit**, Delta im Commit-Text begründet.
 - **Änderungsklassen** (das Sortierprinzip dieses Branches): (1) echt zahl-neutral → Track A;
   (2) UB-Beseitigung, Ergebnis gleich wo heute definiert → Track A; (3) zahl-ändernd → **Track B**,
   mit gemessenem Delta.
+
+---
+
+## Notiz 2026-11-08 (WP5, `feature/input-data-editing`)
+
+`ThermogramHandler` hält die Rohkurve als `XYTrace`, Zahlen unverändert (Golden `data/samples/itc/thermogram_characterization.json`,
+Pin-Test grün). Der Dialog stürzte im Konstruktor ab (Skalierung vor Tabelle/Serien gesetzt, seit C9) – behoben; damit ist die
+GUI-Prüfliste oben überhaupt erst abarbeitbar. `test_thermogram_dialog` deckt Tabelle = Core, Uniform volume, Dilution leeren und
+`setRaw` ab, nicht aber Klicks, Dateidialoge und Export. Siehe Roadmap WP5.

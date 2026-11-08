@@ -96,9 +96,6 @@ public:
     void setRaw(const QJsonObject& object);
     void setSystemParameter(const QJsonObject& object);
     void setRootDir(const QString& str) { m_root_dir = str; }
-public slots:
-    //virtual void reject() override();
-
 private:
     void setUi();
     void UpdateTable();
@@ -110,17 +107,10 @@ private:
     void ImportRow();
     void File2JsonBlock(const QString& filename, QJsonObject& block) const;
 
-    /*! \brief Read an .itc file: returns its thermogram and the system parameters it recorded.
-     *
-     * Writes no members and touches no widgets - the caller decides what this file's contents mean.
-     * A dilution run carries its own injection volumes and its own cell/syringe concentrations, and
-     * neither of those is the titration's. `peaks` and `inject` are outputs describing this file.
-     * Claude Generated */
-    QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject);
-
     /*! \brief Adopt `parameter` as the titration's system parameters and show them in the fields.
      *
-     * Only the experiment's are the titration's; see LoadITCFile. Claude Generated */
+     * Only the experiment's are the titration's: a dilution run carries its own injection volumes and
+     * cell/syringe concentrations, which setDilutionFile() drops. Claude Generated */
     void ApplySystemParameter(const QJsonObject& parameter);
 
     /*! \brief The four import columns per injection: volume [uL], raw experiment heat, raw dilution
@@ -134,7 +124,7 @@ private:
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_export_data, *m_import_row;
-    QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume, *m_showDilution, *m_uniformInject;
+    QCheckBox *m_UseParameter, *m_constantVolume, *m_showDilution, *m_uniformInject;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QLabel* m_message;
     QTabWidget* m_mainwidget;

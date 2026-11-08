@@ -89,7 +89,6 @@ void Thermogram::setUi()
     // Either combo drives the shared cal->J factor through the processor; both then show it.
     connect(m_experiment, &ThermogramWidget::ScalingFactorChanged, this, &Thermogram::setScalingFactor);
     connect(m_dilution, &ThermogramWidget::ScalingFactorChanged, this, &Thermogram::setScalingFactor);
-    setScalingFactor(cal2joule); // seed the processor and both combos
 
     QGridLayout* layout = new QGridLayout;
 
@@ -112,32 +111,24 @@ void Thermogram::setUi()
     });
 
     m_CellVolume = new QLineEdit;
-    //m_CellVolume->setMaximumWidth(100);
-
     connect(m_CellVolume, &QLineEdit::textEdited, m_CellVolume, [this](QString str) {
         this->m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_CellConcentration = new QLineEdit;
-    //m_CellConcentration->setMaximumWidth(100);
-
     connect(m_CellConcentration, &QLineEdit::textEdited, m_CellConcentration, [this](QString str) {
         this->m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_SyringeConcentration = new QLineEdit;
-    //m_SyringeConcentration->setMaximumWidth(100);
-
     connect(m_SyringeConcentration, &QLineEdit::textEdited, m_SyringeConcentration, [this](QString str) {
         this->m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_Temperature = new QLineEdit;
-    //m_Temperature->setMaximumWidth(100);
-
     connect(m_Temperature, &QLineEdit::textEdited, m_Temperature, [this](QString str) {
         this->m_systemparameter[QString::number(AbstractItcModel::Temperature)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
@@ -154,8 +145,6 @@ void Thermogram::setUi()
     connect(m_dil_file, &QLineEdit::textEdited, this, &Thermogram::clearDilution);
 
     m_injct = new QLineEdit;
-    //m_injct->setMaximumWidth(100);
-
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
 
     // An explicit switch for "use the field's value for every injection", instead of the old
@@ -208,8 +197,6 @@ void Thermogram::setUi()
     m_mainwidget = new QTabWidget;
 
     m_table = new QTableWidget;
-    //m_table->setFixedWidth(250);
-
     // Claude Generated: allow manual per-injection volume edits (column 0). The value goes to the
     // processor, which owns the volume vector, so a later UpdateTable() rebuild keeps it and it is
     // stored with the project; useful when the titration step size varies. Guarded by
@@ -316,6 +303,11 @@ void Thermogram::setUi()
 
     m_data_view->addSeries(m_thm_series);
     m_data_view->addSeries(m_raw_series);
+
+    /* Seed the processor and both combos last: setScalingFactor() re-scales, the processor emits
+     * resultChanged() and UpdateData() renders into the table and the series - which therefore have to
+     * exist. Seeded before they were built, the constructor dereferenced uninitialised pointers. */
+    setScalingFactor(cal2joule);
 }
 
 Thermogram::~Thermogram()
@@ -323,12 +315,6 @@ Thermogram::~Thermogram()
     QSettings settings;
     settings.beginGroup("thermogram_dialog");
     settings.setValue("splitterSizes", m_splitter->saveState());
-}
-
-QPair<PeakPick::spectrum, QJsonObject> Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, QVector<qreal>& inject)
-{
-    qreal freq = 0;
-    return ToolSet::LoadITCFile(filename, peaks, offset, freq, inject);
 }
 
 void Thermogram::ApplySystemParameter(const QJsonObject& parameter)
@@ -365,7 +351,9 @@ PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
 {
     QPair<Vector, Vector> experiment = ToolSet::LoadXYFile(filename);
     if (!(experiment.first.size() && experiment.second.size())) {
+#ifdef DEBUG_ON
         qDebug() << "size dont fit";
+#endif
         return PeakPick::spectrum();
     }
     return PeakPick::spectrum(experiment.first, experiment.second);
@@ -376,17 +364,19 @@ void Thermogram::setExperimentFile(QString filename)
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
         m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
         qDebug() << "no thermogram found";
+#endif
         return;
     }
     PeakPick::spectrum original;
     QFileInfo info(filename);
 
     if (info.suffix() == "itc") {
-        qreal offset = 0;
+        qreal offset = 0, freq = 0;
         QVector<qreal> inject;
         try {
-            QPair<PeakPick::spectrum, QJsonObject> pair = LoadITCFile(filename, &m_exp_peaks, offset, inject);
+            QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, &m_exp_peaks, offset, freq, inject);
             original = pair.first;
             // The experiment defines the titration: its @-lines are the injection protocol, and its
             // cell/syringe concentrations are the system parameters.
@@ -402,12 +392,16 @@ void Thermogram::setExperimentFile(QString filename)
         } catch (int error) {
             if (error == 404) {
                 m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
                 qDebug() << "file no found";
+#endif
                 return;
             }
             if (error == 101) {
                 m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
                 qDebug() << "no thermogram found";
+#endif
                 return;
             }
         }
@@ -416,14 +410,9 @@ void Thermogram::setExperimentFile(QString filename)
         m_experiment->setFileType(ThermogramWidget::FileType::ITC);
         m_experiment_thermogram->setThermogram(original);
         m_experiment_thermogram->setPeakList(m_exp_peaks);
-        //m_experiment->setThermogram(&original, offset);
-        //m_experiment->setPeakList(m_exp_peaks);
-        //m_exp_peaks = m_experiment->Peaks();
     } else {
         original = LoadXYFile(filename);
         m_experiment_thermogram->setThermogram(original);
-        //m_experiment->setFileType(ThermogramWidget::FileType::RAW);
-        //m_experiment->setThermogram(&original);
     }
     m_experiment_thermogram->Initialise();
     m_experiment_thermogram->IntegrateThermogram();
@@ -438,7 +427,9 @@ void Thermogram::setExperiment()
 {
     QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.txt *.dat *.itc *.ITC);;All files (*.*)"));
     if (filename.isEmpty()) {
+#ifdef DEBUG_ON
         qDebug() << "no filename set " << filename;
+#endif
         return;
     }
     setLastDir(filename);
@@ -579,7 +570,9 @@ void Thermogram::setDilutionFile(QString filename)
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
         m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
         qDebug() << "no thermogram found";
+#endif
         m_processor->setDilutionEnabled(false); // nothing loaded: nothing to subtract
         return;
     }
@@ -587,24 +580,28 @@ void Thermogram::setDilutionFile(QString filename)
     QFileInfo info(filename);
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
-        qreal offset = 0;
+        qreal offset = 0, freq = 0;
         /* Both outputs are deliberately dropped. A dilution run has its own @-line volumes and its
          * own cell/syringe concentrations, but the titration is defined by the experiment: adopting
          * either from here used to append the volumes onto the experiment's and overwrite its
          * concentrations in the fields. Claude Generated */
         QVector<qreal> dilution_inject;
         try {
-            original = LoadITCFile(filename, &m_dil_peaks, offset, dilution_inject).first;
+            original = ToolSet::LoadITCFile(filename, &m_dil_peaks, offset, freq, dilution_inject).first;
         } catch (int error) {
             m_processor->setDilutionEnabled(false); // the load failed: do not subtract a stale one
             if (error == 404) {
                 m_dil_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
                 qDebug() << "file no found";
+#endif
                 return;
             }
             if (error == 101) {
                 m_dil_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+#ifdef DEBUG_ON
                 qDebug() << "no thermogram found";
+#endif
                 return;
             }
         }
@@ -614,15 +611,10 @@ void Thermogram::setDilutionFile(QString filename)
         m_dilution_thermogram->setThermogram(original);
         m_dilution_thermogram->setPeakList(m_dil_peaks); // was m_exp_peaks (copy-paste bug): dilution must use its own peaks
         m_showDilution->setEnabled(true);
-        //m_dilution->setThermogram(&original, offset);
-        //m_dilution->setPeakList(m_exp_peaks);
-        //m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
         m_dilution->setFileType(ThermogramWidget::FileType::RAW);
         m_dilution_thermogram->setThermogram(original);
-
-        //m_dilution->setThermogram(&original);
     }
     m_dilution_thermogram->Initialise();
     m_dilution_thermogram->IntegrateThermogram();

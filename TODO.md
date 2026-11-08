@@ -206,6 +206,13 @@ against `master`, which did not have the processor.
       `StoreFileName` off the dilution kept a path while the experiment did not. Both are symmetric
       now (no path written in that mode). Revertible if the asymmetry was wanted.
 
+### ITC thermogram — findings of WP5 (2026-11-08, not fixed: they change numbers or behaviour)
+- [ ] **Reopening a stored thermogram loses a peak**: the dialog's `setRaw()` of `reaction.dat` (20 peaks) gives 19, also with lossless raw
+      data; suspected the 6-digit `PeakRuleList` (`Points2String`, 3552.29 s instead of 3552.2857 s) pushing the last peak past the end. Not measured.
+- [ ] `ThermogramWidget::setupControls` connects `pointDoubleClicked` to `PointDoubleClicked` twice (it runs twice per double click).
+- [ ] Data table: the "dil. heat" column paints black cells; the scaling label shows `cal &rarr; J` literally; "Show Dilution" stays disabled for a `.dat` dilution.
+- [ ] `process()` on a short `.itc` (`synthetic.itc`) never returns: `UpdatePeaks()` → `XtoIndex()` loops for a rule in the first four samples (Track B2).
+
 ### ITC thermogram — libpeakpick maths ("Track B", own branch, changes numbers)
 - [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.
 - [ ] **B1 `Peak.end` convention** — SupraFit builds the range inclusive, libpeakpick reads it exclusive; the core of the integration discrepancy.

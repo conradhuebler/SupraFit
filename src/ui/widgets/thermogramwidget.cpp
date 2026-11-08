@@ -75,6 +75,25 @@ ThermogramWidget::ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidg
 
 void ThermogramWidget::setUi()
 {
+    // Claude Generated (WP5): split into named parts, same widgets, connections and order as before
+    setupChart();
+    QLayout* chartlayout = setupPeakLists();
+    setupControls();
+    QLayout* peak_layout = setupParameterPanel();
+
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->addLayout(peak_layout);
+    layout->addWidget(m_guide_label);
+    layout->addLayout(chartlayout);
+
+    setLayout(layout);
+
+    restoreSettings();
+    connectControls();
+}
+
+void ThermogramWidget::setupChart()
+{
     m_guide_label = new QLabel;
     if (qApp->instance()->property("thermogram_guidelines").toBool()) {
         m_guide_label->setFixedHeight(70);
@@ -121,7 +140,10 @@ void ThermogramWidget::setUi()
 
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
+}
 
+QLayout* ThermogramWidget::setupPeakLists()
+{
     m_table = new QTableWidget;
     connect(m_table, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakDoubleClicked));
     m_table->setToolTip(tr("This table hold all peaks, consisting of the integral, start time and end time. Double click on a peak will toggle the <i>Peak Integration mode</i>. Double click of within the thermogram selects the appropriate peak in this table (if any peaks already exists"));
@@ -234,7 +256,11 @@ void ThermogramWidget::setUi()
     m_splitter->addWidget(m_thermogram);
     m_splitter->addWidget(peaks_tab);
     chartlayout->addWidget(m_splitter);
+    return chartlayout;
+}
 
+void ThermogramWidget::setupControls()
+{
     m_const_offset = new QDoubleSpinBox;
     m_const_offset->setMinimum(-1e5);
     m_const_offset->setMaximum(1e5);
@@ -420,7 +446,10 @@ void ThermogramWidget::setUi()
     m_gradient->setDecimals(5);
     m_gradient->setRange(-1, 1);
     m_gradient->setValue(-1);
+}
 
+QLayout* ThermogramWidget::setupParameterPanel()
+{
     int maxwidth = 200;
     int maxheight = 120;
     QHBoxLayout* peak_layout = new QHBoxLayout;
@@ -483,7 +512,9 @@ void ThermogramWidget::setUi()
     group->setMaximumHeight(maxheight);
 
     connect(m_stored_thermogram, &ThermogramHandler::CalibrationChanged, m_stored_thermogram, [group, this]() {
+#ifdef DEBUG_ON
         qDebug() << m_stored_thermogram->Calibration();
+#endif
         group->setTitle(tr("Calibration (%1)").arg(m_stored_thermogram->Calibration()));
     });
 
@@ -552,13 +583,11 @@ void ThermogramWidget::setUi()
         peak_layout->addWidget(group);
         showAdvanced();
     }
-    QVBoxLayout* layout = new QVBoxLayout;
-    layout->addLayout(peak_layout);
-    layout->addWidget(m_guide_label);
-    layout->addLayout(chartlayout);
+    return peak_layout;
+}
 
-    setLayout(layout);
-
+void ThermogramWidget::restoreSettings()
+{
     QSettings settings;
     settings.beginGroup("thermogram");
 
@@ -571,8 +600,10 @@ void ThermogramWidget::setUi()
     m_peak_rule_list->setItem(m_current_peaks_rule, 0, item);
     item = new PeakRule(QString::number(m_peaks_time->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
+}
 
-
+void ThermogramWidget::connectControls()
+{
     connect(m_peaks_start, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, value);
         QSettings settings;
@@ -826,18 +857,6 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     m_thermogram->setSelectStrategy(SelectStrategy::Horizontal);
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
     setGuideText(QString("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
-}
-
-void ThermogramWidget::PeakChanged(int row, int column, int value)
-{
-    if (column == 1)
-        m_peak_list[row].start = value;
-    else if (column == 2)
-        m_peak_list[row].end = value;
-    m_stored_thermogram->setPeakList(m_peak_list);
-
-    Update();
-    PeakDoubleClicked(row);
 }
 
 void ThermogramWidget::CreateSeries()

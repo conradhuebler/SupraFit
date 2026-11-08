@@ -1,6 +1,6 @@
 # core/trace - GUI-free trace building blocks
 
-Basis for UV-Vis, NMR and (WP5) thermogram import; plan: [roadmap/input_data_editing.md](../../../roadmap/input_data_editing.md). Tests: `test_trace` (TraceTest).
+Basis for UV-Vis, NMR and thermogram import (`ThermogramHandler` holds an `XYTrace`, its maths stays libpeakpick until Track B); plan: [roadmap/input_data_editing.md](../../../roadmap/input_data_editing.md). Tests: `test_trace` (TraceTest).
 
 ## Layout
 - **xytrace.h/cpp**: `XYTrace` value type (x, y, name, source, axis label/unit); valid = equal length, finite, x strictly monotone ascending OR descending (NMR ppm)

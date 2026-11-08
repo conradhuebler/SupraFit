@@ -32,7 +32,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
 - **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
-- **dialogs/thermogram.cpp/h**: Thermogram data handling
+- **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
+  - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
 
 ### Analysis Configuration
 - **dialogs/generatedatadialog.cpp/h**: Data generation parameter setup
@@ -66,7 +67,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ### Specialized Components
 - **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
 - **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
-- **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis
+- **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis; `setUi()` = `setupChart`/`setupPeakLists`/`setupControls`/`setupParameterPanel`/`restoreSettings`/`connectControls`, order matters (connections)
+  - Not on `TraceEditorWidget`: needs zoom-by-default, select only in peak edit mode, persistent series, keys/double click/scale — see roadmap WP5
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration
 
 ### Results Display
