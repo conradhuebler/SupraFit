@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <limits>
 #include "src/global.h"
 
 #include "src/core/bc50system.h"
@@ -339,7 +340,7 @@ public:
 
     /*! \brief returns Akaike's Information Criterion (AIC)
     */
-    inline qreal getAIC() const { return DataPoints() * log(SSE() / double(DataPoints())) + 2 * (Parameter() + 1); }
+    inline qreal getAIC() const { return Points() * log(SSE() / double(Points())) + 2 * (Parameter() + 1); }
     
     /*! \brief returns Akaike's Information Criterion (AIC)
      * New getter function for consistency
@@ -357,7 +358,11 @@ public:
     inline qreal getAICc() const
     {
         int K = Parameter() + 1;
-        return getAIC() + (2 * K * (K + 1)) / double(DataPoints() - K - 1);
+        // N = Points() is the number of observations entering SSE (titration points x active signals), not the number of rows (DataPoints()).
+        // AICc is undefined for N - K - 1 <= 0 (the correction term would be singular or negative).
+        if (Points() - K - 1 <= 0)
+            return std::numeric_limits<qreal>::infinity();
+        return getAIC() + (2 * K * (K + 1)) / double(Points() - K - 1);
     }
     
     /*! \brief returns a second-order (corrected) Akaike's Information Criterion (AIC)
