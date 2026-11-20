@@ -151,6 +151,7 @@ void NmrImport::setupUi()
     left->setMaximumWidth(240);
 
     m_editor = new TraceEditorWidget;
+    m_editor->setSettingsKey("nmrimport"); // stack offsets of this dialog (QSettings traceeditor/nmrimport/...)
     // chemical shift high to low from left to right, whatever the order of the file (Claude Generated)
     m_reverse_axis = new QCheckBox(tr("Chemical shift axis: high to low (left to right)"));
     m_reverse_axis->setObjectName("nmrReverseAxis");
@@ -227,6 +228,11 @@ void NmrImport::setupUi()
     m_status->setObjectName("nmrStatus");
     m_ready = new StatusLine;
     m_ready->setObjectName("nmrReady");
+    // hint for signals missing in every spectrum: own line, shown only while the table has such a signal
+    m_hint = new StatusLine;
+    m_hint->setObjectName("nmrMissingHint");
+    m_hint->setVisible(false);
+    lines->addWidget(m_hint);
     lines->addWidget(m_status);
     lines->addWidget(m_ready);
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -476,6 +482,7 @@ QWidget* NmrImport::signalPanel()
     QFormLayout* form = new QFormLayout;
 
     m_offset = new QDoubleSpinBox;
+    m_offset->setObjectName("nmrReferenceOffset");
     m_offset->setDecimals(4);
     m_offset->setRange(-100, 100);
     m_offset->setSingleStep(0.001);
@@ -757,6 +764,7 @@ void NmrImport::retrack()
     AdaptiveWaiter wait(&m_track_ms);
     m_guard->markDirty();
     m_handler.track();
+    m_editor->setExcludedTraces(excludedSpectra());
     updateSpectra();
     updateSignals();
     updateResults();
@@ -769,7 +777,8 @@ void NmrImport::refresh()
     AdaptiveWaiter wait(&m_track_ms);
     m_guard->markDirty();
     m_handler.track();
-    m_editor->setTraces(m_handler.referencedSpectra()); // redraws, the markers follow (chartUpdated)
+    m_editor->setExcludedTraces(excludedSpectra());
+    m_editor->setTraces(m_handler.referencedSpectra()); // redraws, the markers follow (chartUpdated); same spectra keep the zoom
     m_updating = true;
     m_offset->setValue(m_handler.referenceOffset()); // also when the handler was changed directly
     m_updating = false;
@@ -849,10 +858,13 @@ void NmrImport::updateResults()
         vertical << QString::number(k + 1);
     m_results->setVerticalHeaderLabels(vertical);
     int missing = 0, conflict = 0, manual = 0, failed = 0;
+    QVector<int> missingPerColumn(columns.size(), 0); ///< the cells the legend counts as missing, per signal
+    int used = 0; ///< spectra not left out
     QTableWidgetItem* first = nullptr; ///< first cell without a unique shift, scrolled into view
     auto number = [](double v, char format, int precision) { return std::isfinite(v) ? QString::number(v, format, precision) : QString(); };
     for (int k = 0; k < rows; ++k) {
         const bool excluded = m_handler.isSpectrumExcluded(k);
+        used += !excluded;
         for (int c = 0; c < columns.size(); ++c) {
             const NmrCell cell = m_handler.cell(k, columns[c]);
             QTableWidgetItem* item = new QTableWidgetItem;
@@ -881,6 +893,7 @@ void NmrImport::updateResults()
                 if (!first && (cell.status == NmrCellStatus::Missing || cell.status == NmrCellStatus::Conflict || cell.status == NmrCellStatus::FitFailed))
                     first = item;
                 missing += cell.status == NmrCellStatus::Missing;
+                missingPerColumn[c] += cell.status == NmrCellStatus::Missing;
                 conflict += cell.status == NmrCellStatus::Conflict;
                 manual += cell.status == NmrCellStatus::Manual;
                 failed += cell.status == NmrCellStatus::FitFailed || (cell.status == NmrCellStatus::Ok && cell.fitState == NmrFitState::Failed);
@@ -901,6 +914,29 @@ void NmrImport::updateResults()
     }
     if (first)
         m_results->scrollToItem(first, QAbstractItemView::PositionAtCenter);
+
+    // a signal missing in every spectrum used: most often a much stronger line sets the threshold of the
+    // peak picking (relative to the spectrum); say what helps (Claude Generated, Viewer 2)
+    QStringList lost;
+    QList<int> lost_columns;
+    for (int c = 0; c < columns.size(); ++c) {
+        if (used > 0 && missingPerColumn[c] == used) {
+            lost << m_handler.signalList()[columns[c]].name;
+            lost_columns << c;
+        }
+    }
+    const QString hint = lost.isEmpty() ? QString()
+                                        : tr("%1: no peak in the window in any spectrum; a much stronger signal (e.g. a standard) raises the detection threshold: add a Range or Blank region step.").arg(lost.join(", "));
+    for (int c : lost_columns)
+        for (int k = 0; k < rows; ++k)
+            if (QTableWidgetItem* item = m_results->item(k, c * per))
+                item->setToolTip(item->toolTip() + "\n" + hint);
+    m_missing_hint = hint;
+    if (hint.isEmpty())
+        m_hint->clearMessage();
+    else
+        m_hint->setMessage(hint, StatusLine::Warning);
+    m_hint->setVisible(!hint.isEmpty());
     m_updating = false;
     auto chip = [](NmrCellStatus status, const QString& text) {
         const QColor color = statusColor(status);
@@ -943,8 +979,9 @@ void NmrImport::updateMarkers()
             if (!std::isfinite(cell.shift) || m_handler.isSpectrumExcluded(k))
                 continue;
             const double y = shown.at(k).interpolate(cell.shift);
+            const QPointF shift = m_editor->stackOffset(k); // drawn where the editor draws spectrum k
             if (std::isfinite(y))
-                markers->append(cell.shift, y);
+                markers->append(cell.shift + shift.x(), y + shift.y());
         }
         markers->setMarkerSize(7);
         chart->addSeries(markers, false);
@@ -954,9 +991,11 @@ void NmrImport::updateMarkers()
     }
     // the fitted model (dashed) and its residual (thin, 10 % of the spectrum height below zero)
     const int k = fitSpectrum();
+    m_editor->setHighlightedTrace(m_spectra->currentRow() >= 0 ? k : -1); // the spectrum whose fit is drawn
     const QVector<NmrFitRegion> regions = m_handler.fitRegions(k);
     if (!regions.isEmpty() && k < shown.size() && !shown.at(k).isEmpty()) {
-        const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
+        const QPointF shift = m_editor->stackOffset(k); // with the stack offset of spectrum k
+        const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff() + shift.y();
         const QColor model = palette().color(QPalette::Text); // dashed: distinct from the coloured spectra
         QColor residual = palette().color(QPalette::Text);
         residual.setAlpha(140);
@@ -967,8 +1006,8 @@ void NmrImport::updateMarkers()
             LineSeries* rest = new LineSeries;
             for (Eigen::Index i = 0; i < region.block.x.size(); ++i) {
                 const double x = region.block.x(i);
-                curve->append(x, region.block.evaluate(x));
-                rest->append(x, offset + region.block.residuals(i));
+                curve->append(x + shift.x(), region.block.evaluate(x) + shift.y());
+                rest->append(x + shift.x(), offset + region.block.residuals(i));
             }
             chart->addSeries(curve, false);
             chart->addSeries(rest, false);
@@ -981,6 +1020,14 @@ void NmrImport::updateMarkers()
         }
     }
     m_editor->refreshMarkers();
+}
+
+QVector<bool> NmrImport::excludedSpectra() const
+{
+    QVector<bool> excluded(m_handler.spectrumCount());
+    for (int k = 0; k < excluded.size(); ++k)
+        excluded[k] = m_handler.isSpectrumExcluded(k);
+    return excluded;
 }
 
 void NmrImport::updateTable()

@@ -29,11 +29,13 @@
 #include <QtCore/QTemporaryDir>
 #include <QtGui/QCursor>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QWheelEvent>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
 
 #include <QtCharts/QChart>
+#include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
 #include <QtCharts/QValueAxis>
@@ -101,6 +103,27 @@ void drag(TraceEditorWidget& editor, Qt::MouseButton button, QPointF a, QPointF 
     QCoreApplication::processEvents();
 }
 
+/// sends a wheel event (delta in eighths of a degree, 120 = one notch) to the viewport (Claude Generated, Viewer 2)
+void wheel(TraceEditorWidget& editor, const QPoint& at, int delta)
+{
+    QWidget* viewport = editor.chart()->privateView()->viewport();
+    QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, delta), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+    QApplication::sendEvent(viewport, &event);
+}
+
+/// value under a viewport pixel, mapped as the chart maps it
+QPointF valueAt(TraceEditorWidget& editor, const QPoint& at)
+{
+    QChartView* view = editor.chart()->privateView();
+    return view->chart()->mapToValue(view->chart()->mapFromScene(view->mapToScene(at)));
+}
+
+/// the line series of trace k (the editor adds the traces first)
+QLineSeries* line(TraceEditorWidget& editor, int k)
+{
+    return qobject_cast<QLineSeries*>(editor.chart()->chart()->series().value(k));
+}
+
 struct Span {
     double xmin, xmax, ymin, ymax;
 };
@@ -135,6 +158,23 @@ class TestChartZoom : public QObject {
         editor.refreshMarkers();
         QVERIFY(axis(editor, Qt::Horizontal));
         QVERIFY(axis(editor, Qt::Vertical));
+    }
+
+    /// three copies of the spectrum (fixed ids), peak picking, shown at a fixed size (Claude Generated, Viewer 2)
+    void setupStack(TraceEditorWidget& editor, bool descending, Direction direction)
+    {
+        editor.setAxisDirection(direction);
+        TraceSet set;
+        for (int k = 0; k < 3; ++k)
+            set.add(spectrum(descending), QString("trace%1").arg(k));
+        editor.setTraces(set);
+        editor.addOperation("PickPeaks");
+        QVERIFY(editor.setOperationParameters(0, QJsonObject{ { "Threshold", 0.005 } }));
+        editor.resize(1100, 640);
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        QCoreApplication::processEvents();
+        editor.refreshMarkers();
     }
 
     /// tolerance of a value given by a drag: two pixels of the axis
@@ -412,6 +452,246 @@ private slots:
             box->setChecked(true);
         }
         QCOMPARE(QSettings().value("nmrimport/reverseAxis").toBool(), true);
+    }
+
+    /*! \brief Viewer 2: the zoom of the user stays over a change of the steps, the axis direction, the stack offset and
+     * raw/processed; the same traces with a shifted axis move range and zoom along; other traces reset it. */
+    void zoomKeptOverRedraws()
+    {
+        TraceEditorWidget editor;
+        editor.setAxisDirection(Direction::Reversed);
+        TraceSet set;
+        set.add(spectrum(true), "a");
+        set.add(spectrum(true), "b");
+        editor.setTraces(set);
+        editor.resize(1100, 640);
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        QCoreApplication::processEvents();
+        editor.chart()->setZoomStrategy(ZoomStrategy::Rectangular);
+        drag(editor, Qt::LeftButton, QPointF(6, 2), QPointF(2, 0.2));
+        QVERIFY(editor.hasUserView());
+        const Span zoomed = span(editor);
+        auto same = [&](const QString& what) {
+            const Span now = span(editor);
+            QVERIFY2(now.xmin == zoomed.xmin && now.xmax == zoomed.xmax && now.ymin == zoomed.ymin && now.ymax == zoomed.ymax,
+                qPrintable(QString("%1: x %2..%3 y %4..%5, zoom was x %6..%7 y %8..%9").arg(what).arg(now.xmin).arg(now.xmax).arg(now.ymin).arg(now.ymax).arg(zoomed.xmin).arg(zoomed.xmax).arg(zoomed.ymin).arg(zoomed.ymax)));
+        };
+        QCOMPARE(editor.addOperation("Smooth"), 0);
+        same("step added");
+        QVERIFY(editor.setOperationParameters(0, QJsonObject{ { "Window", 9 } }));
+        same("step changed");
+        QVERIFY(editor.setOperationEnabled(0, false));
+        same("step switched off");
+        editor.setShowProcessed(false);
+        same("raw view");
+        editor.setAxisDirection(Direction::Normal);
+        same("axis direction");
+        editor.setStackPercent(30);
+        same("stack offset");
+        editor.setStackPercent(0);
+        // a host adding a series (rescales the axes) and calling refreshMarkers
+        auto* extra = new LineSeries;
+        extra->append(0, -50);
+        extra->append(10, 500);
+        editor.chart()->addSeries(extra);
+        editor.refreshMarkers();
+        same("series of the host");
+
+        // the same traces on an axis moved by 0.25 (referencing): range and zoom move along
+        editor.setRange(3, 7);
+        TraceSet moved;
+        for (const QString& id : { QString("a"), QString("b") }) {
+            XYTrace t = spectrum(true);
+            Eigen::VectorXd x = t.x().array() + 0.25;
+            t.setData(x, t.y());
+            moved.add(t, id);
+        }
+        editor.setTraces(moved);
+        QVERIFY(editor.hasUserView());
+        QVERIFY(std::abs(span(editor).xmin - (zoomed.xmin + 0.25)) < 1e-12 && std::abs(span(editor).xmax - (zoomed.xmax + 0.25)) < 1e-12);
+        QCOMPARE(span(editor).ymin, zoomed.ymin);
+        QVERIFY(std::abs(editor.rangeStart() - 3.25) < 1e-12 && std::abs(editor.rangeEnd() - 7.25) < 1e-12);
+
+        // other traces: whole range
+        TraceSet other;
+        other.add(spectrum(true), "c");
+        editor.setTraces(other);
+        QVERIFY(!editor.hasUserView());
+        QCOMPARE(span(editor).xmin, 0.0);
+        QCOMPARE(span(editor).xmax, 10.0);
+        QCOMPARE(editor.rangeStart(), 0.0);
+        QCOMPARE(editor.rangeEnd(), 10.0);
+    }
+
+    /*! \brief Viewer 2: one wheel notch scales the y span by 0.9 (up) or 1/0.9 (down) about the value under the
+     * pointer; x stays; the middle button goes back to the whole range. */
+    void wheelScalesY()
+    {
+        TraceEditorWidget editor;
+        setup(editor, true, Direction::Reversed);
+        const Span before = span(editor);
+        const QPoint at = pixel(editor, 4, 20);
+        const double anchor = valueAt(editor, at).y();
+        wheel(editor, at, 120);
+        Span after = span(editor);
+        const double tolerance = 1e-9 * (before.ymax - before.ymin);
+        QVERIFY2(std::abs(after.ymin - (anchor - 0.9 * (anchor - before.ymin))) < tolerance && std::abs(after.ymax - (anchor + 0.9 * (before.ymax - anchor))) < tolerance,
+            qPrintable(QString("y %1..%2 -> %3..%4 at %5").arg(before.ymin).arg(before.ymax).arg(after.ymin).arg(after.ymax).arg(anchor)));
+        QCOMPARE(after.xmin, before.xmin);
+        QCOMPARE(after.xmax, before.xmax);
+        QVERIFY(editor.hasUserView());
+        // the value under the pointer stays under it (within a pixel)
+        const double pixel_value = (before.ymax - before.ymin) / editor.chart()->chart()->plotArea().height();
+        QVERIFY(std::abs(valueAt(editor, at).y() - anchor) < pixel_value);
+        // two notches down at the same place: back to 1/0.9 of the start span
+        wheel(editor, at, -240);
+        after = span(editor);
+        QVERIFY(std::abs((after.ymax - after.ymin) - (before.ymax - before.ymin) / 0.9) < tolerance * 10);
+        // kept over a redraw, reset by the middle button
+        editor.addOperation("Smooth");
+        QCOMPARE(span(editor).ymin, after.ymin);
+        const QPoint centre = pixel(editor, 4, 1);
+        send(editor, QEvent::MouseButtonPress, centre, Qt::MiddleButton, Qt::MiddleButton);
+        send(editor, QEvent::MouseButtonRelease, centre, Qt::MiddleButton, Qt::NoButton);
+        QVERIFY(!editor.hasUserView());
+        QCOMPARE(span(editor).xmin, before.xmin);
+        QCOMPARE(span(editor).xmax, before.xmax);
+        QVERIFY(editor.hintText().contains("Wheel"));
+    }
+
+    /*! \brief Viewer 2: "Fit y to the visible range" scales y to the traces between the ends of the x axis (+5 %). */
+    void fitYToVisibleRange()
+    {
+        TraceEditorWidget editor;
+        setup(editor, false, Direction::Auto);
+        editor.chart()->setZoomStrategy(ZoomStrategy::Horizontal);
+        drag(editor, Qt::LeftButton, QPointF(2, 50), QPointF(6, 50));
+        const Span zoomed = span(editor);
+        QVERIFY(zoomed.ymax >= 100); // the reference line at 0.5 ppm still sets y
+        auto* button = editor.findChild<QPushButton*>("traceFitY");
+        QVERIFY(button);
+        button->click();
+        const XYTrace& t = editor.traces().at(0);
+        double lo = 1e300, hi = -1e300;
+        for (Eigen::Index i = 0; i < t.size(); ++i)
+            if (t.x()(i) >= zoomed.xmin && t.x()(i) <= zoomed.xmax) {
+                lo = std::min(lo, t.y()(i));
+                hi = std::max(hi, t.y()(i));
+            }
+        const Span fitted = span(editor);
+        QVERIFY2(std::abs(fitted.ymin - (lo - 0.05 * (hi - lo))) < 1e-12 && std::abs(fitted.ymax - (hi + 0.05 * (hi - lo))) < 1e-12,
+            qPrintable(QString("y %1..%2 for data %3..%4").arg(fitted.ymin).arg(fitted.ymax).arg(lo).arg(hi)));
+        QCOMPARE(fitted.xmin, zoomed.xmin);
+        QCOMPARE(fitted.xmax, zoomed.xmax);
+        QVERIFY(hi < 1.5);
+    }
+
+    void stacking_data()
+    {
+        QTest::addColumn<bool>("descending");
+        QTest::addColumn<Direction>("direction");
+        QTest::newRow("ascending normal") << false << Direction::Normal;
+        QTest::newRow("descending reversed") << true << Direction::Reversed;
+        QTest::newRow("ascending reversed") << false << Direction::Reversed;
+        QTest::newRow("descending normal") << true << Direction::Normal;
+    }
+
+    /*! \brief Viewer 2: stack offsets move the series of trace k (and its peak markers) by stackOffset(k): y by
+     * level x percent of the reference height, x to the right on the screen in either axis direction; reverse
+     * order, excluded traces, reference height independent of the zoom, y labels hidden while stacked. */
+    void stacking()
+    {
+        QFETCH(bool, descending);
+        QFETCH(Direction, direction);
+        TraceEditorWidget editor;
+        setupStack(editor, descending, direction);
+        const XYTrace& raw = editor.traces().at(0);
+        const double reference = raw.y().maxCoeff() - raw.y().minCoeff();
+        QCOMPARE(editor.stackReferenceHeight(), reference);
+        QVERIFY(axis(editor, Qt::Vertical)->labelsVisible());
+        editor.setStackPercent(100);
+        QVERIFY(!axis(editor, Qt::Vertical)->labelsVisible());
+        editor.findChild<QPushButton*>("traceFitY")->click(); // a fixed y axis: the pixels below compare at one scale
+        // screen position (plot coordinates, sub-pixel) of the first point of trace k
+        auto levelPixel = [&](int k) { return editor.chart()->chart()->mapToPosition(line(editor, k)->at(0)).y(); };
+        const double d100 = levelPixel(0) - levelPixel(1);
+        QVERIFY2(d100 > 20, qPrintable(QString::number(d100))); // trace 1 drawn higher than trace 0
+        QVERIFY(std::abs((levelPixel(1) - levelPixel(2)) - d100) < 1e-6);
+        editor.setStackPercent(50);
+        const double d50 = levelPixel(0) - levelPixel(1);
+        QVERIFY2(std::abs(2 * d50 - d100) < 1e-6, qPrintable(QString("%1 px at 100 %, %2 px at 50 %").arg(d100).arg(d50)));
+        // the points: exactly the trace moved by level x 50 % of the reference height
+        for (int k = 0; k < 3; ++k) {
+            QCOMPARE(editor.stackOffset(k), QPointF(0, k * 0.5 * reference));
+            QCOMPARE(line(editor, k)->count(), int(raw.size()));
+            for (int i = 0; i < int(raw.size()); i += 97)
+                QCOMPARE(line(editor, k)->at(i).y(), raw.y()(i) + k * 0.5 * reference);
+        }
+        // peak markers move along
+        int markers = 0;
+        for (QAbstractSeries* series : editor.chart()->chart()->series())
+            if (auto* scatter = qobject_cast<QScatterSeries*>(series)) {
+                const int k = markers++;
+                QCOMPARE(scatter->count(), int(editor.peaks().at(k).size()));
+                QCOMPARE(scatter->at(0).y(), editor.peaks().at(k).at(0).height + editor.stackOffset(k).y());
+            }
+        QCOMPARE(markers, 3);
+        // reference height: not changed by a zoom, but by the range
+        editor.chart()->setZoomStrategy(ZoomStrategy::Rectangular);
+        drag(editor, Qt::LeftButton, QPointF(2, 40), QPointF(6, 10));
+        QCOMPARE(editor.stackReferenceHeight(), reference);
+        editor.setRange(2, 8);
+        QVERIFY2(editor.stackReferenceHeight() < 0.02 * reference, qPrintable(QString::number(editor.stackReferenceHeight())));
+        QCOMPARE(line(editor, 1)->at(0).y(), raw.y()(0) + 0.5 * editor.stackReferenceHeight());
+        editor.setRange(0, 10);
+        // reverse order: the first trace on top
+        editor.setStackReversed(true);
+        QCOMPARE(editor.stackOffset(0).y(), 2 * 0.5 * reference);
+        QCOMPARE(editor.stackOffset(2).y(), 0.0);
+        editor.setStackReversed(false);
+        // an excluded trace does not count and is not drawn
+        editor.setExcludedTraces({ false, true, false });
+        QVERIFY(!line(editor, 1)->isVisible());
+        QCOMPARE(editor.stackOffset(1), QPointF(0, 0));
+        QCOMPARE(editor.stackOffset(2).y(), 0.5 * reference);
+        editor.setExcludedTraces({});
+        // x offset: 10 % of the range = 1 ppm per level, to the right on the screen
+        editor.setStackXPercent(10);
+        const bool reversed = editor.isAxisReversed();
+        QCOMPARE(editor.stackOffset(1).x(), reversed ? -1.0 : 1.0);
+        QCOMPARE(editor.stackOffset(2).x(), reversed ? -2.0 : 2.0);
+        for (int k = 1; k < 3; ++k)
+            QVERIFY(pixel(editor, line(editor, k)->at(0).x(), 0).x() > pixel(editor, line(editor, k - 1)->at(0).x(), 0).x());
+        // back to 0: unchanged data, labels again
+        editor.setStackPercent(0);
+        editor.setStackXPercent(0);
+        QVERIFY(axis(editor, Qt::Vertical)->labelsVisible());
+        for (int k = 0; k < 3; ++k)
+            QCOMPARE(line(editor, k)->at(5), QPointF(raw.x()(5), raw.y()(5)));
+    }
+
+    /*! \brief Viewer 2: the stack settings are remembered per host key. */
+    void stackSettingsPerHost()
+    {
+        {
+            TraceEditorWidget editor;
+            editor.setSettingsKey("hostA");
+            QCOMPARE(editor.stackPercent(), 0.0);
+            editor.setStackPercent(40);
+            editor.setStackXPercent(2.5);
+            editor.setStackReversed(true);
+        }
+        TraceEditorWidget a, b, none;
+        a.setSettingsKey("hostA");
+        b.setSettingsKey("hostB");
+        QCOMPARE(a.stackPercent(), 40.0);
+        QCOMPARE(a.stackXPercent(), 2.5);
+        QVERIFY(a.stackReversed());
+        QCOMPARE(b.stackPercent(), 0.0);
+        QVERIFY(!b.stackReversed());
+        QCOMPARE(none.stackPercent(), 0.0);
+        QCOMPARE(QSettings().value("traceeditor/hostA/stackY").toDouble(), 40.0);
     }
 
     /*! \brief With SUPRAFIT_TRACE_RENDER_DIR: the NMR dialog with ascending data on the reversed ppm axis,

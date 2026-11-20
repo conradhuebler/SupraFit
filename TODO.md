@@ -27,14 +27,16 @@
 - [ ] Lineshape fit "Shared": up to 1.5 s per series (20 spectra, debug build) and every dialog change recomputes; neighbour lines come only from peak picking (a line resolved nowhere widens the signal).
 - [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r` and Bruker `fid` (reuse `FidProcessing`: only a `fromBruker` with its own group delay); true Voigt; global fit of the spectra against the binding model.
 - [ ] JEOL group delay: ½ Σ (order-1)/Π factor leaves a constant ph1 of about -24° (T1) / -105° (T5) per series (docs/jeol_import_2026-11-20.md); the auto phase absorbs it. Find the exact Delta rule.
-- [ ] NMR: the default peak picking of the tracking (relative threshold 0.05 of the y span) finds no signal below 5 % of a dominant reference/solvent line: such signals are "missing" until a PickPeaks step with a lower threshold or a Range step is added; no hint in the dialog.
+- [ ] NMR: the default peak picking of the tracking (threshold 0.05 of the span of the whole spectrum) still misses signals below 5 % of a dominant line (now with a hint, Range/Blank region fix it); a threshold per search window would need no step.
 - [ ] Chart "Tools" button of CuteChart is hard to read in the dark scheme (dark text on dark chart background, offscreen grab); the tracking line stays at its old pixel after a zoom until the mouse moves.
 - [ ] NMR multiplets: lines of a dd closer than the step of a titration are lost or swapped by the tracking (real T1/T5 at LB 0.3 Hz); a signal = centre of a group of lines would track them as one.
 - [ ] NMR dialog with FIDs: 15 x 262144 points drawn (OpenGL above 5000 points, offscreen grabs empty), speed on screen not measured; y labels of normalised spectra show 2 decimals ("0.01"); debug build needs 36 s for 15 FIDs of 131072 points (auto phase).
+- [ ] Trace editor stack/wheel (Viewer 2) machine-tested only: wheel feel and OpenGL drawing of stacked series > 5000 points not seen on a screen; x labels after an x offset are not nice numbers.
+- [ ] CuteChart `addSeries` rescales over all points of all series per call: a full rebuild of 15 × 131072 points costs 140-160 ms release (580-610 ms debug); a batch add without rescaling would remove most of it.
 - [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
 - [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
 - [ ] Import dialogs, not in UX package 1: Edit Data replaces the project and marks fits outdated (E1); ITC without the second OK (E2); ESC/Cancel question in the ITC dialog;
-      remembered settings (E7); zoom kept on redraw in `TraceEditorWidget`; SeriesSourceBar/ConcentrationEditor; MoreLess for the NMR fit options.
+      remembered settings (E7); SeriesSourceBar/ConcentrationEditor; MoreLess for the NMR fit options.
 - [ ] ITC import: `importdata.cpp:605` does not load the chosen `.itc` (`m_filename` already set, `setExperimentFile` never called); the path field loads on every keystroke.
 - [ ] ITC `PointDoubleClicked`: with peak rules and a start outside the rule it resets the *end* button text (start stays "Click to Undo"); after a calibration pick the button keeps "Click to Undo"; it calls `restoreOverrideCursor()` also without a cursor set.
 - [ ] ITC dark scheme: thermogram curve and peak lines are black (`Qt::black`), the guide line is empty until the first mode change; file fields "color: black" (planned separately).

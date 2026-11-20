@@ -67,7 +67,25 @@ class StatusLine;
  * A one-line hint under the chart names the mouse actions of the chart and, set by the host
  * (setDoubleClickHint), what a double-click does; it is shown with the setting "thermogram_guidelines"
  * ("Show hints in the import dialogs"), like the guide line of the thermogram dialog. The chart has no
- * modes of its own (the wheel does nothing here), so the line does not change while working.
+ * modes of its own, so the line does not change while working.
+ *
+ * View (Claude Generated, Viewer 2): the zoom of the user (left drag, wheel, "Fit y to the visible
+ * range", "Zoom to range") is kept over every redraw with the same traces (other processing steps,
+ * stack offsets, axis direction, raw/processed, series added by the host followed by refreshMarkers());
+ * new or other traces (other ids) go back to the whole range, as does the middle button. When the axis of
+ * the same traces moved as a whole (a referencing offset), range and zoom move along by the same amount.
+ * The wheel scales y about the value under the pointer (one notch: span x 0.9 in, / 0.9 out).
+ *
+ * Stacking (view only, the data are unchanged): trace k is drawn moved by stackOffset(k). Its level L is
+ * its place among the traces that are not excluded (setExcludedTraces), counted in list order from the
+ * bottom (first trace at the bottom), or from the top with "Reverse order". Level L is moved up by
+ * L x "Stack offset" % of the reference height (the largest max - min of a shown trace, not excluded,
+ * within the selected range Start..End; computed again only when range, traces, steps or exclusions
+ * change, never by zooming) and to the right on the screen by L x "x offset" % of the span End - Start:
+ * on a reversed axis "right" is towards lower x, so the x shift in data units is negative there. With a
+ * stack offset excluded traces are not drawn and the y labels are hidden (the ticks then mean nothing).
+ * The settings are remembered per host (setSettingsKey, QSettings "traceeditor/<key>/stackY|stackX|
+ * stackReverse"), never in a project.
  */
 class TraceEditorWidget : public QWidget {
     Q_OBJECT
@@ -97,8 +115,9 @@ public:
     void setOperations(const TraceOpList& operations);
     inline const TraceOpList& operations() const { return m_operations; }
 
-    /*! \brief Appends a step of this JSON "Type" (Range, Smooth, Normalise, Baseline, ShiftAxis, PickPeaks) with
-     * default parameters (a Range takes the selected range); returns its index or -1. */
+    /*! \brief Appends a step of this JSON "Type" (Range, Smooth, Normalise, Baseline, ShiftAxis, Blank, PickPeaks) with
+     * default parameters (a Range takes the selected range, a Blank the selected range unless it is the whole
+     * range); returns its index or -1. */
     int addOperation(const QString& type);
     bool removeOperation(int index);
     bool moveOperation(int from, int to);
@@ -141,8 +160,42 @@ public:
     /*! \brief Draws the traces again (raw or processed) with peaks and range limits. */
     void updateChart();
     /*! \brief Places the vertical marker lines of the chart (x values of the host) again (call after adding them); the chart
-     * computes their position only when they are added. */
+     * computes their position only when they are added. Restores the user's zoom, if there is one: a series added by
+     * the host rescales the axes. */
     void refreshMarkers();
+
+    /*! \brief QSettings group of the stack settings of this host ("traceeditor/<key>/..."); reads them. Empty: not stored. Claude Generated */
+    void setSettingsKey(const QString& key);
+    /*! \brief Stack offset in % of the reference height (0: not stacked in y). Claude Generated */
+    double stackPercent() const;
+    void setStackPercent(double percent);
+    /*! \brief Extra x offset per level in % of the selected x span (screen direction: right). Claude Generated */
+    double stackXPercent() const;
+    void setStackXPercent(double percent);
+    /*! \brief Reverse order: the first trace on top. Claude Generated */
+    bool stackReversed() const;
+    void setStackReversed(bool reversed);
+    /*! \brief True if a stack offset (y or x) is set. Claude Generated */
+    bool isStacked() const;
+    /*! \brief Shift (x, y in data units) with which trace traceIndex is drawn; (0, 0) when not stacked or excluded.
+     * A host draws its own series of that trace (fit, residual, markers) with it. Claude Generated */
+    QPointF stackOffset(int traceIndex) const;
+    /*! \brief Height the y stack offset refers to (largest max - min within the selected range). Claude Generated */
+    inline double stackReferenceHeight() const { return m_stack_reference; }
+    /*! \brief Traces left out by the host (true = excluded): they do not count for the stack and are not drawn when
+     * stacked. Claude Generated */
+    void setExcludedTraces(const QVector<bool>& excluded);
+    /*! \brief Draws trace index wider (-1: none), e.g. the one whose fit the host shows. Claude Generated */
+    void setHighlightedTrace(int index);
+
+    /*! \brief Sets y to min/max of the drawn traces (with stack offsets) within the visible x range plus 5 %. Claude Generated */
+    void fitYToVisible();
+    /*! \brief Whole range in x, y scaled to all series; the zoom of the user is dropped (middle button). Claude Generated */
+    void resetView();
+    /*! \brief Scales y by factor about the value y (wheel); factor < 1 zooms in. Claude Generated */
+    void scaleY(double y, double factor);
+    /*! \brief True while the user's zoom is kept (left drag, wheel, fit y, zoom to range). Claude Generated */
+    inline bool hasUserView() const { return m_user_view; }
 
 signals:
     void operationsChanged();
@@ -165,18 +218,43 @@ private:
     void updateRangeLines();
     void updateHint();
     void applyAxisDirection();
+    // Claude Generated (Viewer 2): stacking and the kept view
+    int stackLevel(int traceIndex) const;
+    bool isExcluded(int traceIndex) const;
+    void updateStackReference();
+    /*! \brief Moves the drawn series to the current stack offsets (no new series, no processing). */
+    void applyStack();
+    void rangeMoved();
+    QList<QPointF> shiftedPoints(int traceIndex) const;
+    void homeX(double* lo, double* hi) const;
+    void applyView();
+    void captureView();
+    void saveStackSettings();
+    void updateLineWidths();
 
     TraceSet m_traces;
     TraceOpList m_operations;
     QVector<QVector<TracePeak>> m_peaks;
+    QVector<XYTrace> m_shown; ///< the drawn traces (raw or processed) without stack offsets
+    QList<QPointer<LineSeries>> m_lines; ///< series of the traces (order of traces())
+    QList<QPointer<ScatterSeries>> m_peak_series; ///< peak markers per trace (null without peaks)
     QList<QColor> m_colors;
     QString m_error, m_edit_error;
     bool m_updating = false;
     AxisDirection m_axis_direction = AxisDirection::Auto;
     double m_y_min = 0, m_y_max = 0; ///< y span of the drawn traces, height of the range limits
+    double m_stack_reference = 0;
+    QVector<bool> m_excluded;
+    int m_highlight = -1;
+    QString m_settings_key;
+    bool m_user_view = false; ///< the axes below are the user's zoom, kept over redraws
+    double m_view_x0 = 0, m_view_x1 = 0, m_view_y0 = 0, m_view_y1 = 0;
 
     ChartView* m_chart;
     QDoubleSpinBox *m_start, *m_end;
+    QDoubleSpinBox *m_stack_y, *m_stack_x;
+    QCheckBox* m_stack_reverse;
+    QPushButton* m_fit_y;
     QCheckBox* m_processed;
     QPushButton* m_zoom;
     QHBoxLayout* m_tools;

@@ -152,6 +152,7 @@ void SpectraWidget::setUI()
     // the x-value selection stays here
     m_editor = new TraceEditorWidget;
     m_editor->setDoubleClickHint(tr("Double-click: add an x value"));
+    m_editor->setSettingsKey("spectraimport"); // stack offsets of the spectra dialog (Claude Generated, Viewer 2)
     QLabel* values_label = new QLabel(tr("# X Values"));
     values_label->setToolTip(m_values->toolTip());
     m_editor->addToolWidget(values_label);

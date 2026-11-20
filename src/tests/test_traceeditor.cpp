@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
@@ -35,7 +36,9 @@
 #include <QtTest/QSignalSpy>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QPushButton>
 
 #include <charts.h>
 
@@ -259,6 +262,109 @@ private slots:
         QCOMPARE(editor->traces().size(), 3);
         QCOMPARE(editor->rangeEnd(), 650.0);
         QCOMPARE(editor->operations().size(), 2);
+    }
+
+    /*! \brief Viewer 2: the step "Blank region" in the editor: default range, label, text field, button, errors. */
+    void blankStepInTheEditor()
+    {
+        TraceEditorWidget editor;
+        TraceSet set;
+        for (int s = 0; s < 3; ++s)
+            set.add(band(300, 700, 201, s));
+        editor.setTraces(set);
+        // the whole range would blank everything: no range then
+        QCOMPARE(editor.addOperation("Blank"), 0);
+        QVERIFY(editor.operations().at(0)->toJson()["Ranges"].toArray().isEmpty());
+        QVERIFY(editor.removeOperation(0));
+        editor.setRange(420, 460);
+        QCOMPARE(editor.addOperation("Blank"), 0);
+        QCOMPARE(editor.operations().at(0)->toJson()["Ranges"].toArray(), (QJsonArray{ QJsonArray{ 420, 460 } }));
+        QCOMPARE(TraceEditorWidget::operationLabel(editor.operations().at(0)), QString("Blank region 420 to 460"));
+        QVERIFY(editor.errorText().isEmpty());
+        auto* field = editor.findChild<QLineEdit*>("traceBlankRanges");
+        QVERIFY(field);
+        QCOMPARE(field->text(), QString("420 460"));
+        field->setText("420 460; 620 600");
+        emit field->editingFinished();
+        QCOMPARE(editor.operations().at(0)->toJson()["Ranges"].toArray().size(), 2);
+        QCOMPARE(TraceEditorWidget::operationLabel(editor.operations().at(0)), QString("Blank regions: 2"));
+        field->setText("420 460 480");
+        emit field->editingFinished();
+        QVERIFY(editor.errorText().contains("two numbers"));
+        QCOMPARE(editor.operations().at(0)->toJson()["Ranges"].toArray().size(), 2);
+        editor.setRange(500, 510);
+        auto* take = editor.findChild<QPushButton*>("traceBlankSelected");
+        QVERIFY(take);
+        take->click();
+        QCOMPARE(editor.operations().at(0)->toJson()["Ranges"].toArray().size(), 3);
+        QVERIFY(editor.errorText().isEmpty());
+        // the processed traces are straight between the neighbours of 420..460
+        QVERIFY(editor.setOperationParameters(0, QJsonObject{ { "Ranges", QJsonArray{ QJsonArray{ 0, 1000 } } } }));
+        QVERIFY2(editor.errorText().contains("every point"), qPrintable(editor.errorText()));
+    }
+
+    /*! \brief Viewer 2: time to build the series of 15 spectra x 131072 points (no rendering: the widget is not
+     * shown), to move them by a stack offset and to redraw after a change of the steps. Printed, not pinned
+     * (depends on the machine and the build type). */
+    void timingOfLargeSeries()
+    {
+        const int count = 15, n = 131072;
+        TraceSet set;
+        for (int s = 0; s < count; ++s)
+            set.add(band(10, 0, n, s));
+        TraceEditorWidget editor;
+        QElapsedTimer timer;
+        QList<double> build, stack, steps;
+        for (int run = 0; run < 3; ++run) {
+            TraceSet copy;
+            for (int s = 0; s < count; ++s)
+                copy.add(set.at(s)); // new ids: a full rebuild
+            timer.start();
+            editor.setTraces(copy);
+            build << timer.nsecsElapsed() / 1e6;
+            timer.start();
+            editor.setStackPercent(10 + run);
+            stack << timer.nsecsElapsed() / 1e6;
+            timer.start();
+            editor.setOperations(TraceOpList());
+            steps << timer.nsecsElapsed() / 1e6;
+            editor.setStackPercent(0);
+        }
+        QCOMPARE(editor.chart()->chart()->series().size(), count + 2);
+#ifdef QT_NO_DEBUG
+        const char* type = "release";
+#else
+        const char* type = "debug";
+#endif
+        qInfo("%d x %d points (%s build): setTraces %.0f / %.0f / %.0f ms, stack offset %.0f / %.0f / %.0f ms, redraw without steps %.0f / %.0f / %.0f ms",
+            count, n, type, build[0], build[1], build[2], stack[0], stack[1], stack[2], steps[0], steps[1], steps[2]);
+    }
+
+    /*! \brief Viewer 2 renders (SUPRAFIT_TRACE_RENDER_DIR): the spectra dialog unstacked, stacked, with x offset and reversed. */
+    void renderStack()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const QJsonObject project = spectraProject(8, true);
+        QSettings().remove("traceeditor/spectraimport");
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            SpectraImport dialog;
+            dialog.setData(project);
+            dialog.resize(1366, 768);
+            auto* editor = dialog.findChild<TraceEditorWidget*>();
+            render(&dialog, "uv_stack_none" + suffix);
+            editor->setStackPercent(30);
+            render(&dialog, "uv_stack_y" + suffix);
+            editor->setStackXPercent(3);
+            render(&dialog, "uv_stack_xy" + suffix);
+            editor->setStackReversed(true);
+            render(&dialog, "uv_stack_reverse" + suffix);
+            dialog.hide();
+            QSettings().remove("traceeditor/spectraimport");
+        }
+        Appearance::Apply(Appearance::Light);
     }
 
     void renderDialog()

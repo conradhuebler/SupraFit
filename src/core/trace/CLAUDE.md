@@ -9,6 +9,7 @@ Basis for UV-Vis, NMR and thermogram import (`ThermogramHandler` holds an `XYTra
 - **tracejson.h/cpp**: lossless vector persistence (`vectorToString`/`vectorFromJson`)
 - **traceio.h/cpp**: ASCII/CSV readers (BOM, CRLF, decimal comma, tab/;/,/blank, header lines, matrix x + n columns, TopSpin totxt LEFT/RIGHT); `ToolSet::LoadXYFile`/`LoadCSVFile` stay for UV-Vis
 - `ShiftAxisOp` (`"ShiftAxis"`, `Offset`): x += offset, NMR referencing
+- `BlankOp` (`"Blank"`, `Ranges`): runs of points inside the ranges → chord between the kept neighbours (end run: neighbour value), all covered = error; in `NmrHandler` after FID/auto phase and `ShiftAxis` (reference offset), before peaks/tracking/fit
 - **jeolreader.h/cpp**: JEOL Delta `.jdf` (1D only): header always big-endian, byte 8 = order of parameter/data sections; 64-byte parameter records; real section then imaginary section; layout in the header comment, findings [docs/jeol_import_2026-11-20.md](../../../docs/jeol_import_2026-11-20.md)
 - **fidprocessing.h/cpp**: `Fid` (convention exp(+2πiνt), δ ascending with ν), `FidSettings` (JSON with `"Version"`), apodization, zero filling, radix-2 FFT, filter group delay as exact phase ramp, ACME auto phase, descending ppm trace; tests `test_jeol` (JeolTest)
 - **lineshapefit.h/cpp** (WP4): pseudo-Voigt (common FWHM, area exact) + baseline; own damped Gauss-Newton, analytic Jacobian, bounds by projection/active set, fixed parameters, covariance with rank check; `fitSeries` stacks blocks, `shared` index = one width/η over blocks; tests `test_lineshapefit` (LineshapeFitTest)

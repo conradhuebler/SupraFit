@@ -33,6 +33,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
   - JEOL: group "Processing (FID)" (`nmrFidPanel`, LB, zero fill, ph0/ph1, Auto phase, Auto phase each spectrum) visible only with FIDs; offscreen grabs do not draw series above 5000 points (chart switches to OpenGL)
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
+  - Viewer 2: markers/fit/residual drawn with `stackOffset(k)`; hint in `nmrStatus` + cell tooltips when a signal is missing in every used spectrum (`m_missing_hint`)
   - UX 1: `ImportKeyGuard`, readiness `StatusLine` "nmrReady" on both pages, "Double-click adds the signal" (QSettings `nmrimport/doubleClickAdds`), destructive actions ask via `keyGuard()->confirm()`, `AdaptiveWaiter` around tracking/FID
 - **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
   - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
@@ -69,7 +70,9 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ### Specialized Components
 - **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
 - **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, x direction by `setAxisDirection`), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
-  - Hint line `traceEditorHint` (mouse actions + host text `setDoubleClickHint`), shown with setting `thermogram_guidelines` ("Show hints in the import dialogs"; key kept); the wheel has no function here
+  - Hint line `traceEditorHint` (mouse actions + host text `setDoubleClickHint`), shown with setting `thermogram_guidelines` ("Show hints in the import dialogs"; key kept)
+  - View (Viewer 2): user zoom (`m_user_view`) kept over redraws of the same trace ids, moved with a whole-axis shift; wheel/middle button handled in the viewport event filter (`scaleY`, `resetView`), not by CuteChart's `scaleUp/scaleDown` (cursor-based, ITC only)
+  - Stack (view only): `stackOffset(k)` for host series, `setExcludedTraces`, `setHighlightedTrace`, QSettings `traceeditor/<setSettingsKey>/stackY|stackX|stackReverse`; offsets move points by `replace()`, no rebuild (15 × 131072: 16-22 ms release, rebuild 140-160 ms)
   - `setAxisDirection(Auto|Reversed|Normal)`: Auto = reversed for descending data (default, UV/Vis); `NmrImport` sets Reversed/Normal by `nmrReverseAxis` (QSettings `nmrimport/reverseAxis`); test `test_chartzoom` (ChartZoomTest, real mouse events)
 - **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis; `setUi()` = `setupChart`/`setupPeakLists`/`setupControls`/`setupParameterPanel`/`restoreSettings`/`connectControls`, order matters (connections)
   - Not on `TraceEditorWidget`: needs zoom-by-default, select only in peak edit mode, persistent series, keys/double click/scale — see roadmap WP5

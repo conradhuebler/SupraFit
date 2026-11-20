@@ -75,6 +75,12 @@ class QTableWidget;
  * double-click only sets the position; picking signals, removing a spectrum or a signal asks first when
  * values set by hand (or more than one signal) would be lost; a wait cursor around work that took more
  * than 0.3 s the last time (AdaptiveWaiter).
+ *
+ * Viewer 2 (Claude Generated): the stack of the trace editor (settings key "nmrimport") moves the tracked
+ * markers, the fitted model and its residual with stackOffset() of their spectrum; excluded spectra leave the
+ * stack (setExcludedTraces), the selected spectrum is drawn wider. A signal missing in every used spectrum
+ * gets a hint in its own line above the status line ("nmrMissingHint") and in the tooltips of its cells (the relative threshold of the default peak
+ * picking follows the strongest line of the spectrum); tracking results are not changed.
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -138,6 +144,8 @@ private:
     void updateFitControls();
     /*! \brief Spectrum whose fit is drawn: the selected one, else the reference. */
     int fitSpectrum() const;
+    /*! \brief Excluded flag per spectrum, for the stack of the trace editor. Claude Generated */
+    QVector<bool> excludedSpectra() const;
 
     NmrHandler m_handler;
     QJsonObject m_input_table;
@@ -162,6 +170,7 @@ private:
     QWidget* m_fit_options;
     StatusLine* m_status; ///< result of the last action (read, picked, refused input)
     StatusLine* m_ready; ///< what OK hands over or why not, visible on both pages
+    StatusLine* m_hint; ///< signals missing in every used spectrum (hidden when there is none)
     QLabel* m_legend;
     QCheckBox* m_double_adds;
     QCheckBox* m_reverse_axis; ///< ppm axis from high (left) to low (right); QSettings "nmrimport/reverseAxis"
@@ -178,4 +187,5 @@ private:
     QLabel* m_fid_info;
     QList<QPointer<ScatterSeries>> m_markers; ///< tracked positions in the chart (deleted with clearChart)
     QList<QPointer<LineSeries>> m_fit_lines; ///< fitted model and residual of the selected spectrum
+    QString m_missing_hint; ///< hint for signals that are missing in every spectrum (empty: none)
 };

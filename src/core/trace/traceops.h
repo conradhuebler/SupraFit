@@ -111,6 +111,10 @@ bool normalise(const XYTrace& trace, NormaliseMode mode, bool useReference, doub
 bool pickPeaks(const XYTrace& trace, double threshold, bool relative, double minDistance, bool integrate,
     QVector<TracePeak>* peaks, QString* error = nullptr);
 
+/*! \brief Replaces the points inside the x ranges by straight lines between their neighbours (BlankOp,
+ * Claude Generated); false with *error if the ranges cover every point or a bound is not finite. */
+bool blankRanges(const XYTrace& trace, const QVector<QPair<double, double>>& ranges, XYTrace* result, QString* error = nullptr);
+
 } // namespace TraceOps
 
 /*! \brief One processing step with its parameters (Claude Generated).
@@ -219,6 +223,30 @@ public:
     XYTrace apply(const XYTrace& trace, QString* error = nullptr) const override;
     QJsonObject toJson() const override;
     std::unique_ptr<TraceOp> clone() const override { return std::make_unique<ShiftAxisOp>(*this); }
+};
+
+/*! \brief Blanks x ranges: the points inside are replaced by the straight line between the values next
+ * to them (Claude Generated, Viewer 2).
+ *
+ * Use: an intense signal that is not part of the titration (TMS, CHCl3 or another solvent/standard line,
+ * a solvent band) dominates the y scale, a relative peak-picking threshold and every statistic after
+ * it. Blanking removes it from everything later in the pipeline. All points with x inside any of the
+ * ranges (bounds in any order, inclusive; overlapping or touching ranges act as one) form runs of
+ * consecutive points; each run is replaced by the line through the last point before and the first
+ * point after it, so the trace stays continuous (no step) and the points outside are left bit for bit.
+ * A run at an end of the trace takes the value of its one neighbour. A range without a point changes
+ * nothing; ranges covering every point are an error (there is no value left to draw the line from).
+ * Works on ascending and descending axes. A Normalise step that uses the blanked signal as reference
+ * has to come before this step.
+ * JSON: {"Type": "Blank", "Ranges": [[from, to], ...]}. */
+class BlankOp : public TraceOp {
+public:
+    QVector<QPair<double, double>> ranges;
+    QString type() const override { return "Blank"; }
+    bool validate(QString* error = nullptr) const override;
+    XYTrace apply(const XYTrace& trace, QString* error = nullptr) const override;
+    QJsonObject toJson() const override;
+    std::unique_ptr<TraceOp> clone() const override { return std::make_unique<BlankOp>(*this); }
 };
 
 /*! \brief Peak picking (TraceOps::pickPeaks); apply() passes the trace through, pick() gives the peaks. */

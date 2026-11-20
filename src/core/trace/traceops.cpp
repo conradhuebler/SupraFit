@@ -400,6 +400,63 @@ bool pickPeaks(const XYTrace& trace, double threshold, bool relative, double min
     return true;
 }
 
+// Claude Generated (Viewer 2): removes a dominating standard or solvent signal from a spectrum
+bool blankRanges(const XYTrace& trace, const QVector<QPair<double, double>>& ranges, XYTrace* result, QString* error)
+{
+    if (!checkTrace(trace, error))
+        return false;
+    for (const auto& r : ranges)
+        if (!std::isfinite(r.first) || !std::isfinite(r.second)) {
+            setError(error, "blanked ranges must be finite");
+            return false;
+        }
+    const Eigen::Index n = trace.size();
+    const Eigen::VectorXd& x = trace.x();
+    // which points are inside any range: overlapping, touching or reversed ranges need no extra care
+    std::vector<char> inside(size_t(n), 0);
+    Eigen::Index count = 0;
+    for (Eigen::Index i = 0; i < n; ++i) {
+        for (const auto& r : ranges) {
+            const double lo = std::min(r.first, r.second), hi = std::max(r.first, r.second);
+            if (x(i) >= lo && x(i) <= hi) {
+                inside[size_t(i)] = 1;
+                ++count;
+                break;
+            }
+        }
+    }
+    if (n > 0 && count == n) {
+        setError(error, "the blanked ranges cover every point of the trace");
+        return false;
+    }
+    Eigen::VectorXd y = trace.y();
+    for (Eigen::Index i = 0; i < n;) {
+        if (!inside[size_t(i)]) {
+            ++i;
+            continue;
+        }
+        Eigen::Index last = i; // run of blanked points i..last
+        while (last + 1 < n && inside[size_t(last + 1)])
+            ++last;
+        const Eigen::Index left = i - 1, right = last + 1; // the neighbours kept (index order, either axis direction)
+        for (Eigen::Index k = i; k <= last; ++k) {
+            if (left < 0)
+                y(k) = trace.y()(right);
+            else if (right >= n)
+                y(k) = trace.y()(left);
+            else {
+                // x strictly monotone: x(right) != x(left)
+                const double t = (x(k) - x(left)) / (x(right) - x(left));
+                y(k) = trace.y()(left) + t * (trace.y()(right) - trace.y()(left));
+            }
+        }
+        i = last + 1;
+    }
+    *result = trace;
+    result->setData(x, y);
+    return true;
+}
+
 } // namespace TraceOps
 
 // ---------------------------------------------------------------------------------------------
@@ -464,6 +521,22 @@ std::unique_ptr<TraceOp> TraceOp::fromJson(const QJsonObject& json, QString* err
         if (!readNumber(json, "Offset", &s->offset, error, true))
             return nullptr;
         op = std::move(s);
+    } else if (type == "Blank") {
+        auto b = std::make_unique<BlankOp>();
+        const QJsonValue ranges = json.value("Ranges");
+        if (!ranges.isUndefined() && !ranges.isArray()) {
+            setError(error, "parameter Ranges is not an array");
+            return nullptr;
+        }
+        for (const QJsonValue& v : ranges.toArray()) {
+            const QJsonArray pair = v.toArray();
+            if (pair.size() != 2 || !pair[0].isDouble() || !pair[1].isDouble()) {
+                setError(error, "a blanked range is not a pair of numbers");
+                return nullptr;
+            }
+            b->ranges << qMakePair(pair[0].toDouble(), pair[1].toDouble());
+        }
+        op = std::move(b);
     } else if (type == "PickPeaks") {
         auto p = std::make_unique<PickPeaksOp>();
         if (!readNumber(json, "Threshold", &p->threshold, error, false) || !readNumber(json, "MinDistance", &p->minDistance, error, false))
@@ -620,6 +693,33 @@ XYTrace ShiftAxisOp::apply(const XYTrace& trace, QString* error) const
 QJsonObject ShiftAxisOp::toJson() const
 {
     return QJsonObject{ { "Type", type() }, { "Offset", offset } };
+}
+
+// Claude Generated (Viewer 2)
+bool BlankOp::validate(QString* error) const
+{
+    for (const auto& r : ranges)
+        if (!std::isfinite(r.first) || !std::isfinite(r.second)) {
+            setError(error, "blanked ranges must be finite");
+            return false;
+        }
+    return true;
+}
+
+XYTrace BlankOp::apply(const XYTrace& trace, QString* error) const
+{
+    XYTrace result;
+    if (!validate(error) || !TraceOps::blankRanges(trace, ranges, &result, error))
+        return XYTrace();
+    return result;
+}
+
+QJsonObject BlankOp::toJson() const
+{
+    QJsonArray list;
+    for (const auto& r : ranges)
+        list.append(QJsonArray{ r.first, r.second });
+    return QJsonObject{ { "Type", type() }, { "Ranges", list } };
 }
 
 bool PickPeaksOp::validate(QString* error) const

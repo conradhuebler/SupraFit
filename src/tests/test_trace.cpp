@@ -824,6 +824,196 @@ private slots:
         QVERIFY(error.contains("Offset"));
         QVERIFY(!ShiftAxisOp(std::numeric_limits<double>::infinity()).validate(&error));
     }
+
+    // ----------------------------------------------------------------- Blank (Claude Generated, Viewer 2)
+    /*! \brief A 1H-like spectrum with a dominating standard (height 1) at the end of the axis (TMS, 0 ppm)
+     * or in the middle (CHCl3, 7.26 ppm) and three small signals (2 %) is blanked around the standard.
+     * Spread: line width sigma, half width of the range (in sigma), points of the spectrum, axis direction.
+     * Pinned: points outside the ranges are bit-identical, the blanked run lies on the chord between its
+     * neighbours (every discrete slope from the left to the right neighbour equals the chord slope: no
+     * step, no kink inside), after the blank Normalise and PickPeaks see only the small signals. */
+    void blankRemovesTheStandard()
+    {
+        double worst_outside = 0, worst_slope = 0, worst_edge = 0;
+        int cases = 0;
+        for (bool descending : { false, true })
+            for (int n : { 2001, 8193, 32769 })
+                for (double sigma : { 0.002, 0.005, 0.01, 0.02 })
+                    for (double width : { 4.0, 6.0, 10.0 })
+                        for (double standard : { 0.0, 7.26 }) {
+                            Eigen::VectorXd x(n), y(n);
+                            for (int i = 0; i < n; ++i) {
+                                const double t = descending ? 10.0 - 10.0 * i / double(n - 1) : 10.0 * i / double(n - 1);
+                                x(i) = t;
+                                y(i) = gauss(t, 1.0, standard, sigma) + 0.001 * t; // sloping baseline: the chord is not flat
+                                for (double c : { 1.5, 3.7, 5.2 })
+                                    y(i) += gauss(t, 0.02, c, 0.01);
+                            }
+                            const XYTrace raw(x, y, "spectrum");
+                            BlankOp blank;
+                            blank.ranges << qMakePair(standard + width * sigma, standard - width * sigma); // reversed on purpose
+                            QString error;
+                            const XYTrace out = blank.apply(raw, &error);
+                            QVERIFY2(error.isEmpty(), qPrintable(error));
+                            QCOMPARE(out.size(), raw.size());
+                            const double lo = standard - width * sigma, hi = standard + width * sigma;
+                            Eigen::Index first = -1, last = -1;
+                            for (Eigen::Index i = 0; i < n; ++i) {
+                                QVERIFY(std::isfinite(out.y()(i)));
+                                if (x(i) >= lo && x(i) <= hi) {
+                                    if (first < 0)
+                                        first = i;
+                                    last = i;
+                                } else
+                                    worst_outside = std::max(worst_outside, std::abs(out.y()(i) - y(i)));
+                            }
+                            QVERIFY(first >= 0);
+                            const Eigen::Index left = first - 1, right = last + 1;
+                            if (left < 0 || right >= n) {
+                                // the standard at the end of the axis: the run takes the value of its one neighbour
+                                const double edge = left < 0 ? y(right) : y(left);
+                                for (Eigen::Index i = first; i <= last; ++i)
+                                    worst_edge = std::max(worst_edge, std::abs(out.y()(i) - edge));
+                            } else {
+                                const double chord = (y(right) - y(left)) / (x(right) - x(left));
+                                const double scale = std::abs(y(left)) + std::abs(y(right));
+                                for (Eigen::Index i = left; i < right; ++i) {
+                                    const double slope = (out.y()(i + 1) - out.y()(i)) / (x(i + 1) - x(i));
+                                    worst_slope = std::max(worst_slope, std::abs(slope - chord) * std::abs(x(right) - x(left)) / scale);
+                                }
+                            }
+                            // after the blank: the largest magnitude is a small signal, picking at 5 % finds the three
+                            // (flat baseline here: on a sloping one the tail of the standard leaves a real local maximum)
+                            Eigen::VectorXd flat = y;
+                            for (int i = 0; i < n; ++i)
+                                flat(i) -= 0.001 * x(i);
+                            TraceOpList list;
+                            list.append(blank);
+                            list.append(NormaliseOp());
+                            list.append(PickPeaksOp());
+                            static_cast<PickPeaksOp*>(list.at(2))->threshold = 0.05;
+                            QVector<TracePeak> peaks;
+                            const XYTrace processed = list.apply(XYTrace(x, flat), &error, &peaks);
+                            QVERIFY2(error.isEmpty(), qPrintable(error));
+                            QVERIFY2(peaks.size() == 3, qPrintable(QString("%1 peaks, n %2 sigma %3 width %4 at %5").arg(peaks.size()).arg(n).arg(sigma).arg(width).arg(standard)));
+                            for (const TracePeak& p : peaks)
+                                QVERIFY(std::abs(p.x - standard) > width * sigma);
+                            QVERIFY(processed.y().maxCoeff() <= 1.0);
+                            ++cases;
+                        }
+        qInfo("blank (%d cases: sigma 0.002..0.02 ppm, range +-4..10 sigma, 2001..32769 points, both axis directions, standard at the end and inside): "
+              "worst |change| outside %.3g, worst relative slope deviation from the chord %.3g, worst |y - neighbour| of a run at the end %.3g",
+            cases, worst_outside, worst_slope, worst_edge);
+        QCOMPARE(worst_outside, 0.0);
+        QCOMPARE(worst_edge, 0.0);
+        QVERIFY(worst_slope <= 1e-9);
+    }
+
+    void blankEdgeCases()
+    {
+        Eigen::VectorXd x(8), y(8);
+        x << 0, 1, 2, 3, 4, 5, 6, 7;
+        y << 1, 2, 9, 9, 3, 4, 10, 5;
+        const XYTrace raw(x, y, "t");
+        QString error;
+        auto run = [&](const QVector<QPair<double, double>>& ranges) {
+            BlankOp op;
+            op.ranges = ranges;
+            error.clear();
+            return op.apply(raw, &error);
+        };
+        // outside the data, between two points, no ranges: unchanged bit for bit
+        QVERIFY(identical(run({ { 10, 20 } }).y(), y));
+        QVERIFY(identical(run({ { 2.2, 2.8 } }).y(), y));
+        QVERIFY(identical(run({}).y(), y));
+        QVERIFY(error.isEmpty());
+        // one run: straight line from x 1 (2) to x 4 (3)
+        XYTrace out = run({ { 1.5, 3.5 } });
+        QCOMPARE(out.y()(2), 2.0 + 1.0 / 3.0);
+        QCOMPARE(out.y()(3), 2.0 + 2.0 / 3.0);
+        QVERIFY(identical(raw.y(), y)); // the input is unchanged
+        // reversed and overlapping ranges act as their union; touching ranges as one run
+        QVERIFY(identical(run({ { 3.5, 1.5 } }).y(), out.y()));
+        QVERIFY(identical(run({ { 1.5, 2.6 }, { 2.4, 3.5 } }).y(), out.y()));
+        QVERIFY(identical(run({ { 1.5, 2.2 }, { 2.8, 3.5 } }).y(), out.y())); // no point between them
+        // at the ends: the value of the neighbour
+        out = run({ { -1, 1.2 } });
+        QCOMPARE(out.y()(0), 9.0);
+        QCOMPARE(out.y()(1), 9.0);
+        out = run({ { 5.5, 7 } });
+        QCOMPARE(out.y()(6), 4.0);
+        QCOMPARE(out.y()(7), 4.0);
+        // two runs
+        out = run({ { 2, 3 }, { 6, 6 } });
+        QCOMPARE(out.y()(6), 4.5);
+        QCOMPARE(out.y()(2), 2.0 + 1.0 / 3.0);
+        // descending axis: the same line
+        Eigen::VectorXd xd = x.reverse(), yd = y.reverse();
+        BlankOp op;
+        op.ranges = { { 1.5, 3.5 } };
+        const XYTrace down = op.apply(XYTrace(xd, yd), &error);
+        QCOMPARE(down.y()(5), 2.0 + 1.0 / 3.0);
+        QCOMPARE(down.y()(4), 2.0 + 2.0 / 3.0);
+        // every point covered: an error, no empty trace in silence
+        QVERIFY(run({ { -1, 8 } }).isEmpty());
+        QVERIFY(error.contains("every point"));
+        QVERIFY(run({ { -1, 3.5 }, { 3.5, 9 } }).isEmpty());
+        // not finite
+        op.ranges = { { 0, std::numeric_limits<double>::infinity() } };
+        QVERIFY(!op.validate(&error));
+        QVERIFY(op.apply(raw, &error).isEmpty());
+    }
+
+    void blankJsonAndPipeline()
+    {
+        QString error;
+        BlankOp blank;
+        blank.ranges = { { 7.3, 7.2 }, { -0.1, 0.1 } };
+        TraceOpList list;
+        list.append(NormaliseOp());
+        list.append(blank);
+        list.at(1)->enabled = false;
+        const QJsonObject json = list.toJson();
+        const QJsonObject expected = QJsonDocument::fromJson(R"({"Version": 1, "Operations": [
+            {"Type": "Normalise", "Mode": "Max"},
+            {"Type": "Blank", "Ranges": [[7.3, 7.2], [-0.1, 0.1]], "Enabled": false}]})")
+                                         .object();
+        QCOMPARE(json, expected);
+        TraceOpList back;
+        QVERIFY2(TraceOpList::fromJson(json, &back, &error), qPrintable(error));
+        QCOMPARE(back.toJson(), json);
+        QVERIFY(!back.at(1)->enabled);
+        // a newer version is refused
+        QJsonObject newer = json;
+        newer["Version"] = TraceOpList::Version + 1;
+        QVERIFY(!TraceOpList::fromJson(newer, &back, &error));
+        // empty ranges: allowed (no change)
+        auto op = TraceOp::fromJson(QJsonObject{ { "Type", "Blank" } }, &error);
+        QVERIFY(op);
+        QCOMPARE(op->toJson(), (QJsonObject{ { "Type", "Blank" }, { "Ranges", QJsonArray() } }));
+        // malformed: message, no crash
+        QVERIFY(!TraceOp::fromJson(QJsonObject{ { "Type", "Blank" }, { "Ranges", "7.2 7.3" } }, &error));
+        QVERIFY(error.contains("Ranges"));
+        QVERIFY(!TraceOp::fromJson(QJsonObject{ { "Type", "Blank" }, { "Ranges", QJsonArray{ QJsonArray{ 1, 2, 3 } } } }, &error));
+        QVERIFY(error.contains("pair"));
+        QVERIFY(!TraceOp::fromJson(QJsonObject{ { "Type", "Blank" }, { "Ranges", QJsonArray{ QJsonArray{ 1, "a" } } } }, &error));
+
+        // order matters: Normalise on the standard first keeps the scale of the standard
+        Eigen::VectorXd x = grid(0, 10, 0.01), y(x.size());
+        for (Eigen::Index i = 0; i < x.size(); ++i)
+            y(i) = gauss(x(i), 10.0, 5.0, 0.02) + gauss(x(i), 0.5, 2.0, 0.05);
+        TraceOpList before, after;
+        BlankOp standard;
+        standard.ranges = { { 4.8, 5.2 } };
+        before.append(NormaliseOp());
+        before.append(standard);
+        after.append(standard);
+        after.append(NormaliseOp());
+        const double small_before = before.apply(XYTrace(x, y), &error).y().maxCoeff();
+        const double small_after = after.apply(XYTrace(x, y), &error).y().maxCoeff();
+        QVERIFY(std::abs(small_before - 0.05) < 1e-6);
+        QVERIFY(std::abs(small_after - 1.0) < 1e-12);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTrace)

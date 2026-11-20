@@ -34,6 +34,9 @@
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
 #include <QtTest/QtTest>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
+#include <QtCharts/QValueAxis>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
@@ -248,6 +251,146 @@ private slots:
         QCOMPARE(editor.operations().at(0)->type(), QString("ShiftAxis"));
         QVERIFY(TraceEditorWidget::operationLabel(editor.operations().at(0)).contains("-0.05"));
         QVERIFY(!editor.setOperationParameters(0, QJsonObject{ { "Offset", "x" } }));
+    }
+
+    /*! \brief Viewer 2: with a stack offset the tracked markers, the fitted model and its residual of the selected
+     * spectrum are drawn with the offset of that spectrum; the spectrum is drawn wider; an excluded spectrum
+     * leaves the stack. Claude Generated */
+    void stackedFitCurveAndMarkers()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(overlapSpectrum(k, steps));
+        setOverlapSignals(dialog.handler());
+        dialog.refresh();
+        dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        editor->setStackPercent(50);
+        const int k = 3;
+        QListWidget* spectra = nullptr;
+        for (QListWidget* list : dialog.findChildren<QListWidget*>())
+            if (list->count() == steps)
+                spectra = list;
+        QVERIFY(spectra);
+        spectra->setCurrentRow(k);
+        const QPointF shift = editor->stackOffset(k);
+        QVERIFY(shift.y() > 0);
+        auto* chart = editor->chart()->chart();
+        // the line of spectrum k: wider than the others
+        QCOMPARE(qobject_cast<QLineSeries*>(chart->series().at(k))->pen().widthF(), 2.0);
+        QCOMPARE(qobject_cast<QLineSeries*>(chart->series().at(0))->pen().widthF(), 1.0);
+        const QVector<NmrFitRegion> regions = dialog.handler()->fitRegions(k);
+        QVERIFY(!regions.isEmpty());
+        const NmrFitRegion& region = regions.first();
+        const TraceSet shown = dialog.handler()->processedSpectra();
+        const double base = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
+        int curves = 0, residuals = 0;
+        for (QAbstractSeries* series : chart->series()) {
+            auto* line = qobject_cast<QLineSeries*>(series);
+            if (!line || line->count() != int(region.block.x.size()) || line->at(0).x() != region.block.x(0) + shift.x())
+                continue;
+            if (line->at(0).y() == region.block.evaluate(region.block.x(0)) + shift.y())
+                ++curves;
+            else if (line->at(0).y() == base + shift.y() + region.block.residuals(0))
+                ++residuals;
+        }
+        QCOMPARE(curves, 1);
+        QCOMPARE(residuals, 1);
+        // the tracked position of H1 in spectrum k, on the drawn (moved) spectrum
+        const NmrCell cell = dialog.handler()->cell(k, 0);
+        bool marker = false;
+        for (QAbstractSeries* series : chart->series())
+            if (auto* scatter = qobject_cast<QScatterSeries*>(series))
+                for (int i = 0; i < scatter->count(); ++i)
+                    marker = marker || (scatter->at(i).x() == cell.shift + shift.x() && std::abs(scatter->at(i).y() - (shown.at(k).interpolate(cell.shift) + shift.y())) < 1e-12);
+        QVERIFY(marker);
+        // an excluded spectrum is not drawn in the stack and does not take a level
+        const QPointF before = editor->stackOffset(k);
+        spectra->item(1)->setCheckState(Qt::Unchecked);
+        QVERIFY(!chart->series().at(1)->isVisible());
+        QCOMPARE(editor->stackOffset(1), QPointF(0, 0));
+        QVERIFY(std::abs(editor->stackOffset(k).y() - (before.y() - editor->stackOffset(2).y())) < 1e-9 * before.y());
+        editor->setStackPercent(0);
+        QVERIFY(chart->series().at(1)->isVisible()); // without a stack drawn as before
+        QSettings().remove("traceeditor/nmrimport");
+    }
+
+    /*! \brief Viewer 2: a change of the referencing offset moves the user's x zoom along with the axis, y stays. */
+    void referenceOffsetMovesTheZoom()
+    {
+        NmrImport dialog;
+        fill(dialog.handler(), 4);
+        dialog.refresh();
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        editor->chart()->setXRange(7.0, 7.4);
+        editor->fitYToVisible();
+        QVERIFY(editor->hasUserView());
+        const double y0 = editor->chart()->axisY()->min(), y1 = editor->chart()->axisY()->max();
+        dialog.findChild<QDoubleSpinBox*>("nmrReferenceOffset")->setValue(0.1);
+        QVERIFY(std::abs(editor->chart()->axisX()->min() - 7.1) < 1e-9 && std::abs(editor->chart()->axisX()->max() - 7.5) < 1e-9);
+        QCOMPARE(editor->chart()->axisY()->min(), y0);
+        QCOMPARE(editor->chart()->axisY()->max(), y1);
+    }
+
+    /*! \brief Viewer 2: a signal missing in every spectrum (below 5 % of a dominating standard) gets a hint in the
+     * status line and the tooltips; a Blank region step over the standard brings the signal back. */
+    void hintWhenEverySpectrumMisses()
+    {
+        NmrImport dialog;
+        for (int k = 0; k < 4; ++k) {
+            const int n = 2001;
+            Eigen::VectorXd x(n), y(n);
+            for (int i = 0; i < n; ++i) {
+                x(i) = 10.0 - 0.005 * i;
+                y(i) = 100 * std::exp(-std::pow((x(i) - 0.5) / 0.02, 2)) + std::exp(-std::pow((x(i) - (5.0 + 0.01 * k)) / 0.02, 2));
+            }
+            dialog.handler()->addSpectrum(XYTrace(x, y, QString("s%1").arg(k)));
+        }
+        dialog.handler()->addSignal(5.0, 0.1, "S");
+        dialog.refresh();
+        for (int k = 0; k < 4; ++k)
+            QCOMPARE(dialog.handler()->cell(k, 0).status, NmrCellStatus::Missing);
+        auto* hint = dialog.findChild<StatusLine*>("nmrMissingHint");
+        auto* status = dialog.findChild<StatusLine*>("nmrStatus");
+        QVERIFY(hint && status);
+        QVERIFY2(hint->message().contains("Blank region") && hint->level() == StatusLine::Warning && !hint->isHidden(), qPrintable(hint->message()));
+        QTableWidget* results = dialog.findChild<QTableWidget*>("nmrResults");
+        QVERIFY(results->item(0, 0)->toolTip().contains("standard"));
+        // another message in the status line does not hide or keep the hint
+        dialog.addSignalAt(0.5); // the standard: found everywhere
+        QVERIFY(status->message().contains("added"));
+        QVERIFY(hint->message().startsWith("S:") && !hint->isHidden());
+        // values set by hand in every spectrum: nothing missing in the table, no hint
+        for (int k = 0; k < 4; ++k)
+            dialog.handler()->setManualShift(k, 0, 5.0);
+        dialog.refresh();
+        QVERIFY2(hint->isHidden() && hint->message().isEmpty(), qPrintable(hint->message()));
+        for (int k = 0; k < 4; ++k)
+            dialog.handler()->clearManualShift(k, 0);
+        dialog.refresh();
+        QVERIFY(!hint->isHidden());
+        QVERIFY(dialog.handler()->removeSignal(1));
+        dialog.refresh();
+
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        editor->setRange(0.3, 0.7);
+        QCOMPARE(editor->addOperation("Blank"), 0);
+        QCOMPARE(editor->operations().at(0)->toJson()["Ranges"].toArray().size(), 1);
+        for (int k = 0; k < 4; ++k) {
+            QCOMPARE(dialog.handler()->cell(k, 0).status, NmrCellStatus::Ok);
+            QVERIFY(std::abs(dialog.handler()->cell(k, 0).shift - (5.0 + 0.01 * k)) < 0.003);
+        }
+        QVERIFY(!dialog.findChild<QTableWidget*>("nmrResults")->item(0, 0)->toolTip().contains("standard"));
+        QVERIFY2(hint->isHidden() && hint->message().isEmpty(), qPrintable(hint->message()));
+        QVERIFY(!status->message().contains("Blank region"));
+        // the lineshape fit with the signal found: no hint either; without the step it comes back
+        dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+        QVERIFY(hint->isHidden());
+        QVERIFY(editor->setOperationEnabled(0, false));
+        QVERIFY(!hint->isHidden());
+        QVERIFY(editor->setOperationEnabled(0, true));
+        QVERIFY(hint->isHidden());
     }
 
     void trackedTableAndConcentrations()
@@ -575,6 +718,94 @@ private slots:
         removeSpectrum->click();
         QCOMPARE(dialog.handler()->spectrumCount(), steps - 1);
         QCOMPARE(dialog.manualCount(), 0);
+    }
+
+    /*! \brief Viewer 2 renders (SUPRAFIT_TRACE_RENDER_DIR): a series with a dominating CHCl3 line, unstacked,
+     * stacked in y, with x offset, reverse order, with a Blank region step, and the fit of one spectrum in the stack. */
+    void renderStack()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        // the hint line is shown exactly when a signal is missing in every used spectrum
+        auto checkHint = [](NmrImport& dialog) {
+            const NmrHandler* handler = dialog.handler();
+            bool lost = false;
+            for (int s : handler->enabledSignals()) {
+                int used = 0, missing = 0;
+                for (int k = 0; k < handler->spectrumCount(); ++k)
+                    if (!handler->isSpectrumExcluded(k)) {
+                        ++used;
+                        missing += handler->cell(k, s).status == NmrCellStatus::Missing;
+                    }
+                lost = lost || (used > 0 && missing == used);
+            }
+            auto* hint = dialog.findChild<StatusLine*>("nmrMissingHint");
+            return hint && hint->isHidden() == !lost && hint->message().isEmpty() == !lost;
+        };
+        const int steps = 8;
+        auto spectrum = [steps](int k) {
+            const int n = 3001; // below 5000: drawn without OpenGL, visible in an offscreen grab
+            Eigen::VectorXd x(n), y(n);
+            const double f = 1.0 - std::exp(-1.5 * k / double(steps - 1));
+            for (int i = 0; i < n; ++i) {
+                x(i) = 8.0 - 0.001 * i;
+                const double lines[3][3] = { { 7.26, 0.004, 12.0 }, { 7.60 - 0.30 * f, 0.005, 0.5 }, { 6.20 + 0.10 * f, 0.005, 0.35 } };
+                double v = 0;
+                for (const auto& l : lines) {
+                    const double u = (x(i) - l[0]) / l[1];
+                    v += l[2] / (1 + u * u);
+                }
+                y(i) = v + 0.003 * std::sin(37.0 * i);
+            }
+            return XYTrace(x, y, QString("step_%1.txt").arg(k));
+        };
+        QSettings().remove("traceeditor/nmrimport");
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            NmrImport dialog;
+            for (int k = 0; k < steps; ++k)
+                dialog.handler()->addSpectrum(spectrum(k));
+            dialog.handler()->addSignal(7.60, 0.08, "H1");
+            dialog.handler()->addSignal(6.20, 0.08, "H2");
+            dialog.refresh();
+            dialog.resize(1366, 768);
+            auto* editor = dialog.findChild<TraceEditorWidget*>();
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_none" + suffix);
+            editor->setStackPercent(5); // 5 % of the CHCl3 line
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_y_chcl3" + suffix);
+            // blank CHCl3: the small lines set the scale and the stack
+            editor->setRange(7.20, 7.32);
+            editor->addOperation("Blank");
+            editor->setRange(5.0, 8.0);
+            editor->setStackPercent(60);
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_y_blanked" + suffix);
+            editor->setStackXPercent(2);
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_xy_blanked" + suffix);
+            editor->setStackReversed(true);
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_reverse_blanked" + suffix);
+            editor->setStackReversed(false);
+            editor->setStackXPercent(0);
+            // the fit of spectrum 5 with its residual in the stack
+            dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+            for (QListWidget* list : dialog.findChildren<QListWidget*>())
+                if (list->count() == steps)
+                    list->setCurrentRow(5);
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_fit" + suffix);
+            editor->chart()->setXRange(7.15, 7.70);
+            editor->fitYToVisible();
+            QVERIFY(checkHint(dialog));
+            render(&dialog, "stack_fit_zoom" + suffix);
+            dialog.hide();
+            QSettings().remove("traceeditor/nmrimport");
+        }
+        Appearance::Apply(Appearance::Light);
     }
 
     void renderDialog()
