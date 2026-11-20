@@ -46,7 +46,7 @@ Table layouts (first row may be a header, `#` starts a comment, decimal comma is
   While a file opens, the cursor is the wait cursor; a load that takes longer than about 0.3 s shows "Opening <file>: project n of m" and a bar "n of m models" in the status bar (gone when it is done).
   The format is taken from the content, not the name; files of older SupraFit versions (also several projects in one file) open too. If a file cannot be opened, or models of it are left out, a dialog says why ("Loading Error" / "Project loaded with problems", the details list every model: unknown number, does not fit the data, newer file, "fit of the file is not reproduced" = the model gives another sum of squares from the stored parameters than the file says: fit it again; "leave out the first n data points" = older fits did not use them, they are unchecked in the data table; a meta model of a multi-project file is rebuilt from the projects of the file and has the same page list as a model (Parameters, Statistics with the analyses and results, Summary, Detailed); one whose projects are missing is left out and said). The flexible kinetic model has the option "Formula" (`2022-08` = the formula of the first kinetic projects).
 - **Thermogram (raw ITC heat curve)**: in the Import Table dialog use the button "Import as Thermogram" (plain x-y file: column 1 time, column 2 heat).
-  The "Thermogram Dialog" has tabs Data Table, Experiment, Dilution. Set Cell Volume, Cell Concentration, Syringe Concentration, Temperatur,
+  The "Thermogram Dialog" has tabs Data Table, Experiment, Dilution. Set Cell Volume, Cell Concentration, Syringe Concentration, Temperature,
   Inject Volume; per thermogram "Start time [s]"/"End time [s]" (click "Click to Select", then double-click in the chart), "Inject Time [s]" with
   **Apply and Update** (finds peaks, fits baseline, integrates), "Peak Ranges" (Custom/Zero/Threshold), Calibration and "Scaling (raw heat unit)".
   Per-injection volumes are editable in the table. The result is a two-column table (volume, net heat).
@@ -116,7 +116,7 @@ The page "Statistics" of a model (one model; the page list is replaced by the an
 - Export: project tree Export; Export Data (input tables as text); Export Projects (one `.suprafit` per project); model Save / Save Constants / Export Simulated;
   Monte Carlo Export Results; search Export Models; charts Export Diagram (PNG).
 - **Settings** tabs: General Settings (Threads, "Report thermodynamics in kcal/mol (instead of kJ/mol)", "Automatic open Thermogram Dialog", "Show advanced options and simulation tools in GUI." shows
-  further tools at once: more simulation chips, "Any Model…", "Drop Random", the LXO strategy and the thermogram "Advanced stuff"), Appearance ("Colour scheme:" System / Light / Dark, "Toolbar buttons:"), File Save Settings (agent chats, raw data), Standard Calculation
+  further tools at once: more simulation chips, "Any Model…", "Drop Random", the LXO strategy and the thermogram "Advanced options"), Appearance ("Colour scheme:" System / Light / Dark, "Toolbar buttons:"), File Save Settings (agent chats, raw data), Standard Calculation
   (confidence 95 %, Maximal Steps, bins, BC50 points), Chart Settings, Optimizer Settings (defaults of Fit Settings).
 
 ## 7. Reading results

@@ -146,7 +146,7 @@ void Thermogram::setUi()
     connect(m_dil_file, &QLineEdit::textEdited, this, &Thermogram::clearDilution);
 
     m_injct = new QLineEdit;
-    m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
+    m_message = new QLabel(tr("Inject Volume will be taken from ITC file (if available)!"));
 
     // An explicit switch for "use the field's value for every injection", instead of the old
     // per-keystroke toggle whose value depended on how many characters had been typed. The field is
@@ -184,7 +184,7 @@ void Thermogram::setUi()
     hlayout->addWidget(new QLabel(tr("Syringe Concentration")));
     hlayout->addWidget(m_SyringeConcentration);
 
-    hlayout->addWidget(new QLabel(tr("Temperatur")));
+    hlayout->addWidget(new QLabel(tr("Temperature")));
     hlayout->addWidget(m_Temperature);
     hlayout->addWidget(m_constantVolume);
 
@@ -236,7 +236,7 @@ void Thermogram::setUi()
 
     m_import_row = new QPushButton;
     m_import_row->setFlat(true);
-    m_import_row->setToolTip(tr("Import file containg the first column (eg. injections)."));
+    m_import_row->setToolTip(tr("Import a file containing the first column (e.g. injections)."));
     m_import_row->setIcon(Icon("document-import"));
     connect(m_import_row, &QPushButton::clicked, this, &Thermogram::ImportRow);
 
@@ -497,10 +497,10 @@ void Thermogram::UpdateTable()
         m_thm_series->append(QPointF(j + 1, rows[j][3]));
     }
 
-    QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu)
-                                       << "exp. heat\n[raw]"
-                                       << "dil. heat\n[raw]"
-                                       << "joined heat\n[J]";
+    QStringList header = QStringList() << tr("Volume\n[%1L]").arg(mu)
+                                       << tr("exp. heat\n[raw]")
+                                       << tr("dil. heat\n[raw]")
+                                       << tr("joined heat\n[J]");
     m_table->setHorizontalHeaderLabels(header);
     if (QTableWidgetItem* volHeader = m_table->horizontalHeaderItem(0))
         volHeader->setToolTip(tr("Injection volume in %1L — double-click a cell to edit a single addition point (e.g. when the titration step size varies).").arg(mu));
@@ -529,8 +529,8 @@ void Thermogram::UpdateTable()
         }
     }
 
-    m_data_view->setXAxis("Inject Number");
-    m_data_view->setYAxis("Heat q");
+    m_data_view->setXAxis(tr("Inject Number"));
+    m_data_view->setYAxis(tr("Heat q"));
     m_export_data->setEnabled(m_table->rowCount() && m_table->columnCount());
     m_updating_table = false;
 
