@@ -44,6 +44,7 @@
 
 #include <QtCore/QDir>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 
@@ -677,7 +678,7 @@ private slots:
         const Span before = span(editor);
         wheel(editor, pixel(editor, 4, 0.5 * (before.ymin + before.ymax)), 240);
         QCOMPARE(editor.intensityScale(), 1.5625);
-        QVERIFY(editor.hasUserView());
+        QVERIFY(!editor.hasUserView()); // the wheel alone is no zoom of the user (viewer fixes 2026-11-20)
         const Span scaled = span(editor);
         QCOMPARE(scaled.ymin, before.ymin); // the wheel does not change the axis
         QCOMPARE(scaled.ymax, before.ymax);
@@ -821,6 +822,123 @@ private slots:
         QVERIFY(axis(editor, Qt::Vertical)->labelsVisible());
         for (int k = 0; k < 3; ++k)
             QCOMPARE(line(editor, k)->at(5), QPointF(raw.x()(5), raw.y()(5)));
+    }
+
+    void stackAfterWheel_data()
+    {
+        QTest::addColumn<bool>("zoom");
+        QTest::addColumn<bool>("reverse");
+        QTest::addColumn<Direction>("direction");
+        QTest::newRow("no zoom") << false << false << Direction::Reversed;
+        QTest::newRow("no zoom, reverse order") << false << true << Direction::Reversed;
+        QTest::newRow("no zoom, normal axis") << false << false << Direction::Normal;
+        QTest::newRow("zoom") << true << false << Direction::Reversed;
+        QTest::newRow("zoom, reverse order") << true << true << Direction::Normal;
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): after scaling the intensity with the wheel a new "Stack offset" still
+     * acts: the baseline of trace k lies k (reverse: 2 - k) levels of offset x reference height above the first, and
+     * without a zoom of the user every baseline lies inside the y axis (which follows the stack); with a zoom the axes
+     * stay and the traces move inside them. Wheel, zoom drag and stack box as the user drives them. */
+    void stackAfterWheel()
+    {
+        QFETCH(bool, zoom);
+        QFETCH(bool, reverse);
+        QFETCH(Direction, direction);
+        TraceEditorWidget editor;
+        setupStack(editor, true, direction);
+        editor.setStackReversed(reverse);
+        if (zoom) {
+            editor.chart()->setZoomStrategy(ZoomStrategy::Rectangular);
+            drag(editor, Qt::LeftButton, QPointF(2, 3), QPointF(8, -0.5));
+            QVERIFY(editor.hasUserView());
+        }
+        const Span before = span(editor);
+        const QPoint at = pixel(editor, 5, 0.5 * (before.ymin + before.ymax));
+        wheel(editor, at, 360);
+        QCOMPARE(editor.intensityScale(), std::pow(1.25, 3));
+        QCOMPARE(editor.hasUserView(), zoom);
+        auto* box = editor.findChild<QDoubleSpinBox*>("traceStackOffset");
+        QVERIFY(box);
+        const double reference = editor.stackReferenceHeight();
+        for (double percent : { 30.0, 120.0, 60.0 }) {
+            box->setValue(percent);
+            QCoreApplication::processEvents();
+            const Span now = span(editor);
+            for (int k = 0; k < 3; ++k) {
+                const int level = reverse ? 2 - k : k;
+                const double base = level * percent / 100.0 * reference;
+                QCOMPARE(editor.stackOffset(k).y(), base);
+                // the drawn baseline (first point, y about 0) of trace k
+                const double drawn = line(editor, k)->at(0).y();
+                QVERIFY2(std::abs(drawn - (base + editor.intensityScale() * editor.traces().at(k).y()(0))) < 1e-9 * std::max(1.0, base),
+                    qPrintable(QString("%1 %: trace %2 at %3, expected %4").arg(percent).arg(k).arg(drawn).arg(base)));
+                if (!zoom)
+                    QVERIFY2(drawn >= now.ymin && drawn <= now.ymax, qPrintable(QString("%1 %: baseline %2 at %3 outside %4..%5").arg(percent).arg(k).arg(drawn).arg(now.ymin).arg(now.ymax)));
+            }
+            if (zoom) {
+                QCOMPARE(now.ymin, before.ymin); // the user's view stays
+                QCOMPARE(now.ymax, before.ymax);
+                QCOMPARE(now.xmin, before.xmin);
+            } else
+                QVERIFY2(now.ymax < 3 * (2 * percent / 100.0 * reference + 100), qPrintable(QString::number(now.ymax))); // follows the stack, not the scaled peaks
+        }
+        // reverse the order while scaled: the levels follow
+        editor.setStackReversed(!reverse);
+        QCoreApplication::processEvents();
+        QCOMPARE(editor.stackOffset(0).y(), (reverse ? 0 : 2) * 0.6 * reference);
+        if (!zoom) {
+            const Span now = span(editor);
+            for (int k = 0; k < 3; ++k)
+                QVERIFY(line(editor, k)->at(0).y() >= now.ymin && line(editor, k)->at(0).y() <= now.ymax);
+        }
+        // middle click: intensity 1, whole stack
+        send(editor, QEvent::MouseButtonPress, at, Qt::MiddleButton, Qt::MiddleButton);
+        send(editor, QEvent::MouseButtonRelease, at, Qt::MiddleButton, Qt::NoButton);
+        QCOMPARE(editor.intensityScale(), 1.0);
+        QVERIFY(!editor.hasUserView());
+        QVERIFY(span(editor).ymax >= editor.stackOffset(reverse ? 2 : 0).y());
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): a trace of 200001 points is drawn from at most 2 points per pixel column
+     * (below the 5000 points where the chart switches to OpenGL), its highest and lowest point at their own x and y;
+     * after a zoom the visible part is drawn again, point by point when few enough; the data stay complete. */
+    void displayEnvelope()
+    {
+        TraceEditorWidget editor;
+        TraceSet set;
+        set.add(spectrum(true, 200001), "big");
+        editor.setTraces(set);
+        editor.resize(1100, 640);
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        QCoreApplication::processEvents();
+        QCoreApplication::processEvents();
+        QCOMPARE(int(editor.traces().at(0).size()), 200001);
+        const int drawn = editor.drawnPointCount(0);
+        QVERIFY2(drawn > 200 && drawn <= 2 * TraceEditorWidget::kMaxEnvelopeColumns + 2 && drawn < 5000, qPrintable(QString::number(drawn)));
+        const XYTrace& raw = editor.traces().at(0);
+        Eigen::Index top = 0, low = 0;
+        raw.y().maxCoeff(&top);
+        raw.y().minCoeff(&low);
+        bool hasTop = false, hasLow = false;
+        for (int i = 0; i < drawn; ++i) {
+            hasTop = hasTop || line(editor, 0)->at(i) == QPointF(raw.x()(top), raw.y()(top));
+            hasLow = hasLow || line(editor, 0)->at(i) == QPointF(raw.x()(low), raw.y()(low));
+        }
+        QVERIFY(hasTop && hasLow);
+        // zoom to 0.16 ppm (3201 points): every point in view plus one neighbour on either side
+        editor.chart()->setXRange(4.92, 5.08);
+        QCoreApplication::processEvents();
+        int inside = 0;
+        for (Eigen::Index i = 0; i < raw.size(); ++i)
+            inside += raw.x()(i) >= 4.92 && raw.x()(i) <= 5.08;
+        QVERIFY(inside <= TraceEditorWidget::kDisplayPointLimit);
+        QCOMPARE(editor.drawnPointCount(0), inside + 2);
+        // the whole view again
+        editor.resetView();
+        QCoreApplication::processEvents();
+        QVERIFY(editor.drawnPointCount(0) < 5000);
     }
 
     /*! \brief Viewer 2: the stack settings are remembered per host key. */

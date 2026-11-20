@@ -207,6 +207,12 @@ struct NmrFitRegion {
  * change. Stored: "FidProcessing" (only when there is a FID); with StoreRawData additionally "Fid" (the
  * complex points per spectrum position "1".."n", lossless), else the files are read again from "Sources".
  * "Data" still holds the transformed spectra, so a reader without FID support sees them.
+ *
+ * Speed (Claude Generated, viewer fixes): the referencing, the steps, the peaks and the noise of every spectrum are
+ * computed once and kept per spectrum id until the steps or the offset change or the spectra are replaced
+ * (processedEntry); a retrack after a change of signals, window, scope, order or exclusions only follows the signals.
+ * The cache is mutable state: a handler is used from one thread at a time. FIDs of addFiles() and setFidSettings()
+ * are transformed in parallel (OpenMP), each exactly as alone.
  */
 class NmrHandler {
 public:
@@ -218,6 +224,9 @@ public:
      * TopSpin totxt; a JEOL Delta file is recognised by its content and its FID transformed with
      * fidSettings()) and appends its spectra; false with *error, nothing added then. */
     bool addFile(const QString& filename, QString* error = nullptr);
+    /*! \brief addFile() for every file, read and transformed in parallel (OpenMP), appended in the order of files;
+     * returns per file the reason it was not read (empty: read). The spectra equal those of addFile(). Claude Generated */
+    QVector<QString> addFiles(const QStringList& files);
     /*! \brief Appends the files of a directory whose name ends with suffix (empty = all files) in natural
      * order ("2" before "10", QCollator numeric mode); false with *error if none could be read
      * (files that cannot be read are listed in *error, the others are added). */
@@ -284,8 +293,16 @@ public:
     bool removeSignal(int index);
     bool setSignal(int index, const NmrSignal& signal);
     /*! \brief Signals from the peaks of the reference spectrum (replacing the present ones and the manual
-     * shifts), each with this window; returns their number. */
-    int pickSignals(double window, QString* error = nullptr);
+     * shifts), each with this window; only peaks with from <= δ <= to (default: the whole spectrum) are taken,
+     * the detection itself is unchanged (relative to the whole spectrum or to the window of each maximum).
+     * Returns their number. */
+    int pickSignals(double window, QString* error = nullptr, double from = -std::numeric_limits<double>::infinity(),
+        double to = std::numeric_limits<double>::infinity());
+    /*! \brief Adds a signal at position and moves it onto the peak the tracking takes for it in the reference
+     * spectrum (step 3: the nearest of the peaks within the window that are at least half as high as the highest
+     * there, with the detection threshold of the tracking); without such a peak, or when another signal claims it
+     * (conflict), the signal stays at position. *snapped tells which. Tracks; returns the index. Claude Generated */
+    int addSignalAtPeak(double position, double window, bool* snapped = nullptr);
     /*! \brief Default window of new signals (stored as "Window"). */
     inline double defaultWindow() const { return m_window; }
     inline void setDefaultWindow(double window)
@@ -363,6 +380,10 @@ public:
      * there is no fit, e.g. manual cells); nullptr with *error without a lineshape fit or without rows/columns. */
     DataTable* shiftErrorTable(QString* error = nullptr) const;
 
+    /*! \brief Number of spectrum processings (referencing, steps, peak picking) since construction: a cached
+     * result is reused while spectra, steps and reference offset are unchanged (for tests). Claude Generated */
+    inline int processingRuns() const { return m_processing_runs; }
+
     // ---- persistence
     QJsonObject toJson() const;
     /*! \brief Reads toJson(), then track(). Spectra that cannot be read (file missing without raw data)
@@ -383,6 +404,26 @@ private:
         const QVector<QVector<QPair<double, double>>>* near = nullptr) const;
     void fitLineshapes(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& peaks);
     QString spectrumLabel(int index) const;
+    /// Claude Generated: what the processing of one spectrum gave (cached, see processedEntry)
+    struct ProcessedEntry {
+        XYTrace referenced; ///< raw spectrum + referenceOffset()
+        XYTrace processed; ///< after Operations(); empty if reason is set
+        QString reason; ///< error of Operations()
+        QVector<TracePeak> stepPeaks; ///< peaks of the last enabled PickPeaks step
+        QVector<TracePeak> fallback[2]; ///< default picking: [0] threshold 0.05, [1] every maximum
+        QString fallbackReason[2];
+        bool hasFallback[2] = { false, false };
+        double noise = std::numeric_limits<double>::quiet_NaN(); ///< TraceOps::noiseLevel of the processed spectrum (NaN: not yet)
+    };
+    /// processing of spectrum index for the current spectra, steps and offset; computed once and kept until one of
+    /// them changes (the same functions on the same input: the numbers are those of a new computation)
+    const ProcessedEntry& processedEntry(int index) const;
+    /// default picking of an entry (0.05 of the span, or every maximum)
+    const QVector<TracePeak>& fallbackPeaks(const ProcessedEntry& entry, bool allMaxima) const;
+    /// σ of the noise of the processed spectrum index (cached)
+    double noiseOf(int index) const;
+    /// drops every cached processing (spectra replaced)
+    inline void invalidateProcessing() { m_processed.clear(); }
     /// reads a file: spectra of a text file, or the FID of a JEOL file (*fid set, *isFid true)
     bool readSource(const QString& filename, QVector<XYTrace>* traces, Fid* fid, bool* isFid, QString* error) const;
 
@@ -404,4 +445,7 @@ private:
     QHash<QString, Fid> m_fids; ///< spectrum id -> FID it was transformed from
     QHash<QString, FidPhase> m_fid_phases; ///< spectrum id -> phase applied
     FidSettings m_fid_settings;
+    mutable QHash<QString, ProcessedEntry> m_processed; ///< spectrum id -> processing (Claude Generated)
+    mutable QString m_processed_key; ///< steps and offset of m_processed
+    mutable int m_processing_runs = 0;
 };

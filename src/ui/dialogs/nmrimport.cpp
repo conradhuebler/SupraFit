@@ -25,9 +25,11 @@
 #include <cmath>
 
 #include <QtCore/QCollator>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFileInfo>
 #include <QtCore/QLocale>
 #include <QtCore/QSettings>
+#include <QtCore/QTimer>
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 
@@ -298,9 +300,16 @@ void NmrImport::setupUi()
         m_editor->setAxisDirection(on ? TraceEditorWidget::AxisDirection::Reversed : TraceEditorWidget::AxisDirection::Normal);
     });
     connect(m_editor->chart(), &ChartView::pointDoubleClicked, this, [this](const QPointF& point) {
-        m_position->setValue(point.x());
+        // the chart gives display x: the reference spectrum is drawn shifted by its x offset (Claude Generated)
+        const double x = point.x() - m_editor->stackOffset(m_handler.referenceIndex()).x();
+        m_position->setValue(x);
         if (m_double_adds->isChecked())
-            addSignalAt(point.x());
+            addSignalAtPeak(x);
+    });
+    // Claude Generated: labels of the signals in the chart and rows of the signal table select each other
+    connect(m_editor, &TraceEditorWidget::labelClicked, this, [this](int index) {
+        if (index >= 0 && index < m_signal_table->rowCount())
+            m_signal_table->selectRow(index);
     });
 
     connect(m_results, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
@@ -409,10 +418,15 @@ QWidget* NmrImport::fidPanel()
     m_fid_box->setLayout(layout);
     m_fid_box->setVisible(false);
 
-    connect(m_line_broadening, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
+    // a held arrow key changes LB/ph0/ph1 many times: transform once after the last change if transforms are slow
+    m_fid_timer = new QTimer(this);
+    m_fid_timer->setSingleShot(true);
+    m_fid_timer->setInterval(300);
+    connect(m_fid_timer, &QTimer::timeout, this, &NmrImport::applyFidSettings);
+    connect(m_line_broadening, &QDoubleSpinBox::valueChanged, this, &NmrImport::requestFidSettings);
     connect(m_zero_fill, &QComboBox::currentIndexChanged, this, &NmrImport::applyFidSettings);
-    connect(m_ph0, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
-    connect(m_ph1, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
+    connect(m_ph0, &QDoubleSpinBox::valueChanged, this, &NmrImport::requestFidSettings);
+    connect(m_ph1, &QDoubleSpinBox::valueChanged, this, &NmrImport::requestFidSettings);
     connect(m_auto_each, &QCheckBox::toggled, this, &NmrImport::applyFidSettings);
     connect(m_auto_phase, &QPushButton::clicked, this, [this]() {
         AdaptiveWaiter wait(&m_fid_ms, true); // entropy minimisation of the reference spectrum: always slow enough
@@ -450,8 +464,33 @@ void NmrImport::updateFidControls()
     m_updating = updating;
 }
 
+void NmrImport::requestFidSettings()
+{
+    if (m_updating)
+        return;
+    if (m_fid_ms <= 300)
+        applyFidSettings();
+    else
+        m_fid_timer->start(); // restarted by every further change
+}
+
+NmrHandler* NmrImport::handler()
+{
+    flushFidSettings();
+    return &m_handler;
+}
+
+void NmrImport::flushFidSettings()
+{
+    if (m_fid_timer->isActive()) {
+        m_fid_timer->stop();
+        applyFidSettings();
+    }
+}
+
 void NmrImport::applyFidSettings()
 {
+    m_fid_timer->stop();
     if (m_updating)
         return;
     FidSettings fid = m_handler.fidSettings();
@@ -486,6 +525,7 @@ QWidget* NmrImport::signalPanel()
     form->addRow(tr("Reference offset"), m_offset);
 
     m_window = new QDoubleSpinBox;
+    m_window->setObjectName("nmrSearchWindow");
     m_window->setDecimals(4);
     m_window->setRange(0.0005, 5);
     m_window->setSingleStep(0.005);
@@ -558,15 +598,17 @@ QWidget* NmrImport::signalPanel()
     layout->addWidget(m_fit_options);
 
     m_pick = new QPushButton(tr("Pick from reference spectrum"));
-    m_pick->setToolTip(tr("One signal per peak of the reference spectrum (peak picking of the processing steps, else peaks above 5 % of the intensity span); replaces the signals and the values set by hand."));
+    m_pick->setObjectName("nmrPick");
+    m_pick->setToolTip(tr("One signal per peak of the reference spectrum between Start and End in the visible part of the chart (peaks of a peak picking step, else by the detection threshold); replaces the signals and the values set by hand. The signals are numbered in the chart as in the list."));
     layout->addWidget(m_pick);
 
     QHBoxLayout* add = new QHBoxLayout;
     m_position = new QDoubleSpinBox;
+    m_position->setObjectName("nmrPosition");
     m_position->setDecimals(4);
     m_position->setRange(-1000, 1000);
     m_position->setSuffix(tr(" ppm"));
-    m_position->setToolTip(tr("Position of a new signal; a double-click in the chart sets it."));
+    m_position->setToolTip(tr("Position of a new signal (taken as typed); a double-click in the chart sets it."));
     m_add = new QPushButton(tr("Add"));
     m_add->setToolTip(tr("Adds a signal at this position with the search window."));
     add->addWidget(m_position, 1);
@@ -578,13 +620,14 @@ QWidget* NmrImport::signalPanel()
     m_signal_table->setHorizontalHeaderLabels({ tr("Name"), tr("δ /ppm"), tr("± /ppm") });
     m_signal_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_signal_table->verticalHeader()->setDefaultSectionSize(22);
-    m_signal_table->setToolTip(tr("Untick a signal to leave it out of the table; name, position and window can be edited."));
+    m_signal_table->setToolTip(tr("Untick a signal to leave it out of the table; name, position and window can be edited. The row number is the label of the signal in the chart; selecting a row highlights it."));
     layout->addWidget(m_signal_table, 1);
     m_remove_signal = new QPushButton(tr("Remove signal"));
+    m_remove_signal->setObjectName("nmrRemoveSignal");
     layout->addWidget(m_remove_signal);
     m_double_adds = new QCheckBox(tr("Double-click adds the signal"));
     m_double_adds->setObjectName("nmrDoubleClickAdds");
-    m_double_adds->setToolTip(tr("A double-click in the chart adds a signal at that position. Off: the double-click only sets the position, \"Add\" adds the signal."));
+    m_double_adds->setToolTip(tr("A double-click in the chart adds a signal at the peak the tracking finds near the click in the reference spectrum (at the click itself if there is none). Off: the double-click only sets the position, \"Add\" adds the signal there."));
     m_double_adds->setChecked(QSettings().value("nmrimport/doubleClickAdds", true).toBool());
     layout->addWidget(m_double_adds);
     box->setLayout(layout);
@@ -633,12 +676,18 @@ QWidget* NmrImport::signalPanel()
                 return;
         }
         QString error;
-        const int n = m_handler.pickSignals(m_window->value(), &error);
+        double from = 0, to = 0;
+        pickRange(&from, &to);
+        const int n = m_handler.pickSignals(m_window->value(), &error, from, to);
         if (!error.isEmpty())
             setStatus(error, true);
         else
-            setStatus(tr("%1 signal(s) picked in spectrum %2.").arg(n).arg(m_handler.referenceIndex() + 1), false);
+            setStatus(tr("%1 signal(s) picked in spectrum %2 between %3 and %4 ppm.").arg(n).arg(m_handler.referenceIndex() + 1).arg(from, 0, 'f', 3).arg(to, 0, 'f', 3), false);
         retrack();
+    });
+    connect(m_signal_table, &QTableWidget::currentCellChanged, this, [this]() {
+        if (!m_updating)
+            showSelectedSignal();
     });
     connect(m_add, &QPushButton::clicked, this, [this]() { addSignalAt(m_position->value()); });
     connect(m_remove_signal, &QPushButton::clicked, this, [this]() {
@@ -731,15 +780,19 @@ bool NmrImport::addFiles(const QStringList& files, QString* error, const QList<S
     for (const SeriesSourceBar::Failure& failure : before)
         reasons << failure.reason;
     int read = 0;
-    for (const QString& file : files) {
-        QString reason;
-        if (m_handler.addFile(file, &reason))
+    QElapsedTimer timer; // a FID series: reading is about the time of a transform of the series (debounce of LB/ph0/ph1)
+    timer.start();
+    const QVector<QString> problems = m_handler.addFiles(files); // in parallel, appended in this order
+    for (int i = 0; i < files.size(); ++i) {
+        if (problems.value(i).isEmpty())
             ++read;
         else {
-            failed.append({ file, reason });
-            reasons << reason;
+            failed.append({ files[i], problems[i] });
+            reasons << problems[i];
         }
     }
+    if (m_handler.hasFids() && read > 0)
+        m_fid_ms = std::max(m_fid_ms, timer.elapsed());
     if (!files.isEmpty())
         m_source->setPath(files.size() == 1 ? files.first() : QFileInfo(files.value(0)).path());
     m_source->report(read, failed);
@@ -920,6 +973,12 @@ void NmrImport::updateSignals()
         m_signal_table->setItem(s, 0, name);
         m_signal_table->setItem(s, 1, new QTableWidgetItem(QString::number(list[s].position, 'f', 4)));
         m_signal_table->setItem(s, 2, new QTableWidgetItem(QString::number(list[s].window, 'f', 4)));
+        // the height of its peak in the reference spectrum (Claude Generated)
+        const NmrCell cell = m_handler.cell(m_handler.referenceIndex(), s);
+        const QString tip = std::isfinite(cell.height) ? tr("Signal %1: peak at %2 ppm, height %3 in the reference spectrum").arg(s + 1).arg(cell.shift, 0, 'f', 4).arg(cell.height, 0, 'g', 4)
+                                                       : tr("Signal %1: no peak in the reference spectrum").arg(s + 1);
+        for (int column = 0; column < 3; ++column)
+            m_signal_table->item(s, column)->setToolTip(tip);
     }
     m_updating = false;
 }
@@ -1051,46 +1110,91 @@ void NmrImport::updateResults()
 void NmrImport::updateMarkers()
 {
     ChartView* chart = m_editor->chart();
-    for (const QPointer<ScatterSeries>& series : m_markers) {
-        if (series) {
-            chart->removeSeries(series);
-            delete series;
+    // Claude Generated: the series of the last call take the new points when their number fits (a new series costs
+    // the chart about 8 ms); else they are made again
+    auto drop = [chart](auto& list) {
+        for (const auto& series : list) {
+            if (series) {
+                chart->removeSeries(series);
+                delete series;
+            }
         }
-    }
-    m_markers.clear();
+        list.clear();
+    };
     chart->privateView()->removeAllVerticalLines();
-    if (m_handler.spectrumCount() == 0)
+    if (m_handler.spectrumCount() == 0) {
+        drop(m_markers);
+        drop(m_fit_lines);
+        m_editor->setLabels(-1, {});
         return;
+    }
     const TraceSet shown = m_editor->showProcessed() ? m_handler.processedSpectra() : m_handler.referencedSpectra();
     const QVector<int> columns = m_handler.enabledSignals();
-    for (const QPointer<LineSeries>& series : m_fit_lines) {
-        if (series) {
-            chart->removeSeries(series);
-            delete series;
-        }
-    }
-    m_fit_lines.clear();
-    for (int c : columns) {
-        ScatterSeries* markers = new ScatterSeries;
+    bool keep = m_markers.size() == columns.size();
+    for (const QPointer<ScatterSeries>& series : m_markers)
+        keep = keep && series;
+    if (!keep)
+        drop(m_markers);
+    for (int index = 0; index < columns.size(); ++index) {
+        const int c = columns[index];
+        QList<QPointF> points;
         for (int k = 0; k < shown.size(); ++k) {
             const NmrCell cell = m_handler.cell(k, c);
             if (!std::isfinite(cell.shift) || m_handler.isSpectrumExcluded(k))
                 continue;
             const double y = shown.at(k).interpolate(cell.shift);
             if (std::isfinite(y)) // drawn where the editor draws spectrum k (stack offset, intensity factor)
-                markers->append(m_editor->displayPoint(k, cell.shift, y));
+                points.append(m_editor->displayPoint(k, cell.shift, y));
         }
-        markers->setMarkerSize(7);
-        chart->addSeries(markers, false);
-        m_markers << markers;
+        ScatterSeries* markers = keep ? m_markers[index].data() : new ScatterSeries;
+        if (keep)
+            markers->replace(points);
+        else {
+            markers->append(points);
+            markers->setMarkerSize(7);
+            chart->addSeries(markers, false);
+            m_markers << markers;
+        }
         markers->setColor(palette().color(QPalette::Text));
-        chart->privateView()->addVerticalLine(m_handler.signalList()[c].position);
+        // where the reference spectrum is drawn (its x offset)
+        chart->privateView()->addVerticalLine(m_handler.signalList()[c].position + m_editor->stackOffset(m_handler.referenceIndex()).x());
     }
+    // numbered labels at the peaks of the signals in the reference spectrum, numbers = rows of the signal table
+    // (Claude Generated)
+    QVector<TraceEditorWidget::Label> labels;
+    const int ref = m_handler.referenceIndex();
+    for (int s = 0; s < m_handler.signalList().size(); ++s) {
+        const NmrSignal& signal = m_handler.signalList()[s];
+        const NmrCell cell = m_handler.cell(ref, s);
+        TraceEditorWidget::Label label;
+        label.x = std::isfinite(cell.shift) ? cell.shift : signal.position;
+        label.y = ref < shown.size() ? shown.at(ref).interpolate(label.x) : 0;
+        if (!std::isfinite(label.y))
+            label.y = 0;
+        label.text = QString::number(s + 1);
+        label.dimmed = !signal.enabled;
+        label.toolTip = std::isfinite(cell.height)
+            ? tr("%1 (signal %2): %3 ppm, height %4 in spectrum %5").arg(signal.name).arg(s + 1).arg(label.x, 0, 'f', 4).arg(cell.height, 0, 'g', 4).arg(ref + 1)
+            : tr("%1 (signal %2): %3 ppm, no peak in spectrum %4").arg(signal.name).arg(s + 1).arg(label.x, 0, 'f', 4).arg(ref + 1);
+        labels << label;
+    }
+    m_editor->setLabels(ref, labels);
+    m_editor->setHighlightedLabel(m_signal_table->currentRow());
     // the fitted model (dashed) and its residual (thin, 10 % of the spectrum height below zero)
     const int k = fitSpectrum();
     m_editor->setHighlightedTrace(m_spectra->currentRow() >= 0 ? k : -1); // the spectrum whose fit is drawn
     const QVector<NmrFitRegion> regions = m_handler.fitRegions(k);
-    if (!regions.isEmpty() && k < shown.size() && !shown.at(k).isEmpty()) {
+    int curves = 0; ///< fit curve + residual per drawn region
+    if (k < shown.size() && !shown.at(k).isEmpty())
+        for (const NmrFitRegion& region : regions)
+            curves += region.block.x.size() > 0 ? 2 : 0;
+    bool keepLines = m_fit_lines.size() == curves;
+    for (const QPointer<LineSeries>& series : m_fit_lines)
+        keepLines = keepLines && series;
+    if (!keepLines)
+        drop(m_fit_lines);
+    int line = 0;
+    if (curves > 0) {
         // with the stack offset and intensity factor of spectrum k; the residual line keeps its place 10 % of the
         // measured height below the baseline (in the frame of the y axis), only its amplitude is scaled
         const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
@@ -1100,13 +1204,21 @@ void NmrImport::updateMarkers()
         for (const NmrFitRegion& region : regions) {
             if (region.block.x.size() == 0)
                 continue;
-            LineSeries* curve = new LineSeries;
-            LineSeries* rest = new LineSeries;
+            QList<QPointF> fitted, residuals;
             for (Eigen::Index i = 0; i < region.block.x.size(); ++i) {
                 const double x = region.block.x(i);
-                curve->append(m_editor->displayPoint(k, x, region.block.evaluate(x)));
-                rest->append(m_editor->displayPoint(k, x, region.block.residuals(i)) + QPointF(0, offset));
+                fitted.append(m_editor->displayPoint(k, x, region.block.evaluate(x)));
+                residuals.append(m_editor->displayPoint(k, x, region.block.residuals(i)) + QPointF(0, offset));
             }
+            if (keepLines) {
+                m_fit_lines[line++]->replace(fitted);
+                m_fit_lines[line++]->replace(residuals);
+                continue;
+            }
+            LineSeries* curve = new LineSeries;
+            LineSeries* rest = new LineSeries;
+            curve->append(fitted);
+            rest->append(residuals);
             chart->addSeries(curve, false);
             chart->addSeries(rest, false);
             curve->setColor(model);
@@ -1173,9 +1285,52 @@ void NmrImport::addSignalAt(double position)
         setStatus(tr("Signal %1 added at %2 ppm.").arg(m_handler.signalList()[index].name).arg(position, 0, 'f', 4), false);
 }
 
+void NmrImport::addSignalAtPeak(double position)
+{
+    bool snapped = false;
+    const int index = m_handler.addSignalAtPeak(position, m_window->value(), &snapped);
+    retrack();
+    if (index < 0 || index >= m_handler.signalList().size())
+        return;
+    const NmrSignal& signal = m_handler.signalList()[index];
+    if (snapped)
+        setStatus(tr("Signal %1 added at the peak at %2 ppm (double-click at %3 ppm).").arg(signal.name).arg(signal.position, 0, 'f', 4).arg(position, 0, 'f', 4), false);
+    else
+        setStatus(tr("Signal %1 added at %2 ppm: no free peak within the search window.").arg(signal.name).arg(position, 0, 'f', 4), false);
+    m_signal_table->selectRow(index);
+}
+
+void NmrImport::pickRange(double* from, double* to) const
+{
+    double lo = std::min(m_editor->rangeStart(), m_editor->rangeEnd()), hi = std::max(m_editor->rangeStart(), m_editor->rangeEnd());
+    if (QValueAxis* x = m_editor->chart()->axisX()) {
+        // the visible part of the axis in ppm of the reference spectrum (drawn with its x offset)
+        const double dx = m_editor->stackOffset(m_handler.referenceIndex()).x();
+        const double a = std::min(x->min(), x->max()) - dx, b = std::max(x->min(), x->max()) - dx;
+        if (b > a && std::max(lo, a) < std::min(hi, b)) {
+            lo = std::max(lo, a);
+            hi = std::min(hi, b);
+        }
+    }
+    *from = lo;
+    *to = hi;
+}
+
+void NmrImport::showSelectedSignal()
+{
+    const int row = m_signal_table->currentRow();
+    m_editor->setHighlightedLabel(row);
+    if (row < 0 || row >= m_handler.signalList().size() || m_handler.spectrumCount() == 0)
+        return;
+    const int ref = m_handler.referenceIndex();
+    const NmrCell cell = m_handler.cell(ref, row);
+    const double x = std::isfinite(cell.shift) ? cell.shift : m_handler.signalList()[row].position;
+    m_editor->showX(x + m_editor->stackOffset(ref).x());
+}
+
 void NmrImport::updateDoubleClickHint()
 {
-    m_editor->setDoubleClickHint(m_double_adds->isChecked() ? tr("Double-click: add a signal") : tr("Double-click: set the position of a new signal"));
+    m_editor->setDoubleClickHint(m_double_adds->isChecked() ? tr("Double-click: add a signal at the peak there") : tr("Double-click: set the position of a new signal"));
 }
 
 bool NmrImport::validate(QString* error)
@@ -1216,6 +1371,7 @@ bool NmrImport::validate(QString* error)
 
 void NmrImport::accept()
 {
+    flushFidSettings();
     QString error;
     if (!validate(&error)) {
         QMessageBox::warning(this, tr("Shift table not complete"), error);

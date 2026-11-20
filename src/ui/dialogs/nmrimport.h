@@ -53,6 +53,7 @@ class QPushButton;
 class QSpinBox;
 class QTabWidget;
 class QTableWidget;
+class QTimer;
 
 /*! \brief Import of an NMR titration (Claude Generated).
  *
@@ -92,6 +93,15 @@ class QTableWidget;
  * stack (setExcludedTraces), the selected spectrum is drawn wider. A signal missing in every used spectrum
  * gets a hint in its own line above the status line ("nmrMissingHint") and in the tooltips of its cells (the relative threshold of the default peak
  * picking follows the strongest line of the spectrum); tracking results are not changed.
+ *
+ * Viewer fixes (Claude Generated, 2026-11-20): "Pick from reference spectrum" takes only the peaks between Start and
+ * End that lie in the visible part of the x axis; every signal carries its number (the row of the signal table) as a
+ * label at its peak of the reference spectrum, selecting a row highlights the label (and moves the x axis to it if it
+ * is out of view), a click on a label selects the row. A double-click adds the signal at the peak the tracking takes
+ * near the click (NmrHandler::addSignalAtPeak); "Add" takes the typed position as it is. Positions taken from the
+ * chart and the signal lines account for the x offset of the reference spectrum. LB, ph0 and ph1 transform again
+ * 300 ms after the last change when the last transform took longer than that (a held arrow key does not queue one
+ * transform per step).
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -109,7 +119,8 @@ public:
     /*! \brief Sets the concentration table (rows = spectra); the dialog takes a copy. */
     void setConcentrations(const DataTable* table);
 
-    inline NmrHandler* handler() { return &m_handler; }
+    /*! \brief The handler; a FID transform still waiting for its debounce runs first, so it holds the values of the controls. */
+    NmrHandler* handler();
     /*! \brief The raw block of the project (NmrHandler::toJson). */
     inline QJsonObject ProjectData() const { return m_handler.toJson(); }
     /*! \brief Concentrations + shifts as a table JSON (DataTable::ExportTable); empty if not valid. */
@@ -134,6 +145,14 @@ public:
     int manualCount(int spectrum = -1, int signal = -1) const;
     /*! \brief Adds a signal at position (name and window as "Add") and tracks again. Claude Generated */
     void addSignalAt(double position);
+    /*! \brief Adds a signal at the peak the tracking takes near position in the reference spectrum (the position
+     * itself without a free peak), as a double-click does. Claude Generated */
+    void addSignalAtPeak(double position);
+    /*! \brief x range (ppm of the reference spectrum) that "Pick from reference spectrum" searches: Start..End within
+     * the visible x axis. Claude Generated */
+    void pickRange(double* from, double* to) const;
+    /*! \brief Runs a waiting FID transform now (LB, ph0, ph1 changed within the last 300 ms). Claude Generated */
+    void flushFidSettings();
 
 public slots:
     void accept() override;
@@ -147,6 +166,10 @@ private:
     void updateFidControls();
     /*! \brief Passes the FID controls to the handler, transforms again and redraws. Claude Generated */
     void applyFidSettings();
+    /*! \brief applyFidSettings at once if the last transform was fast, else 300 ms after the last change. Claude Generated */
+    void requestFidSettings();
+    /*! \brief Highlights the label of the selected signal and brings it into view. Claude Generated */
+    void showSelectedSignal();
     void updateSpectra();
     void updateSignals();
     void updateResults();
@@ -206,6 +229,7 @@ private:
     QPushButton* m_auto_phase;
     QCheckBox* m_auto_each;
     QLabel* m_fid_info;
+    QTimer* m_fid_timer; ///< debounce of LB/ph0/ph1 (Claude Generated)
     QList<QPointer<ScatterSeries>> m_markers; ///< tracked positions in the chart (deleted with clearChart)
     QList<QPointer<LineSeries>> m_fit_lines; ///< fitted model and residual of the selected spectrum
     QString m_missing_hint; ///< hint for signals that are missing in every spectrum (empty: none)

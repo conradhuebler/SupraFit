@@ -30,6 +30,7 @@
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
+#include <QtCore/QJsonDocument>
 #include <QtCore/QVariant>
 
 #include "src/core/models/datatable.h"
@@ -205,6 +206,49 @@ bool NmrHandler::addFile(const QString& filename, QString* error)
     return true;
 }
 
+QVector<QString> NmrHandler::addFiles(const QStringList& files)
+{
+    // reading and the FID transform are independent per file (readSource and FidProcessing keep no shared state)
+    struct Read {
+        QVector<XYTrace> traces;
+        Fid fid;
+        bool isFid = false;
+        XYTrace spectrum;
+        FidPhase phase;
+        QString error;
+        bool ok = false;
+    };
+    const int n = int(files.size());
+    QVector<Read> read(n);
+    const FidSettings settings = m_fid_settings;
+#pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < n; ++i) {
+        Read& r = read[i];
+        r.ok = readSource(files[i], &r.traces, &r.fid, &r.isFid, &r.error)
+            && (!r.isFid || FidProcessing::process(r.fid, settings, &r.spectrum, &r.phase, &r.error));
+    }
+    QVector<QString> reasons(n);
+    for (int i = 0; i < n; ++i) {
+        Read& r = read[i];
+        if (!r.ok) {
+            reasons[i] = r.error.isEmpty() ? QStringLiteral("%1 could not be read").arg(files[i]) : r.error;
+            continue;
+        }
+        if (r.isFid) {
+            const QString id = m_spectra.add(r.spectrum);
+            m_columns[id] = 1;
+            m_fids[id] = r.fid;
+            m_fid_phases[id] = r.phase;
+            continue;
+        }
+        for (int t = 0; t < r.traces.size(); ++t) {
+            const QString id = m_spectra.add(r.traces[t]);
+            m_columns[id] = t + 1;
+        }
+    }
+    return reasons;
+}
+
 bool NmrHandler::addDirectory(const QString& directory, const QString& suffix, QString* error)
 {
     QDir dir(directory);
@@ -251,6 +295,7 @@ bool NmrHandler::removeSpectrum(int index)
         return false;
     const QString id = m_spectra.idAt(index);
     m_spectra.remove(id);
+    m_processed.remove(id);
     m_columns.remove(id);
     m_fids.remove(id);
     m_fid_phases.remove(id);
@@ -275,6 +320,7 @@ bool NmrHandler::moveSpectrum(int from, int to)
 void NmrHandler::clear()
 {
     m_spectra.clear();
+    invalidateProcessing();
     m_columns.clear();
     m_fids.clear();
     m_fid_phases.clear();
@@ -300,18 +346,30 @@ bool NmrHandler::setFidSettings(const FidSettings& settings, QString* error)
         setError(error, reason);
         return false;
     }
-    // transform everything first: on a failure nothing changes
+    // transform everything first: on a failure nothing changes. The FIDs are independent (FidProcessing keeps no
+    // shared state), so they are transformed in parallel where OpenMP is there; each result is that of a serial
+    // run (Claude Generated)
+    const QStringList ids = m_fids.keys();
+    const int count = int(ids.size());
+    QVector<XYTrace> transformed(count);
+    QVector<FidPhase> transformedPhases(count);
+    QVector<QString> reasons(count);
+    QVector<char> ok(count, 0);
+#pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < count; ++i)
+        ok[i] = FidProcessing::process(m_fids.constFind(ids[i]).value(), settings, &transformed[i], &transformedPhases[i], &reasons[i]) ? 1 : 0;
     QHash<QString, XYTrace> spectra;
     QHash<QString, FidPhase> phases;
-    for (auto it = m_fids.constBegin(); it != m_fids.constEnd(); ++it) {
-        XYTrace spectrum;
-        FidPhase phase;
-        if (!FidProcessing::process(it.value(), settings, &spectrum, &phase, error))
+    for (int i = 0; i < count; ++i) {
+        if (!ok[i]) {
+            setError(error, reasons[i]);
             return false;
-        spectra[it.key()] = spectrum;
-        phases[it.key()] = phase;
+        }
+        spectra[ids[i]] = transformed[i];
+        phases[ids[i]] = transformedPhases[i];
     }
     m_fid_settings = settings;
+    invalidateProcessing(); // the spectra are replaced
     for (auto it = spectra.constBegin(); it != spectra.constEnd(); ++it) {
         const int index = m_spectra.indexOf(it.key());
         if (index >= 0)
@@ -373,32 +431,85 @@ void NmrHandler::setReferenceOffset(double offset, bool moveSignals)
             value += delta;
 }
 
+/*! \brief The processing of spectrum index (referencing, Operations(), the peaks of a PickPeaks step), computed
+ * once for the present spectra, steps and offset (Claude Generated). The cache is keyed by the spectrum id and
+ * dropped when the steps or the offset differ from those it was made with (compared by their JSON) or the spectra
+ * are replaced (FID settings, clear). Moving or excluding a spectrum, signals, window, threshold scope and fit
+ * settings keep it: a retrack after those only follows the signals. The entries hold the results of the same
+ * calls a new computation makes, so the numbers are identical. */
+const NmrHandler::ProcessedEntry& NmrHandler::processedEntry(int index) const
+{
+    const QString key = QString::fromUtf8(QJsonDocument(m_operations.toJson()).toJson(QJsonDocument::Compact)) + QLatin1Char('|')
+        + QString::number(m_reference_offset, 'g', 17);
+    if (key != m_processed_key) {
+        m_processed.clear();
+        m_processed_key = key;
+    }
+    const QString id = m_spectra.idAt(index);
+    auto it = m_processed.find(id);
+    if (it == m_processed.end()) {
+        ProcessedEntry entry;
+        entry.referenced = ShiftAxisOp(m_reference_offset).apply(m_spectra.at(index));
+        entry.processed = m_operations.apply(entry.referenced, &entry.reason, &entry.stepPeaks);
+        ++m_processing_runs;
+        it = m_processed.insert(id, entry);
+    }
+    return it.value();
+}
+
+const QVector<TracePeak>& NmrHandler::fallbackPeaks(const ProcessedEntry& entry, bool allMaxima) const
+{
+    const int mode = allMaxima ? 1 : 0;
+    auto& cached = const_cast<ProcessedEntry&>(entry); // an entry of the mutable cache
+    if (!cached.hasFallback[mode]) {
+        PickPeaksOp fallback;
+        fallback.threshold = allMaxima ? 0.0 : 0.05;
+        cached.fallback[mode] = fallback.pick(cached.processed, &cached.fallbackReason[mode]);
+        cached.hasFallback[mode] = true;
+    }
+    return cached.fallback[mode];
+}
+
+double NmrHandler::noiseOf(int index) const
+{
+    auto& entry = const_cast<ProcessedEntry&>(processedEntry(index));
+    if (std::isnan(entry.noise)) {
+        // the spectrum the peaks were picked on (every maximum, the input of the window rule): empty if its
+        // processing or picking failed
+        bool failed = !entry.reason.isEmpty();
+        if (!failed && !hasPickStep()) {
+            fallbackPeaks(entry, true);
+            failed = !entry.fallbackReason[1].isEmpty();
+        }
+        entry.noise = TraceOps::noiseLevel(failed ? XYTrace() : entry.processed);
+    }
+    return entry.noise;
+}
+
 TraceSet NmrHandler::referencedSpectra() const
 {
     TraceSet result;
-    const ShiftAxisOp shift(m_reference_offset);
     for (int i = 0; i < m_spectra.size(); ++i)
-        result.add(shift.apply(m_spectra.at(i)), m_spectra.idAt(i));
+        result.add(processedEntry(i).referenced, m_spectra.idAt(i));
     return result;
 }
 
 TraceSet NmrHandler::processedSpectra(QString* error) const
 {
-    const TraceSet referenced = referencedSpectra();
     if (m_operations.isEmpty())
-        return referenced;
+        return referencedSpectra();
     TraceSet processed;
     QString first;
-    for (int i = 0; i < referenced.size(); ++i) {
-        QString reason;
-        XYTrace trace = m_operations.apply(referenced.at(i), &reason);
-        if (!reason.isEmpty()) {
+    for (int i = 0; i < m_spectra.size(); ++i) {
+        const ProcessedEntry& entry = processedEntry(i);
+        XYTrace trace = entry.processed;
+        if (!entry.reason.isEmpty()) {
             if (first.isEmpty())
-                first = QString("%1: %2").arg(referenced.at(i).name(), reason);
+                first = QString("%1: %2").arg(entry.referenced.name(), entry.reason);
             trace = XYTrace();
-            trace.setName(referenced.at(i).name());
+            trace.setName(entry.referenced.name());
         }
-        processed.add(trace, referenced.idAt(i));
+        processed.add(trace, m_spectra.idAt(i));
     }
     setError(error, first);
     return processed;
@@ -415,7 +526,7 @@ QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error) const
     const QVector<QVector<TracePeak>> maxima = peaks(error, &processed, true);
     QVector<double> noise(processed.size());
     for (int k = 0; k < processed.size(); ++k)
-        noise[k] = TraceOps::noiseLevel(processed[k]);
+        noise[k] = noiseOf(k);
     return windowDetectedPeaks(processed, maxima, noise);
 }
 
@@ -467,24 +578,25 @@ QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error, QVector<XYTrace>* 
 {
     const bool hasPick = hasPickStep();
 
-    const TraceSet referenced = referencedSpectra();
-    QVector<QVector<TracePeak>> result(referenced.size());
+    const int n = m_spectra.size();
+    QVector<QVector<TracePeak>> result(n);
     QString first;
-    PickPeaksOp fallback;
-    fallback.threshold = allMaxima ? 0.0 : 0.05;
     if (processedSpectra)
-        processedSpectra->resize(referenced.size());
-    for (int i = 0; i < referenced.size(); ++i) {
-        QString reason;
-        QVector<TracePeak> found;
-        const XYTrace processed = m_operations.apply(referenced.at(i), &reason, &found);
-        if (reason.isEmpty() && !hasPick)
-            found = fallback.pick(processed, &reason);
+        processedSpectra->resize(n);
+    for (int i = 0; i < n; ++i) {
+        // cached processing (processedEntry): the steps run once per spectrum, steps and offset
+        const ProcessedEntry& entry = processedEntry(i);
+        QString reason = entry.reason;
+        const QVector<TracePeak>* found = &entry.stepPeaks;
+        if (reason.isEmpty() && !hasPick) {
+            found = &fallbackPeaks(entry, allMaxima);
+            reason = entry.fallbackReason[allMaxima ? 1 : 0];
+        }
         if (!reason.isEmpty() && first.isEmpty())
-            first = QString("%1: %2").arg(referenced.at(i).name(), reason);
-        result[i] = reason.isEmpty() ? found : QVector<TracePeak>();
+            first = QString("%1: %2").arg(entry.referenced.name(), reason);
+        result[i] = reason.isEmpty() ? *found : QVector<TracePeak>();
         if (processedSpectra)
-            (*processedSpectra)[i] = reason.isEmpty() ? processed : XYTrace();
+            (*processedSpectra)[i] = reason.isEmpty() ? entry.processed : XYTrace();
     }
     setError(error, first);
     return result;
@@ -548,7 +660,7 @@ bool NmrHandler::setSignal(int index, const NmrSignal& signal)
     return true;
 }
 
-int NmrHandler::pickSignals(double window, QString* error)
+int NmrHandler::pickSignals(double window, QString* error, double from, double to)
 {
     if (m_spectra.isEmpty()) {
         setError(error, "no spectra");
@@ -563,8 +675,8 @@ int NmrHandler::pickSignals(double window, QString* error)
         QVector<double> noise(processed.size(), 0.0);
         QVector<QVector<QPair<double, double>>> near(processed.size());
         if (m_reference < processed.size()) {
-            noise[m_reference] = TraceOps::noiseLevel(processed[m_reference]);
-            near[m_reference] << qMakePair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            noise[m_reference] = noiseOf(m_reference);
+            near[m_reference] << qMakePair(std::min(from, to), std::max(from, to)); // only maxima in the range are tested
         }
         all = windowDetectedPeaks(processed, maxima, noise, &near);
     } else
@@ -572,9 +684,30 @@ int NmrHandler::pickSignals(double window, QString* error)
     const QVector<TracePeak>& reference = all.value(m_reference);
     m_signals.clear();
     m_manual.clear();
+    const double lo = std::min(from, to), hi = std::max(from, to);
     for (const TracePeak& peak : reference)
-        addSignal(peak.x, m_window);
+        if (peak.x >= lo && peak.x <= hi) // Claude Generated: the range of the caller (e.g. Start..End of the dialog)
+            addSignal(peak.x, m_window);
     return m_signals.size();
+}
+
+int NmrHandler::addSignalAtPeak(double position, double window, bool* snapped)
+{
+    const int index = addSignal(position, window);
+    if (snapped)
+        *snapped = false;
+    track();
+    const NmrCell found = cell(m_reference, index);
+    if (found.status == NmrCellStatus::Ok && std::isfinite(found.peakShift)) {
+        NmrSignal signal = m_signals[index];
+        signal.position = found.peakShift;
+        signal.name = QString::number(signal.position, 'f', 3);
+        m_signals[index] = signal;
+        if (snapped)
+            *snapped = true;
+        track();
+    }
+    return index;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -714,7 +847,7 @@ void NmrHandler::track()
     // window threshold (Claude Generated): every maximum is a candidate, the rule of step 3a selects
     QVector<double> noise(processed.size());
     for (int k = 0; k < processed.size(); ++k)
-        noise[k] = TraceOps::noiseLevel(processed[k]);
+        noise[k] = noiseOf(k);
     trackDirection(m_reference, +1, found, &processed, &noise);
     trackDirection(m_reference - 1, -1, found, &processed, &noise);
     if (m_fit.method == NmrShiftMethod::LineshapeFit) {

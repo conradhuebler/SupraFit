@@ -456,6 +456,127 @@ private slots:
         QVERIFY2(handler.problems().isEmpty(), qPrintable(handler.problems().join("\n")));
     }
 
+    /*! \brief Viewer fixes (Claude Generated): a pick with a range takes exactly the peaks of the pick over the whole
+     * spectrum that lie in it (bit for bit), in both threshold scopes; the order of the ends does not matter. */
+    void pickSignalsInARange()
+    {
+        for (NmrThresholdScope scope : { NmrThresholdScope::Spectrum, NmrThresholdScope::Window }) {
+            NmrHandler all;
+            fillHandler(&all);
+            all.setThresholdScope(scope);
+            QString error;
+            all.pickSignals(0.08, &error);
+            QVERIFY2(error.isEmpty(), qPrintable(error));
+            QVector<double> expected;
+            for (const NmrSignal& signal : all.signalList())
+                if (signal.position >= 7.0 && signal.position <= 7.7)
+                    expected << signal.position;
+            QVERIFY2(expected.size() >= 3 && expected.size() < all.signalList().size(), qPrintable(QString("%1 of %2").arg(expected.size()).arg(all.signalList().size())));
+            NmrHandler part;
+            fillHandler(&part);
+            part.setThresholdScope(scope);
+            QCOMPARE(part.pickSignals(0.08, &error, 7.7, 7.0), int(expected.size()));
+            for (int i = 0; i < expected.size(); ++i)
+                QCOMPARE(part.signalList()[i].position, expected[i]);
+        }
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): the processing of the spectra runs once per spectra, steps and offset;
+     * signals, window, scope, order and exclusions reuse it, and the cells equal those of a new handler bit for bit. */
+    void processingIsCached()
+    {
+        auto same = [](const NmrHandler& a, const NmrHandler& b) {
+            if (a.cells().size() != b.cells().size())
+                return false;
+            for (int k = 0; k < a.cells().size(); ++k)
+                for (int s = 0; s < a.cells()[k].size(); ++s) {
+                    const NmrCell &x = a.cells()[k][s], &y = b.cells()[k][s];
+                    const bool shift = (std::isnan(x.shift) && std::isnan(y.shift)) || x.shift == y.shift;
+                    const bool height = (std::isnan(x.height) && std::isnan(y.height)) || x.height == y.height;
+                    if (!shift || !height || x.status != y.status)
+                        return false;
+                }
+            return true;
+        };
+        for (NmrThresholdScope scope : { NmrThresholdScope::Spectrum, NmrThresholdScope::Window }) {
+            NmrHandler handler;
+            handler.setThresholdScope(scope);
+            fillHandler(&handler);
+            const int runs = handler.processingRuns();
+            QCOMPARE(runs, handler.spectrumCount());
+            handler.addSignal(7.05, 0.02, "N");
+            handler.setDefaultWindow(0.03);
+            handler.track();
+            handler.setThresholdScope(scope == NmrThresholdScope::Window ? NmrThresholdScope::Spectrum : NmrThresholdScope::Window);
+            handler.track();
+            handler.setThresholdScope(scope);
+            handler.setSpectrumExcluded(3, true);
+            handler.track();
+            handler.setSpectrumExcluded(3, false);
+            QVERIFY(handler.moveSpectrum(2, 5));
+            QVERIFY(handler.moveSpectrum(5, 2));
+            handler.track();
+            QCOMPARE(handler.processingRuns(), runs);
+            NmrHandler fresh;
+            fresh.setThresholdScope(scope);
+            fillHandler(&fresh);
+            fresh.addSignal(7.05, 0.02, "N");
+            fresh.track();
+            QVERIFY(same(handler, fresh));
+            // another offset or other steps: processed again, the same numbers as a new handler with them
+            handler.setReferenceOffset(0.01);
+            handler.track();
+            QCOMPARE(handler.processingRuns(), 2 * runs);
+            TraceOpList ops;
+            ops.append(SmoothOp(7, 2));
+            handler.setOperations(ops);
+            handler.track();
+            QCOMPARE(handler.processingRuns(), 3 * runs);
+            fresh.setReferenceOffset(0.01);
+            fresh.setOperations(ops);
+            fresh.track();
+            QVERIFY(same(handler, fresh));
+            NmrHandler cold;
+            cold.setThresholdScope(scope);
+            fillHandler(&cold);
+            cold.addSignal(7.05, 0.02, "N");
+            cold.setReferenceOffset(0.01);
+            cold.setOperations(ops);
+            cold.track();
+            QVERIFY(same(handler, cold));
+        }
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): addSignalAtPeak puts the signal on the peak the tracking takes near the
+     * position in the reference spectrum, keeps the position without a free peak or for a peak claimed by another signal. */
+    void addSignalAtThePeak()
+    {
+        std::mt19937 rng(7);
+        QVector<QVector<double>> truth;
+        NmrHandler handler;
+        for (const XYTrace& t : titration(Case{ 0.01, 1.0, 0.0, 0.05, 8 }, rng, &truth))
+            handler.addSpectrum(t);
+        for (NmrThresholdScope scope : { NmrThresholdScope::Spectrum, NmrThresholdScope::Window }) {
+            handler.setSignals({});
+            handler.setThresholdScope(scope);
+            bool snapped = false;
+            const int h1 = handler.addSignalAtPeak(kFree[0] + 0.004, 0.02, &snapped);
+            QVERIFY(snapped);
+            const double peak = handler.cell(handler.referenceIndex(), h1).shift;
+            QCOMPARE(handler.signalList()[h1].position, peak);
+            QCOMPARE(handler.signalList()[h1].name, QString::number(peak, 'f', 3));
+            QVERIFY2(std::abs(peak - kFree[0]) < 0.1 * 0.01, qPrintable(QString::number(peak, 'f', 6)));
+            // no line within the window: the position stays
+            const int empty = handler.addSignalAtPeak(7.85, 0.01, &snapped);
+            QVERIFY(!snapped);
+            QCOMPARE(handler.signalList()[empty].position, 7.85);
+            // the peak of H1 again: claimed (conflict), the position stays
+            const int twice = handler.addSignalAtPeak(kFree[0] - 0.003, 0.02, &snapped);
+            QVERIFY(!snapped);
+            QCOMPARE(handler.signalList()[twice].position, kFree[0] - 0.003);
+        }
+    }
+
     /// accuracy over a spread of conditions; worst case printed and pinned
     void endToEndSpread()
     {

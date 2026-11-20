@@ -34,6 +34,8 @@
 class ChartView;
 class LineSeries;
 
+class QGraphicsRectItem;
+
 class QCheckBox;
 class QDoubleSpinBox;
 class QFormLayout;
@@ -93,7 +95,26 @@ class StatusLine;
  * on a reversed axis "right" is towards lower x, so the x shift in data units is negative there. With a
  * stack offset excluded traces are not drawn and the y labels are hidden (the ticks then mean nothing).
  * The settings are remembered per host (setSettingsKey, QSettings "traceeditor/<key>/stackY|stackX|
- * stackReverse"), never in a project.
+ * stackReverse"), never in a project. With an x offset the x axis gives the positions of the bottom trace (level 0);
+ * a note says so.
+ *
+ * Automatic and user view (Claude Generated, viewer fixes 2026-11-20): the axes are the user's view (hasUserView())
+ * only after a zoom (left drag, Ctrl + wheel, "Fit y to the visible range", "Zoom to range"); the intensity wheel
+ * does not make them one. Without a user view the axes follow the stack: at intensity factor 1 the chart scales them
+ * to the drawn series, at another factor they stay where they were when the factor left 1 until a stack setting
+ * changes; then y becomes the nice range of the stacked traces at factor 1, so a new offset is always seen. With a
+ * user view the axes stay and the traces move inside them.
+ *
+ * Display envelope (Claude Generated; view only): a trace of more than kDisplayPointLimit points is drawn from the
+ * points in the visible x range (and one neighbour on either side); if those are still more than kDisplayPointLimit,
+ * from the lowest and the highest point of every pixel column (at most kMaxEnvelopeColumns), in their order, at their
+ * own x and y. Maxima and minima keep their exact place, the line looks as with every point. traces(), the peaks, the
+ * host's tables and computations keep every point; after a zoom or a resize the envelope is computed again.
+ *
+ * Labels (Claude Generated): a host can put numbered labels at points of one trace (setLabels; e.g. the signals of
+ * the NMR import at the reference spectrum). They sit above their point, drawn with the trace's stack offset and
+ * intensity, in up to kLabelRows rows so they do not overlap; one can be highlighted (setHighlightedLabel); a click on
+ * a label emits labelClicked() and is not a zoom.
  */
 class TraceEditorWidget : public QWidget {
     Q_OBJECT
@@ -215,14 +236,42 @@ public:
     void resetView();
     /*! \brief Scales the y axis by factor about the value y (Ctrl + wheel); factor < 1 zooms in. Claude Generated */
     void scaleY(double y, double factor);
-    /*! \brief True while the user's zoom is kept (left drag, wheel, fit y, zoom to range). Claude Generated */
+    /*! \brief True while the user's zoom is kept (left drag, Ctrl + wheel, fit y, zoom to range); the intensity wheel
+     * alone does not set it. Claude Generated */
     inline bool hasUserView() const { return m_user_view; }
+
+    /*! \brief A numbered label of the host at (x, y) of a trace (Claude Generated). */
+    struct Label {
+        double x = 0; ///< data x (without stack offset)
+        double y = 0; ///< data y (as measured, without stack offset and intensity factor)
+        QString text; ///< short text, e.g. the number of a signal
+        QString toolTip;
+        bool dimmed = false; ///< drawn in the disabled text colour (e.g. a signal left out)
+    };
+    /*! \brief Replaces the labels; they are drawn at displayPoint(traceIndex, x, y) of each. Claude Generated */
+    void setLabels(int traceIndex, const QVector<Label>& labels);
+    /*! \brief Draws label index highlighted (-1: none). Claude Generated */
+    void setHighlightedLabel(int index);
+    inline int highlightedLabel() const { return m_label_highlight; }
+    inline int labelCount() const { return int(m_labels.size()); }
+    /*! \brief Rectangle of label index in viewport pixels; empty if it is not drawn (outside the plot). Claude Generated */
+    QRectF labelRect(int index) const;
+    /*! \brief Moves the x axis (same width) so that the display x lies in the middle, if it lies outside the axis now;
+     * the result is the user's view. Claude Generated */
+    void showX(double x);
+    /*! \brief Number of points of the drawn series of trace traceIndex (the display envelope). Claude Generated */
+    int drawnPointCount(int traceIndex) const;
+    static constexpr int kDisplayPointLimit = 4000; ///< a trace with at most this many points in view is drawn point by point
+    static constexpr int kMaxEnvelopeColumns = 2000; ///< most pixel columns of the envelope (below the chart's OpenGL limit of 5000 points)
+    static constexpr int kLabelRows = 4; ///< rows of labels above their points before they may overlap
 
 signals:
     void operationsChanged();
     void rangeChanged(double start, double end);
     /*! \brief The chart was drawn again (its series were replaced); a host adds its own series here. */
     void chartUpdated();
+    /*! \brief A label of the host was clicked (index of setLabels). Claude Generated */
+    void labelClicked(int index);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -243,8 +292,19 @@ private:
     int stackLevel(int traceIndex) const;
     bool isExcluded(int traceIndex) const;
     void updateStackReference();
-    /*! \brief Moves the drawn series to the current stack offsets (no new series, no processing). */
-    void applyStack();
+    /*! \brief Moves the drawn series to the current stack offsets (no new series, no processing); geometry: a stack
+     * setting, the range or the exclusions changed (the automatic y view follows), false: only the intensity factor. */
+    void applyStack(bool geometry = true);
+    // Claude Generated (viewer fixes): envelope, automatic view, labels
+    void setEnvelopeRange(double lo, double hi);
+    static QVector<Eigen::Index> envelopeIndices(const XYTrace& trace, double lo, double hi, int columns);
+    int envelopeColumns() const;
+    void scheduleViewUpdate();
+    void updateEnvelope();
+    void updateLabels();
+    void niceYRange(double* lo, double* hi) const;
+    void freezeAutoView();
+    void updateXNote();
     void rangeMoved();
     QList<QPointF> shiftedPoints(int traceIndex) const;
     void homeX(double* lo, double* hi) const;
@@ -273,12 +333,32 @@ private:
     bool m_user_view = false; ///< the axes below are the user's zoom, kept over redraws
     double m_view_x0 = 0, m_view_x1 = 0, m_view_y0 = 0, m_view_y1 = 0;
     double m_intensity = 1; ///< display factor of the intensities (view only, Viewer 3)
+    double m_auto_x0 = 0, m_auto_x1 = 0, m_auto_y0 = 0, m_auto_y1 = 0; ///< automatic axes while the intensity factor is not 1
+    double m_env_lo = 0, m_env_hi = 0; ///< display x range of the envelope
+    int m_env_columns = 0; ///< pixel columns of the envelope
+    /// drawn indices of a trace for one range, column count and x shift (Claude Generated)
+    struct EnvelopeIndices {
+        bool valid = false;
+        double lo = 0, hi = 0, dx = 0;
+        int columns = 0;
+        QVector<Eigen::Index> indices;
+    };
+    mutable QVector<EnvelopeIndices> m_env_cache; ///< per trace, cleared with new traces
+    QVector<QPair<double, double>> m_extents; ///< y min/max of every drawn trace
+    bool m_view_update_pending = false;
+    int m_label_trace = -1;
+    QVector<Label> m_labels;
+    int m_label_highlight = -1;
+    QList<QGraphicsRectItem*> m_label_items; ///< one box (with its text as child) per label, items of the chart
+    QVector<QRectF> m_label_scene; ///< scene rectangle of every drawn label (empty: hidden)
+    bool m_label_press = false; ///< the press on a label is consumed, so are its release and double-click
 
     ChartView* m_chart;
     QDoubleSpinBox *m_start, *m_end;
     QDoubleSpinBox *m_stack_y, *m_stack_x;
     QCheckBox* m_stack_reverse;
     QLabel* m_intensity_label; ///< "Intensity x f", shown while f != 1
+    QLabel* m_x_note; ///< "x axis: bottom trace", shown with an x offset
     QPushButton* m_fit_y;
     QCheckBox* m_processed;
     QPushButton* m_zoom;

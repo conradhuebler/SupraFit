@@ -31,7 +31,10 @@
 #include <QtCore/QRegularExpression>
 #include <QtCore/QSettings>
 
+#include <QtGui/QBrush>
+#include <QtGui/QFontMetricsF>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QPen>
 #include <QtGui/QPalette>
 #include <QtGui/QWheelEvent>
 
@@ -39,6 +42,8 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFormLayout>
+#include <QtWidgets/QGraphicsRectItem>
+#include <QtWidgets/QGraphicsSimpleTextItem>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
@@ -116,7 +121,9 @@ void TraceEditorWidget::setupUi()
     // range row
     QHBoxLayout* range = new QHBoxLayout;
     m_start = new QDoubleSpinBox;
+    m_start->setObjectName("traceRangeStart");
     m_end = new QDoubleSpinBox;
+    m_end->setObjectName("traceRangeEnd");
     for (QDoubleSpinBox* box : { m_start, m_end }) {
         box->setKeyboardTracking(false);
         box->setMinimumWidth(90);
@@ -185,6 +192,13 @@ void TraceEditorWidget::setupUi()
     m_intensity_label->setHidden(true);
     stack->addSpacing(12);
     stack->addWidget(m_intensity_label);
+    // Claude Generated: with an x offset only the bottom trace is drawn at its true x
+    m_x_note = new QLabel(tr("x axis: bottom trace"));
+    m_x_note->setObjectName("traceXOffsetNote");
+    m_x_note->setToolTip(tr("With an x offset every trace above the bottom one is drawn shifted to the right; the x axis gives the positions of the bottom trace. Markers and tables keep the true positions."));
+    m_x_note->setHidden(true);
+    stack->addSpacing(12);
+    stack->addWidget(m_x_note);
     stack->addStretch();
     layout->addLayout(stack);
 
@@ -284,6 +298,7 @@ void TraceEditorWidget::setupUi()
     for (QDoubleSpinBox* box : { m_stack_y, m_stack_x })
         connect(box, &QDoubleSpinBox::valueChanged, this, [this]() {
             saveStackSettings();
+            updateXNote();
             applyStack();
         });
     connect(m_stack_reverse, &QCheckBox::toggled, this, [this]() {
@@ -785,15 +800,13 @@ void TraceEditorWidget::updateError()
  * PickPeaks step on the processed traces and the limits of the selected range. The processing runs
  * for every trace in either view, so an error of a step is reported also while the raw data are shown.
  * The user's zoom is kept (setTraces decides whether the traces are the same); the stack offsets are
- * applied to the points of the series. */
+ * applied to the points of the series. When the chart already holds a series for every trace and the same peak
+ * series, their points are replaced instead (a new series costs the chart about 8 ms: 15 spectra and the limits
+ * were 120 ms; Claude Generated). */
 void TraceEditorWidget::updateChart()
 {
-    m_chart->clearChart();
-    m_colors.clear();
     m_peaks.clear();
     m_shown.clear();
-    m_lines.clear();
-    m_peak_series.clear();
     m_error.clear();
     const bool processed = m_processed->isChecked();
 
@@ -812,69 +825,126 @@ void TraceEditorWidget::updateChart()
         m_peaks << peaks;
         m_shown << shown;
     }
+    // y extent of every drawn trace (range limits, nice y range) and no envelope of the old traces
+    m_extents.clear();
+    for (const XYTrace& trace : m_shown)
+        m_extents << (trace.isEmpty() ? qMakePair(0.0, 0.0) : qMakePair(trace.y().minCoeff(), trace.y().maxCoeff()));
+    m_env_cache.clear();
     updateStackReference();
+    // the envelope of large traces for the view the axes will show (applyView below)
+    double view_lo = 0, view_hi = 0;
+    if (m_user_view) {
+        view_lo = std::min(m_view_x0, m_view_x1);
+        view_hi = std::max(m_view_x0, m_view_x1);
+    } else if (m_intensity != 1) {
+        view_lo = std::min(m_auto_x0, m_auto_x1);
+        view_hi = std::max(m_auto_x0, m_auto_x1);
+    } else
+        homeX(&view_lo, &view_hi);
+    setEnvelopeRange(view_lo, view_hi);
 
-    for (int i = 0; i < m_shown.size(); ++i) {
-        LineSeries* series = new LineSeries;
-        series->append(shiftedPoints(i));
-        m_chart->addSeries(series, false);
-        // the chart gives the theme colour to the pen; LineSeries::color() only knows a colour set by setColor
-        const QColor color = series->pen().color();
-        series->setColor(color);
-        series->setLineWidth(i == m_highlight ? 2 : 1);
-        m_colors << color;
-        m_lines << series;
-    }
-    // markers after all lines, so the lines keep the colours of the raw view
-    for (int i = 0; i < m_peaks.size(); ++i) {
-        if (!processed || m_peaks[i].isEmpty()) {
-            m_peak_series << nullptr;
-            continue;
-        }
-        ScatterSeries* markers = new ScatterSeries;
-        for (const TracePeak& peak : m_peaks[i])
-            markers->append(displayPoint(i, peak.x, peak.height));
-        markers->setMarkerSize(8);
-        m_chart->addSeries(markers, false);
-        markers->setColor(m_colors[i]);
-        m_peak_series << markers;
-    }
-    const bool stacked = isStacked();
-    for (int i = 0; i < m_lines.size(); ++i) {
-        const bool visible = !(stacked && isExcluded(i));
-        if (!visible) {
-            m_lines[i]->setVisible(false);
-            if (m_peak_series[i])
-                m_peak_series[i]->setVisible(false);
-        }
-    }
-    if (!m_traces.isEmpty()) {
-        m_lower = new LineSeries;
-        m_upper = new LineSeries;
-        for (LineSeries* limit : { m_lower.data(), m_upper.data() }) {
-            m_chart->addSeries(limit, false);
-            QColor color = palette().color(QPalette::Text);
-            color.setAlpha(150); // visible on light and dark chart backgrounds
-            limit->setColor(color);
-            limit->setDashDotLine(true);
+    // the series of the last drawing can take the new points (same number of traces, same peak series)
+    bool reuse = !m_traces.isEmpty() && m_lines.size() == m_traces.size() && m_peak_series.size() == m_traces.size() && m_lower && m_upper;
+    for (int i = 0; reuse && i < m_lines.size(); ++i)
+        reuse = m_lines[i] && (m_peak_series[i].isNull() == (!processed || m_peaks[i].isEmpty()));
+    if (reuse) {
+        const bool stacked = isStacked();
+        for (int i = 0; i < m_lines.size(); ++i) {
+            const bool visible = !(stacked && isExcluded(i));
+            m_lines[i]->replace(shiftedPoints(i));
+            m_lines[i]->setLineWidth(i == m_highlight ? 2 : 1);
+            m_lines[i]->setVisible(visible);
+            if (m_peak_series[i]) {
+                QList<QPointF> points;
+                for (const TracePeak& peak : m_peaks[i])
+                    points << displayPoint(i, peak.x, peak.height);
+                m_peak_series[i]->replace(points);
+                m_peak_series[i]->setVisible(visible);
+            }
         }
         updateRangeLines();
+        if (!m_user_view && m_intensity == 1)
+            m_chart->formatAxis(); // as a new series would
+    }
+    if (!reuse) {
+        m_chart->clearChart();
+        m_colors.clear();
+        m_lines.clear();
+        m_peak_series.clear();
+        for (int i = 0; i < m_shown.size(); ++i) {
+            LineSeries* series = new LineSeries;
+            series->append(shiftedPoints(i));
+            m_chart->addSeries(series, false);
+            // the chart gives the theme colour to the pen; LineSeries::color() only knows a colour set by setColor
+            const QColor color = series->pen().color();
+            series->setColor(color);
+            series->setLineWidth(i == m_highlight ? 2 : 1);
+            m_colors << color;
+            m_lines << series;
+        }
+        // markers after all lines, so the lines keep the colours of the raw view
+        for (int i = 0; i < m_peaks.size(); ++i) {
+            if (!processed || m_peaks[i].isEmpty()) {
+                m_peak_series << nullptr;
+                continue;
+            }
+            ScatterSeries* markers = new ScatterSeries;
+            for (const TracePeak& peak : m_peaks[i])
+                markers->append(displayPoint(i, peak.x, peak.height));
+            markers->setMarkerSize(8);
+            m_chart->addSeries(markers, false);
+            markers->setColor(m_colors[i]);
+            m_peak_series << markers;
+        }
+        const bool stacked = isStacked();
+        for (int i = 0; i < m_lines.size(); ++i) {
+            const bool visible = !(stacked && isExcluded(i));
+            if (!visible) {
+                m_lines[i]->setVisible(false);
+                if (m_peak_series[i])
+                    m_peak_series[i]->setVisible(false);
+            }
+        }
+        if (!m_traces.isEmpty()) {
+            m_lower = new LineSeries;
+            m_upper = new LineSeries;
+            for (LineSeries* limit : { m_lower.data(), m_upper.data() }) {
+                m_chart->addSeries(limit, false);
+                QColor color = palette().color(QPalette::Text);
+                color.setAlpha(150); // visible on light and dark chart backgrounds
+                limit->setColor(color);
+                limit->setDashDotLine(true);
+            }
+            updateRangeLines();
+        }
     }
     updateYLabels();
     applyAxisDirection();
     updateError();
+    // a zoom or a resize computes the envelope again, the labels follow the axes (Claude Generated)
+    if (QValueAxis* x = m_chart->axisX())
+        connect(x, &QValueAxis::rangeChanged, this, &TraceEditorWidget::scheduleViewUpdate, Qt::UniqueConnection);
+    if (QValueAxis* y = m_chart->axisY())
+        connect(y, &QValueAxis::rangeChanged, this, &TraceEditorWidget::scheduleViewUpdate, Qt::UniqueConnection);
+    connect(m_chart->chart(), &QChart::plotAreaChanged, this, &TraceEditorWidget::scheduleViewUpdate, Qt::UniqueConnection);
     refreshMarkers();
     emit chartUpdated();
     applyView(); // the series of the host rescaled the axes
+    updateLabels();
 }
 
 /*! \brief Moves the drawn series to the current stack offsets: the points are replaced, the series stay
  * (colours, the host's series and the processing are untouched). The host is told by chartUpdated() to
  * move its own series. Claude Generated (Viewer 2) */
-void TraceEditorWidget::applyStack()
+void TraceEditorWidget::applyStack(bool geometry)
 {
     if (m_lines.isEmpty())
         return;
+    if (geometry && !m_user_view && m_intensity == 1) {
+        double lo = 0, hi = 0;
+        homeX(&lo, &hi); // the x offset widens the whole view
+        setEnvelopeRange(lo, hi);
+    }
     const bool stacked = isStacked();
     for (int i = 0; i < m_lines.size(); ++i) {
         if (!m_lines[i])
@@ -892,11 +962,20 @@ void TraceEditorWidget::applyStack()
     }
     updateRangeLines();
     updateYLabels();
-    if (!m_user_view)
-        m_chart->formatAxis(); // whole stack in view
+    if (!m_user_view) {
+        if (m_intensity == 1)
+            m_chart->formatAxis(); // whole stack in view
+        else if (geometry) {
+            // Claude Generated: scaled intensities, no zoom of the user: y follows the stack at factor 1, so a new offset
+            // is always seen (the signals above the frame stay cut)
+            niceYRange(&m_auto_y0, &m_auto_y1);
+            homeX(&m_auto_x0, &m_auto_x1);
+        }
+    }
     refreshMarkers();
     emit chartUpdated();
     applyView();
+    updateLabels();
 }
 
 int TraceEditorWidget::stackLevel(int traceIndex) const
@@ -948,12 +1027,56 @@ void TraceEditorWidget::setIntensityScale(double factor)
     factor = std::clamp(factor, kMinIntensity, kMaxIntensity);
     if (factor == m_intensity)
         return;
-    // the axes stay as they are (also when a host set them): they become the user's view, so no redraw (nor a
-    // host's series) rescales them
-    captureView();
+    // the axes stay as they are (also when a host set them); without a zoom of the user they are kept as the automatic
+    // view, which a later stack change moves again (Claude Generated: before, the wheel made them the user's view and
+    // a new stack offset then moved the traces out of the frame)
+    if (m_user_view)
+        captureView(); // the axes as they are now (a host may have moved them)
+    else
+        freezeAutoView(); // the automatic view: the axes as they are now
     m_intensity = factor;
     updateIntensityLabel();
-    applyStack(); // moves the points of the series; the host moves its own (chartUpdated)
+    applyStack(false); // moves the points of the series; the host moves its own (chartUpdated)
+}
+
+void TraceEditorWidget::freezeAutoView()
+{
+    QValueAxis* x = m_chart->axisX();
+    QValueAxis* y = m_chart->axisY();
+    if (!x || !y)
+        return;
+    m_auto_x0 = x->min();
+    m_auto_x1 = x->max();
+    m_auto_y0 = y->min();
+    m_auto_y1 = y->max();
+}
+
+/*! \brief The y range the chart gives the stacked traces at intensity factor 1: their extent (visible traces with
+ * their stack offsets) with Qt's nice numbers, as the QtNiceNumbers scaling of the chart. Claude Generated */
+void TraceEditorWidget::niceYRange(double* lo, double* hi) const
+{
+    double ymin = std::numeric_limits<double>::infinity(), ymax = -ymin;
+    for (int i = 0; i < m_shown.size(); ++i) {
+        if (!m_lines.value(i) || !m_lines[i]->isVisible() || m_shown[i].isEmpty())
+            continue;
+        const double dy = stackOffset(i).y();
+        ymin = std::min(ymin, dy + m_extents.value(i).first);
+        ymax = std::max(ymax, dy + m_extents.value(i).second);
+    }
+    if (!std::isfinite(ymin) || !std::isfinite(ymax) || !(ymax > ymin))
+        return; // nothing drawn: unchanged
+    QValueAxis nice;
+    if (QValueAxis* y = m_chart->axisY())
+        nice.setTickCount(y->tickCount());
+    nice.setRange(ymin, ymax);
+    nice.applyNiceNumbers();
+    *lo = nice.min();
+    *hi = nice.max();
+}
+
+void TraceEditorWidget::updateXNote()
+{
+    m_x_note->setHidden(m_stack_x->value() == 0);
 }
 
 void TraceEditorWidget::scaleIntensity(double factor)
@@ -986,7 +1109,26 @@ void TraceEditorWidget::updateStackReference()
             continue;
         const XYTrace& trace = m_shown[i];
         double ymin = std::numeric_limits<double>::infinity(), ymax = -ymin;
-        for (Eigen::Index k = 0; k < trace.size(); ++k) {
+        // the points in lo..hi: the slice of the monotone axis (envelopeIndices without a column limit would copy it)
+        const Eigen::Index n = trace.size();
+        Eigen::Index a = 0, b = n;
+        if (n > 1) {
+            const bool ascending = trace.x()(n - 1) > trace.x()(0);
+            auto bound = [&](auto before) {
+                Eigen::Index l = 0, r = n;
+                while (l < r) {
+                    const Eigen::Index m = (l + r) / 2;
+                    if (before(trace.x()(m)))
+                        l = m + 1;
+                    else
+                        r = m;
+                }
+                return l;
+            };
+            a = ascending ? bound([lo](double v) { return v < lo; }) : bound([hi](double v) { return v > hi; });
+            b = ascending ? bound([hi](double v) { return v <= hi; }) : bound([lo](double v) { return v >= lo; });
+        }
+        for (Eigen::Index k = a; k < b; ++k) {
             const double x = trace.x()(k);
             if (x < lo || x > hi)
                 continue;
@@ -999,15 +1141,257 @@ void TraceEditorWidget::updateStackReference()
     m_stack_reference = reference > 0 && std::isfinite(reference) ? reference : 1;
 }
 
+/*! \brief The points of the series of a trace: every point of a trace of at most kDisplayPointLimit points; else the
+ * points whose display x lies in the envelope range (and one neighbour on either side), above kDisplayPointLimit of
+ * them the lowest and highest point of each of envelopeColumns() columns in index order (Claude Generated). */
 QList<QPointF> TraceEditorWidget::shiftedPoints(int traceIndex) const
 {
     const XYTrace& trace = m_shown[traceIndex];
     const QPointF shift = stackOffset(traceIndex);
+    const Eigen::Index n = trace.size();
     QList<QPointF> points;
-    points.reserve(trace.size());
-    for (Eigen::Index k = 0; k < trace.size(); ++k) // as displayPoint(), with the shift computed once
-        points.append(QPointF(trace.x()(k) + shift.x(), shift.y() + m_intensity * trace.y()(k)));
+    auto point = [&](Eigen::Index k) { return QPointF(trace.x()(k) + shift.x(), shift.y() + m_intensity * trace.y()(k)); }; // as displayPoint()
+    if (n <= kDisplayPointLimit || !(m_env_hi > m_env_lo) || m_env_columns < 1) {
+        points.reserve(n);
+        for (Eigen::Index k = 0; k < n; ++k)
+            points.append(point(k));
+        return points;
+    }
+    // the chosen indices depend on the range, the columns and the x shift only, not on y (stack level, intensity):
+    // kept per trace, so the wheel and a y offset only map them again
+    if (m_env_cache.size() != m_shown.size())
+        m_env_cache = QVector<EnvelopeIndices>(m_shown.size());
+    EnvelopeIndices& cache = m_env_cache[traceIndex];
+    if (!(cache.valid && cache.lo == m_env_lo && cache.hi == m_env_hi && cache.dx == shift.x() && cache.columns == m_env_columns)) {
+        cache = EnvelopeIndices{ true, m_env_lo, m_env_hi, shift.x(), m_env_columns, envelopeIndices(trace, m_env_lo - shift.x(), m_env_hi - shift.x(), m_env_columns) };
+    }
+    points.reserve(cache.indices.size());
+    for (Eigen::Index k : cache.indices)
+        points.append(point(k));
     return points;
+}
+
+/*! \brief Indices of the points drawn for data x in [lo, hi] (see shiftedPoints): the slice in view with one neighbour on
+ * either side; above kDisplayPointLimit points the lowest and highest point of each of columns columns in index order.
+ * Claude Generated */
+QVector<Eigen::Index> TraceEditorWidget::envelopeIndices(const XYTrace& trace, double lo, double hi, int columns)
+{
+    const Eigen::Index n = trace.size();
+    QVector<Eigen::Index> indices;
+    if (n == 0)
+        return indices;
+    // indices with x in [lo, hi] (x is monotone; binary search in index order)
+    const bool ascending = trace.x()(n - 1) > trace.x()(0);
+    auto firstBeyond = [&](auto before) {
+        Eigen::Index a = 0, b = n;
+        while (a < b) {
+            const Eigen::Index m = (a + b) / 2;
+            if (before(trace.x()(m)))
+                a = m + 1;
+            else
+                b = m;
+        }
+        return a;
+    };
+    const Eigen::Index i0 = ascending ? firstBeyond([lo](double v) { return v < lo; }) : firstBeyond([hi](double v) { return v > hi; });
+    const Eigen::Index i1 = std::max(i0, ascending ? firstBeyond([hi](double v) { return v <= hi; }) : firstBeyond([lo](double v) { return v >= lo; }));
+    const Eigen::Index from = std::max<Eigen::Index>(0, i0 - 1), to = std::min<Eigen::Index>(n, i1 + 1);
+    if (to - from <= kDisplayPointLimit) {
+        indices.reserve(to - from);
+        for (Eigen::Index k = from; k < to; ++k)
+            indices.append(k);
+        return indices;
+    }
+    indices.reserve(2 * columns + 2);
+    if (from < i0)
+        indices.append(from);
+    const double scale = columns / (hi - lo);
+    const double* x = trace.x().data();
+    const double* y = trace.y().data();
+    auto column = [&](Eigen::Index k) { return std::clamp(int((x[k] - lo) * scale), 0, columns - 1); };
+    Eigen::Index k = i0;
+    while (k < i1) {
+        const int c = column(k);
+        Eigen::Index low = k, high = k;
+        Eigen::Index j = k + 1;
+        for (; j < i1 && column(j) == c; ++j) {
+            if (y[j] < y[low])
+                low = j;
+            if (y[j] > y[high])
+                high = j;
+        }
+        indices.append(std::min(low, high));
+        if (low != high)
+            indices.append(std::max(low, high));
+        k = j;
+    }
+    if (i1 < to)
+        indices.append(i1);
+    return indices;
+}
+
+void TraceEditorWidget::setEnvelopeRange(double lo, double hi)
+{
+    m_env_lo = std::min(lo, hi);
+    m_env_hi = std::max(lo, hi);
+    m_env_columns = envelopeColumns();
+}
+
+/*! \brief Pixel columns of the plot area (device pixels), 1200 before the first layout; at most kMaxEnvelopeColumns. Claude Generated */
+int TraceEditorWidget::envelopeColumns() const
+{
+    const double width = m_chart->chart()->plotArea().width() * m_chart->devicePixelRatioF();
+    const int columns = width > 10 ? int(std::ceil(width)) : 1200;
+    return std::clamp(columns, 100, kMaxEnvelopeColumns);
+}
+
+void TraceEditorWidget::scheduleViewUpdate()
+{
+    if (m_view_update_pending)
+        return;
+    m_view_update_pending = true;
+    QMetaObject::invokeMethod(this, [this]() {
+        m_view_update_pending = false;
+        updateEnvelope();
+        updateLabels();
+    }, Qt::QueuedConnection);
+}
+
+/*! \brief Computes the envelope again for the x axis as it is now (after a zoom, a resize or a range set by the host);
+ * nothing happens if range and columns are unchanged or no trace needs an envelope. Claude Generated */
+void TraceEditorWidget::updateEnvelope()
+{
+    QValueAxis* x = m_chart->axisX();
+    if (!x || m_lines.isEmpty())
+        return;
+    bool large = false;
+    for (const XYTrace& trace : m_shown)
+        large = large || trace.size() > kDisplayPointLimit;
+    if (!large)
+        return;
+    const double lo = std::min(x->min(), x->max()), hi = std::max(x->min(), x->max());
+    if (lo == m_env_lo && hi == m_env_hi && envelopeColumns() == m_env_columns)
+        return;
+    setEnvelopeRange(lo, hi);
+    for (int i = 0; i < m_lines.size(); ++i)
+        if (m_lines[i] && m_shown[i].size() > kDisplayPointLimit)
+            m_lines[i]->replace(shiftedPoints(i));
+}
+
+int TraceEditorWidget::drawnPointCount(int traceIndex) const
+{
+    return traceIndex >= 0 && traceIndex < m_lines.size() && m_lines[traceIndex] ? int(m_lines[traceIndex]->count()) : 0;
+}
+
+void TraceEditorWidget::setLabels(int traceIndex, const QVector<Label>& labels)
+{
+    m_label_trace = traceIndex;
+    m_labels = labels;
+    if (m_label_highlight >= m_labels.size())
+        m_label_highlight = -1;
+    updateLabels();
+}
+
+void TraceEditorWidget::setHighlightedLabel(int index)
+{
+    m_label_highlight = index >= 0 && index < m_labels.size() ? index : -1;
+    updateLabels();
+}
+
+QRectF TraceEditorWidget::labelRect(int index) const
+{
+    if (index < 0 || index >= m_label_scene.size() || m_label_scene[index].isEmpty())
+        return QRectF();
+    QChartView* view = m_chart->privateView();
+    return view->mapFromScene(m_label_scene[index]).boundingRect();
+}
+
+/*! \brief Places the labels above their points (display coordinates of their trace): sorted by screen x, each takes the
+ * lowest of kLabelRows rows where it does not overlap the label before it (else the row that ends first), kept inside
+ * the plot area; labels whose point lies outside the plot in x are hidden. Colours from the palette (light and dark);
+ * the highlighted label in the highlight colours. Claude Generated */
+void TraceEditorWidget::updateLabels()
+{
+    QChart* chart = m_chart->chart();
+    while (m_label_items.size() > m_labels.size())
+        delete m_label_items.takeLast();
+    while (m_label_items.size() < m_labels.size()) {
+        auto* box = new QGraphicsRectItem(chart);
+        new QGraphicsSimpleTextItem(box);
+        box->setZValue(12);
+        m_label_items << box;
+    }
+    m_label_scene = QVector<QRectF>(m_labels.size());
+    if (m_labels.isEmpty())
+        return;
+    const bool drawable = !m_lines.isEmpty() && m_chart->axisX() && m_label_trace >= 0 && m_label_trace < m_traces.size()
+        && !(isStacked() && isExcluded(m_label_trace));
+    const QRectF plot = chart->plotArea();
+    const QPalette pal = palette();
+    QFont font = this->font();
+    const QFontMetricsF metrics(font);
+    const double height = metrics.height() + 2;
+    QVector<QPointF> at(m_labels.size());
+    QVector<int> order;
+    for (int i = 0; i < m_labels.size(); ++i) {
+        at[i] = drawable ? chart->mapToPosition(displayPoint(m_label_trace, m_labels[i].x, m_labels[i].y), m_lines.first()) : QPointF();
+        if (drawable && std::isfinite(at[i].x()) && at[i].x() >= plot.left() - 0.5 && at[i].x() <= plot.right() + 0.5)
+            order << i;
+        else
+            m_label_items[i]->setVisible(false);
+    }
+    std::sort(order.begin(), order.end(), [&at](int a, int b) { return at[a].x() < at[b].x(); });
+    QVector<double> rowEnd(kLabelRows, -std::numeric_limits<double>::infinity());
+    for (int i : order) {
+        const Label& label = m_labels[i];
+        const double width = metrics.horizontalAdvance(label.text) + 6;
+        const double left = std::clamp(at[i].x() - 0.5 * width, plot.left(), std::max(plot.left(), plot.right() - width));
+        int row = -1;
+        for (int r = 0; r < kLabelRows && row < 0; ++r)
+            if (rowEnd[r] < left - 1)
+                row = r;
+        if (row < 0)
+            row = int(std::min_element(rowEnd.begin(), rowEnd.end()) - rowEnd.begin());
+        rowEnd[row] = left + width;
+        const double y = std::isfinite(at[i].y()) ? at[i].y() : plot.bottom();
+        const double top = std::clamp(y - 4 - height - row * (height + 1), plot.top(), std::max(plot.top(), plot.bottom() - height));
+        const QRectF rect(left, top, width, height);
+        QGraphicsRectItem* box = m_label_items[i];
+        auto* text = static_cast<QGraphicsSimpleTextItem*>(box->childItems().value(0));
+        const bool highlighted = i == m_label_highlight;
+        QColor background = highlighted ? pal.color(QPalette::Highlight) : pal.color(QPalette::Base);
+        if (!highlighted)
+            background.setAlpha(225);
+        const QColor foreground = highlighted ? pal.color(QPalette::HighlightedText)
+                                              : pal.color(label.dimmed ? QPalette::Disabled : QPalette::Active, QPalette::Text);
+        box->setRect(rect);
+        box->setBrush(background);
+        box->setPen(QPen(highlighted ? pal.color(QPalette::Highlight) : pal.color(QPalette::Text), highlighted ? 2 : 1));
+        box->setToolTip(label.toolTip);
+        box->setZValue(highlighted ? 13 : 12);
+        if (text) {
+            text->setText(label.text);
+            text->setFont(font);
+            text->setBrush(foreground);
+            text->setPos(rect.left() + 3, rect.top() + 1);
+        }
+        box->setVisible(true);
+        m_label_scene[i] = box->mapRectToScene(rect);
+    }
+}
+
+void TraceEditorWidget::showX(double x)
+{
+    QValueAxis* axis = m_chart->axisX();
+    if (!axis || !std::isfinite(x))
+        return;
+    const double lo = axis->min(), hi = axis->max();
+    if (x >= lo && x <= hi)
+        return;
+    const double half = 0.5 * (hi - lo);
+    axis->setRange(x - half, x + half);
+    captureView();
+    refreshMarkers();
 }
 
 /*! \brief The selected range moved: the reference height of the stack follows (not while setTraces sets it). */
@@ -1135,6 +1519,12 @@ void TraceEditorWidget::applyView()
     if (m_user_view) {
         x->setRange(m_view_x0, m_view_x1);
         y->setRange(m_view_y0, m_view_y1);
+    } else if (m_intensity != 1) {
+        // automatic view while the intensities are scaled (Claude Generated): kept, moved only by stack changes
+        if (m_auto_x1 > m_auto_x0)
+            x->setRange(m_auto_x0, m_auto_x1);
+        if (m_auto_y1 > m_auto_y0)
+            y->setRange(m_auto_y0, m_auto_y1);
     } else {
         double lo = 0, hi = 0;
         homeX(&lo, &hi);
@@ -1255,8 +1645,28 @@ void TraceEditorWidget::applyAxisDirection()
 bool TraceEditorWidget::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_chart->privateView() && event->type() == QEvent::Resize)
-        QMetaObject::invokeMethod(this, [this]() { refreshMarkers(); }, Qt::QueuedConnection); // after the chart laid out its plot area
+        QMetaObject::invokeMethod(this, [this]() { refreshMarkers(); scheduleViewUpdate(); }, Qt::QueuedConnection); // after the chart laid out its plot area
     if (watched == m_chart->privateView()->viewport()) {
+        // Claude Generated: a click on a label of the host selects it and starts no zoom
+        if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick || event->type() == QEvent::MouseButtonRelease) {
+            auto* mouse = static_cast<QMouseEvent*>(event);
+            if (mouse->button() == Qt::LeftButton) {
+                if (event->type() == QEvent::MouseButtonRelease && m_label_press) {
+                    m_label_press = false;
+                    return true;
+                }
+                if (event->type() != QEvent::MouseButtonRelease) {
+                    const QPointF scene = m_chart->privateView()->mapToScene(mouse->position().toPoint());
+                    for (int i = 0; i < m_label_scene.size(); ++i)
+                        if (!m_label_scene[i].isEmpty() && m_label_scene[i].contains(scene)) {
+                            m_label_press = true;
+                            if (event->type() == QEvent::MouseButtonPress)
+                                emit labelClicked(i);
+                            return true;
+                        }
+                }
+            }
+        }
         // Claude Generated (Viewer 2/3): the wheel scales the intensity, Ctrl + wheel the y axis at the pointer;
         // the middle button shows everything
         if (event->type() == QEvent::Wheel) {
@@ -1286,7 +1696,7 @@ bool TraceEditorWidget::eventFilter(QObject* watched, QEvent* event)
 
 void TraceEditorWidget::refreshMarkers()
 {
-    if (m_user_view) // a series added by the host rescaled the axes; without a zoom of the user they stay as scaled
+    if (m_user_view || m_intensity != 1) // a series added by the host rescaled the axes; else they stay as scaled
         applyView();
     m_chart->privateView()->updateZoom(); // y span of the axes, the height of the lines
     m_chart->privateView()->setVerticalLinesPrec(-1); // places the lines again
@@ -1302,8 +1712,8 @@ void TraceEditorWidget::updateRangeLines()
         if (!m_lines.value(i) || !m_lines[i]->isVisible() || m_shown[i].isEmpty())
             continue;
         const double dy = stackOffset(i).y();
-        ymin = std::min(ymin, dy + m_intensity * m_shown[i].y().minCoeff());
-        ymax = std::max(ymax, dy + m_intensity * m_shown[i].y().maxCoeff());
+        ymin = std::min(ymin, dy + m_intensity * m_extents.value(i).first);
+        ymax = std::max(ymax, dy + m_intensity * m_extents.value(i).second);
     }
     m_y_min = std::isfinite(ymin) ? ymin : 0;
     m_y_max = std::isfinite(ymax) ? ymax : 1;

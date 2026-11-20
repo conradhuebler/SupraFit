@@ -37,6 +37,7 @@
 #include <QtCore/QUrl>
 #include <QtGui/QClipboard>
 #include <QtGui/QDropEvent>
+#include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 #include <QtTest/QtTest>
 #include <QtCharts/QLineSeries>
@@ -458,6 +459,353 @@ private slots:
         for (int j = 0; j < steps; ++j)
             QCOMPARE(dialog.handler()->cell(j, 0).shift, tracked[j]);
         editor->setStackPercent(0);
+        QSettings().remove("traceeditor/nmrimport");
+    }
+
+    /// spectrum k of steps as chcl3Spectrum on 8..5 ppm with n points (Claude Generated, viewer fixes)
+    static XYTrace chcl3Points(int k, int steps, int n)
+    {
+        Eigen::VectorXd x(n), y(n);
+        const double f = 1.0 - std::exp(-1.5 * k / double(steps - 1));
+        const double dx = 3.0 / (n - 1);
+        for (int i = 0; i < n; ++i) {
+            x(i) = 8.0 - dx * i;
+            const double lines[3][3] = { { 7.26, 0.004, 12.0 }, { 7.60 - 0.30 * f, 0.005, 0.5 }, { 6.20 + 0.10 * f, 0.005, 0.35 } };
+            double v = 0;
+            for (const auto& l : lines) {
+                const double u = (x(i) - l[0]) / l[1];
+                v += l[2] / (1 + u * u);
+            }
+            y(i) = v + 0.003 * std::sin(37.0 * i);
+        }
+        return XYTrace(x, y, QString("step_%1.txt").arg(k));
+    }
+
+    /// viewport pixel of a value of the editor's chart
+    static QPointF chartPixel(TraceEditorWidget* editor, const QPointF& value)
+    {
+        QChart* chart = editor->chart()->chart();
+        return editor->chart()->privateView()->mapFromScene(chart->mapToScene(chart->mapToPosition(value)));
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): "Pick from reference spectrum" takes only peaks between Start and End
+     * within the visible x axis, with both detection thresholds; Start and End set as the user types them. */
+    void pickInTheShownRange()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(chcl3Spectrum(k, steps));
+        dialog.refresh();
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        auto* start = dialog.findChild<QDoubleSpinBox*>("traceRangeStart");
+        auto* end = dialog.findChild<QDoubleSpinBox*>("traceRangeEnd");
+        auto* scope = dialog.findChild<QComboBox*>("nmrThresholdScope");
+        auto* pick = dialog.findChild<QPushButton*>("nmrPick");
+        QVERIFY(editor && start && end && scope && pick);
+        auto near = [&](double x) {
+            for (const NmrSignal& signal : dialog.handler()->signalList())
+                if (std::abs(signal.position - x) < 0.003)
+                    return true;
+            return false;
+        };
+        auto inside = [&](double lo, double hi) {
+            for (const NmrSignal& signal : dialog.handler()->signalList())
+                if (signal.position < lo || signal.position > hi)
+                    return false;
+            return true;
+        };
+        for (int s : { 0, 1 }) {
+            scope->setCurrentIndex(s);
+            start->setValue(7.0);
+            end->setValue(8.0);
+            editor->resetView();
+            pick->click();
+            QVERIFY(dialog.handler()->signalList().size() >= 1);
+            QVERIFY(inside(7.0, 8.0));
+            QVERIFY(near(7.26));
+            QVERIFY(!near(6.20));
+            QCOMPARE(near(7.60), s == 1); // whole spectrum: 7.60 (0.5) lies below 5 % of the CHCl3 line
+            // the visible part of the axis limits as well
+            editor->chart()->setXRange(7.4, 8.0);
+            QCoreApplication::processEvents();
+            pick->click();
+            QVERIFY(inside(7.4, 8.0));
+            QCOMPARE(near(7.60), s == 1);
+            QVERIFY(!near(7.26));
+            QVERIFY(dialog.findChild<StatusLine*>("nmrStatus")->message().contains("7.400"));
+        }
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): every signal has a numbered label at its peak of the reference spectrum;
+     * selecting a row highlights its label and brings it into view; a click on a label selects the row and does not
+     * zoom. */
+    void signalLabelsAndSelection()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(chcl3Spectrum(k, steps));
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        dialog.handler()->addSignal(7.26, 0.02, "S");
+        dialog.handler()->addSignal(6.20, 0.08, "H2");
+        dialog.refresh();
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QCoreApplication::processEvents();
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        auto* table = dialog.findChild<QTableWidget*>("nmrSignals");
+        QCOMPARE(editor->labelCount(), 3);
+        const int ref = dialog.handler()->referenceIndex();
+        for (int s = 0; s < 3; ++s) {
+            const QRectF rect = editor->labelRect(s);
+            QVERIFY2(!rect.isEmpty(), qPrintable(QString::number(s)));
+            // above the peak of the reference spectrum, centred on it
+            const double x = dialog.handler()->cell(ref, s).shift;
+            const QPointF peak = chartPixel(editor, editor->displayPoint(ref, x, dialog.handler()->spectra().at(ref).interpolate(x)));
+            QVERIFY2(std::abs(rect.center().x() - peak.x()) <= 1.0, qPrintable(QString("%1: %2 vs %3").arg(s).arg(rect.center().x()).arg(peak.x())));
+            QVERIFY(rect.bottom() <= peak.y() + 0.5);
+        }
+        table->selectRow(1);
+        QCOMPARE(editor->highlightedLabel(), 1);
+        // out of view: the axis moves to the signal
+        editor->chart()->setXRange(6.0, 6.5);
+        QCoreApplication::processEvents();
+        QVERIFY(editor->labelRect(0).isEmpty());
+        table->selectRow(0);
+        QCOMPARE(editor->highlightedLabel(), 0);
+        const double h1 = dialog.handler()->cell(ref, 0).shift;
+        QVERIFY(editor->chart()->axisX()->min() <= h1 && editor->chart()->axisX()->max() >= h1);
+        QCoreApplication::processEvents();
+        // a click on label 3 (H2 is out of view now: bring it back) selects row 3 and changes no axis
+        editor->resetView();
+        QCoreApplication::processEvents();
+        const QRectF rect = editor->labelRect(2);
+        QVERIFY(!rect.isEmpty());
+        const double x0 = editor->chart()->axisX()->min(), x1 = editor->chart()->axisX()->max(), y0 = editor->chart()->axisY()->min();
+        QWidget* viewport = editor->chart()->privateView()->viewport();
+        const QPoint at = rect.center().toPoint();
+        for (QEvent::Type type : { QEvent::MouseButtonPress, QEvent::MouseButtonRelease }) {
+            QMouseEvent event(type, QPointF(at), QPointF(viewport->mapToGlobal(at)), Qt::LeftButton, type == QEvent::MouseButtonPress ? Qt::LeftButton : Qt::NoButton, Qt::NoModifier);
+            QApplication::sendEvent(viewport, &event);
+        }
+        QCOMPARE(table->currentRow(), 2);
+        QCOMPARE(editor->highlightedLabel(), 2);
+        QCOMPARE(editor->chart()->axisX()->min(), x0);
+        QCOMPARE(editor->chart()->axisX()->max(), x1);
+        QCOMPARE(editor->chart()->axisY()->min(), y0);
+        // the row tooltip names the peak of the reference spectrum
+        QVERIFY(table->item(0, 1)->toolTip().contains(QString::number(h1, 'f', 4)));
+    }
+
+    void tableMatchesTheChart_data()
+    {
+        QTest::addColumn<double>("stackY");
+        QTest::addColumn<double>("stackX");
+        QTest::addColumn<bool>("reverseOrder");
+        QTest::addColumn<double>("offset");
+        QTest::addColumn<bool>("highToLow");
+        QTest::addColumn<bool>("zoom");
+        QTest::addColumn<int>("points");
+        QTest::newRow("plain") << 0.0 << 0.0 << false << 0.0 << true << false << 3001;
+        QTest::newRow("stack y") << 50.0 << 0.0 << false << 0.0 << true << false << 3001;
+        QTest::newRow("x offset, reverse order") << 30.0 << 4.0 << true << 0.0 << true << false << 3001;
+        QTest::newRow("reference offset") << 0.0 << 0.0 << false << 0.0123 << true << false << 3001;
+        QTest::newRow("low to high") << 20.0 << 2.0 << false << 0.0 << false << false << 3001;
+        QTest::newRow("zoom") << 20.0 << 0.0 << false << 0.0 << true << true << 3001;
+        QTest::newRow("envelope 30001 points") << 20.0 << 0.0 << false << 0.0123 << true << false << 30001;
+        QTest::newRow("envelope, zoom, x offset") << 20.0 << 3.0 << true << 0.0 << false << true << 30001;
+    }
+
+    /*! \brief Viewer fixes (Claude Generated): the δ of the table is where the chart draws the peak. For every tracked
+     * cell the highest drawn point of spectrum k near δ + its x offset lies within half a point spacing of it and within
+     * a pixel, its marker sits there, the table cell shows δ, the label of a signal sits on its reference peak; with
+     * stack offsets, x offset (note shown), reference offset, both axis directions, a zoom and the display envelope. A
+     * double-click on the drawn reference peak adds a signal at that peak also with an x offset. */
+    void tableMatchesTheChart()
+    {
+        QFETCH(double, stackY);
+        QFETCH(double, stackX);
+        QFETCH(bool, reverseOrder);
+        QFETCH(double, offset);
+        QFETCH(bool, highToLow);
+        QFETCH(bool, zoom);
+        QFETCH(int, points);
+        const int steps = 6;
+        QSettings().remove("traceeditor/nmrimport");
+        NmrImport dialog;
+        dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(chcl3Points(k, steps, points));
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        dialog.handler()->addSignal(6.20, 0.08, "H2");
+        dialog.refresh();
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        dialog.findChild<QCheckBox*>("nmrReverseAxis")->setChecked(highToLow);
+        dialog.findChild<QDoubleSpinBox*>("nmrReferenceOffset")->setValue(offset);
+        editor->setStackReversed(reverseOrder);
+        editor->setStackPercent(stackY);
+        editor->setStackXPercent(stackX);
+        if (zoom)
+            editor->chart()->setXRange(7.2 + offset, 7.7 + offset); // H1 of every spectrum and the x offsets
+        QCoreApplication::processEvents();
+        QCoreApplication::processEvents();
+        QCOMPARE(dialog.findChild<QLabel*>("traceXOffsetNote")->isHidden(), stackX == 0);
+        const NmrHandler* handler = dialog.handler();
+        const double spacing = 3.0 / (points - 1);
+        auto* chart = editor->chart()->chart();
+        auto* results = dialog.findChild<QTableWidget*>("nmrResults");
+        const double x0 = std::min(editor->chart()->axisX()->min(), editor->chart()->axisX()->max());
+        const double x1 = std::max(editor->chart()->axisX()->min(), editor->chart()->axisX()->max());
+        int checked = 0;
+        double worst = 0;
+        for (int k = 0; k < steps; ++k)
+            for (int s = 0; s < 2; ++s) {
+                const NmrCell cell = handler->cell(k, s);
+                QVERIFY2(cell.status == NmrCellStatus::Ok, qPrintable(QString("%1/%2").arg(k).arg(s)));
+                QCOMPARE(results->item(k, s)->text(), QString::number(cell.shift, 'f', 4));
+                const double d = cell.shift + editor->stackOffset(k).x();
+                if (d < x0 || d > x1)
+                    continue; // out of view
+                auto* line = qobject_cast<QLineSeries*>(chart->series().at(k));
+                QPointF top(0, -1e300);
+                for (int i = 0; i < line->count(); ++i)
+                    if (std::abs(line->at(i).x() - d) < 0.01 && line->at(i).y() > top.y())
+                        top = line->at(i);
+                // within a pixel; on the 3001-point grid within half a point (dense noisy spectra: the tracked maximum
+                // can be a noise maximum a few points beside the highest point, far below a pixel)
+                const double pixels = std::abs(chart->mapToPosition(top).x() - chart->mapToPosition(QPointF(d, top.y())).x()); // sub-pixel
+                QVERIFY2(pixels <= 1.0, qPrintable(QString("%1/%2: %3 px").arg(k).arg(s).arg(pixels)));
+                if (points <= 3001)
+                    QVERIFY2(std::abs(top.x() - d) <= 0.5 * spacing + 1e-12, qPrintable(QString("%1/%2: drawn %3, table %4").arg(k).arg(s).arg(top.x(), 0, 'f', 6).arg(d, 0, 'f', 6)));
+                worst = std::max(worst, pixels);
+                bool marker = false;
+                for (QAbstractSeries* series : chart->series())
+                    if (auto* scatter = qobject_cast<QScatterSeries*>(series))
+                        for (int i = 0; i < scatter->count(); ++i)
+                            marker = marker || scatter->at(i) == editor->displayPoint(k, cell.shift, dialog.handler()->processedSpectra().at(k).interpolate(cell.shift));
+                QVERIFY(marker);
+                ++checked;
+            }
+        QVERIFY(checked >= (zoom ? 3 : 2 * steps));
+        qInfo("%d cells, worst %.2f px between the table value and the drawn peak", checked, worst);
+        // the label of H1 on the drawn reference peak
+        const int ref = handler->referenceIndex();
+        const double dref = handler->cell(ref, 0).shift + editor->stackOffset(ref).x();
+        if (dref >= x0 && dref <= x1) {
+            const QRectF rect = editor->labelRect(0);
+            QVERIFY(!rect.isEmpty());
+            QVERIFY(std::abs(rect.center().x() - chartPixel(editor, QPointF(dref, 0)).x()) <= 1.0);
+            // double-click on the drawn reference peak (H1 removed first): the signal comes back on the same peak
+            const double before = handler->cell(ref, 0).shift;
+            dialog.handler()->removeSignal(0);
+            dialog.refresh();
+            emit editor->chart()->pointDoubleClicked(QPointF(dref + 0.002, 0));
+            const NmrSignal& added = dialog.handler()->signalList().last();
+            QVERIFY2(std::abs(added.position - before) < 1e-12, qPrintable(QString("%1 vs %2").arg(added.position, 0, 'f', 6).arg(before, 0, 'f', 6)));
+        }
+        QSettings().remove("traceeditor/nmrimport");
+    }
+
+    /*! \brief Viewer fixes with the operator's T5 series (Claude Generated; SKIP without SUPRAFIT_JEOL_DIR): referenced
+     * to CHCl3 7.26, Start/End 6.5..9.5: the pick of both thresholds stays in the range; every tracked cell lies within a
+     * pixel of the drawn peak (display envelope of 15 x 262144 points); after the wheel a stack offset keeps every
+     * baseline in the frame. Times printed (not pinned). */
+    void realSeriesPickAndChart()
+    {
+        const QStringList real = realJdfSeries();
+        if (real.isEmpty())
+            QSKIP("real JEOL series not found (SUPRAFIT_JEOL_DIR)");
+        QSettings().remove("traceeditor/nmrimport");
+        NmrImport dialog;
+        dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QElapsedTimer timer;
+        timer.start();
+        QString error;
+        QVERIFY2(dialog.addFiles(real, &error), qPrintable(error));
+        const qint64 loading = timer.elapsed();
+        NmrHandler* handler = dialog.handler();
+        const XYTrace chcl3 = handler->referencedSpectra().at(0).range(7.2, 7.3);
+        Eigen::Index top = 0;
+        chcl3.y().maxCoeff(&top);
+        dialog.findChild<QDoubleSpinBox*>("nmrReferenceOffset")->setValue(handler->referenceOffset() + 7.26 - chcl3.x()(top));
+        dialog.findChild<QDoubleSpinBox*>("traceRangeStart")->setValue(6.5);
+        dialog.findChild<QDoubleSpinBox*>("traceRangeEnd")->setValue(9.5);
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        QCoreApplication::processEvents();
+        for (int k = 0; k < handler->spectrumCount(); ++k)
+            QVERIFY(editor->drawnPointCount(k) < 5000);
+        for (int s : { 0, 1 }) {
+            dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(s);
+            timer.restart();
+            dialog.findChild<QPushButton*>("nmrPick")->click();
+            const qint64 ms = timer.elapsed();
+            int outside = 0;
+            for (const NmrSignal& signal : handler->signalList())
+                outside += signal.position < 6.5 || signal.position > 9.5;
+            qInfo("pick (%s): %d signals, %d outside 6.5..9.5, %lld ms", s ? "search window" : "whole spectrum", int(handler->signalList().size()), outside, ms);
+            QCOMPARE(outside, 0);
+            QVERIFY(!handler->signalList().isEmpty());
+        }
+        // the drawn line reaches the height of every tracked peak within one pixel of its δ: the whole axis (about 0.01 ppm
+        // per pixel, two lines in one column are one) and zoomed to 7.5..9.0 ppm
+        auto* chart = editor->chart()->chart();
+        for (bool zoomed : { false, true }) {
+            if (zoomed)
+                editor->chart()->setXRange(7.5, 9.0);
+            QCoreApplication::processEvents();
+            QCoreApplication::processEvents();
+            const double ppmPerPixel = std::abs(chart->mapToValue(QPointF(1, 0)).x() - chart->mapToValue(QPointF(0, 0)).x());
+            const double x0 = std::min(editor->chart()->axisX()->min(), editor->chart()->axisX()->max());
+            const double x1 = std::max(editor->chart()->axisX()->min(), editor->chart()->axisX()->max());
+            int cells = 0, missed = 0;
+            const TraceSet shown = handler->referencedSpectra(); // no steps: drawn raw
+            for (int k = 0; k < handler->spectrumCount(); ++k)
+                for (int s = 0; s < handler->signalList().size(); ++s) {
+                    const NmrCell cell = handler->cell(k, s);
+                    const double d = cell.shift + editor->stackOffset(k).x();
+                    if (cell.status != NmrCellStatus::Ok || d < x0 || d > x1)
+                        continue;
+                    auto* line = qobject_cast<QLineSeries*>(chart->series().at(k));
+                    double highest = -1e300;
+                    for (int i = 0; i < line->count(); ++i)
+                        if (std::abs(line->at(i).x() - d) <= ppmPerPixel)
+                            highest = std::max(highest, line->at(i).y());
+                    // the highest sample at the peak (the parabola height of the table lies slightly above it)
+                    const XYTrace around = shown.at(k).range(cell.shift - 1.5e-4, cell.shift + 1.5e-4);
+                    const QPointF peak = editor->displayPoint(k, cell.shift, around.y().maxCoeff());
+                    missed += highest < peak.y() - 1e-9 * std::abs(peak.y());
+                    ++cells;
+                }
+            qInfo("T5 %s: %d tracked cells in view, %d where the drawn line does not reach the peak within 1 px (%.4f ppm per px)", zoomed ? "7.5..9.0" : "whole axis", cells, missed, ppmPerPixel);
+            QVERIFY(cells > (zoomed ? 30 : 100));
+            QCOMPARE(missed, 0);
+        }
+        qInfo("T5 loaded in %lld ms", loading);
+        editor->resetView();
+        // wheel, then a stack offset: every baseline in the frame
+        QWidget* viewport = editor->chart()->privateView()->viewport();
+        const QPoint at = viewport->rect().center();
+        QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, 3 * 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QApplication::sendEvent(viewport, &event);
+        dialog.findChild<QDoubleSpinBox*>("traceStackOffset")->setValue(40);
+        QCoreApplication::processEvents();
+        const double y0 = editor->chart()->axisY()->min(), y1 = editor->chart()->axisY()->max();
+        for (int k = 0; k < handler->spectrumCount(); ++k) {
+            const double base = editor->stackOffset(k).y();
+            QVERIFY2(base >= y0 && base <= y1, qPrintable(QString("spectrum %1: level %2 outside %3..%4").arg(k).arg(base).arg(y0).arg(y1)));
+        }
         QSettings().remove("traceeditor/nmrimport");
     }
 
@@ -903,9 +1251,13 @@ private slots:
         QVERIFY(adds && adds->isChecked());
         TraceEditorWidget* editor = dialog.findChild<TraceEditorWidget*>();
         QVERIFY(editor->hintText().contains(QObject::tr("Double-click: add a signal")));
-        emit editor->chart()->pointDoubleClicked(QPointF(7.60, 0.5));
+        // the signal sits on the peak the tracking takes near the click (Claude Generated, viewer fixes): its position is
+        // the δ of the reference cell, a click 0.004 ppm beside the line gives the same signal
+        emit editor->chart()->pointDoubleClicked(QPointF(7.604, 0.5));
         QCOMPARE(dialog.handler()->signalList().size(), 1);
-        QCOMPARE(dialog.handler()->signalList()[0].position, 7.60);
+        const double peak = dialog.handler()->cell(dialog.handler()->referenceIndex(), 0).shift;
+        QCOMPARE(dialog.handler()->signalList()[0].position, peak);
+        QVERIFY2(std::abs(peak - 7.60) < 5e-4, qPrintable(QString::number(peak, 'f', 6)));
 
         adds->setChecked(false);
         QCOMPARE(QSettings().value("nmrimport/doubleClickAdds").toBool(), false);
@@ -1446,6 +1798,77 @@ private slots:
             editor->setIntensityScale(4);
             render(&dialog, "intensity_4_fit_stack" + suffix);
             dialog.hide();
+            QSettings().remove("traceeditor/nmrimport");
+        }
+        Appearance::Apply(Appearance::Light);
+    }
+
+    /*! \brief Viewer fixes renders (Claude Generated; SUPRAFIT_TRACE_RENDER_DIR): labels of picked signals with a selected
+     * row, stack after the wheel and a new offset, the real T5 series (display envelope) with labels; light and dark,
+     * 1366x768. */
+    void renderViewerFixes()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const int steps = 8;
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            QSettings().remove("traceeditor/nmrimport");
+            {
+                NmrImport dialog;
+                dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+                for (int k = 0; k < steps; ++k)
+                    dialog.handler()->addSpectrum(chcl3Spectrum(k, steps));
+                dialog.refresh();
+                dialog.resize(1366, 768);
+                render(&dialog, "fix_before_pick" + suffix);
+                dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(1);
+                dialog.findChild<QPushButton*>("nmrPick")->click();
+                dialog.findChild<QTableWidget*>("nmrSignals")->selectRow(1);
+                render(&dialog, "fix_labels_selected" + suffix);
+                auto* editor = dialog.findChild<TraceEditorWidget*>();
+                editor->setStackPercent(5);
+                QWidget* viewport = editor->chart()->privateView()->viewport();
+                const QPoint at = viewport->rect().center();
+                QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, 8 * 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+                QApplication::sendEvent(viewport, &event);
+                render(&dialog, "fix_wheel_stack5" + suffix);
+                editor->setStackPercent(40);
+                render(&dialog, "fix_wheel_stack40" + suffix);
+                editor->setStackXPercent(3);
+                render(&dialog, "fix_wheel_stack40_x3" + suffix);
+                dialog.hide();
+            }
+            const QStringList real = realJdfSeries();
+            if (!real.isEmpty()) {
+                QSettings().remove("traceeditor/nmrimport"); // not the stack of the synthetic dialog
+                NmrImport dialog;
+                dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+                dialog.resize(1366, 768);
+                dialog.addFiles(real);
+                const XYTrace chcl3 = dialog.handler()->referencedSpectra().at(0).range(7.2, 7.3);
+                Eigen::Index top = 0;
+                chcl3.y().maxCoeff(&top);
+                dialog.findChild<QDoubleSpinBox*>("nmrReferenceOffset")->setValue(dialog.handler()->referenceOffset() + 7.26 - chcl3.x()(top));
+                render(&dialog, "fix_real_t5_whole" + suffix);
+                auto* editor = dialog.findChild<TraceEditorWidget*>();
+                editor->chart()->setXRange(7.5, 9.0);
+                editor->fitYToVisible();
+                dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(1);
+                dialog.findChild<QPushButton*>("nmrPick")->click();
+                dialog.findChild<QTableWidget*>("nmrSignals")->selectRow(3);
+                render(&dialog, "fix_real_t5_labels" + suffix);
+                editor->resetView();
+                editor->chart()->setXRange(7.5, 9.0);
+                editor->setStackPercent(3);
+                QWidget* viewport = editor->chart()->privateView()->viewport();
+                const QPoint at = viewport->rect().center();
+                QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, 3 * 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+                QApplication::sendEvent(viewport, &event);
+                render(&dialog, "fix_real_t5_stack_wheel" + suffix);
+                dialog.hide();
+            }
             QSettings().remove("traceeditor/nmrimport");
         }
         Appearance::Apply(Appearance::Light);

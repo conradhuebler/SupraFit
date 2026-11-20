@@ -1482,6 +1482,24 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen timing of the NMR import dialog with a real JEOL series (Claude Generated) - manual perf tool, not a
+# ctest: benchmark_nmrimport [T5|T1] [repeats]; SUPRAFIT_JEOL_DIR names the directory of the series
+if(BUILD_GUI)
+    qt_add_resources(nmrbenchmark_RES ${CMAKE_SOURCE_DIR}/files.qrc)
+    add_executable(benchmark_nmrimport benchmark_nmrimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${nmrbenchmark_RES})
+    target_link_libraries(benchmark_nmrimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(benchmark_nmrimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(benchmark_nmrimport pthread dl)
+    endif()
+endif()
+
 # Offscreen smoke test of the NMR import dialog (WP3 of roadmap/input_data_editing.md, Claude Generated 2026).
 # SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
 if(BUILD_GUI)
