@@ -127,6 +127,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
     toplevel["converged"] = m_converged;
+    if (m_data_outdated) // optional, only when true: files without outdated models stay as they were (Claude Generated)
+        toplevel["outdated"] = true;
     toplevel["valid"] = !isCorrupt();
     toplevel["name"] = m_name;
     
@@ -300,7 +302,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         QJsonObject statisticObject = json["methods"].toObject();
         QStringList keys = statisticObject.keys();
 
-        for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : std::as_const(keys)) {
             QJsonObject object = statisticObject[str].toObject();
             QJsonObject controller = object["controller"].toObject();
             if (controller.isEmpty())
@@ -377,7 +379,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             [&collator](const QString& key1, const QString& key2) {
                 return collator.compare(key1, key2) < 0;
             });
-        for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : std::as_const(keys)) {
             QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
             int row = str.toInt();
@@ -396,6 +398,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
+    // fitted to earlier data of the project (Edit Data); absent in older files and after a fit (Claude Generated)
+    m_data_outdated = topjson["outdated"].toBool(false);
     m_AppliedSeries = topjson["AppliedSeries"].toInt(0);
 
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
@@ -519,7 +523,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             ParseFastConfidence(m_stats.fastConfidence());
 
         if (fileversion >= 1608) {
-            for (const QString& str : qAsConst(keys)) {
+            for (const QString& str : std::as_const(keys)) {
                 QJsonObject object = statisticObject[str].toObject();
                 QJsonObject controller = object["controller"].toObject();
                 if (controller.isEmpty())
@@ -612,7 +616,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             [&collator](const QString& key1, const QString& key2) {
                 return collator.compare(key1, key2) < 0;
             });
-        for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : std::as_const(keys)) {
             QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
             int row = str.toInt();

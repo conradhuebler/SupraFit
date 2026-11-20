@@ -290,6 +290,11 @@ public:
     void RunJobs();
 
     inline bool Working() const { return m_working; }
+
+    /*! \brief Whether a JobManager runs jobs on a model of the project \p projectId (the model's data, or one of the models of a
+     *  meta model, belong to it). The job threads work on clones that share the data of the project: the data must not be
+     *  replaced meanwhile. Claude Generated. */
+    static bool hasRunningJobs(const QString& projectId);
 public slots:
 
 private:

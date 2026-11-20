@@ -100,6 +100,9 @@ int NonLinearFitThread::NonLinearFit()
         iter = VarProFit(m_model, m_history.sse, m_history.parameter);
     else
         iter = NonlinearFit(m_model, parameter, m_history.sse, m_history.parameter);
+    // The parameters are fitted to the current data now: the outdated mark of an Edit Data goes (whether the fit converged is
+    // told by isConverged()). Every fit path runs through here; the mark travels to the original with ImportModel. Claude Generated.
+    m_model->setDataOutdated(false);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

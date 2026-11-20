@@ -41,6 +41,36 @@ typedef Eigen::VectorXd Vector;
 class DataClass;
 class AbstractModel;
 
+/*! \brief How new data relate to the data of a project, the test before Edit Data replaces them (Claude Generated).
+ *
+ * The models of a project are bound to the shape of its data: `AbstractModel::PrepareParameter` refuses a model whose
+ * `InputParameterSize()` differs from the number of independent columns, the local parameter table has one row per series
+ * (`SeriesCount()`), `ActiveSignals()` and the local boundaries are per series; nothing of a model is stored per data row
+ * (the check marks belong to the data). Hence:
+ * - Identical: same type, same independent and dependent tables (values and check marks), same raw block.
+ * - Compatible: same number of independent columns, same number of series, same data type; the number of rows may differ.
+ *   The models keep their parameters and are calculated again (other column headers are a warning only).
+ * - Incompatible: anything else; the models cannot be kept.
+ */
+struct DataReplaceCheck {
+    enum Result {
+        Identical = 0,
+        Compatible = 1,
+        Incompatible = 2
+    };
+    Result result = Incompatible;
+    int oldSeries = 0, newSeries = 0;
+    int oldIndependent = 0, newIndependent = 0;
+    int oldRows = 0, newRows = 0;
+    int oldType = 0, newType = 0;
+    bool headersChanged = false; ///< other names of the columns (compatible, a warning)
+    bool rawChanged = false; ///< the raw block (thermogram, spectra, processing settings) differs, the tables may not
+    QStringList reasons; ///< why the data are incompatible
+    QStringList warnings; ///< what changes although the data are compatible
+    /*! \brief Reasons and warnings in one text, one per line. */
+    QString Text() const;
+};
+
 class SystemParameter {
 public:
     enum Type {
@@ -307,6 +337,14 @@ public:
      * !\brief Import data from json older files
      */
     bool LegacyImportData(const QJsonObject& topjson, bool forceUUID = true);
+
+    /*! \brief Whether the data block \p newData (as `ExportData()` writes it) can replace the data of this project with its
+     *  models kept; see DataReplaceCheck for the rule. Changes nothing. Claude Generated. */
+    DataReplaceCheck checkReplacement(const QJsonObject& newData) const;
+
+    /*! \brief Takes all models out of the project: they leave the children and the ownership of the data. Returns the owning
+     *  pointers (null for a child the data did not own); the caller decides their lifetime. Claude Generated. */
+    QVector<QSharedPointer<AbstractModel>> takeModels();
 
     void setHeader(const QStringList& strlist);
 

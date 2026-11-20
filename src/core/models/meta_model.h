@@ -117,6 +117,14 @@ public:
         m_converged = converged;
     }
 
+    /*! \brief The mark of the meta model holds for its models (a fit of the meta model fits all of them). Claude Generated. */
+    virtual inline void setDataOutdated(bool outdated) override
+    {
+        for (int i = 0; i < m_models.size(); ++i)
+            m_models[i]->setDataOutdated(outdated);
+        AbstractModel::setDataOutdated(outdated);
+    }
+
     virtual QString GlobalParameterName(int i = 0) const override;
     virtual QString LocalParameterName(int i = 0) const override;
 

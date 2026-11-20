@@ -299,7 +299,7 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
         m_concentrations->setHeaderData(2, Qt::Horizontal, QString("Guest (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         for (int i = 0; i < GlobalParameterSize(); ++i)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
-    } else if (equilibrium.size() != m_concentrations->columnCount()) {
+    } else if (equilibrium.size() != m_concentrations->columnCount() || m_concentrations->rowCount() != DataPoints()) { // rows: Edit Data (Claude Generated)
         delete m_concentrations;
         m_concentrations = new DataTable(DataPoints(), equilibrium.rows(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
@@ -385,6 +385,19 @@ void AbstractItcModel::AdaptStoredModel(const QJsonObject& block)
     setSystemParameterValue(Reservoir, choice);
     UpdateParameter();
     Calculate();
+}
+
+void AbstractItcModel::EvaluateOptions()
+{
+    if (m_c0 && m_c0->rowCount() == DataPoints())
+        return;
+    if (m_c0)
+        delete m_c0;
+    m_c0 = new DataTable(DataPoints(), 3, this);
+    m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    CalculateConcentrations();
 }
 
 void AbstractItcModel::UpdateParameter()

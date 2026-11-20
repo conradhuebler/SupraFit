@@ -518,6 +518,20 @@ public:
 
     inline bool isConverged() const { return m_converged; }
     virtual inline void setConverged(bool converged) { m_converged = converged; }
+
+    /*! \brief The data of the project were replaced since the last fit (Edit Data): the parameters are those fitted to the
+     *  earlier data, calculated once on the current data (Claude Generated).
+     *
+     *  Set only by `ProjectManager::replaceProjectData`, cleared by the end of a fit (`NonLinearFitThread::NonLinearFit`, the one
+     *  place every fit path runs through; the result reaches the model with `ImportModel`) or by `markCurrent()`. Stored as the
+     *  optional key "outdated" of the model block, written only when true. */
+    inline bool isDataOutdated() const { return m_data_outdated; }
+    virtual inline void setDataOutdated(bool outdated) { m_data_outdated = outdated; }
+    /*! \brief Takes the outdated mark back without a fit (the user accepts the parameters for the current data). Claude Generated. */
+    inline void markCurrent() { setDataOutdated(false); }
+    /*! \brief Whether the statistic results stored with the model belong to earlier data. There is no state per result: the mark of
+     *  the model holds for all of them, a result computed after the replacement is not told apart (Claude Generated). */
+    inline bool isStatisticOutdated() const { return m_data_outdated; }
     /*! \brief Returns the f value for the given p value
      *  Degrees of freedom and number of parameters are taken in account
      */
@@ -1016,6 +1030,7 @@ protected:
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom, m_threads = 1;
     int m_AppliedSeries = 0;
+    bool m_data_outdated = false; ///< see isDataOutdated() (Claude Generated)
     bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false, m_complete = true, m_demand_inialisation = false;
     QJsonObject m_opt_config;
     QVector<QJsonObject> m_pre_input;

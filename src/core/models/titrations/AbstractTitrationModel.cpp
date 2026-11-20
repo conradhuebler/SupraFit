@@ -132,6 +132,11 @@ QPair<bool, bool> AbstractTitrationModel::getHostGuestPair() const
 
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
+    if (m_concentrations && (m_concentrations->rowCount() != DataPoints() || m_concentrations->columnCount() != equilibrium.rows())) {
+        // other data since the table was made (Edit Data replaces them, Claude Generated)
+        delete m_concentrations;
+        m_concentrations = nullptr;
+    }
     if (!m_concentrations) {
         m_concentrations = new DataTable(DataPoints(), equilibrium.rows(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);

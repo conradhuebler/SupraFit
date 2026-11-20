@@ -25,16 +25,43 @@
 #include "weakenedgridsearch.h"
 
 #include "src/core/toolset.h"
+#include "src/core/models/meta_model.h"
 #include "src/core/models/models.h"
 
 #include "src/global.h"
 
 #include <QtCore/QDateTime>
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
+#include <QtCore/QSet>
 
 #include "src/core/phasetiming.h"
 
 #include "jobmanager.h"
+
+namespace {
+// the managers that run jobs now (Claude Generated): asked by ProjectManager::replaceProjectData
+QMutex s_runningMutex;
+QSet<const JobManager*> s_running;
+}
+
+bool JobManager::hasRunningJobs(const QString& projectId)
+{
+    QMutexLocker locker(&s_runningMutex);
+    for (const JobManager* manager : std::as_const(s_running)) {
+        const QSharedPointer<AbstractModel> model = manager->m_model;
+        if (!model)
+            continue;
+        if (model->UUID() == projectId)
+            return true;
+        if (const MetaModel* meta = qobject_cast<const MetaModel*>(model.data()))
+            for (const QSharedPointer<AbstractModel>& m : meta->Models())
+                if (m && m->UUID() == projectId)
+                    return true;
+    }
+    return false;
+}
 
 JobManager::JobManager(QObject* parent)
     : QObject(parent)
@@ -88,11 +115,17 @@ JobManager::JobManager(QObject* parent)
 
 JobManager::~JobManager()
 {
+    QMutexLocker locker(&s_runningMutex);
+    s_running.remove(this);
 }
 
 void JobManager::RunJobs()
 {
     m_working = true;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        s_running.insert(this);
+    }
     m_interrupt = false;
     int start = 0;
     int threads = qApp->instance()->property("threads").toInt();
@@ -158,6 +191,10 @@ void JobManager::RunJobs()
     }
     m_jobs.clear();
     m_working = false;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        s_running.remove(this);
+    }
     qApp->instance()->setProperty("threads", threads);
     emit AllFinished();
 }

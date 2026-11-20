@@ -930,6 +930,21 @@ set_tests_properties(ProjectCompatTest PROPERTIES
     TIMEOUT 300
 )
 
+# Edit Data replaces the data of a project: check, outdated models, undo, job lock (Claude Generated 2026)
+add_executable(test_data_replace
+    test_data_replace.cpp
+)
+target_link_libraries(test_data_replace
+    ${TEST_COMMON_LIBS}
+)
+target_compile_definitions(test_data_replace PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_test(NAME DataReplaceTest COMMAND test_data_replace)
+set_tests_properties(DataReplaceTest PROPERTIES
+    TIMEOUT 300
+)
+
 # Fixed fluorescence models against fl_any on textbook data (Claude Generated 2026)
 add_executable(test_fl_fixed_vs_any
     test_fl_fixed_vs_any.cpp

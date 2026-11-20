@@ -95,6 +95,7 @@ A multi-project file contains multiple independent analyses:
 ### Model Identification
 - **`model`** (integer): Model type ID (see MODEL_ID_REFERENCE.md)
 - **`name`** (string): Human-readable model name
+- **`outdated`** (bool, optional): `true` if the data of the project were replaced (Edit Data) after the fit; the parameters belong to the earlier data, `SSE` is their value on the current data. Written only when true; absent means current. Older versions ignore it.
 
 ### Model Data
 - **`data`** (object): Core model information
