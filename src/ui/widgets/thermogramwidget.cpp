@@ -541,7 +541,7 @@ QLayout* ThermogramWidget::setupParameterPanel()
     group->setMaximumHeight(maxheight);
 
     triplett = new QHBoxLayout;
-    QLabel* scaling_label = new QLabel(tr("cal &rarr; J"));
+    QLabel* scaling_label = new QLabel(tr("cal → J"));
     scaling_label->setToolTip(tr("Factor the raw calorimeter heat is multiplied by. Use %1 to convert calories into Joule (so ΔH/ΔS come out in kJ/mol and J/(mol·K)); use 1 if the data are already in Joule (e.g. with a calibration peak). Leaving it at 1 for cal data is the usual reason results match calorie-based tools like NanoAnalyze.").arg(QString::number(cal2joule)));
     triplett->addWidget(scaling_label);
     triplett->addWidget(m_scaling);
