@@ -32,7 +32,11 @@
 #include <QtCore/QDir>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QSettings>
+#include <QtCore/QMimeData>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QUrl>
+#include <QtGui/QClipboard>
+#include <QtGui/QDropEvent>
 #include <QtTest/QtTest>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
@@ -44,9 +48,11 @@
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
 
@@ -54,8 +60,13 @@
 #include "src/core/nmrhandler.h"
 #include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/dialogmemory.h"
 #include "src/ui/guitools/importkeyguard.h"
+#include "src/ui/guitools/morelesstoggle.h"
+#include "src/ui/guitools/seriessourcebar.h"
 #include "src/ui/guitools/statusline.h"
+#include "src/ui/widgets/DropTable.h"
+#include "src/ui/widgets/concentrationeditor.h"
 #include "src/ui/widgets/traceeditorwidget.h"
 
 #include "jdf_test_writer.h"
@@ -131,6 +142,41 @@ QStringList realJdfSeries()
     for (QString& f : files)
         f = QDir(dir).filePath(f);
     return files;
+}
+
+/// one spectrum per file as "ppm intensity" lines, as an ASCII export (Claude Generated, UX package 2a)
+void writeNmrText(const QString& file, int step, int steps)
+{
+    const XYTrace trace = nmrSpectrum(step, steps);
+    QFile out(file);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+    QTextStream stream(&out);
+    for (Eigen::Index i = 0; i < trace.x().size(); ++i)
+        stream << QString::number(trace.x()(i), 'g', 12) << " " << QString::number(trace.y()(i), 'g', 12) << "\n";
+}
+
+/// the More/Less switch of the lineshape fit options (MoreLessToggle has no Q_OBJECT: found as a tool button)
+MoreLessToggle* fitToggle(QWidget* dialog)
+{
+    return static_cast<MoreLessToggle*>(dialog->findChild<QToolButton*>("nmrFitOptionsToggle"));
+}
+
+/// a drop of urls on widget, as the window system delivers it (enter, move, drop)
+bool dropUrls(QWidget* widget, const QList<QUrl>& urls)
+{
+    QMimeData mime;
+    mime.setUrls(urls);
+    const QPoint at = widget->rect().center();
+    QDragEnterEvent enter(at, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(widget, &enter);
+    if (!enter.isAccepted())
+        return false;
+    QDragMoveEvent move(at, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(widget, &move);
+    QDropEvent drop(QPointF(at), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(widget, &drop);
+    return drop.isAccepted();
 }
 } // namespace
 
@@ -722,6 +768,342 @@ private slots:
 
     /*! \brief Viewer 2 renders (SUPRAFIT_TRACE_RENDER_DIR): a series with a dominating CHCl3 line, unstacked,
      * stacked in y, with x offset, reverse order, with a Blank region step, and the fit of one spectrum in the stack. */
+    /// every test starts without remembered dialog settings (Claude Generated, UX package 2a)
+    void init()
+    {
+        QSettings().remove("dialogs");
+    }
+
+    /// A: options of a new series survive closing the dialog; ph0 belongs to the series (Claude Generated)
+    void rememberedOptionsOfANewSeries()
+    {
+        {
+            NmrImport dialog;
+            dialog.findChild<QDoubleSpinBox*>("nmrLineBroadening")->setValue(1.5);
+            dialog.findChild<QComboBox*>("nmrZeroFill")->setCurrentIndex(2);
+            dialog.findChild<QDoubleSpinBox*>("nmrPh0")->setValue(30);
+            dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+            dialog.findChild<QSpinBox*>("nmrMaxIterations")->setValue(500);
+            dialog.findChild<QDoubleSpinBox*>("nmrFitRange")->setValue(0.05);
+            dialog.findChild<QComboBox*>("nmrBaseline")->setCurrentIndex(2);
+            dialog.findChild<QComboBox*>("nmrWidthMode")->setCurrentIndex(1);
+            dialog.findChild<QCheckBox*>("nmrPeakFallback")->setChecked(true);
+            QDoubleSpinBox* window = nullptr;
+            for (QDoubleSpinBox* box : dialog.findChildren<QDoubleSpinBox*>())
+                if (box->toolTip().startsWith(QObject::tr("Window of new signals").left(10)))
+                    window = box;
+            QVERIFY(window);
+            window->setValue(0.02);
+            dialog.sourceBar()->endingBox()->setCurrentText(".asc");
+        }
+        NmrImport again;
+        QCOMPARE(again.findChild<QDoubleSpinBox*>("nmrLineBroadening")->value(), 1.5);
+        QCOMPARE(again.handler()->fidSettings().lineBroadening, 1.5);
+        QCOMPARE(again.findChild<QComboBox*>("nmrZeroFill")->currentIndex(), 2);
+        QCOMPARE(again.findChild<QDoubleSpinBox*>("nmrPh0")->value(), 0.0);
+        QCOMPARE(again.findChild<QComboBox*>("nmrShiftMethod")->currentIndex(), 1);
+        QCOMPARE(again.handler()->fitSettings().method, NmrShiftMethod::LineshapeFit);
+        QCOMPARE(again.handler()->fitSettings().maxIterations, 500);
+        QCOMPARE(again.handler()->fitSettings().range, 0.05);
+        QCOMPARE(again.handler()->fitSettings().baseline, LineshapeBaseline::Linear);
+        QCOMPARE(again.handler()->fitSettings().widthMode, NmrWidthMode::Shared);
+        QVERIFY(again.handler()->fitSettings().peakFallback);
+        QCOMPARE(again.handler()->defaultWindow(), 0.02);
+        QCOMPARE(again.sourceBar()->ending(), QString(".asc"));
+        QVERIFY(fitToggle(&again)->isExpanded()); // lineshape fit
+    }
+
+    /// A: a reopened project keeps its own values, not the remembered ones (Claude Generated)
+    void projectValuesWin()
+    {
+        QJsonObject project;
+        {
+            NmrImport dialog;
+            fill(dialog.handler(), 4);
+            dialog.handler()->addSignal(7.60, 0.08, "H1");
+            dialog.refresh();
+            project["raw"] = dialog.ProjectData(); // peak picking, window 0.05, 200 iterations
+        }
+        {
+            NmrImport dialog; // remember other values
+            dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+            dialog.findChild<QSpinBox*>("nmrMaxIterations")->setValue(700);
+            dialog.findChild<QDoubleSpinBox*>("nmrLineBroadening")->setValue(2.0);
+        }
+        NmrImport reopened;
+        QCOMPARE(reopened.handler()->fitSettings().method, NmrShiftMethod::LineshapeFit); // the memory, before the project
+        reopened.setData(project);
+        QCOMPARE(reopened.handler()->fitSettings().method, NmrShiftMethod::PeakPicking);
+        QCOMPARE(reopened.findChild<QComboBox*>("nmrShiftMethod")->currentIndex(), 0);
+        QCOMPARE(reopened.handler()->fitSettings().maxIterations, 200);
+        QCOMPARE(reopened.findChild<QSpinBox*>("nmrMaxIterations")->value(), 200);
+        QCOMPARE(reopened.handler()->fidSettings().lineBroadening, FidSettings().lineBroadening);
+        // reading the project wrote nothing into the memory
+        QCOMPARE(reopened.memory()->value("maxIterations").toInt(), 700);
+    }
+
+    /// A: stored values of the wrong type or outside the limits are ignored (Claude Generated)
+    void invalidStoredValuesAreIgnored()
+    {
+        QSettings settings;
+        settings.setValue("dialogs/nmrimport/maxIterations", 999999);
+        settings.setValue("dialogs/nmrimport/searchWindow", "abc");
+        settings.setValue("dialogs/nmrimport/shiftFrom", 7);
+        settings.setValue("dialogs/nmrimport/peakFallback", "maybe");
+        settings.setValue("dialogs/nmrimport/lineBroadening", -3.0);
+        settings.setValue("dialogs/nmrimport/zeroFill", "2.5");
+        settings.setValue("dialogs/nmrimport/fitRange", 99.0);
+        settings.setValue("dialogs/nmrimport/geometry", QByteArray("garbage"));
+        settings.setValue("dialogs/nmrimport/splitter/main", QByteArray("garbage"));
+        NmrImport dialog;
+        const NmrFitSettings defaults;
+        QCOMPARE(dialog.handler()->fitSettings().maxIterations, defaults.maxIterations);
+        QCOMPARE(dialog.handler()->fitSettings().method, defaults.method);
+        QCOMPARE(dialog.handler()->fitSettings().range, defaults.range);
+        QCOMPARE(dialog.handler()->fitSettings().peakFallback, defaults.peakFallback);
+        QCOMPARE(dialog.handler()->fidSettings().lineBroadening, FidSettings().lineBroadening);
+        QCOMPARE(dialog.handler()->fidSettings().zeroFill, FidSettings().zeroFill);
+        QCOMPARE(dialog.size(), QSize(1280, 800));
+        QVERIFY(!fitToggle(&dialog)->isExpanded());
+    }
+
+    /// A: geometry and splitters come back; a place on no screen is not used (Claude Generated)
+    void geometryAndSplitters()
+    {
+        QByteArray splitter;
+        {
+            NmrImport dialog;
+            dialog.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+            dialog.setGeometry(40, 40, 1000, 650);
+            QSplitter* main = dialog.findChild<QSplitter*>("nmrMainSplitter");
+            main->setSizes({ 200, 500, 300 });
+            splitter = main->saveState();
+            dialog.hide();
+        }
+        {
+            NmrImport dialog;
+            QCOMPARE(dialog.size(), QSize(1000, 650));
+            QCOMPARE(dialog.geometry().topLeft(), QPoint(40, 40));
+            QCOMPARE(dialog.findChild<QSplitter*>("nmrMainSplitter")->saveState(), splitter);
+            dialog.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+            dialog.setGeometry(6000, 6000, 1100, 700); // a screen that is gone
+            dialog.hide();
+        }
+        NmrImport dialog;
+        QCOMPARE(dialog.size(), QSize(1280, 800));
+        QVERIFY(!DialogMemory::fitsAScreen(QRect(6000, 6000, 1100, 700)));
+        QVERIFY(DialogMemory::fitsAScreen(QRect(10, 10, 1100, 700)));
+    }
+
+    /// D: the lineshape options are folded by default and open for a lineshape fit and its project (Claude Generated)
+    void fitOptionsMoreLess()
+    {
+        NmrImport dialog;
+        MoreLessToggle* toggle = fitToggle(&dialog);
+        QWidget* options = dialog.findChild<QWidget*>("nmrFitOptions");
+        QVERIFY(toggle && options);
+        QVERIFY(!toggle->isExpanded());
+        QCOMPARE(options->maximumHeight(), 0);
+        QVERIFY(dialog.findChild<QComboBox*>("nmrShiftMethod")->isVisibleTo(&dialog)); // "Shift from" stays in sight
+        dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+        QVERIFY(toggle->isExpanded());
+        QVERIFY(options->maximumHeight() > 0);
+        dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(0);
+        QVERIFY(toggle->isExpanded()); // only opens by itself
+        toggle->click(); // the user folds it: kept
+        QVERIFY(!toggle->isExpanded());
+        QCOMPARE(dialog.memory()->value("fitOptionsExpanded").toBool(), false);
+
+        // a project with a lineshape fit opens them
+        fill(dialog.handler(), 4);
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        NmrFitSettings fit;
+        fit.method = NmrShiftMethod::LineshapeFit;
+        dialog.handler()->setFitSettings(fit);
+        QJsonObject project;
+        project["raw"] = dialog.ProjectData();
+        QSettings().remove("dialogs");
+        NmrImport reopened;
+        QVERIFY(!fitToggle(&reopened)->isExpanded());
+        reopened.setData(project);
+        QVERIFY(fitToggle(&reopened)->isExpanded());
+    }
+
+    /// B: drops of a directory, files, both and a file that is no spectrum; natural order; the message (Claude Generated)
+    void dropFilesAndDirectories()
+    {
+        const QString dir = m_dir.filePath("drop");
+        QDir().mkpath(dir);
+        const int steps = 3;
+        const QStringList names = { "t_10.txt", "t_2.txt", "t_1.txt" };
+        for (int k = 0; k < steps; ++k)
+            writeNmrText(QDir(dir).filePath(names[k]), k, steps);
+        {
+            QFile bad(QDir(dir).filePath("t_5.txt"));
+            QVERIFY(bad.open(QIODevice::WriteOnly));
+            bad.write("no numbers here\n");
+        }
+        {
+            QFile other(QDir(dir).filePath("notes.md")); // other ending: not taken from the directory
+            QVERIFY(other.open(QIODevice::WriteOnly));
+        }
+
+        NmrImport dialog;
+        dialog.sourceBar()->setEnding(".txt");
+        // a directory, dropped on the results table (a child)
+        QVERIFY(dropUrls(dialog.findChild<QTableWidget*>("nmrResults"), { QUrl::fromLocalFile(dir) }));
+        QCOMPARE(dialog.handler()->spectrumCount(), 3);
+        QCOMPARE(dialog.handler()->spectra().at(0).name(), QString("t_1.txt"));
+        QCOMPARE(dialog.handler()->spectra().at(1).name(), QString("t_2.txt"));
+        QCOMPARE(dialog.handler()->spectra().at(2).name(), QString("t_10.txt"));
+        StatusLine* line = dialog.sourceBar()->statusLine();
+        QVERIFY2(line->message().startsWith("3 file(s) read, 1 not read"), qPrintable(line->message()));
+        QVERIFY(line->message().contains("t_5.txt"));
+        QCOMPARE(line->level(), StatusLine::Warning);
+        QCOMPARE(dialog.findChild<QLabel*>("seriesSpectraCount")->text(), QString("Spectra: 3"));
+
+        // files dropped on the read-only path field append, in natural order
+        QVERIFY(dropUrls(dialog.findChild<QLineEdit*>("seriesPath"), { QUrl::fromLocalFile(QDir(dir).filePath("t_2.txt")), QUrl::fromLocalFile(QDir(dir).filePath("t_10.txt")) }));
+        QCOMPARE(dialog.handler()->spectrumCount(), 5);
+        QCOMPARE(dialog.handler()->spectra().at(3).name(), QString("t_2.txt"));
+        QCOMPARE(dialog.handler()->spectra().at(4).name(), QString("t_10.txt"));
+        QCOMPARE(line->message(), QString("2 file(s) read"));
+        QCOMPARE(line->level(), StatusLine::Info);
+
+        // mixed: an empty directory, a file, a URL that is no local file
+        const QString empty = m_dir.filePath("drop_empty");
+        QDir().mkpath(empty);
+        QVERIFY(dropUrls(&dialog, { QUrl::fromLocalFile(empty), QUrl::fromLocalFile(QDir(dir).filePath("t_1.txt")), QUrl("https://example.org/a.txt") }));
+        QCOMPARE(dialog.handler()->spectrumCount(), 6);
+        QVERIFY2(line->message().startsWith("1 file(s) read, 2 not read"), qPrintable(line->message()));
+        QVERIFY(line->toolTip().contains("drop_empty"));
+        QVERIFY(line->toolTip().contains("not a local file"));
+
+        // a drop of text is not taken
+        QMimeData text;
+        text.setText("7.25");
+        QDragEnterEvent enter(QPoint(5, 5), Qt::CopyAction, &text, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&dialog, &enter);
+        QVERIFY(!enter.isAccepted());
+
+        // "Open directory" of a directory without such a file changes nothing
+        QString error;
+        QVERIFY(!dialog.setDirectory(empty, ".txt", &error));
+        QCOMPARE(dialog.handler()->spectrumCount(), 6);
+        QCOMPARE(line->level(), StatusLine::Error);
+    }
+
+    /// C: the concentration editor: paste, load from a file (decimal comma), rows against spectra (Claude Generated)
+    void concentrationEditor()
+    {
+        const int steps = 10;
+        NmrImport dialog;
+        fill(dialog.handler(), steps);
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        dialog.refresh();
+        ConcentrationEditor* editor = dialog.concentrationEditor();
+        QVERIFY(editor);
+        QVERIFY(editor->findChild<QLabel*>("concentrationHint")->text().contains("Ctrl+V"));
+        QCOMPARE(editor->statusLine()->level(), StatusLine::Info);
+
+        // three rows for four spectra: warning, OK not possible
+        QApplication::clipboard()->setText("0,001\t0\n0,001\t0,0005\n0,001\t0,001\n");
+        editor->table()->setFocus();
+        QTest::keyClick(editor->table(), Qt::Key_V, Qt::ControlModifier);
+        QCOMPARE(editor->rows(), 3);
+        QCOMPARE(editor->statusLine()->level(), StatusLine::Warning);
+        QVERIFY2(editor->statusLine()->message().startsWith("3 rows for 10 spectra"), qPrintable(editor->statusLine()->message()));
+        QVERIFY(dialog.findChild<StatusLine*>("nmrReady")->message().startsWith(QObject::tr("OK not possible yet")));
+
+        // a file with a header and decimal commas
+        const QString file = m_dir.filePath("conc.txt");
+        {
+            QFile out(file);
+            QVERIFY(out.open(QIODevice::WriteOnly | QIODevice::Text));
+            out.write("Host\tGuest\n");
+            for (int k = 0; k < steps; ++k)
+                out.write(QString("0,001\t%1\n").arg(QString::number(5e-4 * k).replace('.', ',')).toUtf8());
+        }
+        QString error;
+        QVERIFY2(editor->loadFile(file, &error), qPrintable(error));
+        QCOMPARE(editor->rows(), steps);
+        QCOMPARE(editor->columns(), 2);
+        QCOMPARE(editor->dataTable()->data(3, 1), 1.5e-3);
+        QCOMPARE(editor->statusLine()->message(), QString("10 rows for 10 spectra"));
+        QVERIFY2(dialog.validate(&error), qPrintable(error));
+        QCOMPARE(dialog.IndependentCount(), 2);
+        QCOMPARE(DataTable(dialog.InputTable()).rowCount(), steps);
+
+        // one spectrum left out: one row per spectrum or per used spectrum
+        dialog.handler()->setSpectrumExcluded(steps - 1, true);
+        dialog.refresh();
+        QCOMPARE(editor->statusLine()->message(), QString("10 rows for 10 spectra"));
+        {
+            std::unique_ptr<DataTable> nine(concentrations(steps - 1));
+            dialog.setConcentrations(nine.get());
+        }
+        QCOMPARE(editor->statusLine()->message(), QString("9 rows for 9 used spectra"));
+        QVERIFY2(dialog.validate(&error), qPrintable(error));
+        {
+            std::unique_ptr<DataTable> eight(concentrations(steps - 2));
+            dialog.setConcentrations(eight.get());
+        }
+        QCOMPARE(editor->statusLine()->level(), StatusLine::Warning);
+        QVERIFY(editor->statusLine()->message().contains("9 used"));
+
+        // a file without numbers leaves the table as it is
+        const QString text = m_dir.filePath("conc_bad.txt");
+        {
+            QFile out(text);
+            QVERIFY(out.open(QIODevice::WriteOnly));
+            out.write("nothing\n");
+        }
+        QVERIFY(!editor->loadFile(text, &error));
+        QCOMPARE(editor->rows(), steps - 2);
+        QCOMPARE(editor->statusLine()->level(), StatusLine::Error);
+    }
+
+    /// renders of the source bar, the concentration editor and the folded/opened fit options (Claude Generated)
+    void renderPackage2a()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const QString dir = m_dir.filePath("render2a");
+        QDir().mkpath(dir);
+        for (int k = 0; k < 6; ++k)
+            writeNmrText(QDir(dir).filePath(QString("step_%1.txt").arg(k + 1)), k, 6);
+        {
+            QFile empty(QDir(dir).filePath("step_9.txt")); // an empty file: "1 not read"
+            QVERIFY(empty.open(QIODevice::WriteOnly));
+        }
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            QSettings().remove("dialogs");
+            NmrImport dialog;
+            dialog.resize(1366, 768);
+            dialog.sourceBar()->setEnding(".txt");
+            QVERIFY(dropUrls(&dialog, { QUrl::fromLocalFile(dir) }));
+            dialog.handler()->addSignal(7.60, 0.08, "H1");
+            dialog.refresh();
+            render(&dialog, "nmr2a_source_folded" + suffix);
+            fitToggle(&dialog)->setExpanded(true, false);
+            QCoreApplication::processEvents();
+            render(&dialog, "nmr2a_options_open" + suffix);
+            dialog.findChild<QTabWidget*>()->setCurrentIndex(1);
+            QApplication::clipboard()->setText("0.001\t0\n0.001\t0.0005\n0.001\t0.001\n");
+            dialog.concentrationEditor()->table()->setFocus();
+            QTest::keyClick(dialog.concentrationEditor()->table(), Qt::Key_V, Qt::ControlModifier);
+            render(&dialog, "nmr2a_concentrations_warning" + suffix);
+            dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+            dialog.hide();
+        }
+        Appearance::Apply(Appearance::Light);
+        QSettings().remove("dialogs");
+    }
+
     void renderStack()
     {
         if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())

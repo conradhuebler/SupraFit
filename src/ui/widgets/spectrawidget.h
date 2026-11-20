@@ -22,9 +22,13 @@
 #include <charts.h>
 
 #include <QtCore/QJsonObject>
+#include <QtCore/QList>
+#include <QtCore/QPair>
 
 #include <src/core/spectrahandler.h>
 
+class ConcentrationEditor;
+class DialogMemory;
 class DropTable;
 class TraceEditorWidget;
 
@@ -45,6 +49,13 @@ public:
     void setDirectory(const QString& directry, const QString& type);
     void setFile(const QString& file);
     void addFile(const QString& file);
+    /*! \brief Appends one spectrum per file (as addFile); a file without a valid spectrum is left out and
+     * listed in *failed with the reason. Returns the number of files read. Claude Generated */
+    int addFiles(const QStringList& files, QList<QPair<QString, QString>>* failed = nullptr);
+    /*! \brief Restores the VarCovar options (# X values, Cluster Results, Cluster Average) from memory
+     * and keeps them there. Claude Generated */
+    void rememberIn(DialogMemory* memory);
+    inline ConcentrationEditor* concentrationEditor() const { return m_indep; }
 
     void clear();
 
@@ -85,7 +96,8 @@ private:
     QTabWidget* m_views;
     QListWidget *m_files, *m_xvalues;
     TraceEditorWidget* m_editor; ///< chart, range and processing steps of the spectra
-    DropTable *m_indep, *m_datatable;
+    ConcentrationEditor* m_indep; ///< concentrations, one row per spectrum
+    DropTable* m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
     QLineEdit* m_add_xvalue;
     QPushButton *m_accept_x, *m_varcovar, *m_export_table;

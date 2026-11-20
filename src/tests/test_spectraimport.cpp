@@ -37,7 +37,15 @@
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTextStream>
+#include <QtCore/QMimeData>
 #include <QtCore/QTimer>
+#include <QtCore/QUrl>
+#include <QtGui/QDropEvent>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QListWidget>
+#include <QtWidgets/QSpinBox>
+#include <QtWidgets/QSplitter>
 #include <QtGui/QClipboard>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
@@ -54,11 +62,14 @@
 #include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/dialogmemory.h"
 #include "src/ui/guitools/importkeyguard.h"
+#include "src/ui/guitools/seriessourcebar.h"
 #include "src/ui/guitools/statusline.h"
 #include "src/ui/instance.h"
 #include "src/ui/mainwindow/suprafitgui.h"
 #include "src/ui/widgets/DropTable.h"
+#include "src/ui/widgets/concentrationeditor.h"
 #include "src/ui/widgets/spectrawidget.h"
 #include "src/ui/widgets/traceeditorwidget.h"
 
@@ -84,6 +95,30 @@ QString concentrationText(int rows)
     for (int k = 0; k < rows; ++k)
         text += QString("%1\t%2\n").arg(1e-3).arg(2e-4 * k);
     return text;
+}
+
+/// a drop of urls on widget (enter, move, drop); true if the drop was taken (Claude Generated, UX package 2a)
+bool dropUrls(QWidget* widget, const QList<QUrl>& urls)
+{
+    QMimeData mime;
+    mime.setUrls(urls);
+    const QPoint at = widget->rect().center();
+    QDragEnterEvent enter(at, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(widget, &enter);
+    if (!enter.isAccepted())
+        return false;
+    QDropEvent drop(QPointF(at), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(widget, &drop);
+    return drop.isAccepted();
+}
+
+/// "# X Values" of VarCovar
+QSpinBox* valuesBox(QWidget* dialog)
+{
+    for (QSpinBox* box : dialog->findChildren<QSpinBox*>())
+        if (box->toolTip() == QObject::tr("Number of x values VarCovar selects."))
+            return box;
+    return nullptr;
 }
 
 QPushButton* okButton(QDialog* dialog)
@@ -339,6 +374,184 @@ private slots:
         nmr->trigger();
         QCOMPARE(seen, QStringList{ "NmrImport" });
         closer.stop();
+    }
+
+    /// no remembered dialog settings from an earlier test (Claude Generated, UX package 2a)
+    void init()
+    {
+        QSettings().remove("dialogs");
+    }
+
+    /// B: "Load file" replaces by a table file, "Add files" and a drop append; labels of both dialogs (Claude Generated)
+    void sourceBarActions()
+    {
+        SpectraImport dialog;
+        SeriesSourceBar* bar = dialog.sourceBar();
+        QCOMPARE(bar->findChild<QPushButton*>("seriesOpenDirectory")->text(), QObject::tr("Open directory"));
+        QCOMPARE(bar->findChild<QPushButton*>("seriesAddFiles")->text(), QObject::tr("Add files"));
+        QVERIFY(!bar->findChild<QPushButton*>("seriesLoadFile")->isHidden()); // UV/Vis reads table files
+        NmrImport nmr;
+        QVERIFY(nmr.sourceBar()->findChild<QPushButton*>("seriesLoadFile")->isHidden());
+        QCOMPARE(nmr.sourceBar()->findChild<QPushButton*>("seriesOpenDirectory")->text(), bar->findChild<QPushButton*>("seriesOpenDirectory")->text());
+
+        dialog.openDirectory(m_spectra, ".dat");
+        QCOMPARE(dialog.spectraWidget()->spectraCount(), 4);
+        QCOMPARE(bar->statusLine()->message(), QString("4 file(s) read"));
+        QCOMPARE(bar->findChild<QLabel*>("seriesSpectraCount")->text(), QString("Spectra: 4"));
+
+        // a dropped file appends; a file without numbers is not read
+        const QString bad = m_dir.filePath("empty.dat");
+        {
+            QFile file(bad);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write("nothing\n");
+        }
+        QVERIFY(dropUrls(dialog.spectraWidget()->findChild<DropTable*>("spectraConcentrations"),
+            { QUrl::fromLocalFile(QDir(m_spectra).filePath("uv_1.dat")), QUrl::fromLocalFile(bad) }));
+        QCOMPARE(dialog.spectraWidget()->spectraCount(), 5);
+        QVERIFY2(bar->statusLine()->message().startsWith("1 file(s) read, 1 not read"), qPrintable(bar->statusLine()->message()));
+        QVERIFY(bar->statusLine()->toolTip().contains("empty.dat"));
+        QCOMPARE(bar->statusLine()->level(), StatusLine::Warning);
+
+        // a dropped directory: the files whose name contains the ending ("xy"), natural order
+        const QString xy = m_dir.filePath("uvxy");
+        QDir().mkpath(xy);
+        for (int k : { 10, 2, 1 })
+            writeSpectrum(QDir(xy).filePath(QString("s_%1.xy").arg(k)), k % 4);
+        bar->setEnding("xy");
+        QVERIFY(dropUrls(&dialog, { QUrl::fromLocalFile(xy) }));
+        QCOMPARE(dialog.spectraWidget()->spectraCount(), 8);
+        QListWidget* list = nullptr;
+        for (QListWidget* candidate : dialog.spectraWidget()->findChildren<QListWidget*>())
+            if (candidate->count() == 8)
+                list = candidate;
+        QVERIFY(list);
+        QCOMPARE(list->item(5)->text(), QString("s_1.xy"));
+        QCOMPARE(list->item(6)->text(), QString("s_2.xy"));
+        QCOMPARE(list->item(7)->text(), QString("s_10.xy"));
+
+        // "Load file" of a table (first row x, one spectrum per further row) replaces the series
+        const QString table = m_dir.filePath("table.txt");
+        {
+            QFile file(table);
+            QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+            QTextStream stream(&file);
+            for (int r = 0; r < 4; ++r) {
+                QStringList row;
+                for (int i = 0; i < 50; ++i)
+                    row << QString::number(r == 0 ? 400 + 2 * i : r * std::exp(-std::pow((400 + 2 * i - 450) / 10.0, 2)));
+                stream << row.join(" ") << "\n";
+            }
+        }
+        dialog.openFile(table);
+        QCOMPARE(dialog.spectraWidget()->spectraCount(), 3);
+        QCOMPARE(bar->statusLine()->message(), QString("1 file(s) read"));
+        dialog.openFile(bad); // no table: reported, nothing left
+        QCOMPARE(bar->statusLine()->level(), StatusLine::Error);
+    }
+
+    /// A: VarCovar options, ending and geometry survive the dialog; invalid values are ignored (Claude Generated)
+    void rememberedSettings()
+    {
+        QByteArray splitter;
+        {
+            SpectraImport dialog;
+            valuesBox(&dialog)->setValue(7);
+            for (QCheckBox* box : dialog.findChildren<QCheckBox*>()) {
+                if (box->text() == QObject::tr("Cluster Results"))
+                    box->setChecked(false);
+                if (box->text() == QObject::tr("Cluster Average"))
+                    box->setChecked(true);
+            }
+            dialog.sourceBar()->setEnding("xy");
+            dialog.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+            dialog.setGeometry(30, 20, 1100, 700);
+            QSplitter* main = dialog.findChild<QSplitter*>("spectraMainSplitter");
+            main->setSizes({ 150, 600, 250 });
+            splitter = main->saveState();
+            dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+            dialog.hide();
+        }
+        {
+            SpectraImport dialog;
+            QCOMPARE(valuesBox(&dialog)->value(), 7);
+            for (QCheckBox* box : dialog.findChildren<QCheckBox*>()) {
+                if (box->text() == QObject::tr("Cluster Results"))
+                    QVERIFY(!box->isChecked());
+                if (box->text() == QObject::tr("Cluster Average"))
+                    QVERIFY(box->isChecked());
+            }
+            QCOMPARE(dialog.sourceBar()->ending(), QString("xy"));
+            QCOMPARE(dialog.size(), QSize(1100, 700));
+            QCOMPARE(dialog.findChild<QSplitter*>("spectraMainSplitter")->saveState(), splitter);
+        }
+        QSettings().setValue("dialogs/spectraimport/xValueCount", 1000); // above the limit of 100
+        QSettings().setValue("dialogs/spectraimport/clusterResults", "perhaps");
+        QSettings().setValue("dialogs/spectraimport/geometry", QByteArray("garbage"));
+        SpectraImport dialog;
+        QCOMPARE(valuesBox(&dialog)->value(), 5);
+        for (QCheckBox* box : dialog.findChildren<QCheckBox*>())
+            if (box->text() == QObject::tr("Cluster Results"))
+                QVERIFY(box->isChecked());
+        QCOMPARE(dialog.size(), QSize(1280, 800));
+        qApp->setProperty("LastSpectraType", "csv");
+    }
+
+    /// C: the concentration editor of the UV/Vis dialog: rows against spectra, load from a file (Claude Generated)
+    void concentrationEditorRows()
+    {
+        SpectraImport dialog;
+        dialog.openDirectory(m_spectra, ".dat");
+        QVERIFY(dialog.spectraWidget()->addXValueText("440"));
+        ConcentrationEditor* editor = dialog.spectraWidget()->concentrationEditor();
+        paste(editor->table(), concentrationText(3));
+        QCOMPARE(editor->statusLine()->level(), StatusLine::Warning);
+        QVERIFY2(editor->statusLine()->message().startsWith("3 rows for 4 spectra"), qPrintable(editor->statusLine()->message()));
+        QCOMPARE(dialog.statusLine()->level(), StatusLine::Warning); // the readiness of UX package 1, unchanged
+        const QString file = m_dir.filePath("uvconc.txt"); // ';' between the columns, decimal comma
+        {
+            QFile out(file);
+            QVERIFY(out.open(QIODevice::WriteOnly | QIODevice::Text));
+            out.write(concentrationText(4).replace(".", ",").replace("\t", ";").toUtf8());
+        }
+        QString error;
+        QVERIFY2(editor->loadFile(file, &error), qPrintable(error));
+        QCOMPARE(dialog.spectraWidget()->concentrationRows(), 4);
+        QCOMPARE(dialog.spectraWidget()->concentrationColumns(), 2);
+        QCOMPARE(editor->dataTable()->data(3, 1), 6e-4);
+        QCOMPARE(editor->statusLine()->message(), QString("4 rows for 4 spectra"));
+        QCOMPARE(DataTable(dialog.spectraWidget()->InputTable()).columnCount(), 3); // 2 concentrations + 1 x value
+        QVERIFY(dialog.spectraWidget()->ready());
+        QCOMPARE(dialog.statusLine()->level(), StatusLine::Info);
+    }
+
+    /// renders: source bar with a message and the concentration warning, light and dark (Claude Generated)
+    void renderPackage2a()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const QString bad = m_dir.filePath("broken.dat");
+        {
+            QFile file(bad);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write("x\n");
+        }
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString scheme = mode == Appearance::Dark ? QStringLiteral("dark") : QStringLiteral("light");
+            SpectraImport dialog;
+            dialog.resize(1366, 768);
+            dialog.openDirectory(m_spectra, ".dat");
+            dialog.addFiles({ bad });
+            dialog.spectraWidget()->addXValueText("440");
+            paste(dialog.spectraWidget()->concentrationEditor()->table(), concentrationText(3));
+            render(&dialog, "uvvis2a_source_conc_" + scheme);
+            dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+            dialog.hide();
+        }
+        Appearance::Apply(Appearance::Light);
+        QSettings().remove("dialogs");
     }
 
     void renderDialog()

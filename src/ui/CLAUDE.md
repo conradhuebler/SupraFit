@@ -35,6 +35,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
   - Viewer 2: markers/fit/residual drawn with `stackOffset(k)`; hint in `nmrStatus` + cell tooltips when a signal is missing in every used spectrum (`m_missing_hint`)
   - UX 1: `ImportKeyGuard`, readiness `StatusLine` "nmrReady" on both pages, "Double-click adds the signal" (QSettings `nmrimport/doubleClickAdds`), destructive actions ask via `keyGuard()->confirm()`, `AdaptiveWaiter` around tracking/FID
+  - UX 2a: `SeriesSourceBar`, `ConcentrationEditor`, fit options behind `MoreLessToggle` (opens for lineshape fit); `restoreOptions()` (memory) runs before `setData()`, so a project's values win; save only in the `m_updating`-guarded apply paths
 - **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
   - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
 
@@ -126,6 +127,9 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **guitools/waiter.h**: Progress indication and user feedback; `AdaptiveWaiter` = wait cursor only if the same work took > 0.3 s last time
 - **guitools/importkeyguard.cpp/h**: `ImportKeyGuard` — Enter never presses OK, dirty after the first Show, `confirmDiscard()` from the host's `reject()`, `setConfirmHandler` for tests; not used by the ITC dialog (own rule)
 - **guitools/statusline.cpp/h**: `StatusLine` — one elided line, Info/Warning/Error in palette-safe colours, full text as tooltip
+- **guitools/dialogmemory.cpp/h**: `DialogMemory` — QSettings `dialogs/<name>/...` of exec() dialogs: geometry as QRect (applied only on a present screen, not below the minimum size), splitters, checked readers that ignore wrong types/out-of-range values
+- **guitools/seriessourcebar.cpp/h**: `SeriesSourceBar` — Open directory/File ending/Load file/Add files/path/count + "n file(s) read, m not read"; drops of files/directories via an application event filter (children that take text drops would swallow them)
+- **widgets/concentrationeditor.cpp/h**: `ConcentrationEditor` — `DropTable` + paste hint + "Load from file" (`FileHandler`, as Open Project) + "n rows for m spectra"; `Edited()` on paste/load/clear/setTable
 - **widgets/messagedock.cpp/h**: Message logging and status display
 
 ### Chart Integration

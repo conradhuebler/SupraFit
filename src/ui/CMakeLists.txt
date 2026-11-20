@@ -52,6 +52,7 @@ set(SFGui_SRC
                 widgets/DropTable.h
                 widgets/spectrawidget.cpp
                 widgets/traceeditorwidget.cpp
+                widgets/concentrationeditor.cpp
                 widgets/metamodelparameter.cpp
                 widgets/parameterwidget.cpp
                 widgets/analysisparts.cpp
@@ -95,6 +96,8 @@ set(SFGui_SRC
                 guitools/appearance.cpp
                 guitools/importkeyguard.cpp
                 guitools/statusline.cpp
+                guitools/dialogmemory.cpp
+                guitools/seriessourcebar.cpp
     )
 
 if(USE_LLM)

@@ -53,10 +53,14 @@
 
 #include "src/core/models/datatable.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/dialogmemory.h"
 #include "src/ui/guitools/importkeyguard.h"
+#include "src/ui/guitools/morelesstoggle.h"
+#include "src/ui/guitools/seriessourcebar.h"
 #include "src/ui/guitools/statusline.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/DropTable.h"
+#include "src/ui/widgets/concentrationeditor.h"
 #include "src/ui/widgets/traceeditorwidget.h"
 
 #include "src/global.h"
@@ -106,23 +110,19 @@ void NmrImport::setupUi()
     m_guard = new ImportKeyGuard(this);
     QVBoxLayout* layout = new QVBoxLayout;
 
-    // loading
-    QHBoxLayout* load = new QHBoxLayout;
-    m_directory = new QPushButton(tr("Open directory"));
-    m_directory->setToolTip(tr("Reads every file of a directory with the chosen ending, one spectrum per titration step, in natural order (2 before 10)."));
-    m_suffix = new QComboBox;
-    m_suffix->setEditable(true);
-    m_suffix->addItems({ ".txt", ".csv", ".dat", ".xy", ".asc", ".jdf" });
-    m_suffix->setToolTip(tr("Ending of the spectrum files in the directory"));
-    m_files = new QPushButton(tr("Add files"));
-    m_files->setToolTip(tr("Two columns (ppm, intensity) = one spectrum; more columns = ppm and one spectrum per column; TopSpin totxt export; JEOL Delta FID (.jdf)."));
-    m_path = new QLineEdit;
-    m_path->setReadOnly(true);
-    load->addWidget(m_directory);
-    load->addWidget(m_suffix);
-    load->addWidget(m_files);
-    load->addWidget(m_path, 1);
-    layout->addLayout(load);
+    m_memory = new DialogMemory(this, "nmrimport");
+
+    // loading: directory, files, drag and drop (Claude Generated, UX package 2a)
+    m_source = new SeriesSourceBar;
+    m_source->setObjectName("nmrSource");
+    m_source->setEndings({ ".txt", ".csv", ".dat", ".xy", ".asc", ".jdf" }, true);
+    m_source->setMatch(SeriesSourceBar::Match::EndsWith);
+    m_source->setFileFilter(tr("Spectra (*.txt *.csv *.dat *.xy *.asc *.jdf);;JEOL Delta (*.jdf);;All files (*)"));
+    m_source->setDirectoryToolTip(tr("Replaces the series by every file of a directory with the chosen ending, one spectrum per titration step, in natural order (2 before 10)."));
+    m_source->setAddFilesToolTip(tr("Appends files: two columns (ppm, intensity) = one spectrum; more columns = ppm and one spectrum per column; TopSpin totxt export; JEOL Delta FID (.jdf). Files or a directory can also be dropped on the dialog."));
+    m_source->setEnding(m_memory->value("fileEnding").toString());
+    m_source->installDropTarget(this);
+    layout->addWidget(m_source);
 
     // page 1: spectra, chart, shifts, signals
     QWidget* left = new QWidget;
@@ -180,6 +180,7 @@ void NmrImport::setupUi()
     results->setLayout(results_layout);
 
     QSplitter* center = new QSplitter(Qt::Vertical);
+    center->setObjectName("nmrCenterSplitter");
     center->addWidget(m_editor);
     center->addWidget(results);
     center->setStretchFactor(0, 3);
@@ -187,6 +188,7 @@ void NmrImport::setupUi()
     center->setChildrenCollapsible(false);
 
     QSplitter* main = new QSplitter(Qt::Horizontal);
+    main->setObjectName("nmrMainSplitter");
     main->addWidget(left);
     main->addWidget(center);
     main->addWidget(signalPanel());
@@ -198,12 +200,8 @@ void NmrImport::setupUi()
     // page 2: concentrations and the table handed over
     QWidget* tables = new QWidget;
     QHBoxLayout* tables_layout = new QHBoxLayout;
-    QVBoxLayout* conc_layout = new QVBoxLayout;
-    QLabel* conc_label = new QLabel(tr("Concentrations (host, guest), one row per spectrum: paste with Ctrl+V"));
-    conc_label->setWordWrap(true);
-    conc_layout->addWidget(conc_label);
-    m_concentrations = new DropTable;
-    conc_layout->addWidget(m_concentrations, 1);
+    m_concentrations = new ConcentrationEditor(tr("Concentrations (host, guest), one row per spectrum"));
+    m_concentrations->setObjectName("nmrConcentrations");
     QVBoxLayout* preview_layout = new QVBoxLayout;
     preview_layout->addWidget(new QLabel(tr("Table for the import")));
     m_preview = new DropTable;
@@ -211,7 +209,7 @@ void NmrImport::setupUi()
     m_table_status = new QLabel;
     m_table_status->setWordWrap(true);
     preview_layout->addWidget(m_table_status);
-    tables_layout->addLayout(conc_layout, 1);
+    tables_layout->addWidget(m_concentrations, 1);
     tables_layout->addLayout(preview_layout, 2);
     tables->setLayout(tables_layout);
 
@@ -248,28 +246,16 @@ void NmrImport::setupUi()
 
     connect(m_buttons, &QDialogButtonBox::accepted, this, &NmrImport::accept);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &NmrImport::reject);
-    connect(m_directory, &QPushButton::clicked, this, [this]() {
-        const QString directory = QFileDialog::getExistingDirectory(this, tr("Open directory"), getDir());
-        if (directory.isEmpty())
-            return;
-        setLastDir(directory);
-        m_handler.clear();
+    connect(m_source, &SeriesSourceBar::directoryChosen, this, [this](const QString& directory) {
         QString error;
-        setDirectory(directory, m_suffix->currentText(), &error);
+        // a directory without such a file only says so; the series stays
+        if (!SeriesSourceBar::filesInDirectory(directory, m_source->ending(), SeriesSourceBar::Match::EndsWith).isEmpty())
+            m_handler.clear();
+        setDirectory(directory, m_source->ending(), &error);
     });
-    connect(m_files, &QPushButton::clicked, this, [this]() {
-        QStringList files = QFileDialog::getOpenFileNames(this, tr("Add files"), getDir(),
-            tr("Spectra (*.txt *.csv *.dat *.xy *.asc *.jdf);;JEOL Delta (*.jdf);;All files (*)"));
-        if (files.isEmpty())
-            return;
-        // natural order ("2" before "10"), as for a directory
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(files.begin(), files.end(), [&collator](const QString& a, const QString& b) { return collator.compare(a, b) < 0; });
-        setLastDir(files.first());
-        QString error;
-        addFiles(files, &error);
-    });
+    connect(m_source, &SeriesSourceBar::filesChosen, this, [this](const QStringList& files) { addFiles(files); });
+    connect(m_source, &SeriesSourceBar::filesDropped, this, [this](const QStringList& files, const QList<SeriesSourceBar::Failure>& failed) { addFiles(files, nullptr, failed); });
+    connect(m_source, &SeriesSourceBar::endingChanged, this, [this](const QString& ending) { m_memory->setValue("fileEnding", ending.trimmed()); });
     connect(m_spectra, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
         if (m_updating)
             return;
@@ -338,7 +324,7 @@ void NmrImport::setupUi()
             setStatus(tr("'%1' is not a chemical shift.").arg(item->text()), true);
         QMetaObject::invokeMethod(this, [this]() { updateResults(); updateMarkers(); updateTable(); }, Qt::QueuedConnection);
     });
-    connect(m_concentrations, &DropTable::Edited, this, [this]() {
+    connect(m_concentrations, &ConcentrationEditor::Edited, this, [this]() {
         m_guard->markDirty();
         updateTable();
     });
@@ -351,6 +337,12 @@ void NmrImport::setupUi()
     });
     updateDoubleClickHint();
     m_guard->removeDefaultButtons();
+
+    // remembered place, splitters and the options of a new series (Claude Generated, UX package 2a)
+    m_memory->restoreGeometry();
+    m_memory->addSplitter(main, "main");
+    m_memory->addSplitter(center, "center");
+    restoreOptions();
 }
 
 /*! \brief Panel of the FID processing (Claude Generated, JEOL import). */
@@ -468,6 +460,8 @@ void NmrImport::applyFidSettings()
     fid.ph0 = m_ph0->value();
     fid.ph1 = m_ph1->value();
     fid.autoPhase = m_auto_each->isChecked();
+    m_memory->setValue("lineBroadening", fid.lineBroadening); // ph0/ph1 belong to the series: not kept
+    m_memory->setValue("zeroFill", m_zero_fill->currentIndex());
     AdaptiveWaiter wait(&m_fid_ms); // every FID is transformed again
     QString error;
     if (!m_handler.setFidSettings(fid, &error))
@@ -508,7 +502,21 @@ QWidget* NmrImport::signalPanel()
     form->addRow(tr("Shift from"), m_method);
     layout->addLayout(form);
 
+    // the options of the lineshape fit behind "..more.."; they open by themselves for a lineshape fit
+    // (Claude Generated, UX package 2a)
     m_fit_options = new QWidget;
+    m_fit_options->setObjectName("nmrFitOptions");
+    m_fit_toggle = new MoreLessToggle(m_fit_options);
+    m_fit_toggle->setObjectName("nmrFitOptionsToggle");
+    m_fit_toggle->setToolTip(tr("Show or hide the options of the lineshape fit"));
+    QHBoxLayout* toggle_row = new QHBoxLayout;
+    toggle_row->setContentsMargins(0, 0, 0, 0);
+    QLabel* toggle_label = new QLabel(tr("Lineshape fit options"));
+    toggle_label->setToolTip(m_fit_toggle->toolTip());
+    toggle_row->addWidget(toggle_label);
+    toggle_row->addStretch(1);
+    toggle_row->addWidget(m_fit_toggle);
+    layout->addLayout(toggle_row);
     QFormLayout* fit_form = new QFormLayout;
     fit_form->setContentsMargins(0, 0, 0, 0);
     m_width_mode = new QComboBox;
@@ -584,14 +592,17 @@ QWidget* NmrImport::signalPanel()
     });
     connect(m_window, &QDoubleSpinBox::valueChanged, this, [this](double window) {
         m_handler.setDefaultWindow(window);
-        if (!m_updating)
+        if (!m_updating) {
             m_guard->markDirty();
+            m_memory->setValue("searchWindow", window);
+        }
     });
     connect(m_double_adds, &QCheckBox::toggled, this, [this](bool on) {
         QSettings().setValue("nmrimport/doubleClickAdds", on);
         updateDoubleClickHint();
     });
     connect(m_method, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
+    connect(m_fit_toggle, &QToolButton::clicked, this, [this]() { m_memory->setValue("fitOptionsExpanded", m_fit_toggle->isExpanded()); });
     connect(m_width_mode, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
     connect(m_baseline, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
     connect(m_fit_range, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFitSettings);
@@ -664,6 +675,8 @@ void NmrImport::updateFitControls()
     m_fallback->setChecked(fit.peakFallback);
     m_fit_options->setEnabled(fit.method == NmrShiftMethod::LineshapeFit);
     m_details->setEnabled(fit.method == NmrShiftMethod::LineshapeFit);
+    if (fit.method == NmrShiftMethod::LineshapeFit)
+        m_fit_toggle->setExpanded(true); // the options of the chosen method in sight
     m_updating = updating;
 }
 
@@ -680,6 +693,13 @@ void NmrImport::applyFitSettings()
     fit.maxIterations = m_max_iterations->value();
     fit.peakFallback = m_fallback->isChecked();
     m_handler.setFitSettings(fit);
+    // defaults of the next new series (a project brings its own)
+    m_memory->setValue("shiftFrom", m_method->currentIndex());
+    m_memory->setValue("lineWidth", m_width_mode->currentIndex());
+    m_memory->setValue("baseline", m_baseline->currentIndex());
+    m_memory->setValue("fitRange", m_fit_range->value());
+    m_memory->setValue("maxIterations", m_max_iterations->value());
+    m_memory->setValue("peakFallback", m_fallback->isChecked());
     updateFitControls();
     retrack();
 }
@@ -690,21 +710,27 @@ int NmrImport::fitSpectrum() const
     return row >= 0 && row < m_handler.spectrumCount() ? row : m_handler.referenceIndex();
 }
 
-bool NmrImport::addFiles(const QStringList& files, QString* error)
+bool NmrImport::addFiles(const QStringList& files, QString* error, const QList<SeriesSourceBar::Failure>& before)
 {
-    QStringList failed;
+    QList<SeriesSourceBar::Failure> failed = before;
+    QStringList reasons;
+    for (const SeriesSourceBar::Failure& failure : before)
+        reasons << failure.reason;
+    int read = 0;
     for (const QString& file : files) {
         QString reason;
-        if (!m_handler.addFile(file, &reason))
-            failed << reason;
+        if (m_handler.addFile(file, &reason))
+            ++read;
+        else {
+            failed.append({ file, reason });
+            reasons << reason;
+        }
     }
-    m_path->setText(files.size() == 1 ? files.first() : QFileInfo(files.value(0)).path());
-    if (!failed.isEmpty()) {
-        if (error)
-            *error = failed.join("\n");
-        setStatus(tr("Not read: %1").arg(failed.join("; ")), true);
-    } else
-        setStatus(tr("%1 spectra.").arg(m_handler.spectrumCount()), false);
+    if (!files.isEmpty())
+        m_source->setPath(files.size() == 1 ? files.first() : QFileInfo(files.value(0)).path());
+    m_source->report(read, failed);
+    if (error && !reasons.isEmpty())
+        *error = reasons.join("\n");
     m_editor->setOperations(m_handler.operations());
     refresh();
     return failed.isEmpty();
@@ -712,17 +738,61 @@ bool NmrImport::addFiles(const QStringList& files, QString* error)
 
 bool NmrImport::setDirectory(const QString& directory, const QString& suffix, QString* error)
 {
+    m_source->setPath(directory);
     QString reason;
-    const bool ok = m_handler.addDirectory(directory, suffix, &reason);
-    m_path->setText(directory);
-    if (!reason.isEmpty())
-        setStatus(tr("Not read: %1").arg(reason), true);
-    else
-        setStatus(tr("%1 spectra.").arg(m_handler.spectrumCount()), false);
-    if (error)
-        *error = reason;
-    refresh();
-    return ok;
+    if (!QFileInfo(directory).isDir())
+        reason = tr("Directory %1 does not exist.").arg(directory);
+    const QStringList files = reason.isEmpty() ? SeriesSourceBar::filesInDirectory(directory, suffix, SeriesSourceBar::Match::EndsWith) : QStringList();
+    if (reason.isEmpty() && files.isEmpty())
+        reason = suffix.isEmpty() ? tr("No file in %1.").arg(directory) : tr("No file ending with %1 in %2.").arg(suffix, directory);
+    if (!reason.isEmpty()) {
+        m_source->reportMessage(reason, StatusLine::Error);
+        if (error)
+            *error = reason;
+        refresh();
+        return false;
+    }
+    addFiles(files, error);
+    return m_handler.spectrumCount() > 0;
+}
+
+/*! \brief Defaults of a new series from the memory: search window, "Shift from" and the lineshape fit
+ * options, LB and zero fill of the FIDs; a stored value outside the limits of its control is ignored.
+ * Runs before a project is read (setData), whose values then win. Claude Generated (UX package 2a) */
+void NmrImport::restoreOptions()
+{
+    m_updating = true;
+    if (m_memory->restore(m_window, "searchWindow"))
+        m_handler.setDefaultWindow(m_window->value());
+    m_memory->restore(m_method, "shiftFrom");
+    m_memory->restore(m_width_mode, "lineWidth");
+    m_memory->restore(m_baseline, "baseline");
+    m_memory->restore(m_fit_range, "fitRange");
+    m_memory->restore(m_max_iterations, "maxIterations");
+    m_memory->restore(m_fallback, "peakFallback");
+    NmrFitSettings fit;
+    fit.method = m_method->currentIndex() == 1 ? NmrShiftMethod::LineshapeFit : NmrShiftMethod::PeakPicking;
+    fit.widthMode = m_width_mode->currentIndex() == 1 ? NmrWidthMode::Shared : NmrWidthMode::Free;
+    fit.baseline = LineshapeBaseline(std::clamp(m_baseline->currentIndex(), 0, 2));
+    fit.range = m_fit_range->value();
+    fit.maxIterations = m_max_iterations->value();
+    fit.peakFallback = m_fallback->isChecked();
+    m_handler.setFitSettings(fit);
+
+    FidSettings fid = m_handler.fidSettings();
+    double lb = 0;
+    if (m_memory->readDouble("lineBroadening", m_line_broadening->minimum(), m_line_broadening->maximum(), &lb))
+        fid.lineBroadening = lb;
+    int zero = 0;
+    if (m_memory->readInt("zeroFill", 0, m_zero_fill->count() - 1, &zero))
+        fid.zeroFill = m_zero_fill->itemData(zero).toInt();
+    m_handler.setFidSettings(fid); // no FIDs yet: nothing is transformed
+    bool expanded = false;
+    if (m_memory->readBool("fitOptionsExpanded", &expanded))
+        m_fit_toggle->setExpanded(expanded, false);
+    m_updating = false;
+    updateFitControls();
+    updateFidControls();
 }
 
 void NmrImport::setData(const QJsonObject& project)
@@ -750,12 +820,7 @@ void NmrImport::setConcentrations(const DataTable* table)
 {
     if (!table)
         return;
-    DataTable* copy = new DataTable(*const_cast<DataTable*>(table));
-    copy->setParent(m_concentrations);
-    QAbstractItemModel* old = m_concentrations->model();
-    m_concentrations->setModel(copy);
-    if (old && old->parent() == m_concentrations)
-        delete old;
+    m_concentrations->setTable(table); // a copy; Edited() builds the table again
     updateTable();
 }
 
@@ -770,6 +835,7 @@ void NmrImport::retrack()
     updateResults();
     updateMarkers();
     updateTable();
+    m_concentrations->setSpectraCount(m_handler.spectrumCount(), usedSpectra());
 }
 
 void NmrImport::refresh()
@@ -787,6 +853,8 @@ void NmrImport::refresh()
     updateSignals();
     updateResults();
     updateTable();
+    m_source->setSpectraCount(m_handler.spectrumCount());
+    m_concentrations->setSpectraCount(m_handler.spectrumCount(), usedSpectra());
 }
 
 void NmrImport::updateSpectra()
@@ -1022,6 +1090,14 @@ void NmrImport::updateMarkers()
     m_editor->refreshMarkers();
 }
 
+int NmrImport::usedSpectra() const
+{
+    int used = 0;
+    for (int k = 0; k < m_handler.spectrumCount(); ++k)
+        used += !m_handler.isSpectrumExcluded(k);
+    return used;
+}
+
 QVector<bool> NmrImport::excludedSpectra() const
 {
     QVector<bool> excluded(m_handler.spectrumCount());
@@ -1076,7 +1152,7 @@ bool NmrImport::validate(QString* error)
 {
     m_input_table = QJsonObject();
     m_independent_count = 0;
-    DataTable* concentrations = qobject_cast<DataTable*>(m_concentrations->model());
+    DataTable* concentrations = m_concentrations->dataTable();
     std::unique_ptr<DataTable> table;
     QString reason;
     if (!concentrations || concentrations->columnCount() == 0 || concentrations->rowCount() == 0) {

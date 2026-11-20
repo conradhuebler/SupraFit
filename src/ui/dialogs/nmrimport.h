@@ -28,9 +28,13 @@
 #include <QtWidgets/QDialog>
 
 #include "src/core/nmrhandler.h"
+#include "src/ui/guitools/seriessourcebar.h"
 
+class ConcentrationEditor;
 class DataTable;
+class DialogMemory;
 class DropTable;
+class MoreLessToggle;
 class ImportKeyGuard;
 class StatusLine;
 class LineSeries;
@@ -76,6 +80,12 @@ class QTableWidget;
  * values set by hand (or more than one signal) would be lost; a wait cursor around work that took more
  * than 0.3 s the last time (AdaptiveWaiter).
  *
+ * UX package 2a (Claude Generated): SeriesSourceBar (directory, files, drop on the dialog, "n files read,
+ * m not read"), ConcentrationEditor on the second page, the lineshape fit options behind a MoreLessToggle
+ * (open by themselves for a lineshape fit), DialogMemory "dialogs/nmrimport": geometry, splitters, the
+ * file ending and the defaults of a new series (search window, "Shift from", fit options, LB, zero fill;
+ * restoreOptions() runs in the constructor, setData() then brings the values of the project).
+ *
  * Viewer 2 (Claude Generated): the stack of the trace editor (settings key "nmrimport") moves the tracked
  * markers, the fitted model and its residual with stackOffset() of their spectrum; excluded spectra leave the
  * stack (setExcludedTraces), the selected spectrum is drawn wider. A signal missing in every used spectrum
@@ -87,9 +97,11 @@ class NmrImport : public QDialog {
 public:
     explicit NmrImport(QWidget* parent = nullptr);
 
-    /*! \brief Reads files (one spectrum, a matrix of spectra or TopSpin totxt each); false with *error. */
-    bool addFiles(const QStringList& files, QString* error = nullptr);
-    /*! \brief Reads the files of a directory ending with suffix in natural order. */
+    /*! \brief Appends files (one spectrum, a matrix of spectra or TopSpin totxt each); false with *error.
+     * The source bar reports "n files read, m not read" (with the entries of a drop in before). */
+    bool addFiles(const QStringList& files, QString* error = nullptr, const QList<SeriesSourceBar::Failure>& before = {});
+    /*! \brief Appends the files of a directory ending with suffix in natural order; false (nothing read)
+     * for a directory that does not exist or has no such file. */
     bool setDirectory(const QString& directory, const QString& suffix, QString* error = nullptr);
     /*! \brief Restores a project ({"raw": NMR block, "independent": concentrations}). */
     void setData(const QJsonObject& project);
@@ -114,6 +126,9 @@ public:
     void refresh();
 
     inline ImportKeyGuard* keyGuard() const { return m_guard; }
+    inline SeriesSourceBar* sourceBar() const { return m_source; }
+    inline DialogMemory* memory() const { return m_memory; }
+    inline ConcentrationEditor* concentrationEditor() const { return m_concentrations; }
     /*! \brief Number of cells set by hand, of one spectrum and/or one signal (-1: all). Claude Generated */
     int manualCount(int spectrum = -1, int signal = -1) const;
     /*! \brief Adds a signal at position (name and window as "Add") and tracks again. Claude Generated */
@@ -146,15 +161,18 @@ private:
     int fitSpectrum() const;
     /*! \brief Excluded flag per spectrum, for the stack of the trace editor. Claude Generated */
     QVector<bool> excludedSpectra() const;
+    /*! \brief Number of spectra not left out. Claude Generated */
+    int usedSpectra() const;
+    void restoreOptions();
 
     NmrHandler m_handler;
     QJsonObject m_input_table;
     int m_independent_count = 0;
     bool m_updating = false;
 
-    QLineEdit* m_path;
-    QComboBox* m_suffix;
-    QPushButton *m_directory, *m_files;
+    SeriesSourceBar* m_source; ///< directory, files, drop, "n files read"
+    DialogMemory* m_memory; ///< geometry, splitters, defaults of a new series ("dialogs/nmrimport")
+    MoreLessToggle* m_fit_toggle; ///< shows the options of the lineshape fit
     QTabWidget* m_tabs;
     QListWidget* m_spectra;
     QPushButton *m_up, *m_down, *m_remove, *m_reference;
@@ -176,7 +194,8 @@ private:
     QCheckBox* m_reverse_axis; ///< ppm axis from high (left) to low (right); QSettings "nmrimport/reverseAxis"
     ImportKeyGuard* m_guard;
     qint64 m_track_ms = 0, m_fid_ms = 0; ///< duration of the last tracking / FID transform (wait cursor)
-    DropTable *m_concentrations, *m_preview;
+    ConcentrationEditor* m_concentrations;
+    DropTable* m_preview;
     QLabel* m_table_status;
     QDialogButtonBox* m_buttons;
     QGroupBox* m_fid_box;

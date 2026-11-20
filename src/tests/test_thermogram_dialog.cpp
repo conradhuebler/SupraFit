@@ -31,6 +31,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QTimer>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -41,6 +42,7 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
 
+#include <functional>
 #include <memory>
 
 #include "src/core/itcprocessor.h"
@@ -48,7 +50,9 @@
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
 #include "src/global.h"
+#include "src/ui/dialogs/importdata.h"
 #include "src/ui/dialogs/thermogram.h"
+#include "src/ui/widgets/DropTable.h"
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/instance.h"
 
@@ -282,6 +286,87 @@ private slots:
         calibration->click();
         QCOMPARE(calibration->text(), QObject::tr("Click to Select"));
         QVERIFY(!QApplication::overrideCursor());
+    }
+
+    /*! \brief The file chosen in the Import Table dialog is the experiment of the Thermogram dialog (Claude
+     * Generated, UX package 2a): an .itc opened as a file reaches the dialog, its table is the core result and
+     * is handed over; an .xy thermogram (.dat) passed to "Import as Thermogram" is loaded, too. */
+    void importDataLoadsTheChosenFile()
+    {
+        // the core result of synthetic.itc, as in itcExperiment()
+        QString file = sample("synthetic.itc");
+        std::vector<PeakPick::Peak> peaks;
+        QVector<qreal> inject;
+        qreal offset = 0, freq = 0;
+        QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(file, &peaks, offset, freq, inject);
+        ItcProcessor core;
+        core.setScalingFactor(cal2joule);
+        core.setInjectionVolumes(inject);
+        core.experiment()->setThermogram(pair.first);
+        core.experiment()->setPeakList(peaks);
+        core.experiment()->Initialise();
+        core.experiment()->IntegrateThermogram();
+        core.padInjectionVolumes(inject.isEmpty() ? 0.0 : inject.last());
+
+        int seen = 0;
+        // polls the top-level windows while a modal dialog runs: checks and accepts the Thermogram dialog,
+        // closes anything else modal (named in the log)
+        auto inspect = [&](std::function<void(Thermogram*)> check) {
+            QTimer* poll = new QTimer;
+            poll->setInterval(20);
+            QObject::connect(poll, &QTimer::timeout, poll, [&seen, check, poll]() {
+                for (QWidget* widget : QApplication::topLevelWidgets()) {
+                    if (!widget->isVisible())
+                        continue;
+                    if (Thermogram* dialog = qobject_cast<Thermogram*>(widget)) {
+                        poll->stop();
+                        poll->deleteLater();
+                        ++seen;
+                        check(dialog);
+                        dialog->accept();
+                        return;
+                    }
+                    if (QDialog* other = qobject_cast<QDialog*>(widget); other && other->isModal()) {
+                        qWarning("closing modal %s", other->metaObject()->className());
+                        other->reject();
+                    }
+                }
+            });
+            poll->start();
+        };
+
+        inspect([&](Thermogram* dialog) { compareWithCore(dialog, core, false); });
+        ImportData import(file); // LoadFile: an .itc goes to the Thermogram dialog at once
+        QCOMPARE(seen, 1);
+        DataTable* handed = qobject_cast<DataTable*>(import.findChild<DropTable*>()->model());
+        QVERIFY(handed);
+        std::unique_ptr<DataTable> want(core.resultTable());
+        QCOMPARE(handed->rowCount(), want->rowCount());
+        for (int i = 0; i < want->rowCount(); ++i) {
+            QVERIFY(near(handed->data(i, 0), want->data(i, 0)));
+            QVERIFY(near(handed->data(i, 1), want->data(i, 1)));
+        }
+
+        // a .dat thermogram given to "Import as Thermogram": the same as the dialog loading it itself
+        Thermogram reference;
+        reference.setExperimentFile(sample("reaction.dat"));
+        std::unique_ptr<DataTable> expected(reference.ResultTable());
+        int rows = -1;
+        bool loaded = false;
+        inspect([&](Thermogram* dialog) {
+            for (QLineEdit* edit : dialog->findChildren<QLineEdit*>())
+                loaded |= edit->text() == sample("reaction.dat"); // the experiment field names the file
+            loaded &= dialog->findChild<QTabWidget*>()->widget(1)->isEnabled(); // the experiment page is filled
+            std::unique_ptr<DataTable> got(dialog->ResultTable());
+            rows = got->rowCount();
+            for (int i = 0; i < std::min(got->rowCount(), expected->rowCount()); ++i)
+                QVERIFY(near(got->data(i, 1), expected->data(i, 1)));
+        });
+        ImportData table;
+        QVERIFY(table.ImportThermogram(sample("reaction.dat")));
+        QCOMPARE(seen, 2);
+        QVERIFY(loaded);
+        QCOMPARE(rows, expected->rowCount());
     }
 
     void renderDialog()

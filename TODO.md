@@ -35,9 +35,10 @@
 - [ ] CuteChart `addSeries` rescales over all points of all series per call: a full rebuild of 15 × 131072 points costs 140-160 ms release (580-610 ms debug); a batch add without rescaling would remove most of it.
 - [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
 - [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
-- [ ] Import dialogs, not in UX package 1: Edit Data replaces the project and marks fits outdated (E1); ITC without the second OK (E2); ESC/Cancel question in the ITC dialog;
-      remembered settings (E7); SeriesSourceBar/ConcentrationEditor; MoreLess for the NMR fit options.
-- [ ] ITC import: `importdata.cpp:605` does not load the chosen `.itc` (`m_filename` already set, `setExperimentFile` never called); the path field loads on every keystroke.
+- [ ] Import dialogs, still open: Edit Data replaces the project and marks fits outdated (E1); ITC without the second OK (E2); ESC/Cancel question in the ITC dialog.
+- [ ] ITC import: the path field of the Thermogram dialog loads on every keystroke.
+- [ ] Import dialogs UX 2a machine-tested only: real drag and drop from a file manager, real file dialogs, restored geometry under a window manager (frame vs. client rectangle, Wayland ignores positions); a drop appends, also a directory (Open directory replaces).
+- [ ] UV/Vis: `SpectraHandler::addSpectrum` picks the reader by "csv"/"absorb" anywhere in the path; the dialog now lists directories by file name, `addDirectory` (core) still by full path. `.csv` concentration files are read with ',' only (`FileHandler::ReadSeperated`).
 - [ ] ITC `PointDoubleClicked`: with peak rules and a start outside the rule it resets the *end* button text (start stays "Click to Undo"); after a calibration pick the button keeps "Click to Undo"; it calls `restoreOverrideCursor()` also without a cursor set.
 - [ ] ITC dark scheme: thermogram curve and peak lines are black (`Qt::black`), the guide line is empty until the first mode change; file fields "color: black" (planned separately).
 - [ ] Spectra: `CompileSimpleTable` allocates a `DataTable` (parent = handler) on every `UpdateData`; concentrations with another row count are padded with 0 (`appendColumns`; the dialog asks before OK).

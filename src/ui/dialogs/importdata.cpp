@@ -602,7 +602,9 @@ bool ImportData::RunThermogram(Thermogram* thermogram)
 bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
-    if (m_filename.isEmpty()) {
+    // the chosen file is the experiment, also when it is m_filename already (every caller passes it)
+    // (Claude Generated, UX package 2a)
+    if (!filename.isEmpty() && QFileInfo(filename).isFile()) {
         m_filename = filename;
         thermogram->setExperimentFile(filename);
     }

@@ -35,6 +35,7 @@
 #include <QtWidgets/QWidget>
 
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 #include <QtCore/QLocale>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
@@ -43,9 +44,11 @@
 #include <src/core/spectrahandler.h>
 
 #include <src/ui/widgets/DropTable.h>
+#include <src/ui/widgets/concentrationeditor.h>
 #include <src/ui/widgets/traceeditorwidget.h>
 
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/dialogmemory.h"
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/guitools/statusline.h"
 #include "src/ui/guitools/waiter.h"
@@ -66,7 +69,9 @@ void SpectraWidget::setUI()
     QGridLayout* layout = new QGridLayout;
 
     m_main_splitter = new QSplitter(Qt::Horizontal);
+    m_main_splitter->setObjectName("spectraMainSplitter");
     m_list_splitter = new QSplitter(Qt::Vertical);
+    m_list_splitter->setObjectName("spectraListSplitter");
 
     m_files = new QListWidget;
     m_files->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -177,18 +182,12 @@ void SpectraWidget::setUI()
     m_views->addTab(chart_viewport, tr("Spectra View"));
     m_views->addTab(table_viewport, tr("Data View"));
 
-    m_indep = new DropTable;
-    m_indep->setObjectName("spectraConcentrations");
+    // concentrations: paste, load from a file, rows checked against the spectra (Claude Generated, UX package 2a)
+    m_indep = new ConcentrationEditor(tr("Concentrations"));
+    m_indep->setObjectName("spectraConcentrationEditor");
+    m_indep->table()->setObjectName("spectraConcentrations");
     m_indep->setMaximumWidth(300);
-    m_indep->setToolTip(tr("Concentrations, one row per spectrum: copy a table and paste it here with Ctrl+V (Ctrl+B appends columns, Ctrl+Y puts them in front)."));
-
-    QWidget* indep = new QWidget;
-    QVBoxLayout* vlayout = new QVBoxLayout;
-    QLabel* indep_label = new QLabel(tr("Concentrations: paste with Ctrl+V"));
-    indep_label->setToolTip(m_indep->toolTip());
-    vlayout->addWidget(indep_label);
-    vlayout->addWidget(m_indep);
-    indep->setLayout(vlayout);
+    QWidget* indep = m_indep;
 
     m_list_splitter->addWidget(m_files);
     m_list_splitter->addWidget(xwidget);
@@ -214,7 +213,7 @@ void SpectraWidget::setUI()
     });
     connect(m_handler, &SpectraHandler::Updated, this, &SpectraWidget::UpdateData);
     // pasted concentrations go into the table at once (Claude Generated, UX package 1)
-    connect(m_indep, &DropTable::Edited, this, [this]() {
+    connect(m_indep, &ConcentrationEditor::Edited, this, [this]() {
         UpdateData();
         emit changed();
     });
@@ -254,6 +253,51 @@ void SpectraWidget::addFile(const QString& file)
     emit changed();
 }
 
+int SpectraWidget::addFiles(const QStringList& files, QList<QPair<QString, QString>>* failed)
+{
+    int read = 0;
+    for (const QString& file : files) {
+        const QFileInfo info(file);
+        QString reason;
+        if (!info.isFile() || !info.isReadable())
+            reason = tr("cannot be read");
+        else {
+            m_handler->addSpectrum(file);
+            const QStringList order = m_handler->getOrder();
+            // the readers give an empty spectrum for a file without numbers: drop it again
+            if (!order.isEmpty()) {
+                const XYTrace trace = m_handler->Spectra().trace(order.last());
+                if (trace.size() < 2)
+                    reason = tr("no spectrum found");
+                else
+                    trace.isValid(&reason);
+                if (!reason.isEmpty())
+                    m_handler->removeSpectrum(order.last());
+            }
+        }
+        if (reason.isEmpty())
+            ++read;
+        else if (failed)
+            failed->append(qMakePair(file, reason));
+    }
+    UpdateSpectra();
+    UpdateData();
+    emit changed();
+    return read;
+}
+
+void SpectraWidget::rememberIn(DialogMemory* memory)
+{
+    if (!memory)
+        return;
+    memory->restore(m_values, "xValueCount");
+    memory->restore(m_cluster, "clusterResults");
+    memory->restore(m_averaged, "clusterAverage");
+    connect(m_values, &QSpinBox::valueChanged, this, [memory](int value) { memory->setValue("xValueCount", value); });
+    connect(m_cluster, &QCheckBox::toggled, this, [memory](bool on) { memory->setValue("clusterResults", on); });
+    connect(m_averaged, &QCheckBox::toggled, this, [memory](bool on) { memory->setValue("clusterAverage", on); });
+}
+
 void SpectraWidget::setDirectory(const QString& directry, const QString& type)
 {
     m_handler->addDirectory(directry, type);
@@ -289,6 +333,7 @@ void SpectraWidget::UpdateSpectra()
         }
         m_files->addItem(item);
     }
+    m_indep->setSpectraCount(order.size());
 }
 
 void SpectraWidget::PointDoubleClicked(const QPointF& point)
@@ -331,14 +376,12 @@ int SpectraWidget::xValueCount() const
 
 int SpectraWidget::concentrationRows() const
 {
-    const DataTable* table = qobject_cast<DataTable*>(m_indep->model());
-    return table && table->isValid() && table->columnCount() > 0 ? table->rowCount() : 0;
+    return m_indep->rows();
 }
 
 int SpectraWidget::concentrationColumns() const
 {
-    const DataTable* table = qobject_cast<DataTable*>(m_indep->model());
-    return table && table->isValid() && table->rowCount() > 0 ? table->columnCount() : 0;
+    return m_indep->columns();
 }
 
 bool SpectraWidget::hasTable() const
@@ -378,7 +421,7 @@ void SpectraWidget::UpdateData()
     m_datatable->setModel(data);
     // before the early returns: the dialog hands this over also without a concentration table
     m_project = m_handler->getSpectraData();
-    QPointer<DataTable> table = qobject_cast<DataTable*>(m_indep->model());
+    QPointer<DataTable> table = m_indep->dataTable();
     if (!table)
         return;
     if (!table->isValid() || table->columnCount() == 0)
@@ -391,7 +434,11 @@ void SpectraWidget::UpdateData()
 
 void SpectraWidget::setData(const QJsonObject& data)
 {
-    m_indep->setModel(new DataTable(data["independent"].toObject()));
+    {
+        const DataTable independent(data["independent"].toObject());
+        const QSignalBlocker block(m_indep); // the spectra come next; UpdateData() below builds the table
+        m_indep->setTable(&independent);
+    }
     m_handler->LoadData(data["raw"].toObject());
     m_editor->setOperations(m_handler->Operations());
     m_editor->setShowProcessed(!m_handler->Operations().isEmpty());
