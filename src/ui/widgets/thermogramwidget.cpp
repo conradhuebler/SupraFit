@@ -281,6 +281,7 @@ void ThermogramWidget::setupControls()
 
     m_get_peaks_start = new QPushButton(tr("Click to Select"));
     m_get_peaks_start->setIcon(Icon("edit-select"));
+    // the only connection of the double click: PointDoubleClicked serves all selection modes (peak start, peak end, calibration start)
     connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
@@ -335,7 +336,6 @@ void ThermogramWidget::setupControls()
 
     m_get_calibration_start = new QPushButton(tr("Click to Select"));
     m_get_calibration_start->setIcon(Icon("edit-select"));
-    connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     m_get_calibration_start->setMaximumWidth(100);
     m_get_calibration_start->setToolTip(tr("Click and select the starting time for the calibration from the thermogram."));
