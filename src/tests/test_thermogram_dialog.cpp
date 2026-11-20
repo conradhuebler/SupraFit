@@ -22,7 +22,7 @@
  * table it shows and the table it hands over are what the core ItcProcessor computes for the same calls:
  * .itc experiment (volumes from the @-lines), .dat experiment + dilution (dilution column, net heat),
  * the uniform-volume checkbox, clearing the dilution field and setRaw() of a stored block.
- * Set SUPRAFIT_TRACE_RENDER_DIR to write PNG renders (light, 1366x768). */
+ * Set SUPRAFIT_TRACE_RENDER_DIR to write PNG renders (light and dark, 1366x768). */
 
 #include <charts.h>
 
@@ -35,6 +35,8 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
@@ -228,19 +230,76 @@ private slots:
         compareWithCore(&dialog, core, false);
     }
 
+    /*! \brief A double click in a selection mode acts once (Claude Generated, UX package 1): the chart was
+     * connected twice, so the second call fell through to the standard mode and selected the peak at the
+     * position in the peak list. */
+    void doubleClickActsOnce()
+    {
+        Thermogram dialog;
+        dialog.setExperimentFit(ruleBlock("reaction.dat"));
+        dialog.setExperimentFile(sample("reaction.dat"));
+        QWidget* experiment = dialog.findChild<QTabWidget*>()->widget(1);
+        ChartView* chart = experiment->findChild<ChartView*>();
+        QVERIFY(chart);
+        QTableWidget* peaks = nullptr;
+        for (QTableWidget* table : experiment->findChildren<QTableWidget*>())
+            if (table->toolTip().startsWith("This table hold all peaks"))
+                peaks = table;
+        QVERIFY(peaks && peaks->rowCount() > 5);
+        QPushButton* startButton = nullptr;
+        for (QGroupBox* group : experiment->findChildren<QGroupBox*>())
+            if (group->title() == QObject::tr("Start time [s]"))
+                startButton = group->findChild<QPushButton*>();
+        QVERIFY(startButton);
+
+        peaks->setCurrentCell(-1, -1);
+        const double x = 0.5 * (peaks->item(4, 1)->text().toDouble() + peaks->item(4, 2)->text().toDouble());
+        startButton->click(); // peak start selection mode
+        emit chart->pointDoubleClicked(QPointF(x, 0));
+        QCOMPARE(peaks->currentRow(), -1); // the double click set the start time, it did not select a peak
+        // the button text is not checked: with peak rules and a position outside the rule the slot resets the text of the end button (TODO.md)
+        QVERIFY(!QApplication::overrideCursor());
+
+        emit chart->pointDoubleClicked(QPointF(x, 0)); // standard mode: selects the peak
+        QCOMPARE(peaks->currentRow(), 4);
+    }
+
+    /*! \brief The second click on the calibration button leaves its selection mode (Claude Generated, UX package 1). */
+    void calibrationSelectionUndo()
+    {
+        Thermogram dialog;
+        dialog.setExperimentFit(ruleBlock("reaction.dat"));
+        dialog.setExperimentFile(sample("reaction.dat"));
+        QWidget* experiment = dialog.findChild<QTabWidget*>()->widget(1);
+        QPushButton* calibration = nullptr;
+        for (QGroupBox* group : experiment->findChildren<QGroupBox*>())
+            if (group->title().startsWith(QObject::tr("Calibration")))
+                calibration = group->findChild<QPushButton*>();
+        QVERIFY(calibration);
+        calibration->click();
+        QCOMPARE(calibration->text(), QObject::tr("Click to Undo"));
+        QVERIFY(QApplication::overrideCursor());
+        calibration->click();
+        QCOMPARE(calibration->text(), QObject::tr("Click to Select"));
+        QVERIFY(!QApplication::overrideCursor());
+    }
+
     void renderDialog()
     {
         if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
             QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
-        Appearance::Apply(Appearance::Light);
+        // light and dark (Claude Generated, UX package 1: the colours of the data table)
+        for (const int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+        Appearance::Apply(mode);
+        const QString scheme = mode == Appearance::Dark ? QStringLiteral("dark") : QStringLiteral("light");
         {
             Thermogram dialog;
             dialog.resize(1366, 768);
             dialog.setExperimentFile(sample("synthetic.itc"));
             dialog.findChild<QTabWidget*>()->setCurrentIndex(0);
-            render(&dialog, "thermo_itc_table_light");
+            render(&dialog, QStringLiteral("thermo_itc_table_") + scheme);
             dialog.findChild<QTabWidget*>()->setCurrentIndex(1);
-            render(&dialog, "thermo_itc_experiment_light");
+            render(&dialog, QStringLiteral("thermo_itc_experiment_") + scheme);
             dialog.hide();
         }
         {
@@ -251,13 +310,15 @@ private slots:
             dialog.setDilutionFit(ruleBlock("dilution.dat"));
             dialog.setDilutionFile(sample("dilution.dat"));
             dialog.findChild<QTabWidget*>()->setCurrentIndex(0);
-            render(&dialog, "thermo_dat_table_light");
+            render(&dialog, QStringLiteral("thermo_dat_table_") + scheme);
             dialog.findChild<QTabWidget*>()->setCurrentIndex(1);
-            render(&dialog, "thermo_dat_experiment_light");
+            render(&dialog, QStringLiteral("thermo_dat_experiment_") + scheme);
             dialog.findChild<QTabWidget*>()->setCurrentIndex(2);
-            render(&dialog, "thermo_dat_dilution_light");
+            render(&dialog, QStringLiteral("thermo_dat_dilution_") + scheme);
             dialog.hide();
         }
+        }
+        Appearance::Apply(Appearance::Light);
     }
 };
 
