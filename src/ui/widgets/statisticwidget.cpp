@@ -20,6 +20,7 @@
 
 #include "src/core/models/models.h"
 
+#include "src/ui/guitools/statusline.h"
 #include "src/ui/widgets/textwidget.h"
 
 #include <QtWidgets/QApplication>
@@ -44,6 +45,11 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
     QWidget* content = new QWidget;
     QVBoxLayout* content_layout = new QVBoxLayout;
     content_layout->setContentsMargins(6, 6, 6, 6);
+    m_outdated_hint = new StatusLine;
+    m_outdated_hint->setObjectName(QStringLiteral("statisticOutdatedHint"));
+    m_outdated_hint->setMessage(tr("These results belong to earlier data of this model."), StatusLine::Warning);
+    m_outdated_hint->hide();
+    content_layout->addWidget(m_outdated_hint);
     m_grid = new QGridLayout;
     m_grid->setHorizontalSpacing(18);
     m_grid->setVerticalSpacing(6);
@@ -121,6 +127,14 @@ StatisticWidget::~StatisticWidget()
 {
 }
 
+void StatisticWidget::setOutdated(bool outdated)
+{
+    m_outdated = outdated;
+    QSharedPointer<AbstractModel> model = m_model.toStrongRef();
+    // the fit numbers above are calculated on the current data; only the stored results are from the earlier fit
+    m_outdated_hint->setVisible(m_outdated && model && !model->getFastConfidence().isEmpty());
+}
+
 void StatisticWidget::toggleView()
 {
     bool hidden = m_subwidget->isHidden();
@@ -188,6 +202,7 @@ void StatisticWidget::Update()
     const QString extra = info + overview;
     m_overview->setText(extra);
     m_overview->setHidden(extra.trimmed().isEmpty());
+    m_outdated_hint->setVisible(m_outdated && !result.isEmpty());
     m_overview->document()->setTextWidth(m_overview->viewport()->width());
     m_overview->setFixedHeight(int(m_overview->document()->size().height()) + 8);
 }

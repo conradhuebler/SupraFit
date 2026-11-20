@@ -129,4 +129,7 @@ signals:
     void Warning(const QString& str, int priority);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
     void AddProject(const QJsonObject& project);
+    /*! \brief Edit Data replaced the data of the project (or took it back); \p summary says what happened. An empty summary: only
+     *  the outdated mark of a model changed (fit, Mark as current). Claude Generated. */
+    void DataReplaced(const QString& summary);
 };

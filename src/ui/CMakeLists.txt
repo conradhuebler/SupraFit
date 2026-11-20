@@ -86,6 +86,7 @@ set(SFGui_SRC
                 mainwindow/modelusage.cpp
                 mainwindow/quickbardialog.cpp
                 mainwindow/modeldataholder.cpp
+                mainwindow/editdatacontroller.cpp
                 mainwindow/datawidget.cpp
                 mainwindow/metamodelwidget.cpp
                 mainwindow/modelwidget.cpp
@@ -96,6 +97,7 @@ set(SFGui_SRC
                 guitools/appearance.cpp
                 guitools/importkeyguard.cpp
                 guitools/statusline.cpp
+                guitools/outdatedbanner.cpp
                 guitools/dialogmemory.cpp
                 guitools/seriessourcebar.cpp
     )

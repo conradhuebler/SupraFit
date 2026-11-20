@@ -14,6 +14,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **mainwindow/datawidget.cpp/h**: Data table display and editing
 - **mainwindow/projecttree.cpp/h**: Project hierarchy and navigation
 - **mainwindow/modeldataholder.cpp/h**: Model-data association management
+- **mainwindow/editdatacontroller.cpp/h**: `EditDataController` — Edit Data of thermogram/spectra/NMR projects (dialog → `ImportTableData`/`getStoredData` → `checkReplacement` → `replaceProjectData`, incompatible question, stop jobs, undo); dialog/choice/confirm handlers injectable (`test_edit_data`); `ModelDataHolder::ApplyDataReplacement` closes dropped panes and refreshes the rest
+- **guitools/outdatedbanner.cpp/h**: `OutdatedBanner` — "This model was fitted to earlier data." + Fit again / Mark as current in model and meta-model panes; `ModelWidget` keeps `"outdated"` in `m_last_model` so Restore/LoadJson never clear the mark
 
 ### Visualization
 - **mainwindow/chartwidget.cpp/h**: Main charting and plotting interface

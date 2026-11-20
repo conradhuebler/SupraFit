@@ -24,9 +24,11 @@
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/guitools/sectionstack.h"
+#include "src/ui/guitools/statusline.h"
 
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QStackedWidget>
+#include <QtWidgets/QVBoxLayout>
 
 StatisticsPage::StatisticsPage(StatisticDialog* statistic, ResultsDialog* results, SectionStack* pages, QObject* parent)
     : QObject(parent)
@@ -47,7 +49,17 @@ int StatisticsPage::Install(const QIcon& icon)
     connect(m_results, &ResultsDialog::AttentionRequested, this, [this]() { Open(true); });
     m_stack = new QStackedWidget;
     m_stack->addWidget(m_statistic);
-    m_stack->addWidget(m_results);
+    // the results with a hint above them while they belong to earlier data (Edit Data, Claude Generated)
+    QWidget* results = new QWidget;
+    QVBoxLayout* results_layout = new QVBoxLayout(results);
+    results_layout->setContentsMargins(0, 0, 0, 0);
+    m_outdated_hint = new StatusLine;
+    m_outdated_hint->setObjectName(QStringLiteral("resultsOutdatedHint"));
+    m_outdated_hint->setMessage(tr("These results belong to earlier data of this model."), StatusLine::Warning);
+    m_outdated_hint->hide();
+    results_layout->addWidget(m_outdated_hint);
+    results_layout->addWidget(m_results, 1);
+    m_stack->addWidget(results);
     m_index = m_pages->addGroupPage(
         m_stack, tr("Statistics"),
         [this]() {
@@ -86,6 +98,12 @@ int StatisticsPage::Install(const QIcon& icon)
     connect(m_results, &ResultsDialog::ListChanged, this, [this]() { m_pages->refreshGroup(m_index); });
     m_statistic->show(); // hidden by its constructor; a layout does not show an explicitly hidden widget
     return m_index;
+}
+
+void StatisticsPage::setOutdated(bool outdated)
+{
+    if (m_outdated_hint)
+        m_outdated_hint->setVisible(outdated);
 }
 
 /*! \brief Rows of the Statistics list: the analyses to start, then the finished results (if any). */

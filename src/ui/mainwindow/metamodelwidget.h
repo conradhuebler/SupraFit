@@ -57,6 +57,8 @@ public:
         Model()->Calculate();
     }
     SectionStack* Pages() const { return m_pages; } ///< the page list (test access)
+    /*! \brief The note that a model of the meta model was fitted to earlier data (Edit Data). Claude Generated. */
+    class OutdatedBanner* Banner() const { return m_outdated_banner; }
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
     void LinkModel(QSharedPointer<AbstractModel> model, QColor color)
@@ -75,6 +77,9 @@ public slots:
 private:
     void setUi();
     void History();
+    /*! \brief Banner and statistics hint follow the outdated mark of the meta model. Claude Generated. */
+    void RefreshOutdated();
+    class OutdatedBanner* m_outdated_banner = nullptr;
 
     QHash<QSharedPointer<AbstractModel>, QColor> m_linked_charts;
 

@@ -26,6 +26,8 @@
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
 
+#include "src/ui/guitools/statusline.h"
+
 #include "projecttree.h"
 
 // Claude Generated - ProjectManager Integration Helper Implementation
@@ -266,6 +268,25 @@ int ProjectTree::rowCount(const QModelIndex& p) const
     return count;
 }
 
+/*! \brief The model of a child row (model element), looked up through its parent project as the display role does it; null for
+ *  a project row or an index that no longer fits. Claude Generated. */
+AbstractModel* ProjectTree::modelAt(const QModelIndex& index, const QVector<QWeakPointer<DataClass>>& projectList) const
+{
+    const int uuidIndex = int(reinterpret_cast<quintptr>(index.internalPointer())) - 1;
+    if (!index.internalPointer() || uuidIndex < 0 || uuidIndex >= m_uuids.size())
+        return nullptr;
+    const QString parentUuid = m_uuids[uuidIndex].split("|").value(0);
+    for (const QWeakPointer<DataClass>& weak : projectList) {
+        QSharedPointer<DataClass> project = weak.toStrongRef();
+        if (!project || project->UUID() != parentUuid)
+            continue;
+        if (index.row() >= project->ChildrenSize())
+            return nullptr;
+        return qobject_cast<AbstractModel*>(project->Children(index.row()).data());
+    }
+    return nullptr;
+}
+
 // Claude Generated - ProjectManager Integration for data display
 QVariant ProjectTree::data(const QModelIndex& index, int role) const
 {
@@ -299,6 +320,8 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
                                     AbstractModel* model = qobject_cast<AbstractModel*>(child.data());
                                     if (model) {
                                         data = model->Name();
+                                        if (model->isDataOutdated()) // Edit Data replaced the data after the fit (Claude Generated)
+                                            data = tr("%1 (outdated)").arg(model->Name());
                                     } else {
                                         data = QString("Model #%1").arg(index.row());
                                     }
@@ -314,6 +337,9 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
                     QSharedPointer<DataClass> project = projectList[index.row()].toStrongRef();
                     if (project) {
                         data = project->ProjectTitle();
+                        // a meta model with a model of a replaced project (Claude Generated)
+                        if (AbstractModel* meta = qobject_cast<AbstractModel*>(project.data()); meta && meta->isDataOutdated())
+                            data = tr("%1 (outdated)").arg(project->ProjectTitle());
                     }
                 }
             }
@@ -349,6 +375,9 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
             return QColor(230, 240, 255);
         }
     } else if (role == Qt::ForegroundRole) {
+        if (internalPtr != nullptr) // an outdated model in the warning colour of the palette (Claude Generated)
+            if (const AbstractModel* model = modelAt(index, projectList); model && model->isDataOutdated())
+                return StatusLine::color(StatusLine::Warning);
         // Claude Generated - Enhanced text color for active projects
         if (index.row() == m_active_row && index.column() == 0 && internalPtr == nullptr) {
             // Darker blue text for active project
@@ -364,7 +393,9 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
                 return tr("Inactive Project - Double-click to switch and focus, or single-click to switch only");
             }
         } else {
-            // Model-level tooltip - simplified without parent lookup to avoid crashes
+            // Model-level tooltip (Claude Generated: the outdated note)
+            if (const AbstractModel* model = modelAt(index, projectList); model && model->isDataOutdated())
+                return tr("Model - Double-click to focus. Fitted to earlier data: the data of the project changed after this fit; fit it again or mark it as current.");
             return tr("Model - Double-click to focus");
         }
     }

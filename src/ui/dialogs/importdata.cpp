@@ -483,45 +483,12 @@ void ImportData::WriteData(const DataTable* model, int independent)
     for (const QModelIndex& i : m_table->selectionModel()->selectedColumns()) {
         columns << i.column();
     }
-
-    QPointer<DataTable> tmp;
-    for (int i = 0; i < model->columnCount(); ++i) {
-        if (columns.contains(i))
-            continue;
-        DataTable* t = model->BlockColumns(i, 1);
-        if (!tmp) {
-            tmp = t;
-            continue;
-        }
-        tmp->appendColumns(t);
-        delete t;
-    }
     independent = m_independent_rows->value();
-    m_storeddata = new DataClass;
-    // DataTable* indep = model->BlockColumns(0, independent);
-    // DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
-    DataTable* indep = tmp->BlockColumns(0, independent);
-    DataTable* dep = tmp->BlockColumns(independent, tmp->columnCount() - independent);
-    QStringList header_indep, header_dep;
-    QStringList header = tmp->header();
-
-#pragma message("will this still be true after restructureing")
-    if (tmp->columnCount() - independent == 0) {
-        DataTable* model = new DataTable(indep->rowCount(), m_dependent_rows->value(), this);
-        //header_indep = QStringList(header.begin(), header.begin() + independent );
-        m_storeddata->setDependentTable(model);
-        m_storeddata->setType(DataClassPrivate::DataType::Simulation);
+    // the table becomes a data set in the core (DataClass::FromImportTable), as Edit Data makes it without this dialog
+    // (Claude Generated)
+    m_storeddata = DataClass::FromImportTable(model, independent, m_type, m_raw, m_title, columns, m_dependent_rows ? m_dependent_rows->value() : 1);
+    if (m_storeddata && m_storeddata->Type() == DataClassPrivate::DataType::Simulation)
         m_projectfile = QString("Simulation - %1").arg(QDateTime::currentDateTime().toString());
-    } else {
-        m_storeddata->setDataType(m_type);
-        m_storeddata->setDependentTable(dep);
-        //header_dep = QStringList(header.begin() + independent + 1, header.end() );
-    }
-    delete tmp;
-#pragma message("have a look at here, while restructureing stuff")
-    m_storeddata->setIndependentTable(indep);
-    m_storeddata->setRawData(m_raw);
-    m_storeddata->setProjectTitle(m_title);
 }
 
 void ImportData::accept()

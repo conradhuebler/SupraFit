@@ -100,6 +100,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_model_dataholder, &ModelDataHolder::ModelRemoved, this, &MainWindow::ModelsChanged);
     connect(m_model_dataholder, &ModelDataHolder::SpectraEdited, this, &MainWindow::SpectraEdited);
     connect(m_model_dataholder, &ModelDataHolder::AddProject, this, &MainWindow::AddProject);
+    connect(m_model_dataholder, &ModelDataHolder::DataReplaced, this, &MainWindow::DataReplaced);
     connect(m_model_dataholder, &ModelDataHolder::Message, this, &MainWindow::Message);
     connect(m_model_dataholder, &ModelDataHolder::Warning, this, &MainWindow::Warning);
 

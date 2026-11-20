@@ -52,6 +52,9 @@ public:
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
     void setEditable(bool editable);
+    /*! \brief Counts (data points, series, independent variables) and data range again, after Edit Data replaced the data.
+     *  Claude Generated. */
+    void RefreshDataInfo();
     // small enough for 1024x600 screens; the panes inside scroll or wrap (UI redesign WP6)
     virtual QSize minimumSizeHint() const override { return QSize(420, 320); }
 

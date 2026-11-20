@@ -52,6 +52,7 @@
 #include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/datawidget.h"
+#include "src/ui/mainwindow/editdatacontroller.h"
 #include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
@@ -194,6 +195,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_edit_data = m_data_menu->addAction(Icon("document-edit"), tr("Edit Data"));
     m_edit_data->setToolTip(tr("Edit the data table of the current project"));
     connect(m_edit_data, &QAction::triggered, this, &MDHDockTitleBar::EditData);
+
+    m_undo_edit = m_data_menu->addAction(Icon("edit-undo"), tr("Undo Edit Data"));
+    m_undo_edit->setToolTip(tr("Restore the data and models from before the last Edit Data"));
+    m_undo_edit->setEnabled(false);
+    connect(m_undo_edit, &QAction::triggered, this, &MDHDockTitleBar::UndoEditData);
 
     m_split_data = m_data_menu->addAction(Icon("split"), tr("Split Data Set"));
     m_split_data->setToolTip(tr("Split the data set column-wise into separate projects"));
@@ -471,6 +477,11 @@ void MDHDockTitleBar::setEditDataToggles(bool toggles)
                                     : tr("Edit the raw data of the current project in its import dialog"));
 }
 
+void MDHDockTitleBar::setUndoEditEnabled(bool enabled)
+{
+    m_undo_edit->setEnabled(enabled);
+}
+
 void MDHDockTitleBar::setEditDataChecked(bool checked)
 {
     QSignalBlocker block(m_edit_data);
@@ -620,6 +631,25 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);
+
+    // Edit Data of thermogram and spectra projects: one controller for the dialog, the check and the replacement (Claude Generated)
+    m_edit_controller = new EditDataController(this);
+    connect(m_edit_controller, &EditDataController::Message, this, &ModelDataHolder::Message);
+    connect(m_edit_controller, &EditDataController::Warning, this, &ModelDataHolder::Warning);
+    connect(m_edit_controller, &EditDataController::dataReplaced, this, &ModelDataHolder::ApplyDataReplacement);
+    connect(m_edit_controller, &EditDataController::newProjectRequested, this, [this](const QJsonObject& table, const QJsonObject& raw, const QJsonObject& data) {
+        if (!table.isEmpty())
+            emit SpectraEdited(table, raw); // spectra: the table dialog of a new project, as before
+        else {
+            QJsonObject project;
+            project["data"] = data;
+            emit AddProject(project);
+        }
+    });
+    connect(m_TitleBarWidget, &MDHDockTitleBar::UndoEditData, this, [this]() { m_edit_controller->undo(m_currentProjectId); });
+    connect(m_TitleBarWidget->DataMenu(), &QMenu::aboutToShow, this, [this]() {
+        m_TitleBarWidget->setUndoEditEnabled(EditDataController::canUndo(m_currentProjectId));
+    });
     connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, [this]() {
         if (this->m_compare_dialog) {
             m_compare_dialog->setCutoff(this->m_ReductionCutoff);
@@ -1126,6 +1156,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(this, &ModelDataHolder::recalculate, modelwidget, &ModelWidget::recalculate);
+    connect(modelwidget, &ModelWidget::OutdatedChanged, this, [this]() { emit DataReplaced(QString()); }); // the project list follows (Claude Generated)
 
     connect(modelwidget->Jobs(), &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
     connect(modelwidget->Jobs(), &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps, Qt::DirectConnection);
@@ -1649,42 +1680,47 @@ void ModelDataHolder::CompareMC()
     dialog.exec();
 }
 
+/*! \brief Edit Data: plain tables become editable in place; thermograms and spectra open their import dialog through the
+ * EditDataController, which replaces the data of the project and keeps or removes its models (Claude Generated, E1). */
 void ModelDataHolder::EditData()
 {
-    int version = m_data.toStrongRef()->ExportData()["SupraFit"].toInt();
-    if (version < 1602) {
-        QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
+    QSharedPointer<DataClass> data = m_data.toStrongRef();
+    if (!data)
+        return;
+    if (!EditDataController::usesDialog(data)) {
         ToggleTablesEditable();
-    } else {
-        if (m_data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
-            ImportData dialog(m_data);
-            dialog.setRootDir(m_data.toStrongRef()->RootDir());
-            if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
-                {
-                    if (m_data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
-                        m_data.toStrongRef()->ImportData(dialog.getStoredData().ExportData(), false);
-                        emit m_data.toStrongRef()->Info()->Update();
-                    }
-                }
-            }
-            emit m_data.toStrongRef()->Info()->Update();
-
-        } else if (m_data.toStrongRef()->DataType() == DataClassPrivate::Spectrum && NmrHandler::isNmrBlock(m_data.toStrongRef()->RawData())) {
-            // NMR titration: a Spectrum project whose raw block carries "Profile": "nmr" (Claude Generated, WP3)
-            NmrImport dialog(this);
-            dialog.setData(m_data.toStrongRef().data()->ExportData());
-            if (dialog.exec() == QDialog::Accepted)
-                SpectraEdited(dialog.InputTable(), dialog.ProjectData());
-        } else if (m_data.toStrongRef()->DataType() == DataClassPrivate::Spectrum) {
-            SpectraImport dialog;
-            dialog.setData(m_data.toStrongRef().data()->ExportData());
-            if (dialog.exec() == QDialog::Accepted) {
-                SpectraEdited(dialog.InputTable(), dialog.ProjectData());
-            }
-        } else {
-            ToggleTablesEditable();
-        }
+        return;
     }
+    if (m_currentProjectId.isEmpty()) {
+        emit Warning(tr("Edit Data needs a project of the project list."), 1);
+        return;
+    }
+    m_edit_controller->edit(m_currentProjectId);
+    m_TitleBarWidget->setUndoEditEnabled(EditDataController::canUndo(m_currentProjectId));
+}
+
+void ModelDataHolder::ApplyDataReplacement(const QString& projectId, const QString& summary)
+{
+    QSharedPointer<DataClass> data = m_data.toStrongRef();
+    if (!data || projectId != m_currentProjectId)
+        return;
+    // the panes of models that left the project (DropModels); the core does not close them
+    QSet<AbstractModel*> inProject;
+    for (int i = 0; i < data->ChildrenSize(); ++i)
+        if (AbstractModel* model = qobject_cast<AbstractModel*>(data->Children(i).data()))
+            inProject.insert(model);
+    for (int i = m_modelsWidget->count() - 1; i > 0; --i)
+        if (ModelWidget* widget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i)); widget && !inProject.contains(widget->Model().data()))
+            RemoveTab(i);
+    for (const QPointer<ModelWidget>& widget : std::as_const(m_model_widgets))
+        if (widget)
+            widget->DataReplaced();
+    if (m_datawidget)
+        m_datawidget->RefreshDataInfo();
+    if (m_charts)
+        m_charts->setRawData(data);
+    m_TitleBarWidget->setUndoEditEnabled(EditDataController::canUndo(m_currentProjectId));
+    emit DataReplaced(summary);
 }
 
 /*! \brief Switch both data tables between editable and read-only, show the data tab and report the

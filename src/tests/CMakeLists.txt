@@ -1458,6 +1458,30 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen test of Edit Data in the main window: controller, outdated chip/banner, project list, undo, close question
+# (E1, Claude Generated 2026). SUPRAFIT_EDITDATA_GRAB=<dir> writes PNGs.
+if(BUILD_GUI)
+    qt_add_resources(editdata_RES ${CMAKE_SOURCE_DIR}/files.qrc)
+    add_executable(test_edit_data test_edit_data.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${editdata_RES})
+    target_link_libraries(test_edit_data
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_edit_data ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_edit_data pthread dl)
+    endif()
+    target_compile_definitions(test_edit_data PRIVATE SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    add_test(NAME EditDataTest COMMAND test_edit_data)
+    set_tests_properties(EditDataTest PROPERTIES
+        TIMEOUT 300
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Offscreen smoke test of the NMR import dialog (WP3 of roadmap/input_data_editing.md, Claude Generated 2026).
 # SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
 if(BUILD_GUI)

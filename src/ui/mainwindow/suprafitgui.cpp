@@ -1059,6 +1059,13 @@ void SupraFitGui::ConnectProjectWindow(MainWindow* window)
     connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
     connect(window, &MainWindow::AddProject, this, &SupraFitGui::LoadJson);
     connect(window, &MainWindow::ModelsChanged, this, [this]() { LoadProgressStep(false); });
+    // Edit Data: the project list shows which models are fitted to earlier data, the status bar what was done (Claude Generated)
+    connect(window, &MainWindow::DataReplaced, this, [this](const QString& summary) {
+        m_project_tree->UpdateStructure();
+        m_project_view->viewport()->update();
+        if (!summary.isEmpty() && statusBar())
+            statusBar()->showMessage(summary, 8000);
+    });
 }
 
 void SupraFitGui::LoadJson(const QJsonObject& str)
@@ -1565,8 +1572,9 @@ void SupraFitGui::SaveProjectAction()
                 }
             }
             
-            if (allSaved && !json.isEmpty()) {
-                JsonHandler::WriteJsonFile(json, m_supr_file);
+            if (allSaved && !json.isEmpty() && JsonHandler::WriteJsonFile(json, m_supr_file)) {
+                for (const QString& projectId : std::as_const(managedProjectIds))
+                    projectManager.markDataSaved(projectId); // written here, not by saveProject (Claude Generated)
                 qDebug() << "SaveProjectAction: Successfully saved multi-project file";
                 setLastDir(m_supr_file);
                 return;
@@ -1632,8 +1640,9 @@ void SupraFitGui::SaveAsProjectAction()
                     }
                 }
                 
-                if (allSaved && !json.isEmpty()) {
-                    JsonHandler::WriteJsonFile(json, m_supr_file);
+                if (allSaved && !json.isEmpty() && JsonHandler::WriteJsonFile(json, m_supr_file)) {
+                    for (const QString& projectId : std::as_const(managedProjectIds))
+                        projectManager.markDataSaved(projectId); // written here, not by saveProject (Claude Generated)
                     qDebug() << "SaveAsProjectAction: Successfully saved multi-project file";
                     setLastDir(str);
                     return;
@@ -1741,6 +1750,18 @@ void SupraFitGui::closeEvent(QCloseEvent* event)
     if (!SupraFit::ProjectManager::instance().projectsWithUnsavedAttachments().isEmpty()) {
         const auto answer = QMessageBox::question(this, tr("Unsaved agent chats"),
             tr("The agent chats of the open project changed since it was saved. Save the project now?"),
+            QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
+        if (answer == QMessageBox::Cancel) {
+            event->ignore();
+            return;
+        }
+        if (answer == QMessageBox::Save)
+            SaveProjectAction();
+    }
+    // Edit Data replaced the data of projects that were not saved since (Claude Generated)
+    if (!SupraFit::ProjectManager::instance().projectsWithUnsavedData().isEmpty()) {
+        const auto answer = QMessageBox::question(this, tr("Unsaved data"),
+            tr("The data of an open project were changed with Edit Data since it was saved. Save the changed data?"),
             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
         if (answer == QMessageBox::Cancel) {
             event->ignore();

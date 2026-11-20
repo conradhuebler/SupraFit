@@ -45,6 +45,7 @@
 #include "src/ui/widgets/statisticspage.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/guitools.h"
+#include "src/ui/guitools/outdatedbanner.h"
 #include "src/ui/guitools/sectionstack.h"
 
 #include <QtWidgets/QComboBox>
@@ -113,7 +114,16 @@ void MetaModelWidget::setUi()
     m_actions = new ModelActions;
     m_actions->setPageNavigation(true); // Statistics, Results and Detailed are pages of the list, as in the model pane
     m_metamodelparameter = new MetaModelParameter(m_model, &m_linked_charts);
-    layout->addWidget(m_actions, 2, 0, 1, 5);
+    // a model of the meta model was fitted to earlier data of its project (Edit Data, Claude Generated)
+    m_outdated_banner = new OutdatedBanner;
+    connect(m_outdated_banner, &OutdatedBanner::fitAgain, this, &MetaModelWidget::Minimize);
+    connect(m_outdated_banner, &OutdatedBanner::markCurrent, this, [this]() {
+        Model()->markCurrent(); // the meta model and its models
+        emit Message(tr("%1 is marked as current; it was not fitted to the current data.").arg(Model()->Name()), 3);
+        RefreshOutdated();
+    });
+    layout->addWidget(m_outdated_banner, 2, 0, 1, 5);
+    layout->addWidget(m_actions, 3, 0, 1, 5);
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
@@ -140,8 +150,8 @@ void MetaModelWidget::setUi()
         if (pages->currentTitle() == tr("Detailed"))
             Detailed();
     });
-    layout->addWidget(pages, 3, 0, 1, 5);
-    layout->setRowStretch(3, 1);
+    layout->addWidget(pages, 4, 0, 1, 5);
+    layout->setRowStretch(4, 1);
 
     connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
     connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
@@ -173,9 +183,20 @@ void MetaModelWidget::setUi()
     connect(Model(), &DataClass::Message, this, &MetaModelWidget::Message);
     connect(Model(), &DataClass::Warning, this, &MetaModelWidget::Warning);
     connect(Model(), &AbstractModel::Recalculated, m_statistic_widget, &StatisticWidget::Update);
+    connect(Model(), &AbstractModel::Recalculated, this, &MetaModelWidget::RefreshOutdated);
     connect(Model(), &MetaModel::DemandResortParameter, Model(), &MetaModel::ResortParameter);
 
     setLayout(layout);
+    RefreshOutdated();
+}
+
+void MetaModelWidget::RefreshOutdated()
+{
+    const bool outdated = m_model && m_model->isDataOutdated();
+    m_outdated_banner->setOutdated(outdated);
+    if (m_statistics)
+        m_statistics->setOutdated(outdated);
+    m_statistic_widget->setOutdated(outdated);
 }
 
 void MetaModelWidget::Calculate()
@@ -204,6 +225,9 @@ void MetaModelWidget::Minimize()
 
     if (!m_model->ImportModel(model))
         qDebug() << "something went wrong";
+    // the fit cleared the outdated mark of the meta model (ImportModel); its models follow (Claude Generated)
+    if (!m_model->isDataOutdated())
+        m_model->setDataOutdated(false);
 
     m_model->CalculateStatistics(true);
     m_model->setFast(false);

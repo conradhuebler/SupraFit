@@ -61,6 +61,9 @@ class LocalParameterWidget;
 class ModelActions;
 class ModalDialog;
 class ModelElement;
+class OutdatedBanner;
+class QLabel;
+class QSpinBox;
 class OptimizerFlagWidget;
 class OptionsWidget;
 class ResultsDialog;
@@ -107,6 +110,16 @@ public:
     void setJob(const QJsonObject& job);
     JobManager* Jobs() const { return m_jobmanager; }
 
+    /*! \brief The note in the head of the pane while the model is fitted to earlier data (Edit Data). Claude Generated. */
+    inline OutdatedBanner* Banner() const { return m_outdated_banner; }
+    /*! \brief The status chip next to the Fit button (converged, not converged, data changed, corrupt). Claude Generated. */
+    inline QLabel* StatusChip() const { return m_converged_label; }
+    /*! \brief Edit Data replaced the data of the project (or took it back): the outdated state, the state Restore() goes back
+     *  to and the range of the series box follow, the pane is drawn again. Claude Generated. */
+    void DataReplaced();
+    /*! \brief Takes the outdated mark back without a fit ("Mark as current"). Claude Generated. */
+    void MarkCurrent();
+
 public slots:
     void LoadJson(const QJsonObject& object);
 
@@ -139,6 +152,11 @@ private:
     QCheckBox *m_readonly, *m_legend;
     ExportSimulationWidget* m_simulation_export = nullptr; ///< simulated-data drag sources + goodness-of-fit labels
     QLabel* m_converged_label;
+    OutdatedBanner* m_outdated_banner = nullptr; ///< "This model was fitted to earlier data." (Claude Generated)
+    QSpinBox* m_series_box = nullptr; ///< series the model is applied to (models without series support)
+    /*! \brief Banner and statistics hints follow the outdated mark of the model. Claude Generated. */
+    void RefreshOutdated();
+    bool m_shown_outdated = false; ///< the outdated state the pane shows
     OptionsWidget* m_model_options_widget;
     QVBoxLayout* m_layout;
     QTimer* m_script_timer;
@@ -242,4 +260,6 @@ signals:
     void started();
     void finished();
     void Message(const QString& str);
+    /*! \brief The outdated mark of the model changed (Edit Data, fit, Mark as current). Claude Generated. */
+    void OutdatedChanged(bool outdated);
 };

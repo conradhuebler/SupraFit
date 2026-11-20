@@ -20,6 +20,7 @@
 #pragma once
 
 #include "src/core/models/dataclass.h"
+#include "src/core/models/AbstractModel.h"
 #include "src/core/projectmanager.h"
 
 #include "src/ui/guitools/mime.h"
@@ -120,6 +121,8 @@ private:
      * @return Vector of weak pointers to DataClass objects
      */
     QVector<QWeakPointer<DataClass>> getUnifiedProjectList() const;
+    /*! \brief The model of a child row, null for a project row (Claude Generated). */
+    AbstractModel* modelAt(const QModelIndex& index, const QVector<QWeakPointer<DataClass>>& projectList) const;
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
