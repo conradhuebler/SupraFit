@@ -481,6 +481,56 @@ private slots:
         QCOMPARE(model->ModelTable()->rowCount(), rows);
         QVERIFY(std::isfinite(model->SSE()));
     }
+
+    // (j) the points left out of the fit stay left out: the dialog marks every injection, the fixture leaves injections out of
+    // the fit; the undo gives the values back with all their digits (Claude Generated)
+    void itcKeepsLeftOutPoints()
+    {
+        ProjectManager& pm = ProjectManager::instance();
+        QSharedPointer<DataClass> project = loadItc();
+        QVERIFY(project);
+        const QString id = project->UUID();
+        AbstractModel* model = models(project.data()).first();
+        QVERIFY(!project->DependentModel()->isChecked(0, 0)); // the fixture leaves the first injection out
+        const double fitted = model->SSE();
+        int leftOut = 0; // cells left out in the rows both data sets have
+        const Eigen::MatrixXd marksBefore = project->DependentModel()->CheckedTable();
+        for (int i = 0; i + 1 < project->DataPoints(); ++i) {
+            leftOut += project->IndependentModel()->isChecked(i, 0) ? 0 : 1;
+            leftOut += project->DependentModel()->isChecked(i, 0) ? 0 : 1;
+        }
+        fmt::print("  ITC fixture: {} cells left out\n", leftOut);
+        const QByteArray dataBefore = dataBytes(project.data()), modelsBefore = modelBytes(project.data());
+
+        // as the import dialog hands the data over: every cell marked, one injection less
+        QJsonObject fromDialog = dropLastRow(project->ExportData());
+        for (const char* key : { "independent", "dependent" }) {
+            DataTable table;
+            table.ImportTable(fromDialog[QLatin1String(key)].toObject());
+            table.setCheckedAll(true);
+            fromDialog[QLatin1String(key)] = table.ExportTable(true);
+        }
+        const DataReplaceReport report = pm.replaceProjectData(id, fromDialog);
+        QVERIFY2(report.replaced, qPrintable(report.Details()));
+        QCOMPARE(report.uncheckedKept, leftOut);
+        QVERIFY(!project->DependentModel()->isChecked(0, 0));
+        QVERIFY(project->DependentModel()->CheckedTable() == marksBefore.topRows(marksBefore.rows() - 1));
+        fmt::print("  ITC left-out point kept: SSE fitted {:.6g}, after the replacement {:.6g}\n", fitted, model->SSE());
+        // the last injection is gone, the first stays out: the parameters still describe the data (with the first injection
+        // used again, the SSE rose from 0.075 to 356)
+        QVERIFY2(model->SSE() < 10 * fitted + 1e-3, qPrintable(QString::number(model->SSE())));
+
+        QVERIFY(pm.undoLastDataReplacement(id));
+        QVERIFY(dataBytes(project.data()) == dataBefore);
+        QVERIFY(modelBytes(project.data()) == modelsBefore);
+        QCOMPARE(model->SSE(), fitted);
+
+        // DropModels takes the marks of the new data (no model depends on the old ones)
+        const DataReplaceReport dropped = pm.replaceProjectData(id, fromDialog, DataReplacePolicy::DropModels);
+        QVERIFY(dropped.replaced);
+        QCOMPARE(dropped.uncheckedKept, 0);
+        QVERIFY(project->DependentModel()->isChecked(0, 0));
+    }
 };
 
 QTEST_MAIN(TestDataReplace)

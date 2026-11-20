@@ -97,6 +97,7 @@ struct DataReplaceReport {
     DataReplaceCheck check;
     bool replaced = false;
     int modelsKept = 0, modelsRemoved = 0;
+    int uncheckedKept = 0; ///< cells left out of the fit (check mark off) whose marks were kept for the rows of both data sets
     QList<DataReplaceModel> models; ///< every kept model with its sum of squares before and after
     QStringList outdatedMetaModels; ///< project ids of the meta models marked outdated
     QList<LoadIssue> issues;
@@ -211,6 +212,9 @@ public:
     bool hasUnsavedData(const QString& projectId) const;
     /*! \brief Project ids whose data were replaced and not saved. */
     QStringList projectsWithUnsavedData() const;
+    /*! \brief The project was written by a caller that does not go through `saveProject` (the GUI writes several projects
+     *  into one file): its replaced data are saved. Claude Generated. */
+    void markDataSaved(const QString& projectId);
 
     // === Project State Management ===
 
@@ -519,6 +523,7 @@ private:
         QList<QJsonObject> models; ///< ExportModel() of every model, in project order
         QList<int> modelIds; ///< SFModel() of every model, to make dropped ones again
         QList<QList<int>> active, locked; ///< active series and locked parameters (ImportModel does not restore them)
+        QList<Eigen::MatrixXd> tables; ///< the values of the four data tables: `data` holds them with 6 digits only (Claude Generated)
         QList<QPointer<DataClass>> kept; ///< the models kept (KeepModels); empty after DropModels
         QHash<QString, bool> metaOutdated; ///< meta model project id -> its mark before
         bool unsaved = false;
@@ -526,7 +531,7 @@ private:
     QHash<QString, DataSnapshot> m_dataSnapshots;
     /*! \brief Reads \p data into the project without the implicit update and calculates the models of \p models afterwards with the
      *  model tables sized to the new data. */
-    void importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models);
+    void importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models, const QList<Eigen::MatrixXd>& exact = QList<Eigen::MatrixXd>());
 
     // Singleton instance management
     static QMutex s_instanceMutex; ///< Singleton creation mutex

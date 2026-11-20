@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -205,6 +205,9 @@ void itc_IItoII_Model::CalculateVariables()
 {
     if (!m_threadpool)
         return;
+    // one solver per data row: Edit Data can give the project more rows than the model had when it was made (Claude Generated)
+    while (m_solvers.size() < DataPoints())
+        m_solvers << new IItoI_ItoI_ItoII_Solver();
 
     bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2019 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,21 +46,44 @@ QMutex s_runningMutex;
 QSet<const JobManager*> s_running;
 }
 
+namespace {
+/*! \brief Whether the model of a job manager belongs to the project \p projectId (its own data, or a model of a meta model). */
+bool runsOnProject(const QSharedPointer<AbstractModel>& model, const QString& projectId)
+{
+    if (!model)
+        return false;
+    if (model->UUID() == projectId)
+        return true;
+    if (const MetaModel* meta = qobject_cast<const MetaModel*>(model.data()))
+        for (const QSharedPointer<AbstractModel>& m : meta->Models())
+            if (m && m->UUID() == projectId)
+                return true;
+    return false;
+}
+}
+
 bool JobManager::hasRunningJobs(const QString& projectId)
 {
     QMutexLocker locker(&s_runningMutex);
-    for (const JobManager* manager : std::as_const(s_running)) {
-        const QSharedPointer<AbstractModel> model = manager->m_model;
-        if (!model)
-            continue;
-        if (model->UUID() == projectId)
+    for (const JobManager* manager : std::as_const(s_running))
+        if (runsOnProject(manager->m_model, projectId))
             return true;
-        if (const MetaModel* meta = qobject_cast<const MetaModel*>(model.data()))
-            for (const QSharedPointer<AbstractModel>& m : meta->Models())
-                if (m && m->UUID() == projectId)
-                    return true;
-    }
     return false;
+}
+
+int JobManager::interruptJobs(const QString& projectId)
+{
+    QList<JobManager*> managers;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        for (const JobManager* manager : std::as_const(s_running))
+            if (runsOnProject(manager->m_model, projectId))
+                managers << const_cast<JobManager*>(manager);
+    }
+    // outside the lock: the handlers stop by direct connections
+    for (JobManager* manager : std::as_const(managers))
+        emit manager->Interrupt();
+    return int(managers.size());
 }
 
 JobManager::JobManager(QObject* parent)

@@ -1535,6 +1535,46 @@ QList<AbstractModel*> projectModels(DataClass* project)
     return models;
 }
 
+/*! \brief Takes the check marks of \p before (the data of the project) into \p after (the new data block) for every row that
+ *  exists in both, table by table ("independent", "dependent"); rows only \p after has keep their own marks. A data range of
+ *  \p before that is narrower than its rows is taken over, cut to the rows of \p after. Only the "checked" strings change, the
+ *  values stay as they are. Returns the number of cells left out (mark 0) that were taken over. Claude Generated. */
+int carryCheckMarks(const QJsonObject& before, QJsonObject& after)
+{
+    int unchecked = 0;
+    for (const char* key : { "independent", "dependent" }) {
+        const QJsonObject oldTable = before[QLatin1String(key)].toObject();
+        QJsonObject newTable = after[QLatin1String(key)].toObject();
+        if (oldTable["cols"].toInt() != newTable["cols"].toInt() || !oldTable.contains("checked"))
+            continue;
+        const QJsonObject oldChecked = oldTable["checked"].toObject();
+        QJsonObject newChecked = newTable["checked"].toObject();
+        const int rows = std::min(oldTable["rows"].toInt(), newTable["rows"].toInt());
+        for (int i = 0; i < rows; ++i) {
+            const QString row = QString::number(i);
+            const QString marks = oldChecked[row].toString();
+            if (marks.isEmpty())
+                continue;
+            for (double mark : ToolSet::String2DoubleVec(marks))
+                if (mark == 0)
+                    ++unchecked;
+            newChecked[row] = marks;
+        }
+        newTable["checked"] = newChecked;
+        after[QLatin1String(key)] = newTable;
+    }
+    const int oldBegin = before["begin_data"].toInt(), oldEnd = before["end_data"].toInt();
+    const int oldRows = before["dependent"].toObject()["rows"].toInt(), newRows = after["dependent"].toObject()["rows"].toInt();
+    if (oldBegin != oldEnd && (oldBegin > 0 || oldEnd < oldRows)) {
+        const int begin = std::min(oldBegin, newRows), end = std::min(oldEnd, newRows);
+        if (begin < end) {
+            after["begin_data"] = begin;
+            after["end_data"] = end;
+        }
+    }
+    return unchecked;
+}
+
 /*! \brief The models of a meta model that are made on the data of the project \p projectId. */
 QList<AbstractModel*> metaModelsOf(::MetaModel* meta, const QString& projectId)
 {
@@ -1546,7 +1586,7 @@ QList<AbstractModel*> metaModelsOf(::MetaModel* meta, const QString& projectId)
 }
 }
 
-void ProjectManager::importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models)
+void ProjectManager::importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models, const QList<Eigen::MatrixXd>& exact)
 {
     {
         // ImportData ends with Info()->Update(): every model on these data would be calculated with tables of the old size before
@@ -1557,6 +1597,12 @@ void ProjectManager::importReplacementData(const QSharedPointer<DataClass>& proj
             if (table)
                 table->clear(0, 0);
         project->ImportData(data, false);
+        // the table blocks hold every value with 6 significant digits (DataTable::ExportTable): the undo puts the values back
+        // as they were (Claude Generated)
+        const QList<DataTable*> tables = { project->IndependentModel(), project->DependentModel(), project->IndependentRawModel(), project->DependentRawModel() };
+        for (int i = 0; i < tables.size() && i < exact.size(); ++i)
+            if (tables[i] && tables[i]->Table().rows() == exact[i].rows() && tables[i]->Table().cols() == exact[i].cols())
+                tables[i]->Table() = exact[i];
     }
     for (AbstractModel* model : models)
         model->UpdateParameter(); // tables of the model that follow the data (concentrations of ITC) are made for the new rows
@@ -1608,6 +1654,8 @@ DataReplaceReport ProjectManager::replaceProjectData(const QString& projectId, c
     // the state before, for the one-step undo
     DataSnapshot snapshot;
     snapshot.data = project->ExportData();
+    for (DataTable* table : { project->IndependentModel(), project->DependentModel(), project->IndependentRawModel(), project->DependentRawModel() })
+        snapshot.tables << (table ? Eigen::MatrixXd(table->Table()) : Eigen::MatrixXd());
     for (AbstractModel* model : std::as_const(models)) {
         snapshot.models << model->ExportModel(true, false);
         snapshot.modelIds << int(model->SFModel());
@@ -1655,6 +1703,13 @@ DataReplaceReport ProjectManager::replaceProjectData(const QString& projectId, c
         QJsonObject prepared = block;
         for (const char* key : { "uuid", "title", "system", "root_dir", "content" })
             prepared[QLatin1String(key)] = snapshot.data[QLatin1String(key)];
+        // the models were fitted without the points the user left out: those marks (and the data range) stay with the rows
+        // that exist in both data sets, new rows are used (Claude Generated)
+        if (policy == DataReplacePolicy::KeepModels && report.check.result == DataReplaceCheck::Compatible) {
+            report.uncheckedKept = carryCheckMarks(snapshot.data, prepared);
+            if (report.uncheckedKept > 0)
+                report.issues.append(LoadIssue{ LoadIssue::Note, "data", tr("%1 points left out of the fit stay left out.").arg(report.uncheckedKept) });
+        }
 
         QList<double> before;
         for (AbstractModel* model : std::as_const(models))
@@ -1741,7 +1796,7 @@ bool ProjectManager::undoLastDataReplacement(const QString& projectId, QString* 
                 metas << meta;
                 calculated << metaModelsOf(meta, projectId);
             }
-    importReplacementData(project, snapshot.data, calculated);
+    importReplacementData(project, snapshot.data, calculated, snapshot.tables);
 
     auto restore = [&snapshot](AbstractModel* model, int i) {
         const bool imported = model->ImportModel(snapshot.models[i]);
@@ -1750,8 +1805,12 @@ bool ProjectManager::undoLastDataReplacement(const QString& projectId, QString* 
         return imported;
     };
     if (kept) {
-        for (int i = 0; i < models.size(); ++i)
+        for (int i = 0; i < models.size(); ++i) {
             restore(models[i], i);
+            // the update above may not reach a model (ITC: its own tables follow the rows only in its update slot); the restored
+            // parameters are calculated on the restored data, as replaceProjectData does it (Claude Generated)
+            models[i]->Calculate();
+        }
     } else {
         for (int i = 0; i < snapshot.models.size(); ++i) {
             QSharedPointer<AbstractModel> model = CreateModel(snapshot.modelIds[i], project.data());
@@ -1792,6 +1851,12 @@ bool ProjectManager::hasUnsavedData(const QString& projectId) const
 {
     QMutexLocker locker(&m_projectsMutex);
     return m_unsavedData.contains(projectId);
+}
+
+void ProjectManager::markDataSaved(const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+    m_unsavedData.remove(projectId);
 }
 
 QStringList ProjectManager::projectsWithUnsavedData() const

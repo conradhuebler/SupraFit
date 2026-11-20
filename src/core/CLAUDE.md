@@ -22,6 +22,7 @@ Core functionality providing the foundation for SupraFit applications. Contains 
   - Replacing keeps UUID, title, system parameters, root_dir, content; kept models are calculated once (no refit) and `isDataOutdated()`; meta models with a model of the project too
   - The mark is cleared at the end of every fit (`NonLinearFitThread::NonLinearFit`, travels by `ImportModel`) or by `markCurrent()`; stored as optional `"outdated": true`, `qint_version` unchanged; statistics have no own state (`isStatisticOutdated()` = the model's mark)
   - `importReplacementData` empties the tables first (`ImportTable` never shrinks) and blocks the implicit update; model tables sized per data row must follow `DataPoints()` at Calculate time (ITC `EvaluateOptions`)
+  - KeepModels + Compatible keeps the check marks (and a narrowed data range) of the rows both sets have (`uncheckedKept`); the undo snapshot keeps the exact table values (`ExportTable` writes 6 digits)
 - **thermogramhandler.cpp/h**: Specialized thermogram data processing (one per ITC trace)
   - Raw curve is an `XYTrace` (WP5); libpeakpick runs on a `PeakPick::spectrum` built from it in `setThermogram`, numbers pinned by `test_thermogram_characterization` (golden `data/samples/itc/thermogram_characterization.json`, rel. 1e-9)
   - Chart series (`ThermogramSeries`/`Baseline*`) are computed on request, not stored; `StoreRawData()` is the only reader of the app property (`setStoreRawData` overrides)

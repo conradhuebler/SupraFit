@@ -39,12 +39,14 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QPointer>
 #include <QtCore/QReadWriteLock>
+#include <QtCore/QScopedPointer>
 #include <QtCore/QString>
 #include <QtCore/QUuid>
 #include <QtCore/QtGlobal>
 
 #include <QJSEngine>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -474,6 +476,56 @@ QVector<QSharedPointer<AbstractModel>> DataClass::takeModels()
     }
     d->m_children = keep;
     return models;
+}
+
+DataClass* DataClass::FromImportTable(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw,
+    const QString& title, const QVector<int>& excludedColumns, int simulatedSeries)
+{
+    if (!table || table->columnCount() == 0)
+        return nullptr;
+    // the columns taken, in their order (the dialog leaves out the selected ones)
+    QPointer<DataTable> kept;
+    for (int i = 0; i < table->columnCount(); ++i) {
+        if (excludedColumns.contains(i))
+            continue;
+        DataTable* column = table->BlockColumns(i, 1);
+        if (!kept) {
+            kept = column;
+            continue;
+        }
+        kept->appendColumns(column);
+        delete column;
+    }
+    if (!kept)
+        return nullptr;
+    independent = std::clamp(independent, 1, kept->columnCount());
+    DataClass* data = new DataClass;
+    DataTable* indep = kept->BlockColumns(0, independent);
+    if (kept->columnCount() - independent == 0) {
+        data->setDependentTable(new DataTable(indep->rowCount(), simulatedSeries, nullptr));
+        data->setType(DataClassPrivate::DataType::Simulation);
+    } else {
+        data->setDataType(type);
+        data->setDependentTable(kept->BlockColumns(independent, kept->columnCount() - independent));
+    }
+    delete kept;
+    data->setIndependentTable(indep);
+    data->setRawData(raw);
+    data->setProjectTitle(title);
+    return data;
+}
+
+QJsonObject DataClass::ImportTableData(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw, const QString& title)
+{
+    QScopedPointer<DataClass> data(FromImportTable(table, independent, type, raw, title));
+    if (!data)
+        return QJsonObject();
+    QJsonObject block = data->ExportData();
+    QStringList active; // every series shown, as ImportData::accept() writes it
+    for (int i = 0; i < data->DependentModel()->columnCount(); ++i)
+        active << "1";
+    block["active_series"] = active.join(" ");
+    return block;
 }
 
 bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)

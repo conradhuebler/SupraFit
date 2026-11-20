@@ -346,6 +346,20 @@ public:
      *  pointers (null for a child the data did not own); the caller decides their lifetime. Claude Generated. */
     QVector<QSharedPointer<AbstractModel>> takeModels();
 
+    /*! \brief A new data set from an import table, as the "Import Table" dialog makes it (Claude Generated).
+     *
+     *  The columns of \p table without those in \p excludedColumns: the first \p independent are the independent table, the
+     *  others the dependent one. Without dependent columns the data set is a simulation with \p simulatedSeries empty series.
+     *  \p type is the data type of the set (Table, Spectrum, Thermogram), \p raw its raw block (spectra, thermogram), \p title
+     *  its title. The set has a new UUID; the caller owns it. */
+    static DataClass* FromImportTable(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw,
+        const QString& title, const QVector<int>& excludedColumns = QVector<int>(), int simulatedSeries = 1);
+    /*! \brief The data block (`ExportData()`) of FromImportTable() with every series active, the block the "Import Table" dialog
+     *  hands over (without its system parameters). Edit Data uses it to take the table of an import dialog without the second
+     *  dialog. Claude Generated. */
+    static QJsonObject ImportTableData(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw,
+        const QString& title = QString());
+
     void setHeader(const QStringList& strlist);
 
     virtual void OverrideInDependentTable(DataTable* table);
