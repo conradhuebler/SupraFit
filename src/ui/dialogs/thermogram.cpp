@@ -586,7 +586,7 @@ void Thermogram::setDilutionFile(QString filename)
 
     filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
     if (filename.isEmpty()) {
-        m_exp_file->setStyleSheet("background-color: " + excluded() + " color: black;");
+        m_dil_file->setStyleSheet("background-color: " + excluded() + " color: black;");
 #ifdef DEBUG_ON
         qDebug() << "no thermogram found";
 #endif
