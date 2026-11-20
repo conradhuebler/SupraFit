@@ -74,7 +74,15 @@ class StatusLine;
  * stack offsets, axis direction, raw/processed, series added by the host followed by refreshMarkers());
  * new or other traces (other ids) go back to the whole range, as does the middle button. When the axis of
  * the same traces moved as a whole (a referencing offset), range and zoom move along by the same amount.
- * The wheel scales y about the value under the pointer (one notch: span x 0.9 in, / 0.9 out).
+ * Ctrl + wheel scales y about the value under the pointer (one notch: span x 0.9 in, / 0.9 out).
+ *
+ * Intensity (Claude Generated, Viewer 3; view only, never stored): the wheel without a modifier multiplies
+ * the intensity factor f by 1.25 per notch (finer wheels in proportion, 0.01 <= f <= 1e6). Trace k is drawn
+ * at displayPoint(k, x, y) = (x + dx_k, L_k + f y), L_k = stackOffset(k).y(): the baseline and the distance
+ * of the stack levels stay, the axes never change (the view is taken as the user's view), signals above the
+ * frame are cut. The host draws its series of trace k through displayPoint() as well. While f != 1 the y
+ * labels are hidden and a label "Intensity x f" is shown; "Fit y to the visible range", the middle button and
+ * other traces (other ids) set f to 1; steps, stack settings and axis direction keep it.
  *
  * Stacking (view only, the data are unchanged): trace k is drawn moved by stackOffset(k). Its level L is
  * its place among the traces that are not excluded (setExcludedTraces), counted in list order from the
@@ -180,6 +188,18 @@ public:
     /*! \brief Shift (x, y in data units) with which trace traceIndex is drawn; (0, 0) when not stacked or excluded.
      * A host draws its own series of that trace (fit, residual, markers) with it. Claude Generated */
     QPointF stackOffset(int traceIndex) const;
+    /*! \brief Where the point (x, y) of trace traceIndex is drawn: x + stack x shift, stack level + intensity factor x y.
+     * Hosts draw their series of a trace (markers, fit, residual) through it. Claude Generated (Viewer 3) */
+    QPointF displayPoint(int traceIndex, double x, double y) const;
+    /*! \brief Display factor of the intensities (1: as measured); view only. Claude Generated (Viewer 3) */
+    inline double intensityScale() const { return m_intensity; }
+    /*! \brief Sets the intensity factor (clamped to kMinIntensity..kMaxIntensity) and moves the drawn points; the axes stay. Claude Generated */
+    void setIntensityScale(double factor);
+    /*! \brief Multiplies the intensity factor by factor (wheel: 1.25 per notch). Claude Generated */
+    void scaleIntensity(double factor);
+    static constexpr double kMinIntensity = 0.01; ///< lowest intensity factor
+    static constexpr double kMaxIntensity = 1e6; ///< highest intensity factor
+    static constexpr double kIntensityStep = 1.25; ///< intensity factor of one wheel notch
     /*! \brief Height the y stack offset refers to (largest max - min within the selected range). Claude Generated */
     inline double stackReferenceHeight() const { return m_stack_reference; }
     /*! \brief Traces left out by the host (true = excluded): they do not count for the stack and are not drawn when
@@ -188,11 +208,12 @@ public:
     /*! \brief Draws trace index wider (-1: none), e.g. the one whose fit the host shows. Claude Generated */
     void setHighlightedTrace(int index);
 
-    /*! \brief Sets y to min/max of the drawn traces (with stack offsets) within the visible x range plus 5 %. Claude Generated */
+    /*! \brief Sets the intensity factor to 1 and y to min/max of the drawn traces (with stack offsets) within the visible x
+     * range plus 5 %. Claude Generated */
     void fitYToVisible();
-    /*! \brief Whole range in x, y scaled to all series; the zoom of the user is dropped (middle button). Claude Generated */
+    /*! \brief Whole range in x, y scaled to all series, intensity factor 1; the zoom of the user is dropped (middle button). Claude Generated */
     void resetView();
-    /*! \brief Scales y by factor about the value y (wheel); factor < 1 zooms in. Claude Generated */
+    /*! \brief Scales the y axis by factor about the value y (Ctrl + wheel); factor < 1 zooms in. Claude Generated */
     void scaleY(double y, double factor);
     /*! \brief True while the user's zoom is kept (left drag, wheel, fit y, zoom to range). Claude Generated */
     inline bool hasUserView() const { return m_user_view; }
@@ -231,6 +252,8 @@ private:
     void captureView();
     void saveStackSettings();
     void updateLineWidths();
+    void updateYLabels();
+    void updateIntensityLabel();
 
     TraceSet m_traces;
     TraceOpList m_operations;
@@ -249,11 +272,13 @@ private:
     QString m_settings_key;
     bool m_user_view = false; ///< the axes below are the user's zoom, kept over redraws
     double m_view_x0 = 0, m_view_x1 = 0, m_view_y0 = 0, m_view_y1 = 0;
+    double m_intensity = 1; ///< display factor of the intensities (view only, Viewer 3)
 
     ChartView* m_chart;
     QDoubleSpinBox *m_start, *m_end;
     QDoubleSpinBox *m_stack_y, *m_stack_x;
     QCheckBox* m_stack_reverse;
+    QLabel* m_intensity_label; ///< "Intensity x f", shown while f != 1
     QPushButton* m_fit_y;
     QCheckBox* m_processed;
     QPushButton* m_zoom;

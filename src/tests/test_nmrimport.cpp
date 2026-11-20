@@ -37,6 +37,7 @@
 #include <QtCore/QUrl>
 #include <QtGui/QClipboard>
 #include <QtGui/QDropEvent>
+#include <QtGui/QWheelEvent>
 #include <QtTest/QtTest>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
@@ -220,6 +221,26 @@ class TestNmrImport : public QObject {
         QVERIFY(widget->grab().save(QDir(dir).filePath(name + ".png")));
     }
 
+    /// spectrum k of steps: a dominating CHCl3 line (12) and two small moving lines (0.5, 0.35), 3001 points (below
+    /// 5000: drawn without OpenGL, visible in an offscreen grab) (Claude Generated, Viewer 2/3)
+    static XYTrace chcl3Spectrum(int k, int steps)
+    {
+        const int n = 3001;
+        Eigen::VectorXd x(n), y(n);
+        const double f = 1.0 - std::exp(-1.5 * k / double(steps - 1));
+        for (int i = 0; i < n; ++i) {
+            x(i) = 8.0 - 0.001 * i;
+            const double lines[3][3] = { { 7.26, 0.004, 12.0 }, { 7.60 - 0.30 * f, 0.005, 0.5 }, { 6.20 + 0.10 * f, 0.005, 0.35 } };
+            double v = 0;
+            for (const auto& l : lines) {
+                const double u = (x(i) - l[0]) / l[1];
+                v += l[2] / (1 + u * u);
+            }
+            y(i) = v + 0.003 * std::sin(37.0 * i);
+        }
+        return XYTrace(x, y, QString("step_%1.txt").arg(k));
+    }
+
     QTemporaryDir m_dir;
 
 private slots:
@@ -359,6 +380,84 @@ private slots:
         QVERIFY(std::abs(editor->stackOffset(k).y() - (before.y() - editor->stackOffset(2).y())) < 1e-9 * before.y());
         editor->setStackPercent(0);
         QVERIFY(chart->series().at(1)->isVisible()); // without a stack drawn as before
+        QSettings().remove("traceeditor/nmrimport");
+    }
+
+    /*! \brief Viewer 3: with the intensity factor of the wheel (four notches on the chart, 1.25^4) the tracked markers,
+     * the fitted model and the residual amplitude of the selected spectrum are drawn like the spectrum (displayPoint);
+     * the residual line keeps its place below the baseline; with and without a stack. Claude Generated */
+    void intensityScalesFitCurveAndMarkers()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(overlapSpectrum(k, steps));
+        setOverlapSignals(dialog.handler());
+        dialog.refresh();
+        dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        const int k = 3;
+        QListWidget* spectra = nullptr;
+        for (QListWidget* list : dialog.findChildren<QListWidget*>())
+            if (list->count() == steps)
+                spectra = list;
+        QVERIFY(spectra);
+        spectra->setCurrentRow(k);
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QVector<double> tracked;
+        for (int j = 0; j < steps; ++j)
+            tracked << dialog.handler()->cell(j, 0).shift;
+        QWidget* viewport = editor->chart()->privateView()->viewport();
+        const QPoint at = viewport->rect().center();
+        QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, 4 * 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QApplication::sendEvent(viewport, &event);
+        const double f = std::pow(1.25, 4);
+        QVERIFY(std::abs(editor->intensityScale() - f) < 1e-12);
+        auto* chart = editor->chart()->chart();
+        for (double stack : { 0.0, 50.0 }) {
+            editor->setStackPercent(stack);
+            QVERIFY(std::abs(editor->intensityScale() - f) < 1e-12);
+            const QPointF shift = editor->stackOffset(k);
+            QCOMPARE(shift.y() > 0, stack > 0);
+            // the spectrum line itself
+            const TraceSet shown = dialog.handler()->processedSpectra();
+            QVERIFY(std::abs(qobject_cast<QLineSeries*>(chart->series().at(k))->at(10).y() - (shift.y() + f * shown.at(k).y()(10))) < 1e-9);
+            const QVector<NmrFitRegion> regions = dialog.handler()->fitRegions(k);
+            QVERIFY(!regions.isEmpty());
+            const NmrFitRegion& region = regions.first();
+            const double base = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
+            const double tol = 1e-9 * f * shown.at(k).y().cwiseAbs().maxCoeff();
+            int curves = 0, residuals = 0;
+            for (QAbstractSeries* series : chart->series()) {
+                auto* line = qobject_cast<QLineSeries*>(series);
+                if (!line || line->count() != int(region.block.x.size()) || line->at(0).x() != region.block.x(0) + shift.x())
+                    continue;
+                bool curve = true, rest = true;
+                for (int i = 0; i < line->count(); ++i) {
+                    const double x = region.block.x(i);
+                    curve = curve && std::abs(line->at(i).y() - (shift.y() + f * region.block.evaluate(x))) < tol;
+                    rest = rest && std::abs(line->at(i).y() - (shift.y() + base + f * region.block.residuals(i))) < tol;
+                }
+                curves += curve;
+                residuals += rest;
+            }
+            QCOMPARE(curves, 1);
+            QCOMPARE(residuals, 1);
+            // the tracked position of H1 in spectrum k: on the scaled spectrum
+            const NmrCell cell = dialog.handler()->cell(k, 0);
+            bool marker = false;
+            for (QAbstractSeries* series : chart->series())
+                if (auto* scatter = qobject_cast<QScatterSeries*>(series))
+                    for (int i = 0; i < scatter->count(); ++i)
+                        marker = marker || (scatter->at(i).x() == cell.shift + shift.x() && std::abs(scatter->at(i).y() - (shift.y() + f * shown.at(k).interpolate(cell.shift))) < tol);
+            QVERIFY(marker);
+        }
+        // the factor is a view: the tracked shifts do not depend on it
+        for (int j = 0; j < steps; ++j)
+            QCOMPARE(dialog.handler()->cell(j, 0).shift, tracked[j]);
+        editor->setStackPercent(0);
         QSettings().remove("traceeditor/nmrimport");
     }
 
@@ -1125,22 +1224,7 @@ private slots:
             return hint && hint->isHidden() == !lost && hint->message().isEmpty() == !lost;
         };
         const int steps = 8;
-        auto spectrum = [steps](int k) {
-            const int n = 3001; // below 5000: drawn without OpenGL, visible in an offscreen grab
-            Eigen::VectorXd x(n), y(n);
-            const double f = 1.0 - std::exp(-1.5 * k / double(steps - 1));
-            for (int i = 0; i < n; ++i) {
-                x(i) = 8.0 - 0.001 * i;
-                const double lines[3][3] = { { 7.26, 0.004, 12.0 }, { 7.60 - 0.30 * f, 0.005, 0.5 }, { 6.20 + 0.10 * f, 0.005, 0.35 } };
-                double v = 0;
-                for (const auto& l : lines) {
-                    const double u = (x(i) - l[0]) / l[1];
-                    v += l[2] / (1 + u * u);
-                }
-                y(i) = v + 0.003 * std::sin(37.0 * i);
-            }
-            return XYTrace(x, y, QString("step_%1.txt").arg(k));
-        };
+        auto spectrum = [steps](int k) { return chcl3Spectrum(k, steps); };
         QSettings().remove("traceeditor/nmrimport");
         for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
             Appearance::Apply(mode);
@@ -1184,6 +1268,61 @@ private slots:
             editor->fitYToVisible();
             QVERIFY(checkHint(dialog));
             render(&dialog, "stack_fit_zoom" + suffix);
+            dialog.hide();
+            QSettings().remove("traceeditor/nmrimport");
+        }
+        Appearance::Apply(Appearance::Light);
+    }
+
+    /*! \brief Viewer 3 renders: intensity factor 1, 4, 16 without a stack, 4 with a stack, the fit and residual of
+     * spectrum 5 at factor 4 (zoomed in x), light and dark, 1366x768. Claude Generated */
+    void renderIntensity()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const int steps = 8;
+        QSettings().remove("traceeditor/nmrimport");
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            NmrImport dialog;
+            for (int k = 0; k < steps; ++k)
+                dialog.handler()->addSpectrum(chcl3Spectrum(k, steps));
+            dialog.handler()->addSignal(7.60, 0.08, "H1");
+            dialog.handler()->addSignal(6.20, 0.08, "H2");
+            dialog.refresh();
+            dialog.resize(1366, 768);
+            auto* editor = dialog.findChild<TraceEditorWidget*>();
+            const QList<QAbstractAxis*> axes = editor->chart()->chart()->axes(Qt::Vertical);
+            for (double f : { 1.0, 4.0, 16.0 }) {
+                editor->setIntensityScale(f);
+                render(&dialog, QString("intensity_%1%2").arg(f).arg(suffix));
+                auto* y = qobject_cast<QValueAxis*>(axes.value(0));
+                qInfo("factor %g: y %g..%g", f, y ? y->min() : 0.0, y ? y->max() : 0.0);
+            }
+            editor->setStackPercent(5);
+            editor->setIntensityScale(4);
+            render(&dialog, "intensity_4_stack" + suffix);
+            editor->setStackPercent(0);
+            // blank CHCl3, so the small lines are tracked; the fit of spectrum 5, zoomed in x
+            editor->setRange(7.20, 7.32);
+            editor->addOperation("Blank");
+            editor->setRange(5.0, 8.0);
+            dialog.findChild<QComboBox*>("nmrShiftMethod")->setCurrentIndex(1);
+            for (QListWidget* list : dialog.findChildren<QListWidget*>())
+                if (list->count() == steps)
+                    list->setCurrentRow(5);
+            editor->chart()->setXRange(7.15, 7.70);
+            editor->setIntensityScale(1);
+            editor->fitYToVisible();
+            render(&dialog, "intensity_1_fit" + suffix);
+            editor->setIntensityScale(4);
+            render(&dialog, "intensity_4_fit" + suffix);
+            editor->setStackPercent(60);
+            editor->chart()->setXRange(7.15, 7.70);
+            editor->fitYToVisible(); // with the stack, at factor 1
+            editor->setIntensityScale(4);
+            render(&dialog, "intensity_4_fit_stack" + suffix);
             dialog.hide();
             QSettings().remove("traceeditor/nmrimport");
         }

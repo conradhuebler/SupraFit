@@ -178,6 +178,13 @@ void TraceEditorWidget::setupUi()
     stack->addWidget(x_label);
     stack->addWidget(m_stack_x);
     stack->addWidget(m_stack_reverse);
+    // the intensity factor of the wheel, shown only while it is not 1 (Claude Generated, Viewer 3)
+    m_intensity_label = new QLabel;
+    m_intensity_label->setObjectName("traceIntensity");
+    m_intensity_label->setToolTip(tr("The traces are drawn this many times higher (mouse wheel); the y axis and the data are unchanged. \"Fit y to the visible range\" or a middle click sets it back to 1."));
+    m_intensity_label->setHidden(true);
+    stack->addSpacing(12);
+    stack->addWidget(m_intensity_label);
     stack->addStretch();
     layout->addLayout(stack);
 
@@ -314,7 +321,7 @@ void TraceEditorWidget::setDoubleClickHint(const QString& text)
 
 QString TraceEditorWidget::hintText() const
 {
-    QStringList parts = { tr("Left-drag: zoom"), tr("Wheel: y zoom at the pointer"), tr("Middle click: whole spectrum"), tr("Right-drag: select the range") };
+    QStringList parts = { tr("Left-drag: zoom"), tr("Wheel: intensity"), tr("Ctrl+wheel: y zoom"), tr("Middle click: whole spectrum"), tr("Right-drag: select the range") };
     if (!m_double_click_hint.isEmpty())
         parts << m_double_click_hint;
     parts << tr("ESC: cancel a drag");
@@ -370,8 +377,11 @@ void TraceEditorWidget::setTraces(const TraceSet& traces)
         end = old_end >= old_hi ? hi : std::clamp(old_end + delta, lo, hi);
         m_view_x0 += delta;
         m_view_x1 += delta;
-    } else
+    } else {
         m_user_view = false;
+        m_intensity = 1; // other spectra: drawn as measured (Viewer 3)
+        updateIntensityLabel();
+    }
     m_updating = true;
     for (QDoubleSpinBox* box : { m_start, m_end }) {
         box->setDecimals(decimalsFor(hi - lo));
@@ -822,9 +832,8 @@ void TraceEditorWidget::updateChart()
             continue;
         }
         ScatterSeries* markers = new ScatterSeries;
-        const QPointF shift = stackOffset(i);
         for (const TracePeak& peak : m_peaks[i])
-            markers->append(peak.x + shift.x(), peak.height + shift.y());
+            markers->append(displayPoint(i, peak.x, peak.height));
         markers->setMarkerSize(8);
         m_chart->addSeries(markers, false);
         markers->setColor(m_colors[i]);
@@ -851,8 +860,7 @@ void TraceEditorWidget::updateChart()
         }
         updateRangeLines();
     }
-    if (m_chart->axisY())
-        m_chart->axisY()->setLabelsVisible(m_stack_y->value() == 0);
+    updateYLabels();
     applyAxisDirection();
     updateError();
     refreshMarkers();
@@ -875,17 +883,15 @@ void TraceEditorWidget::applyStack()
         m_lines[i]->replace(shiftedPoints(i));
         m_lines[i]->setVisible(visible);
         if (i < m_peak_series.size() && m_peak_series[i]) {
-            const QPointF shift = stackOffset(i);
             QList<QPointF> points;
             for (const TracePeak& peak : m_peaks[i])
-                points << QPointF(peak.x + shift.x(), peak.height + shift.y());
+                points << displayPoint(i, peak.x, peak.height);
             m_peak_series[i]->replace(points);
             m_peak_series[i]->setVisible(visible);
         }
     }
     updateRangeLines();
-    if (m_chart->axisY())
-        m_chart->axisY()->setLabelsVisible(m_stack_y->value() == 0);
+    updateYLabels();
     if (!m_user_view)
         m_chart->formatAxis(); // whole stack in view
     refreshMarkers();
@@ -929,6 +935,46 @@ QPointF TraceEditorWidget::stackOffset(int traceIndex) const
     return QPointF(level * dx, level * dy);
 }
 
+QPointF TraceEditorWidget::displayPoint(int traceIndex, double x, double y) const
+{
+    const QPointF shift = stackOffset(traceIndex);
+    return QPointF(x + shift.x(), shift.y() + m_intensity * y);
+}
+
+void TraceEditorWidget::setIntensityScale(double factor)
+{
+    if (!std::isfinite(factor) || !(factor > 0))
+        return;
+    factor = std::clamp(factor, kMinIntensity, kMaxIntensity);
+    if (factor == m_intensity)
+        return;
+    // the axes stay as they are (also when a host set them): they become the user's view, so no redraw (nor a
+    // host's series) rescales them
+    captureView();
+    m_intensity = factor;
+    updateIntensityLabel();
+    applyStack(); // moves the points of the series; the host moves its own (chartUpdated)
+}
+
+void TraceEditorWidget::scaleIntensity(double factor)
+{
+    setIntensityScale(m_intensity * factor);
+}
+
+/*! \brief The y tick labels mean data values only without a stack offset and at intensity factor 1. */
+void TraceEditorWidget::updateYLabels()
+{
+    if (m_chart->axisY())
+        m_chart->axisY()->setLabelsVisible(m_stack_y->value() == 0 && m_intensity == 1);
+}
+
+void TraceEditorWidget::updateIntensityLabel()
+{
+    const QString value = m_intensity >= 100 ? QLocale().toString(m_intensity, 'f', 0) : QLocale().toString(m_intensity, 'g', 3);
+    m_intensity_label->setText(tr("Intensity ×%1").arg(value));
+    m_intensity_label->setHidden(m_intensity == 1);
+}
+
 /*! \brief Largest max - min of a drawn trace (not excluded) within Start..End; 1 if there is none (flat or
  * no point in the range), so the offset never collapses to 0. */
 void TraceEditorWidget::updateStackReference()
@@ -959,8 +1005,8 @@ QList<QPointF> TraceEditorWidget::shiftedPoints(int traceIndex) const
     const QPointF shift = stackOffset(traceIndex);
     QList<QPointF> points;
     points.reserve(trace.size());
-    for (Eigen::Index k = 0; k < trace.size(); ++k)
-        points.append(QPointF(trace.x()(k) + shift.x(), trace.y()(k) + shift.y()));
+    for (Eigen::Index k = 0; k < trace.size(); ++k) // as displayPoint(), with the shift computed once
+        points.append(QPointF(trace.x()(k) + shift.x(), shift.y() + m_intensity * trace.y()(k)));
     return points;
 }
 
@@ -1114,6 +1160,11 @@ void TraceEditorWidget::captureView()
 void TraceEditorWidget::resetView()
 {
     m_user_view = false;
+    if (m_intensity != 1) {
+        m_intensity = 1;
+        updateIntensityLabel();
+        applyStack();
+    }
     m_chart->formatAxis();
     applyView();
     refreshMarkers();
@@ -1125,6 +1176,14 @@ void TraceEditorWidget::fitYToVisible()
     QValueAxis* y = m_chart->axisY();
     if (!x || !y)
         return;
+    // back to the measured intensities first: the axis is fitted to the unscaled traces (Viewer 3); the x axis as
+    // it is now (also when a host set it) is kept over that redraw
+    if (m_intensity != 1) {
+        captureView();
+        m_intensity = 1;
+        updateIntensityLabel();
+        applyStack();
+    }
     const double lo = x->min(), hi = x->max();
     double ymin = std::numeric_limits<double>::infinity(), ymax = -ymin;
     for (int i = 0; i < m_shown.size(); ++i) {
@@ -1136,7 +1195,7 @@ void TraceEditorWidget::fitYToVisible()
             const double px = trace.x()(k) + shift.x();
             if (px < lo || px > hi)
                 continue;
-            ymin = std::min(ymin, trace.y()(k) + shift.y());
+            ymin = std::min(ymin, trace.y()(k) + shift.y()); // intensity factor 1 here
             ymax = std::max(ymax, trace.y()(k) + shift.y());
         }
     }
@@ -1198,14 +1257,18 @@ bool TraceEditorWidget::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_chart->privateView() && event->type() == QEvent::Resize)
         QMetaObject::invokeMethod(this, [this]() { refreshMarkers(); }, Qt::QueuedConnection); // after the chart laid out its plot area
     if (watched == m_chart->privateView()->viewport()) {
-        // Claude Generated (Viewer 2): the wheel scales y at the pointer; the middle button shows everything
+        // Claude Generated (Viewer 2/3): the wheel scales the intensity, Ctrl + wheel the y axis at the pointer;
+        // the middle button shows everything
         if (event->type() == QEvent::Wheel) {
             auto* wheel = static_cast<QWheelEvent*>(event);
-            const double steps = wheel->angleDelta().y() / 120.0;
+            const double steps = wheel->angleDelta().y() / 120.0; // 120 = one notch; finer wheels in proportion
             if (steps != 0 && !m_traces.isEmpty()) {
-                QChartView* view = m_chart->privateView();
-                const QPointF value = view->chart()->mapToValue(view->chart()->mapFromScene(view->mapToScene(wheel->position().toPoint())));
-                scaleY(value.y(), std::pow(0.9, steps));
+                if (wheel->modifiers() & Qt::ControlModifier) {
+                    QChartView* view = m_chart->privateView();
+                    const QPointF value = view->chart()->mapToValue(view->chart()->mapFromScene(view->mapToScene(wheel->position().toPoint())));
+                    scaleY(value.y(), std::pow(0.9, steps));
+                } else
+                    scaleIntensity(std::pow(kIntensityStep, steps));
             }
             return true;
         }
@@ -1239,8 +1302,8 @@ void TraceEditorWidget::updateRangeLines()
         if (!m_lines.value(i) || !m_lines[i]->isVisible() || m_shown[i].isEmpty())
             continue;
         const double dy = stackOffset(i).y();
-        ymin = std::min(ymin, m_shown[i].y().minCoeff() + dy);
-        ymax = std::max(ymax, m_shown[i].y().maxCoeff() + dy);
+        ymin = std::min(ymin, dy + m_intensity * m_shown[i].y().minCoeff());
+        ymax = std::max(ymax, dy + m_intensity * m_shown[i].y().maxCoeff());
     }
     m_y_min = std::isfinite(ymin) ? ymin : 0;
     m_y_max = std::isfinite(ymax) ? ymax : 1;

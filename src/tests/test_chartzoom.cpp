@@ -44,6 +44,7 @@
 
 #include <QtCore/QDir>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 
 #include "src/core/nmrhandler.h"
@@ -103,11 +104,11 @@ void drag(TraceEditorWidget& editor, Qt::MouseButton button, QPointF a, QPointF 
     QCoreApplication::processEvents();
 }
 
-/// sends a wheel event (delta in eighths of a degree, 120 = one notch) to the viewport (Claude Generated, Viewer 2)
-void wheel(TraceEditorWidget& editor, const QPoint& at, int delta)
+/// sends a wheel event (delta in eighths of a degree, 120 = one notch) to the viewport (Claude Generated, Viewer 2/3)
+void wheel(TraceEditorWidget& editor, const QPoint& at, int delta, Qt::KeyboardModifiers modifiers = Qt::NoModifier)
 {
     QWidget* viewport = editor.chart()->privateView()->viewport();
-    QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, delta), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+    QWheelEvent event(QPointF(at), QPointF(viewport->mapToGlobal(at)), QPoint(), QPoint(0, delta), Qt::NoButton, modifiers, Qt::NoScrollPhase, false);
     QApplication::sendEvent(viewport, &event);
 }
 
@@ -524,16 +525,17 @@ private slots:
         QCOMPARE(editor.rangeEnd(), 10.0);
     }
 
-    /*! \brief Viewer 2: one wheel notch scales the y span by 0.9 (up) or 1/0.9 (down) about the value under the
-     * pointer; x stays; the middle button goes back to the whole range. */
-    void wheelScalesY()
+    /*! \brief Viewer 2 (Viewer 3: with Ctrl): one notch scales the y span by 0.9 (up) or 1/0.9 (down) about the value
+     * under the pointer; x and the intensity factor stay; the middle button goes back to the whole range. */
+    void ctrlWheelScalesY()
     {
         TraceEditorWidget editor;
         setup(editor, true, Direction::Reversed);
         const Span before = span(editor);
         const QPoint at = pixel(editor, 4, 20);
         const double anchor = valueAt(editor, at).y();
-        wheel(editor, at, 120);
+        wheel(editor, at, 120, Qt::ControlModifier);
+        QCOMPARE(editor.intensityScale(), 1.0);
         Span after = span(editor);
         const double tolerance = 1e-9 * (before.ymax - before.ymin);
         QVERIFY2(std::abs(after.ymin - (anchor - 0.9 * (anchor - before.ymin))) < tolerance && std::abs(after.ymax - (anchor + 0.9 * (before.ymax - anchor))) < tolerance,
@@ -545,7 +547,7 @@ private slots:
         const double pixel_value = (before.ymax - before.ymin) / editor.chart()->chart()->plotArea().height();
         QVERIFY(std::abs(valueAt(editor, at).y() - anchor) < pixel_value);
         // two notches down at the same place: back to 1/0.9 of the start span
-        wheel(editor, at, -240);
+        wheel(editor, at, -240, Qt::ControlModifier);
         after = span(editor);
         QVERIFY(std::abs((after.ymax - after.ymin) - (before.ymax - before.ymin) / 0.9) < tolerance * 10);
         // kept over a redraw, reset by the middle button
@@ -557,7 +559,157 @@ private slots:
         QVERIFY(!editor.hasUserView());
         QCOMPARE(span(editor).xmin, before.xmin);
         QCOMPARE(span(editor).xmax, before.xmax);
-        QVERIFY(editor.hintText().contains("Wheel"));
+        QVERIFY(editor.hintText().contains("Ctrl+wheel: y zoom"));
+    }
+
+    void wheelScalesIntensity_data()
+    {
+        QTest::addColumn<bool>("descending");
+        QTest::addColumn<Direction>("direction");
+        QTest::addColumn<double>("stack");
+        QTest::addColumn<bool>("reverse");
+        QTest::newRow("ascending normal") << false << Direction::Normal << 0.0 << false;
+        QTest::newRow("descending reversed") << true << Direction::Reversed << 0.0 << false;
+        QTest::newRow("stacked ascending normal") << false << Direction::Normal << 60.0 << false;
+        QTest::newRow("stacked descending reversed") << true << Direction::Reversed << 60.0 << false;
+        QTest::newRow("stacked reverse order, ascending reversed") << false << Direction::Reversed << 60.0 << true;
+        QTest::newRow("stacked reverse order, descending normal") << true << Direction::Normal << 60.0 << true;
+    }
+
+    /*! \brief Viewer 3: the wheel (no modifier) multiplies the intensity factor by 1.25 per notch: the axes stay, the
+     * baselines stay at their pixels (with and without a stack, both axis directions, reverse order), the distances of
+     * the levels stay, a peak of height h rises to 1.25^n h above its baseline, the peak markers sit on the scaled
+     * tops; finer wheels in proportion; limits; y labels hidden and the factor shown while it is not 1. Claude Generated */
+    void wheelScalesIntensity()
+    {
+        QFETCH(bool, descending);
+        QFETCH(Direction, direction);
+        QFETCH(double, stack);
+        QFETCH(bool, reverse);
+        TraceEditorWidget editor;
+        setupStack(editor, descending, direction);
+        editor.setStackPercent(stack);
+        editor.setStackReversed(reverse);
+        editor.findChild<QPushButton*>("traceFitY")->click(); // a fixed axis for the pixel comparison
+        const Span before = span(editor);
+        QChart* chart = editor.chart()->chart();
+        const XYTrace& raw = editor.traces().at(0);
+        Eigen::Index top = 0;
+        raw.y().maxCoeff(&top); // the 100 high reference signal; point 0 lies on the baseline (y < 1e-100)
+        auto py = [&](int k, int i) { return chart->mapToPosition(line(editor, k)->at(i)).y(); };
+        QVector<double> base, height;
+        for (int k = 0; k < 3; ++k) {
+            base << py(k, 0);
+            height << py(k, 0) - py(k, int(top));
+        }
+        auto* label = editor.findChild<QLabel*>("traceIntensity");
+        QVERIFY(label && label->isHidden());
+        QVERIFY(stack != 0 || axis(editor, Qt::Vertical)->labelsVisible());
+        const QPoint at = pixel(editor, 4, 0.5 * (before.ymin + before.ymax));
+        auto check = [&](double factor, const char* what) {
+            QVERIFY2(std::abs(editor.intensityScale() - factor) < 1e-12 * factor, qPrintable(QString("%1: factor %2, expected %3").arg(what).arg(editor.intensityScale()).arg(factor)));
+            const Span now = span(editor);
+            QVERIFY2(now.xmin == before.xmin && now.xmax == before.xmax && now.ymin == before.ymin && now.ymax == before.ymax, what);
+            for (int k = 0; k < 3; ++k) {
+                QVERIFY2(std::abs(py(k, 0) - base[k]) < 1e-6, qPrintable(QString("%1: baseline %2 at %3 px, was %4").arg(what).arg(k).arg(py(k, 0)).arg(base[k])));
+                const double h = py(k, 0) - py(k, int(top));
+                QVERIFY2(std::abs(h - factor * height[k]) < 1e-6 * factor * height[k], qPrintable(QString("%1: peak %2 px high, expected %3").arg(what).arg(h).arg(factor * height[k])));
+            }
+            // peak markers: displayPoint of the picked peak, on the top of the drawn line
+            int markers = 0;
+            for (QAbstractSeries* series : chart->series())
+                if (auto* scatter = qobject_cast<QScatterSeries*>(series)) {
+                    const int k = markers++;
+                    for (int j = 0; j < scatter->count(); ++j) {
+                        const TracePeak& peak = editor.peaks().at(k).at(j);
+                        QCOMPARE(scatter->at(j), editor.displayPoint(k, peak.x, peak.height));
+                        const double rise = scatter->at(j).y() - editor.stackOffset(k).y();
+                        QVERIFY2(std::abs(scatter->at(j).y() - line(editor, k)->at(int(peak.index)).y()) < 0.01 * rise, what);
+                    }
+                }
+            QCOMPARE(markers, 3);
+            QCOMPARE(label->isHidden(), factor == 1);
+            QCOMPARE(axis(editor, Qt::Vertical)->labelsVisible(), stack == 0 && factor == 1);
+        };
+        wheel(editor, at, 120);
+        check(1.25, "one notch up");
+        QVERIFY(label->text().contains("1.25") || label->text().contains("1,25"));
+        // the distances of the levels in pixels are unchanged
+        if (stack != 0)
+            QVERIFY(std::abs((py(0, 0) - py(1, 0)) - (base[0] - base[1])) < 1e-6 && std::abs(base[0] - base[1]) > 20);
+        wheel(editor, at, -120);
+        check(1, "one notch down");
+        wheel(editor, at, 360);
+        check(std::pow(1.25, 3), "three notches");
+        wheel(editor, at, 60); // a fine wheel: half a notch
+        check(std::pow(1.25, 3.5), "half a notch");
+        wheel(editor, at, -60);
+        // limits
+        wheel(editor, at, 120 * 100);
+        check(TraceEditorWidget::kMaxIntensity, "upper limit");
+        wheel(editor, at, -120 * 200);
+        check(TraceEditorWidget::kMinIntensity, "lower limit");
+        editor.setIntensityScale(4);
+        check(4, "set");
+        // Ctrl + wheel: the y axis changes, the factor stays
+        wheel(editor, at, 120, Qt::ControlModifier);
+        QCOMPARE(editor.intensityScale(), 4.0);
+        QVERIFY(span(editor).ymax - span(editor).ymin < before.ymax - before.ymin);
+        // "Fit y to the visible range": factor 1, y to the unscaled traces (as before scaling)
+        editor.findChild<QPushButton*>("traceFitY")->click();
+        check(1, "fit y");
+        // middle click: factor 1 and the whole view
+        wheel(editor, at, 240);
+        send(editor, QEvent::MouseButtonPress, at, Qt::MiddleButton, Qt::MiddleButton);
+        send(editor, QEvent::MouseButtonRelease, at, Qt::MiddleButton, Qt::NoButton);
+        QCOMPARE(editor.intensityScale(), 1.0);
+        QVERIFY(!editor.hasUserView());
+        QVERIFY(label->isHidden());
+    }
+
+    /*! \brief Viewer 3: the intensity factor stays over steps, stack offsets and the axis direction; other traces set it
+     * to 1; it is not stored. Claude Generated */
+    void intensityKeptAndReset()
+    {
+        TraceEditorWidget editor;
+        editor.setSettingsKey("intensityHost");
+        setupStack(editor, true, Direction::Reversed);
+        const Span before = span(editor);
+        wheel(editor, pixel(editor, 4, 0.5 * (before.ymin + before.ymax)), 240);
+        QCOMPARE(editor.intensityScale(), 1.5625);
+        QVERIFY(editor.hasUserView());
+        const Span scaled = span(editor);
+        QCOMPARE(scaled.ymin, before.ymin); // the wheel does not change the axis
+        QCOMPARE(scaled.ymax, before.ymax);
+        QVERIFY(editor.addOperation("Smooth") >= 0);
+        QCOMPARE(editor.intensityScale(), 1.5625);
+        editor.setStackPercent(40);
+        editor.setStackXPercent(2);
+        editor.setStackReversed(true);
+        editor.setAxisDirection(Direction::Normal);
+        QCOMPARE(editor.intensityScale(), 1.5625);
+        QCOMPARE(line(editor, 1)->at(7).y(), editor.displayPoint(1, 0, editor.traces().at(1).y()(7)).y());
+        // an x range set by the host while scaled stays over "Fit y to the visible range" and a new factor
+        editor.chart()->setXRange(3, 6);
+        editor.fitYToVisible();
+        QCOMPARE(editor.intensityScale(), 1.0);
+        QCOMPARE(span(editor).xmin, 3.0);
+        QCOMPARE(span(editor).xmax, 6.0);
+        editor.chart()->setXRange(2, 7);
+        editor.setIntensityScale(1.5625);
+        QCOMPARE(span(editor).xmin, 2.0);
+        QCOMPARE(span(editor).xmax, 7.0);
+        // the same ids again: kept; other ids: 1
+        editor.setTraces(editor.traces());
+        QCOMPARE(editor.intensityScale(), 1.5625);
+        TraceSet other;
+        other.add(spectrum(true), "other");
+        editor.setTraces(other);
+        QCOMPARE(editor.intensityScale(), 1.0);
+        QVERIFY(editor.findChild<QLabel*>("traceIntensity")->isHidden());
+        for (const QString& key : QSettings().allKeys())
+            QVERIFY2(!key.contains("ntensity", Qt::CaseInsensitive) || key.startsWith("traceeditor/intensityHost/stack"), qPrintable(key));
+        QSettings().remove("traceeditor/intensityHost");
     }
 
     /*! \brief Viewer 2: "Fit y to the visible range" scales y to the traces between the ends of the x axis (+5 %). */

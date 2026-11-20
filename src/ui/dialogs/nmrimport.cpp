@@ -1047,9 +1047,8 @@ void NmrImport::updateMarkers()
             if (!std::isfinite(cell.shift) || m_handler.isSpectrumExcluded(k))
                 continue;
             const double y = shown.at(k).interpolate(cell.shift);
-            const QPointF shift = m_editor->stackOffset(k); // drawn where the editor draws spectrum k
-            if (std::isfinite(y))
-                markers->append(cell.shift + shift.x(), y + shift.y());
+            if (std::isfinite(y)) // drawn where the editor draws spectrum k (stack offset, intensity factor)
+                markers->append(m_editor->displayPoint(k, cell.shift, y));
         }
         markers->setMarkerSize(7);
         chart->addSeries(markers, false);
@@ -1062,8 +1061,9 @@ void NmrImport::updateMarkers()
     m_editor->setHighlightedTrace(m_spectra->currentRow() >= 0 ? k : -1); // the spectrum whose fit is drawn
     const QVector<NmrFitRegion> regions = m_handler.fitRegions(k);
     if (!regions.isEmpty() && k < shown.size() && !shown.at(k).isEmpty()) {
-        const QPointF shift = m_editor->stackOffset(k); // with the stack offset of spectrum k
-        const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff() + shift.y();
+        // with the stack offset and intensity factor of spectrum k; the residual line keeps its place 10 % of the
+        // measured height below the baseline (in the frame of the y axis), only its amplitude is scaled
+        const double offset = -0.1 * shown.at(k).y().cwiseAbs().maxCoeff();
         const QColor model = palette().color(QPalette::Text); // dashed: distinct from the coloured spectra
         QColor residual = palette().color(QPalette::Text);
         residual.setAlpha(140);
@@ -1074,8 +1074,8 @@ void NmrImport::updateMarkers()
             LineSeries* rest = new LineSeries;
             for (Eigen::Index i = 0; i < region.block.x.size(); ++i) {
                 const double x = region.block.x(i);
-                curve->append(x + shift.x(), region.block.evaluate(x) + shift.y());
-                rest->append(x + shift.x(), offset + region.block.residuals(i));
+                curve->append(m_editor->displayPoint(k, x, region.block.evaluate(x)));
+                rest->append(m_editor->displayPoint(k, x, region.block.residuals(i)) + QPointF(0, offset));
             }
             chart->addSeries(curve, false);
             chart->addSeries(rest, false);

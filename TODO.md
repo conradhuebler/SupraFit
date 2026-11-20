@@ -32,6 +32,7 @@
 - [ ] NMR multiplets: lines of a dd closer than the step of a titration are lost or swapped by the tracking (real T1/T5 at LB 0.3 Hz); a signal = centre of a group of lines would track them as one.
 - [ ] NMR dialog with FIDs: 15 x 262144 points drawn (OpenGL above 5000 points, offscreen grabs empty), speed on screen not measured; y labels of normalised spectra show 2 decimals ("0.01"); debug build needs 36 s for 15 FIDs of 131072 points (auto phase).
 - [ ] Trace editor stack/wheel (Viewer 2) machine-tested only: wheel feel and OpenGL drawing of stacked series > 5000 points not seen on a screen; x labels after an x offset are not nice numbers.
+- [ ] Trace editor intensity wheel (Viewer 3) machine-tested only (real wheel/touchpad, Ctrl on macOS = Cmd not seen). NMR residual without stack lies 10 % of the height below 0, under the frame after "Fit y to the visible range" (it ignores host series).
 - [ ] CuteChart `addSeries` rescales over all points of all series per call: a full rebuild of 15 × 131072 points costs 140-160 ms release (580-610 ms debug); a batch add without rescaling would remove most of it.
 - [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
 - [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).

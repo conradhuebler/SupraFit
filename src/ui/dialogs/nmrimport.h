@@ -87,7 +87,8 @@ class QTableWidget;
  * restoreOptions() runs in the constructor, setData() then brings the values of the project).
  *
  * Viewer 2 (Claude Generated): the stack of the trace editor (settings key "nmrimport") moves the tracked
- * markers, the fitted model and its residual with stackOffset() of their spectrum; excluded spectra leave the
+ * markers, the fitted model and its residual with displayPoint() of their spectrum (Viewer 3: with the intensity
+ * factor of the wheel; the residual line stays 10 % of the measured height below the baseline, its amplitude scales); excluded spectra leave the
  * stack (setExcludedTraces), the selected spectrum is drawn wider. A signal missing in every used spectrum
  * gets a hint in its own line above the status line ("nmrMissingHint") and in the tooltips of its cells (the relative threshold of the default peak
  * picking follows the strongest line of the spectrum); tracking results are not changed.
