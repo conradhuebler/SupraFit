@@ -21,8 +21,10 @@
 
 #include <charts.h>
 
+#include <algorithm>
 #include <cmath>
 
+#include <QtCore/QCollator>
 #include <QtCore/QFileInfo>
 #include <QtCore/QLocale>
 #include <QtGui/QIcon>
@@ -105,10 +107,10 @@ void NmrImport::setupUi()
     m_directory->setToolTip(tr("Reads every file of a directory with the chosen ending, one spectrum per titration step, in natural order (2 before 10)."));
     m_suffix = new QComboBox;
     m_suffix->setEditable(true);
-    m_suffix->addItems({ ".txt", ".csv", ".dat", ".xy", ".asc" });
+    m_suffix->addItems({ ".txt", ".csv", ".dat", ".xy", ".asc", ".jdf" });
     m_suffix->setToolTip(tr("Ending of the spectrum files in the directory"));
     m_files = new QPushButton(tr("Add files"));
-    m_files->setToolTip(tr("Two columns (ppm, intensity) = one spectrum; more columns = ppm and one spectrum per column; TopSpin totxt export."));
+    m_files->setToolTip(tr("Two columns (ppm, intensity) = one spectrum; more columns = ppm and one spectrum per column; TopSpin totxt export; JEOL Delta FID (.jdf)."));
     m_path = new QLineEdit;
     m_path->setReadOnly(true);
     load->addWidget(m_directory);
@@ -138,9 +140,10 @@ void NmrImport::setupUi()
     edit->addWidget(m_remove);
     edit->addWidget(m_reference);
     left_layout->addLayout(edit);
+    left_layout->addWidget(fidPanel());
     left->setLayout(left_layout);
     left->setMinimumWidth(150);
-    left->setMaximumWidth(220);
+    left->setMaximumWidth(240);
 
     m_editor = new TraceEditorWidget;
     m_results = new QTableWidget;
@@ -230,9 +233,14 @@ void NmrImport::setupUi()
         setDirectory(directory, m_suffix->currentText(), &error);
     });
     connect(m_files, &QPushButton::clicked, this, [this]() {
-        const QStringList files = QFileDialog::getOpenFileNames(this, tr("Add files"), getDir());
+        QStringList files = QFileDialog::getOpenFileNames(this, tr("Add files"), getDir(),
+            tr("Spectra (*.txt *.csv *.dat *.xy *.asc *.jdf);;JEOL Delta (*.jdf);;All files (*)"));
         if (files.isEmpty())
             return;
+        // natural order ("2" before "10"), as for a directory
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(files.begin(), files.end(), [&collator](const QString& a, const QString& b) { return collator.compare(a, b) < 0; });
         setLastDir(files.first());
         QString error;
         addFiles(files, &error);
@@ -294,9 +302,131 @@ void NmrImport::setupUi()
     connect(m_concentrations, &DropTable::Edited, this, &NmrImport::updateTable);
     connect(m_details, &QCheckBox::toggled, this, [this]() { updateResults(); });
     connect(m_spectra, &QListWidget::currentRowChanged, this, [this]() {
-        if (!m_updating)
+        if (!m_updating) {
             updateMarkers();
+            updateFidControls();
+        }
     });
+}
+
+/*! \brief Panel of the FID processing (Claude Generated, JEOL import). */
+QWidget* NmrImport::fidPanel()
+{
+    m_fid_box = new QGroupBox(tr("Processing (FID)"));
+    m_fid_box->setObjectName("nmrFidPanel");
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->setContentsMargins(4, 4, 4, 4);
+    QFormLayout* form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
+    form->setRowWrapPolicy(QFormLayout::WrapLongRows);
+
+    m_line_broadening = new QDoubleSpinBox;
+    m_line_broadening->setObjectName("nmrLineBroadening");
+    m_line_broadening->setDecimals(2);
+    m_line_broadening->setRange(0, 50);
+    m_line_broadening->setSingleStep(0.1);
+    m_line_broadening->setSuffix(tr(" Hz"));
+    m_line_broadening->setKeyboardTracking(false);
+    m_line_broadening->setToolTip(tr("Exponential apodization: every line is broadened by this width (lower noise, wider lines)."));
+    form->addRow(tr("LB"), m_line_broadening);
+
+    m_zero_fill = new QComboBox;
+    m_zero_fill->setObjectName("nmrZeroFill");
+    for (int factor : { 1, 2, 4, 8 })
+        m_zero_fill->addItem(tr("× %1").arg(factor), factor);
+    m_zero_fill->setToolTip(tr("Zero filling: the spectrum has the next power of two of this many times the points of the FID."));
+    form->addRow(tr("Zero fill"), m_zero_fill);
+
+    m_ph0 = new QDoubleSpinBox;
+    m_ph0->setObjectName("nmrPh0");
+    m_ph0->setDecimals(1);
+    m_ph0->setRange(-360, 360);
+    m_ph0->setSingleStep(1);
+    m_ph0->setSuffix(tr(" °"));
+    m_ph0->setKeyboardTracking(false);
+    m_ph0->setToolTip(tr("Zero-order phase of all spectra."));
+    form->addRow(tr("ph0"), m_ph0);
+
+    m_ph1 = new QDoubleSpinBox;
+    m_ph1->setObjectName("nmrPh1");
+    m_ph1->setDecimals(1);
+    m_ph1->setRange(-3600, 3600);
+    m_ph1->setSingleStep(1);
+    m_ph1->setSuffix(tr(" °"));
+    m_ph1->setKeyboardTracking(false);
+    m_ph1->setToolTip(tr("First-order phase across the spectral width, zero at the centre of the spectrum (after the correction of the digital filter delay)."));
+    form->addRow(tr("ph1"), m_ph1);
+    layout->addLayout(form);
+
+    m_auto_phase = new QPushButton(tr("Auto phase"));
+    m_auto_phase->setObjectName("nmrAutoPhase");
+    m_auto_phase->setToolTip(tr("Finds ph0 and ph1 of the reference spectrum (entropy minimisation) and uses them for all spectra."));
+    layout->addWidget(m_auto_phase);
+    m_auto_each = new QCheckBox(tr("Auto phase each spectrum"));
+    m_auto_each->setObjectName("nmrAutoPhaseEach");
+    m_auto_each->setToolTip(tr("Every spectrum gets its own phase by entropy minimisation instead of the common ph0 and ph1."));
+    layout->addWidget(m_auto_each);
+    m_fid_info = new QLabel;
+    m_fid_info->setObjectName("nmrFidInfo");
+    m_fid_info->setWordWrap(true);
+    layout->addWidget(m_fid_info);
+    m_fid_box->setLayout(layout);
+    m_fid_box->setVisible(false);
+
+    connect(m_line_broadening, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
+    connect(m_zero_fill, &QComboBox::currentIndexChanged, this, &NmrImport::applyFidSettings);
+    connect(m_ph0, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
+    connect(m_ph1, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
+    connect(m_auto_each, &QCheckBox::toggled, this, &NmrImport::applyFidSettings);
+    connect(m_auto_phase, &QPushButton::clicked, this, [this]() {
+        QString error;
+        if (!m_handler.autoPhaseFromReference(&error))
+            setStatus(error, true);
+        else
+            setStatus(tr("Phase of spectrum %1: ph0 %2°, ph1 %3°.").arg(m_handler.referenceIndex() + 1).arg(m_handler.fidSettings().ph0, 0, 'f', 1).arg(m_handler.fidSettings().ph1, 0, 'f', 1), false);
+        refresh();
+    });
+    return m_fid_box;
+}
+
+void NmrImport::updateFidControls()
+{
+    const bool updating = m_updating;
+    m_updating = true;
+    const FidSettings& fid = m_handler.fidSettings();
+    m_fid_box->setVisible(m_handler.hasFids());
+    m_line_broadening->setValue(fid.lineBroadening);
+    m_zero_fill->setCurrentIndex(std::max(0, m_zero_fill->findData(fid.zeroFill)));
+    m_ph0->setValue(fid.ph0);
+    m_ph1->setValue(fid.ph1);
+    m_auto_each->setChecked(fid.autoPhase);
+    m_ph0->setEnabled(!fid.autoPhase);
+    m_ph1->setEnabled(!fid.autoPhase);
+    m_auto_phase->setEnabled(!fid.autoPhase);
+    const int row = m_spectra->currentRow();
+    const int k = m_handler.isFid(row) ? row : m_handler.referenceIndex();
+    if (m_handler.isFid(k)) {
+        const FidPhase phase = m_handler.fidPhase(k);
+        m_fid_info->setText(tr("%1\nSpectrum %2: ph0 %3°, ph1 %4°").arg(m_handler.fidDescription(k)).arg(k + 1).arg(phase.ph0, 0, 'f', 1).arg(phase.ph1, 0, 'f', 1));
+    } else
+        m_fid_info->clear();
+    m_updating = updating;
+}
+
+void NmrImport::applyFidSettings()
+{
+    if (m_updating)
+        return;
+    FidSettings fid = m_handler.fidSettings();
+    fid.lineBroadening = m_line_broadening->value();
+    fid.zeroFill = m_zero_fill->currentData().toInt();
+    fid.ph0 = m_ph0->value();
+    fid.ph1 = m_ph1->value();
+    fid.autoPhase = m_auto_each->isChecked();
+    QString error;
+    if (!m_handler.setFidSettings(fid, &error))
+        setStatus(error, true);
+    refresh();
 }
 
 QWidget* NmrImport::signalPanel()
@@ -572,6 +702,10 @@ void NmrImport::refresh()
 {
     m_handler.track();
     m_editor->setTraces(m_handler.referencedSpectra()); // redraws, the markers follow (chartUpdated)
+    m_updating = true;
+    m_offset->setValue(m_handler.referenceOffset()); // also when the handler was changed directly
+    m_updating = false;
+    updateFidControls();
     updateSpectra();
     updateSignals();
     updateResults();

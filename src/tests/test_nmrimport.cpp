@@ -19,19 +19,28 @@
  * table shows the tracked shifts with a colour per status, a manual value typed into a cell is taken,
  * the table is refused without concentrations or with missing cells, and a stored NMR project comes
  * back. Set SUPRAFIT_TRACE_RENDER_DIR to write PNG renders (light, dark, 1366x768). Claude Generated.
+ * JEOL import: a synthetic .jdf series shows the panel "Processing (FID)", its controls reach NmrHandler and
+ * come back with the project; with SUPRAFIT_JEOL_DIR (default: the operator's titration directory) the renders
+ * include a real series.
  */
 
 #include <charts.h>
 
 #include <cmath>
 
+#include <QtCore/QCollator>
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
 #include <QtTest/QtTest>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
@@ -41,6 +50,8 @@
 #include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/widgets/traceeditorwidget.h"
+
+#include "jdf_test_writer.h"
 
 namespace {
 /// three Lorentz lines on a descending ppm axis moving with the step; the third vanishes from 'vanish' on;
@@ -90,6 +101,30 @@ XYTrace overlapSpectrum(int step, int steps)
     }
     return XYTrace(x, y, QString("step_%1.txt").arg(step));
 }
+/// a .jdf series of 8 FIDs in dir: a line moving 7.60 -> 7.55 ppm, a static line, a receiver phase per file
+void writeJdfSeries(const QString& dir, int steps = 8, int points = 8192, double t2 = 0.3)
+{
+    QDir().mkpath(dir);
+    for (int k = 0; k < steps; ++k) {
+        const double f = 1.0 - std::exp(-1.5 * k / double(steps - 1));
+        const QByteArray bytes = JdfTest::fidFile({ { 7.60 - 0.05 * f, 1.0, t2 }, { 7.26, 3.0, t2 }, { 6.90 + 0.02 * f, 0.6, t2 } },
+            500.159915, 6250, 4.5, points, 19.6875, 37.0 * k - 100, -20, 0.002);
+        JdfTest::save(QDir(dir).filePath(QString("titration_%1_single_pulse-1-1.jdf").arg(k + 1)), bytes);
+    }
+}
+
+/// the real series of the operator, if present (SUPRAFIT_JEOL_DIR)
+QStringList realJdfSeries()
+{
+    const QString dir = qEnvironmentVariable("SUPRAFIT_JEOL_DIR", QStringLiteral("/home/conrad/TUBAF/SB18_Titrationen"));
+    QStringList files = QDir(dir).entryList({ "sb-SB18_T5_CDCl3_ObDGlc_*.jdf" }, QDir::Files);
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::sort(files.begin(), files.end(), [&collator](const QString& a, const QString& b) { return collator.compare(a, b) < 0; });
+    for (QString& f : files)
+        f = QDir(dir).filePath(f);
+    return files;
+}
 } // namespace
 
 class TestNmrImport : public QObject {
@@ -132,10 +167,72 @@ class TestNmrImport : public QObject {
         QVERIFY(widget->grab().save(QDir(dir).filePath(name + ".png")));
     }
 
+    QTemporaryDir m_dir;
+
 private slots:
     void initTestCase()
     {
         qApp->setProperty("StoreRawData", true);
+        QVERIFY(m_dir.isValid());
+    }
+
+    /// JEOL: the FID panel appears with a .jdf series, its controls set the processing of the handler
+    void fidProcessingPanel()
+    {
+        const QString dir = m_dir.filePath("jdf");
+        writeJdfSeries(dir, 8, 4096, 0.2);
+        NmrImport text;
+        fill(text.handler(), 4);
+        text.refresh();
+        QGroupBox* hidden = text.findChild<QGroupBox*>("nmrFidPanel");
+        QVERIFY(hidden && !hidden->isVisibleTo(&text));
+
+        NmrImport dialog;
+        QString error;
+        QVERIFY2(dialog.setDirectory(dir, ".jdf", &error), qPrintable(error));
+        QCOMPARE(dialog.handler()->spectrumCount(), 8);
+        QGroupBox* panel = dialog.findChild<QGroupBox*>("nmrFidPanel");
+        QVERIFY(panel && panel->isVisibleTo(&dialog));
+        QDoubleSpinBox* lb = dialog.findChild<QDoubleSpinBox*>("nmrLineBroadening");
+        QDoubleSpinBox* ph0 = dialog.findChild<QDoubleSpinBox*>("nmrPh0");
+        QComboBox* zeroFill = dialog.findChild<QComboBox*>("nmrZeroFill");
+        QCheckBox* each = dialog.findChild<QCheckBox*>("nmrAutoPhaseEach");
+        QPushButton* autoPhase = dialog.findChild<QPushButton*>("nmrAutoPhase");
+        QLabel* info = dialog.findChild<QLabel*>("nmrFidInfo");
+        QVERIFY(lb && ph0 && zeroFill && each && autoPhase && info);
+        // default: every spectrum phased on its own, the phase fields are off
+        QVERIFY(each->isChecked());
+        QVERIFY(!ph0->isEnabled());
+        QVERIFY(info->text().contains("CHLOROFORM-D"));
+        lb->setValue(1.5);
+        QCOMPARE(dialog.handler()->fidSettings().lineBroadening, 1.5);
+        zeroFill->setCurrentIndex(zeroFill->findData(1));
+        QCOMPARE(dialog.handler()->fidSettings().zeroFill, 1);
+        QCOMPARE(dialog.handler()->spectra().at(0).size(), Eigen::Index(4096));
+        // common phase from the reference spectrum, then by hand
+        each->setChecked(false);
+        QVERIFY(ph0->isEnabled());
+        autoPhase->click();
+        QVERIFY(!dialog.handler()->fidSettings().autoPhase);
+        QCOMPARE(ph0->value(), std::round(dialog.handler()->fidSettings().ph0 * 10) / 10);
+        ph0->setValue(12.5);
+        QCOMPARE(dialog.handler()->fidSettings().ph0, 12.5);
+        QCOMPARE(dialog.handler()->fidPhase(5).ph0, 12.5);
+        each->setChecked(true);
+        // signals and table work on the transformed spectra
+        dialog.handler()->addSignal(7.60, 0.03, "H1");
+        dialog.refresh();
+        for (int k = 0; k < 8; ++k)
+            QCOMPARE(dialog.handler()->cell(k, 0).status, NmrCellStatus::Ok);
+        // back with the project
+        QJsonObject project;
+        project["raw"] = dialog.ProjectData();
+        NmrImport again;
+        again.setData(project);
+        QVERIFY(again.handler()->fidSettings() == dialog.handler()->fidSettings());
+        QCOMPARE(again.findChild<QDoubleSpinBox*>("nmrLineBroadening")->value(), 1.5);
+        QVERIFY(again.findChild<QGroupBox*>("nmrFidPanel")->isVisibleTo(&again));
+        QCOMPARE(again.handler()->cell(7, 0).shift, dialog.handler()->cell(7, 0).shift);
     }
 
     void shiftAxisInTheEditor()
@@ -359,6 +456,60 @@ private slots:
                 render(&dialog, "nmr_fit_zoom" + suffix);
                 dialog.findChild<QSpinBox*>("nmrMaxIterations")->setValue(2);
                 render(&dialog, "nmr_fit_failed" + suffix);
+                dialog.hide();
+            }
+            {
+                // JEOL: synthetic FID series with the processing panel
+                // 2048 points (4096 after zero filling): offscreen grabs do not show series above 5000 points
+                // (the chart draws those with OpenGL); T2 0.1 s, so the short FID has decayed (no truncation wiggles)
+                const QString dir = m_dir.filePath("jdf_render");
+                writeJdfSeries(dir, 8, 2048, 0.1);
+                NmrImport dialog;
+                dialog.resize(1366, 768);
+                dialog.setDirectory(dir, ".jdf");
+                dialog.handler()->addSignal(7.60, 0.03, "H1");
+                dialog.handler()->addSignal(6.90, 0.03, "H2");
+                dialog.refresh();
+                render(&dialog, "nmr_jdf_synthetic" + suffix);
+                dialog.hide();
+            }
+            const QStringList real = realJdfSeries();
+            if (!real.isEmpty()) {
+                // the operator's T5 series: CHCl3 referenced to 7.26 ppm, zoom on H2..H7
+                NmrImport dialog;
+                dialog.resize(1366, 768);
+                QElapsedTimer timer;
+                timer.start();
+                QString error;
+                dialog.addFiles(real, &error);
+                const qint64 loading = timer.elapsed();
+                const XYTrace& first = dialog.handler()->spectra().at(0);
+                const XYTrace chcl3 = first.range(7.2, 7.3);
+                Eigen::Index top = 0;
+                chcl3.y().maxCoeff(&top);
+                dialog.handler()->referenceTo(chcl3.x()(top), 7.26);
+                dialog.refresh();
+                timer.restart();
+                render(&dialog, "nmr_jdf_real" + suffix);
+                // H2 (8.90-8.93 ppm) as a range step: below 5000 points, so the offscreen grab shows the lines
+                // the intensities differ between the experiments: normalised to CHCl3 first
+                TraceOpList operations;
+                NormaliseOp normalise(TraceOps::NormaliseMode::Max);
+                normalise.useReference = true;
+                normalise.refStart = 7.2;
+                normalise.refEnd = 7.3;
+                operations.append(normalise);
+                operations.append(RangeOp(8.89, 8.935));
+                dialog.handler()->setOperations(operations);
+                dialog.findChild<TraceEditorWidget*>()->setOperations(operations);
+                dialog.findChild<TraceEditorWidget*>()->setShowProcessed(true);
+                dialog.handler()->addSignal(8.9267, 0.0025, "H2a");
+                dialog.handler()->addSignal(8.9222, 0.0025, "H2b");
+                dialog.refresh();
+                dialog.findChild<TraceEditorWidget*>()->chart()->setXMin(8.89);
+                dialog.findChild<TraceEditorWidget*>()->chart()->setXMax(8.935);
+                render(&dialog, "nmr_jdf_real_h2" + suffix);
+                qInfo("real JEOL series: %d spectra read and transformed in %lld ms, two renders %lld ms", int(real.size()), loading, timer.elapsed());
                 dialog.hide();
             }
         }

@@ -32,6 +32,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QVector>
 
+#include "src/core/trace/fidprocessing.h"
 #include "src/core/trace/lineshapefit.h"
 #include "src/core/trace/traceops.h"
 #include "src/core/trace/traceset.h"
@@ -180,6 +181,13 @@ struct NmrFitRegion {
  * the spectra as in SpectraHandler ("Data" only with the application property StoreRawData, else
  * read again from "Sources"), "TraceOps", "ReferenceOffset", "ReferenceSpectrum", "Signals", "Manual",
  * "Excluded", "Window", "MinHeight", "LineshapeFit".
+ *
+ * FIDs (JEOL .jdf, Claude Generated): a time-domain file is transformed by FidProcessing with fidSettings()
+ * (one set for the whole series: apodization, zero filling, phase or automatic phase per spectrum); the
+ * spectrum list holds the transformed spectra, the FIDs are kept to transform them again when the settings
+ * change. Stored: "FidProcessing" (only when there is a FID); with StoreRawData additionally "Fid" (the
+ * complex points per spectrum position "1".."n", lossless), else the files are read again from "Sources".
+ * "Data" still holds the transformed spectra, so a reader without FID support sees them.
  */
 class NmrHandler {
 public:
@@ -188,7 +196,8 @@ public:
 
     // ---- spectra
     /*! \brief Reads one file (two columns = one spectrum, more columns = x + one spectrum per column,
-     * TopSpin totxt) and appends its spectra; false with *error, nothing added then. */
+     * TopSpin totxt; a JEOL Delta file is recognised by its content and its FID transformed with
+     * fidSettings()) and appends its spectra; false with *error, nothing added then. */
     bool addFile(const QString& filename, QString* error = nullptr);
     /*! \brief Appends the files of a directory whose name ends with suffix (empty = all files) in natural
      * order ("2" before "10", QCollator numeric mode); false with *error if none could be read
@@ -222,6 +231,25 @@ public:
     TraceSet processedSpectra(QString* error = nullptr) const;
     /*! \brief Peaks used by the tracking, per spectrum (see the class description, step 2). */
     QVector<QVector<TracePeak>> peaks(QString* error = nullptr) const;
+
+    // ---- FID processing (Claude Generated, JEOL import)
+    /*! \brief True if at least one spectrum was transformed from a FID. */
+    inline bool hasFids() const { return !m_fids.isEmpty(); }
+    /*! \brief True if the spectrum at index was transformed from a FID. */
+    bool isFid(int index) const;
+    inline const FidSettings& fidSettings() const { return m_fid_settings; }
+    /*! \brief Replaces the settings and transforms every FID again (ids, signals and manual shifts stay);
+     * false with *error for invalid settings or a failed transform (the old settings stay then). Call
+     * track() afterwards. */
+    bool setFidSettings(const FidSettings& settings, QString* error = nullptr);
+    /*! \brief Phase applied to the spectrum at index (zero phases for a spectrum that is no FID). */
+    FidPhase fidPhase(int index) const;
+    /*! \brief Acquisition summary of the FID at index (instrument, nucleus, solvent, ...); empty for other spectra. */
+    QString fidDescription(int index) const;
+    /*! \brief Finds ph0/ph1 by FidProcessing::autoPhase on the reference spectrum (the first FID if the
+     * reference is none) and sets them as the common phase of the series (autoPhase off); false with *error
+     * without FIDs. */
+    bool autoPhaseFromReference(QString* error = nullptr);
 
     // ---- signals
     inline int referenceIndex() const { return m_reference; }
@@ -314,6 +342,8 @@ private:
     QVector<QVector<TracePeak>> peaks(QString* error, QVector<XYTrace>* processed) const;
     void fitLineshapes(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& peaks);
     QString spectrumLabel(int index) const;
+    /// reads a file: spectra of a text file, or the FID of a JEOL file (*fid set, *isFid true)
+    bool readSource(const QString& filename, QVector<XYTrace>* traces, Fid* fid, bool* isFid, QString* error) const;
 
     TraceSet m_spectra; ///< raw spectra in titration order; source = file, name = file name [column]
     QHash<QString, int> m_columns; ///< spectrum id -> data column in its file (1 = first after x), for reading again
@@ -329,4 +359,7 @@ private:
     NmrFitSettings m_fit;
     QVector<QVector<NmrFitRegion>> m_fit_regions; ///< [spectrum]
     double m_fit_ms = 0;
+    QHash<QString, Fid> m_fids; ///< spectrum id -> FID it was transformed from
+    QHash<QString, FidPhase> m_fid_phases; ///< spectrum id -> phase applied
+    FidSettings m_fid_settings;
 };

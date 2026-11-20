@@ -25,7 +25,10 @@
 - [ ] NMR tracking below 0.75 FWHM: a neighbour line not resolved in the reference spectrum is followed instead of the signal, without a warning (at 0.5 FWHM 1 of 24 cases wrong in both modes); feeding fit positions back into the tracking made it worse.
 - [ ] Weight the NMR fit with the δ errors (`NmrHandler::shiftErrorTable`; too small for smoothed spectra, noise is correlated).
 - [ ] Lineshape fit "Shared": up to 1.5 s per series (20 spectra, debug build) and every dialog change recomputes; neighbour lines come only from peak picking (a line resolved nowhere widens the signal).
-- [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r`, JEOL `jdf`, FID→FFT; true Voigt; global fit of the spectra against the binding model.
+- [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r` and Bruker `fid` (reuse `FidProcessing`: only a `fromBruker` with its own group delay); true Voigt; global fit of the spectra against the binding model.
+- [ ] JEOL group delay: ½ Σ (order-1)/Π factor leaves a constant ph1 of about -24° (T1) / -105° (T5) per series (docs/jeol_import_2026-11-20.md); the auto phase absorbs it. Find the exact Delta rule.
+- [ ] NMR multiplets: lines of a dd closer than the step of a titration are lost or swapped by the tracking (real T1/T5 at LB 0.3 Hz); a signal = centre of a group of lines would track them as one.
+- [ ] NMR dialog with FIDs: 15 x 262144 points drawn (OpenGL above 5000 points, offscreen grabs empty), speed on screen not measured; y labels of normalised spectra show 2 decimals ("0.01"); debug build needs 36 s for 15 FIDs of 131072 points (auto phase).
 - [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
 - [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
 - [ ] `ItcAnyTest` aborts after `testSelfAggregationSpecies` (`PeakPick::LeastSquares` reads an empty vector, `mathhelper.h:262`) and `LandscapeSearchTest` times out (600 s); both fail without this branch too.

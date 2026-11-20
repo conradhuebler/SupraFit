@@ -31,6 +31,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **dialogs/importdata.cpp/h**: Data file import wizard
 - **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
 - **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
+  - JEOL: group "Processing (FID)" (`nmrFidPanel`, LB, zero fill, ph0/ph1, Auto phase, Auto phase each spectrum) visible only with FIDs; offscreen grabs do not draw series above 5000 points (chart switches to OpenGL)
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
 - **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
   - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist

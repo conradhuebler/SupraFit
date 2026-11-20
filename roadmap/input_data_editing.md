@@ -5,7 +5,7 @@ Claude Generated - work package / roadmap document (no production code changed)
 
 # Work Package: Eingabedaten editieren (Traces: UV-Vis, NMR, Thermogramm)
 
-**Status:** WP0-WP6 ADDED 🤖 ⚙️ (synthetische Daten, Offscreen-Renders; keine Klick-Abnahme, keine echten NMR-Daten) · **Branch:** `feature/input-data-editing` · **Owner:** Conrad Hübler
+**Status:** WP0-WP6 ADDED 🤖 ⚙️ (synthetische Daten, Offscreen-Renders; keine Klick-Abnahme); JEOL-Import ADDED 🤖 ⚙️ (echte JEOL-Serien gegen MestReNova validiert, [docs/jeol_import_2026-11-20.md](../docs/jeol_import_2026-11-20.md)) · **Branch:** `feature/input-data-editing` · **Owner:** Conrad Hübler
 
 Messungen, Worst-Case-Werte und Befunde: [docs/input_data_editing_2026-11-08.md](../docs/input_data_editing_2026-11-08.md).
 
@@ -19,7 +19,7 @@ Gauss-Lorentz-Fit des ganzen Signals (Lage, Breite, Fläche, Mischung).
 ## Entscheidungen (Diskussion 2026-11-08)
 
 - Das Thermogramm zieht **zuletzt** um (Handler frisch refaktoriert, GUI-Abnahme steht aus). Umgesetzt wurde nur der verhaltenserhaltende Teil (WP5).
-- NMR-Format zum Start: **ASCII/CSV** (TopSpin-/MestReNova-Export). Bruker `1r`, JEOL, FID→FFT: TODO.
+- NMR-Format zum Start: **ASCII/CSV** (TopSpin-/MestReNova-Export); danach JEOL `.jdf` mit FID→FFT (umgesetzt). Bruker `1r`/`fid`: TODO.
 - Lineshape: **Pseudo-Voigt** (lineare Gauss-Lorentz-Mischung). Echtes Voigt: TODO.
 - Globaler Fit (Spektrum direkt am Bindungsmodell): **späte Phase**.
 - QBit und libpeakpick-`GLFit` sind **Ideenquelle**. Im Zweifel neu und sauberer im SupraFit-Stil schreiben
@@ -50,6 +50,7 @@ Gauss-Lorentz-Fit des ganzen Signals (Lage, Breite, Fläche, Mischung).
 - **WP4 NMR Advanced** ✅ ADDED: `LineshapeFit` und Betriebsart „Lineshape fit“. Offen: Verfolgungsfehler unter 0,75 FWHM, Gewichtung mit δ-Fehlern.
 - **WP5 Thermogramm** ✅ ADDED (verhaltenserhaltend): Rohkurve als `XYTrace`, verlustfreies JSON, `setUi()` zerlegt, Konstruktor-Absturz behoben. Bewusst nicht: Integration/Baseline auf `TraceOps` (Track B) und Chart auf `TraceEditorWidget` (Editor braucht Auswahlmodus „aus“, stabile Serien-Hooks, Signale für Doppelklick/Tasten).
 - **WP6 Doku** ✅ ADDED: `docs/ASSISTANT_HELP.md` Abschnitt 2, CLAUDE.md von `core`, `core/trace`, `ui`, `AIChangelog.md`, Messdokument in `docs/`.
+- **JEOL** ✅ ADDED: `JeolReader`, `FidProcessing` (radix-2 FFT, Filter-Gruppenlaufzeit, ACME-Autophase je Spektrum als Standard, weil ph0 je Experiment streut), Panel „Processing (FID)“ in `NmrImport`; echte Serien T1/T5: Mittel 1,3-3,1·10⁻⁴ ppm, Worst 1,7·10⁻³ ppm, |Δ lg K| ≤ 0,019.
 
 ## Nächste Schritte
 
@@ -59,7 +60,8 @@ Gauss-Lorentz-Fit des ganzen Signals (Lage, Breite, Fläche, Mischung).
 
 ## Später (TODO)
 
-- Bruker `1r`, JEOL `jdf`, FID→FFT (Phasenkorrektur) als Loader.
+- Bruker `1r` und Bruker-`fid` als Loader (`FidProcessing` ist wiederverwendbar: Bruker braucht nur `fromBruker` mit eigener Gruppenlaufzeit `GRPDLY`/DSP-Tabelle).
+- Multiplett-Signal (Zentrum einer Liniengruppe verfolgen): Einzellinien eines dd gehen bei Schritten größer als der Linienabstand verloren.
 - Echtes Voigt als Lineshape-Option.
 - Globaler Fit: Spektrum direkt am Bindungsmodell (Spezies-Anteile bestimmen die Lage, Fast-Exchange, optional Linienverbreiterung); gestapelter Residuenvektor mit geteilten Parametern, evtl. VarPro für die Amplituden.
 - Manuelle Zuordnungs-Editoren für verfolgte Signale; CLI-Import für NMR-Serien.

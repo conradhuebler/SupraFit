@@ -561,6 +561,32 @@ endif()
 add_test(NAME NmrHandlerTest COMMAND test_nmrhandler)
 set_tests_properties(NmrHandlerTest PROPERTIES TIMEOUT 300)
 
+# Claude Generated: JEOL Delta reader and FID processing (JeolReader, FidProcessing; JEOL import of
+# roadmap/input_data_editing.md). The real-data slots read SUPRAFIT_JEOL_DIR and are skipped without it.
+add_executable(test_jeol
+    test_jeol.cpp
+)
+
+target_link_libraries(test_jeol
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_jeol ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_jeol pthread dl)
+endif()
+
+add_test(NAME JeolTest COMMAND test_jeol)
+set_tests_properties(JeolTest PROPERTIES TIMEOUT 600) # the real series take ~4 min in the debug build
+
 # Claude Generated: pseudo-Voigt lineshape fit (LineshapeFit; WP4 input data editing)
 add_executable(test_lineshapefit
     test_lineshapefit.cpp

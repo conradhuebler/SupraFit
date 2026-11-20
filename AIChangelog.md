@@ -2,6 +2,7 @@
 
 One line per significant AI-assisted improvement (newest first).
 
+- 2026-11-20: JEOL Delta import: `JeolReader` (1D FIDs, offsets checked), `FidProcessing` (radix-2 FFT, filter delay, ACME auto phase per spectrum), panel "Processing (FID)" in `NmrImport`; the operator's two series (30 files) against MestReNova: mean 1.3-3.1e-4 ppm, worst 1.7e-3 ppm, |Δ lg K| ≤ 0.019; [docs/jeol_import_2026-11-20.md](docs/jeol_import_2026-11-20.md).
 - 2026-11-08: Thermogram on `XYTrace` (WP5, numbers pinned at 1e-9): raw curve lossless in JSON, chart series computed on request, `setUi()` split, dialog constructor crash fixed (scaling seeded before table/series existed); details [docs/input_data_editing_2026-11-08.md](docs/input_data_editing_2026-11-08.md).
 - 2026-11-08: NMR lineshape fit (WP4): `LineshapeFit` pseudo-Voigt + "Lineshape fit" mode of `NmrHandler`/`NmrImport`; two lines 1 FWHM apart worst 0.18 FWHM (peak picking 0.94); tracking errors remain below 0.75 FWHM; measurements [docs/input_data_editing_2026-11-08.md](docs/input_data_editing_2026-11-08.md).
 - 2026-11-08: NMR titration import (WP3): `NmrHandler` tracks signals through 1D spectra (missing/conflict never interpolated), `TraceIO` readers, dialog `NmrImport`, stored as Spectrum project `"Profile": "nmr"`; 192 synthetic titrations worst lg K 0.0085; [docs/input_data_editing_2026-11-08.md](docs/input_data_editing_2026-11-08.md).

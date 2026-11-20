@@ -39,6 +39,7 @@ class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;
 class QDoubleSpinBox;
+class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -60,6 +61,11 @@ class QTableWidget;
  * or shared, baseline, fit range, iterations, peak position where a fit fails); "Fit details" adds the
  * columns ±δ, FWHM, area and η per signal to the result table; the chart shows the fitted model and its
  * residual for the selected spectrum.
+ *
+ * FIDs (JEOL .jdf): the panel "Processing (FID)" under the spectra list (shown only when the series holds a
+ * FID) sets the common FID processing of NmrHandler: line broadening, zero filling, phase 0/1 for all
+ * spectra, "Auto phase" (from the reference spectrum, written into the phase fields) or automatic phase per
+ * spectrum.
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -98,6 +104,11 @@ public slots:
 private:
     void setupUi();
     QWidget* signalPanel();
+    QWidget* fidPanel();
+    /*! \brief Shows the FID settings of the handler; the panel is visible only with FIDs. Claude Generated */
+    void updateFidControls();
+    /*! \brief Passes the FID controls to the handler, transforms again and redraws. Claude Generated */
+    void applyFidSettings();
     void updateSpectra();
     void updateSignals();
     void updateResults();
@@ -135,6 +146,12 @@ private:
     DropTable *m_concentrations, *m_preview;
     QLabel* m_table_status;
     QDialogButtonBox* m_buttons;
+    QGroupBox* m_fid_box;
+    QDoubleSpinBox *m_line_broadening, *m_ph0, *m_ph1;
+    QComboBox* m_zero_fill;
+    QPushButton* m_auto_phase;
+    QCheckBox* m_auto_each;
+    QLabel* m_fid_info;
     QList<QPointer<ScatterSeries>> m_markers; ///< tracked positions in the chart (deleted with clearChart)
     QList<QPointer<LineSeries>> m_fit_lines; ///< fitted model and residual of the selected spectrum
 };

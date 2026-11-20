@@ -33,6 +33,7 @@
 #include <QtCore/QVariant>
 
 #include "src/core/models/datatable.h"
+#include "src/core/trace/jeolreader.h"
 #include "src/core/trace/traceio.h"
 #include "src/core/trace/tracejson.h"
 #include "src/version.h"
@@ -77,11 +78,37 @@ struct TrackState {
 // ---------------------------------------------------------------------------------------------
 // spectra
 
+/*! \brief A JEOL file (recognised by its magic, not by the ending) gives its FID, any other file its text
+ * spectra. Claude Generated */
+bool NmrHandler::readSource(const QString& filename, QVector<XYTrace>* traces, Fid* fid, bool* isFid, QString* error) const
+{
+    *isFid = JeolReader::isJeolFile(filename);
+    if (!*isFid)
+        return TraceIO::readTraceFile(filename, traces, error);
+    JeolReader::Data data;
+    if (!JeolReader::readFile(filename, &data, error))
+        return false;
+    return FidProcessing::fromJeol(data, fid, error);
+}
+
 bool NmrHandler::addFile(const QString& filename, QString* error)
 {
     QVector<XYTrace> traces;
-    if (!TraceIO::readTraceFile(filename, &traces, error))
+    Fid fid;
+    bool isFid = false;
+    if (!readSource(filename, &traces, &fid, &isFid, error))
         return false;
+    if (isFid) {
+        XYTrace spectrum;
+        FidPhase phase;
+        if (!FidProcessing::process(fid, m_fid_settings, &spectrum, &phase, error))
+            return false;
+        const QString id = m_spectra.add(spectrum);
+        m_columns[id] = 1;
+        m_fids[id] = fid;
+        m_fid_phases[id] = phase;
+        return true;
+    }
     for (int i = 0; i < traces.size(); ++i) {
         const QString id = m_spectra.add(traces[i]);
         m_columns[id] = i + 1;
@@ -136,6 +163,8 @@ bool NmrHandler::removeSpectrum(int index)
     const QString id = m_spectra.idAt(index);
     m_spectra.remove(id);
     m_columns.remove(id);
+    m_fids.remove(id);
+    m_fid_phases.remove(id);
     m_manual.remove(id);
     m_excluded.remove(id);
     if (index < m_reference)
@@ -158,11 +187,83 @@ void NmrHandler::clear()
 {
     m_spectra.clear();
     m_columns.clear();
+    m_fids.clear();
+    m_fid_phases.clear();
     m_manual.clear();
     m_excluded.clear();
     m_cells.clear();
     m_fit_regions.clear();
     m_reference = 0;
+}
+
+// ---------------------------------------------------------------------------------------------
+// FID processing (Claude Generated, JEOL import)
+
+bool NmrHandler::isFid(int index) const
+{
+    return index >= 0 && index < m_spectra.size() && m_fids.contains(m_spectra.idAt(index));
+}
+
+bool NmrHandler::setFidSettings(const FidSettings& settings, QString* error)
+{
+    QString reason;
+    if (!settings.isValid(&reason)) {
+        setError(error, reason);
+        return false;
+    }
+    // transform everything first: on a failure nothing changes
+    QHash<QString, XYTrace> spectra;
+    QHash<QString, FidPhase> phases;
+    for (auto it = m_fids.constBegin(); it != m_fids.constEnd(); ++it) {
+        XYTrace spectrum;
+        FidPhase phase;
+        if (!FidProcessing::process(it.value(), settings, &spectrum, &phase, error))
+            return false;
+        spectra[it.key()] = spectrum;
+        phases[it.key()] = phase;
+    }
+    m_fid_settings = settings;
+    for (auto it = spectra.constBegin(); it != spectra.constEnd(); ++it) {
+        const int index = m_spectra.indexOf(it.key());
+        if (index >= 0)
+            m_spectra.replace(index, it.value());
+    }
+    m_fid_phases = phases;
+    return true;
+}
+
+FidPhase NmrHandler::fidPhase(int index) const
+{
+    return isFid(index) ? m_fid_phases.value(m_spectra.idAt(index)) : FidPhase();
+}
+
+QString NmrHandler::fidDescription(int index) const
+{
+    return isFid(index) ? m_fids.value(m_spectra.idAt(index)).description : QString();
+}
+
+bool NmrHandler::autoPhaseFromReference(QString* error)
+{
+    int index = isFid(m_reference) ? m_reference : -1;
+    for (int i = 0; index < 0 && i < m_spectra.size(); ++i)
+        if (isFid(i))
+            index = i;
+    if (index < 0) {
+        setError(error, QStringLiteral("no spectrum was transformed from a FID"));
+        return false;
+    }
+    const Fid& fid = m_fids[m_spectra.idAt(index)];
+    Eigen::VectorXcd spectrum;
+    Eigen::VectorXd ppm;
+    if (!FidProcessing::complexSpectrum(fid, m_fid_settings, &spectrum, &ppm, error))
+        return false;
+    const double pivot = std::isfinite(m_fid_settings.pivot) ? m_fid_settings.pivot : fid.offset;
+    const FidPhase phase = FidProcessing::autoPhase(spectrum, ppm, fid.frequency, fid.sweep, pivot, m_fid_settings.autoFirstOrder, m_fid_settings.ph1);
+    FidSettings settings = m_fid_settings;
+    settings.ph0 = phase.ph0;
+    settings.ph1 = phase.ph1;
+    settings.autoPhase = false;
+    return setFidSettings(settings, error);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1095,8 +1196,19 @@ QJsonObject NmrHandler::toJson() const
     json["SupraFit"] = qint_version;
     json["Files"] = files.join("||");
     json["Sources"] = sources;
-    if (qApp && qApp->property("StoreRawData").toBool())
+    const bool raw = qApp && qApp->property("StoreRawData").toBool();
+    if (raw)
         json["Data"] = data;
+    if (hasFids()) {
+        json["FidProcessing"] = m_fid_settings.toJson();
+        if (raw) {
+            QJsonObject fids;
+            for (int i = 0; i < m_spectra.size(); ++i)
+                if (isFid(i))
+                    fids[QString::number(i + 1)] = m_fids.value(m_spectra.idAt(i)).toJson();
+            json["Fid"] = fids;
+        }
+    }
     if (!m_operations.isEmpty())
         json["TraceOps"] = m_operations.toJson();
     json["ReferenceOffset"] = m_reference_offset;
@@ -1136,12 +1248,50 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
     m_reference_offset = 0;
     QStringList problems;
 
+    // FID processing first: the FIDs are transformed while they are read (projects without it: defaults)
+    m_fid_settings = FidSettings();
+    if (json.contains("FidProcessing")) {
+        QString reason;
+        FidSettings settings;
+        if (FidSettings::fromJson(json.value("FidProcessing").toObject(), &settings, &reason))
+            m_fid_settings = settings;
+        else
+            problems << reason;
+    }
+    // adds the FID's spectrum; false with a problem if the transform fails
+    auto addFid = [this, &problems](const Fid& fid, const QString& file) {
+        XYTrace spectrum;
+        FidPhase phase;
+        QString reason;
+        if (!FidProcessing::process(fid, m_fid_settings, &spectrum, &phase, &reason)) {
+            problems << reason;
+            return false;
+        }
+        spectrum.setSource(file);
+        const QString id = m_spectra.add(spectrum);
+        m_columns[id] = 1;
+        m_fids[id] = fid;
+        m_fids[id].source = file;
+        m_fid_phases[id] = phase;
+        return true;
+    };
+
     const QJsonObject data = json.value("Data").toObject();
+    const QJsonObject storedFids = json.value("Fid").toObject();
     const int count = data.value("Count").toInt();
     if (json.contains("Data") && count > 0) {
         const QJsonArray sources = json.value("Sources").toArray();
         for (int i = 1; i <= count; ++i) {
             const QJsonObject block = data.value(QString::number(i)).toObject();
+            if (storedFids.contains(QString::number(i))) {
+                Fid fid;
+                QString reason;
+                if (Fid::fromJson(storedFids.value(QString::number(i)).toObject(), &fid, &reason))
+                    addFid(fid, sources.at(i - 1).toObject().value("File").toString());
+                else
+                    problems << QString("stored FID %1: %2").arg(i).arg(reason);
+                continue;
+            }
             XYTrace trace;
             QString reason;
             if (!XYTrace::fromJson(block, &trace, &reason)) {
@@ -1163,9 +1313,15 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
             const int column = value.toObject().value("Column").toInt(1);
             if (!read.contains(file)) {
                 QVector<XYTrace> traces;
+                Fid fid;
+                bool isFid = false;
                 QString reason;
-                if (!TraceIO::readTraceFile(file, &traces, &reason))
+                if (!readSource(file, &traces, &fid, &isFid, &reason))
                     problems << reason;
+                else if (isFid) {
+                    addFid(fid, file);
+                    continue; // one spectrum per FID file; a second entry of the same file reads it again
+                }
                 read[file] = traces;
             }
             const QVector<XYTrace>& traces = read[file];
