@@ -178,6 +178,30 @@ class TestJeol : public QObject {
 
     QTemporaryDir m_dir;
 
+    /// Claude Generated: the series read with LB lb (settings first: every FID is transformed once, while it is read);
+    /// kept for the next slot of the same run (the debug build needs about 35 s per series)
+    static bool loadSeries(const QStringList& files, double lb, NmrHandler* handler, qint64* loadMs, QString* error)
+    {
+        static QHash<QString, QPair<NmrHandler, qint64>> cache;
+        const QString key = files.value(0) + QString::number(files.size()) + "|" + QString::number(lb);
+        if (!cache.contains(key)) {
+            QElapsedTimer timer;
+            timer.start();
+            NmrHandler loaded;
+            FidSettings settings = loaded.fidSettings();
+            settings.lineBroadening = lb;
+            if (!loaded.setFidSettings(settings, error))
+                return false;
+            for (const QString& file : files)
+                if (!loaded.addFile(file, error))
+                    return false;
+            cache.insert(key, { loaded, timer.elapsed() });
+        }
+        *handler = cache.value(key).first;
+        *loadMs = cache.value(key).second;
+        return true;
+    }
+
     /// a small FID file: three lines, digital filter delay of 19.65625 points
     static JdfTest::Spec smallSpec(bool littleEndian, int dataType = 0, int points = 256)
     {
@@ -703,17 +727,12 @@ private slots:
                     refTable(k, c) = ref.shifts[k][c];
             const double lgKRef = fitLgK(ref.concentrations, refTable);
             for (double lb : broadenings) {
-                // the settings first: every FID is transformed once, while it is read
                 QElapsedTimer timer;
-                timer.start();
-                NmrHandler handler;
-                FidSettings settings = handler.fidSettings();
-                settings.lineBroadening = lb;
+                qint64 loadMs = 0;
                 QString error;
-                QVERIFY2(handler.setFidSettings(settings, &error), qPrintable(error));
-                for (const QString& file : files)
-                    QVERIFY2(handler.addFile(file, &error), qPrintable(error));
-                const qint64 loadMs = timer.elapsed();
+                NmrHandler handler;
+                QVERIFY2(loadSeries(files, lb, &handler, &loadMs, &error), qPrintable(error));
+                timer.start();
                 // referencing: CHCl3 of the first spectrum at 7.26 ppm
                 handler.setReferenceOffset(0);
                 handler.referenceTo(highestPeak(handler.spectra().at(0), 7.2, 7.3).x, 7.26);
@@ -828,6 +847,135 @@ private slots:
         }
     }
 
+    /// Claude Generated: the real series without the helpers realSeriesAgainstReference needs (no Normalise to CHCl3,
+    /// no Range, no PickPeaks step: the default picking of the handler), threshold of the whole spectrum vs threshold
+    /// of the search window; the same signals (one per resolved line of each multiplet of spectrum 1). Printed per
+    /// series: cells tracked, |δ - reference| of the complete multiplet centres, lg K; the window threshold is pinned
+    /// (MinHeight 0.3: open cells at most kPinRealWindowOpen; MinHeight 0.1: every cell).
+    void realSeriesWindowThreshold()
+    {
+        const QString dir = realDirectory();
+        if (dir.isEmpty() || !QFile::exists(QDir(dir).filePath(kReferenceFile)))
+            QSKIP("no JEOL data with the reference evaluation (SUPRAFIT_JEOL_DIR)");
+        const QList<double> broadenings = qEnvironmentVariableIsSet("JEOL_EXPLORE") ? QList<double>{ 0.3, 1, 3 } : QList<double>{ kRealLineBroadening };
+        for (const QString& key : { QString("T1"), QString("T5") }) {
+            const QStringList files = seriesFiles(dir, key == "T1" ? "sb-SB18_T1_b_gluco_" : "sb-SB18_T5_CDCl3_ObDGlc_");
+            const Reference ref = readReference(dir, key);
+            QCOMPARE(files.size(), ref.shifts.size());
+            const int columns = ref.shifts.first().size();
+            Eigen::MatrixXd refTable(files.size(), columns);
+            for (int k = 0; k < files.size(); ++k)
+                for (int c = 0; c < columns; ++c)
+                    refTable(k, c) = ref.shifts[k][c];
+            const double lgKRef = fitLgK(ref.concentrations, refTable);
+            for (double lb : broadenings) {
+                NmrHandler handler;
+                qint64 loadMs = 0;
+                QString error;
+                QVERIFY2(loadSeries(files, lb, &handler, &loadMs, &error), qPrintable(error));
+                handler.setReferenceOffset(0);
+                handler.referenceTo(highestPeak(handler.spectra().at(0), 7.2, 7.3).x, 7.26);
+                handler.setOperations(TraceOpList());
+                // the same signals as realSeriesAgainstReference, from the referenced spectrum 1 without steps
+                const XYTrace first = handler.processedSpectra().at(0);
+                QVector<NmrSignal> signalList;
+                QVector<QVector<int>> multiplets(columns);
+                for (int c = 0; c < columns; ++c) {
+                    const double centre = ref.shifts[0][c];
+                    QVector<TracePeak> peaks;
+                    TraceOps::pickPeaks(first.range(centre - 0.012, centre + 0.012), 0.0, true, 0, false, &peaks);
+                    double highest = 0;
+                    for (const TracePeak& p : peaks)
+                        highest = std::max(highest, p.height);
+                    QVector<double> lines;
+                    for (const TracePeak& p : peaks)
+                        if (p.height >= 0.42 * highest)
+                            lines << p.x;
+                    std::sort(lines.begin(), lines.end());
+                    double window = 0.004;
+                    for (int i = 1; i < lines.size(); ++i)
+                        window = std::min(window, kWindowFactor * (lines[i] - lines[i - 1]));
+                    for (double x : lines) {
+                        multiplets[c] << signalList.size();
+                        signalList << NmrSignal{ QString("S%1_%2").arg(c + 1).arg(multiplets[c].size()), x, window, true };
+                    }
+                }
+                handler.setSignals(signalList);
+                // MinHeight 0.1 as well: without the normalisation the intensity of a line jumps by up to 8x between
+                // experiments, more than the default 0.3 of the last height allows
+                const QList<QPair<NmrThresholdScope, double>> configurations = { { NmrThresholdScope::Spectrum, 0.3 }, { NmrThresholdScope::Window, 0.3 }, { NmrThresholdScope::Window, 0.1 } };
+                for (const auto& [scope, minHeight] : configurations) {
+                    handler.setThresholdScope(scope);
+                    handler.setMinHeight(minHeight);
+                    QCOMPARE(handler.usesWindowThreshold(), scope == NmrThresholdScope::Window);
+                    for (NmrShiftMethod method : { NmrShiftMethod::PeakPicking, NmrShiftMethod::LineshapeFit }) {
+                        NmrFitSettings fit;
+                        fit.method = method;
+                        fit.range = 0.006 + 0.0015 * lb;
+                        handler.setFitSettings(fit);
+                        QElapsedTimer timer;
+                        timer.start();
+                        handler.track();
+                        const qint64 trackMs = timer.elapsed();
+                        int okCells = 0, lineCells = 0, complete = 0, nFwhm = 0;
+                        double worst = 0, sum = 0, fwhmSum = 0, worstFwhm = 0;
+                        QString worstCell;
+                        Eigen::MatrixXd shifts(files.size(), columns);
+                        for (int k = 0; k < files.size(); ++k)
+                            for (int c = 0; c < columns; ++c) {
+                                double centre = 0;
+                                for (int sIndex : multiplets[c]) {
+                                    const NmrCell cell = handler.cell(k, sIndex);
+                                    ++lineCells;
+                                    okCells += cell.status == NmrCellStatus::Ok;
+                                    centre += (cell.status == NmrCellStatus::Ok ? cell.shift : std::numeric_limits<double>::quiet_NaN()) / multiplets[c].size();
+                                    if (std::isfinite(cell.fwhm)) {
+                                        fwhmSum += cell.fwhm;
+                                        ++nFwhm;
+                                    }
+                                }
+                                shifts(k, c) = centre;
+                                if (!std::isfinite(centre))
+                                    continue;
+                                ++complete;
+                                const double d = std::abs(centre - ref.shifts[k][c]);
+                                sum += d;
+                                if (d > worst) {
+                                    worst = d;
+                                    worstCell = QString("step %1, signal %2").arg(k + 1).arg(c + 1);
+                                }
+                            }
+                        const double fwhm = nFwhm > 0 ? fwhmSum / nFwhm : std::numeric_limits<double>::quiet_NaN();
+                        worstFwhm = std::isfinite(fwhm) ? worst / fwhm : std::numeric_limits<double>::quiet_NaN();
+                        const bool all = complete == files.size() * columns;
+                        const double lgK = all ? fitLgK(ref.concentrations, shifts) : std::numeric_limits<double>::quiet_NaN();
+                        const bool window = scope == NmrThresholdScope::Window;
+                        qInfo("%s LB %.1f Hz, no steps, %s threshold, MinHeight %.1f, %s: %d of %d line cells tracked, %d of %d multiplet cells complete; |δ - reference| mean %.2e ppm, worst %.2e ppm (%s)%s; lg K %.4f (reference refitted %.4f); track %lld ms",
+                            qPrintable(key), lb, window ? "search-window" : "whole-spectrum", minHeight, method == NmrShiftMethod::PeakPicking ? "peak picking" : "lineshape fit", okCells, lineCells, complete,
+                            int(files.size() * columns), sum / std::max(1, complete), worst, qPrintable(worstCell),
+                            std::isfinite(fwhm) ? qPrintable(QString(" = %1 FWHM (mean fitted FWHM %2 ppm)").arg(worstFwhm, 0, 'f', 2).arg(fwhm, 0, 'e', 2)) : "", lgK, lgKRef, trackMs);
+                        if (qEnvironmentVariableIsSet("JEOL_CELLS") && window) {
+                            qInfo("%s", qPrintable(handler.problems().mid(0, 20).join("; ")));
+                            for (int k = 0; k < files.size(); ++k) {
+                                QString row = QString("  %1:").arg(k + 1);
+                                for (int c = 0; c < columns; ++c)
+                                    row += QString(" %1 (%2)").arg(shifts(k, c), 0, 'f', 5).arg((shifts(k, c) - ref.shifts[k][c]) * 1000, 0, 'f', 2);
+                                qInfo("%s", qPrintable(row));
+                            }
+                        }
+                        if (!window || lb != kRealLineBroadening || qEnvironmentVariableIsSet("JEOL_EXPLORE"))
+                            continue;
+                        const int open = int(files.size() * columns) - complete;
+                        QVERIFY2(open <= (minHeight < 0.3 ? 0 : kPinRealWindowOpen), qPrintable(QString("%1 open multiplet cells").arg(open)));
+                        QVERIFY2(worst < kPinRealShift, qPrintable(QString::number(worst)));
+                        if (all)
+                            QVERIFY2(std::abs(lgK - lgKRef) < kPinRealLgK, qPrintable(QString::number(lgK - lgKRef)));
+                    }
+                }
+            }
+        }
+    }
+
 private:
     // pinned worst cases (measured values are printed by the tests; see docs/jeol_import_2026-11-20.md)
     static constexpr double kPinPositionFwhm1 = 0.4;
@@ -837,6 +985,10 @@ private:
     static constexpr double kPinRealLgK = 0.03;
     static constexpr double kRealLineBroadening = 3.0;
     static constexpr double kWindowFactor = 0.9;
+    // realSeriesWindowThreshold (Claude Generated), measured 2026-11-20 at LB 3 Hz without steps, window threshold: MinHeight 0.3
+    // T1 75/75 multiplet cells (worst 1.7e-3 ppm), T5 44/60 (16 open: intensity jumps between the experiments); MinHeight
+    // 0.1 both complete (worst 1.7e-3 / 5.9e-4 ppm, lg K 2.669 / 2.892); the worst shift and lg K use the pins above
+    static constexpr int kPinRealWindowOpen = 16;
 };
 
 QTEST_GUILESS_MAIN(TestJeol)

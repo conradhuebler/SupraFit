@@ -183,6 +183,7 @@ private:
     QPushButton *m_pick, *m_add, *m_remove_signal;
     QTableWidget* m_signal_table;
     QComboBox *m_method, *m_width_mode, *m_baseline;
+    QComboBox* m_threshold; ///< detection threshold of the tracking: whole spectrum / search window (Claude Generated)
     QDoubleSpinBox* m_fit_range;
     QSpinBox* m_max_iterations;
     QCheckBox *m_fallback, *m_details;

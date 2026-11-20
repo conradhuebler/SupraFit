@@ -63,6 +63,13 @@ enum class NmrShiftMethod {
     LineshapeFit ///< δ = centre of a pseudo-Voigt fitted to the whole signal (LineshapeFit)
 };
 
+/*! \brief What the detection threshold of the default peak picking of the tracking refers to (Claude Generated).
+ * Only used when the processing has no enabled PickPeaks step (that step's own threshold applies then). */
+enum class NmrThresholdScope {
+    Spectrum, ///< a maximum counts if y >= min + 0.05 (max - min) of the whole processed spectrum (projects without the option)
+    Window ///< per signal and spectrum: height above the baseline of the search window >= max(0.05 x the highest peak there, 6 σ of the noise), see step 3a
+};
+
 /*! \brief Width and η of the fitted lines over the series (Claude Generated, WP4). */
 enum class NmrWidthMode {
     Free, ///< every spectrum is fitted on its own: width and η per spectrum
@@ -133,13 +140,25 @@ struct NmrFitRegion {
  *    peaks, pickSignals(), or by a list of positions with a search window ± w, setSignals()).
  * 2. Every spectrum is processed (ShiftAxis by referenceOffset(), then Operations()); its peaks are
  *    those of the last enabled PickPeaks step of Operations() (position refined by the parabola of
- *    TraceOps::pickPeaks), or of a default picking (relative threshold 0.05, no minimal distance)
- *    if the list has none.
+ *    TraceOps::pickPeaks), or of a default picking (no minimal distance) if the list has none. The threshold
+ *    of the default picking (thresholdScope()) is relative to the whole spectrum (Spectrum: y >= min + 0.05
+ *    (max - min); a line much stronger than a signal, a standard or the solvent, can hide it) or to the
+ *    search window of each signal (Window, step 3a).
  * 3. Starting at the reference spectrum the series is walked forward and backward. For each signal
  *    the candidates are the peaks within ± window of its last known position (the window moves with
  *    the signal); a peak within ± window of the prediction (linear extrapolation of the last two known
  *    positions, per spectrum index; the last position if only one is known) is a candidate, too, so
  *    a signal that moves faster than the window per step is followed while its motion is steady.
+ * 3a. Window threshold (Claude Generated): the region is [min(last, prediction) - window, max(last, prediction)
+ *    + window]; σ is the noise of the spectrum (TraceOps::noiseLevel, robust against lines). A local maximum
+ *    of the region is a candidate if its height above the chord (straight line through the medians of the
+ *    first and the last tenth of the region widened by the window on both sides) is >= max(0.05 H, 6 σ), or
+ *    its prominence (height above the higher of the lowest points on either side, walked until a higher point)
+ *    is >= max(0.05 H, 10 σ); H = the largest of both measures in the region. The chord keeps a line that
+ *    overlaps a neighbour, the prominence a line on the curved wing of a strong line. 6 σ: the highest of N
+ *    noise maxima exceeds 6 σ with probability about N · 1e-9; 10 σ for the prominence because it adds the
+ *    depth of the lowest point (a pure-noise window: about 5-7 σ). Measured false-peak rate in test_nmrhandler;
+ *    0.05 is the relative threshold of the spectrum rule, applied locally.
  *    A candidate lower than minHeight() times the height of the signal's last peak is not taken
  *    (noise maxima, weak neighbour lines; the intensity of a signal changes little from step to step).
  *    Of several candidates the one of least cost |δ - prediction| / window + |ln(height / last height)|
@@ -180,7 +199,7 @@ struct NmrFitRegion {
  * Persistence (toJson/fromJson): the raw block of a DataClass of type Spectrum with "Profile": "nmr";
  * the spectra as in SpectraHandler ("Data" only with the application property StoreRawData, else
  * read again from "Sources"), "TraceOps", "ReferenceOffset", "ReferenceSpectrum", "Signals", "Manual",
- * "Excluded", "Window", "MinHeight", "LineshapeFit".
+ * "Excluded", "Window", "MinHeight", "LineshapeFit", "ThresholdScope" ("Window"; written only then, missing = Spectrum).
  *
  * FIDs (JEOL .jdf, Claude Generated): a time-domain file is transformed by FidProcessing with fidSettings()
  * (one set for the whole series: apodization, zero filling, phase or automatic phase per spectrum); the
@@ -229,7 +248,9 @@ public:
     /*! \brief Spectra after the referencing and Operations(); a spectrum whose processing fails is empty,
      * *error names the first failure. */
     TraceSet processedSpectra(QString* error = nullptr) const;
-    /*! \brief Peaks used by the tracking, per spectrum (see the class description, step 2). */
+    /*! \brief Peaks of every spectrum (class description, step 2). With the Window threshold and no PickPeaks
+     * step: the local maxima that pass the window rule (step 3a) in a window ± defaultWindow() centred on
+     * themselves (used for pickSignals() and the neighbour lines of the lineshape fit). */
     QVector<QVector<TracePeak>> peaks(QString* error = nullptr) const;
 
     // ---- FID processing (Claude Generated, JEOL import)
@@ -280,6 +301,21 @@ public:
         if (fraction >= 0 && fraction <= 1)
             m_min_height = fraction;
     }
+
+    /*! \brief Reference of the detection threshold of the default peak picking (stored as "ThresholdScope";
+     * default Spectrum, the behaviour of projects without the key). Claude Generated. */
+    inline NmrThresholdScope thresholdScope() const { return m_threshold_scope; }
+    inline void setThresholdScope(NmrThresholdScope scope) { m_threshold_scope = scope; }
+    /*! \brief True if the tracking uses the window threshold: scope Window and no enabled PickPeaks step. */
+    bool usesWindowThreshold() const;
+    /*! \brief True if Operations() hold an enabled PickPeaks step (its threshold is used, not thresholdScope()). */
+    bool hasPickStep() const;
+    /// relative part of the window threshold (fraction of the highest peak above the window baseline)
+    static constexpr double WindowRelativeThreshold = 0.05;
+    /// noise part of the window threshold in units of σ of the noise (TraceOps::noiseLevel)
+    static constexpr double WindowNoiseSigmas = 6.0;
+    /// noise part of the prominence criterion of the window threshold in units of σ
+    static constexpr double WindowProminenceSigmas = 10.0;
 
     // ---- lineshape fit (WP4)
     inline const NmrFitSettings& fitSettings() const { return m_fit; }
@@ -338,8 +374,13 @@ public:
     static QString statusName(NmrCellStatus status);
 
 private:
-    void trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks);
-    QVector<QVector<TracePeak>> peaks(QString* error, QVector<XYTrace>* processed) const;
+    void trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks, const QVector<XYTrace>* processed = nullptr,
+        const QVector<double>* noise = nullptr);
+    QVector<QVector<TracePeak>> peaks(QString* error, QVector<XYTrace>* processed, bool allMaxima = false) const;
+    /// maxima that pass the window rule in a window ± defaultWindow() centred on themselves; with near only those
+    /// inside the given x ranges of their spectrum
+    QVector<QVector<TracePeak>> windowDetectedPeaks(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& maxima, const QVector<double>& noise,
+        const QVector<QVector<QPair<double, double>>>* near = nullptr) const;
     void fitLineshapes(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& peaks);
     QString spectrumLabel(int index) const;
     /// reads a file: spectra of a text file, or the FID of a JEOL file (*fid set, *isFid true)
@@ -351,6 +392,7 @@ private:
     double m_reference_offset = 0;
     double m_window = 0.05;
     double m_min_height = 0.3;
+    NmrThresholdScope m_threshold_scope = NmrThresholdScope::Spectrum;
     int m_reference = 0;
     QVector<NmrSignal> m_signals;
     QMap<QString, QMap<int, double>> m_manual; ///< spectrum id -> signal -> δ

@@ -27,8 +27,12 @@
 // counts and neighbour distances (FWHM 0.002-0.02 ppm on a 0.001 ppm grid = 2-20 points per line
 // width, noise 0-5 % of the line height, 10/20 steps, neighbour 0.015-0.05 ppm); the WORST case is
 // printed (qInfo) and pinned. NMR_DEBUG=1 prints every case.
+// Detection threshold relative to the search window (NmrThresholdScope::Window, Claude Generated): the same titrations
+// next to a dominant standard, without a standard against the whole-spectrum threshold, false peaks in windows of pure
+// noise over many seeds, and the rules (conflict, missing, jump) unchanged; see docs/nmr_window_threshold_2026-11-20.md.
 
 #include <cmath>
+#include <functional>
 #include <random>
 
 #include <QtCore/QCoreApplication>
@@ -94,6 +98,15 @@ struct Result {
     bool allOk = true;
     QString problem;
     double maxErrorFwhm = 0, maxErrorPpm = 0, dLgK = 0, maxLimitError = 0;
+    int cells = 0, okCells = 0; ///< host cells and those tracked (Ok), counted over all cells
+};
+
+/// Claude Generated: variant of a case for the threshold scope (lines added to every spectrum, e.g. a dominant
+/// standard; without the PickPeaks step the default picking of the handler is used)
+struct Variant {
+    NmrThresholdScope scope = NmrThresholdScope::Spectrum;
+    bool pickStep = true;
+    QVector<Line> extra;
 };
 
 const double kLgK = 3.5, kHost = 2e-3, kFrom = 8.0, kTo = 6.5, kDx = 0.001;
@@ -133,7 +146,7 @@ class TestNmrHandler : public QObject {
     /// guest equivalents of step i of n, denser at the start where the shifts change fastest
     static double guest(int i, int n) { return kHost * 8.0 * std::pow(double(i) / double(n - 1), 2); }
 
-    static QVector<XYTrace> titration(const Case& c, std::mt19937& rng, QVector<QVector<double>>* truth)
+    static QVector<XYTrace> titration(const Case& c, std::mt19937& rng, QVector<QVector<double>>* truth, const QVector<Line>& extra = {})
     {
         QVector<XYTrace> spectra;
         truth->clear();
@@ -148,19 +161,22 @@ class TestNmrHandler : public QObject {
             }
             // a line of the guest or an impurity below signal 2; it does not move
             lines << Line{ kFree[1] - c.neighbour, c.fwhm, 0.6, c.eta };
+            lines << extra;
             truth->append(row);
             spectra << spectrum(lines, kFrom, kTo, kDx, c.noise, rng, QString("step %1").arg(i));
         }
         return spectra;
     }
 
-    static TraceOpList pipeline(const Case& c)
+    static TraceOpList pipeline(const Case& c, bool pickStep = true)
     {
         TraceOpList ops;
         if (c.noise > 0) {
             int window = int(std::round(0.7 * c.fwhm / kDx)) | 1;
             ops.append(SmoothOp(std::max(window, 5), 2));
         }
+        if (!pickStep)
+            return ops;
         PickPeaksOp pick;
         pick.threshold = 0.05;
         pick.minDistance = 0.5 * c.fwhm;
@@ -169,14 +185,15 @@ class TestNmrHandler : public QObject {
     }
 
     /// handler -> table -> nmr_ItoI fit; errors against the truth; with fit: δ from the lineshape fit (WP4)
-    static Result runCase(const Case& c, unsigned seed, const NmrFitSettings* fit = nullptr, bool neighbourSignal = false)
+    static Result runCase(const Case& c, unsigned seed, const NmrFitSettings* fit = nullptr, bool neighbourSignal = false, const Variant& variant = Variant())
     {
         std::mt19937 rng(seed);
         QVector<QVector<double>> truth;
         NmrHandler handler;
-        for (const XYTrace& t : titration(c, rng, &truth))
+        for (const XYTrace& t : titration(c, rng, &truth, variant.extra))
             handler.addSpectrum(t);
-        handler.setOperations(pipeline(c));
+        handler.setOperations(pipeline(c, variant.pickStep));
+        handler.setThresholdScope(variant.scope);
         if (fit)
             handler.setFitSettings(*fit);
         // positions as a user would click them: a little off the true peaks
@@ -188,6 +205,10 @@ class TestNmrHandler : public QObject {
         handler.track();
 
         Result r;
+        r.cells = 3 * c.steps;
+        for (int k = 0; k < c.steps; ++k)
+            for (int s = 0; s < 3; ++s)
+                r.okCells += handler.cell(k, s).status == NmrCellStatus::Ok;
         for (int k = 0; k < c.steps; ++k) {
             for (int s = 0; s < 3; ++s) {
                 const NmrCell cell = handler.cell(k, s);
@@ -947,7 +968,341 @@ private slots:
         QCOMPARE(withoutKey, old);
     }
 
+    // ---- detection threshold relative to the search window (NmrThresholdScope::Window, Claude Generated)
+
+    /// (a) a dominant standard (20-1000 x the host signals, narrow or broad like a solvent, at the edge or between
+    /// the signals): with the threshold of the whole spectrum the host signals are lost, with the window threshold
+    /// they are tracked; worst position error and |Δ lg K| over the spread, printed and pinned
+    void windowThresholdDominantStandard()
+    {
+        Result worstWindow;
+        QString worstPos, worstK;
+        int cases = 0, spectrumCells = 0, spectrumOk = 0, spectrumAllOk = 0, windowAllOk = 0;
+        QStringList failures;
+        unsigned seed = 501;
+        for (double height : { 20.0, 200.0, 1000.0 })
+            for (double standardWidth : { 0.0, 0.03 }) // 0: as narrow as the host signals
+                for (double position : { 7.97, 7.78 })
+                    for (double fwhm : { 0.002, 0.008, 0.02 })
+                        for (double noise : { 0.0, 0.01, 0.05 })
+                            for (double neighbour : { 0.05, 0.015 }) {
+                                const Case c{ fwhm, 1.0, noise, neighbour, 10 };
+                                Variant v;
+                                v.pickStep = false;
+                                v.extra = { Line{ position, standardWidth > 0 ? standardWidth : fwhm, height, 1.0 } };
+                                const QString label = QString("standard %1x FWHM %2 at %3, FWHM %4 ppm, noise %5, neighbour %6 ppm").arg(height).arg(standardWidth > 0 ? standardWidth : fwhm).arg(position).arg(fwhm).arg(noise).arg(neighbour);
+                                v.scope = NmrThresholdScope::Spectrum;
+                                const Result rs = runCase(c, seed, nullptr, false, v);
+                                v.scope = NmrThresholdScope::Window;
+                                const Result rw = runCase(c, seed, nullptr, false, v);
+                                ++seed;
+                                ++cases;
+                                spectrumCells += rs.cells;
+                                spectrumOk += rs.okCells;
+                                spectrumAllOk += rs.allOk;
+                                windowAllOk += rw.allOk;
+                                if (qEnvironmentVariableIsSet("NMR_DEBUG"))
+                                    qInfo().noquote() << QString("%1: spectrum %2/%3 ok; window %4 pos %5 FWHM dlgK %6").arg(label).arg(rs.okCells).arg(rs.cells).arg(rw.allOk ? "all ok" : rw.problem.section('\n', 0, 0)).arg(rw.maxErrorFwhm, 0, 'g', 3).arg(rw.dLgK, 0, 'g', 3);
+                                if (!rw.allOk) {
+                                    failures << label + ": " + rw.problem.section('\n', 0, 0);
+                                    continue;
+                                }
+                                if (rw.maxErrorFwhm > worstWindow.maxErrorFwhm) {
+                                    worstWindow.maxErrorFwhm = rw.maxErrorFwhm;
+                                    worstPos = label;
+                                }
+                                worstWindow.maxErrorPpm = std::max(worstWindow.maxErrorPpm, rw.maxErrorPpm);
+                                if (rw.dLgK > worstWindow.dLgK) {
+                                    worstWindow.dLgK = rw.dLgK;
+                                    worstK = label;
+                                }
+                                worstWindow.maxLimitError = std::max(worstWindow.maxLimitError, rw.maxLimitError);
+                            }
+        qInfo().noquote() << QString("NMR tracking next to a dominant standard over %1 cases (20-1000 x, narrow/broad, edge/middle, FWHM 0.002-0.02 ppm, noise 0-5 %, neighbour 0.015/0.05 ppm):").arg(cases);
+        qInfo().noquote() << QString("  threshold of the whole spectrum: %1 of %2 host cells tracked (%3 %), %4 of %5 cases complete").arg(spectrumOk).arg(spectrumCells).arg(100.0 * spectrumOk / std::max(1, spectrumCells), 0, 'f', 1).arg(spectrumAllOk).arg(cases);
+        qInfo().noquote() << QString("  threshold of the search window: %1 of %2 cases complete").arg(windowAllOk).arg(cases);
+        qInfo().noquote() << QString("  window: worst position error %1 FWHM (%2), %3 ppm").arg(worstWindow.maxErrorFwhm, 0, 'g', 3).arg(worstPos).arg(worstWindow.maxErrorPpm, 0, 'g', 3);
+        qInfo().noquote() << QString("  window: worst |lg K - true| %1 (%2); limiting shifts %3 ppm").arg(worstWindow.dLgK, 0, 'g', 3).arg(worstK).arg(worstWindow.maxLimitError, 0, 'g', 3);
+        for (const QString& f : failures)
+            qInfo().noquote() << "  window incomplete:" << f;
+        // the cases left: H1 starts 0.18 ppm (6-9 standard widths) from a 1000 x line, on its steep wing: a shoulder
+        // without a maximum, or a prominence below 10 σ; the whole-spectrum threshold finds none of these either
+        QVERIFY2(failures.size() <= kPinWindowIncomplete, qPrintable(failures.join("\n")));
+        for (const QString& f : failures)
+            QVERIFY2(f.startsWith("standard 1000x") && f.contains("at 7.78") && f.contains("signal 0"), qPrintable(f));
+        QVERIFY2(spectrumOk < spectrumCells / 2, qPrintable(QString("the whole-spectrum threshold tracked %1 of %2 cells").arg(spectrumOk).arg(spectrumCells)));
+        QVERIFY2(worstWindow.maxErrorFwhm < kPinWindowPositionFwhm, qPrintable(QString::number(worstWindow.maxErrorFwhm)));
+        QVERIFY2(worstWindow.dLgK < kPinWindowLgK, qPrintable(QString::number(worstWindow.dLgK)));
+        QVERIFY2(worstWindow.maxLimitError < kPinWindowLimit, qPrintable(QString::number(worstWindow.maxLimitError)));
+    }
+
+    /// (a) without a standard (the spread of endToEndSpread, default picking instead of the PickPeaks step):
+    /// the window threshold is not worse than the threshold of the whole spectrum
+    void windowThresholdWithoutStandard()
+    {
+        Result worst[2];
+        QString label[2];
+        int complete[2] = { 0, 0 }, cases = 0;
+        unsigned seed = 11;
+        for (double fwhm : { 0.002, 0.003, 0.008, 0.02 })
+            for (double eta : { 1.0, 0.5 })
+                for (double noise : { 0.0, 0.005, 0.02, 0.05 })
+                    for (int steps : { 10, 20 })
+                        for (double neighbour : { 0.05, 0.025, 0.015 }) {
+                            const Case c{ fwhm, eta, noise, neighbour, steps };
+                            ++cases;
+                            for (int m = 0; m < 2; ++m) {
+                                Variant v;
+                                v.pickStep = false;
+                                v.scope = m == 0 ? NmrThresholdScope::Spectrum : NmrThresholdScope::Window;
+                                const Result r = runCase(c, seed, nullptr, false, v);
+                                complete[m] += r.allOk;
+                                if (!r.allOk) {
+                                    if (qEnvironmentVariableIsSet("NMR_DEBUG"))
+                                        qInfo().noquote() << m << c.fwhm << c.eta << c.noise << c.steps << c.neighbour << r.problem.section('\n', 0, 0);
+                                    continue;
+                                }
+                                if (r.maxErrorFwhm > worst[m].maxErrorFwhm) {
+                                    worst[m].maxErrorFwhm = r.maxErrorFwhm;
+                                    label[m] = QString("FWHM %1, eta %2, noise %3, %4 steps, neighbour %5").arg(fwhm).arg(eta).arg(noise).arg(steps).arg(neighbour);
+                                }
+                                worst[m].dLgK = std::max(worst[m].dLgK, r.dLgK);
+                                worst[m].maxLimitError = std::max(worst[m].maxLimitError, r.maxLimitError);
+                            }
+                            ++seed;
+                        }
+        qInfo().noquote() << QString("NMR tracking without a standard, default picking, %1 cases:").arg(cases);
+        for (int m = 0; m < 2; ++m)
+            qInfo().noquote() << QString("  %1: %2 complete; worst position %3 FWHM (%4), |Δ lg K| %5, limiting shifts %6 ppm").arg(m == 0 ? "whole spectrum" : "search window").arg(complete[m]).arg(worst[m].maxErrorFwhm, 0, 'g', 3).arg(label[m]).arg(worst[m].dLgK, 0, 'g', 3).arg(worst[m].maxLimitError, 0, 'g', 3);
+        QVERIFY(complete[1] >= complete[0]);
+        QVERIFY2(worst[1].maxErrorFwhm <= worst[0].maxErrorFwhm * 1.05 + 1e-12, qPrintable(QString("%1 vs %2").arg(worst[1].maxErrorFwhm).arg(worst[0].maxErrorFwhm)));
+        QVERIFY2(worst[1].dLgK <= std::max(worst[0].dLgK * 1.05, kPinLgK), qPrintable(QString("%1 vs %2").arg(worst[1].dLgK).arg(worst[0].dLgK)));
+    }
+
+    /// (b) windows without a signal (a signal that vanishes from step 6 on, a signal defined where there is no line,
+    /// on a flat baseline and on the wing of a broad strong line) must stay missing: rate of false peaks over many
+    /// noise realisations (fixed seeds), also with MinHeight 0 (only the threshold decides)
+    void windowThresholdFalsePositives()
+    {
+        const int realisations = 10;
+        long windows[2] = { 0, 0 }, falsePeaks[2] = { 0, 0 }, lostReal[2] = { 0, 0 }, realCells[2] = { 0, 0 };
+        long windowsStrict[2] = { 0, 0 }, falseStrict[2] = { 0, 0 }, ontoLine[2] = { 0, 0 };
+        for (double noise : { 0.0, 0.005, 0.01, 0.02, 0.05 })
+            for (double fwhm : { 0.002, 0.008, 0.02 })
+                for (bool wing : { false, true })
+                    for (double minHeight : { 0.3, 0.0 })
+                        for (int r = 0; r < realisations; ++r) {
+                            const unsigned seed = 9000 + unsigned(r) + 100u * unsigned(fwhm * 1000) + (wing ? 50000u : 0u) + unsigned(noise * 1e6);
+                            for (int m = 0; m < 2; ++m) {
+                                std::mt19937 rng(seed);
+                                const int n = 10;
+                                NmrHandler handler;
+                                for (int k = 0; k < n; ++k) {
+                                    const double x = boundFraction(kHost, guest(k, n), kLgK);
+                                    QVector<Line> lines;
+                                    for (int s = 0; s < 3; ++s)
+                                        lines << Line{ kFree[s] + x * (kComplex[s] - kFree[s]), fwhm, (s == 2 && k >= 6) ? 0.0 : 1.0 - 0.2 * s, 1.0 };
+                                    if (wing)
+                                        lines << Line{ 6.55, 0.03, 200, 1.0 }; // its wing slopes under H3 and under the empty position 6.66
+                                    handler.addSpectrum(spectrum(lines, kFrom, kTo, kDx, noise, rng, QString("step %1").arg(k)));
+                                }
+                                handler.setOperations(pipeline(Case{ fwhm, 1.0, noise, 0.05, n }, false));
+                                handler.setThresholdScope(m == 0 ? NmrThresholdScope::Spectrum : NmrThresholdScope::Window);
+                                handler.setMinHeight(minHeight);
+                                for (int s = 0; s < 3; ++s)
+                                    handler.addSignal(kFree[s], 0.05, QString("H%1").arg(s + 1));
+                                handler.addSignal(7.85, 0.05, "empty");
+                                if (wing)
+                                    handler.addSignal(6.66, 0.03, "empty on the wing");
+                                handler.track();
+                                long count = 0, wrong = 0;
+                                for (int k = 0; k < n; ++k) {
+                                    for (int s = 0; s < handler.signalList().size(); ++s) {
+                                        const bool empty = s >= 3 || (s == 2 && k >= 6);
+                                        const NmrCellStatus status = handler.cell(k, s).status;
+                                        if (empty) {
+                                            ++count;
+                                            if (status != NmrCellStatus::Missing) {
+                                                // a real line (the standard, another host line) reached through the
+                                                // prediction is a matter of the tracking rules, not of the threshold
+                                                const double shift = handler.cell(k, s).shift;
+                                                const double x = boundFraction(kHost, guest(k, n), kLgK);
+                                                bool onLine = wing && std::abs(shift - 6.55) < 0.01;
+                                                for (int t = 0; t < 2; ++t)
+                                                    onLine = onLine || std::abs(shift - (kFree[t] + x * (kComplex[t] - kFree[t]))) < 0.01;
+                                                if (onLine)
+                                                    ++ontoLine[m];
+                                                else
+                                                    ++wrong;
+                                            }
+                                        } else {
+                                            ++realCells[m];
+                                            lostReal[m] += status != NmrCellStatus::Ok;
+                                        }
+                                    }
+                                }
+                                if (qEnvironmentVariableIsSet("NMR_DEBUG") && (r == 0 || wrong > 0))
+                                    for (int s = 0; s < handler.signalList().size(); ++s) {
+                                        QString row = QString("m%1 noise %2 fwhm %3 wing %4 minH %5 %6:").arg(m).arg(noise).arg(fwhm).arg(wing).arg(minHeight).arg(handler.signalList()[s].name);
+                                        for (int k = 0; k < n; ++k)
+                                            row += " " + NmrHandler::statusName(handler.cell(k, s).status).left(4) + (wrong > 0 ? QString("(%1/%2)").arg(handler.cell(k, s).shift, 0, 'f', 4).arg(handler.cell(k, s).height, 0, 'f', 3) : QString());
+                                        qInfo().noquote() << row;
+                                    }
+                                windows[m] += count;
+                                falsePeaks[m] += wrong;
+                                if (minHeight == 0) {
+                                    windowsStrict[m] += count;
+                                    falseStrict[m] += wrong;
+                                }
+                            }
+                        }
+        for (int m = 0; m < 2; ++m)
+            qInfo().noquote() << QString("NMR %1 threshold, windows without a signal (noise 0-5 %, FWHM 0.002-0.02 ppm, flat/wing, %2 realisations each): noise peaks taken %3 of %4 (%5 %), with MinHeight 0 %6 of %7 (%8 %); host cells not tracked %9 of %10; cells that ran onto another line by the prediction %11")
+                                     .arg(m == 0 ? "whole-spectrum" : "search-window")
+                                     .arg(realisations)
+                                     .arg(falsePeaks[m])
+                                     .arg(windows[m])
+                                     .arg(100.0 * falsePeaks[m] / std::max(1L, windows[m]), 0, 'g', 3)
+                                     .arg(falseStrict[m])
+                                     .arg(windowsStrict[m])
+                                     .arg(100.0 * falseStrict[m] / std::max(1L, windowsStrict[m]), 0, 'g', 3)
+                                     .arg(lostReal[m])
+                                     .arg(realCells[m])
+                                     .arg(ontoLine[m]);
+        QCOMPARE(falsePeaks[1], 0L);
+        QCOMPARE(lostReal[1], 0L);
+    }
+
+    /// (c) conflict of crossing signals, a vanishing signal, a jump wider than the window in the first step and a
+    /// reference in the middle: the window threshold gives the cells of the whole-spectrum threshold
+    void windowThresholdKeepsTheRules()
+    {
+        auto compare = [](const std::function<void(NmrHandler*)>& build, const QString& name, bool exact) {
+            NmrHandler a, b;
+            build(&a);
+            build(&b);
+            b.setThresholdScope(NmrThresholdScope::Window);
+            a.track();
+            b.track();
+            QVERIFY(b.usesWindowThreshold());
+            for (int k = 0; k < a.spectrumCount(); ++k)
+                for (int s = 0; s < a.signalList().size(); ++s) {
+                    const QString where = QString("%1: spectrum %2 signal %3").arg(name).arg(k).arg(s);
+                    QVERIFY2(a.cell(k, s).status == b.cell(k, s).status, qPrintable(where + ": " + NmrHandler::statusName(a.cell(k, s).status) + " vs " + NmrHandler::statusName(b.cell(k, s).status)));
+                    if (exact && std::isfinite(a.cell(k, s).shift))
+                        QVERIFY2(a.cell(k, s).shift == b.cell(k, s).shift, qPrintable(where));
+                }
+        };
+        for (double noise : { 0.0, 0.01, 0.02 }) {
+            const bool exact = noise == 0;
+            auto smooth = [noise](NmrHandler* h) {
+                if (noise > 0)
+                    h->setOperations(pipeline(Case{ 0.01, 1.0, noise, 0.05, 10 }, false));
+            };
+            compare([&](NmrHandler* h) {
+                std::mt19937 rng(4);
+                for (int k = 0; k < 11; ++k)
+                    h->addSpectrum(spectrum({ Line{ 7.20 + 0.02 * k, 0.01, 1, 1 }, Line{ 7.35 - 0.01 * k, 0.01, 0.8, 1 } }, 7.6, 7.0, kDx, noise, rng, QString("s%1").arg(k)));
+                h->addSignal(7.20, 0.04, "up");
+                h->addSignal(7.35, 0.04, "down");
+                smooth(h);
+            },
+                QString("crossing, noise %1").arg(noise), exact);
+            NmrHandler crossing;
+            {
+                std::mt19937 rng(4);
+                for (int k = 0; k < 11; ++k)
+                    crossing.addSpectrum(spectrum({ Line{ 7.20 + 0.02 * k, 0.01, 1, 1 }, Line{ 7.35 - 0.01 * k, 0.01, 0.8, 1 } }, 7.6, 7.0, kDx, noise, rng, QString("s%1").arg(k)));
+                crossing.addSignal(7.20, 0.04, "up");
+                crossing.addSignal(7.35, 0.04, "down");
+                smooth(&crossing);
+                crossing.setThresholdScope(NmrThresholdScope::Window);
+                crossing.track();
+                QCOMPARE(crossing.cell(5, 0).status, NmrCellStatus::Conflict);
+                QCOMPARE(crossing.cell(5, 1).status, NmrCellStatus::Conflict);
+            }
+            compare([&](NmrHandler* h) {
+                std::mt19937 rng(3);
+                for (int k = 0; k < 10; ++k) {
+                    const double x = boundFraction(kHost, guest(k, 10), kLgK);
+                    QVector<Line> lines;
+                    for (int s = 0; s < 3; ++s)
+                        lines << Line{ kFree[s] + x * (kComplex[s] - kFree[s]), 0.01, (s == 2 && k >= 6) ? 0.0 : 1.0, 1.0 };
+                    h->addSpectrum(spectrum(lines, kFrom, kTo, kDx, noise, rng, QString("step %1").arg(k)));
+                }
+                for (int s = 0; s < 3; ++s)
+                    h->addSignal(kFree[s], 0.05, QString("H%1").arg(s + 1));
+                smooth(h);
+            },
+                QString("vanishing, noise %1").arg(noise), exact);
+            compare([&](NmrHandler* h) {
+                // the signal jumps by 0.12 ppm (window 0.05) in the first step, then moves on steadily
+                std::mt19937 rng(12);
+                for (int k = 0; k < 8; ++k)
+                    h->addSpectrum(spectrum({ Line{ 7.20 + (k > 0 ? 0.12 : 0.0) + 0.01 * k, 0.01, 1, 1 }, Line{ 6.90, 0.01, 0.7, 1 } }, 7.6, 6.7, kDx, noise, rng, QString("j%1").arg(k)));
+                h->addSignal(7.20, 0.05, "jump");
+                h->addSignal(6.90, 0.05, "still");
+                smooth(h);
+            },
+                QString("jump, noise %1").arg(noise), exact);
+            compare([&](NmrHandler* h) {
+                std::mt19937 rng(6);
+                QVector<QVector<double>> truth;
+                for (const XYTrace& t : titration(Case{ 0.01, 0.5, noise, 0.05, 12 }, rng, &truth))
+                    h->addSpectrum(t);
+                h->setReferenceIndex(6);
+                for (int s = 0; s < 3; ++s)
+                    h->addSignal(truth[6][s] + 0.001, 0.05);
+                smooth(h);
+            },
+                QString("reference in the middle, noise %1").arg(noise), exact);
+        }
+    }
+
+    /// the threshold scope is stored only when it is Window; a block without the key reads as Spectrum and is
+    /// written back unchanged; with a PickPeaks step the step's threshold applies in both scopes
+    void thresholdScopeJson()
+    {
+        NmrHandler handler;
+        fillHandler(&handler, 6);
+        const QJsonObject before = handler.toJson();
+        QVERIFY(!before.contains("ThresholdScope"));
+        QCOMPARE(handler.thresholdScope(), NmrThresholdScope::Spectrum);
+        handler.setThresholdScope(NmrThresholdScope::Window);
+        handler.track();
+        const QJsonObject json = handler.toJson();
+        QCOMPARE(json.value("ThresholdScope").toString(), QString("Window"));
+        NmrHandler back;
+        QString error;
+        QVERIFY2(back.fromJson(json, &error), qPrintable(error));
+        QCOMPARE(back.thresholdScope(), NmrThresholdScope::Window);
+        QCOMPARE(back.toJson(), json);
+        NmrHandler old;
+        QVERIFY2(old.fromJson(before, &error), qPrintable(error));
+        QCOMPARE(old.thresholdScope(), NmrThresholdScope::Spectrum);
+        QCOMPARE(old.toJson(), before);
+        // fromJson resets the scope of a handler used before
+        QVERIFY(back.fromJson(before, &error));
+        QCOMPARE(back.thresholdScope(), NmrThresholdScope::Spectrum);
+        // a PickPeaks step: its own threshold, the scope is not used
+        TraceOpList ops;
+        ops.append(PickPeaksOp());
+        handler.setOperations(ops);
+        QVERIFY(!handler.usesWindowThreshold());
+        // the peaks of the default picking with the window threshold: the host lines and the neighbour line
+        handler.setOperations(TraceOpList());
+        QCOMPARE(handler.pickSignals(0.08, &error), 4);
+    }
+
 private:
+    // pinned worst cases of the window threshold (windowThresholdDominantStandard); measured values printed by the test
+    // measured 2026-11-20 over 216 cases: 206 complete (the 10 others: H1 on the steep wing of a 1000 x line),
+    // position 0.195 FWHM (1000 x broad standard at the edge, FWHM 0.002 ppm, noise 5 %, neighbour 0.015 ppm),
+    // |Δ lg K| 0.0158 (200 x standard 0.18 ppm from H1, FWHM 0.02 ppm, noise 5 %), limiting shifts 0.0020 ppm
+    static constexpr int kPinWindowIncomplete = 10;
+    static constexpr double kPinWindowPositionFwhm = 0.25;
+    static constexpr double kPinWindowLgK = 0.025;
+    static constexpr double kPinWindowLimit = 0.003;
     // pinned worst cases of endToEndSpread (measured values are printed by the test)
     // measured 2026-11-08 over 192 cases: 0.237 FWHM, 0.0085 lg K, 0.0022 ppm (all three: FWHM 0.02 ppm,
     // pseudo-Voigt eta 0.5, noise 5 % of the line height, 10 steps, neighbour line 0.015 ppm = 0.75 FWHM away)

@@ -495,6 +495,13 @@ QWidget* NmrImport::signalPanel()
     m_window->setToolTip(tr("Window of new signals: a signal is searched within this distance of its last position and of the position expected from its last two steps."));
     form->addRow(tr("Search window ±"), m_window);
 
+    // Claude Generated: what the detection threshold of the default peak picking refers to
+    m_threshold = new QComboBox;
+    m_threshold->setObjectName("nmrThresholdScope");
+    m_threshold->addItems({ tr("whole spectrum"), tr("search window") });
+    m_threshold->setToolTip(tr("Relative to the whole spectrum, a peak counts above 5 % of its intensity range, so a much stronger line can hide small signals; relative to the search window, a peak counts if it stands out of the noise and of the other peaks in the window of its signal (without a peak picking step)."));
+    form->addRow(tr("Detection threshold"), m_threshold);
+
     m_method = new QComboBox;
     m_method->setObjectName("nmrShiftMethod");
     m_method->addItems({ tr("Peak picking"), tr("Lineshape fit") });
@@ -600,6 +607,13 @@ QWidget* NmrImport::signalPanel()
     connect(m_double_adds, &QCheckBox::toggled, this, [this](bool on) {
         QSettings().setValue("nmrimport/doubleClickAdds", on);
         updateDoubleClickHint();
+    });
+    connect(m_threshold, &QComboBox::currentIndexChanged, this, [this](int index) {
+        if (m_updating)
+            return;
+        m_handler.setThresholdScope(index == 1 ? NmrThresholdScope::Window : NmrThresholdScope::Spectrum);
+        m_memory->setValue("thresholdScope", index); // default of the next new series
+        retrack();
     });
     connect(m_method, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
     connect(m_fit_toggle, &QToolButton::clicked, this, [this]() { m_memory->setValue("fitOptionsExpanded", m_fit_toggle->isExpanded()); });
@@ -764,6 +778,11 @@ void NmrImport::restoreOptions()
     m_updating = true;
     if (m_memory->restore(m_window, "searchWindow"))
         m_handler.setDefaultWindow(m_window->value());
+    // a new series looks for peaks relative to the search window unless another choice is remembered
+    int scope = 1;
+    m_memory->readInt("thresholdScope", 0, m_threshold->count() - 1, &scope);
+    m_threshold->setCurrentIndex(scope);
+    m_handler.setThresholdScope(scope == 1 ? NmrThresholdScope::Window : NmrThresholdScope::Spectrum);
     m_memory->restore(m_method, "shiftFrom");
     m_memory->restore(m_width_mode, "lineWidth");
     m_memory->restore(m_baseline, "baseline");
@@ -809,6 +828,7 @@ void NmrImport::setData(const QJsonObject& project)
     m_updating = true;
     m_offset->setValue(m_handler.referenceOffset());
     m_window->setValue(m_handler.defaultWindow());
+    m_threshold->setCurrentIndex(m_handler.thresholdScope() == NmrThresholdScope::Window ? 1 : 0); // the project's choice
     m_updating = false;
     updateFitControls();
     m_editor->setOperations(m_handler.operations());
@@ -849,6 +869,7 @@ void NmrImport::refresh()
     m_offset->setValue(m_handler.referenceOffset()); // also when the handler was changed directly
     m_updating = false;
     updateFidControls();
+    m_threshold->setEnabled(!m_handler.hasPickStep()); // a peak picking step brings its own threshold
     updateSpectra();
     updateSignals();
     updateResults();
@@ -993,8 +1014,17 @@ void NmrImport::updateResults()
             lost_columns << c;
         }
     }
-    const QString hint = lost.isEmpty() ? QString()
-                                        : tr("%1: no peak in the window in any spectrum; a much stronger signal (e.g. a standard) raises the detection threshold: add a Range or Blank region step.").arg(lost.join(", "));
+    // Claude Generated: the remedy depends on the threshold; relative to the search window a stronger line
+    // elsewhere no longer hides the signal, so only the window or the range is left
+    QString hint;
+    if (!lost.isEmpty()) {
+        if (m_handler.usesWindowThreshold())
+            hint = tr("%1: no peak in the window in any spectrum: check the position, widen the search window or change the range.").arg(lost.join(", "));
+        else if (m_handler.hasPickStep())
+            hint = tr("%1: no peak in the window in any spectrum; a much stronger signal (e.g. a standard) raises the detection threshold: add a Range or Blank region step.").arg(lost.join(", "));
+        else
+            hint = tr("%1: no peak in the window in any spectrum; a much stronger line (e.g. a standard) hides it: set \"Detection threshold\" to \"search window\" or add a Range or Blank region step.").arg(lost.join(", "));
+    }
     for (int c : lost_columns)
         for (int k = 0; k < rows; ++k)
             if (QTableWidgetItem* item = m_results->item(k, c * per))

@@ -115,6 +115,17 @@ bool pickPeaks(const XYTrace& trace, double threshold, bool relative, double min
  * Claude Generated); false with *error if the ranges cover every point or a bound is not finite. */
 bool blankRanges(const XYTrace& trace, const QVector<QPair<double, double>>& ranges, XYTrace* result, QString* error = nullptr);
 
+/*! \brief Robust standard deviation of the noise of a trace (Claude Generated).
+ *
+ * σ = 1.4826 · median over blocks of MAD_b, MAD_b = median |r_i - median_b(r)| within block b, r = y minus the
+ * least-squares parabola of the block (slope and curvature of a wing are not noise). The blocks hold
+ * max(64, n / 32) consecutive points (the rest joins the last block; fewer than 64 points: one block). For
+ * Gaussian noise 1.4826 · MAD is σ. The median over the blocks ignores the blocks covered by lines or by the
+ * steep wing of a strong line as long as they are fewer than half; a block wide compared with the
+ * correlation length of smoothed or apodized noise keeps the estimate unbiased (first differences would
+ * underestimate correlated noise). 0 for fewer than 3 points. */
+double noiseLevel(const XYTrace& trace);
+
 } // namespace TraceOps
 
 /*! \brief One processing step with its parameters (Claude Generated).

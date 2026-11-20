@@ -457,6 +457,56 @@ bool blankRanges(const XYTrace& trace, const QVector<QPair<double, double>>& ran
     return true;
 }
 
+// Claude Generated: noise scale of the window threshold of the NMR tracking (NmrThresholdScope::Window)
+double noiseLevel(const XYTrace& trace)
+{
+    const Eigen::Index n = trace.size();
+    if (n < 3)
+        return 0;
+    const Eigen::VectorXd& y = trace.y();
+    const Eigen::Index block = n < 64 ? n : std::max<Eigen::Index>(64, n / 32);
+    const Eigen::Index blocks = std::max<Eigen::Index>(1, n / block);
+    auto median = [](std::vector<double>& v) {
+        const size_t half = v.size() / 2;
+        std::nth_element(v.begin(), v.begin() + half, v.end());
+        double m = v[half];
+        if (v.size() % 2 == 0) {
+            const double lower = *std::max_element(v.begin(), v.begin() + half);
+            m = 0.5 * (m + lower);
+        }
+        return m;
+    };
+    std::vector<double> mads;
+    mads.reserve(size_t(blocks));
+    std::vector<double> values;
+    for (Eigen::Index b = 0; b < blocks; ++b) {
+        const Eigen::Index first = b * block, last = (b + 1 == blocks) ? n : first + block; // the rest joins the last block
+        values.assign(y.data() + first, y.data() + last);
+        // parabola through the block removed (least squares over the scaled point index): the slope and the
+        // curvature of the wing of a strong line are no noise
+        const Eigen::Index count = Eigen::Index(values.size());
+        const double half = 0.5 * double(count - 1);
+        Eigen::MatrixXd basis(count, 3);
+        Eigen::VectorXd rhs(count);
+        for (Eigen::Index i = 0; i < count; ++i) {
+            const double u = half > 0 ? (double(i) - half) / half : 0.0;
+            basis(i, 0) = 1;
+            basis(i, 1) = u;
+            basis(i, 2) = u * u;
+            rhs(i) = values[size_t(i)];
+        }
+        const Eigen::VectorXd c = basis.colPivHouseholderQr().solve(rhs);
+        const Eigen::VectorXd residual = rhs - basis * c;
+        for (Eigen::Index i = 0; i < count; ++i)
+            values[size_t(i)] = residual(i);
+        const double m = median(values);
+        for (double& v : values)
+            v = std::abs(v - m);
+        mads.push_back(median(values));
+    }
+    return 1.4826 * median(mads);
+}
+
 } // namespace TraceOps
 
 // ---------------------------------------------------------------------------------------------

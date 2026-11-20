@@ -73,6 +73,95 @@ struct TrackState {
         lastIndex = k;
     }
 };
+
+/*! \brief Window threshold of the tracking (NmrThresholdScope::Window, class description step 3a). Claude Generated.
+ *
+ * maxima: all local maxima of trace, sorted by index (TraceOps::pickPeaks order); returns the indices into
+ * maxima of those with x in [lo, hi] that stand out of their window by one of two measures:
+ * - height above the chord h_c = y_p - b(x_p), b the straight line through the medians of the first and the
+ *   last tenth (at least 2 points) of the points in [lo - margin, hi + margin] (the margin keeps a peak at the
+ *   edge of [lo, hi] out of the baseline): h_c >= max(relative x H, sigmas x noise);
+ * - prominence h_p = y_p - max(lowest point on the left, lowest point on the right), each side walked until a
+ *   point higher than y_p or the end of the widened window: h_p >= max(relative x H, prominenceSigmas x noise).
+ * H = the largest max(h_c, h_p) of the maxima in [lo, hi]. The chord keeps lines that overlap a neighbour (small
+ * prominence); the prominence keeps a line on the curved wing of a strong line (the chord lies above a convex
+ * wing). Noise passes neither: on a flat baseline its maxima are about 3-4 σ above the chord and 5-7 σ above the
+ * lower of their side minima; on a wing the chord lies above and the next noise wiggle limits the prominence.
+ * Fewer than 5 points: nothing passes. */
+QVector<int> windowCandidates(const XYTrace& trace, double noise, const QVector<TracePeak>& maxima, double lo, double hi,
+    double margin, double relative, double sigmas, double prominenceSigmas)
+{
+    QVector<int> result;
+    const Eigen::Index n = trace.size();
+    if (n < 5 || maxima.isEmpty() || !(hi >= lo))
+        return result;
+    const Eigen::VectorXd& x = trace.x();
+    const Eigen::VectorXd& y = trace.y();
+    const bool ascending = x(n - 1) > x(0);
+    // first index whose x lies beyond value in index order (binary search on the monotone axis)
+    auto boundIndex = [&](double value, bool upper) -> Eigen::Index {
+        Eigen::Index a = 0, b = n;
+        while (a < b) {
+            const Eigen::Index m = (a + b) / 2;
+            const bool before = ascending ? (upper ? x(m) <= value : x(m) < value) : (upper ? x(m) >= value : x(m) > value);
+            if (before)
+                a = m + 1;
+            else
+                b = m;
+        }
+        return a;
+    };
+    const double blo = lo - margin, bhi = hi + margin;
+    const Eigen::Index first = ascending ? boundIndex(blo, false) : boundIndex(bhi, false);
+    const Eigen::Index end = ascending ? boundIndex(bhi, true) : boundIndex(blo, true);
+    const Eigen::Index count = end - first;
+    if (count < 5)
+        return result;
+    const Eigen::Index edge = std::max<Eigen::Index>(2, count / 10);
+    auto segmentMedian = [&](Eigen::Index from) {
+        std::vector<double> v(y.data() + from, y.data() + from + edge);
+        const size_t half = v.size() / 2;
+        std::nth_element(v.begin(), v.begin() + half, v.end());
+        double m = v[half];
+        if (v.size() % 2 == 0)
+            m = 0.5 * (m + *std::max_element(v.begin(), v.begin() + half));
+        return m;
+    };
+    const double y0 = segmentMedian(first), y1 = segmentMedian(end - edge);
+    const double x0 = 0.5 * (x(first) + x(first + edge - 1)), x1 = 0.5 * (x(end - edge) + x(end - 1));
+    auto chord = [&](double at) { return x1 == x0 ? 0.5 * (y0 + y1) : y0 + (y1 - y0) * (at - x0) / (x1 - x0); };
+
+    // maxima inside the region [lo, hi]: their indices lie within [first, end) (maxima sorted by index)
+    auto byIndex = [](const TracePeak& p, Eigen::Index i) { return p.index < i; };
+    const int from = int(std::lower_bound(maxima.begin(), maxima.end(), first, byIndex) - maxima.begin());
+    const int to = int(std::lower_bound(maxima.begin(), maxima.end(), end, byIndex) - maxima.begin());
+    double highest = -std::numeric_limits<double>::infinity();
+    QVector<int> inside;
+    QVector<double> hc, hp;
+    for (int p = from; p < to; ++p) {
+        const TracePeak& peak = maxima[p];
+        if (peak.x < lo || peak.x > hi || peak.index < first || peak.index >= end)
+            continue;
+        const double top = y(peak.index);
+        double left = top, right = top;
+        for (Eigen::Index i = peak.index - 1; i >= first && y(i) <= top; --i)
+            left = std::min(left, y(i));
+        for (Eigen::Index i = peak.index + 1; i < end && y(i) <= top; ++i)
+            right = std::min(right, y(i));
+        inside << p;
+        hc << peak.height - chord(peak.x);
+        hp << peak.height - std::max(left, right);
+        highest = std::max(highest, std::max(hc.last(), hp.last()));
+    }
+    for (int i = 0; i < inside.size(); ++i) {
+        const double floor = relative * highest;
+        const bool byChord = hc[i] > 0 && hc[i] >= std::max(floor, sigmas * noise);
+        const bool byProminence = hp[i] > 0 && hp[i] >= std::max(floor, prominenceSigmas * noise);
+        if (byChord || byProminence)
+            result << inside[i];
+    }
+    return result;
+}
 } // namespace
 
 // ---------------------------------------------------------------------------------------------
@@ -316,24 +405,73 @@ TraceSet NmrHandler::processedSpectra(QString* error) const
 }
 
 /*! \brief Peaks of every spectrum: those of the last enabled PickPeaks step of the processing, or of
- * the default picking (relative threshold 0.05) on the processed spectrum if there is no such step. */
+ * the default picking on the processed spectrum if there is no such step (relative threshold 0.05 of the
+ * spectrum, or with the window threshold the maxima that pass it around themselves). */
 QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error) const
 {
-    return peaks(error, nullptr);
+    if (!usesWindowThreshold())
+        return peaks(error, nullptr);
+    QVector<XYTrace> processed;
+    const QVector<QVector<TracePeak>> maxima = peaks(error, &processed, true);
+    QVector<double> noise(processed.size());
+    for (int k = 0; k < processed.size(); ++k)
+        noise[k] = TraceOps::noiseLevel(processed[k]);
+    return windowDetectedPeaks(processed, maxima, noise);
 }
 
-/*! \brief peaks() and, if processed is given, the processed spectra they were picked on (one pass). */
-QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error, QVector<XYTrace>* processedSpectra) const
+bool NmrHandler::hasPickStep() const
 {
     bool hasPick = false;
     for (int i = 0; i < m_operations.size(); ++i)
         hasPick = hasPick || (m_operations.at(i)->enabled && m_operations.at(i)->type() == "PickPeaks");
+    return hasPick;
+}
+
+bool NmrHandler::usesWindowThreshold() const
+{
+    return m_threshold_scope == NmrThresholdScope::Window && !hasPickStep();
+}
+
+/*! \brief Maxima that pass the window rule (class description, step 3a) in a window ± defaultWindow() centred on
+ * themselves: the peaks of a spectrum without a signal to follow (pickSignals, neighbour lines of the fit).
+ * Claude Generated. */
+QVector<QVector<TracePeak>> NmrHandler::windowDetectedPeaks(const QVector<XYTrace>& processed, const QVector<QVector<TracePeak>>& maxima, const QVector<double>& noise,
+    const QVector<QVector<QPair<double, double>>>* near) const
+{
+    QVector<QVector<TracePeak>> result(maxima.size());
+    for (int k = 0; k < maxima.size() && k < processed.size(); ++k) {
+        const XYTrace& trace = processed[k];
+        const QVector<TracePeak>& all = maxima[k];
+        if (trace.size() < 5)
+            continue;
+        const double sigma = noise.value(k, 0);
+        for (int p = 0; p < all.size(); ++p) {
+            if (near) {
+                bool inside = false;
+                for (const auto& range : near->value(k))
+                    inside = inside || (all[p].x >= range.first && all[p].x <= range.second);
+                if (!inside)
+                    continue;
+            }
+            const QVector<int> passing = windowCandidates(trace, sigma, all, all[p].x - m_window, all[p].x + m_window, m_window, WindowRelativeThreshold, WindowNoiseSigmas, WindowProminenceSigmas);
+            if (passing.contains(p))
+                result[k] << all[p];
+        }
+    }
+    return result;
+}
+
+/*! \brief peaks() and, if processed is given, the processed spectra they were picked on (one pass); with
+ * allMaxima the default picking returns every local maximum (threshold 0, input of the window threshold). */
+QVector<QVector<TracePeak>> NmrHandler::peaks(QString* error, QVector<XYTrace>* processedSpectra, bool allMaxima) const
+{
+    const bool hasPick = hasPickStep();
 
     const TraceSet referenced = referencedSpectra();
     QVector<QVector<TracePeak>> result(referenced.size());
     QString first;
     PickPeaksOp fallback;
-    fallback.threshold = 0.05;
+    fallback.threshold = allMaxima ? 0.0 : 0.05;
     if (processedSpectra)
         processedSpectra->resize(referenced.size());
     for (int i = 0; i < referenced.size(); ++i) {
@@ -417,7 +555,20 @@ int NmrHandler::pickSignals(double window, QString* error)
         return 0;
     }
     setDefaultWindow(window);
-    const QVector<QVector<TracePeak>> all = peaks(error);
+    QVector<QVector<TracePeak>> all;
+    if (usesWindowThreshold()) {
+        // the window rule only for the reference spectrum (Claude Generated)
+        QVector<XYTrace> processed;
+        const QVector<QVector<TracePeak>> maxima = peaks(error, &processed, true);
+        QVector<double> noise(processed.size(), 0.0);
+        QVector<QVector<QPair<double, double>>> near(processed.size());
+        if (m_reference < processed.size()) {
+            noise[m_reference] = TraceOps::noiseLevel(processed[m_reference]);
+            near[m_reference] << qMakePair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+        }
+        all = windowDetectedPeaks(processed, maxima, noise, &near);
+    } else
+        all = peaks(error);
     const QVector<TracePeak>& reference = all.value(m_reference);
     m_signals.clear();
     m_manual.clear();
@@ -433,8 +584,11 @@ int NmrHandler::pickSignals(double window, QString* error)
  *
  * The state of each signal starts at its reference position (forward walk) or at the result of the
  * reference spectrum (backward walk, start = reference - 1); see the class description for the rules. */
-void NmrHandler::trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks)
+void NmrHandler::trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks, const QVector<XYTrace>* processed,
+    const QVector<double>* noise)
 {
+    // with processed spectra and their noise: peaks holds every maximum, the window threshold selects (step 3a)
+    const bool windowThreshold = processed && noise;
     const int n = m_spectra.size();
     QVector<TrackState> states(m_signals.size());
     for (int s = 0; s < m_signals.size(); ++s) {
@@ -471,7 +625,16 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             const double lastHeight = states[s].height;
             QVector<int> candidates;
             double highest = -std::numeric_limits<double>::infinity();
+            QVector<char> passes;
+            if (windowThreshold) {
+                passes = QVector<char>(found.size(), 0);
+                const double lo = std::min(center, prediction) - window, hi = std::max(center, prediction) + window;
+                for (int p : windowCandidates(processed->value(k), noise->value(k, 0), found, lo, hi, window, WindowRelativeThreshold, WindowNoiseSigmas, WindowProminenceSigmas))
+                    passes[p] = 1;
+            }
             for (int p = 0; p < found.size(); ++p) {
+                if (windowThreshold && !passes[p])
+                    continue;
                 // inside the window around the last known position or around the prediction
                 if (std::abs(found[p].x - center) > window && std::abs(found[p].x - prediction) > window)
                     continue;
@@ -535,15 +698,39 @@ void NmrHandler::track()
     setReferenceIndex(m_reference);
     QString error;
     QVector<XYTrace> processed;
-    const QVector<QVector<TracePeak>> found = peaks(&error, &processed);
+    const bool windowThreshold = usesWindowThreshold();
+    const QVector<QVector<TracePeak>> found = peaks(&error, &processed, windowThreshold);
 #ifdef DEBUG_ON
     if (!error.isEmpty())
         qDebug() << "NmrHandler::track:" << error;
 #endif
-    trackDirection(m_reference, +1, found);
-    trackDirection(m_reference - 1, -1, found);
-    if (m_fit.method == NmrShiftMethod::LineshapeFit)
-        fitLineshapes(processed, found);
+    if (!windowThreshold) {
+        trackDirection(m_reference, +1, found);
+        trackDirection(m_reference - 1, -1, found);
+        if (m_fit.method == NmrShiftMethod::LineshapeFit)
+            fitLineshapes(processed, found);
+        return;
+    }
+    // window threshold (Claude Generated): every maximum is a candidate, the rule of step 3a selects
+    QVector<double> noise(processed.size());
+    for (int k = 0; k < processed.size(); ++k)
+        noise[k] = TraceOps::noiseLevel(processed[k]);
+    trackDirection(m_reference, +1, found, &processed, &noise);
+    trackDirection(m_reference - 1, -1, found, &processed, &noise);
+    if (m_fit.method == NmrShiftMethod::LineshapeFit) {
+        // the fit looks for neighbour lines only near the tracked signals: the rule runs there, not over the whole
+        // spectrum (whole JEOL spectra hold thousands of noise maxima)
+        QVector<QVector<QPair<double, double>>> near(m_cells.size());
+        for (int k = 0; k < m_cells.size(); ++k)
+            for (int s = 0; s < m_signals.size(); ++s) {
+                const NmrCell& cell = m_cells[k][s];
+                if (std::isfinite(cell.shift)) {
+                    const double reach = m_signals[s].window + m_fit.range;
+                    near[k] << qMakePair(cell.shift - reach, cell.shift + reach);
+                }
+            }
+        fitLineshapes(processed, windowDetectedPeaks(processed, found, noise, &near));
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1215,6 +1402,8 @@ QJsonObject NmrHandler::toJson() const
     json["ReferenceSpectrum"] = m_reference;
     json["Window"] = m_window;
     json["MinHeight"] = m_min_height;
+    if (m_threshold_scope == NmrThresholdScope::Window)
+        json["ThresholdScope"] = "Window"; // only then: projects of the default stay as before
 
     QJsonArray signalArray;
     for (const NmrSignal& signal : m_signals) {
@@ -1347,6 +1536,7 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
     m_reference_offset = json.value("ReferenceOffset").toDouble(0);
     m_window = json.value("Window").toDouble(0.05);
     m_min_height = json.value("MinHeight").toDouble(0.3);
+    m_threshold_scope = json.value("ThresholdScope").toString() == "Window" ? NmrThresholdScope::Window : NmrThresholdScope::Spectrum;
     // without the key (projects before WP4): peak picking, as before
     setFitSettings(NmrFitSettings::fromJson(json.value("LineshapeFit").toObject()));
     for (const QJsonValue& value : json.value("Signals").toArray()) {

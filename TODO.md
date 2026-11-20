@@ -27,7 +27,8 @@
 - [ ] Lineshape fit "Shared": up to 1.5 s per series (20 spectra, debug build) and every dialog change recomputes; neighbour lines come only from peak picking (a line resolved nowhere widens the signal).
 - [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r` and Bruker `fid` (reuse `FidProcessing`: only a `fromBruker` with its own group delay); true Voigt; global fit of the spectra against the binding model.
 - [ ] JEOL group delay: ½ Σ (order-1)/Π factor leaves a constant ph1 of about -24° (T1) / -105° (T5) per series (docs/jeol_import_2026-11-20.md); the auto phase absorbs it. Find the exact Delta rule.
-- [ ] NMR: the default peak picking of the tracking (threshold 0.05 of the span of the whole spectrum) still misses signals below 5 % of a dominant line (now with a hint, Range/Blank region fix it); a threshold per search window would need no step.
+- [ ] NMR: switch the core default of `NmrThresholdScope` to `Window` (at least as good in every measurement, docs/nmr_window_threshold_2026-11-20.md); changes old projects and pins, operator decision.
+- [ ] NMR tracking without Normalise: MinHeight 0.3 of the last height drops cells where the intensity jumps between experiments (real T5: 16 of 60 open, none at 0.1); relate it to the noise or the window instead.
 - [ ] Chart "Tools" button of CuteChart is hard to read in the dark scheme (dark text on dark chart background, offscreen grab); the tracking line stays at its old pixel after a zoom until the mouse moves.
 - [ ] NMR multiplets: lines of a dd closer than the step of a titration are lost or swapped by the tracking (real T1/T5 at LB 0.3 Hz); a signal = centre of a group of lines would track them as one.
 - [ ] NMR dialog with FIDs: 15 x 262144 points drawn (OpenGL above 5000 points, offscreen grabs empty), speed on screen not measured; y labels of normalised spectra show 2 decimals ("0.01"); debug build needs 36 s for 15 FIDs of 131072 points (auto phase).

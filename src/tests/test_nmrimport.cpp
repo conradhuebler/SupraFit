@@ -483,6 +483,7 @@ private slots:
     void hintWhenEverySpectrumMisses()
     {
         NmrImport dialog;
+        dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(0); // relative to the whole spectrum
         for (int k = 0; k < 4; ++k) {
             const int n = 2001;
             Eigen::VectorXd x(n), y(n);
@@ -536,6 +537,127 @@ private slots:
         QVERIFY(!hint->isHidden());
         QVERIFY(editor->setOperationEnabled(0, true));
         QVERIFY(hint->isHidden());
+    }
+
+    /// Claude Generated: "Detection threshold": a new series starts relative to the search window, the choice is
+    /// remembered for the next new series, a project brings its own (an old project without the key: whole
+    /// spectrum, written back without the key); the hint names the remedy of the chosen threshold
+    void detectionThresholdOption()
+    {
+        auto standardSeries = [](NmrHandler* handler) {
+            for (int k = 0; k < 4; ++k) {
+                const int n = 2001;
+                Eigen::VectorXd x(n), y(n);
+                for (int i = 0; i < n; ++i) {
+                    x(i) = 10.0 - 0.005 * i;
+                    y(i) = 100 * std::exp(-std::pow((x(i) - 0.5) / 0.02, 2)) + std::exp(-std::pow((x(i) - (5.0 + 0.01 * k)) / 0.02, 2));
+                }
+                handler->addSpectrum(XYTrace(x, y, QString("s%1").arg(k)));
+            }
+        };
+        QJsonObject windowProject, oldProject;
+        {
+            NmrImport dialog;
+            auto* scope = dialog.findChild<QComboBox*>("nmrThresholdScope");
+            QVERIFY(scope);
+            QCOMPARE(scope->currentIndex(), 1);
+            QCOMPARE(dialog.handler()->thresholdScope(), NmrThresholdScope::Window);
+            standardSeries(dialog.handler());
+            dialog.handler()->addSignal(5.0, 0.1, "S");
+            dialog.refresh();
+            auto* hint = dialog.findChild<StatusLine*>("nmrMissingHint");
+            for (int k = 0; k < 4; ++k)
+                QCOMPARE(dialog.handler()->cell(k, 0).status, NmrCellStatus::Ok);
+            QVERIFY(hint->isHidden());
+            windowProject["raw"] = dialog.ProjectData();
+            QCOMPARE(windowProject["raw"].toObject().value("ThresholdScope").toString(), QString("Window"));
+            // a position without a line: the hint names the window and the range only
+            dialog.handler()->addSignal(3.0, 0.1, "E");
+            dialog.refresh();
+            QVERIFY2(hint->message().startsWith("E:") && hint->message().contains("search window") && !hint->message().contains("Blank"), qPrintable(hint->message()));
+            QVERIFY(dialog.handler()->removeSignal(1));
+            // relative to the whole spectrum: the standard hides S; the hint names the option first
+            scope->setCurrentIndex(0);
+            QCOMPARE(dialog.handler()->thresholdScope(), NmrThresholdScope::Spectrum);
+            QCOMPARE(dialog.handler()->cell(0, 0).status, NmrCellStatus::Missing);
+            QVERIFY2(!hint->isHidden() && hint->message().indexOf("\"search window\"") >= 0
+                    && hint->message().indexOf("\"search window\"") < hint->message().indexOf("Blank region"),
+                qPrintable(hint->message()));
+            oldProject["raw"] = dialog.ProjectData();
+            QVERIFY(!oldProject["raw"].toObject().contains("ThresholdScope"));
+            // a peak picking step: its own threshold, the choice is off
+            TraceOpList ops;
+            ops.append(PickPeaksOp());
+            dialog.handler()->setOperations(ops);
+            dialog.refresh();
+            QVERIFY(!scope->isEnabled());
+            dialog.handler()->setOperations(TraceOpList());
+            dialog.refresh();
+            QVERIFY(scope->isEnabled());
+        }
+        // the last choice (whole spectrum) is the default of the next new series
+        {
+            NmrImport again;
+            QCOMPARE(again.findChild<QComboBox*>("nmrThresholdScope")->currentIndex(), 0);
+            QCOMPARE(again.handler()->thresholdScope(), NmrThresholdScope::Spectrum);
+            QCOMPARE(again.memory()->value("thresholdScope").toInt(), 0);
+            // the project's value wins and is not remembered
+            again.setData(windowProject);
+            QCOMPARE(again.findChild<QComboBox*>("nmrThresholdScope")->currentIndex(), 1);
+            QCOMPARE(again.handler()->thresholdScope(), NmrThresholdScope::Window);
+            QCOMPARE(again.memory()->value("thresholdScope").toInt(), 0);
+            QCOMPARE(again.ProjectData().value("ThresholdScope").toString(), QString("Window"));
+        }
+        // an old project (no key) with the window remembered: whole spectrum, saved again without the key
+        QSettings().setValue("dialogs/nmrimport/thresholdScope", 1);
+        {
+            NmrImport reopened;
+            QCOMPARE(reopened.handler()->thresholdScope(), NmrThresholdScope::Window);
+            reopened.setData(oldProject);
+            QCOMPARE(reopened.handler()->thresholdScope(), NmrThresholdScope::Spectrum);
+            QCOMPARE(reopened.findChild<QComboBox*>("nmrThresholdScope")->currentIndex(), 0);
+            QCOMPARE(reopened.handler()->cell(0, 0).status, NmrCellStatus::Missing); // as before
+            QCOMPARE(reopened.ProjectData(), oldProject["raw"].toObject());
+        }
+        // a stored value out of range is ignored: the window, as for a first start
+        QSettings().setValue("dialogs/nmrimport/thresholdScope", 5);
+        NmrImport fresh;
+        QCOMPARE(fresh.findChild<QComboBox*>("nmrThresholdScope")->currentIndex(), 1);
+    }
+
+    /// Claude Generated: renders (SUPRAFIT_TRACE_RENDER_DIR) of a series with a dominant CHCl3 line (24 x the small
+    /// lines): relative to the whole spectrum the small signals are missing (hint), relative to the search window found
+    void renderThresholdScope()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        const int steps = 8;
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            NmrImport dialog;
+            dialog.resize(1366, 768);
+            for (int k = 0; k < steps; ++k)
+                dialog.handler()->addSpectrum(chcl3Spectrum(k, steps));
+            dialog.handler()->addSignal(7.60, 0.08, "H1");
+            dialog.handler()->addSignal(6.20, 0.08, "H2");
+            std::unique_ptr<DataTable> conc(concentrations(steps));
+            dialog.setConcentrations(conc.get());
+            auto* scope = dialog.findChild<QComboBox*>("nmrThresholdScope");
+            scope->setCurrentIndex(0);
+            dialog.refresh();
+            QVERIFY(!dialog.findChild<StatusLine*>("nmrMissingHint")->isHidden());
+            render(&dialog, "nmr_threshold_spectrum" + suffix);
+            scope->setCurrentIndex(1);
+            QVERIFY(dialog.findChild<StatusLine*>("nmrMissingHint")->isHidden());
+            for (int k = 0; k < steps; ++k)
+                for (int s = 0; s < 2; ++s)
+                    QCOMPARE(dialog.handler()->cell(k, s).status, NmrCellStatus::Ok);
+            render(&dialog, "nmr_threshold_window" + suffix);
+            dialog.hide();
+        }
+        Appearance::Apply(Appearance::Light);
+        QSettings().remove("dialogs");
     }
 
     void trackedTableAndConcentrations()
