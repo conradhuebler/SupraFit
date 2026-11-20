@@ -1397,6 +1397,29 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen test of zoom, range selection and axis direction with mouse events on the chart of the trace editor
+# and of the ppm axis of the NMR dialog (Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders.
+if(BUILD_GUI)
+    qt_add_resources(chartzoom_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_chartzoom test_chartzoom.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${chartzoom_RES})
+    target_link_libraries(test_chartzoom
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_chartzoom ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_chartzoom pthread dl)
+    endif()
+    add_test(NAME ChartZoomTest COMMAND test_chartzoom)
+    set_tests_properties(ChartZoomTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Offscreen test of the UV/Vis spectra import dialog, ImportKeyGuard, the hint line of the trace editor and the
 # import entries of the main window (UX package 1, Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders.
 if(BUILD_GUI)

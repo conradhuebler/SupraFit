@@ -68,8 +68,9 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Specialized Components
 - **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
-- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
+- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, x direction by `setAxisDirection`), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
   - Hint line `traceEditorHint` (mouse actions + host text `setDoubleClickHint`), shown with setting `thermogram_guidelines` ("Show hints in the import dialogs"; key kept); the wheel has no function here
+  - `setAxisDirection(Auto|Reversed|Normal)`: Auto = reversed for descending data (default, UV/Vis); `NmrImport` sets Reversed/Normal by `nmrReverseAxis` (QSettings `nmrimport/reverseAxis`); test `test_chartzoom` (ChartZoomTest, real mouse events)
 - **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis; `setUi()` = `setupChart`/`setupPeakLists`/`setupControls`/`setupParameterPanel`/`restoreSettings`/`connectControls`, order matters (connections)
   - Not on `TraceEditorWidget`: needs zoom-by-default, select only in peak edit mode, persistent series, keys/double click/scale — see roadmap WP5
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration

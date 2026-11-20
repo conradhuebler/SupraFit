@@ -164,6 +164,7 @@ private:
     StatusLine* m_ready; ///< what OK hands over or why not, visible on both pages
     QLabel* m_legend;
     QCheckBox* m_double_adds;
+    QCheckBox* m_reverse_axis; ///< ppm axis from high (left) to low (right); QSettings "nmrimport/reverseAxis"
     ImportKeyGuard* m_guard;
     qint64 m_track_ms = 0, m_fid_ms = 0; ///< duration of the last tracking / FID transform (wait cursor)
     DropTable *m_concentrations, *m_preview;

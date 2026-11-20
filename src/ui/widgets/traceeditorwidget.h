@@ -56,7 +56,11 @@ class StatusLine;
  * shown in the widget (errorText()), the list is then left unchanged.
  *
  * The x range (spin boxes "Start"/"End", or a right-button drag in the chart) is a selection of the
- * host (rangeChanged()); it is not a processing step. Descending axes (NMR ppm) are drawn reversed.
+ * host (rangeChanged()); it is not a processing step. The screen direction of the x axis is set by
+ * setAxisDirection(): Auto draws traces stored in descending order reversed (NMR ppm from the file),
+ * Reversed/Normal fix the direction whatever the order of the data. Everything that maps between
+ * pixels and x values (range, zoom, markers, lines of the host) goes through the chart axis, so it
+ * works in either direction.
  * The host can put own controls into the tool row (addToolWidget) and use chart() for its own
  * interaction (double-click, vertical lines).
  *
@@ -68,7 +72,22 @@ class StatusLine;
 class TraceEditorWidget : public QWidget {
     Q_OBJECT
 public:
+    /*! \brief Screen direction of the x axis (Claude Generated).
+     * Auto: reversed if the traces are stored in descending x order; Reversed: high x on the left
+     * (chemical shift as usual for 1H NMR); Normal: low x on the left. */
+    enum class AxisDirection {
+        Auto,
+        Reversed,
+        Normal
+    };
+
     explicit TraceEditorWidget(QWidget* parent = nullptr);
+
+    /*! \brief Sets the direction of the x axis and redraws the axis, the range limits and the marker lines. Claude Generated */
+    void setAxisDirection(AxisDirection direction);
+    inline AxisDirection axisDirection() const { return m_axis_direction; }
+    /*! \brief True if the x axis runs from high (left) to low (right) for the current direction and traces. Claude Generated */
+    bool isAxisReversed() const;
 
     /*! \brief Traces to show (copied for drawing); the range limits follow their common x range. */
     void setTraces(const TraceSet& traces);
@@ -145,6 +164,7 @@ private:
     void selectionToRange(double a, double b);
     void updateRangeLines();
     void updateHint();
+    void applyAxisDirection();
 
     TraceSet m_traces;
     TraceOpList m_operations;
@@ -152,6 +172,7 @@ private:
     QList<QColor> m_colors;
     QString m_error, m_edit_error;
     bool m_updating = false;
+    AxisDirection m_axis_direction = AxisDirection::Auto;
     double m_y_min = 0, m_y_max = 0; ///< y span of the drawn traces, height of the range limits
 
     ChartView* m_chart;

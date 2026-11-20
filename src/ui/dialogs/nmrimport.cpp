@@ -151,6 +151,13 @@ void NmrImport::setupUi()
     left->setMaximumWidth(240);
 
     m_editor = new TraceEditorWidget;
+    // chemical shift high to low from left to right, whatever the order of the file (Claude Generated)
+    m_reverse_axis = new QCheckBox(tr("Chemical shift axis: high to low (left to right)"));
+    m_reverse_axis->setObjectName("nmrReverseAxis");
+    m_reverse_axis->setToolTip(tr("Draws the ppm axis with high values on the left, as usual for 1H spectra. Off: low values on the left."));
+    m_reverse_axis->setChecked(QSettings().value("nmrimport/reverseAxis", true).toBool());
+    m_editor->addToolWidget(m_reverse_axis);
+    m_editor->setAxisDirection(m_reverse_axis->isChecked() ? TraceEditorWidget::AxisDirection::Reversed : TraceEditorWidget::AxisDirection::Normal);
     m_results = new QTableWidget;
     m_results->setObjectName("nmrResults");
     m_results->setToolTip(tr("Chemical shifts of the signals per spectrum. Type a value to set a cell by hand, clear it to use the tracked value again."));
@@ -294,6 +301,10 @@ void NmrImport::setupUi()
         retrack();
     });
     connect(m_editor, &TraceEditorWidget::chartUpdated, this, &NmrImport::updateMarkers);
+    connect(m_reverse_axis, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue("nmrimport/reverseAxis", on);
+        m_editor->setAxisDirection(on ? TraceEditorWidget::AxisDirection::Reversed : TraceEditorWidget::AxisDirection::Normal);
+    });
     connect(m_editor->chart(), &ChartView::pointDoubleClicked, this, [this](const QPointF& point) {
         m_position->setValue(point.x());
         if (m_double_adds->isChecked())

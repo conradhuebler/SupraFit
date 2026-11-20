@@ -718,12 +718,39 @@ void TraceEditorWidget::updateChart()
             m_chart->setXMax(hi);
         }
     }
-    // NMR: chemical shift runs from high to low
-    if (m_chart->axisX())
-        m_chart->axisX()->setReverse(!m_traces.isEmpty() && m_traces.at(0).orientation() == XYTrace::Orientation::Descending);
+    applyAxisDirection();
     updateError();
     refreshMarkers();
     emit chartUpdated();
+}
+
+bool TraceEditorWidget::isAxisReversed() const
+{
+    switch (m_axis_direction) {
+    case AxisDirection::Reversed:
+        return true;
+    case AxisDirection::Normal:
+        return false;
+    case AxisDirection::Auto:
+        break;
+    }
+    return !m_traces.isEmpty() && m_traces.at(0).orientation() == XYTrace::Orientation::Descending;
+}
+
+void TraceEditorWidget::setAxisDirection(AxisDirection direction)
+{
+    if (direction == m_axis_direction)
+        return;
+    m_axis_direction = direction;
+    applyAxisDirection();
+    refreshMarkers();
+}
+
+/*! \brief Sets the reverse flag of the x axis; series, range limits and zoom follow the axis. Claude Generated */
+void TraceEditorWidget::applyAxisDirection()
+{
+    if (m_chart->axisX())
+        m_chart->axisX()->setReverse(isAxisReversed());
 }
 
 bool TraceEditorWidget::eventFilter(QObject* watched, QEvent* event)
