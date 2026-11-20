@@ -625,7 +625,8 @@ bool ImportData::ImportThermogram()
 
 bool ImportData::ImportSpectra(const QString& filename)
 {
-    SpectraImport* import = new SpectraImport;
+    SpectraImport dialog; // on the stack: it was not deleted when cancelled
+    SpectraImport* import = &dialog;
     import->setSpectraFile(filename);
 
     if (import->exec() == QDialog::Accepted) {
@@ -640,7 +641,6 @@ bool ImportData::ImportSpectra(const QString& filename)
             m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
         });
         NoChanged();
-        delete import;
         return true;
     }
     return false;

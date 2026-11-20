@@ -99,7 +99,7 @@ void ThermogramWidget::setupChart()
         m_guide_label->setFixedHeight(70);
         m_guide_label->setWordWrap(true);
         m_guide_label->setMaximumWidth(1100);
-        m_guide_label->setToolTip(tr("Hey, I am like Clippit (german: Karl Klammer). If you do not want to see me, just disable me in the general config (=> [General Settings] => [Show guidelines in Thermogram Dialog])!"));
+        m_guide_label->setToolTip(tr("Hey, I am like Clippit (german: Karl Klammer). If you do not want to see me, just disable me in the general config (=> [General Settings] => [Show hints in the import dialogs])!"));
     } else
         m_guide_label->setFixedHeight(30);
 

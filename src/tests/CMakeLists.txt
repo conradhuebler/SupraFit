@@ -1397,6 +1397,29 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen test of the UV/Vis spectra import dialog, ImportKeyGuard, the hint line of the trace editor and the
+# import entries of the main window (UX package 1, Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders.
+if(BUILD_GUI)
+    qt_add_resources(spectraimport_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists and the toolbar
+    add_executable(test_spectraimport test_spectraimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${spectraimport_RES})
+    target_link_libraries(test_spectraimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_spectraimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_spectraimport pthread dl)
+    endif()
+    add_test(NAME SpectraImportTest COMMAND test_spectraimport)
+    set_tests_properties(SpectraImportTest PROPERTIES
+        TIMEOUT 120
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Offscreen smoke test of the NMR import dialog (WP3 of roadmap/input_data_editing.md, Claude Generated 2026).
 # SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
 if(BUILD_GUI)

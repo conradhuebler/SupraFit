@@ -29,10 +29,11 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Data Import/Export
 - **dialogs/importdata.cpp/h**: Data file import wizard
-- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
+- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface; `ImportKeyGuard` + `StatusLine` (OK off without spectra or x values); test `test_spectraimport` (also the "Open Spectra"/"Open NMR Spectra" entries of `SupraFitGui`)
 - **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
   - JEOL: group "Processing (FID)" (`nmrFidPanel`, LB, zero fill, ph0/ph1, Auto phase, Auto phase each spectrum) visible only with FIDs; offscreen grabs do not draw series above 5000 points (chart switches to OpenGL)
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
+  - UX 1: `ImportKeyGuard`, readiness `StatusLine` "nmrReady" on both pages, "Double-click adds the signal" (QSettings `nmrimport/doubleClickAdds`), destructive actions ask via `keyGuard()->confirm()`, `AdaptiveWaiter` around tracking/FID
 - **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
   - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
 
@@ -68,6 +69,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 ### Specialized Components
 - **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
 - **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, reversed for descending axes), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
+  - Hint line `traceEditorHint` (mouse actions + host text `setDoubleClickHint`), shown with setting `thermogram_guidelines` ("Show hints in the import dialogs"; key kept); the wheel has no function here
 - **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis; `setUi()` = `setupChart`/`setupPeakLists`/`setupControls`/`setupParameterPanel`/`restoreSettings`/`connectControls`, order matters (connections)
   - Not on `TraceEditorWidget`: needs zoom-by-default, select only in peak edit mode, persistent series, keys/double click/scale — see roadmap WP5
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration
@@ -117,7 +119,9 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Interaction Tools
 - **guitools/mime.h**: Drag-and-drop MIME type handling
-- **guitools/waiter.h**: Progress indication and user feedback
+- **guitools/waiter.h**: Progress indication and user feedback; `AdaptiveWaiter` = wait cursor only if the same work took > 0.3 s last time
+- **guitools/importkeyguard.cpp/h**: `ImportKeyGuard` — Enter never presses OK, dirty after the first Show, `confirmDiscard()` from the host's `reject()`, `setConfirmHandler` for tests; not used by the ITC dialog (own rule)
+- **guitools/statusline.cpp/h**: `StatusLine` — one elided line, Info/Warning/Error in palette-safe colours, full text as tooltip
 - **widgets/messagedock.cpp/h**: Message logging and status display
 
 ### Chart Integration

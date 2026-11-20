@@ -44,6 +44,7 @@ class QListWidget;
 class QListWidgetItem;
 class QPushButton;
 class QToolButton;
+class StatusLine;
 
 /*! \brief Shows a TraceSet (raw or processed by a TraceOpList), lets the user select an x range and
  * edit the processing steps (Claude Generated).
@@ -58,6 +59,11 @@ class QToolButton;
  * host (rangeChanged()); it is not a processing step. Descending axes (NMR ppm) are drawn reversed.
  * The host can put own controls into the tool row (addToolWidget) and use chart() for its own
  * interaction (double-click, vertical lines).
+ *
+ * A one-line hint under the chart names the mouse actions of the chart and, set by the host
+ * (setDoubleClickHint), what a double-click does; it is shown with the setting "thermogram_guidelines"
+ * ("Show hints in the import dialogs"), like the guide line of the thermogram dialog. The chart has no
+ * modes of its own (the wheel does nothing here), so the line does not change while working.
  */
 class TraceEditorWidget : public QWidget {
     Q_OBJECT
@@ -103,6 +109,13 @@ public:
     /*! \brief Adds a control of the host to the tool row above the chart. */
     void addToolWidget(QWidget* widget);
 
+    /*! \brief What a double-click in the chart does for the host, for the hint line (empty: not mentioned). Claude Generated */
+    void setDoubleClickHint(const QString& text);
+    /*! \brief Text of the one-line hint under the chart (mouse and keys of the chart). Claude Generated */
+    QString hintText() const;
+    /*! \brief True if the import dialogs show hint lines: the setting "thermogram_guidelines" (on when not set). Claude Generated */
+    static bool hintsEnabled();
+
     /*! \brief One-line description of a step for the list. */
     static QString operationLabel(const TraceOp* op);
 
@@ -120,6 +133,7 @@ signals:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
 private:
     void setupUi();
@@ -130,6 +144,7 @@ private:
     void listChanged(int select);
     void selectionToRange(double a, double b);
     void updateRangeLines();
+    void updateHint();
 
     TraceSet m_traces;
     TraceOpList m_operations;
@@ -151,5 +166,7 @@ private:
     QGroupBox* m_parameters;
     QFormLayout* m_form;
     QLabel* m_error_label;
+    StatusLine* m_hint; ///< one-line hint on the mouse and keys of the chart (setting "thermogram_guidelines")
+    QString m_double_click_hint;
     QPointer<LineSeries> m_lower, m_upper; ///< dashed limits of the selected range
 };

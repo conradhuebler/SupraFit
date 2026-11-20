@@ -31,6 +31,13 @@
 - [ ] NMR dialog with FIDs: 15 x 262144 points drawn (OpenGL above 5000 points, offscreen grabs empty), speed on screen not measured; y labels of normalised spectra show 2 decimals ("0.01"); debug build needs 36 s for 15 FIDs of 131072 points (auto phase).
 - [ ] Spectra: "Edit Data" OK creates a new project instead of replacing it; a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
 - [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
+- [ ] Import dialogs, not in UX package 1: Edit Data replaces the project and marks fits outdated (E1); ITC without the second OK (E2); ESC/Cancel question in the ITC dialog;
+      remembered settings (E7); zoom kept on redraw in `TraceEditorWidget`; SeriesSourceBar/ConcentrationEditor; MoreLess for the NMR fit options.
+- [ ] ITC import: `importdata.cpp:605` does not load the chosen `.itc` (`m_filename` already set, `setExperimentFile` never called); the path field loads on every keystroke.
+- [ ] ITC `PointDoubleClicked`: with peak rules and a start outside the rule it resets the *end* button text (start stays "Click to Undo"); after a calibration pick the button keeps "Click to Undo"; it calls `restoreOverrideCursor()` also without a cursor set.
+- [ ] ITC dark scheme: thermogram curve and peak lines are black (`Qt::black`), the guide line is empty until the first mode change; file fields "color: black" (planned separately).
+- [ ] Spectra: `CompileSimpleTable` allocates a `DataTable` (parent = handler) on every `UpdateData`; concentrations with another row count are padded with 0 (`appendColumns`; the dialog asks before OK).
+- [ ] `docs/ASSISTANT_HELP.md` is about 4200 words, above the ~4000-token goal: shorten section 5 (Landscape Sampling paragraph) first.
 - [ ] `ItcAnyTest` aborts after `testSelfAggregationSpecies` (`PeakPick::LeastSquares` reads an empty vector, `mathhelper.h:262`) and `LandscapeSearchTest` times out (600 s); both fail without this branch too.
 
 ## Older project files
@@ -213,8 +220,7 @@ against `master`, which did not have the processor.
 ### ITC thermogram — findings of WP5 (2026-11-08, not fixed: they change numbers or behaviour)
 - [ ] **Reopening a stored thermogram loses a peak**: the dialog's `setRaw()` of `reaction.dat` (20 peaks) gives 19, also with lossless raw
       data; suspected the 6-digit `PeakRuleList` (`Points2String`, 3552.29 s instead of 3552.2857 s) pushing the last peak past the end. Not measured.
-- [ ] `ThermogramWidget::setupControls` connects `pointDoubleClicked` to `PointDoubleClicked` twice (it runs twice per double click).
-- [ ] Data table: the "dil. heat" column paints black cells; the scaling label shows `cal &rarr; J` literally; "Show Dilution" stays disabled for a `.dat` dilution.
+- [ ] "Show Dilution" stays disabled for a `.dat` dilution.
 - [ ] `process()` on a short `.itc` (`synthetic.itc`) never returns: `UpdatePeaks()` → `XtoIndex()` loops for a rule in the first four samples (Track B2).
 
 ### ITC thermogram — libpeakpick maths ("Track B", own branch, changes numbers)

@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraImport - dialog of the spectra import and of editing a spectra project again
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,15 +28,34 @@
 class QPushButton;
 class QLineEdit;
 class QDialogButtonBox;
+class QLabel;
 
+class ImportKeyGuard;
 class SpectraWidget;
+class StatusLine;
 
+/*! \brief Dialog of the UV/Vis spectra import (SpectraWidget) and of Edit Data of a spectra project.
+ *
+ * Keyboard rule and discard question of ImportKeyGuard (Enter never presses OK; Cancel, ESC or closing
+ * the window ask when something changed). The status line under the spectra says what OK will hand
+ * over or why not; OK is off only while there is nothing to hand over (no spectrum or no x value).
+ */
 class SpectraImport : public QDialog {
+    Q_OBJECT
 public:
     SpectraImport();
     SpectraImport(const QString& directory);
 
     virtual ~SpectraImport(){};
+
+    inline SpectraWidget* spectraWidget() const { return m_spectrawidget; }
+    inline ImportKeyGuard* keyGuard() const { return m_guard; }
+    inline StatusLine* statusLine() const { return m_status; }
+    /*! \brief Reads every file of directory whose name contains type (as "Open Directory"); an empty
+     * directory changes nothing. Claude Generated */
+    void openDirectory(const QString& directory, const QString& type);
+    /*! \brief Reads a file (as "Load file"); an empty name changes nothing. Claude Generated */
+    void openFile(const QString& file);
 
     void setSpectraFile(const QString& file);
 
@@ -49,6 +68,7 @@ public slots:
     void setFile();
     void setDirectory();
     void accept() override;
+    void reject() override;
 
 private:
     SpectraWidget* m_spectrawidget;
@@ -56,4 +76,9 @@ private:
     QLineEdit* m_path;
     QDialogButtonBox* m_buttonbox;
     QComboBox* m_file_type;
+    StatusLine* m_status;
+    ImportKeyGuard* m_guard;
+    QString m_notice; ///< message of the last refused input, shown until the next change
+
+    void updateStatus();
 };

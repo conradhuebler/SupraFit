@@ -19,6 +19,8 @@
 
 #include <charts.h>
 
+#include <cmath>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -33,6 +35,7 @@
 #include <QtWidgets/QWidget>
 
 #include <QtCore/QDir>
+#include <QtCore/QLocale>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
@@ -44,6 +47,7 @@
 
 #include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/guitools.h"
+#include "src/ui/guitools/statusline.h"
 #include "src/ui/guitools/waiter.h"
 
 #include "src/global.h"
@@ -78,11 +82,13 @@ void SpectraWidget::setUI()
         UpdateSpectra();
         UpdateVerticaLines();
         UpdateData();
+        emit changed();
     });
     m_files->addAction(action);
 
     m_add_xvalue = new QLineEdit;
     m_add_xvalue->setPlaceholderText(tr("Enter x value!"));
+    m_add_xvalue->setToolTip(tr("An x value (e.g. a wavelength) for the table; Enter or \"Add value\" adds it, a double-click in the chart, too."));
 
     m_accept_x = new QPushButton(tr("Add value"));
     m_accept_x->setFlat(true);
@@ -92,16 +98,20 @@ void SpectraWidget::setUI()
     m_cluster = new QCheckBox;
     m_cluster->setText(tr("Cluster Results"));
     m_cluster->setChecked(true);
+    m_cluster->setToolTip(tr("VarCovar selects three times the number of x values and groups them by x into that number of clusters, one x per cluster."));
 
     m_averaged = new QCheckBox;
     m_averaged->setText(tr("Cluster Average"));
     m_averaged->setChecked(false);
+    m_averaged->setToolTip(tr("Each cluster gives its mean x instead of its x of largest variance."));
 
     m_values = new QSpinBox;
     m_values->setMinimum(1);
     m_values->setMaximum(100);
     m_values->setValue(5);
+    m_values->setToolTip(tr("Number of x values VarCovar selects."));
     m_varcovar = new QPushButton(tr("VarCovar"));
+    m_varcovar->setToolTip(tr("Selects x values in the selected range from the variance-covariance matrix of the spectra: the x of largest variance first, then the least correlated ones. Replaces the list of x values."));
 
     QGridLayout* xlayout = new QGridLayout;
     xlayout->addWidget(m_add_xvalue, 0, 0);
@@ -118,9 +128,11 @@ void SpectraWidget::setUI()
     connect(action, &QAction::triggered, m_xvalues, [this]() {
         auto avl = m_xvalues->currentRow();
         if (avl < m_xvalues->count() && avl >= 0) {
-            m_xvalues->takeItem(avl);
+            delete m_xvalues->takeItem(avl);
             UpdateXValues();
             UpdateVerticaLines();
+            UpdateData();
+            emit changed();
         }
     });
     m_xvalues->addAction(action);
@@ -131,13 +143,18 @@ void SpectraWidget::setUI()
         m_xvalues->clear();
         m_handler->setXValues(QVector<double>());
         UpdateVerticaLines();
+        UpdateData();
+        emit changed();
     });
     m_xvalues->addAction(action);
 
     // chart, range (Start/End, right-button drag) and processing steps come from the trace editor;
     // the x-value selection stays here
     m_editor = new TraceEditorWidget;
-    m_editor->addToolWidget(new QLabel(tr("# X Values")));
+    m_editor->setDoubleClickHint(tr("Double-click: add an x value"));
+    QLabel* values_label = new QLabel(tr("# X Values"));
+    values_label->setToolTip(m_values->toolTip());
+    m_editor->addToolWidget(values_label);
     m_editor->addToolWidget(m_values);
     m_editor->addToolWidget(m_cluster);
     m_editor->addToolWidget(m_averaged);
@@ -160,11 +177,15 @@ void SpectraWidget::setUI()
     m_views->addTab(table_viewport, tr("Data View"));
 
     m_indep = new DropTable;
+    m_indep->setObjectName("spectraConcentrations");
     m_indep->setMaximumWidth(300);
+    m_indep->setToolTip(tr("Concentrations, one row per spectrum: copy a table and paste it here with Ctrl+V (Ctrl+B appends columns, Ctrl+Y puts them in front)."));
 
     QWidget* indep = new QWidget;
     QVBoxLayout* vlayout = new QVBoxLayout;
-    vlayout->addWidget(new QLabel(tr("Drop table with independent data")));
+    QLabel* indep_label = new QLabel(tr("Concentrations: paste with Ctrl+V"));
+    indep_label->setToolTip(m_indep->toolTip());
+    vlayout->addWidget(indep_label);
     vlayout->addWidget(m_indep);
     indep->setLayout(vlayout);
 
@@ -183,19 +204,25 @@ void SpectraWidget::setUI()
     connect(m_editor, &TraceEditorWidget::rangeChanged, this, [this](double start, double end) {
         m_handler->setXRange(start, end);
         m_project = m_handler->getSpectraData();
+        emit changed();
     });
     connect(m_editor, &TraceEditorWidget::operationsChanged, this, [this]() {
         m_handler->setOperations(m_editor->operations());
         UpdateData();
+        emit changed();
     });
     connect(m_handler, &SpectraHandler::Updated, this, &SpectraWidget::UpdateData);
-
-    connect(m_accept_x, &QPushButton::clicked, this, [this]() {
-        m_xvalues->addItem(m_add_xvalue->text());
-        m_handler->addXValue(m_add_xvalue->text().toDouble());
+    // pasted concentrations go into the table at once (Claude Generated, UX package 1)
+    connect(m_indep, &DropTable::Edited, this, [this]() {
         UpdateData();
-        m_add_xvalue->clear();
+        emit changed();
     });
+    for (QCheckBox* box : { m_cluster, m_averaged })
+        connect(box, &QCheckBox::toggled, this, &SpectraWidget::changed);
+    connect(m_values, &QSpinBox::valueChanged, this, &SpectraWidget::changed);
+
+    connect(m_accept_x, &QPushButton::clicked, this, [this]() { addXValueText(m_add_xvalue->text()); });
+    connect(m_add_xvalue, &QLineEdit::returnPressed, this, [this]() { addXValueText(m_add_xvalue->text()); });
 
     connect(m_varcovar, &QPushButton::clicked, this, [this]() {
         Waiter wait;
@@ -206,6 +233,7 @@ void SpectraWidget::setUI()
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));
         UpdateData();
+        emit changed();
     });
 
     connect(m_export_table, &QPushButton::clicked, this, &SpectraWidget::SaveToFile);
@@ -215,19 +243,21 @@ void SpectraWidget::setFile(const QString& file)
 {
     m_handler->setSpectrafromFile(file);
     UpdateSpectra();
+    emit changed();
 }
 
 void SpectraWidget::addFile(const QString& file)
 {
     m_handler->addSpectrum(file);
     UpdateSpectra();
+    emit changed();
 }
 
 void SpectraWidget::setDirectory(const QString& directry, const QString& type)
 {
     m_handler->addDirectory(directry, type);
     UpdateSpectra();
-    //m_handler->PCA();
+    emit changed();
 }
 
 void SpectraWidget::clear()
@@ -266,6 +296,76 @@ void SpectraWidget::PointDoubleClicked(const QPointF& point)
     m_handler->addXValue(point.x());
     UpdateData();
     UpdateVerticaLines();
+    emit changed();
+}
+
+bool SpectraWidget::addXValueText(const QString& text)
+{
+    QString t = text.trimmed();
+    t.replace(',', '.');
+    bool ok = false;
+    const double x = QLocale::c().toDouble(t, &ok);
+    if (!ok || !std::isfinite(x)) {
+        emit message(t.isEmpty() ? tr("Type an x value first.") : tr("'%1' is not a number: no x value added.").arg(text.trimmed()), StatusLine::Error);
+        return false;
+    }
+    m_xvalues->addItem(QString::number(x));
+    m_handler->addXValue(x);
+    UpdateData();
+    UpdateVerticaLines();
+    m_add_xvalue->clear();
+    emit changed();
+    return true;
+}
+
+int SpectraWidget::spectraCount() const
+{
+    return m_handler->getOrder().size();
+}
+
+int SpectraWidget::xValueCount() const
+{
+    return m_handler->XValues().size();
+}
+
+int SpectraWidget::concentrationRows() const
+{
+    const DataTable* table = qobject_cast<DataTable*>(m_indep->model());
+    return table && table->isValid() && table->columnCount() > 0 ? table->rowCount() : 0;
+}
+
+int SpectraWidget::concentrationColumns() const
+{
+    const DataTable* table = qobject_cast<DataTable*>(m_indep->model());
+    return table && table->isValid() && table->rowCount() > 0 ? table->columnCount() : 0;
+}
+
+bool SpectraWidget::hasTable() const
+{
+    return spectraCount() > 0 && xValueCount() > 0;
+}
+
+bool SpectraWidget::ready(QString* why) const
+{
+    const int spectra = spectraCount();
+    const int x = xValueCount();
+    const int rows = concentrationRows();
+    QString reason;
+    bool ok = false;
+    if (spectra == 0)
+        reason = tr("No spectra: load a file or open a directory.");
+    else if (x == 0)
+        reason = tr("No x values: double-click in the chart, type a value or use VarCovar.");
+    else if (rows > 0 && rows != spectra)
+        reason = tr("The concentrations have %1 rows for %2 spectra: missing cells would be 0.").arg(rows).arg(spectra);
+    else {
+        ok = true;
+        reason = rows > 0 ? tr("OK hands over %1 spectra at %2 x values with %3 concentration column(s).").arg(spectra).arg(x).arg(concentrationColumns())
+                          : tr("OK hands over %1 spectra at %2 x values, without concentrations.").arg(spectra).arg(x);
+    }
+    if (why)
+        *why = reason;
+    return ok;
 }
 
 /*! \brief Table of the selected x values (processed spectra), joined with the dropped concentrations

@@ -27,6 +27,7 @@
 #include <QtCore/QCollator>
 #include <QtCore/QFileInfo>
 #include <QtCore/QLocale>
+#include <QtCore/QSettings>
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 
@@ -52,6 +53,9 @@
 
 #include "src/core/models/datatable.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/importkeyguard.h"
+#include "src/ui/guitools/statusline.h"
+#include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/DropTable.h"
 #include "src/ui/widgets/traceeditorwidget.h"
 
@@ -99,6 +103,7 @@ QColor NmrImport::statusColor(NmrCellStatus status)
 
 void NmrImport::setupUi()
 {
+    m_guard = new ImportKeyGuard(this);
     QVBoxLayout* layout = new QVBoxLayout;
 
     // loading
@@ -207,11 +212,18 @@ void NmrImport::setupUi()
     m_tabs->addTab(tables, tr("Concentrations and table"));
     layout->addWidget(m_tabs, 1);
 
+    // bottom: the last action and what OK hands over, on both pages (Claude Generated, UX package 1)
     QHBoxLayout* bottom = new QHBoxLayout;
-    m_status = new QLabel;
-    m_status->setWordWrap(true);
+    QVBoxLayout* lines = new QVBoxLayout;
+    lines->setSpacing(2);
+    m_status = new StatusLine;
+    m_status->setObjectName("nmrStatus");
+    m_ready = new StatusLine;
+    m_ready->setObjectName("nmrReady");
+    lines->addWidget(m_status);
+    lines->addWidget(m_ready);
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    bottom->addWidget(m_status, 1);
+    bottom->addLayout(lines, 1);
     bottom->addWidget(m_buttons);
     layout->addLayout(bottom);
     setLayout(layout);
@@ -222,7 +234,7 @@ void NmrImport::setupUi()
     resize(1280, 800);
 
     connect(m_buttons, &QDialogButtonBox::accepted, this, &NmrImport::accept);
-    connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(m_buttons, &QDialogButtonBox::rejected, this, &NmrImport::reject);
     connect(m_directory, &QPushButton::clicked, this, [this]() {
         const QString directory = QFileDialog::getExistingDirectory(this, tr("Open directory"), getDir());
         if (directory.isEmpty())
@@ -261,7 +273,13 @@ void NmrImport::setupUi()
     connect(m_up, &QPushButton::clicked, this, [move]() { move(-1); });
     connect(m_down, &QPushButton::clicked, this, [move]() { move(+1); });
     connect(m_remove, &QPushButton::clicked, this, [this]() {
-        if (m_handler.removeSpectrum(m_spectra->currentRow()))
+        const int row = m_spectra->currentRow();
+        if (row < 0 || row >= m_handler.spectrumCount())
+            return;
+        const int manual = manualCount(row, -1);
+        if (manual > 0 && !m_guard->confirm(tr("Remove spectrum %1 and discard %2 hand-set value(s)?").arg(row + 1).arg(manual), tr("Remove")))
+            return;
+        if (m_handler.removeSpectrum(row))
             refresh();
     });
     connect(m_reference, &QPushButton::clicked, this, [this]() {
@@ -276,7 +294,11 @@ void NmrImport::setupUi()
         retrack();
     });
     connect(m_editor, &TraceEditorWidget::chartUpdated, this, &NmrImport::updateMarkers);
-    connect(m_editor->chart(), &ChartView::pointDoubleClicked, this, [this](const QPointF& point) { m_position->setValue(point.x()); });
+    connect(m_editor->chart(), &ChartView::pointDoubleClicked, this, [this](const QPointF& point) {
+        m_position->setValue(point.x());
+        if (m_double_adds->isChecked())
+            addSignalAt(point.x());
+    });
 
     connect(m_results, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
         if (m_updating)
@@ -299,7 +321,10 @@ void NmrImport::setupUi()
             setStatus(tr("'%1' is not a chemical shift.").arg(item->text()), true);
         QMetaObject::invokeMethod(this, [this]() { updateResults(); updateMarkers(); updateTable(); }, Qt::QueuedConnection);
     });
-    connect(m_concentrations, &DropTable::Edited, this, &NmrImport::updateTable);
+    connect(m_concentrations, &DropTable::Edited, this, [this]() {
+        m_guard->markDirty();
+        updateTable();
+    });
     connect(m_details, &QCheckBox::toggled, this, [this]() { updateResults(); });
     connect(m_spectra, &QListWidget::currentRowChanged, this, [this]() {
         if (!m_updating) {
@@ -307,6 +332,8 @@ void NmrImport::setupUi()
             updateFidControls();
         }
     });
+    updateDoubleClickHint();
+    m_guard->removeDefaultButtons();
 }
 
 /*! \brief Panel of the FID processing (Claude Generated, JEOL import). */
@@ -379,6 +406,7 @@ QWidget* NmrImport::fidPanel()
     connect(m_ph1, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyFidSettings);
     connect(m_auto_each, &QCheckBox::toggled, this, &NmrImport::applyFidSettings);
     connect(m_auto_phase, &QPushButton::clicked, this, [this]() {
+        AdaptiveWaiter wait(&m_fid_ms, true); // entropy minimisation of the reference spectrum: always slow enough
         QString error;
         if (!m_handler.autoPhaseFromReference(&error))
             setStatus(error, true);
@@ -423,6 +451,7 @@ void NmrImport::applyFidSettings()
     fid.ph0 = m_ph0->value();
     fid.ph1 = m_ph1->value();
     fid.autoPhase = m_auto_each->isChecked();
+    AdaptiveWaiter wait(&m_fid_ms); // every FID is transformed again
     QString error;
     if (!m_handler.setFidSettings(fid, &error))
         setStatus(error, true);
@@ -504,7 +533,7 @@ QWidget* NmrImport::signalPanel()
     m_position->setDecimals(4);
     m_position->setRange(-1000, 1000);
     m_position->setSuffix(tr(" ppm"));
-    m_position->setToolTip(tr("Position of a new signal; a double-click in the chart takes the position."));
+    m_position->setToolTip(tr("Position of a new signal; a double-click in the chart sets it."));
     m_add = new QPushButton(tr("Add"));
     m_add->setToolTip(tr("Adds a signal at this position with the search window."));
     add->addWidget(m_position, 1);
@@ -520,6 +549,11 @@ QWidget* NmrImport::signalPanel()
     layout->addWidget(m_signal_table, 1);
     m_remove_signal = new QPushButton(tr("Remove signal"));
     layout->addWidget(m_remove_signal);
+    m_double_adds = new QCheckBox(tr("Double-click adds the signal"));
+    m_double_adds->setObjectName("nmrDoubleClickAdds");
+    m_double_adds->setToolTip(tr("A double-click in the chart adds a signal at that position. Off: the double-click only sets the position, \"Add\" adds the signal."));
+    m_double_adds->setChecked(QSettings().value("nmrimport/doubleClickAdds", true).toBool());
+    layout->addWidget(m_double_adds);
     box->setLayout(layout);
     box->setMinimumWidth(230);
     box->setMaximumWidth(300);
@@ -530,7 +564,15 @@ QWidget* NmrImport::signalPanel()
         m_handler.setReferenceOffset(offset);
         refresh();
     });
-    connect(m_window, &QDoubleSpinBox::valueChanged, this, [this](double window) { m_handler.setDefaultWindow(window); });
+    connect(m_window, &QDoubleSpinBox::valueChanged, this, [this](double window) {
+        m_handler.setDefaultWindow(window);
+        if (!m_updating)
+            m_guard->markDirty();
+    });
+    connect(m_double_adds, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue("nmrimport/doubleClickAdds", on);
+        updateDoubleClickHint();
+    });
     connect(m_method, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
     connect(m_width_mode, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
     connect(m_baseline, &QComboBox::currentIndexChanged, this, &NmrImport::applyFitSettings);
@@ -539,6 +581,14 @@ QWidget* NmrImport::signalPanel()
     connect(m_fallback, &QCheckBox::toggled, this, &NmrImport::applyFitSettings);
     updateFitControls();
     connect(m_pick, &QPushButton::clicked, this, [this]() {
+        const int signals_now = m_handler.signalList().size();
+        const int manual = manualCount();
+        if (signals_now > 1 || manual > 0) {
+            const QString question = manual > 0 ? tr("Replace %1 signal(s) and discard %2 hand-set value(s)?").arg(signals_now).arg(manual)
+                                                : tr("Replace %1 signals?").arg(signals_now);
+            if (!m_guard->confirm(question, tr("Replace")))
+                return;
+        }
         QString error;
         const int n = m_handler.pickSignals(m_window->value(), &error);
         if (!error.isEmpty())
@@ -547,12 +597,15 @@ QWidget* NmrImport::signalPanel()
             setStatus(tr("%1 signal(s) picked in spectrum %2.").arg(n).arg(m_handler.referenceIndex() + 1), false);
         retrack();
     });
-    connect(m_add, &QPushButton::clicked, this, [this]() {
-        m_handler.addSignal(m_position->value(), m_window->value());
-        retrack();
-    });
+    connect(m_add, &QPushButton::clicked, this, [this]() { addSignalAt(m_position->value()); });
     connect(m_remove_signal, &QPushButton::clicked, this, [this]() {
-        if (m_handler.removeSignal(m_signal_table->currentRow()))
+        const int row = m_signal_table->currentRow();
+        if (row < 0 || row >= m_handler.signalList().size())
+            return;
+        const int manual = manualCount(-1, row);
+        if (manual > 0 && !m_guard->confirm(tr("Remove signal %1 and discard %2 hand-set value(s)?").arg(m_handler.signalList()[row].name).arg(manual), tr("Remove")))
+            return;
+        if (m_handler.removeSignal(row))
             retrack();
     });
     connect(m_signal_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
@@ -690,6 +743,8 @@ void NmrImport::setConcentrations(const DataTable* table)
 
 void NmrImport::retrack()
 {
+    AdaptiveWaiter wait(&m_track_ms);
+    m_guard->markDirty();
     m_handler.track();
     updateSpectra();
     updateSignals();
@@ -700,6 +755,8 @@ void NmrImport::retrack()
 
 void NmrImport::refresh()
 {
+    AdaptiveWaiter wait(&m_track_ms);
+    m_guard->markDirty();
     m_handler.track();
     m_editor->setTraces(m_handler.referencedSpectra()); // redraws, the markers follow (chartUpdated)
     m_updating = true;
@@ -919,10 +976,42 @@ void NmrImport::updateTable()
 {
     QString error;
     const bool ok = validate(&error);
-    m_table_status->setText(ok ? tr("%1 rows, %2 concentration and %3 shift column(s).").arg(m_preview->model() ? m_preview->model()->rowCount() : 0).arg(m_independent_count).arg(m_handler.enabledSignals().size()) : error);
+    const QString summary = tr("%1 rows, %2 concentration and %3 shift column(s).").arg(m_preview->model() ? m_preview->model()->rowCount() : 0).arg(m_independent_count).arg(m_handler.enabledSignals().size());
+    m_table_status->setText(ok ? summary : error);
     QPalette palette = m_table_status->palette();
-    palette.setColor(QPalette::WindowText, ok ? this->palette().color(QPalette::WindowText) : (Appearance::IsDark() ? QColor(255, 120, 110) : QColor(180, 30, 20)));
+    palette.setColor(QPalette::WindowText, ok ? this->palette().color(QPalette::WindowText) : StatusLine::color(StatusLine::Error));
     m_table_status->setPalette(palette);
+    // the same on both pages, in one line (the full text is the tooltip)
+    if (ok)
+        m_ready->setMessage(tr("OK hands over %1").arg(summary), StatusLine::Info);
+    else
+        m_ready->setMessage(tr("OK not possible yet: %1").arg(error), m_handler.spectrumCount() == 0 ? StatusLine::Info : StatusLine::Warning);
+}
+
+int NmrImport::manualCount(int spectrum, int signal) const
+{
+    int count = 0;
+    for (int k = 0; k < m_handler.spectrumCount(); ++k) {
+        if (spectrum >= 0 && k != spectrum)
+            continue;
+        for (int s = 0; s < m_handler.signalList().size(); ++s)
+            if ((signal < 0 || s == signal) && m_handler.hasManualShift(k, s))
+                ++count;
+    }
+    return count;
+}
+
+void NmrImport::addSignalAt(double position)
+{
+    const int index = m_handler.addSignal(position, m_window->value());
+    retrack();
+    if (index >= 0 && index < m_handler.signalList().size())
+        setStatus(tr("Signal %1 added at %2 ppm.").arg(m_handler.signalList()[index].name).arg(position, 0, 'f', 4), false);
+}
+
+void NmrImport::updateDoubleClickHint()
+{
+    m_editor->setDoubleClickHint(m_double_adds->isChecked() ? tr("Double-click: add a signal") : tr("Double-click: set the position of a new signal"));
 }
 
 bool NmrImport::validate(QString* error)
@@ -973,8 +1062,11 @@ void NmrImport::accept()
 
 void NmrImport::setStatus(const QString& text, bool error)
 {
-    m_status->setText(text);
-    QPalette palette = m_status->palette();
-    palette.setColor(QPalette::WindowText, error ? (Appearance::IsDark() ? QColor(255, 120, 110) : QColor(180, 30, 20)) : this->palette().color(QPalette::WindowText));
-    m_status->setPalette(palette);
+    m_status->setMessage(text, error ? StatusLine::Error : StatusLine::Info);
+}
+
+void NmrImport::reject()
+{
+    if (m_guard->confirmDiscard())
+        QDialog::reject();
 }

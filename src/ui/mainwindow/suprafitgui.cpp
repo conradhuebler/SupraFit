@@ -40,6 +40,7 @@
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
+#include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/dialogs/spectraimport.h"
 
 #include "src/ui/guitools/appearance.h"
@@ -391,6 +392,10 @@ SupraFitGui::SupraFitGui()
 
     m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
     connect(m_spectra, &QAction::triggered, this, &SupraFitGui::OpenSpectraDir);
+
+    m_nmr = new QAction(Icon("spectra_ico"), tr("Open NMR Spectra"), this);
+    m_nmr->setObjectName("openNmrSpectra");
+    connect(m_nmr, &QAction::triggered, this, &SupraFitGui::OpenNmrSpectra);
 
     m_save = new QAction(Icon("document-save"), tr("&Save Project"), this);
     m_save->setShortcuts(QKeySequence::Save);
@@ -827,13 +832,32 @@ void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& dat
 
 void SupraFitGui::OpenSpectraDir()
 {
-    SpectraImport* spectra = new SpectraImport;
+    SpectraImport spectra;
+    spectra.setParent(this, spectra.windowFlags()); // a dialog of this window, deleted with the scope
 
-    if (spectra->exec()) {
+    if (spectra.exec() == QDialog::Accepted) {
+        // the table of the dialog (x values, with the pasted concentrations), as Edit Data hands it over
         ImportData dialog(this);
         DataTable* tmp = new DataTable;
+        tmp->ImportTable(spectra.InputTable());
         dialog.LoadTable(tmp, 2);
-        dialog.setSpectraData(spectra->ProjectData());
+        dialog.setSpectraData(spectra.ProjectData());
+        if (dialog.exec() == QDialog::Accepted) {
+            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+            m_mainsplitter->show();
+        }
+    }
+    UpdateRecentList();
+}
+
+void SupraFitGui::OpenNmrSpectra()
+{
+    NmrImport nmr(this);
+    if (nmr.exec() == QDialog::Accepted) {
+        // as ImportData::ImportNmr: concentrations + shifts, the number of concentration columns, the NMR raw block
+        ImportData dialog(this);
+        dialog.LoadTable(new DataTable(nmr.InputTable()), nmr.IndependentCount());
+        dialog.setSpectraData(nmr.ProjectData());
         if (dialog.exec() == QDialog::Accepted) {
             SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
             m_mainsplitter->show();
@@ -901,12 +925,13 @@ void SupraFitGui::SetupToolBar()
     m_load->setToolTip(tr("Open a SupraFit project or a data table"));
     m_thermogram->setToolTip(tr("Import raw ITC thermograms"));
     m_spectra->setToolTip(tr("Import a directory of spectra"));
+    m_nmr->setToolTip(tr("Import an NMR titration: spectra, signals and chemical shifts"));
     m_save->setToolTip(tr("Save all open projects"));
     m_save_as->setToolTip(tr("Save all open projects to a new file"));
     m_config->setToolTip(tr("Program settings"));
 
     m_main_toolbar->addWidget(groupButton(m_new_table, { m_new_table, m_new_window }, QString()));
-    m_main_toolbar->addWidget(groupButton(m_load, { m_load, m_thermogram, m_spectra }, QString()));
+    m_main_toolbar->addWidget(groupButton(m_load, { m_load, m_thermogram, m_spectra, m_nmr }, QString()));
     m_main_toolbar->addWidget(groupButton(m_save, { m_save, m_save_as }, QString()));
     m_main_toolbar->addSeparator();
 

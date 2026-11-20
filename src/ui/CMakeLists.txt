@@ -93,6 +93,8 @@ set(SFGui_SRC
                 mainwindow/suprafitgui.cpp
                 settingsregistry.cpp
                 guitools/appearance.cpp
+                guitools/importkeyguard.cpp
+                guitools/statusline.cpp
     )
 
 if(USE_LLM)

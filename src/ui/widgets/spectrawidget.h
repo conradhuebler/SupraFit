@@ -53,11 +53,33 @@ public:
     QJsonObject InputTable() const { return m_input_table; }
     void setData(const QJsonObject& data);
 
+    /*! \brief Number of loaded spectra. Claude Generated */
+    int spectraCount() const;
+    /*! \brief Number of selected x values. Claude Generated */
+    int xValueCount() const;
+    /*! \brief Rows of the pasted concentration table (0 without one). Claude Generated */
+    int concentrationRows() const;
+    /*! \brief Columns of the pasted concentration table (0 without one). Claude Generated */
+    int concentrationColumns() const;
+
+    /*! \brief Can OK hand over a complete table? True if there is at least one spectrum and one x value and
+     * the concentrations (if pasted) have one row per spectrum. *why: the reason, or what OK hands over. Claude Generated */
+    bool ready(QString* why = nullptr) const;
+    /*! \brief Is there anything OK could hand over (at least one spectrum and one x value)? Claude Generated */
+    bool hasTable() const;
+
+    /*! \brief Adds an x value typed by the user ("450.5" or "450,5"); false (and message()) for anything else. Claude Generated */
+    bool addXValueText(const QString& text);
+
 public slots:
     void UpdateSpectra();
     void UpdateData();
 
 signals:
+    /*! \brief Spectra, x values, processing, range, concentrations or VarCovar options changed. Claude Generated */
+    void changed();
+    /*! \brief A message for the status line of the dialog (level of StatusLine). Claude Generated */
+    void message(const QString& text, int level);
 
 private:
     QTabWidget* m_views;

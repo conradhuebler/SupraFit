@@ -31,6 +31,8 @@
 
 class DataTable;
 class DropTable;
+class ImportKeyGuard;
+class StatusLine;
 class LineSeries;
 class ScatterSeries;
 class TraceEditorWidget;
@@ -66,6 +68,13 @@ class QTableWidget;
  * FID) sets the common FID processing of NmrHandler: line broadening, zero filling, phase 0/1 for all
  * spectra, "Auto phase" (from the reference spectrum, written into the phase fields) or automatic phase per
  * spectrum.
+ *
+ * UX package 1: keyboard rule and discard question of ImportKeyGuard; a status line at the bottom says
+ * on both pages what OK hands over or why it cannot (validate()); "Double-click adds the signal"
+ * (QSettings "nmrimport/doubleClickAdds", default on) adds a signal at a double-click, else the
+ * double-click only sets the position; picking signals, removing a spectrum or a signal asks first when
+ * values set by hand (or more than one signal) would be lost; a wait cursor around work that took more
+ * than 0.3 s the last time (AdaptiveWaiter).
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -98,8 +107,15 @@ public:
     /*! \brief Tracks again and redraws everything (after changes made through handler()). */
     void refresh();
 
+    inline ImportKeyGuard* keyGuard() const { return m_guard; }
+    /*! \brief Number of cells set by hand, of one spectrum and/or one signal (-1: all). Claude Generated */
+    int manualCount(int spectrum = -1, int signal = -1) const;
+    /*! \brief Adds a signal at position (name and window as "Add") and tracks again. Claude Generated */
+    void addSignalAt(double position);
+
 public slots:
     void accept() override;
+    void reject() override;
 
 private:
     void setupUi();
@@ -116,6 +132,8 @@ private:
     void updateTable();
     void retrack();
     void setStatus(const QString& text, bool error);
+    /*! \brief Hint of the double-click in the trace editor, after the option. Claude Generated */
+    void updateDoubleClickHint();
     void applyFitSettings();
     void updateFitControls();
     /*! \brief Spectrum whose fit is drawn: the selected one, else the reference. */
@@ -142,7 +160,12 @@ private:
     QSpinBox* m_max_iterations;
     QCheckBox *m_fallback, *m_details;
     QWidget* m_fit_options;
-    QLabel *m_status, *m_legend;
+    StatusLine* m_status; ///< result of the last action (read, picked, refused input)
+    StatusLine* m_ready; ///< what OK hands over or why not, visible on both pages
+    QLabel* m_legend;
+    QCheckBox* m_double_adds;
+    ImportKeyGuard* m_guard;
+    qint64 m_track_ms = 0, m_fid_ms = 0; ///< duration of the last tracking / FID transform (wait cursor)
     DropTable *m_concentrations, *m_preview;
     QLabel* m_table_status;
     QDialogButtonBox* m_buttons;

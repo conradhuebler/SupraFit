@@ -47,7 +47,10 @@
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QVBoxLayout>
 
+#include <QtWidgets/QApplication>
+
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/statusline.h"
 
 #include "traceeditorwidget.h"
 
@@ -209,6 +212,11 @@ void TraceEditorWidget::setupUi()
     splitter->setStretchFactor(1, 0);
     splitter->setChildrenCollapsible(false);
     layout->addWidget(splitter, 1);
+
+    // one-line hint on the mouse and keys of the chart (Claude Generated, UX package 1)
+    m_hint = new StatusLine;
+    m_hint->setObjectName("traceEditorHint");
+    layout->addWidget(m_hint);
     setLayout(layout);
 
     connect(m_zoom, &QPushButton::clicked, this, [this]() {
@@ -235,6 +243,40 @@ void TraceEditorWidget::setupUi()
 
     updateList();
     updateForm();
+    updateHint();
+}
+
+void TraceEditorWidget::setDoubleClickHint(const QString& text)
+{
+    m_double_click_hint = text;
+    updateHint();
+}
+
+QString TraceEditorWidget::hintText() const
+{
+    QStringList parts = { tr("Left-drag: zoom"), tr("Middle click: whole spectrum"), tr("Right-drag: select the range") };
+    if (!m_double_click_hint.isEmpty())
+        parts << m_double_click_hint;
+    parts << tr("ESC: cancel a drag");
+    return parts.join(QStringLiteral("  ·  "));
+}
+
+bool TraceEditorWidget::hintsEnabled()
+{
+    const QVariant value = qApp->property("thermogram_guidelines");
+    return !value.isValid() || value.toBool();
+}
+
+void TraceEditorWidget::updateHint()
+{
+    m_hint->setMessage(hintText(), StatusLine::Info);
+    m_hint->setVisible(hintsEnabled());
+}
+
+void TraceEditorWidget::showEvent(QShowEvent* event)
+{
+    updateHint(); // the setting may have changed since the widget was built
+    QWidget::showEvent(event);
 }
 
 void TraceEditorWidget::setTraces(const TraceSet& traces)

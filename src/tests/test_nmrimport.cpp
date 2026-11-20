@@ -37,9 +37,11 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTabWidget>
@@ -49,6 +51,8 @@
 #include "src/core/nmrhandler.h"
 #include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/guitools/appearance.h"
+#include "src/ui/guitools/importkeyguard.h"
+#include "src/ui/guitools/statusline.h"
 #include "src/ui/widgets/traceeditorwidget.h"
 
 #include "jdf_test_writer.h"
@@ -402,6 +406,175 @@ private slots:
         QCOMPARE(again.findChild<QSpinBox*>("nmrMaxIterations")->value(), 200);
         QVERIFY(again.findChild<QCheckBox*>("nmrPeakFallback")->isChecked());
         QCOMPARE(again.InputTable(), dialog.InputTable());
+    }
+
+    /// UX package 1 (Claude Generated): Enter does not accept, Cancel asks only after a change, the status line
+    /// at the bottom says what OK does (visible on the first page)
+    void keyboardRuleAndStatusLine()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        fill(dialog.handler(), steps);
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        std::unique_ptr<DataTable> conc(concentrations(steps));
+        dialog.setConcentrations(conc.get());
+        dialog.refresh();
+        QString error;
+        QVERIFY2(dialog.validate(&error), qPrintable(error)); // OK would hand over: Enter must not press it
+        QStringList asked;
+        bool answer = false;
+        dialog.keyGuard()->setConfirmHandler([&](const QString& question) {
+            asked << question;
+            return answer;
+        });
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QCOMPARE(dialog.findChild<QTabWidget*>()->currentIndex(), 0);
+        StatusLine* ready = dialog.findChild<StatusLine*>("nmrReady");
+        QVERIFY(ready && ready->isVisible());
+        QCOMPARE(ready->level(), StatusLine::Info);
+        QVERIFY(ready->message().startsWith(QObject::tr("OK hands over").left(8)));
+
+        // Enter in the start of the range and in the search window
+        TraceEditorWidget* editor = dialog.findChild<TraceEditorWidget*>();
+        QDoubleSpinBox* start = editor->findChildren<QDoubleSpinBox*>().value(0);
+        QDoubleSpinBox* window = nullptr;
+        for (QDoubleSpinBox* box : dialog.findChildren<QDoubleSpinBox*>())
+            if (box->toolTip().startsWith("Window of new signals"))
+                window = box;
+        QVERIFY(start && window);
+        for (QDoubleSpinBox* box : { start, window }) {
+            box->setFocus();
+            QTest::keyClick(box, Qt::Key_Return);
+            QTest::keyClick(box, Qt::Key_Enter);
+            QVERIFY(dialog.isVisible());
+        }
+        QCOMPARE(dialog.result(), 0);
+        // ESC in the chart stays there
+        editor->chart()->privateView()->setFocus();
+        QTest::keyClick(editor->chart()->privateView(), Qt::Key_Escape);
+        QVERIFY(dialog.isVisible());
+
+        // unchanged: Cancel closes without a question
+        QVERIFY(!dialog.keyGuard()->isDirty());
+        dialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Cancel)->click();
+        QVERIFY(!dialog.isVisible());
+        QCOMPARE(asked.size(), 0);
+
+        // a change: the question, "Keep editing" keeps the dialog
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        dialog.addSignalAt(7.10);
+        QVERIFY(dialog.keyGuard()->isDirty());
+        dialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Cancel)->click();
+        QCOMPARE(asked.size(), 1);
+        QVERIFY(dialog.isVisible());
+        answer = true;
+        QTest::keyClick(&dialog, Qt::Key_Escape);
+        QCOMPARE(asked.size(), 2);
+        QVERIFY(!dialog.isVisible());
+
+        // without concentrations the line says why OK cannot hand over
+        NmrImport empty;
+        fill(empty.handler(), steps);
+        empty.handler()->addSignal(7.60, 0.08, "H1");
+        empty.refresh();
+        QCOMPARE(empty.findChild<StatusLine*>("nmrReady")->level(), StatusLine::Warning);
+        QVERIFY2(empty.findChild<StatusLine*>("nmrReady")->message().contains("concentrations"), qPrintable(empty.findChild<StatusLine*>("nmrReady")->message()));
+    }
+
+    /// D1 (Claude Generated): a double-click adds a signal, or only sets the position; the choice is remembered
+    void doubleClickAddsSignal()
+    {
+        NmrImport dialog;
+        fill(dialog.handler(), 6);
+        dialog.refresh();
+        QCheckBox* adds = dialog.findChild<QCheckBox*>("nmrDoubleClickAdds");
+        QVERIFY(adds && adds->isChecked());
+        TraceEditorWidget* editor = dialog.findChild<TraceEditorWidget*>();
+        QVERIFY(editor->hintText().contains(QObject::tr("Double-click: add a signal")));
+        emit editor->chart()->pointDoubleClicked(QPointF(7.60, 0.5));
+        QCOMPARE(dialog.handler()->signalList().size(), 1);
+        QCOMPARE(dialog.handler()->signalList()[0].position, 7.60);
+
+        adds->setChecked(false);
+        QCOMPARE(QSettings().value("nmrimport/doubleClickAdds").toBool(), false);
+        QVERIFY(editor->hintText().contains(QObject::tr("Double-click: set the position of a new signal")));
+        emit editor->chart()->pointDoubleClicked(QPointF(7.10, 0.5));
+        QCOMPARE(dialog.handler()->signalList().size(), 1);
+        QDoubleSpinBox* position = nullptr;
+        for (QDoubleSpinBox* box : dialog.findChildren<QDoubleSpinBox*>())
+            if (box->toolTip().startsWith("Position of a new signal"))
+                position = box;
+        QVERIFY(position);
+        QCOMPARE(position->value(), 7.10);
+
+        NmrImport again; // the next dialog starts with the remembered choice
+        QVERIFY(!again.findChild<QCheckBox*>("nmrDoubleClickAdds")->isChecked());
+        again.findChild<QCheckBox*>("nmrDoubleClickAdds")->setChecked(true);
+    }
+
+    /// D2 (Claude Generated): picking, removing a spectrum or a signal asks when hand-set values would be lost
+    void destructiveActionsAsk()
+    {
+        const int steps = 6;
+        NmrImport dialog;
+        fill(dialog.handler(), steps);
+        dialog.handler()->addSignal(7.60, 0.08, "H1");
+        dialog.handler()->addSignal(7.10, 0.08, "H2");
+        dialog.refresh();
+        QVERIFY(dialog.handler()->setManualShift(2, 1, 7.15));
+        dialog.refresh();
+        QCOMPARE(dialog.manualCount(), 1);
+        QStringList asked;
+        bool answer = false;
+        dialog.keyGuard()->setConfirmHandler([&](const QString& question) {
+            asked << question;
+            return answer;
+        });
+        QPushButton *pick = nullptr, *removeSignal = nullptr, *removeSpectrum = nullptr;
+        for (QPushButton* button : dialog.findChildren<QPushButton*>()) {
+            if (button->text() == QObject::tr("Pick from reference spectrum"))
+                pick = button;
+            else if (button->text() == QObject::tr("Remove signal"))
+                removeSignal = button;
+            else if (button->text() == QObject::tr("Remove") && !dialog.findChild<TraceEditorWidget*>()->isAncestorOf(button))
+                removeSpectrum = button; // the editor has a "Remove" of its steps
+        }
+        QVERIFY(pick && removeSignal && removeSpectrum);
+
+        pick->click();
+        QCOMPARE(asked.size(), 1);
+        QVERIFY2(asked[0].contains("2 signal") && asked[0].contains("1 hand-set"), qPrintable(asked[0]));
+        QCOMPARE(dialog.handler()->signalList().size(), 2); // kept
+        QCOMPARE(dialog.manualCount(), 1);
+
+        QTableWidget* signalTable = dialog.findChild<QTableWidget*>("nmrSignals");
+        signalTable->setCurrentCell(0, 0); // H1 has no hand-set value: no question
+        removeSignal->click();
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(dialog.handler()->signalList().size(), 1);
+        signalTable = dialog.findChild<QTableWidget*>("nmrSignals");
+        signalTable->setCurrentCell(0, 0); // H2 (now column 0) has one
+        removeSignal->click();
+        QCOMPARE(asked.size(), 2);
+        QCOMPARE(dialog.handler()->signalList().size(), 1);
+
+        QListWidget* spectra = nullptr;
+        for (QListWidget* list : dialog.findChildren<QListWidget*>())
+            if (list->toolTip().startsWith("Titration order"))
+                spectra = list;
+        QVERIFY(spectra);
+        spectra->setCurrentRow(2);
+        removeSpectrum->click();
+        QCOMPARE(asked.size(), 3);
+        QVERIFY(asked[2].contains("1 hand-set"));
+        QCOMPARE(dialog.handler()->spectrumCount(), steps);
+        answer = true;
+        spectra->setCurrentRow(2);
+        removeSpectrum->click();
+        QCOMPARE(dialog.handler()->spectrumCount(), steps - 1);
+        QCOMPARE(dialog.manualCount(), 0);
     }
 
     void renderDialog()
