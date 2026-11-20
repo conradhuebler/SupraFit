@@ -43,6 +43,7 @@
 
 #include "libpeakpick/peakpick.h"
 
+#include "src/ui/guitools/appearance.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/widgets/thermogramwidget.h"
@@ -481,20 +482,16 @@ void Thermogram::UpdateTable()
         m_table->setItem(j, 0, newItem);
 
         newItem = new QTableWidgetItem(QString::number(rows[j][1]));
-        newItem->background().setColor(m_raw_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable); // only the volume column is editable
         m_table->setItem(j, 1, newItem);
         m_raw_series->append(QPointF(j + 1, rows[j][1]));
 
         newItem = new QTableWidgetItem(QString::number(rows[j][2]));
-        if (dilution)
-            newItem->setBackground(m_dil_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 2, newItem);
         m_dil_series->append(QPointF(j + 1, rows[j][2]));
 
         newItem = new QTableWidgetItem(QString::number(rows[j][3]));
-        newItem->background().setColor(m_thm_series->color().lighter());
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         m_table->setItem(j, 3, newItem);
         m_thm_series->append(QPointF(j + 1, rows[j][3]));
@@ -511,6 +508,26 @@ void Thermogram::UpdateTable()
 
     if (dilution)
         m_data_view->addSeries(m_dil_series);
+
+    // Cell colours of the heat columns: the colour of the series in the chart, mixed into the base colour
+    // of the palette (light and dark); only now, because the dilution series gets its colour when it is
+    // added to the chart. Claude Generated (UX package 1)
+    auto tint = [this](const QColor& series) {
+        const QColor base = palette().color(QPalette::Base);
+        const qreal a = 0.35;
+        return QColor::fromRgbF(base.redF() * (1 - a) + series.redF() * a, base.greenF() * (1 - a) + series.greenF() * a, base.blueF() * (1 - a) + series.blueF() * a);
+    };
+    const QList<QPair<int, QColor>> tinted = { { 1, tint(m_raw_series->color()) }, { 2, tint(m_dil_series->color()) }, { 3, tint(m_thm_series->color()) } };
+    for (const auto& column : tinted) {
+        if (column.first == 2 && !dilution)
+            continue;
+        for (int j = 0; j < m_table->rowCount(); ++j) {
+            if (QTableWidgetItem* item = m_table->item(j, column.first)) {
+                item->setBackground(column.second);
+                item->setForeground(Appearance::ContrastText(column.second));
+            }
+        }
+    }
 
     m_data_view->setXAxis("Inject Number");
     m_data_view->setYAxis("Heat q");
