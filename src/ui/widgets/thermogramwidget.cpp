@@ -341,12 +341,13 @@ void ThermogramWidget::setupControls()
     m_get_calibration_start->setToolTip(tr("Click and select the starting time for the calibration from the thermogram."));
 
     connect(m_get_calibration_start, &QPushButton::clicked, this, [this]() {
-        if (!m_get_time_from_thermogram) {
+        // the calibration mode is m_calibration_start_int, not m_get_time_from_thermogram (that one belongs to the peak start/end modes)
+        if (!m_get_time_from_thermogram && !m_calibration_start_int) {
             m_calibration_start_int = 1;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
             m_get_calibration_start->setText("Click to Undo");
             setGuideText(QString("You are now in <i>Calibartion start time selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the calibration starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
-        } else if (m_get_time_from_thermogram == 1) {
+        } else if (m_calibration_start_int == 1) {
             m_calibration_start_int = 0;
             m_get_calibration_start->setText("Click to Select");
             ResetGuideLabel();
