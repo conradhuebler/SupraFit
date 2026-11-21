@@ -130,8 +130,6 @@ private:
         m_table = table;
         m_table->layoutChanged();
     }
-    void deleteRow();
-    void deleteColumn();
 
     QPointer<DataTable> m_table;
 };

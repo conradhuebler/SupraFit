@@ -442,11 +442,6 @@ void ThermogramWidget::setupControls()
     m_overshot = new QSpinBox;
     m_overshot->setRange(1, 200);
     m_overshot->setValue(1);
-
-    m_gradient = new QDoubleSpinBox;
-    m_gradient->setDecimals(5);
-    m_gradient->setRange(-1, 1);
-    m_gradient->setValue(-1);
 }
 
 QLayout* ThermogramWidget::setupParameterPanel()
@@ -577,7 +572,6 @@ QLayout* ThermogramWidget::setupParameterPanel()
         triplett = new QHBoxLayout;
 
         triplett->addWidget(m_overshot);
-        triplett->addWidget(m_gradient);
         vlayout->addLayout(triplett);
 
         group->setLayout(vlayout);

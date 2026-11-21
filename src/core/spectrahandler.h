@@ -72,8 +72,7 @@ public:
     inline QVector<double> XValues() const { return m_x; }
     DataTable* CompileSimpleTable();
 
-    void PCA();
-    /*! \brief Matrix of the spectra (rows) over their common x range, as used by VarCovarSelect/PCA.
+    /*! \brief Matrix of the spectra (rows) over their common x range, as used by VarCovarSelect.
      * Spectra of another sampling are interpolated onto the axis of the first one. Claude Generated */
     inline Eigen::MatrixXd SpectraMatrix() const { return PrepareMatrix(); }
     QVector<double> VarCovarSelect(int max_number, bool do_clustering = true, bool averaged = false);

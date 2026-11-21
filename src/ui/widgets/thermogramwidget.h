@@ -126,7 +126,7 @@ private:
     QComboBox *m_integration_range, *m_scaling;
     QSpinBox *m_iterations, *m_overshot;
 
-    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold, *m_gradient;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold;
     QPushButton *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules, *m_get_calibration_start;
     QCheckBox *m_direction, *m_averaged;
     QTableWidget *m_table, *m_peak_rule_list;

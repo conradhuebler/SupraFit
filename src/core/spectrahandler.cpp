@@ -267,25 +267,6 @@ TraceSet SpectraHandler::ProcessedSpectra(QString* error) const
     return processed;
 }
 
-void SpectraHandler::PCA()
-{
-    Eigen::MatrixXd mat = PrepareMatrix();
-    Eigen::MatrixXd centered = mat.rowwise() - mat.colwise().mean();
-    Eigen::MatrixXd cov = centered.adjoint() * centered;
-    /*
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(cov);
-    std::cout << eig.eigenvalues()/eig.eigenvalues().sum()*100<< std::endl;
-    std::cout << eig.eigenvectors().col(eig.eigenvectors().cols()-1) << std::endl;
-   std::cout << eig.eigenvectors().row(eig.eigenvectors().rows()-1) << std::endl;
-*/
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(centered, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    //std::cout << svd.singularValues()/svd.singularValues().sum()*100 << std::endl;
-    Eigen::MatrixXd V = svd.matrixV();
-    // std::cout << V.rightCols(1) << std::endl;
-    //std::cout << svd.matrixU().transpose().leftCols(5) << std::endl;
-    // std::cout << V.rightCols(2) *svd.singularValues()(2)* svd.matrixU().transpose().leftCols(2).transpose() << std::endl;
-}
-
 QJsonObject SpectraHandler::getSpectraData() const
 {
     QJsonObject spectradata, data;

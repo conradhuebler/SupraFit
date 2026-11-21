@@ -273,8 +273,6 @@ void ThermogramHandler::UpdatePeaks()
     if (m_spectrum.Step() == 0)
         return;
 
-    qreal offset = 0;
-    int off = 1;
     int rules_size = m_peak_rules.size();
     double end = m_ThermogramEnd;
     m_peak_list.clear();
@@ -307,7 +305,8 @@ void ThermogramHandler::UpdatePeaks()
         }
     }
 
-    m_offset = offset / double(off);
+    // the start value of the baseline is zero (a sum over the peaks that was meant for it was never filled) (Claude Generated, R0)
+    m_offset = 0;
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
     CalibrateSystem();
