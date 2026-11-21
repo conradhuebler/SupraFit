@@ -30,6 +30,7 @@
 
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTimer>
@@ -402,6 +403,97 @@ private slots:
         QCOMPARE(seen, 2);
         QVERIFY(loaded);
         QCOMPARE(rows, expected->rowCount());
+    }
+
+    /*! \brief MEASUREMENT, no assertion on the numbers (R0/F10): the net heats of the dialog (setExperimentFile runs
+     * Initialise + IntegrateThermogram) against ItcProcessor::process() (Initialise + UpdatePeaks +
+     * AdjustIntegrationRange + IntegrateThermogram, also the CLI) for the ITC samples, the same peak rules for both.
+     * Prints per case the number of injections and the worst relative difference; SKIP without the samples.
+     * Claude Generated */
+    void measureDialogVersusProcess()
+    {
+        struct Case {
+            QString experiment, dilution;
+        };
+        // synthetic.itc is not measured: process() does not return on it (PeakPick::spectrum::XtoIndex loops for a peak rule
+        // within four points of the start of the trace, Track B of SESSION_HANDOFF_THERMO.md); the dialog does not call
+        // UpdatePeaks for .itc files and is not affected.
+        const QList<Case> cases = { { "reaction.dat", QString() }, { "dilution.dat", QString() }, { "reaction.dat", "dilution.dat" } };
+        int measured = 0;
+        for (const Case& c : cases) {
+            if (!QFileInfo::exists(sample(c.experiment)) || (!c.dilution.isEmpty() && !QFileInfo::exists(sample(c.dilution))))
+                continue;
+            const bool itc = c.experiment.endsWith(".itc");
+
+            Thermogram dialog;
+            if (!itc)
+                dialog.setExperimentFit(ruleBlock(c.experiment));
+            dialog.setExperimentFile(sample(c.experiment));
+            if (!c.dilution.isEmpty()) {
+                dialog.setDilutionFit(ruleBlock(c.dilution));
+                dialog.setDilutionFile(sample(c.dilution));
+            }
+            std::unique_ptr<DataTable> shown(dialog.ResultTable());
+
+            ItcProcessor core;
+            core.setScalingFactor(cal2joule);
+            if (itc) {
+                QString file = sample(c.experiment);
+                std::vector<PeakPick::Peak> peaks;
+                QVector<qreal> inject;
+                qreal offset = 0, freq = 0;
+                const QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(file, &peaks, offset, freq, inject);
+                core.setInjectionVolumes(inject);
+                core.experiment()->setThermogram(pair.first);
+                core.experiment()->setPeakList(peaks);
+            } else {
+                const QPair<Vector, Vector> xy = ToolSet::LoadXYFile(sample(c.experiment));
+                core.experiment()->setThermogramParameter(ruleBlock(c.experiment));
+                core.experiment()->setThermogram(PeakPick::spectrum(xy.first, xy.second));
+            }
+            if (!c.dilution.isEmpty()) {
+                const QPair<Vector, Vector> xy = ToolSet::LoadXYFile(sample(c.dilution));
+                core.dilution()->setThermogramParameter(ruleBlock(c.dilution));
+                core.dilution()->setThermogram(PeakPick::spectrum(xy.first, xy.second));
+                core.setDilutionEnabled(true);
+            }
+            core.process();
+            const QVector<qreal> net = core.netHeat();
+
+            // compared index by index and with the dialog's rows shifted by one (the two paths may differ by a peak)
+            double scale = 0;
+            for (qreal q : net)
+                scale = std::max<double>(scale, std::abs(q));
+            int n = 0;
+            for (int shift : { 0, 1, -1 }) {
+                double worst = 0, worstAbs = 0, worstAbsInner = 0;
+                int at = -1, count = 0;
+                for (int i = 0; i < net.size(); ++i) {
+                    const int row = i + shift;
+                    if (row < 0 || row >= shown->rowCount())
+                        continue;
+                    ++count;
+                    const double a = shown->data(row, 1), b = net[i];
+                    const double rel = std::abs(a - b) / std::max(std::abs(b), 1e-300);
+                    if (std::abs(a - b) > worstAbs) {
+                        worstAbs = std::abs(a - b);
+                        at = i;
+                    }
+                    if (i < net.size() - 1)
+                        worstAbsInner = std::max(worstAbsInner, std::abs(a - b));
+                    worst = std::max(worst, rel);
+                }
+                n = std::max(n, count);
+                qInfo("%s%s: dialog %d / process() %d injections, dialog row = process row %+d: worst |dq| %.3g = %.3g of the "
+                      "largest |q| (injection %d of process()), without the last injection %.3g of it, worst relative to the own value %.3g",
+                    qPrintable(c.experiment), c.dilution.isEmpty() ? "" : qPrintable(" - " + c.dilution), shown->rowCount(), int(net.size()),
+                    shift, worstAbs, scale > 0 ? worstAbs / scale : 0.0, at + 1, scale > 0 ? worstAbsInner / scale : 0.0, worst);
+            }
+            QVERIFY(n > 0);
+            ++measured;
+        }
+        if (measured == 0)
+            QSKIP("no ITC samples in " SAMPLE_DIR);
     }
 
     void renderDialog()
