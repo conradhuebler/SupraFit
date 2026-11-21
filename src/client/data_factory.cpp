@@ -242,7 +242,8 @@ QPointer<DataClass> DataFactory::applyNoise(QPointer<DataClass> data, const QJso
         // All noise types use DataTable's PrepareMC functionality - Claude Generated
         
         // Get noise parameters with reasonable defaults
-        double stddev = noiseConfig["StdDev"].toDouble(0.05);  // Default 5% noise
+        // absolute standard deviation in the unit of the table (default 0.05), not 5 % of the value (Claude Generated, R0)
+        double stddev = noiseConfig["StdDev"].toDouble(0.05);
         int seed = noiseConfig["Seed"].toInt(42);
         QVector<int> columns;  // Empty means all columns
         
