@@ -21,6 +21,7 @@
 // only by the core ItcProcessor + ThermogramHandler on the sample thermograms in data/samples/itc.
 
 #include <cmath>
+#include <memory>
 
 #include <QtCore/QJsonObject>
 #include <QtTest/QSignalSpy>
@@ -436,6 +437,54 @@ private slots:
         QCOMPARE(proc.injectionVolumes()[0], 1.0);
         QCOMPARE(proc.injectionVolumes()[1], 2.0);
         QCOMPARE(proc.injectionVolumes()[2], 3.0);
+    }
+
+    /*! \brief A fit block of the first thermogram versions (no "SupraFit" key, LegacyLoad): the end of the thermogram is
+     * read from "end_time" also when "peak_time" is missing; SupraFit always wrote both keys, for such blocks the
+     * result is the one of before. Claude Generated (R0) */
+    void testLegacyBlockReadsEndTime()
+    {
+        const QPair<Vector, Vector> xy = ToolSet::LoadXYFile(QString(SAMPLE_DIR) + "/reaction.dat");
+        const qreal begin = xy.first(0), end = xy.first(xy.first.size() - 1);
+        const qreal duration = (end - begin) / 21.0;
+        const qreal endTime = end - duration; // the last peak rule stops before the end of the trace
+
+        QJsonObject thermogram;
+        thermogram["x"] = ToolSet::DoubleList2String(xy.first);
+        thermogram["y"] = ToolSet::DoubleList2String(xy.second);
+        QJsonObject block;
+        block["thermogram"] = thermogram;
+        block["start_time"] = begin;
+        block["end_time"] = endTime;
+        block["rules_list"] = ToolSet::Points2String(QList<QPointF>{ QPointF(begin + duration, duration) });
+
+        auto run = [](const QJsonObject& fit) {
+            auto handler = std::make_unique<ThermogramHandler>();
+            handler->setThermogramParameter(fit);
+            handler->Initialise();
+            handler->IntegrateThermogram();
+            return handler;
+        };
+
+        // both keys, as SupraFit wrote them
+        QJsonObject both = block;
+        both["peak_time"] = duration;
+        const auto withBoth = run(both);
+        QVERIFY(withBoth->Peaks()->size() > 0);
+        // the rules end at end_time: the last peak ends before it
+        QVERIFY(withBoth->Peaks()->last().end * withBoth->Spectrum()->Step() + begin <= endTime);
+        qreal sum = 0;
+        for (qreal v : withBoth->Integrals())
+            sum += v;
+        qInfo("legacy block with peak_time and end_time: %d peaks, sum of the integrals %.17g", int(withBoth->Peaks()->size()), sum);
+
+        // end_time alone
+        const auto endOnly = run(block);
+        QCOMPARE(endOnly->Peaks()->size(), withBoth->Peaks()->size());
+        const QVector<qreal> a = endOnly->Integrals(), b = withBoth->Integrals();
+        QCOMPARE(a.size(), b.size());
+        for (int i = 0; i < a.size(); ++i) // 1e-9: the OpenMP reduction of the integration varies in the last bits
+            QVERIFY2(qAbs(a[i] - b[i]) <= 1e-9 * qAbs(b[i]), qPrintable(QString("peak %1: %2 vs %3").arg(i).arg(a[i], 0, 'g', 17).arg(b[i], 0, 'g', 17)));
     }
 
     // toJson -> fromJson reproduces the injection volumes and the scaling factor.

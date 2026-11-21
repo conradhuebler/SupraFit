@@ -247,7 +247,8 @@ void ThermogramHandler::LegacyLoad()
     if (m_thermogram_parameter.contains("peak_time"))
         m_PeakDuration = m_thermogram_parameter["peak_time"].toDouble();
 
-    if (m_thermogram_parameter.contains("peak_time"))
+    // the key read is the key checked (it checked "peak_time"; SupraFit wrote both keys together) (Claude Generated, R0)
+    if (m_thermogram_parameter.contains("end_time"))
         m_ThermogramEnd = m_thermogram_parameter["end_time"].toDouble();
 
     if (m_thermogram_parameter.contains("iter"))
