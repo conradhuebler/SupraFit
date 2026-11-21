@@ -82,6 +82,9 @@ public:
     /*! \brief Adds an x value typed by the user ("450.5" or "450,5"); false (and message()) for anything else. Claude Generated */
     bool addXValueText(const QString& text);
 
+    /*! \brief Writes the table of the selected x values as text; an existing file is replaced. Claude Generated */
+    bool SaveTable(const QString& filename) const;
+
 public slots:
     void UpdateSpectra();
     void UpdateData();

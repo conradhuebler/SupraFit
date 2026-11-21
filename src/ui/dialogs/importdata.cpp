@@ -452,14 +452,24 @@ void ImportData::ExportFile()
         return;
 
     setLastDir(filename);
+    ExportTable(filename);
+}
+
+/*! \brief Writes the table of the dialog as text (as "Export table"); an existing file is replaced. Claude Generated */
+bool ImportData::ExportTable(const QString& filename) const
+{
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
+    if (!model)
+        return false;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
-        return;
+    // Truncate: without it the end of a longer older file stayed behind the table (Claude Generated, R0)
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
 
     QTextStream stream(&file);
     stream << model->ExportAsString();
+    return true;
 }
 
 void ImportData::LoadTable(DataTable* model, int independent)

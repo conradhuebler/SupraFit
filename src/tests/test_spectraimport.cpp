@@ -253,6 +253,28 @@ private slots:
         QCOMPARE(dialog.result(), int(QDialog::Accepted));
     }
 
+    /// "Export Table" over a longer file of an earlier export leaves nothing of the old content behind (Claude Generated, R0)
+    void exportTableReplacesALongerFile()
+    {
+        SpectraImport dialog;
+        dialog.openDirectory(m_spectra, ".dat");
+        QVERIFY(dialog.spectraWidget()->addXValueText("440"));
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString file = dir.filePath("table.dat");
+        {
+            QFile old(file);
+            QVERIFY(old.open(QIODevice::WriteOnly));
+            old.write(QByteArray(5000, '9'));
+        }
+        QVERIFY(dialog.spectraWidget()->SaveTable(file));
+        QFile written(file);
+        QVERIFY(written.open(QIODevice::ReadOnly));
+        const QString content = QString::fromUtf8(written.readAll());
+        QVERIFY2(!content.contains(QStringLiteral("9999")), qPrintable(content.right(80)));
+        QCOMPARE(content.count(QLatin1Char('\n')), 5); // header and one row per spectrum
+    }
+
     /// B: Enter in a spin box keeps the dialog open, ESC in the chart only ends its drag, Cancel asks only after a change
     void keyboardRuleAndDiscardQuestion()
     {

@@ -467,18 +467,29 @@ void SpectraWidget::UpdateVerticaLines()
 
 void SpectraWidget::SaveToFile()
 {
-    const QString content = qobject_cast<DataTable*>(m_datatable->model())->ExportAsString();
     const QString filename = QFileDialog::getSaveFileName(this, "Export Table", getDir());
 
     if (filename.isEmpty())
         return;
 
     setLastDir(filename);
+    SaveTable(filename);
+}
+
+/*! \brief Writes the table of the selected x values as text (as "Export Table"); an existing file is replaced.
+ * Claude Generated */
+bool SpectraWidget::SaveTable(const QString& filename) const
+{
+    DataTable* model = qobject_cast<DataTable*>(m_datatable->model());
+    if (!model)
+        return false;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
-        return;
+    // Truncate: without it the end of a longer older file stayed behind the table (Claude Generated, R0)
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
 
     QTextStream stream(&file);
-    stream << content;
+    stream << model->ExportAsString();
+    return true;
 }

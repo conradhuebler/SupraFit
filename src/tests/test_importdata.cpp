@@ -20,7 +20,8 @@
 /* Claude Generated (R0 of roadmap/data_pipeline_work_packages.md). The dialog is driven through its API, no
  * file dialogs:
  * - "Store Recipe" / "Load Recipe" of "Simulate Data": a stored recipe and a control file whose block "main"
- *   holds the recipe give the same equations, numbers of columns/points and the evaluated table. */
+ *   holds the recipe give the same equations, numbers of columns/points and the evaluated table;
+ * - "Export table" replaces an existing file completely. */
 
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
@@ -112,6 +113,30 @@ private slots:
             QVERIFY(dialog.LoadRecipe(file));
             checkEvaluated(dialog);
         }
+    }
+
+    /// "Export table" over a longer file of an earlier export leaves nothing of the old content behind
+    void exportReplacesALongerFile()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString recipeFile = dir.filePath("recipe.json");
+        QVERIFY(JsonHandler::WriteJsonFile(recipe(), recipeFile));
+        ImportData dialog;
+        enableSimulation(dialog);
+        QVERIFY(dialog.LoadRecipe(recipeFile));
+
+        const QString file = dir.filePath("table.dat");
+        {
+            QFile old(file);
+            QVERIFY(old.open(QIODevice::WriteOnly));
+            old.write(QByteArray(5000, '9'));
+        }
+        QVERIFY(dialog.ExportTable(file));
+        DataTable* model = qobject_cast<DataTable*>(dialog.findChild<DropTable*>()->model());
+        QFile written(file);
+        QVERIFY(written.open(QIODevice::ReadOnly));
+        QCOMPARE(QString::fromUtf8(written.readAll()), model->ExportAsString());
     }
 };
 
