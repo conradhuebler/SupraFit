@@ -51,6 +51,7 @@ Core `src/core/recipe/` (`ProcessingRecipe`, `SourceRef`, `RecipeRunner::run/ver
 - Das Rezept soll eine **Abfolge verschiedener Schritte** speichern können (geordnete Liste typisierter Schritte über alle Stufen: FID/Achse/TraceOps/Extraktion bis zur Tabelle), nicht nur die Parameter einer festen Pipeline.
 - **Speichern in der Projektdatei** ist der Normalfall (keine verteilten Dateien); der Export als `*.sfrecipe.json` ist nur optional. Mit `StoreRawData` ist das Projekt selbsttragend (Größe: Rohdaten kompakt/komprimiert ablegen prüfen).
 - Auch **„normales“ Preprocessing von Tabellen** (Spalten rechnen, skalieren, normieren, abgeleitete Spalten, Zeilen ausschließen …) soll im Rezept stehen, so wie die Skript-Engine es erlaubt oder erlauben sollte (ExprTk; beim Simulieren gibt es schon „Store/Load Recipe“ für Spaltengleichungen). Ist-Zustand und Entwurf: Plan-Ergänzung offen.
+- **UX-Folge:** Bearbeiten von Spektren/Thermogrammen läuft nicht mehr im modalen Dialog, sondern als nicht-modale **Seite im Hauptfenster** (so war es in `input_data_editing.md` für „Rohdaten“ schon vorgesehen), das Agenten-Dock daneben. Mensch und Agent bearbeiten dasselbe Rezept; die heutigen Dialoge bleiben höchstens als Import-Assistent für den ersten Import. Entwurf: Plan-Ergänzung offen (Handler als projektgebundene Objekte, gleichzeitige Bearbeitung, Layout 1366x768 mit Dock, Reihenfolge).
 - **Parallelisierung** des Data-Processing: siehe TODO.md.
 
 ## Nicht beurteilt
