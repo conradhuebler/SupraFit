@@ -63,6 +63,9 @@
 - [ ] Release: shorten `docs/ASSISTANT_HELP.md` (above ~4400 words; the Landscape paragraph first, after the histogram paragraph is committed); mouse wheel step 1.25 per notch ok? Click-through of all dialogs with real data before a merge.
 - [ ] Recipes and agent tools ([roadmap/recipes_and_agent_tools.md](roadmap/recipes_and_agent_tools.md)): seven decisions (recipe as a view of the flat keys; digest only vs exact table; warn on algorithm change; help budget 8000 -> 9000 tokens [raise]; agent file policy; identity by name + sha256; keep auto-phase values). Known defects found on the way: stored tables/x values/inject volumes have 6 digits, the md5 of the thermogram file block is binary text.
 
+## Parallelisation of the data processing
+- [ ] Spectra/FID processing: FIDs are transformed in parallel already (OpenMP, per file); still serial: `TraceOpList::apply` per spectrum, tracking per signal (signals are independent: parallel across signals, the spectra of one signal stay sequential because of the prediction), the lineshape fit per group (1.2 s release, 27 s debug per series), reading of the `.jdf` files, the `SpectraHandler` table build. Keep results bit-identical (no reductions across threads) and the "one handler, one thread" rule; measure with `benchmark_nmrimport`.
+
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.
 - [ ] System parameter index 6 (`InptUnit`, old heat unit, value "0") is stored in ITC projects of 2018 but declared by no model (`AbstractItcModel`: commented out): remove it on load or declare it again; it stays "Imported parameter 6".

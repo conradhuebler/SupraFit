@@ -42,10 +42,16 @@ Core `src/core/recipe/` (`ProcessingRecipe`, `SourceRef`, `RecipeRunner::run/ver
 1. Rezept als Sicht auf die flachen Schlüssel oder verschachtelter Block `Recipe` (Sicht).
 2. Voll genaue Tabelle zusätzlich speichern (nur Digest in der Provenienz).
 3. Bei Algorithmus-Änderung alten Pfad behalten oder nur warnen (warnen und vergleichen).
-4. Hilfe-Budget von 8000 auf 9000 Token anheben oder kürzen (anheben, Werkzeuge in Abschnitt 8 nur mit Namen).
+4. Hilfe-Budget: **entschieden 2026-11-21: anheben** (von 8000 auf etwa 9000 Token; Werkzeuge in Abschnitt 8 nur mit Namen).
 5. Datei-Policy: Projektordner automatisch zum Lesen, alles andere explizit, Schreiben nur FileWrite.
 6. Bei `StoreAbsolutePath` aus: Dateiname + sha256 als Identität (ja).
 7. Auto-Phase-Werte speichern, aber nicht standardmäßig einfrieren (ja).
+
+## Ergänzungen des Betreibers (2026-11-21)
+- Das Rezept soll eine **Abfolge verschiedener Schritte** speichern können (geordnete Liste typisierter Schritte über alle Stufen: FID/Achse/TraceOps/Extraktion bis zur Tabelle), nicht nur die Parameter einer festen Pipeline.
+- **Speichern in der Projektdatei** ist der Normalfall (keine verteilten Dateien); der Export als `*.sfrecipe.json` ist nur optional. Mit `StoreRawData` ist das Projekt selbsttragend (Größe: Rohdaten kompakt/komprimiert ablegen prüfen).
+- Auch **„normales“ Preprocessing von Tabellen** (Spalten rechnen, skalieren, normieren, abgeleitete Spalten, Zeilen ausschließen …) soll im Rezept stehen, so wie die Skript-Engine es erlaubt oder erlauben sollte (ExprTk; beim Simulieren gibt es schon „Store/Load Recipe“ für Spaltengleichungen). Ist-Zustand und Entwurf: Plan-Ergänzung offen.
+- **Parallelisierung** des Data-Processing: siehe TODO.md.
 
 ## Nicht beurteilt
 Verhalten älterer Binärdateien mit zusätzlichen Schlüsseln, GEMM-Determinismus unter OpenMP, echte Plattformunterschiede, UV/Vis-`LoadData` bei fehlenden Dateien, Wettläufe der bestehenden Mutate-Werkzeuge (Affinität Any) mit der GUI.
