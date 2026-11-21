@@ -67,6 +67,7 @@ public:
     void GenerateData();
     void setGeneratedData(const QJsonObject& json);
     QJsonObject Generator() const;
+    bool LoadRecipe(const QString& filename);
 
 public slots:
     bool ImportThermogram(const QString& filename);

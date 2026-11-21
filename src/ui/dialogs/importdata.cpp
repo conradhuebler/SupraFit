@@ -245,23 +245,7 @@ QWidget* ImportData::SimulationWidget()
         const QString filename = QFileDialog::getOpenFileName(this, tr("Load simulation recipe"), getDir(), "*.json");
         if (filename.isEmpty() || filename.isNull())
             return;
-        QJsonObject data;
-        JsonHandler::ReadJsonFile(data, filename);
-        if (data.keys().contains("main", Qt::CaseInsensitive)) {
-            QJsonObject tmp;
-            for (auto key : m_project.keys())
-                if (key.compare("main", Qt::CaseInsensitive) == 0) {
-                    tmp = m_project[key].toObject();
-                    data = tmp;
-                    break;
-                }
-        }
-        m_independent_rows->setValue(data["independent"].toInt());
-        m_datapoints->setValue(data["datapoints"].toInt());
-        m_dependent_rows->setValue(data["dependent"].toInt());
-        m_equations = data["equations"].toString().split("|");
-
-        Evaluate(data);
+        LoadRecipe(filename);
         setLastDir(filename);
     });
 
@@ -312,6 +296,29 @@ void ImportData::ReshapeTable()
             m_equations.removeLast();
     }
     Evaluate(Generator());
+}
+
+/*! \brief Reads a simulation recipe (as written by "Store Recipe", or a control file whose block "main"
+ * holds the recipe) and evaluates it: number of independent columns, data points, series and the column
+ * equations. Claude Generated */
+bool ImportData::LoadRecipe(const QString& filename)
+{
+    QJsonObject data;
+    if (!JsonHandler::ReadJsonFile(data, filename))
+        return false;
+    // the block "main" of the file just read (it was looked up in the last loaded project before)
+    for (const QString& key : data.keys())
+        if (key.compare("main", Qt::CaseInsensitive) == 0) {
+            data = data[key].toObject();
+            break;
+        }
+    m_independent_rows->setValue(data["independent"].toInt());
+    m_datapoints->setValue(data["datapoints"].toInt());
+    m_dependent_rows->setValue(data["dependent"].toInt());
+    m_equations = data["equations"].toString().split("|");
+
+    Evaluate(data);
+    return true;
 }
 
 QJsonObject ImportData::Generator() const

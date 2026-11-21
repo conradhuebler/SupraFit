@@ -1483,6 +1483,26 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen test of the table import dialog: Store/Load Recipe of "Simulate Data", Export table (R0, Claude Generated 2026)
+if(BUILD_GUI)
+    add_executable(test_importdata test_importdata.cpp ${CMAKE_SOURCE_DIR}/src/ui/instance.h)
+    target_link_libraries(test_importdata
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_importdata ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_importdata pthread dl)
+    endif()
+    add_test(NAME ImportDataTest COMMAND test_importdata)
+    set_tests_properties(ImportDataTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Offscreen test of Edit Data in the main window: controller, outdated chip/banner, project list, undo, close question
 # (E1, Claude Generated 2026). SUPRAFIT_EDITDATA_GRAB=<dir> writes PNGs.
 if(BUILD_GUI)
