@@ -561,6 +561,31 @@ endif()
 add_test(NAME NmrHandlerTest COMMAND test_nmrhandler)
 set_tests_properties(NmrHandlerTest PROPERTIES TIMEOUT 300)
 
+# Claude Generated: multiplet signals of NmrHandler (centre of a group of lines; synthetic spreads, rules, JSON)
+add_executable(test_nmrmultiplet
+    test_nmrmultiplet.cpp
+)
+
+target_link_libraries(test_nmrmultiplet
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmrmultiplet ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmrmultiplet pthread dl)
+endif()
+
+add_test(NAME NmrHandlerMultipletTest COMMAND test_nmrmultiplet)
+set_tests_properties(NmrHandlerMultipletTest PROPERTIES TIMEOUT 600)
+
 # Claude Generated: JEOL Delta reader and FID processing (JeolReader, FidProcessing; JEOL import of
 # roadmap/input_data_editing.md). The real-data slots read SUPRAFIT_JEOL_DIR and are skipped without it.
 add_executable(test_jeol
@@ -585,7 +610,7 @@ if(UNIX)
 endif()
 
 add_test(NAME JeolTest COMMAND test_jeol)
-set_tests_properties(JeolTest PROPERTIES TIMEOUT 600) # the real series take ~4 min in the debug build
+set_tests_properties(JeolTest PROPERTIES TIMEOUT 1500) # the real series take ~4 min in the debug build, the multiplet slots (Claude Generated) ~7 min more
 
 # Claude Generated: pseudo-Voigt lineshape fit (LineshapeFit; WP4 input data editing)
 add_executable(test_lineshapefit

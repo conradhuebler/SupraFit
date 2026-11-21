@@ -22,7 +22,8 @@
  * C: the real titration series in SUPRAFIT_JEOL_DIR (default: the operator's directory; SKIP if missing),
  *    compared with the shifts of the operator's own evaluation in the .suprafit file of that directory.
  *    The real files are only read. JEOL_EXPLORE=1 runs the real series over LB 0.3-6 Hz (and prints the
- *    auto-phase cases above 2°), JEOL_CELLS=1 prints every cell against the reference.
+ *    auto-phase cases above 2°), JEOL_CELLS=1 prints every cell against the reference. Multiplet signals (Claude
+ *    Generated, realSeriesMultiplets*): LB 0.3 / 1 Hz without steps; JEOL_LINES=1 prints the maxima around each centre.
  */
 
 #include <algorithm>
@@ -976,7 +977,231 @@ private slots:
         }
     }
 
+    /// Claude Generated: multiplet signals (NmrHandler step 3b) on the real series WITHOUT the helpers of the slots above
+    /// (slots realSeriesMultiplets*):
+    /// LB 0.3 Hz (the default of the series) and 1 Hz instead of 3 Hz, no steps (no Normalise to CHCl3, no Range, no
+    /// Blank), threshold of the search window, MinHeight 0.3. One multiplet per column of the reference evaluation, (1) by
+    /// hand: the lines of spectrum 1 near the reference centre (a range drawn around them), pattern dd / t / s;
+    /// (2) automatic: pickMultiplets over 5.25..9.05 ppm (J <= 20 Hz, ripple 5 %), the multiplet nearest to each
+    /// reference centre. Printed per series, LB and centre estimator: cells tracked, |δ - reference| mean/worst in ppm and
+    /// in FWHM, line-count warnings, lg K against the refitted reference; the automatic pick at T5 7.5..9.0 (old pick:
+    /// 18 signals, 206 conflicts) as numbers of multiplets and conflicts. Pinned at LB 0.3 Hz, centroid.
+    void realSeriesMultipletsT1() { realSeriesMultiplets("T1", 0.3); }
+    void realSeriesMultipletsT1Lb1() { realSeriesMultiplets("T1", 1.0); }
+    void realSeriesMultipletsT5() { realSeriesMultiplets("T5", 0.3); }
+    void realSeriesMultipletsT5Lb1() { realSeriesMultiplets("T5", 1.0); }
+
 private:
+    /// one series and line broadening of the multiplet slots (a slot each: the debug build needs about 35 s per load)
+    void realSeriesMultiplets(const QString& series, double broadening)
+    {
+        const QString dir = realDirectory();
+        if (dir.isEmpty() || !QFile::exists(QDir(dir).filePath(kReferenceFile)))
+            QSKIP("no JEOL data with the reference evaluation (SUPRAFIT_JEOL_DIR)");
+        QStringList failures;
+        for (const QString& key : { series }) {
+            const QStringList files = seriesFiles(dir, key == "T1" ? "sb-SB18_T1_b_gluco_" : "sb-SB18_T5_CDCl3_ObDGlc_");
+            const Reference ref = readReference(dir, key);
+            QCOMPARE(files.size(), ref.shifts.size());
+            const int columns = ref.shifts.first().size();
+            Eigen::MatrixXd refTable(files.size(), columns);
+            for (int k = 0; k < files.size(); ++k)
+                for (int c = 0; c < columns; ++c)
+                    refTable(k, c) = ref.shifts[k][c];
+            const double lgKRef = fitLgK(ref.concentrations, refTable);
+            for (double lb : { broadening }) {
+                NmrHandler handler;
+                qint64 loadMs = 0;
+                QString error;
+                QVERIFY2(loadSeries(files, lb, &handler, &loadMs, &error), qPrintable(error));
+                handler.setReferenceOffset(0);
+                handler.referenceTo(highestPeak(handler.spectra().at(0), 7.2, 7.3).x, 7.26);
+                handler.setOperations(TraceOpList());
+                handler.setThresholdScope(NmrThresholdScope::Window);
+                const XYTrace first = handler.processedSpectra().at(0);
+                const double frequency = handler.spectrometerFrequency();
+                QVERIFY(std::abs(frequency - 500.16) < 0.01);
+                // (1) by hand: the main lines within ±12 Hz of the reference centre (at least 45 % of the highest there)
+                QVector<NmrSignal> byHand;
+                QString lineText;
+                for (int c = 0; c < columns; ++c) {
+                    const double centre = ref.shifts[0][c];
+                    const double reach = 12.0 / frequency;
+                    QVector<TracePeak> peaks;
+                    TraceOps::pickPeaks(first.range(centre - reach, centre + reach), 0.0, true, 0, false, &peaks);
+                    double highest = 0;
+                    for (const TracePeak& p : peaks)
+                        highest = std::max(highest, p.height);
+                    QVector<double> lines;
+                    for (const TracePeak& p : peaks)
+                        if (p.height >= 0.45 * highest)
+                            lines << p.x;
+                    std::sort(lines.begin(), lines.end());
+                    lineText += QString(" [%1]").arg(lines.size());
+                    for (double x : lines)
+                        lineText += QString(" %1").arg((x - centre) * frequency, 0, 'f', 1);
+                    if (qEnvironmentVariableIsSet("JEOL_LINES")) {
+                        QVector<TracePeak> wide;
+                        TraceOps::pickPeaks(first.range(centre - 2 * reach, centre + 2 * reach), 0.0, true, 0, false, &wide);
+                        QString text;
+                        for (const TracePeak& p : wide)
+                            if (p.height >= 0.03 * highest)
+                                text += QString(" %1 Hz (%2)").arg((p.x - centre) * frequency, 0, 'f', 1).arg(p.height / highest, 0, 'f', 2);
+                        qInfo("%s LB %.1f column %d at %.4f:%s", qPrintable(key), lb, c + 1, centre, qPrintable(text));
+                    }
+                    NmrSignal signal;
+                    signal.name = QString("M%1").arg(c + 1);
+                    signal.type = NmrSignalType::Multiplet;
+                    const double spread = lines.isEmpty() ? 0 : lines.last() - lines.first();
+                    signal.position = lines.isEmpty() ? centre : 0.5 * (lines.first() + lines.last());
+                    signal.halfSpan = 0.5 * spread + 1.5 / frequency; // a range drawn 1.5 Hz beyond the outer lines
+                    signal.window = kMultipletWindow;
+                    signal.pattern = centre > 7.7 || std::abs(centre - 7.32) < 0.05 ? "dd" : std::abs(centre - 7.51) < 0.05 ? "t" : "s";
+                    byHand << signal;
+                }
+                qInfo("%s LB %.1f Hz lines of spectrum 1 around the reference centres [Hz]:%s", qPrintable(key), lb, qPrintable(lineText));
+                // (2) automatic grouping over the range of the signals
+                QVector<QVector<NmrSignal>> sets{ byHand };
+                QStringList setNames{ "by hand" };
+                for (double coupling : { 20.0, 10.0 }) {
+                    NmrHandler automatic = handler;
+                    const int picked = automatic.pickMultiplets(kMultipletWindow, coupling / frequency, 0.05, &error, 5.25, 9.05);
+                    automatic.track();
+                    QString pickedText;
+                    for (int s = 0; s < automatic.signalList().size(); ++s)
+                        pickedText += QString(" %1 (± %2 Hz, %3 lines)").arg(automatic.signalList()[s].position, 0, 'f', 4).arg(automatic.signalList()[s].halfSpan * frequency, 0, 'f', 1).arg(automatic.cell(0, s).lines.size());
+                    qInfo("%s LB %.1f Hz automatic grouping 5.25..9.05 ppm (J <= %.0f Hz): %d multiplets:%s", qPrintable(key), lb, coupling, picked, qPrintable(pickedText));
+                    QVector<NmrSignal> matched;
+                    for (int c = 0; c < columns; ++c) {
+                        int best = -1;
+                        for (int s = 0; s < automatic.signalList().size(); ++s)
+                            if (best < 0 || std::abs(automatic.signalList()[s].position - ref.shifts[0][c]) < std::abs(automatic.signalList()[best].position - ref.shifts[0][c]))
+                                best = s;
+                        QVERIFY(best >= 0);
+                        NmrSignal signal = automatic.signalList()[best];
+                        signal.pattern = byHand[c].pattern;
+                        matched << signal;
+                    }
+                    sets << matched;
+                    setNames << QString("automatic, J <= %1 Hz").arg(coupling);
+                }
+                for (int mode = 0; mode < sets.size(); ++mode) {
+                    handler.setSignals(sets[mode]);
+                    for (NmrMultipletCentre estimator : { NmrMultipletCentre::Centroid, NmrMultipletCentre::OuterMidpoint, NmrMultipletCentre::LineMean })
+                        for (NmrShiftMethod method : { NmrShiftMethod::PeakPicking, NmrShiftMethod::LineshapeFit }) {
+                            if (method == NmrShiftMethod::LineshapeFit && estimator != NmrMultipletCentre::Centroid)
+                                continue; // the fit gives its own centre
+                            handler.setMultipletCentre(estimator);
+                            NmrFitSettings fit;
+                            fit.method = method;
+                            fit.range = 0.004 + 0.0015 * lb;
+                            handler.setFitSettings(fit);
+                            QElapsedTimer timer;
+                            timer.start();
+                            handler.track();
+                            const qint64 trackMs = timer.elapsed();
+                            int ok = 0, warnings = 0, nFwhm = 0;
+                            double worst = 0, sum = 0, fwhmSum = 0;
+                            QString worstCell;
+                            Eigen::MatrixXd shifts(files.size(), columns);
+                            for (int k = 0; k < files.size(); ++k)
+                                for (int c = 0; c < columns; ++c) {
+                                    const NmrCell cell = handler.cell(k, c);
+                                    shifts(k, c) = cell.shift;
+                                    warnings += !handler.lineCountWarning(k, c).isEmpty();
+                                    if (cell.status != NmrCellStatus::Ok)
+                                        continue;
+                                    ++ok;
+                                    // width of the lines at half height in this spectrum (the natural width at this LB)
+                                    const XYTrace spectrum = handler.processedSpectra().at(k);
+                                    for (double x : cell.lines) {
+                                        const double w = LineshapeFit::estimateFwhm(spectrum.x(), spectrum.y(), spectrum.nearestIndex(x), 0);
+                                        if (std::isfinite(w)) {
+                                            fwhmSum += w;
+                                            ++nFwhm;
+                                        }
+                                    }
+                                    const double d = std::abs(cell.shift - ref.shifts[k][c]);
+                                    sum += d;
+                                    if (d > worst) {
+                                        worst = d;
+                                        worstCell = QString("step %1, %2").arg(k + 1).arg(byHand[c].pattern);
+                                    }
+                                }
+                            const double fwhm = nFwhm > 0 ? fwhmSum / nFwhm : std::numeric_limits<double>::quiet_NaN();
+                            const bool all = ok == files.size() * columns;
+                            const double lgK = all ? fitLgK(ref.concentrations, shifts) : std::numeric_limits<double>::quiet_NaN();
+                            const QString name = method == NmrShiftMethod::LineshapeFit ? QString("lineshape fit") : NmrHandler::multipletCentreName(estimator);
+                            qInfo("%s LB %.1f Hz multiplets %s (%s): %d of %d cells; |δ - reference| mean %.2e ppm, worst %.2e ppm (%s) = %.2f FWHM (mean line FWHM %.2e ppm); %d line-count warnings; lg K %.4f (reference refitted %.4f); track %lld ms",
+                                qPrintable(key), lb, qPrintable(setNames[mode]), qPrintable(name), ok, int(files.size() * columns), sum / std::max(1, ok), worst, qPrintable(worstCell),
+                                worst / fwhm, fwhm, warnings, lgK, lgKRef, trackMs);
+                            if (qEnvironmentVariableIsSet("JEOL_CELLS")) {
+                                qInfo("%s", qPrintable(handler.problems().mid(0, 20).join("; ")));
+                                for (int k = 0; k < files.size(); ++k) {
+                                    QString row = QString("  %1:").arg(k + 1);
+                                    for (int c = 0; c < columns; ++c)
+                                        row += QString(" %1 (%2, %3 l)").arg(shifts(k, c), 0, 'f', 5).arg((shifts(k, c) - ref.shifts[k][c]) * 1000, 0, 'f', 2).arg(handler.cell(k, c).lines.size());
+                                    qInfo("%s", qPrintable(row));
+                                }
+                            }
+                            // pinned: the default estimator with peak picking; by hand at both LB, automatic at LB 0.3 Hz
+                            // (J <= 20 Hz chains the aromatic lines of T1 7.40-7.51 into one group: T5 only)
+                            const bool pinned = estimator == kPinnedEstimator && method == NmrShiftMethod::PeakPicking
+                                && (mode == 0 || (lb == 0.3 && (mode == 2 || key == "T5")));
+                            if (!pinned)
+                                continue;
+                            const double lgKPin = lb == 0.3 ? kPinMultipletLgK : kPinMultipletLgKLb1;
+                            // checked after every configuration is printed
+                            const QString where = QString("%1 LB %2 %3 %4: ").arg(key).arg(lb).arg(setNames[mode], name);
+                            if (!all)
+                                failures << where + handler.problems().join("; ");
+                            if (!(worst < kPinMultipletShift))
+                                failures << where + QString("worst %1 ppm").arg(worst);
+                            if (!(std::abs(lgK - lgKRef) < lgKPin))
+                                failures << where + QString("Δ lg K %1").arg(lgK - lgKRef);
+                        }
+                }
+                // the automatic pick in the range of the field report (T5 7.5..9.0): multiplets and conflicts
+                if (key == "T5") {
+                    NmrHandler pick = handler;
+                    const int old = pick.pickSignals(0.05, &error, 7.5, 9.0);
+                    pick.track();
+                    int oldConflicts = 0;
+                    for (int k = 0; k < pick.spectrumCount(); ++k)
+                        for (int s = 0; s < pick.signalList().size(); ++s)
+                            oldConflicts += pick.cell(k, s).status == NmrCellStatus::Conflict;
+                    const int multiplets = pick.pickMultiplets(0.05, 20.0 / frequency, 0.05, &error, 7.5, 9.0);
+                    pick.track();
+                    int conflicts = 0, open = 0;
+                    for (int k = 0; k < pick.spectrumCount(); ++k)
+                        for (int s = 0; s < pick.signalList().size(); ++s) {
+                            conflicts += pick.cell(k, s).status == NmrCellStatus::Conflict;
+                            open += pick.cell(k, s).status != NmrCellStatus::Ok;
+                        }
+                    QString positions;
+                    for (const NmrSignal& s : pick.signalList())
+                        positions += QString(" %1 (± %2)").arg(s.position, 0, 'f', 4).arg(s.halfSpan, 0, 'f', 4);
+                    qInfo("T5 LB %.1f Hz pick 7.5..9.0 ppm, window 0.05: one signal per peak %d signals, %d conflict cells; grouped (J <= 20 Hz) %d multiplets, %d conflict cells, %d open cells:%s", lb, old, oldConflicts, multiplets, conflicts, open, qPrintable(positions));
+                    if (lb == 0.3 && conflicts > kPinMultipletPickConflicts)
+                        failures << QString("T5 pick: %1 conflict cells").arg(conflicts);
+                }
+            }
+        }
+        QVERIFY2(failures.isEmpty(), qPrintable(failures.join("\n")));
+    }
+
+private:
+    // Claude Generated: realSeriesMultiplets (measured values in docs/nmr_multiplets_2026-11-21.md), outer midpoint, peak
+    // picking, measured 2026-11-21: worst |δ - reference| 2.21e-3 ppm (T1 LB 0.3, the reference's own outlier H7 step 3);
+    // |Δ lg K| T1 0.042 (by hand) / 0.050 (automatic J <= 10 Hz) at LB 0.3 (partly resolved outer pairs of H4/H7 move the
+    // midpoint by up to 0.75 Hz), T5 0.005; LB 1 Hz by hand T1 0.018, T5 0.022; T5 pick 7.5..9.0 at LB 0.3: 3 multiplets,
+    // 0 conflict cells (one signal per peak: 18 signals, 206 conflict cells)
+    static constexpr double kMultipletWindow = 0.02;
+    static constexpr double kPinMultipletShift = 0.0025;
+    static constexpr double kPinMultipletLgK = 0.06;
+    static constexpr double kPinMultipletLgKLb1 = 0.03;
+    static constexpr int kPinMultipletPickConflicts = 0;
+    static constexpr NmrMultipletCentre kPinnedEstimator = NmrMultipletCentre::OuterMidpoint;
     // pinned worst cases (measured values are printed by the tests; see docs/jeol_import_2026-11-20.md)
     static constexpr double kPinPositionFwhm1 = 0.4;
     static constexpr double kPinPositionFwhm2 = 0.15;

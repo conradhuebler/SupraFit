@@ -39,13 +39,32 @@
 
 class DataTable;
 
+/*! \brief What a signal follows (Claude Generated, multiplet signals). */
+enum class NmrSignalType {
+    Peak, ///< one line: δ = position of that line (the behaviour of every project without the key)
+    Multiplet ///< a group of lines within ± halfSpan of their centre: δ = the centre (class description, step 3b)
+};
+
+/*! \brief Estimator of the centre of a multiplet from its lines (Claude Generated, class description step 3b). */
+enum class NmrMultipletCentre {
+    Centroid, ///< (a) intensity-weighted centre of the baseline-corrected area over the span of the group
+    OuterMidpoint, ///< (b) midpoint of the outermost lines
+    LineMean ///< (c) height-weighted mean of the picked line positions
+};
+
 /*! \brief A signal followed through the titration: its position in the reference spectrum and the
- * half width of the search window, both in ppm of the referenced scale. Claude Generated. */
+ * half width of the search window, both in ppm of the referenced scale. Claude Generated.
+ * A multiplet (type Multiplet) is a group of lines whose centre is followed; position is then the centre in the
+ * reference spectrum and window the allowed motion of the centre. */
 struct NmrSignal {
     QString name;
-    double position = 0; ///< δ in the reference spectrum [ppm]
+    double position = 0; ///< δ in the reference spectrum [ppm] (multiplet: its centre)
     double window = 0.05; ///< search window ± window around the last known position [ppm]
     bool enabled = true; ///< false: the signal is not a column of the shift table
+    NmrSignalType type = NmrSignalType::Peak; ///< Claude Generated: one line or a multiplet
+    double halfSpan = 0; ///< multiplet: half width of the group around its centre [ppm] (the lines lie within ± halfSpan)
+    QString pattern = QString(); ///< multiplet: expected pattern (s, d, t, q, dd, dt, ..., m; empty = none), only a hint (line count warning)
+    inline bool isMultiplet() const { return type == NmrSignalType::Multiplet; }
 };
 
 /*! \brief State of one cell (spectrum, signal) of the shift table. Claude Generated. */
@@ -115,6 +134,10 @@ struct NmrCell {
     double eta = std::numeric_limits<double>::quiet_NaN(); ///< fitted Lorentz fraction η of the pseudo-Voigt
     NmrFitState fitState = NmrFitState::NotFitted;
     QString fitMessage; ///< why the fit failed
+    // ---- multiplet signals (Claude Generated; empty for a single peak)
+    QVector<double> lines; ///< positions of the lines of the group [ppm], ascending
+    QVector<double> lineHeights; ///< their heights above the baseline of the search region
+    double groupShare = std::numeric_limits<double>::quiet_NaN(); ///< sum of the line heights / that of the highest group of the region
 };
 
 /*! \brief One fitted range of one spectrum: the lines (signals and unassigned neighbour lines) with
@@ -165,6 +188,42 @@ struct NmrFitRegion {
  *    wins: nearest to the prediction, unless its height jumps (a noise maximum or a neighbour line close
  *    to an overshooting prediction). For the first peak of a signal (no height known yet) the peak
  *    nearest to the position among those at least half as high as the highest candidate.
+ * 3b. Multiplets (Claude Generated, NmrSignal::type Multiplet): a multiplet (d, t, dd, ...) is one nucleus whose
+ *    line is split by couplings J into lines of fixed spacing around its chemical shift; the fast-exchange shift is
+ *    the CENTRE of the group, and the lines move together. Following single lines fails when the centre moves more
+ *    than a line spacing per step (the lines are swapped), so the group is followed as one: the region is
+ *    [min(last, prediction) - (h + w), max(last, prediction) + (h + w)] (h = halfSpan, w = window); its candidate
+ *    lines are the peaks there (with the window threshold: those passing step 3a in the region). A line's height is
+ *    taken above the chord of the region (as in step 3a). Every run of neighbouring candidates within 2h is a
+ *    possible group; in it, maxima lower than multipletRipple() x the highest line of the run (ripple beside the
+ *    lines) or with a prominence below 6 σ (noise on a line; prominence as in step 3a) do not count, and the run must
+ *    begin and end on lines; barely resolved lines keep their height but have a shallow dip, hence height for the
+ *    ripple and prominence for the noise. In the first spectrum (no group known) the group is the lines within ± h
+ *    of the position (the most lines, then the highest). Later a group whose centre lies within w of the last
+ *    position or of the prediction is a candidate; the one of least cost |c - prediction| / w + |ln(S / S_last)|
+ *    + |n - n_last| + |spread - spread_last| / h wins (S = sum of its line heights / that of the highest group of
+ *    the region: the intensity of whole experiments jumps, the share does not; n lines; J does not change, so a group
+ *    with a foreign line or without one of its own costs more); S < minHeight() x S_last is not taken.
+ *    The centre c (multipletCentre()):
+ *    (a) Centroid: Σ w x / Σ w, w = max(y - b, 0) over [outer lines ∓ e], b the chord of the region (the ends of the
+ *        interval itself still lie on the tails of the lines), e = 1.5 x the width at half height of the outer lines,
+ *        at most half the gap to the next line outside the group (one e for both sides: a one-sided cut would move
+ *        the centroid);
+ *    (b) OuterMidpoint: (x_first + x_last) / 2;
+ *    (c) LineMean: Σ h_i x_i / Σ h_i of the picked lines (heights above the chord).
+ *    Assumptions and sources of error: first-order multiplets (Δν >> J) are symmetric, all three give the shift.
+ *    Strong coupling (Δν/J of a few) bends the intensities towards the partner (roof effect) and moves the lines:
+ *    for an AB pair the midpoint (b) lies outside the true shift by C - Δν/2 (2C = sqrt(Δν² + J²)), the
+ *    intensity-weighted (a)/(c) inside by Δν/2 - Δν²/(4C); a constant bias cancels in the shift change, a Δν that
+ *    changes along the titration does not. A neighbour multiplet closer than about one line width adds its tail to
+ *    (a) (linear part removed by b) and can merge with the outer line ((b), (c)); groups that share a line or whose
+ *    spans interleave or that hold a line within ± h of the other's centre are a Conflict. Noise moves the picked
+ *    positions ((b), (c)) more than the area (a); a lost outer line moves (b) by half a spacing, (c) and (a) less; a
+ *    partly resolved outer pair moves (b) by up to half its spacing. Default (b): the smallest errors measured in
+ *    test_nmrmultiplet and test_jeol (docs/nmr_multiplets_2026-11-21.md).
+ *    The number of lines found is compared with the pattern (expectedLineCount) only as a warning (lineCountWarning).
+ *    Lineshape fit: every line of the group is a line of the fit (starts from the picked lines, shared width with
+ *    "Shared"); the centre is the area-weighted mean of the fitted positions.
  * 4. No candidate: Missing (NaN, the last known position stays). Two signals claim the same peak:
  *    both Conflict (shift = the peak, their last known positions are not moved by it). A manual
  *    value (setManualShift) replaces the cell (Manual) and is a known position for the tracking.
@@ -200,6 +259,8 @@ struct NmrFitRegion {
  * the spectra as in SpectraHandler ("Data" only with the application property StoreRawData, else
  * read again from "Sources"), "TraceOps", "ReferenceOffset", "ReferenceSpectrum", "Signals", "Manual",
  * "Excluded", "Window", "MinHeight", "LineshapeFit", "ThresholdScope" ("Window"; written only then, missing = Spectrum).
+ * Multiplets (Claude Generated): a signal carries "Type": "Multiplet", "HalfSpan" and "Pattern" (if set) only when it
+ * is one; "MultipletCentre" and "MultipletRipple" are written only when a signal is a multiplet.
  *
  * FIDs (JEOL .jdf, Claude Generated): a time-domain file is transformed by FidProcessing with fidSettings()
  * (one set for the whole series: apodization, zero filling, phase or automatic phase per spectrum); the
@@ -303,6 +364,48 @@ public:
      * there, with the detection threshold of the tracking); without such a peak, or when another signal claims it
      * (conflict), the signal stays at position. *snapped tells which. Tracks; returns the index. Claude Generated */
     int addSignalAtPeak(double position, double window, bool* snapped = nullptr);
+
+    // ---- multiplets (Claude Generated, class description step 3b)
+    /*! \brief Adds a multiplet for the range [from, to] of the reference spectrum: half span = half the range, centre =
+     * the centre of the lines found there by the tracking (the middle of the range without lines; *found tells which).
+     * Tracks; returns the index (-1 for an empty range). */
+    int addMultiplet(double from, double to, double window, bool* found = nullptr);
+    /*! \brief Multiplets from the peaks of the reference spectrum between from and to (replacing the signals and the
+     * manual shifts): neighbouring lines closer than maxCoupling [ppm] form one group (single linkage); lines whose
+     * height is below ripple x the highest line of their group or below 6 σ of the noise are left out (and the groups
+     * split again where they bridged a gap); a maximum with a prominence below 6 σ is no line (as in the tracking);
+     * half span = half the spread of the lines + 0.25 x the spread, within 0.1-0.5 x maxCoupling (at least 3 points);
+     * centre by multipletCentre(); a group of one line is a singlet (pattern "s"). The detection is that of
+     * pickSignals(). Returns the number of multiplets. */
+    int pickMultiplets(double window, double maxCoupling, double ripple, QString* error = nullptr,
+        double from = -std::numeric_limits<double>::infinity(), double to = std::numeric_limits<double>::infinity());
+    /*! \brief Estimator of the multiplet centre (stored as "MultipletCentre"; default OuterMidpoint: the smallest errors in
+     * test_nmrmultiplet and against the operator's MestReNova centres, docs/nmr_multiplets_2026-11-21.md). */
+    inline NmrMultipletCentre multipletCentre() const { return m_multiplet_centre; }
+    inline void setMultipletCentre(NmrMultipletCentre centre) { m_multiplet_centre = centre; }
+    /*! \brief Smallest height of a line of a multiplet relative to its highest line (default 0.05, "MultipletRipple"). */
+    inline double multipletRipple() const { return m_multiplet_ripple; }
+    inline void setMultipletRipple(double fraction)
+    {
+        if (fraction >= 0 && fraction < 1)
+            m_multiplet_ripple = fraction;
+    }
+    /*! \brief True if a signal is a multiplet. */
+    bool hasMultiplets() const;
+    /*! \brief Spectrometer frequency of the nucleus [MHz] from the first FID (NaN without FIDs), for J in Hz -> ppm. */
+    double spectrometerFrequency() const;
+    /*! \brief Number of lines of a first-order pattern: s 1, d 2, t 3, q 4, p/quint 5, sext 6, sept 7 and products of
+     * the letters d/t/q/p (dd 4, dt 6, ddd 8); -1 for m, an empty or an unknown pattern (no check). */
+    static int expectedLineCount(const QString& pattern);
+    /*! \brief Warning for a multiplet cell whose number of lines differs from its pattern ("3 lines, dd has 4"); empty
+     * otherwise. Equal couplings or unresolved lines give fewer lines, so it is never an error. */
+    QString lineCountWarning(int spectrum, int signal) const;
+    static QString signalTypeName(NmrSignalType type);
+    static QString multipletCentreName(NmrMultipletCentre centre);
+    static NmrMultipletCentre multipletCentreFromName(const QString& name, NmrMultipletCentre fallback = NmrMultipletCentre::OuterMidpoint);
+    /// noise part of the prominence of a multiplet line in units of σ of the noise (the candidates passed the detection
+    /// already; 6 σ as the chord rule of step 3a: 10 σ dropped real outer lines at 5 % noise in test_nmrmultiplet)
+    static constexpr double MultipletProminenceSigmas = 6.0;
     /*! \brief Default window of new signals (stored as "Window"). */
     inline double defaultWindow() const { return m_window; }
     inline void setDefaultWindow(double window)
@@ -396,7 +499,24 @@ public:
 
 private:
     void trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks, const QVector<XYTrace>* processed = nullptr,
-        const QVector<double>* noise = nullptr);
+        const QVector<double>* noise = nullptr, bool windowThreshold = false);
+    /// Claude Generated: one candidate group of a multiplet (step 3b)
+    struct MultipletGroup {
+        QVector<int> members; ///< indices into the peaks of the spectrum, ascending x
+        QVector<double> lines, heights; ///< positions and heights above the chord of the region
+        double centre = std::numeric_limits<double>::quiet_NaN();
+        double height = 0; ///< sum of the line heights
+        double area = std::numeric_limits<double>::quiet_NaN(); ///< baseline-corrected area over the span (centroid)
+        QVector<double> outside; ///< lines of something else nearby (limit the centroid integration)
+        double chord[4] = { 0, 0, 0, 0 }; ///< baseline of the region (x0, y0, x1, y1)
+    };
+    /// candidate groups of a multiplet of half span h in [lo, hi] of trace (step 3b); passing: indices into found that
+    /// pass the detection (nullptr: all of found in the region)
+    QVector<MultipletGroup> multipletGroups(const XYTrace& trace, const QVector<TracePeak>& found, const QVector<int>* passing, double lo, double hi,
+        double halfSpan, double noise) const;
+    /// centre of the lines of a group by the estimator; chord = baseline (x0, y0, x1, y1); area of the centroid in *area
+    double multipletCentreOf(const XYTrace& trace, const QVector<TracePeak>& found, const QVector<int>& members, const QVector<double>& heights,
+        const QVector<double>& outside, NmrMultipletCentre estimator, const double chord[4], double* area = nullptr) const;
     QVector<QVector<TracePeak>> peaks(QString* error, QVector<XYTrace>* processed, bool allMaxima = false) const;
     /// maxima that pass the window rule in a window ± defaultWindow() centred on themselves; with near only those
     /// inside the given x ranges of their spectrum
@@ -434,6 +554,8 @@ private:
     double m_window = 0.05;
     double m_min_height = 0.3;
     NmrThresholdScope m_threshold_scope = NmrThresholdScope::Spectrum;
+    NmrMultipletCentre m_multiplet_centre = NmrMultipletCentre::OuterMidpoint; ///< Claude Generated
+    double m_multiplet_ripple = 0.05; ///< Claude Generated
     int m_reference = 0;
     QVector<NmrSignal> m_signals;
     QMap<QString, QMap<int, double>> m_manual; ///< spectrum id -> signal -> δ

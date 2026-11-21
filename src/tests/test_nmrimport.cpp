@@ -1874,6 +1874,200 @@ private slots:
         Appearance::Apply(Appearance::Light);
     }
 
+    /// Claude Generated: spectrum k of steps with a d (J 7 Hz, 7.70 ppm), a t (J 6 Hz, 7.40) and a dd (J 8 / 3.6 Hz, 7.10)
+    /// at 500 MHz, all moving upfield by 0.004 ppm per step, FWHM 0.0008 ppm, 4001 points
+    static XYTrace multipletSpectrum(int k)
+    {
+        const int n = 4001;
+        Eigen::VectorXd x(n), y(n);
+        const double J = 1.0 / 500.0, shift = -0.004 * k, w = 0.0008;
+        QVector<QPair<double, double>> lines; // position, height
+        for (double o : { -3.5 * J, 3.5 * J })
+            lines << qMakePair(7.70 + shift + o, 0.8);
+        lines << qMakePair(7.40 + shift - 6 * J, 0.5) << qMakePair(7.40 + shift, 1.0) << qMakePair(7.40 + shift + 6 * J, 0.5);
+        for (double a : { -4.0 * J, 4.0 * J })
+            for (double b : { -1.8 * J, 1.8 * J })
+                lines << qMakePair(7.10 + shift + a + b, 0.6);
+        for (int i = 0; i < n; ++i) {
+            x(i) = 7.9 - 0.00025 * i;
+            double v = 0.002 * std::sin(41.0 * i);
+            for (const auto& l : lines) {
+                const double u = (x(i) - l.first) / (0.5 * w);
+                v += l.second / (1 + u * u);
+            }
+            y(i) = v;
+        }
+        return XYTrace(x, y, QString("step_%1.txt").arg(k));
+    }
+
+    /*! \brief Multiplets in the dialog (Claude Generated): "Multiplet from range" adds a multiplet for Start..End (too
+     * wide a range is refused), the signal table shows type, centre, half span and pattern, a pattern that does not fit
+     * the line count is marked, the type turns back into a peak, the grouped pick makes one multiplet per group, labels
+     * carry the lines, the result tooltips name the multiplet centre. */
+    void multipletSignalsInTheDialog()
+    {
+        const int steps = 6;
+        QSettings().remove("traceeditor/nmrimport");
+        QSettings().remove("dialogs/nmrimport");
+        NmrImport dialog;
+        dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+        for (int k = 0; k < steps; ++k)
+            dialog.handler()->addSpectrum(multipletSpectrum(k));
+        dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(1);
+        dialog.findChild<QDoubleSpinBox*>("nmrSearchWindow")->setValue(0.02);
+        dialog.findChild<QDoubleSpinBox*>("nmrSpectrometerFrequency")->setValue(500);
+        dialog.refresh();
+        dialog.resize(1366, 768);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto* editor = dialog.findChild<TraceEditorWidget*>();
+        auto* table = dialog.findChild<QTableWidget*>("nmrSignals");
+        auto* status = dialog.findChild<StatusLine*>("nmrStatus");
+        NmrHandler* handler = dialog.handler();
+        // too wide: refused
+        dialog.findChild<QDoubleSpinBox*>("traceRangeStart")->setValue(6.95);
+        dialog.findChild<QDoubleSpinBox*>("traceRangeEnd")->setValue(7.85);
+        dialog.findChild<QPushButton*>("nmrAddMultiplet")->click();
+        QVERIFY(handler->signalList().isEmpty());
+        QVERIFY(status->message().contains("wider"));
+        // the dd: range ± 0.015 ppm around it
+        dialog.findChild<QDoubleSpinBox*>("traceRangeStart")->setValue(7.085);
+        dialog.findChild<QDoubleSpinBox*>("traceRangeEnd")->setValue(7.115);
+        dialog.findChild<QPushButton*>("nmrAddMultiplet")->click();
+        QCOMPARE(handler->signalList().size(), 1);
+        const NmrSignal dd = handler->signalList()[0];
+        QVERIFY(dd.isMultiplet());
+        QVERIFY(std::abs(dd.halfSpan - 0.015) < 1e-9);
+        QVERIFY2(std::abs(dd.position - 7.10) < 2e-4, qPrintable(QString::number(dd.position, 'f', 5)));
+        QCOMPARE(int(handler->cell(handler->referenceIndex(), 0).lines.size()), 4);
+        QVERIFY(status->message().contains("4 line(s)"));
+        auto* type = qobject_cast<QComboBox*>(table->cellWidget(0, 1));
+        QVERIFY(type);
+        QCOMPARE(type->currentIndex(), 1);
+        QCOMPARE(table->item(0, 4)->text(), QString::number(0.015, 'f', 4));
+        QCOMPARE(table->item(0, 2)->text(), QString::number(dd.position, 'f', 4));
+        for (int k = 0; k < steps; ++k) {
+            QCOMPARE(handler->cell(k, 0).status, NmrCellStatus::Ok);
+            QVERIFY(std::abs(handler->cell(k, 0).shift - (7.10 - 0.004 * k)) < 2e-4);
+        }
+        QCoreApplication::processEvents();
+        QCOMPARE(editor->labelCount(), 1);
+        QVERIFY(!editor->labelRect(0).isEmpty());
+        auto* results = dialog.findChild<QTableWidget*>("nmrResults");
+        QVERIFY(results->item(0, 0)->toolTip().contains("multiplet centre of 4 line(s)"));
+        // a pattern that does not fit: the pattern cell is marked, the tooltip gives the hint
+        table->item(0, 5)->setText("t");
+        QCoreApplication::processEvents();
+        QCOMPARE(handler->signalList()[0].pattern, QString("t"));
+        QVERIFY(!handler->lineCountWarning(handler->referenceIndex(), 0).isEmpty());
+        QCOMPARE(table->item(0, 5)->background().color(), NmrImport::statusColor(NmrCellStatus::Conflict));
+        QVERIFY(table->item(0, 2)->toolTip().contains("Hint"));
+        table->item(0, 5)->setText("dd");
+        QCoreApplication::processEvents();
+        QCOMPARE(table->item(0, 5)->background().style(), Qt::NoBrush);
+        // edit the half span
+        table->item(0, 4)->setText("0.0140");
+        QCoreApplication::processEvents();
+        QVERIFY(std::abs(handler->signalList()[0].halfSpan - 0.014) < 1e-12);
+        // back to a peak and to a multiplet again
+        qobject_cast<QComboBox*>(table->cellWidget(0, 1))->setCurrentIndex(0);
+        QCoreApplication::processEvents();
+        QVERIFY(!handler->signalList()[0].isMultiplet());
+        QVERIFY(handler->cell(0, 0).lines.isEmpty());
+        QCOMPARE(table->item(0, 4)->text(), QString());
+        qobject_cast<QComboBox*>(table->cellWidget(0, 1))->setCurrentIndex(1);
+        QCoreApplication::processEvents();
+        QVERIFY(handler->signalList()[0].isMultiplet());
+        QVERIFY(std::abs(handler->signalList()[0].halfSpan - 0.014) < 1e-12); // kept
+        // grouped pick over the three multiplets
+        dialog.findChild<QCheckBox*>("nmrGroupMultiplets")->setChecked(true);
+        dialog.findChild<QDoubleSpinBox*>("traceRangeStart")->setValue(6.95);
+        dialog.findChild<QDoubleSpinBox*>("traceRangeEnd")->setValue(7.85);
+        editor->resetView();
+        dialog.findChild<QPushButton*>("nmrPick")->click();
+        QCOMPARE(handler->signalList().size(), 3);
+        const int ref = handler->referenceIndex();
+        QVector<int> counts;
+        for (int s = 0; s < 3; ++s) {
+            QVERIFY(handler->signalList()[s].isMultiplet());
+            counts << handler->cell(ref, s).lines.size();
+        }
+        QCOMPARE(counts, QVector<int>({ 4, 3, 2 })); // ascending ppm: dd, t, d
+        QVERIFY(status->message().contains("3 multiplet(s)"));
+        QVERIFY(handler->problems().isEmpty());
+        QCoreApplication::processEvents();
+        QCOMPARE(editor->labelCount(), 3);
+        table->selectRow(1);
+        QCOMPARE(editor->highlightedLabel(), 1);
+        // the options are remembered for the next series
+        bool group = false;
+        QVERIFY(dialog.memory()->readBool("groupMultiplets", &group));
+        QVERIFY(group);
+        QSettings().remove("traceeditor/nmrimport");
+        QSettings().remove("dialogs/nmrimport");
+    }
+
+    /*! \brief Renders of the multiplets (Claude Generated; SUPRAFIT_TRACE_RENDER_DIR): the synthetic d/t/dd series with the
+     * grouped pick and a selected multiplet, the options open; the real T5 series (if present) grouped in 7.5..9.0 ppm;
+     * light and dark, 1366x768. */
+    void renderMultiplets()
+    {
+        if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())
+            QSKIP("SUPRAFIT_TRACE_RENDER_DIR not set");
+        for (int mode : { int(Appearance::Light), int(Appearance::Dark) }) {
+            Appearance::Apply(mode);
+            const QString suffix = mode == Appearance::Light ? "_light" : "_dark";
+            QSettings().remove("traceeditor/nmrimport");
+            {
+                NmrImport dialog;
+                dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+                for (int k = 0; k < 6; ++k)
+                    dialog.handler()->addSpectrum(multipletSpectrum(k));
+                dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(1);
+                dialog.findChild<QDoubleSpinBox*>("nmrSearchWindow")->setValue(0.02);
+                dialog.findChild<QDoubleSpinBox*>("nmrSpectrometerFrequency")->setValue(500);
+                dialog.refresh();
+                dialog.resize(1366, 768);
+                dialog.findChild<QCheckBox*>("nmrGroupMultiplets")->setChecked(true);
+                static_cast<MoreLessToggle*>(dialog.findChild<QToolButton*>("nmrMultipletOptionsToggle"))->setExpanded(true, false);
+                dialog.findChild<QPushButton*>("nmrPick")->click();
+                dialog.findChild<QTableWidget*>("nmrSignals")->selectRow(1);
+                render(&dialog, "multiplet_synthetic" + suffix);
+                auto* editor = dialog.findChild<TraceEditorWidget*>();
+                editor->chart()->setXRange(7.30, 7.50);
+                editor->fitYToVisible();
+                render(&dialog, "multiplet_synthetic_zoom" + suffix);
+                dialog.hide();
+            }
+            const QStringList real = realJdfSeries();
+            if (!real.isEmpty()) {
+                QSettings().remove("traceeditor/nmrimport");
+                NmrImport dialog;
+                dialog.keyGuard()->setConfirmHandler([](const QString&) { return true; });
+                dialog.resize(1366, 768);
+                dialog.addFiles(real);
+                const XYTrace chcl3 = dialog.handler()->referencedSpectra().at(0).range(7.2, 7.3);
+                Eigen::Index top = 0;
+                chcl3.y().maxCoeff(&top);
+                dialog.findChild<QDoubleSpinBox*>("nmrReferenceOffset")->setValue(dialog.handler()->referenceOffset() + 7.26 - chcl3.x()(top));
+                dialog.findChild<QComboBox*>("nmrThresholdScope")->setCurrentIndex(1);
+                dialog.findChild<QCheckBox*>("nmrGroupMultiplets")->setChecked(true);
+                auto* editor = dialog.findChild<TraceEditorWidget*>();
+                editor->chart()->setXRange(7.5, 9.0);
+                editor->fitYToVisible();
+                dialog.findChild<QPushButton*>("nmrPick")->click();
+                dialog.findChild<QTableWidget*>("nmrSignals")->selectRow(0);
+                render(&dialog, "multiplet_real_t5" + suffix);
+                editor->chart()->setXRange(8.88, 8.96);
+                editor->fitYToVisible();
+                render(&dialog, "multiplet_real_t5_zoom" + suffix);
+                dialog.hide();
+            }
+            QSettings().remove("traceeditor/nmrimport");
+        }
+        Appearance::Apply(Appearance::Light);
+    }
+
     void renderDialog()
     {
         if (qEnvironmentVariable("SUPRAFIT_TRACE_RENDER_DIR").isEmpty())

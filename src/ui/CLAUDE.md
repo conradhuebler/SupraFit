@@ -40,6 +40,7 @@ Complete graphical user interface for SupraFit providing intuitive access to all
   - UX 1: `ImportKeyGuard`, readiness `StatusLine` "nmrReady" on both pages, "Double-click adds the signal" (QSettings `nmrimport/doubleClickAdds`), destructive actions ask via `keyGuard()->confirm()`, `AdaptiveWaiter` around tracking/FID
   - UX 2a: `SeriesSourceBar`, `ConcentrationEditor`, fit options behind `MoreLessToggle` (opens for lineshape fit); `restoreOptions()` (memory) runs before `setData()`, so a project's values win; save only in the `m_updating`-guarded apply paths
   - Viewer fixes: pick in `pickRange()` (Start..End ∩ visible axis), double-click → `NmrHandler::addSignalAtPeak`, signal labels (`setLabels`, row = number), chart x minus `stackOffset(ref).x()`; LB/ph0/ph1 debounced 300 ms when slow, `handler()`/`accept()` flush; marker/fit series reused; timing tool `benchmark_nmrimport`
+  - Multiplets: signal table columns Name/Type (combo cell widget)/δ/±/½ span/Pattern, "Multiplet from range" (`pickRange`, ≤ `kMaxMultipletRange`), group "Multiplet options" (`nmrMultipletOptions`, MoreLessToggle: grouping J in Hz, MHz from the FIDs, ripple, centre); `TraceEditorWidget::Label::ticks` draws the bracket
 - **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
   - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
 

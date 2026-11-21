@@ -163,6 +163,76 @@ QVector<int> windowCandidates(const XYTrace& trace, double noise, const QVector<
     }
     return result;
 }
+
+/*! \brief Points and chord of a region [lo - margin, hi + margin] of a trace (Claude Generated, multiplets, step 3b): the
+ * straight line through the medians of the first and the last tenth (at least 2 points), as in windowCandidates. */
+struct RegionChord {
+    Eigen::Index first = 0, end = 0; ///< index range of the widened region
+    double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    bool valid = false;
+    double at(double x) const { return x1 == x0 ? 0.5 * (y0 + y1) : y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+};
+
+RegionChord regionChord(const XYTrace& trace, double lo, double hi, double margin)
+{
+    RegionChord r;
+    const Eigen::Index n = trace.size();
+    if (n < 5 || !(hi >= lo))
+        return r;
+    const Eigen::VectorXd& x = trace.x();
+    const Eigen::VectorXd& y = trace.y();
+    const bool ascending = x(n - 1) > x(0);
+    auto boundIndex = [&](double value, bool upper) -> Eigen::Index {
+        Eigen::Index a = 0, b = n;
+        while (a < b) {
+            const Eigen::Index m = (a + b) / 2;
+            const bool before = ascending ? (upper ? x(m) <= value : x(m) < value) : (upper ? x(m) >= value : x(m) > value);
+            if (before)
+                a = m + 1;
+            else
+                b = m;
+        }
+        return a;
+    };
+    const double blo = lo - margin, bhi = hi + margin;
+    r.first = ascending ? boundIndex(blo, false) : boundIndex(bhi, false);
+    r.end = ascending ? boundIndex(bhi, true) : boundIndex(blo, true);
+    const Eigen::Index count = r.end - r.first;
+    if (count < 5)
+        return r;
+    const Eigen::Index edge = std::max<Eigen::Index>(2, count / 10);
+    auto segmentMedian = [&](Eigen::Index from) {
+        std::vector<double> v(y.data() + from, y.data() + from + edge);
+        const size_t half = v.size() / 2;
+        std::nth_element(v.begin(), v.begin() + half, v.end());
+        double m = v[half];
+        if (v.size() % 2 == 0)
+            m = 0.5 * (m + *std::max_element(v.begin(), v.begin() + half));
+        return m;
+    };
+    r.y0 = segmentMedian(r.first);
+    r.y1 = segmentMedian(r.end - edge);
+    r.x0 = 0.5 * (x(r.first) + x(r.first + edge - 1));
+    r.x1 = 0.5 * (x(r.end - edge) + x(r.end - 1));
+    r.valid = true;
+    return r;
+}
+
+/// prominence of the maximum at index within [first, end): height above the higher of the lowest points on either
+/// side, each side walked until a higher point (as in windowCandidates). Claude Generated
+double prominence(const XYTrace& trace, const TracePeak& peak, Eigen::Index first, Eigen::Index end)
+{
+    const Eigen::VectorXd& y = trace.y();
+    if (peak.index < first || peak.index >= end)
+        return 0;
+    const double top = y(peak.index);
+    double left = top, right = top;
+    for (Eigen::Index i = peak.index - 1; i >= first && y(i) <= top; --i)
+        left = std::min(left, y(i));
+    for (Eigen::Index i = peak.index + 1; i < end && y(i) <= top; ++i)
+        right = std::min(right, y(i));
+    return peak.height - std::max(left, right);
+}
 } // namespace
 
 // ---------------------------------------------------------------------------------------------
@@ -656,6 +726,8 @@ bool NmrHandler::setSignal(int index, const NmrSignal& signal)
 {
     if (index < 0 || index >= m_signals.size() || !std::isfinite(signal.position) || !(signal.window > 0))
         return false;
+    if (signal.isMultiplet() && !(signal.halfSpan >= 0 && std::isfinite(signal.halfSpan)))
+        return false; // Claude Generated
     m_signals[index] = signal;
     return true;
 }
@@ -711,6 +783,393 @@ int NmrHandler::addSignalAtPeak(double position, double window, bool* snapped)
 }
 
 // ---------------------------------------------------------------------------------------------
+// multiplets (Claude Generated, class description step 3b)
+
+bool NmrHandler::hasMultiplets() const
+{
+    for (const NmrSignal& signal : m_signals)
+        if (signal.isMultiplet())
+            return true;
+    return false;
+}
+
+double NmrHandler::spectrometerFrequency() const
+{
+    for (int i = 0; i < m_spectra.size(); ++i)
+        if (isFid(i))
+            return m_fids.value(m_spectra.idAt(i)).frequency;
+    return kNaN;
+}
+
+int NmrHandler::expectedLineCount(const QString& pattern)
+{
+    QString p = pattern.trimmed().toLower();
+    p.remove(' ');
+    p.replace("quint", "p");
+    if (p == "sext")
+        return 6;
+    if (p == "sept")
+        return 7;
+    if (p.isEmpty() || p == "m")
+        return -1;
+    if (p == "s")
+        return 1;
+    int count = 1;
+    for (const QChar c : p) {
+        const int factor = c == 'd' ? 2 : c == 't' ? 3 : c == 'q' ? 4 : c == 'p' ? 5 : 0;
+        if (factor == 0)
+            return -1;
+        count *= factor;
+    }
+    return count;
+}
+
+QString NmrHandler::lineCountWarning(int spectrum, int signal) const
+{
+    if (signal < 0 || signal >= m_signals.size() || !m_signals[signal].isMultiplet())
+        return QString();
+    const NmrCell c = cell(spectrum, signal);
+    const int expected = expectedLineCount(m_signals[signal].pattern);
+    if (c.status != NmrCellStatus::Ok || expected < 0 || expected == c.lines.size())
+        return QString();
+    return QString("%1 line(s) found, %2 has %3").arg(c.lines.size()).arg(m_signals[signal].pattern.trimmed()).arg(expected);
+}
+
+QString NmrHandler::signalTypeName(NmrSignalType type)
+{
+    return type == NmrSignalType::Multiplet ? "Multiplet" : "Peak";
+}
+
+QString NmrHandler::multipletCentreName(NmrMultipletCentre centre)
+{
+    switch (centre) {
+    case NmrMultipletCentre::OuterMidpoint:
+        return "OuterMidpoint";
+    case NmrMultipletCentre::LineMean:
+        return "LineMean";
+    case NmrMultipletCentre::Centroid:
+        break;
+    }
+    return "Centroid";
+}
+
+NmrMultipletCentre NmrHandler::multipletCentreFromName(const QString& name, NmrMultipletCentre fallback)
+{
+    if (name == "Centroid")
+        return NmrMultipletCentre::Centroid;
+    if (name == "OuterMidpoint")
+        return NmrMultipletCentre::OuterMidpoint;
+    if (name == "LineMean")
+        return NmrMultipletCentre::LineMean;
+    return fallback;
+}
+
+/*! \brief Centre of a group of lines (class description, step 3b): members are indices into found (sorted by x),
+ * heights their heights above the baseline of the region, outside the positions of other lines nearby (they limit the
+ * integration of the centroid). Science: for a first-order multiplet the lines lie symmetric around the shift; the
+ * centroid uses the whole area (least sensitive to noise and to a lost line), the outer midpoint only two positions,
+ * the line mean the picked positions weighted by their heights. Claude Generated */
+double NmrHandler::multipletCentreOf(const XYTrace& trace, const QVector<TracePeak>& found, const QVector<int>& members, const QVector<double>& heights,
+    const QVector<double>& outside, NmrMultipletCentre estimator, const double chord[4], double* area) const
+{
+    if (area)
+        *area = kNaN;
+    if (members.isEmpty())
+        return kNaN;
+    const double first = found[members.first()].x, last = found[members.last()].x;
+    double weighted = 0, weights = 0;
+    for (int i = 0; i < members.size(); ++i) {
+        const double h = std::max(heights.value(i, 0), 0.0);
+        weighted += h * found[members[i]].x;
+        weights += h;
+    }
+    const double lineMean = weights > 0 ? weighted / weights : 0.5 * (first + last);
+    if (estimator == NmrMultipletCentre::OuterMidpoint && !area)
+        return 0.5 * (first + last);
+    if (estimator == NmrMultipletCentre::LineMean && !area)
+        return lineMean;
+
+    // centroid over [first - e, last + e]
+    const Eigen::Index n = trace.size();
+    if (n < 5)
+        return estimator == NmrMultipletCentre::OuterMidpoint ? 0.5 * (first + last) : lineMean;
+    const double dx = std::abs(trace.x()(n - 1) - trace.x()(0)) / double(n - 1);
+    double width = 0;
+    int widths = 0;
+    for (int i : { 0, int(members.size()) - 1 }) {
+        const TracePeak& peak = found[members[i]];
+        // the baseline under the line: its height above the baseline is heights[i]
+        const double w = LineshapeFit::estimateFwhm(trace.x(), trace.y(), peak.index, peak.height - heights.value(i, peak.height));
+        if (std::isfinite(w) && w > 0) {
+            width += w;
+            ++widths;
+        }
+    }
+    double e = 1.5 * (widths > 0 ? width / widths : 3 * dx);
+    for (double o : outside) {
+        if (o < first)
+            e = std::min(e, 0.5 * (first - o));
+        else if (o > last)
+            e = std::min(e, 0.5 * (o - last));
+    }
+    e = std::max(e, dx);
+    const XYTrace part = trace.range(first - e, last + e);
+    const Eigen::Index m = part.size();
+    double centroid = lineMean;
+    if (m >= 3) {
+        // weights above the chord of the region (far from the lines; the ends of [first - e, last + e] still lie on the
+        // tails of the lines), negative weights (noise below the chord) are not counted
+        auto baseline = [&](double x) { return chord[2] == chord[0] ? 0.5 * (chord[1] + chord[3]) : chord[1] + (chord[3] - chord[1]) * (x - chord[0]) / (chord[2] - chord[0]); };
+        double moment = 0, sum = 0;
+        for (Eigen::Index i = 0; i < m; ++i) {
+            const double x = part.x()(i);
+            const double w = std::max(part.y()(i) - baseline(x), 0.0);
+            moment += w * x;
+            sum += w;
+        }
+        if (sum > 0) {
+            centroid = moment / sum;
+            if (area)
+                *area = sum * dx;
+        }
+    }
+    switch (estimator) {
+    case NmrMultipletCentre::OuterMidpoint:
+        return 0.5 * (first + last);
+    case NmrMultipletCentre::LineMean:
+        return lineMean;
+    case NmrMultipletCentre::Centroid:
+        break;
+    }
+    return centroid;
+}
+
+/*! \brief Candidate groups of a multiplet in [lo, hi] (class description, step 3b). Claude Generated */
+QVector<NmrHandler::MultipletGroup> NmrHandler::multipletGroups(const XYTrace& trace, const QVector<TracePeak>& found, const QVector<int>* passing,
+    double lo, double hi, double halfSpan, double noise) const
+{
+    QVector<MultipletGroup> groups;
+    const RegionChord chord = regionChord(trace, lo, hi, std::max(halfSpan, 0.0));
+    if (!chord.valid)
+        return groups;
+    struct Candidate {
+        int index;
+        double x, height, prominence;
+    };
+    QVector<Candidate> candidates;
+    auto consider = [&](int p) {
+        const TracePeak& peak = found[p];
+        if (peak.x < lo || peak.x > hi || peak.index < chord.first || peak.index >= chord.end)
+            return;
+        const double h = peak.height - chord.at(peak.x);
+        if (h > 0)
+            candidates.append({ p, peak.x, h, prominence(trace, peak, chord.first, chord.end) });
+    };
+    if (passing)
+        for (int p : *passing)
+            consider(p);
+    else
+        for (int p = 0; p < found.size(); ++p)
+            consider(p);
+    std::sort(candidates.begin(), candidates.end(), [](const Candidate& a, const Candidate& b) { return a.x < b.x; });
+    const double span = 2 * std::max(halfSpan, 0.0);
+    const double floorNoise = MultipletProminenceSigmas * (std::isfinite(noise) ? noise : 0.0);
+    QVector<QVector<int>> sets; // positions in candidates
+    // every run of neighbouring candidates within a span of 2 h is a possible group; the tracking chooses by position,
+    // height, number and spread of the lines
+    for (int i = 0; i < candidates.size(); ++i)
+        for (int j = i; j < candidates.size() && candidates[j].x <= candidates[i].x + span; ++j) {
+            double highest = 0;
+            int top = -1;
+            for (int m = i; m <= j; ++m)
+                if (candidates[m].height > highest) {
+                    highest = candidates[m].height;
+                    top = m;
+                }
+            // ripple (low maxima beside the lines) and noise maxima on a line (no dip deeper than the noise) are no
+            // lines of the group; the run must end on lines. Barely resolved lines of the group keep their height but
+            // have a shallow dip, so the ripple is judged by the height, the noise by the prominence
+            const double limit = m_multiplet_ripple * highest;
+            auto isLine = [&](int m) { return m == top || (candidates[m].height >= limit && candidates[m].prominence >= floorNoise); };
+            if (!isLine(i) || !isLine(j))
+                continue;
+            QVector<int> kept;
+            for (int m = i; m <= j; ++m)
+                if (isLine(m))
+                    kept << m;
+            if (!sets.contains(kept))
+                sets << kept;
+        }
+    for (int a = 0; a < sets.size(); ++a) {
+        MultipletGroup group;
+        double highest = 0;
+        for (int j : sets[a]) {
+            group.members << candidates[j].index;
+            group.lines << candidates[j].x;
+            group.heights << candidates[j].height;
+            group.height += candidates[j].height;
+            highest = std::max(highest, candidates[j].height);
+        }
+        // lines of something else nearby: they limit the integration of the centroid
+        QVector<double> outside;
+        for (int j = 0; j < candidates.size(); ++j)
+            if (!sets[a].contains(j) && candidates[j].height >= m_multiplet_ripple * highest && candidates[j].prominence >= floorNoise)
+                outside << candidates[j].x;
+        group.outside = outside;
+        group.chord[0] = chord.x0;
+        group.chord[1] = chord.y0;
+        group.chord[2] = chord.x1;
+        group.chord[3] = chord.y1;
+        // the area (an integral over the span) only where the centroid needs it; the tracking adds it for the chosen group
+        const bool centroid = m_multiplet_centre == NmrMultipletCentre::Centroid;
+        group.centre = multipletCentreOf(trace, found, group.members, group.heights, outside, m_multiplet_centre, group.chord, centroid ? &group.area : nullptr);
+        groups << group;
+    }
+    return groups;
+}
+
+int NmrHandler::addMultiplet(double from, double to, double window, bool* found)
+{
+    if (found)
+        *found = false;
+    const double lo = std::min(from, to), hi = std::max(from, to);
+    if (!(hi > lo) || !std::isfinite(lo) || !std::isfinite(hi))
+        return -1;
+    NmrSignal signal;
+    signal.type = NmrSignalType::Multiplet;
+    signal.position = 0.5 * (lo + hi);
+    signal.halfSpan = 0.5 * (hi - lo);
+    signal.window = (window > 0 && std::isfinite(window)) ? window : m_window;
+    // the lines of the range in the reference spectrum, with the detection of the tracking
+    if (m_reference >= 0 && m_reference < m_spectra.size()) {
+        QVector<XYTrace> processed;
+        const QVector<QVector<TracePeak>> all = peaks(nullptr, &processed, usesWindowThreshold());
+        const XYTrace& trace = processed.value(m_reference);
+        const QVector<TracePeak>& candidates = all.value(m_reference);
+        const double noise = noiseOf(m_reference);
+        QVector<int> passing;
+        if (usesWindowThreshold())
+            passing = windowCandidates(trace, noise, candidates, lo, hi, signal.halfSpan, WindowRelativeThreshold, WindowNoiseSigmas, WindowProminenceSigmas);
+        const QVector<MultipletGroup> groups = multipletGroups(trace, candidates, usesWindowThreshold() ? &passing : nullptr, lo, hi, signal.halfSpan * (1 + 1e-9), noise);
+        const MultipletGroup* best = nullptr;
+        for (const MultipletGroup& group : groups)
+            if (std::isfinite(group.centre) && (!best || group.height > best->height))
+                best = &group;
+        if (best) {
+            signal.position = best->centre;
+            if (found)
+                *found = true;
+        }
+    }
+    signal.name = QString::number(signal.position, 'f', 3);
+    m_signals << signal;
+    track();
+    return m_signals.size() - 1;
+}
+
+int NmrHandler::pickMultiplets(double window, double maxCoupling, double ripple, QString* error, double from, double to)
+{
+    if (m_spectra.isEmpty()) {
+        setError(error, "no spectra");
+        return 0;
+    }
+    setDefaultWindow(window);
+    setMultipletRipple(ripple);
+    const double lo = std::min(from, to), hi = std::max(from, to);
+    // the peaks of the reference spectrum with the detection of pickSignals
+    QVector<XYTrace> processed;
+    QVector<QVector<TracePeak>> all;
+    if (usesWindowThreshold()) {
+        const QVector<QVector<TracePeak>> maxima = peaks(error, &processed, true);
+        QVector<double> noise(processed.size(), 0.0);
+        QVector<QVector<QPair<double, double>>> near(processed.size());
+        if (m_reference < processed.size()) {
+            noise[m_reference] = noiseOf(m_reference);
+            near[m_reference] << qMakePair(lo, hi);
+        }
+        all = windowDetectedPeaks(processed, maxima, noise, &near);
+    } else
+        all = peaks(error, &processed, false);
+    m_signals.clear();
+    m_manual.clear();
+    const QVector<TracePeak>& reference = all.value(m_reference);
+    const XYTrace& trace = processed.value(m_reference);
+    if (trace.size() < 5)
+        return 0;
+    const double sigma = noiseOf(m_reference);
+    const double dx = std::abs(trace.x()(trace.size() - 1) - trace.x()(0)) / double(trace.size() - 1);
+    const double J = maxCoupling > 0 && std::isfinite(maxCoupling) ? maxCoupling : 0.04;
+
+    // lines: peaks in the range standing 6 σ above their local baseline
+    struct Line {
+        int index;
+        double x, height;
+    };
+    QVector<Line> lines;
+    for (int p = 0; p < reference.size(); ++p) {
+        const TracePeak& peak = reference[p];
+        if (peak.x < lo || peak.x > hi)
+            continue;
+        const RegionChord chord = regionChord(trace, peak.x - m_window, peak.x + m_window, m_window);
+        const double h = peak.height - (chord.valid ? chord.at(peak.x) : 0.0);
+        // as in the tracking (step 3b): a maximum on a line without a dip deeper than the noise is no line
+        if (h > 0 && h >= WindowNoiseSigmas * sigma && chord.valid && prominence(trace, peak, chord.first, chord.end) >= MultipletProminenceSigmas * sigma)
+            lines.append({ p, peak.x, h });
+    }
+    std::sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.x < b.x; });
+    // single linkage by the largest coupling; ripple below the fraction of the highest line of its group is dropped
+    // and the groups are formed again (a ripple maximum may bridge two groups)
+    QVector<QVector<Line>> groups;
+    for (bool changed = true; changed;) {
+        changed = false;
+        groups.clear();
+        for (const Line& line : lines) {
+            if (groups.isEmpty() || line.x - groups.last().last().x > J)
+                groups.append(QVector<Line>());
+            groups.last() << line;
+        }
+        QVector<Line> kept;
+        for (const QVector<Line>& group : groups) {
+            double highest = 0;
+            for (const Line& line : group)
+                highest = std::max(highest, line.height);
+            for (const Line& line : group) {
+                if (line.height >= m_multiplet_ripple * highest)
+                    kept << line;
+                else
+                    changed = true;
+            }
+        }
+        lines = kept;
+    }
+    for (const QVector<Line>& group : groups) {
+        QVector<int> members;
+        QVector<double> heights, outside;
+        for (const Line& line : group) {
+            members << line.index;
+            heights << line.height;
+        }
+        for (const QVector<Line>& other : groups)
+            if (&other != &group)
+                for (const Line& line : other)
+                    outside << line.x;
+        const double spread = group.last().x - group.first().x;
+        NmrSignal signal;
+        signal.type = NmrSignalType::Multiplet;
+        const RegionChord chord = regionChord(trace, group.first().x - m_window, group.last().x + m_window, m_window);
+        const double line[4] = { chord.x0, chord.y0, chord.x1, chord.y1 };
+        signal.position = multipletCentreOf(trace, reference, members, heights, outside, m_multiplet_centre, line);
+        signal.halfSpan = 0.5 * spread + std::max(std::clamp(0.25 * spread, 0.1 * J, 0.5 * J), 3 * dx);
+        signal.window = m_window;
+        signal.name = QString::number(signal.position, 'f', 3);
+        if (group.size() == 1)
+            signal.pattern = "s";
+        m_signals << signal;
+    }
+    return m_signals.size();
+}
+
+// ---------------------------------------------------------------------------------------------
 // tracking
 
 /*! \brief Walks from spectrum start in direction step (+1/-1) to the end of the series.
@@ -718,12 +1177,16 @@ int NmrHandler::addSignalAtPeak(double position, double window, bool* snapped)
  * The state of each signal starts at its reference position (forward walk) or at the result of the
  * reference spectrum (backward walk, start = reference - 1); see the class description for the rules. */
 void NmrHandler::trackDirection(int start, int step, const QVector<QVector<TracePeak>>& peaks, const QVector<XYTrace>* processed,
-    const QVector<double>* noise)
+    const QVector<double>* noise, bool windowThreshold)
 {
-    // with processed spectra and their noise: peaks holds every maximum, the window threshold selects (step 3a)
-    const bool windowThreshold = processed && noise;
+    // with the window threshold peaks holds every maximum, the rule of step 3a selects; processed spectra and their
+    // noise are also needed by multiplets (step 3b)
+    windowThreshold = windowThreshold && processed && noise;
     const int n = m_spectra.size();
     QVector<TrackState> states(m_signals.size());
+    QVector<int> lastCount(m_signals.size(), 0); ///< Claude Generated: number and spread of the lines of a multiplet's last group
+    QVector<double> lastSpread(m_signals.size(), kNaN);
+    QVector<double> lastShare(m_signals.size(), 1.0); ///< share of the multiplet's height in the highest group of its region
     for (int s = 0; s < m_signals.size(); ++s) {
         states[s].last = m_signals[s].position;
         states[s].lastIndex = m_reference;
@@ -732,6 +1195,18 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             if (ref.status == NmrCellStatus::Ok || ref.status == NmrCellStatus::Manual)
                 states[s].last = ref.shift;
             states[s].height = ref.height;
+            if (m_signals[s].isMultiplet()) {
+                // a multiplet compares the sum of its line heights (Claude Generated)
+                double sum = 0;
+                for (double h : ref.lineHeights)
+                    sum += h;
+                states[s].height = ref.lineHeights.isEmpty() ? kNaN : sum;
+                if (ref.status == NmrCellStatus::Ok && !ref.lines.isEmpty()) {
+                    lastShare[s] = std::isfinite(ref.groupShare) ? ref.groupShare : 1.0;
+                    lastCount[s] = ref.lines.size();
+                    lastSpread[s] = ref.lines.last() - ref.lines.first();
+                }
+            }
         }
     }
     for (int k = start; k >= 0 && k < n; k += step) {
@@ -740,6 +1215,11 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             continue;
         const QVector<TracePeak>& found = peaks.value(k);
         QVector<int> choice(m_signals.size(), -1);
+        QVector<QVector<int>> groupOf(m_signals.size()); ///< Claude Generated: peaks claimed by a multiplet
+        QVector<double> groupHeight(m_signals.size(), kNaN);
+        QVector<int> groupCount(m_signals.size(), 0);
+        QVector<double> groupShare(m_signals.size(), 1.0);
+        QVector<double> groupSpread(m_signals.size(), kNaN);
         for (int s = 0; s < m_signals.size(); ++s) {
             NmrCell& cell = m_cells[k][s];
             cell = NmrCell();
@@ -756,6 +1236,73 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             const double window = m_signals[s].window;
             const double minHeight = std::isfinite(states[s].height) ? m_min_height * states[s].height : -std::numeric_limits<double>::infinity();
             const double lastHeight = states[s].height;
+            if (m_signals[s].isMultiplet()) {
+                // Claude Generated: the group of lines around the centre (step 3b)
+                const double h = std::max(m_signals[s].halfSpan, 0.0);
+                const double lo = std::min(center, prediction) - (h + window), hi = std::max(center, prediction) + (h + window);
+                static const XYTrace none;
+                const XYTrace& trace = processed && k < processed->size() ? (*processed)[k] : none;
+                const double sigma = noise ? noise->value(k, 0) : 0.0;
+                QVector<int> passing;
+                if (windowThreshold)
+                    passing = windowCandidates(trace, sigma, found, lo, hi, window, WindowRelativeThreshold, WindowNoiseSigmas, WindowProminenceSigmas);
+                QVector<MultipletGroup> groups = multipletGroups(trace, found, windowThreshold ? &passing : nullptr, lo, hi, h, sigma);
+                int best = -1;
+                double bestCost = std::numeric_limits<double>::infinity();
+                const bool first = !std::isfinite(lastHeight) || !(lastHeight > 0) || lastCount[s] < 1;
+                // heights relative to the highest group of the region: the intensity of a whole spectrum may jump
+                // between the experiments of a titration, the share of a multiplet in its region does not
+                double highest = 0;
+                for (const MultipletGroup& g : groups)
+                    highest = std::max(highest, g.height);
+                for (int g = 0; g < groups.size(); ++g) {
+                    const MultipletGroup& group = groups[g];
+                    if (!std::isfinite(group.centre) || group.lines.isEmpty())
+                        continue;
+                    const double spread = group.lines.last() - group.lines.first();
+                    double cost;
+                    if (first) {
+                        // the definition: the lines within ± h of the position; the most of them, then the highest
+                        if (group.lines.first() < center - h || group.lines.last() > center + h)
+                            continue;
+                        cost = -double(group.lines.size()) - group.height / (1 + group.height);
+                    } else {
+                        if (std::abs(group.centre - center) > window && std::abs(group.centre - prediction) > window)
+                            continue;
+                        const double share = group.height / highest;
+                        if (share < m_min_height * lastShare[s])
+                            continue;
+                        // nearest to the prediction, with the share of the height, the number and the spread of the lines
+                        // of the last step (J does not change: a group with a line of a neighbour or without one of its
+                        // own is worse)
+                        cost = std::abs(group.centre - prediction) / window + std::abs(std::log(share / lastShare[s]))
+                            + std::abs(group.lines.size() - lastCount[s]) + (h > 0 ? std::abs(spread - lastSpread[s]) / h : 0.0);
+                    }
+                    if (cost < bestCost || (cost == bestCost && best >= 0 && group.height > groups[best].height)) {
+                        bestCost = cost;
+                        best = g;
+                    }
+                }
+                if (best < 0)
+                    continue; // Missing
+                MultipletGroup& group = groups[best];
+                if (std::isnan(group.area)) // the integral of the chosen group (step 3b, centroid limits)
+                    multipletCentreOf(trace, found, group.members, group.heights, group.outside, NmrMultipletCentre::Centroid, group.chord, &group.area);
+                groupOf[s] = group.members;
+                groupHeight[s] = group.height;
+                groupCount[s] = group.lines.size();
+                groupShare[s] = highest > 0 ? group.height / highest : 1.0;
+                groupSpread[s] = group.lines.last() - group.lines.first();
+                cell.shift = group.centre;
+                cell.peakShift = group.centre;
+                cell.height = *std::max_element(group.heights.begin(), group.heights.end());
+                cell.integral = group.area;
+                cell.lines = group.lines;
+                cell.lineHeights = group.heights;
+                cell.groupShare = groupShare[s];
+                cell.status = NmrCellStatus::Ok;
+                continue;
+            }
             QVector<int> candidates;
             double highest = -std::numeric_limits<double>::infinity();
             QVector<char> passes;
@@ -804,17 +1351,49 @@ void NmrHandler::trackDirection(int start, int step, const QVector<QVector<Trace
             cell.integral = found[best].integral;
             cell.status = NmrCellStatus::Ok;
         }
+        // Claude Generated: a multiplet conflicts with a signal that claims one of its lines, and with a multiplet whose
+        // span interleaves with its own (the assignment of the lines is ambiguous)
+        auto claims = [&](int s, int p) { return groupOf[s].isEmpty() ? choice[s] == p : groupOf[s].contains(p); };
+        auto overlap = [&](int s, int t) {
+            if (groupOf[s].isEmpty() && groupOf[t].isEmpty())
+                return choice[t] == choice[s];
+            if (groupOf[s].isEmpty())
+                return choice[s] >= 0 && claims(t, choice[s]);
+            for (int p : groupOf[s])
+                if (claims(t, p))
+                    return true;
+            if (groupOf[t].isEmpty())
+                return false;
+            // the spans interleave, or a line of one lies within ± half span of the other's centre (two multiplets
+            // that took each other's lines are as ambiguous as two that share one)
+            const NmrCell &a = m_cells[k][s], &b = m_cells[k][t];
+            if (a.lines.first() <= b.lines.last() && b.lines.first() <= a.lines.last())
+                return true;
+            auto reaches = [&](const NmrCell& c, int signal, const NmrCell& other) {
+                const double half = m_signals[signal].halfSpan;
+                for (double x : other.lines)
+                    if (std::abs(x - c.shift) <= half)
+                        return true;
+                return false;
+            };
+            return reaches(a, s, b) || reaches(b, t, a);
+        };
         for (int s = 0; s < m_signals.size(); ++s) {
-            if (choice[s] < 0)
+            if (choice[s] < 0 && groupOf[s].isEmpty())
                 continue;
             bool shared = false;
             for (int t = 0; t < m_signals.size(); ++t)
-                shared = shared || (t != s && choice[t] == choice[s]);
+                shared = shared || (t != s && (choice[t] >= 0 || !groupOf[t].isEmpty()) && overlap(s, t));
             if (shared)
                 m_cells[k][s].status = NmrCellStatus::Conflict;
             else {
                 states[s].update(m_cells[k][s].shift, k);
-                states[s].height = m_cells[k][s].height;
+                states[s].height = groupOf[s].isEmpty() ? m_cells[k][s].height : groupHeight[s];
+                if (!groupOf[s].isEmpty()) {
+                    lastShare[s] = groupShare[s];
+                    lastCount[s] = groupCount[s];
+                    lastSpread[s] = groupSpread[s];
+                }
             }
         }
     }
@@ -838,8 +1417,17 @@ void NmrHandler::track()
         qDebug() << "NmrHandler::track:" << error;
 #endif
     if (!windowThreshold) {
-        trackDirection(m_reference, +1, found);
-        trackDirection(m_reference - 1, -1, found);
+        if (hasMultiplets()) {
+            // Claude Generated: multiplets need the spectra and their noise (step 3b)
+            QVector<double> noise(processed.size());
+            for (int k = 0; k < processed.size(); ++k)
+                noise[k] = noiseOf(k);
+            trackDirection(m_reference, +1, found, &processed, &noise, false);
+            trackDirection(m_reference - 1, -1, found, &processed, &noise, false);
+        } else {
+            trackDirection(m_reference, +1, found);
+            trackDirection(m_reference - 1, -1, found);
+        }
         if (m_fit.method == NmrShiftMethod::LineshapeFit)
             fitLineshapes(processed, found);
         return;
@@ -848,8 +1436,8 @@ void NmrHandler::track()
     QVector<double> noise(processed.size());
     for (int k = 0; k < processed.size(); ++k)
         noise[k] = noiseOf(k);
-    trackDirection(m_reference, +1, found, &processed, &noise);
-    trackDirection(m_reference - 1, -1, found, &processed, &noise);
+    trackDirection(m_reference, +1, found, &processed, &noise, true);
+    trackDirection(m_reference - 1, -1, found, &processed, &noise, true);
     if (m_fit.method == NmrShiftMethod::LineshapeFit) {
         // the fit looks for neighbour lines only near the tracked signals: the rule runs there, not over the whole
         // spectrum (whole JEOL spectra hold thousands of noise maxima)
@@ -858,7 +1446,9 @@ void NmrHandler::track()
             for (int s = 0; s < m_signals.size(); ++s) {
                 const NmrCell& cell = m_cells[k][s];
                 if (std::isfinite(cell.shift)) {
-                    const double reach = m_signals[s].window + m_fit.range;
+                    double reach = m_signals[s].window + m_fit.range;
+                    if (m_signals[s].isMultiplet())
+                        reach += m_signals[s].halfSpan; // Claude Generated: the lines of the group
                     near[k] << qMakePair(cell.shift - reach, cell.shift + reach);
                 }
             }
@@ -921,11 +1511,22 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
         if (m_excluded.contains(m_spectra.idAt(k)) || !m_signals[s].enabled)
             return kNaN;
         const NmrCell& c = m_cells[k][s];
+        if (m_signals[s].isMultiplet()) // Claude Generated: only a tracked group is fitted (manual and conflict stay)
+            return c.status == NmrCellStatus::Ok && !c.lines.isEmpty() ? c.peakShift : kNaN;
         if (c.status == NmrCellStatus::Ok)
             return c.peakShift;
         if (c.status == NmrCellStatus::Manual || c.status == NmrCellStatus::Conflict)
             return c.shift;
         return kNaN;
+    };
+    // Claude Generated: extent of the lines of signal s in spectrum k (a single peak: its position)
+    auto extent = [&](int k, int s, double* lo, double* hi) {
+        const NmrCell& c = m_cells[k][s];
+        if (m_signals[s].isMultiplet() && !c.lines.isEmpty()) {
+            *lo = c.lines.first();
+            *hi = c.lines.last();
+        } else
+            *lo = *hi = startPosition(k, s);
     };
 
     // starts of signals that claim the same peak (Conflict): spread around the peak by ± 0.25 of its width
@@ -959,7 +1560,18 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
         for (int s = 0; s < ns; ++s)
             for (int t = s + 1; t < ns; ++t) {
                 const double a = startPosition(k, s), b = startPosition(k, t);
-                if (std::isfinite(a) && std::isfinite(b) && std::abs(a - b) < 2 * R)
+                if (!std::isfinite(a) || !std::isfinite(b))
+                    continue;
+                if (!m_signals[s].isMultiplet() && !m_signals[t].isMultiplet()) {
+                    if (std::abs(a - b) < 2 * R)
+                        parent[find(t)] = find(s);
+                    continue;
+                }
+                // Claude Generated: a multiplet reaches from its first to its last line
+                double loS, hiS, loT, hiT;
+                extent(k, s, &loS, &hiS);
+                extent(k, t, &loT, &hiT);
+                if (loS - R < hiT + R && loT - R < hiS + R)
                     parent[find(t)] = find(s);
             }
     QMap<int, QVector<int>> groups;
@@ -977,6 +1589,15 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
             if (!std::isfinite(p))
                 continue;
             lineSignals << s;
+            if (m_signals[s].isMultiplet()) {
+                // Claude Generated: the range covers every line of the group
+                const NmrCell& c = m_cells[k][s];
+                lo = std::min(lo, c.lines.first());
+                hi = std::max(hi, c.lines.last());
+                for (double h : c.lineHeights)
+                    minHeight = std::min(minHeight, h);
+                continue;
+            }
             lo = std::min(lo, p);
             hi = std::max(hi, p);
             if (m_cells[k][s].status == NmrCellStatus::Conflict) {
@@ -1040,6 +1661,7 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
                 const NmrCell& c = m_cells[k][s];
                 // the peak of a signal, also the one maximum two signals share (Conflict)
                 assigned = assigned || (c.status == NmrCellStatus::Ok && c.peakShift == peak.x) || (c.status == NmrCellStatus::Conflict && c.shift == peak.x);
+                assigned = assigned || (m_signals[s].isMultiplet() && c.lines.contains(peak.x)); // Claude Generated: a line of the group
             }
             if (!assigned)
                 unassigned << peak;
@@ -1071,6 +1693,23 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
         }
         for (int s : lineSignals) {
             const NmrCell& c = m_cells[k][s];
+            if (m_signals[s].isMultiplet()) {
+                // Claude Generated: one line per line of the group, each bounded to half the spacing to its neighbours
+                // (at least two points, at most the window), one width and η in the shared mode
+                double spacing = std::numeric_limits<double>::infinity();
+                for (int i = 1; i < c.lines.size(); ++i)
+                    spacing = std::min(spacing, c.lines[i] - c.lines[i - 1]);
+                const double reach = std::min(m_signals[s].window, std::max(0.5 * spacing, 2 * dx));
+                for (int i = 0; i < c.lines.size(); ++i) {
+                    const double position = std::clamp(c.lines[i], xmin, xmax);
+                    LineshapeLineStart l = line(position, part.interpolate(position), reach, prevFwhm.value(s, kNaN), prevEta.value(s, kNaN));
+                    if (m_fit.widthMode == NmrWidthMode::Shared)
+                        l.shared = s;
+                    block->lines << l;
+                    region->lineSignal << s;
+                }
+                continue;
+            }
             const bool manual = c.status == NmrCellStatus::Manual;
             double position = manual ? c.shift : c.peakShift, height = manual ? part.interpolate(position) : c.height;
             if (c.status == NmrCellStatus::Conflict) {
@@ -1136,16 +1775,49 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
         return QString();
     };
 
+    // Claude Generated: does the fit of the lines of multiplet s in block b count? The group must keep at least 1 % of
+    // the largest line of the range; its lines with at least 5 % of its area must not end at a bound and need an error
+    auto multipletFailure = [&](const LineshapeResult& r, int b, const NmrFitRegion& region, int s) -> QString {
+        if (!r.ok())
+            return r.message.isEmpty() ? LineshapeFit::statusName(r.status) : r.message;
+        const LineshapeBlockResult& br = r.blocks[b];
+        double total = 0, largest = 0;
+        for (int l = 0; l < br.lines.size() && l < region.lineSignal.size(); ++l) {
+            largest = std::max(largest, br.lines[l].area);
+            if (region.lineSignal[l] == s)
+                total += br.lines[l].area;
+        }
+        if (!(total >= 0.01 * largest) || !(total > 0))
+            return "the multiplet vanished (area below 1 % of the largest line of the range)";
+        for (int l = 0; l < br.lines.size() && l < region.lineSignal.size(); ++l) {
+            if (region.lineSignal[l] != s || br.lines[l].area < 0.05 * total)
+                continue;
+            if (br.positionAtBound[l])
+                return "a line of the multiplet is at the limit of its range";
+            if (br.fwhmAtBound[l])
+                return "the width of a line of the multiplet is at its limit";
+            if (!std::isfinite(br.errors[l].position))
+                return "no standard error of a line position of the multiplet";
+        }
+        return QString();
+    };
+
     auto store = [&](int k, const LineshapeResult& r, int b, const NmrFitRegion& base) {
         NmrFitRegion region = base;
         region.status = r.status;
         region.message = r.message;
         if (b < r.blocks.size())
             region.block = r.blocks[b];
+        QVector<int> multiplets; // Claude Generated: multiplet signals of the region, aggregated below
         for (int l = 0; l < region.lineSignal.size() && b < r.blocks.size(); ++l) {
             const int s = region.lineSignal[l];
             if (s < 0)
                 continue;
+            if (m_signals[s].isMultiplet()) {
+                if (!multiplets.contains(s))
+                    multiplets << s;
+                continue;
+            }
             NmrCell& c = m_cells[k][s];
             const PseudoVoigtLine& fitted = r.blocks[b].lines[l];
             const PseudoVoigtLine& error = r.blocks[b].errors[l];
@@ -1157,6 +1829,33 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
             c.fitMessage = lineFailure(r, b, l, c.status == NmrCellStatus::Manual);
             c.fitState = c.fitMessage.isEmpty() ? NmrFitState::Fitted : NmrFitState::Failed;
         }
+        // Claude Generated: centre of a multiplet = area-weighted mean of its fitted line positions; its error from the
+        // errors of the positions (weights taken as exact), width and η area-weighted, area the sum
+        for (int s : multiplets) {
+            NmrCell& c = m_cells[k][s];
+            const LineshapeBlockResult& br = r.blocks[b];
+            double area = 0, position = 0, variance = 0, fwhm = 0, eta = 0;
+            for (int l = 0; l < region.lineSignal.size() && l < br.lines.size(); ++l)
+                if (region.lineSignal[l] == s)
+                    area += std::max(br.lines[l].area, 0.0);
+            for (int l = 0; l < region.lineSignal.size() && l < br.lines.size(); ++l) {
+                if (region.lineSignal[l] != s)
+                    continue;
+                const double w = area > 0 ? std::max(br.lines[l].area, 0.0) / area : 0.0;
+                position += w * br.lines[l].position;
+                fwhm += w * br.lines[l].fwhm;
+                eta += w * br.lines[l].eta;
+                if (w > 0)
+                    variance += w * w * br.errors[l].position * br.errors[l].position;
+            }
+            c.fitShift = area > 0 ? position : kNaN;
+            c.shiftError = area > 0 ? std::sqrt(variance) : kNaN;
+            c.fwhm = area > 0 ? fwhm : kNaN;
+            c.eta = area > 0 ? eta : kNaN;
+            c.area = area;
+            c.fitMessage = multipletFailure(r, b, region, s);
+            c.fitState = c.fitMessage.isEmpty() ? NmrFitState::Fitted : NmrFitState::Failed;
+        }
         m_fit_regions[k] << region;
     };
 
@@ -1164,7 +1863,10 @@ void NmrHandler::fitLineshapes(const QVector<XYTrace>& processed, const QVector<
         int ok = 0;
         for (int l = 0; l < region.lineSignal.size(); ++l) {
             const int s = region.lineSignal[l];
-            ok += s >= 0 && lineFailure(r, 0, l, m_cells[k][s].status == NmrCellStatus::Manual).isEmpty();
+            if (s >= 0 && m_signals[s].isMultiplet()) // Claude Generated: every line of a multiplet counts as the group
+                ok += multipletFailure(r, 0, region, s).isEmpty();
+            else
+                ok += s >= 0 && lineFailure(r, 0, l, m_cells[k][s].status == NmrCellStatus::Manual).isEmpty();
         }
         return ok;
     };
@@ -1543,9 +2245,19 @@ QJsonObject NmrHandler::toJson() const
         QJsonObject s{ { "Name", signal.name }, { "Position", signal.position }, { "Window", signal.window } };
         if (!signal.enabled)
             s["Enabled"] = false;
+        if (signal.isMultiplet()) { // Claude Generated: only for a multiplet, single peaks stay as before
+            s["Type"] = signalTypeName(signal.type);
+            s["HalfSpan"] = signal.halfSpan;
+            if (!signal.pattern.trimmed().isEmpty())
+                s["Pattern"] = signal.pattern.trimmed();
+        }
         signalArray.append(s);
     }
     json["Signals"] = signalArray;
+    if (hasMultiplets()) {
+        json["MultipletCentre"] = multipletCentreName(m_multiplet_centre);
+        json["MultipletRipple"] = m_multiplet_ripple;
+    }
 
     QJsonArray manual, excluded;
     for (int i = 0; i < m_spectra.size(); ++i) {
@@ -1670,6 +2382,9 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
     m_window = json.value("Window").toDouble(0.05);
     m_min_height = json.value("MinHeight").toDouble(0.3);
     m_threshold_scope = json.value("ThresholdScope").toString() == "Window" ? NmrThresholdScope::Window : NmrThresholdScope::Spectrum;
+    m_multiplet_centre = multipletCentreFromName(json.value("MultipletCentre").toString()); // Claude Generated
+    m_multiplet_ripple = 0.05;
+    setMultipletRipple(json.value("MultipletRipple").toDouble(0.05));
     // without the key (projects before WP4): peak picking, as before
     setFitSettings(NmrFitSettings::fromJson(json.value("LineshapeFit").toObject()));
     for (const QJsonValue& value : json.value("Signals").toArray()) {
@@ -1679,6 +2394,11 @@ bool NmrHandler::fromJson(const QJsonObject& json, QString* error)
         signal.position = s.value("Position").toDouble();
         signal.window = s.value("Window").toDouble(m_window);
         signal.enabled = s.value("Enabled").toBool(true);
+        if (s.value("Type").toString() == signalTypeName(NmrSignalType::Multiplet)) { // Claude Generated
+            signal.type = NmrSignalType::Multiplet;
+            signal.halfSpan = std::max(0.0, s.value("HalfSpan").toDouble(0));
+            signal.pattern = s.value("Pattern").toString();
+        }
         m_signals << signal;
     }
     setReferenceIndex(json.value("ReferenceSpectrum").toInt(0));

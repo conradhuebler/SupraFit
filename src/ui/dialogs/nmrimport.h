@@ -102,6 +102,13 @@ class QTimer;
  * chart and the signal lines account for the x offset of the reference spectrum. LB, ph0 and ph1 transform again
  * 300 ms after the last change when the last transform took longer than that (a held arrow key does not queue one
  * transform per step).
+ *
+ * Multiplets (Claude Generated, 2026-11-21): the signal table has the columns Type (peak / multiplet), centre, window,
+ * half span and pattern; "Multiplet from range" adds a multiplet for Start..End (a right drag); the group "Multiplet
+ * options" (behind ..more..) holds "Group lines into multiplets (J ≤ x Hz)" for "Pick from reference spectrum", the
+ * spectrometer frequency (from the FIDs, else typed), the ripple threshold and the centre estimator. The label of a
+ * multiplet sits at its centre with a bracket over its lines; a line count that does not fit the pattern is a hint in
+ * the tooltips.
  */
 class NmrImport : public QDialog {
     Q_OBJECT
@@ -151,6 +158,12 @@ public:
     /*! \brief x range (ppm of the reference spectrum) that "Pick from reference spectrum" searches: Start..End within
      * the visible x axis. Claude Generated */
     void pickRange(double* from, double* to) const;
+    /*! \brief Adds a multiplet for Start..End within the visible x axis (as "Multiplet from range"); false with a status
+     * message for a range wider than kMaxMultipletRange. Claude Generated */
+    bool addMultipletFromRange();
+    /*! \brief Largest coupling of the grouping in ppm: "J ≤" [Hz] / spectrometer frequency [MHz]. Claude Generated */
+    double maxCouplingPpm() const;
+    static constexpr double kMaxMultipletRange = 0.3; ///< widest range "Multiplet from range" takes [ppm]
     /*! \brief Runs a waiting FID transform now (LB, ph0, ph1 changed within the last 300 ms). Claude Generated */
     void flushFidSettings();
 
@@ -162,6 +175,12 @@ private:
     void setupUi();
     QWidget* signalPanel();
     QWidget* fidPanel();
+    /*! \brief Options of the multiplets (grouping, frequency, ripple, centre), behind a MoreLessToggle. Claude Generated */
+    QWidget* multipletPanel();
+    /*! \brief Passes ripple and centre estimator to the handler, remembers the options, tracks again. Claude Generated */
+    void applyMultipletSettings();
+    /*! \brief Tooltip of a signal row: its peak or its lines in the reference spectrum, line count hint. Claude Generated */
+    QString signalToolTip(int signal) const;
     /*! \brief Shows the FID settings of the handler; the panel is visible only with FIDs. Claude Generated */
     void updateFidControls();
     /*! \brief Passes the FID controls to the handler, transforms again and redraws. Claude Generated */
@@ -204,6 +223,12 @@ private:
     QTableWidget* m_results;
     QDoubleSpinBox *m_offset, *m_window, *m_position;
     QPushButton *m_pick, *m_add, *m_remove_signal;
+    QPushButton* m_add_multiplet; ///< Claude Generated: multiplet from Start..End
+    MoreLessToggle* m_multiplet_toggle; ///< Claude Generated: shows the multiplet options
+    QWidget* m_multiplet_options;
+    QCheckBox* m_group; ///< "Group lines into multiplets" for the pick
+    QDoubleSpinBox *m_max_coupling, *m_frequency, *m_ripple;
+    QComboBox* m_centre; ///< centre estimator of the multiplets
     QTableWidget* m_signal_table;
     QComboBox *m_method, *m_width_mode, *m_baseline;
     QComboBox* m_threshold; ///< detection threshold of the tracking: whole spectrum / search window (Claude Generated)

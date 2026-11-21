@@ -42,6 +42,7 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFormLayout>
+#include <QtWidgets/QGraphicsPathItem>
 #include <QtWidgets/QGraphicsRectItem>
 #include <QtWidgets/QGraphicsSimpleTextItem>
 #include <QtWidgets/QGroupBox>
@@ -1318,6 +1319,7 @@ void TraceEditorWidget::updateLabels()
     while (m_label_items.size() < m_labels.size()) {
         auto* box = new QGraphicsRectItem(chart);
         new QGraphicsSimpleTextItem(box);
+        new QGraphicsPathItem(box); // Claude Generated: bracket over the lines of a multiplet (Label::ticks)
         box->setZValue(12);
         m_label_items << box;
     }
@@ -1346,15 +1348,27 @@ void TraceEditorWidget::updateLabels()
         const Label& label = m_labels[i];
         const double width = metrics.horizontalAdvance(label.text) + 6;
         const double left = std::clamp(at[i].x() - 0.5 * width, plot.left(), std::max(plot.left(), plot.right() - width));
+        // Claude Generated: screen x of the ticks (lines of a multiplet), clipped to the plot; the label and its bracket
+        // take the row together
+        QVector<double> ticks;
+        for (double t : label.ticks) {
+            const double px = chart->mapToPosition(displayPoint(m_label_trace, t, label.y), m_lines.first()).x();
+            if (std::isfinite(px))
+                ticks << std::clamp(px, plot.left(), plot.right());
+        }
+        std::sort(ticks.begin(), ticks.end());
+        const double extentLeft = ticks.isEmpty() ? left : std::min(left, ticks.first());
+        const double extentRight = ticks.isEmpty() ? left + width : std::max(left + width, ticks.last());
         int row = -1;
         for (int r = 0; r < kLabelRows && row < 0; ++r)
-            if (rowEnd[r] < left - 1)
+            if (rowEnd[r] < extentLeft - 1)
                 row = r;
         if (row < 0)
             row = int(std::min_element(rowEnd.begin(), rowEnd.end()) - rowEnd.begin());
-        rowEnd[row] = left + width;
+        rowEnd[row] = extentRight;
         const double y = std::isfinite(at[i].y()) ? at[i].y() : plot.bottom();
-        const double top = std::clamp(y - 4 - height - row * (height + 1), plot.top(), std::max(plot.top(), plot.bottom() - height));
+        const double bracket = ticks.isEmpty() ? 0.0 : 6.0; // room for the bracket under the label
+        const double top = std::clamp(y - 4 - bracket - height - row * (height + 1 + bracket), plot.top(), std::max(plot.top(), plot.bottom() - height - bracket));
         const QRectF rect(left, top, width, height);
         QGraphicsRectItem* box = m_label_items[i];
         auto* text = static_cast<QGraphicsSimpleTextItem*>(box->childItems().value(0));
@@ -1374,6 +1388,25 @@ void TraceEditorWidget::updateLabels()
             text->setFont(font);
             text->setBrush(foreground);
             text->setPos(rect.left() + 3, rect.top() + 1);
+        }
+        // bracket: a bar under the label over the span of the lines, a short tick down at each line
+        if (auto* path = static_cast<QGraphicsPathItem*>(box->childItems().value(1))) {
+            QPainterPath shape;
+            if (!ticks.isEmpty()) {
+                const double bar = rect.bottom() + 3;
+                shape.moveTo(rect.center().x(), rect.bottom());
+                shape.lineTo(rect.center().x(), bar);
+                shape.moveTo(ticks.first(), bar);
+                shape.lineTo(ticks.last(), bar);
+                for (double t : ticks) {
+                    shape.moveTo(t, bar);
+                    shape.lineTo(t, bar + 4);
+                }
+            }
+            path->setPath(shape);
+            QColor color = highlighted ? pal.color(QPalette::Highlight) : pal.color(label.dimmed ? QPalette::Disabled : QPalette::Active, QPalette::Text);
+            path->setPen(QPen(color, highlighted ? 2 : 1));
+            path->setBrush(Qt::NoBrush);
         }
         box->setVisible(true);
         m_label_scene[i] = box->mapRectToScene(rect);

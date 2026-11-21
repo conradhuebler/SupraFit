@@ -160,6 +160,14 @@ int main(int argc, char** argv)
             report(s == 0 ? "Pick (whole spectrum)" : "Pick (search window)", ms,
                 QString("%1 signals, %2 outside Start..End").arg(handler->signalList().size()).arg(outside(handler, start->value(), end->value())));
         }
+        // Claude Generated: the grouped pick (multiplets, J <= 20 Hz), then back to one signal per peak
+        if (auto* group = dialog.findChild<QCheckBox*>("nmrGroupMultiplets")) {
+            group->setChecked(true);
+            const double ms = timed([&]() { pick->click(); });
+            report("Pick, grouped into multiplets", ms, QString("%1 multiplets").arg(handler->signalList().size()));
+            group->setChecked(false);
+            pick->click();
+        }
         // a handful of signals for the following steps
         while (handler->signalList().size() > 6)
             handler->removeSignal(handler->signalList().size() - 1);

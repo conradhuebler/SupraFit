@@ -114,7 +114,8 @@ class StatusLine;
  * Labels (Claude Generated): a host can put numbered labels at points of one trace (setLabels; e.g. the signals of
  * the NMR import at the reference spectrum). They sit above their point, drawn with the trace's stack offset and
  * intensity, in up to kLabelRows rows so they do not overlap; one can be highlighted (setHighlightedLabel); a click on
- * a label emits labelClicked() and is not a zoom.
+ * a label emits labelClicked() and is not a zoom. A label with ticks (the lines of an NMR multiplet) gets a bracket under it
+ * over the span of the ticks with a short stroke at each (Claude Generated).
  */
 class TraceEditorWidget : public QWidget {
     Q_OBJECT
@@ -247,6 +248,7 @@ public:
         QString text; ///< short text, e.g. the number of a signal
         QString toolTip;
         bool dimmed = false; ///< drawn in the disabled text colour (e.g. a signal left out)
+        QVector<double> ticks; ///< data x of lines that belong to the label (a multiplet): a bracket under it (Claude Generated)
     };
     /*! \brief Replaces the labels; they are drawn at displayPoint(traceIndex, x, y) of each. Claude Generated */
     void setLabels(int traceIndex, const QVector<Label>& labels);

@@ -599,8 +599,9 @@ QWidget* NmrImport::signalPanel()
 
     m_pick = new QPushButton(tr("Pick from reference spectrum"));
     m_pick->setObjectName("nmrPick");
-    m_pick->setToolTip(tr("One signal per peak of the reference spectrum between Start and End in the visible part of the chart (peaks of a peak picking step, else by the detection threshold); replaces the signals and the values set by hand. The signals are numbered in the chart as in the list."));
+    m_pick->setToolTip(tr("One signal per peak of the reference spectrum between Start and End in the visible part of the chart (peaks of a peak picking step, else by the detection threshold), or one multiplet per group of lines with \"Group lines into multiplets\"; replaces the signals and the values set by hand. The signals are numbered in the chart as in the list."));
     layout->addWidget(m_pick);
+    layout->addWidget(multipletPanel());
 
     QHBoxLayout* add = new QHBoxLayout;
     m_position = new QDoubleSpinBox;
@@ -614,13 +615,23 @@ QWidget* NmrImport::signalPanel()
     add->addWidget(m_position, 1);
     add->addWidget(m_add);
     layout->addLayout(add);
+    m_add_multiplet = new QPushButton(tr("Multiplet from range"));
+    m_add_multiplet->setObjectName("nmrAddMultiplet");
+    m_add_multiplet->setToolTip(tr("Adds a multiplet for the range Start..End (drag with the right mouse button over its lines): its centre is followed instead of a single line; half span = half the range."));
+    layout->addWidget(m_add_multiplet);
 
-    m_signal_table = new QTableWidget(0, 3);
+    // Claude Generated: type, centre, window, half span and pattern of every signal
+    m_signal_table = new QTableWidget(0, 6);
     m_signal_table->setObjectName("nmrSignals");
-    m_signal_table->setHorizontalHeaderLabels({ tr("Name"), tr("δ /ppm"), tr("± /ppm") });
-    m_signal_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_signal_table->setHorizontalHeaderLabels({ tr("Name"), tr("Type"), tr("δ /ppm"), tr("±"), tr("½ span"), tr("Pattern") });
+    m_signal_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    m_signal_table->horizontalHeader()->setStretchLastSection(true); // the pattern takes what is left
+    m_signal_table->horizontalHeader()->setMinimumSectionSize(24);
     m_signal_table->verticalHeader()->setDefaultSectionSize(22);
-    m_signal_table->setToolTip(tr("Untick a signal to leave it out of the table; name, position and window can be edited. The row number is the label of the signal in the chart; selecting a row highlights it."));
+    m_signal_table->setToolTip(tr("Untick a signal to leave it out of the table; name, type, position (the centre of a multiplet), window, half span and pattern can be edited. The row number is the label of the signal in the chart; selecting a row highlights it."));
+    m_signal_table->horizontalHeaderItem(1)->setToolTip(tr("Peak: one line is followed. Multiplet: the group of lines within ± half span of its centre is followed, δ is the centre."));
+    m_signal_table->horizontalHeaderItem(4)->setToolTip(tr("Multiplet: the lines lie within ± this distance of the centre [ppm]."));
+    m_signal_table->horizontalHeaderItem(5)->setToolTip(tr("Multiplet: expected pattern (s, d, t, q, dd, dt, ..., m); a different number of lines found is shown as a hint."));
     layout->addWidget(m_signal_table, 1);
     m_remove_signal = new QPushButton(tr("Remove signal"));
     m_remove_signal->setObjectName("nmrRemoveSignal");
@@ -631,8 +642,8 @@ QWidget* NmrImport::signalPanel()
     m_double_adds->setChecked(QSettings().value("nmrimport/doubleClickAdds", true).toBool());
     layout->addWidget(m_double_adds);
     box->setLayout(layout);
-    box->setMinimumWidth(230);
-    box->setMaximumWidth(300);
+    box->setMinimumWidth(400); // the six columns of the signal table without a scroll bar
+    box->setMaximumWidth(460);
 
     connect(m_offset, &QDoubleSpinBox::valueChanged, this, [this](double offset) {
         if (m_updating)
@@ -678,9 +689,13 @@ QWidget* NmrImport::signalPanel()
         QString error;
         double from = 0, to = 0;
         pickRange(&from, &to);
-        const int n = m_handler.pickSignals(m_window->value(), &error, from, to);
+        const bool group = m_group->isChecked();
+        const int n = group ? m_handler.pickMultiplets(m_window->value(), maxCouplingPpm(), m_ripple->value() / 100.0, &error, from, to)
+                            : m_handler.pickSignals(m_window->value(), &error, from, to);
         if (!error.isEmpty())
             setStatus(error, true);
+        else if (group)
+            setStatus(tr("%1 multiplet(s) picked in spectrum %2 between %3 and %4 ppm (J ≤ %5 Hz).").arg(n).arg(m_handler.referenceIndex() + 1).arg(from, 0, 'f', 3).arg(to, 0, 'f', 3).arg(m_max_coupling->value(), 0, 'f', 1), false);
         else
             setStatus(tr("%1 signal(s) picked in spectrum %2 between %3 and %4 ppm.").arg(n).arg(m_handler.referenceIndex() + 1).arg(from, 0, 'f', 3).arg(to, 0, 'f', 3), false);
         retrack();
@@ -690,6 +705,7 @@ QWidget* NmrImport::signalPanel()
             showSelectedSignal();
     });
     connect(m_add, &QPushButton::clicked, this, [this]() { addSignalAt(m_position->value()); });
+    connect(m_add_multiplet, &QPushButton::clicked, this, [this]() { addMultipletFromRange(); });
     connect(m_remove_signal, &QPushButton::clicked, this, [this]() {
         const int row = m_signal_table->currentRow();
         if (row < 0 || row >= m_handler.signalList().size())
@@ -711,17 +727,140 @@ QWidget* NmrImport::signalPanel()
         if (item->column() == 0) {
             signal.name = item->text().trimmed().isEmpty() ? signal.name : item->text().trimmed();
             signal.enabled = item->checkState() == Qt::Checked;
+        } else if (item->column() == 5) {
+            signal.pattern = item->text().trimmed();
         } else if (parseShift(item->text(), &value)) {
-            if (item->column() == 1)
+            if (item->column() == 2)
                 signal.position = value;
-            else if (value > 0)
+            else if (item->column() == 3 && value > 0)
                 signal.window = value;
+            else if (item->column() == 4 && value >= 0)
+                signal.halfSpan = value;
         }
         if (!m_handler.setSignal(row, signal))
             setStatus(tr("Signal %1 not changed: the window must be positive.").arg(row + 1), true);
         QMetaObject::invokeMethod(this, [this]() { retrack(); }, Qt::QueuedConnection);
     });
     return box;
+}
+
+/*! \brief Options of the multiplets behind "..more.." (Claude Generated): grouping of the pick by the largest coupling J
+ * in Hz (converted with the spectrometer frequency, from the FIDs or typed), ripple threshold, centre estimator. */
+QWidget* NmrImport::multipletPanel()
+{
+    QWidget* panel = new QWidget;
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->setContentsMargins(0, 0, 0, 0);
+    m_multiplet_options = new QWidget;
+    m_multiplet_options->setObjectName("nmrMultipletOptions");
+    m_multiplet_toggle = new MoreLessToggle(m_multiplet_options);
+    m_multiplet_toggle->setObjectName("nmrMultipletOptionsToggle");
+    m_multiplet_toggle->setToolTip(tr("Show or hide the options of the multiplets"));
+    m_group = new QCheckBox(tr("Group lines into multiplets"));
+    m_group->setObjectName("nmrGroupMultiplets");
+    m_group->setToolTip(tr("\"Pick from reference spectrum\" makes one multiplet of the lines that lie closer together than the largest coupling J; weak ripple beside the lines and maxima below the noise threshold are left out."));
+    QHBoxLayout* toggle_row = new QHBoxLayout;
+    toggle_row->setContentsMargins(0, 0, 0, 0);
+    toggle_row->addWidget(m_group);
+    toggle_row->addStretch(1);
+    toggle_row->addWidget(m_multiplet_toggle);
+    layout->addLayout(toggle_row);
+
+    QFormLayout* form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
+    m_max_coupling = new QDoubleSpinBox;
+    m_max_coupling->setObjectName("nmrMaxCoupling");
+    m_max_coupling->setDecimals(1);
+    m_max_coupling->setRange(0.5, 100);
+    m_max_coupling->setValue(20);
+    m_max_coupling->setSuffix(tr(" Hz"));
+    m_max_coupling->setKeyboardTracking(false);
+    m_max_coupling->setToolTip(tr("Lines closer than this coupling form one multiplet."));
+    form->addRow(tr("J ≤"), m_max_coupling);
+    m_frequency = new QDoubleSpinBox;
+    m_frequency->setObjectName("nmrSpectrometerFrequency");
+    m_frequency->setDecimals(2);
+    m_frequency->setRange(10, 2000);
+    m_frequency->setValue(400);
+    m_frequency->setSuffix(tr(" MHz"));
+    m_frequency->setKeyboardTracking(false);
+    m_frequency->setToolTip(tr("Frequency of the observed nucleus, converts J from Hz to ppm; taken from the FIDs when the series has them."));
+    form->addRow(tr("Spectrometer"), m_frequency);
+    m_ripple = new QDoubleSpinBox;
+    m_ripple->setObjectName("nmrMultipletRipple");
+    m_ripple->setDecimals(1);
+    m_ripple->setRange(0, 50);
+    m_ripple->setValue(100 * m_handler.multipletRipple());
+    m_ripple->setSuffix(tr(" %"));
+    m_ripple->setKeyboardTracking(false);
+    m_ripple->setToolTip(tr("A maximum lower than this share of the highest line of its multiplet (as height above its surroundings) is ripple, not a line."));
+    form->addRow(tr("Ripple below"), m_ripple);
+    m_centre = new QComboBox;
+    m_centre->setObjectName("nmrMultipletCentre");
+    m_centre->addItems({ tr("Centroid of the area"), tr("Midpoint of the outer lines"), tr("Height-weighted mean of the lines") });
+    m_centre->setCurrentIndex(int(m_handler.multipletCentre())); // the default of the core
+    m_centre->setToolTip(tr("Centre of a multiplet: centroid of its area above the baseline, midpoint of its outermost lines, or mean of its line positions weighted by their heights. The lineshape fit uses the area-weighted mean of the fitted lines."));
+    form->addRow(tr("Centre"), m_centre);
+    m_multiplet_options->setLayout(form);
+    layout->addWidget(m_multiplet_options);
+    panel->setLayout(layout);
+
+    connect(m_multiplet_toggle, &QToolButton::clicked, this, [this]() { m_memory->setValue("multipletOptionsExpanded", m_multiplet_toggle->isExpanded()); });
+    connect(m_group, &QCheckBox::toggled, this, [this](bool on) {
+        if (!m_updating)
+            m_memory->setValue("groupMultiplets", on);
+    });
+    connect(m_max_coupling, &QDoubleSpinBox::valueChanged, this, [this](double value) {
+        if (!m_updating)
+            m_memory->setValue("maxCoupling", value);
+    });
+    connect(m_frequency, &QDoubleSpinBox::valueChanged, this, [this](double value) {
+        if (!m_updating && !m_handler.hasFids())
+            m_memory->setValue("spectrometerFrequency", value);
+    });
+    connect(m_ripple, &QDoubleSpinBox::valueChanged, this, &NmrImport::applyMultipletSettings);
+    connect(m_centre, &QComboBox::currentIndexChanged, this, &NmrImport::applyMultipletSettings);
+    return panel;
+}
+
+void NmrImport::applyMultipletSettings()
+{
+    if (m_updating)
+        return;
+    m_handler.setMultipletRipple(m_ripple->value() / 100.0);
+    m_handler.setMultipletCentre(NmrMultipletCentre(std::clamp(m_centre->currentIndex(), 0, 2)));
+    m_memory->setValue("multipletRipple", m_ripple->value());
+    m_memory->setValue("multipletCentre", m_centre->currentIndex());
+    if (m_handler.hasMultiplets())
+        retrack();
+}
+
+double NmrImport::maxCouplingPpm() const
+{
+    return m_max_coupling->value() / m_frequency->value();
+}
+
+bool NmrImport::addMultipletFromRange()
+{
+    double from = 0, to = 0;
+    pickRange(&from, &to);
+    if (!(to - from <= kMaxMultipletRange)) {
+        setStatus(tr("The range %1..%2 ppm is wider than %3 ppm: drag with the right mouse button over the lines of one multiplet.").arg(from, 0, 'f', 4).arg(to, 0, 'f', 4).arg(kMaxMultipletRange), true);
+        return false;
+    }
+    bool found = false;
+    const int index = m_handler.addMultiplet(from, to, m_window->value(), &found);
+    retrack();
+    if (index < 0 || index >= m_handler.signalList().size())
+        return false;
+    const NmrSignal& signal = m_handler.signalList()[index];
+    const NmrCell cell = m_handler.cell(m_handler.referenceIndex(), index);
+    if (found)
+        setStatus(tr("Multiplet %1 added: centre %2 ppm, %3 line(s), half span %4 ppm.").arg(signal.name).arg(signal.position, 0, 'f', 4).arg(cell.lines.size()).arg(signal.halfSpan, 0, 'f', 4), false);
+    else
+        setStatus(tr("Multiplet %1 added at the middle of %2..%3 ppm: no line found there.").arg(signal.name).arg(from, 0, 'f', 4).arg(to, 0, 'f', 4), false);
+    m_signal_table->selectRow(index);
+    return true;
 }
 
 /*! \brief Shows the fit settings of the handler in the controls (no tracking). Claude Generated. */
@@ -862,6 +1001,19 @@ void NmrImport::restoreOptions()
     bool expanded = false;
     if (m_memory->readBool("fitOptionsExpanded", &expanded))
         m_fit_toggle->setExpanded(expanded, false);
+    // Claude Generated: multiplet options
+    bool group = false;
+    if (m_memory->readBool("groupMultiplets", &group))
+        m_group->setChecked(group);
+    m_memory->restore(m_max_coupling, "maxCoupling");
+    m_memory->restore(m_frequency, "spectrometerFrequency");
+    m_memory->restore(m_ripple, "multipletRipple");
+    m_memory->restore(m_centre, "multipletCentre");
+    m_handler.setMultipletRipple(m_ripple->value() / 100.0);
+    m_handler.setMultipletCentre(NmrMultipletCentre(std::clamp(m_centre->currentIndex(), 0, 2)));
+    bool multipletExpanded = false;
+    if (m_memory->readBool("multipletOptionsExpanded", &multipletExpanded))
+        m_multiplet_toggle->setExpanded(multipletExpanded, false);
     m_updating = false;
     updateFitControls();
     updateFidControls();
@@ -882,6 +1034,13 @@ void NmrImport::setData(const QJsonObject& project)
     m_offset->setValue(m_handler.referenceOffset());
     m_window->setValue(m_handler.defaultWindow());
     m_threshold->setCurrentIndex(m_handler.thresholdScope() == NmrThresholdScope::Window ? 1 : 0); // the project's choice
+    if (m_handler.hasMultiplets()) { // Claude Generated: a project with multiplets brings their options
+        m_ripple->setValue(100 * m_handler.multipletRipple());
+        m_centre->setCurrentIndex(int(m_handler.multipletCentre()));
+    } else {
+        m_handler.setMultipletRipple(m_ripple->value() / 100.0);
+        m_handler.setMultipletCentre(NmrMultipletCentre(std::clamp(m_centre->currentIndex(), 0, 2)));
+    }
     m_updating = false;
     updateFitControls();
     m_editor->setOperations(m_handler.operations());
@@ -923,6 +1082,14 @@ void NmrImport::refresh()
     m_updating = false;
     updateFidControls();
     m_threshold->setEnabled(!m_handler.hasPickStep()); // a peak picking step brings its own threshold
+    // Claude Generated: the frequency of the FIDs converts J (typed only without FIDs)
+    const double frequency = m_handler.spectrometerFrequency();
+    if (std::isfinite(frequency) && frequency >= m_frequency->minimum() && frequency <= m_frequency->maximum()) {
+        m_updating = true;
+        m_frequency->setValue(frequency);
+        m_updating = false;
+    }
+    m_frequency->setEnabled(!m_handler.hasFids());
     updateSpectra();
     updateSignals();
     updateResults();
@@ -967,20 +1134,84 @@ void NmrImport::updateSignals()
     const QVector<NmrSignal>& list = m_handler.signalList();
     m_signal_table->setRowCount(list.size());
     for (int s = 0; s < list.size(); ++s) {
-        QTableWidgetItem* name = new QTableWidgetItem(list[s].name);
+        const NmrSignal& signal = list[s];
+        QTableWidgetItem* name = new QTableWidgetItem(signal.name);
         name->setFlags(name->flags() | Qt::ItemIsUserCheckable);
-        name->setCheckState(list[s].enabled ? Qt::Checked : Qt::Unchecked);
+        name->setCheckState(signal.enabled ? Qt::Checked : Qt::Unchecked);
         m_signal_table->setItem(s, 0, name);
-        m_signal_table->setItem(s, 1, new QTableWidgetItem(QString::number(list[s].position, 'f', 4)));
-        m_signal_table->setItem(s, 2, new QTableWidgetItem(QString::number(list[s].window, 'f', 4)));
-        // the height of its peak in the reference spectrum (Claude Generated)
-        const NmrCell cell = m_handler.cell(m_handler.referenceIndex(), s);
-        const QString tip = std::isfinite(cell.height) ? tr("Signal %1: peak at %2 ppm, height %3 in the reference spectrum").arg(s + 1).arg(cell.shift, 0, 'f', 4).arg(cell.height, 0, 'g', 4)
-                                                       : tr("Signal %1: no peak in the reference spectrum").arg(s + 1);
-        for (int column = 0; column < 3; ++column)
+        // Claude Generated: the type as a choice; peak <-> multiplet keeps the position
+        QTableWidgetItem* type = new QTableWidgetItem;
+        type->setFlags(type->flags() & ~Qt::ItemIsEditable);
+        m_signal_table->setItem(s, 1, type);
+        QComboBox* choice = qobject_cast<QComboBox*>(m_signal_table->cellWidget(s, 1));
+        if (!choice) {
+            choice = new QComboBox;
+            choice->setObjectName("nmrSignalType");
+            choice->addItems({ tr("peak"), tr("multiplet") });
+            choice->setFrame(false);
+            m_signal_table->setCellWidget(s, 1, choice);
+            connect(choice, &QComboBox::currentIndexChanged, this, [this, choice](int index) {
+                if (m_updating)
+                    return;
+                int row = -1;
+                for (int r = 0; r < m_signal_table->rowCount() && row < 0; ++r)
+                    if (m_signal_table->cellWidget(r, 1) == choice)
+                        row = r;
+                if (row < 0 || row >= m_handler.signalList().size())
+                    return;
+                NmrSignal changed = m_handler.signalList()[row];
+                changed.type = index == 1 ? NmrSignalType::Multiplet : NmrSignalType::Peak;
+                if (changed.isMultiplet() && !(changed.halfSpan > 0))
+                    changed.halfSpan = 0.5 * maxCouplingPpm(); // a doublet of the largest coupling; edit "½ span" for others
+                m_handler.setSignal(row, changed);
+                QMetaObject::invokeMethod(this, [this]() { retrack(); }, Qt::QueuedConnection);
+            });
+        }
+        choice->setCurrentIndex(signal.isMultiplet() ? 1 : 0);
+        m_signal_table->setItem(s, 2, new QTableWidgetItem(QString::number(signal.position, 'f', 4)));
+        m_signal_table->setItem(s, 3, new QTableWidgetItem(QString::number(signal.window, 'f', 4)));
+        QTableWidgetItem* span = new QTableWidgetItem(signal.isMultiplet() ? QString::number(signal.halfSpan, 'f', 4) : QString());
+        QTableWidgetItem* pattern = new QTableWidgetItem(signal.isMultiplet() ? signal.pattern : QString());
+        if (!signal.isMultiplet()) {
+            span->setFlags(span->flags() & ~Qt::ItemIsEditable);
+            pattern->setFlags(pattern->flags() & ~Qt::ItemIsEditable);
+        }
+        m_signal_table->setItem(s, 4, span);
+        m_signal_table->setItem(s, 5, pattern);
+        const QString tip = signalToolTip(s);
+        for (int column = 0; column < 6; ++column)
             m_signal_table->item(s, column)->setToolTip(tip);
+        choice->setToolTip(tip);
+        // a line count that does not fit the pattern: the pattern cell is marked
+        const QString warning = m_handler.lineCountWarning(m_handler.referenceIndex(), s);
+        if (!warning.isEmpty()) {
+            const QColor color = statusColor(NmrCellStatus::Conflict);
+            pattern->setBackground(color);
+            pattern->setForeground(Appearance::ContrastText(color));
+        }
     }
     m_updating = false;
+}
+
+/*! \brief Tooltip of a signal row (Claude Generated): its peak, or the centre, lines and hint of a multiplet, in the
+ * reference spectrum. */
+QString NmrImport::signalToolTip(int s) const
+{
+    const NmrCell cell = m_handler.cell(m_handler.referenceIndex(), s);
+    const bool multiplet = s >= 0 && s < m_handler.signalList().size() && m_handler.signalList()[s].isMultiplet();
+    if (!multiplet)
+        return std::isfinite(cell.height) ? tr("Signal %1: peak at %2 ppm, height %3 in the reference spectrum").arg(s + 1).arg(cell.shift, 0, 'f', 4).arg(cell.height, 0, 'g', 4)
+                                          : tr("Signal %1: no peak in the reference spectrum").arg(s + 1);
+    if (cell.status != NmrCellStatus::Ok || cell.lines.isEmpty())
+        return tr("Signal %1: multiplet, no lines found in the reference spectrum").arg(s + 1);
+    QStringList lines;
+    for (double x : cell.lines)
+        lines << QString::number(x, 'f', 4);
+    QString tip = tr("Signal %1: multiplet, centre %2 ppm, %3 line(s) at %4 ppm in the reference spectrum").arg(s + 1).arg(cell.shift, 0, 'f', 4).arg(cell.lines.size()).arg(lines.join(", "));
+    const QString warning = m_handler.lineCountWarning(m_handler.referenceIndex(), s);
+    if (!warning.isEmpty())
+        tip += "\n" + tr("Hint: %1 (equal couplings or unresolved lines give fewer lines; check the half span).").arg(warning);
+    return tip;
 }
 
 void NmrImport::updateResults()
@@ -1023,6 +1254,11 @@ void NmrImport::updateResults()
                 tip += tr("\npeak maximum %1 ppm").arg(cell.peakShift, 0, 'f', 4);
             if (fit && cell.fitState == NmrFitState::Failed)
                 tip += tr("\nfit: %1").arg(cell.fitMessage);
+            if (!cell.lines.isEmpty())
+                tip += tr("\nmultiplet centre of %1 line(s)").arg(cell.lines.size());
+            const QString warning = m_handler.lineCountWarning(k, columns[c]);
+            if (!warning.isEmpty())
+                tip += tr("\nhint: %1").arg(warning);
             item->setToolTip(tip);
             if (excluded) {
                 item->setFlags(item->flags() & ~Qt::ItemIsEditable);
@@ -1169,11 +1405,15 @@ void NmrImport::updateMarkers()
         TraceEditorWidget::Label label;
         label.x = std::isfinite(cell.shift) ? cell.shift : signal.position;
         label.y = ref < shown.size() ? shown.at(ref).interpolate(label.x) : 0;
+        for (double line : cell.lines) // Claude Generated: a multiplet's label above its highest line
+            if (ref < shown.size() && std::isfinite(shown.at(ref).interpolate(line)))
+                label.y = std::max(label.y, shown.at(ref).interpolate(line));
         if (!std::isfinite(label.y))
             label.y = 0;
         label.text = QString::number(s + 1);
         label.dimmed = !signal.enabled;
-        label.toolTip = std::isfinite(cell.height)
+        label.ticks = cell.lines; // Claude Generated: the lines of a multiplet under its label
+        label.toolTip = signal.isMultiplet() ? signalToolTip(s) : std::isfinite(cell.height)
             ? tr("%1 (signal %2): %3 ppm, height %4 in spectrum %5").arg(signal.name).arg(s + 1).arg(label.x, 0, 'f', 4).arg(cell.height, 0, 'g', 4).arg(ref + 1)
             : tr("%1 (signal %2): %3 ppm, no peak in spectrum %4").arg(signal.name).arg(s + 1).arg(label.x, 0, 'f', 4).arg(ref + 1);
         labels << label;
