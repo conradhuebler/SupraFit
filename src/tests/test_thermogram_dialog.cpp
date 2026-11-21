@@ -28,6 +28,7 @@
 
 #include <cmath>
 
+#include <QtCore/QCryptographicHash>
 #include <QtCore/QDir>
 #include <QtCore/QSettings>
 #include <QtCore/QTemporaryDir>
@@ -46,6 +47,7 @@
 #include <memory>
 
 #include "src/core/itcprocessor.h"
+#include "src/core/jsonhandler.h"
 #include "src/core/models/datatable.h"
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
@@ -232,6 +234,39 @@ private slots:
         QVERIFY(field->text().isEmpty());
         core.setDilutionEnabled(false);
         compareWithCore(&dialog, core, false);
+    }
+
+    /*! \brief The md5 of the file block is the hex digest of the file (32 characters) and survives writing and reading
+     * the project JSON; a block of an older version with the binary digest as text is read without harm and written
+     * again as hex. Claude Generated (R0) */
+    void fileHashIsHex()
+    {
+        qApp->setProperty("StoreFileHash", true);
+        Thermogram dialog;
+        dialog.setExperimentFit(ruleBlock("reaction.dat"));
+        dialog.setExperimentFile(sample("reaction.dat"));
+        QJsonObject raw = dialog.Raw();
+        const QString md5 = raw["experiment"].toObject()["md5"].toString();
+        QCOMPARE(md5, QStringLiteral("49d0ee9c5d8e63735b1194646872f781")); // md5sum of data/samples/itc/reaction.dat
+        QFile file(sample("reaction.dat"));
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        QCOMPARE(md5, QString::fromLatin1(QCryptographicHash::hash(file.readAll(), QCryptographicHash::Md5).toHex()));
+
+        QTemporaryDir dir;
+        const QString path = dir.filePath("raw.json");
+        QVERIFY(JsonHandler::WriteJsonFile(raw, path));
+        QJsonObject read;
+        QVERIFY(JsonHandler::ReadJsonFile(read, path));
+        QCOMPARE(read["experiment"].toObject()["md5"].toString(), md5);
+
+        // an older block: the 16 bytes of the digest as text
+        QJsonObject experiment = raw["experiment"].toObject();
+        experiment["md5"] = QString(QCryptographicHash::hash(QByteArray("old"), QCryptographicHash::Md5));
+        raw["experiment"] = experiment;
+        Thermogram again;
+        again.setRaw(raw);
+        QCOMPARE(again.Raw()["experiment"].toObject()["md5"].toString(), md5);
+        qApp->setProperty("StoreFileHash", false);
     }
 
     /*! \brief A double click in a selection mode acts once (Claude Generated, UX package 1): the chart was

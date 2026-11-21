@@ -714,7 +714,8 @@ void Thermogram::File2JsonBlock(const QString& filename, QJsonObject& block) con
         QFile file(filename);
         if (file.open(QIODevice::ReadOnly)) {
             fileHashed.addData(file.readAll());
-            block["md5"] = QString(fileHashed.result());
+            // hex digest: the 16 raw bytes as text were not valid UTF-8 and changed on writing (Claude Generated, R0)
+            block["md5"] = QString::fromLatin1(fileHashed.result().toHex());
         }
     }
 }
