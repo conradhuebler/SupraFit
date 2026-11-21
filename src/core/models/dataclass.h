@@ -311,10 +311,14 @@ public:
     //! subclasses no longer need to reach into d->m_simulate_dependent directly (D5a).
     inline int SimulateDependent() const { return d->m_simulate_dependent; }
 
+    /*! \brief Marks the rows [DataBegin(), DataEnd()) as used and every other row as left out; single marks are lost. */
     void UpdateCheckedState();
+    /*! \brief Sets the mark of one row and the range to the rows in use: DataBegin() = first, DataEnd() = last + 1. */
     void ReReadCheckedState(int row, bool state);
 
+    //! First row of the data range (inclusive).
     int DataBegin() const { return d->m_begin_data; }
+    //! One past the last row of the data range (exclusive, as `end_data` in the project file).
     int DataEnd() const { return d->m_end_data; }
 
     void InitialiseCalculationModel();

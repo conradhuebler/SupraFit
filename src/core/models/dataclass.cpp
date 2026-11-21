@@ -963,8 +963,10 @@ void DataClass::ReReadCheckedState(int row, bool state)
         if (IndependentModel()->isChecked(i))
             last = i;
     }
-    d->m_begin_data = first;
-    d->m_end_data = last;
+    // [DataBegin, DataEnd): the end is one past the last row in use, as UpdateCheckedState, Begin/End Data and
+    // the model loops read it; the last row in use was left out after storing and loading (Claude Generated, R0)
+    d->m_begin_data = first == -1 ? 0 : first;
+    d->m_end_data = last + 1;
     emit DataRangedChanged();
 }
 
