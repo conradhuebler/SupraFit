@@ -18,7 +18,8 @@
  */
 
 /* Claude Generated (R0 of roadmap/data_pipeline_work_packages.md):
- * - LoadITCFile: a missing file is replaced by the file of the same name in "lastdir", with a warning that names it. */
+ * - LoadITCFile: a missing file is replaced by the file of the same name in "lastdir", with a warning that names it;
+ * - FindFile: the file of a stored path in the project directory, below it only with "recursive". */
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
@@ -64,6 +65,31 @@ private slots:
         QString direct = copy;
         ToolSet::LoadITCFile(direct, &peaks, offset, freq, inject);
         QCOMPARE(direct, copy);
+    }
+
+    /// a stored path is looked up in the project directory; below it only when recursive is set
+    void findFileRecursiveOnlyWhenAsked()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        QVERIFY(QDir(dir.path()).mkpath("a/b"));
+        const QString deep = dir.filePath("a/b/data.itc");
+        const QString flat = dir.filePath("flat.itc");
+        for (const QString& name : { deep, flat }) {
+            QFile file(name);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write("x");
+        }
+        // an existing path is taken as it is
+        QCOMPARE(ToolSet::FindFile(flat, dir.path(), QString(), false), flat);
+        // the name in the directory itself
+        QCOMPARE(ToolSet::FindFile("/gone/flat.itc", dir.path(), QString(), false), flat);
+        QCOMPARE(ToolSet::FindFile("/gone/flat.itc", dir.path(), QString(), true), flat);
+        // below the directory: only with recursive
+        QCOMPARE(ToolSet::FindFile("/gone/data.itc", dir.path(), QString(), false), QString());
+        QCOMPARE(QDir::cleanPath(ToolSet::FindFile("/gone/data.itc", dir.path(), QString(), true)), QDir::cleanPath(deep));
+        // a name that is nowhere
+        QCOMPARE(ToolSet::FindFile("/gone/none.itc", dir.path(), QString(), true), QString());
     }
 };
 
