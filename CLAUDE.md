@@ -115,6 +115,7 @@ One home per kind of information; copies drift apart.
 - [Roadmap: SSE-Landscape Sampling](./roadmap/landscape_sampling.md) — Metadynamik-artiges Sampling der SSE-Fläche für globale Suche und Profil-Konfidenzintervalle
 - [Roadmap: Input Data Editing](./roadmap/input_data_editing.md) — gemeinsame Trace-Pipeline für UV-Vis/NMR/Thermogramm, NMR-Peak-Picking und Pseudo-Voigt-Fit
 - [Roadmap: Recipes and Agent Tools](./roadmap/recipes_and_agent_tools.md) — versioniertes Rezept Rohdaten → Tabelle (Projekt, Datei, CLI) und Agenten-Werkzeuge für Spektren/Thermogramme
+- [Roadmap: Data pipeline work packages](./roadmap/data_pipeline_work_packages.md) — Arbeitspakete R0-R10 (Rezeptkern, Operatorkatalog, ITC-Zerlegung, Tabellen-Operatoren, Speichern, CLI, Agent, Rohdaten-Seite, FAIR-Paket); Inventar: [docs/data_manipulators_inventory_2026-11-21.md](./docs/data_manipulators_inventory_2026-11-21.md)
 - [Roadmap: ScriptModel Performance](./roadmap/scriptmodel_performance.md)
 - [Roadmap: Model-Pane Navigation (ScriptModel UI)](./roadmap/scriptmodel_ui_layout.md) — Bereichsliste mit Pin, Statistik als Seite, FlowLayout-Ruhe, More/Less-Bauteil
 
