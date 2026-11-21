@@ -55,6 +55,14 @@
 - [ ] `docs/ASSISTANT_HELP.md` is about 4200 words, above the ~4000-token goal: shorten section 5 (Landscape Sampling paragraph) first.
 - [ ] `ItcAnyTest` aborts after `testSelfAggregationSpecies` (`PeakPick::LeastSquares` reads an empty vector, `mathhelper.h:262`) and `LandscapeSearchTest` times out (600 s); both fail without this branch too.
 
+## Open decisions (after longer testing by the operator; recommendation in brackets)
+- [ ] NMR dialog: does "Add" (typed position) snap to the nearest peak like the double click does (double click snaps: kept)? Should "Pick from reference spectrum" use only Start/End or Start/End cut with the visible range (now: cut)? Should the δ column of the signal list take the tracked reference value after a reprocessing (e.g. LB)?
+- [ ] Multiplets: "Group lines into multiplets" on by default for new series (now off)? Default J 20 Hz or 10 Hz [10 Hz: 20 Hz chains the aromatics of T1]? Line-count warning keep, soften to a tooltip, or drop [soften: it fires in 27-35 of 60-75 real cells]?
+- [ ] Tracking: switch the core default of the detection threshold to "search window" (it was at least as good in every measurement; changes pinned numbers and old projects) and make `MinHeight` adjustable in the dialog [0.1 for series that are not normalised].
+- [ ] Edit Data: clear the outdated mark after every finished fit (now) or only after a converged one? Systemparameters changed in the thermogram dialog are not taken over on replacement (the project keeps its own): keep? Edit Data for ITC without the second OK (E2), ESC/Cancel question and path field loading per keystroke in the ITC dialog: after the click check of the ITC dialog.
+- [ ] Release: shorten `docs/ASSISTANT_HELP.md` (above ~4400 words; the Landscape paragraph first, after the histogram paragraph is committed); mouse wheel step 1.25 per notch ok? Click-through of all dialogs with real data before a merge.
+- [ ] Recipes and agent tools (plan of 2026-11-21 pending): decisions follow with the plan.
+
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.
 - [ ] System parameter index 6 (`InptUnit`, old heat unit, value "0") is stored in ITC projects of 2018 but declared by no model (`AbstractItcModel`: commented out): remove it on load or declare it again; it stays "Imported parameter 6".
