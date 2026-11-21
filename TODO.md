@@ -21,6 +21,7 @@
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
 ## Input data editing (roadmap/input_data_editing.md, record: docs/input_data_editing_2026-11-08.md)
+- [ ] Tech Preview of the NMR import: remove the label after the click check with real data (strings in `suprafitgui.cpp`, `importdata.cpp`, `nmrimport.cpp`, line `nmrTechPreview`, ASSISTANT_HELP §2, `test_spectraimport`/`test_nmrimport`).
 - [ ] Click-through of the spectra, NMR and thermogram dialogs and a test with real TopSpin/MestReNova series (the totxt header is only rebuilt synthetically); all of WP0-WP5 is machine-tested only.
 - [ ] NMR tracking below 0.75 FWHM: a neighbour line not resolved in the reference spectrum is followed instead of the signal, without a warning (at 0.5 FWHM 1 of 24 cases wrong in both modes); feeding fit positions back into the tracking made it worse.
 - [ ] Weight the NMR fit with the δ errors (`NmrHandler::shiftErrorTable`; too small for smoothed spectra, noise is correlated).

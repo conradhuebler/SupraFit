@@ -172,9 +172,9 @@ void ImportData::setUi()
         ImportSpectra(m_filename);
     });
 
-    m_nmr = new QPushButton(tr("Import as NMR Spectra"));
+    m_nmr = new QPushButton(tr("Import as NMR Spectra (Tech Preview)"));
     m_nmr->setStyleSheet("background-color: #77d740; color: black;");
-    m_nmr->setToolTip(tr("Series of 1D NMR spectra: follow signals through the titration and import their chemical shifts."));
+    m_nmr->setToolTip(tr("Series of 1D NMR spectra: follow signals through the titration and import their chemical shifts. This feature is new and not yet widely tested; please check the results."));
     connect(m_nmr, &QPushButton::clicked, this, [this]() {
         ImportNmr(m_filename);
     });

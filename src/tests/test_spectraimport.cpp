@@ -357,7 +357,7 @@ private slots:
             if (action->text() == QObject::tr("Open Spectra"))
                 spectra = action;
         QVERIFY(spectra && nmr);
-        QCOMPARE(nmr->text(), QObject::tr("Open NMR Spectra"));
+        QCOMPARE(nmr->text(), QObject::tr("Open NMR Spectra (Tech Preview)"));
 
         QStringList seen;
         int handedColumns = -1;

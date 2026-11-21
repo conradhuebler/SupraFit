@@ -232,6 +232,11 @@ void NmrImport::setupUi()
     m_hint = new StatusLine;
     m_hint->setObjectName("nmrMissingHint");
     m_hint->setVisible(false);
+    // Claude Generated: permanent note of the Tech Preview, own line above the status lines (never replaced by them)
+    StatusLine* preview = new StatusLine;
+    preview->setObjectName("nmrTechPreview");
+    preview->setMessage(tr("Tech Preview: new feature, results should be checked against your own evaluation."), StatusLine::Info);
+    lines->addWidget(preview);
     lines->addWidget(m_hint);
     lines->addWidget(m_status);
     lines->addWidget(m_ready);
@@ -241,7 +246,7 @@ void NmrImport::setupUi()
     layout->addLayout(bottom);
     setLayout(layout);
 
-    setWindowTitle(tr("NMR Titration Import"));
+    setWindowTitle(tr("NMR Titration Import (Tech Preview)"));
     // fits a 1366x768 screen; opens larger where there is room
     setMinimumSize(960, 600);
     resize(1280, 800);

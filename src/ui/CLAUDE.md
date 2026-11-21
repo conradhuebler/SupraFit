@@ -31,8 +31,9 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Data Import/Export
 - **dialogs/importdata.cpp/h**: Data file import wizard
-- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface; `ImportKeyGuard` + `StatusLine` (OK off without spectra or x values); test `test_spectraimport` (also the "Open Spectra"/"Open NMR Spectra" entries of `SupraFitGui`)
-- **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
+- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface; `ImportKeyGuard` + `StatusLine` (OK off without spectra or x values); test `test_spectraimport` (also the "Open Spectra"/"Open NMR Spectra (Tech Preview)" entries of `SupraFitGui`)
+- **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra (Tech Preview)" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
+  - Tech Preview label (entries, title, tooltips, `nmrTechPreview` line): remove together, see TODO.md
   - JEOL: group "Processing (FID)" (`nmrFidPanel`, LB, zero fill, ph0/ph1, Auto phase, Auto phase each spectrum) visible only with FIDs; whole real series visible offscreen since the display envelope (series above 5000 points switch to OpenGL, offscreen empty)
   - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
   - Viewer 2: markers/fit/residual drawn with `stackOffset(k)`; hint in `nmrStatus` + cell tooltips when a signal is missing in every used spectrum (`m_missing_hint`; text by threshold: whole spectrum names "search window" first, search window only window/range)

@@ -1589,6 +1589,9 @@ private slots:
         QCOMPARE(editor->statusLine()->level(), StatusLine::Warning);
         QVERIFY2(editor->statusLine()->message().startsWith("3 rows for 10 spectra"), qPrintable(editor->statusLine()->message()));
         QVERIFY(dialog.findChild<StatusLine*>("nmrReady")->message().startsWith(QObject::tr("OK not possible yet")));
+        // the Tech Preview note is its own line, next to the status lines
+        QVERIFY(dialog.windowTitle().endsWith(QObject::tr("(Tech Preview)")));
+        QVERIFY(dialog.findChild<StatusLine*>("nmrTechPreview")->message().startsWith(QObject::tr("Tech Preview")));
 
         // a file with a header and decimal commas
         const QString file = m_dir.filePath("conc.txt");

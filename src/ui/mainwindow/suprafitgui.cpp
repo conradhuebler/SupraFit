@@ -393,7 +393,7 @@ SupraFitGui::SupraFitGui()
     m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
     connect(m_spectra, &QAction::triggered, this, &SupraFitGui::OpenSpectraDir);
 
-    m_nmr = new QAction(Icon("spectra_ico"), tr("Open NMR Spectra"), this);
+    m_nmr = new QAction(Icon("spectra_ico"), tr("Open NMR Spectra (Tech Preview)"), this);
     m_nmr->setObjectName("openNmrSpectra");
     connect(m_nmr, &QAction::triggered, this, &SupraFitGui::OpenNmrSpectra);
 
@@ -925,7 +925,7 @@ void SupraFitGui::SetupToolBar()
     m_load->setToolTip(tr("Open a SupraFit project or a data table"));
     m_thermogram->setToolTip(tr("Import raw ITC thermograms"));
     m_spectra->setToolTip(tr("Import a directory of spectra"));
-    m_nmr->setToolTip(tr("Import an NMR titration: spectra, signals and chemical shifts"));
+    m_nmr->setToolTip(tr("Import an NMR titration: spectra, signals and chemical shifts. This feature is new and not yet widely tested; please check the results."));
     m_save->setToolTip(tr("Save all open projects"));
     m_save_as->setToolTip(tr("Save all open projects to a new file"));
     m_config->setToolTip(tr("Program settings"));
