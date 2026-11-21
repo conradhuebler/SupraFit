@@ -466,6 +466,25 @@ endif()
 
 add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
 
+# File helpers of ToolSet: .itc file taken from lastdir, FindFile (R0, Claude Generated 2026)
+add_executable(test_toolset_io test_toolset_io.cpp)
+target_compile_definitions(test_toolset_io PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+target_link_libraries(test_toolset_io
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_toolset_io ml)
+endif()
+if(UNIX)
+    target_link_libraries(test_toolset_io pthread dl)
+endif()
+add_test(NAME ToolSetIoTest COMMAND test_toolset_io)
+
 # Claude Generated: characterisation of ThermogramHandler/ItcProcessor (WP5 input data editing) - the numbers of
 # the implementation before the move onto XYTrace, frozen in data/samples/itc/thermogram_characterization.json
 add_executable(test_thermogram_characterization

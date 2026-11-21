@@ -231,9 +231,12 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
         QString file = list.last();
         QString lastdir = qApp->instance()->property("lastdir").toString();
         QFileInfo inf(lastdir + "/" + file);
-        if (inf.exists())
+        if (inf.exists()) {
+            // the stored path is gone, the file of the same name in the last directory is read instead: said, not silent
+            // (Claude Generated, R0)
+            qWarning().noquote() << QStringLiteral("%1 not found, reading %2 instead").arg(filename, lastdir + "/" + file);
             filename = lastdir + "/" + file;
-        else {
+        } else {
             qDebug() << QString(lastdir + "/" + file) << "doesnt work";
             throw 404;
         }
