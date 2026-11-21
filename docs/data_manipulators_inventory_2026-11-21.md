@@ -93,3 +93,13 @@ ML-Vorbereitung (mlfeatureextractor.cpp:198-538): Merkmale aus Fit-/Statistikerg
 
 ## Wahrscheinlich übersehene oder nicht gelesene Orte
 libpeakpick-Interna (baseline.h, analyse.h, mathhelper.h); `track()`/`trackDirection` (nmrhandler.cpp:1179-1460) und `fitLineshapes` (:1500-1990) im Detail; `traceeditorwidget.cpp` Formulare (:587-760); `nmrimport.cpp` jenseits der gelesenen Stellen (~1632 Zeilen); `modeldataholder.cpp` (~1959 Zeilen) außer Datenmenü/Split; `modelwidget.cpp`/`modelelement.cpp`/`signalelement.cpp`; `chartwidget.cpp`; `ProjectManager::loadProject`/`LegacyImportData`; `AbstractModel_serialize.cpp` (LegacyImportModel); `meta_model.cpp` (Datenverbund); `statisticdialog.cpp`/`scanwidget.cpp`; `analysis_manager.cpp`; `suprafit_cli.cpp` `ProcessMLPipeline` (:1899-2153); einzelne Titrations-/Kinetik-/Thermodynamik-Modelle (`EvaluateOptions`); `concentrationsolver`/`speciationengine`-Eingaben; `systemparameterwidget.cpp`, `reactioneditorwidget.cpp`, `textwidget.cpp`; `external/` (CuteChat, CuteChart) nicht durchsucht.
+
+## Status nach R0 (2026-11-21)
+- Behoben: „Load Recipe“ liest `main` aus der geladenen Datei (`ImportData::LoadRecipe`, ImportDataTest).
+- Behoben: md5 des Thermogramm-Dateiblocks als Hex (32 Zeichen); gelesen wird der Wert nirgends, alte Binärwerte schaden nicht (ThermogramDialogTest `fileHashIsHex`).
+- Behoben: Export-Tabelle (Import-Dialog und UV/Vis „Export Table“) ersetzt die Datei (`Truncate`); `.dh`/`.dat`-Export und die übrigen Schreibstellen kürzten schon.
+- Behoben: `ReReadCheckedState` setzt `end_data` exklusiv (letzte Zeile + 1); bestätigt: die letzte Zeile fiel nach Speichern/Laden heraus. Derselbe Slot läuft auch beim Klick auf ein Kästchen der Tabelle (`DataTable::setData` → `CheckedStateChanged`), aus dem Code gelesen ließen die Modellschleifen `i < DataEnd()` die Zeile dort schon vor dem Speichern aus. Alte Dateien laden unverändert. Begin/End löscht Einzelmarken weiter (R4).
+- Behoben: `.itc`-Ersatz aus `lastdir` meldet sich mit `qWarning` (gelesene Datei); `FindFile` sucht mit `recursive` unterhalb des Verzeichnisses (ToolSetIoTest).
+- Behoben: `LegacyLoad` liest `end_time` unter `end_time`; SupraFit schrieb beide Schlüssel stets zusammen, für solche Blöcke gleiche Zahlen; ein Block nur mit `end_time` hing vorher (`XtoIndex`). Projekte laden ohne diesen Pfad (keine Wirkung auf die gespeicherte SSE).
+- Entfernt: `SpectraHandler::PCA`, `DropTable::deleteRow/deleteColumn`, `m_gradient` (Spinbox ohne Wirkung), tote Summe in `UpdatePeaks` (`m_offset` bleibt 0).
+- Dokumentiert: DataFactory-Rauschen `StdDev` absolut (Entscheidung offen). Gemessen: Dialog vs `process()` ([itc_dialog_vs_process_2026-11-21.md](itc_dialog_vs_process_2026-11-21.md)).
