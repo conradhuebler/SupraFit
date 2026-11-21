@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -176,6 +176,9 @@ void nmr_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 
 void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
+    // one solver per data row: Edit Data can give the project more rows than the model had when it was made (Claude Generated)
+    while (m_solvers.size() < DataPoints())
+        m_solvers << new IItoI_ItoI_ItoII_Solver();
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
     qreal K12 = qPow(10, GlobalParameter(2));

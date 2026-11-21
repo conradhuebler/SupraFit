@@ -466,6 +466,196 @@ endif()
 
 add_test(NAME ItcThermogramTest COMMAND test_itc_thermogram)
 
+# File helpers of ToolSet: .itc file taken from lastdir, FindFile (R0, Claude Generated 2026)
+add_executable(test_toolset_io test_toolset_io.cpp)
+target_compile_definitions(test_toolset_io PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+target_link_libraries(test_toolset_io
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_toolset_io ml)
+endif()
+if(UNIX)
+    target_link_libraries(test_toolset_io pthread dl)
+endif()
+add_test(NAME ToolSetIoTest COMMAND test_toolset_io)
+
+# Claude Generated: characterisation of ThermogramHandler/ItcProcessor (WP5 input data editing) - the numbers of
+# the implementation before the move onto XYTrace, frozen in data/samples/itc/thermogram_characterization.json
+add_executable(test_thermogram_characterization
+    test_thermogram_characterization.cpp
+)
+target_compile_definitions(test_thermogram_characterization PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+target_link_libraries(test_thermogram_characterization
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_thermogram_characterization ml)
+endif()
+if(UNIX)
+    target_link_libraries(test_thermogram_characterization pthread dl)
+endif()
+add_test(NAME ThermogramCharacterizationTest COMMAND test_thermogram_characterization)
+
+# Claude Generated: SpectraHandler persistence, CompileSimpleTable and VarCovarSelect (WP0 input data editing)
+add_executable(test_spectrahandler
+    test_spectrahandler.cpp
+)
+
+target_link_libraries(test_spectrahandler
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_spectrahandler ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_spectrahandler pthread dl)
+endif()
+
+add_test(NAME SpectraHandlerTest COMMAND test_spectrahandler)
+
+# Claude Generated: trace building blocks XYTrace/TraceSet/TraceOps (WP1 input data editing)
+add_executable(test_trace
+    test_trace.cpp
+)
+
+target_link_libraries(test_trace
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_trace ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_trace pthread dl)
+endif()
+
+add_test(NAME TraceTest COMMAND test_trace)
+
+# Claude Generated: NMR import (NmrHandler: loaders, signal tracking, shift table, persistence; WP3 input data editing)
+add_executable(test_nmrhandler
+    test_nmrhandler.cpp
+)
+
+target_link_libraries(test_nmrhandler
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmrhandler ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmrhandler pthread dl)
+endif()
+
+add_test(NAME NmrHandlerTest COMMAND test_nmrhandler)
+set_tests_properties(NmrHandlerTest PROPERTIES TIMEOUT 300)
+
+# Claude Generated: multiplet signals of NmrHandler (centre of a group of lines; synthetic spreads, rules, JSON)
+add_executable(test_nmrmultiplet
+    test_nmrmultiplet.cpp
+)
+
+target_link_libraries(test_nmrmultiplet
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_nmrmultiplet ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_nmrmultiplet pthread dl)
+endif()
+
+add_test(NAME NmrHandlerMultipletTest COMMAND test_nmrmultiplet)
+set_tests_properties(NmrHandlerMultipletTest PROPERTIES TIMEOUT 600)
+
+# Claude Generated: JEOL Delta reader and FID processing (JeolReader, FidProcessing; JEOL import of
+# roadmap/input_data_editing.md). The real-data slots read SUPRAFIT_JEOL_DIR and are skipped without it.
+add_executable(test_jeol
+    test_jeol.cpp
+)
+
+target_link_libraries(test_jeol
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_jeol ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_jeol pthread dl)
+endif()
+
+add_test(NAME JeolTest COMMAND test_jeol)
+set_tests_properties(JeolTest PROPERTIES TIMEOUT 1500) # the real series take ~4 min in the debug build, the multiplet slots (Claude Generated) ~7 min more
+
+# Claude Generated: pseudo-Voigt lineshape fit (LineshapeFit; WP4 input data editing)
+add_executable(test_lineshapefit
+    test_lineshapefit.cpp
+)
+
+target_link_libraries(test_lineshapefit
+    Qt6::Core
+    Qt6::Test
+    Qt6::Qml
+    -Wl,--start-group models core -Wl,--end-group
+    fmt::fmt-header-only
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+if(ML_NEURAL_NETWORKS)
+    target_link_libraries(test_lineshapefit ml)
+endif()
+
+if(UNIX)
+    target_link_libraries(test_lineshapefit pthread dl)
+endif()
+
+add_test(NAME LineshapeFitTest COMMAND test_lineshapefit)
+set_tests_properties(LineshapeFitTest PROPERTIES TIMEOUT 300)
+
 set_tests_properties(ItcAnyTest PROPERTIES
     TIMEOUT 60
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -781,6 +971,21 @@ set_tests_properties(MetaRestoreTest PROPERTIES
 )
 
 set_tests_properties(ProjectCompatTest PROPERTIES
+    TIMEOUT 300
+)
+
+# Edit Data replaces the data of a project: check, outdated models, undo, job lock (Claude Generated 2026)
+add_executable(test_data_replace
+    test_data_replace.cpp
+)
+target_link_libraries(test_data_replace
+    ${TEST_COMMON_LIBS}
+)
+target_compile_definitions(test_data_replace PRIVATE
+    SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_test(NAME DataReplaceTest COMMAND test_data_replace)
+set_tests_properties(DataReplaceTest PROPERTIES
     TIMEOUT 300
 )
 
@@ -1228,6 +1433,160 @@ if(BUILD_GUI)
     )
 endif()
 
+# Offscreen smoke test of the TraceEditorWidget and the spectra dialog (WP2 of roadmap/input_data_editing.md,
+# Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(traceeditor_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_traceeditor test_traceeditor.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${traceeditor_RES})
+    target_link_libraries(test_traceeditor
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_traceeditor ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_traceeditor pthread dl)
+    endif()
+    add_test(NAME TraceEditorTest COMMAND test_traceeditor)
+    set_tests_properties(TraceEditorTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen test of zoom, range selection and axis direction with mouse events on the chart of the trace editor
+# and of the ppm axis of the NMR dialog (Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders.
+if(BUILD_GUI)
+    qt_add_resources(chartzoom_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_chartzoom test_chartzoom.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${chartzoom_RES})
+    target_link_libraries(test_chartzoom
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_chartzoom ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_chartzoom pthread dl)
+    endif()
+    add_test(NAME ChartZoomTest COMMAND test_chartzoom)
+    set_tests_properties(ChartZoomTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen test of the UV/Vis spectra import dialog, ImportKeyGuard, the hint line of the trace editor and the
+# import entries of the main window (UX package 1, Claude Generated 2026). SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders.
+if(BUILD_GUI)
+    qt_add_resources(spectraimport_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists and the toolbar
+    add_executable(test_spectraimport test_spectraimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${spectraimport_RES})
+    target_link_libraries(test_spectraimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_spectraimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_spectraimport pthread dl)
+    endif()
+    add_test(NAME SpectraImportTest COMMAND test_spectraimport)
+    set_tests_properties(SpectraImportTest PROPERTIES
+        TIMEOUT 120
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen test of the table import dialog: Store/Load Recipe of "Simulate Data", Export table (R0, Claude Generated 2026)
+if(BUILD_GUI)
+    add_executable(test_importdata test_importdata.cpp ${CMAKE_SOURCE_DIR}/src/ui/instance.h)
+    target_link_libraries(test_importdata
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_importdata ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_importdata pthread dl)
+    endif()
+    add_test(NAME ImportDataTest COMMAND test_importdata)
+    set_tests_properties(ImportDataTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen test of Edit Data in the main window: controller, outdated chip/banner, project list, undo, close question
+# (E1, Claude Generated 2026). SUPRAFIT_EDITDATA_GRAB=<dir> writes PNGs.
+if(BUILD_GUI)
+    qt_add_resources(editdata_RES ${CMAKE_SOURCE_DIR}/files.qrc)
+    add_executable(test_edit_data test_edit_data.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${editdata_RES})
+    target_link_libraries(test_edit_data
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_edit_data ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_edit_data pthread dl)
+    endif()
+    target_compile_definitions(test_edit_data PRIVATE SUPRAFIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    add_test(NAME EditDataTest COMMAND test_edit_data)
+    set_tests_properties(EditDataTest PROPERTIES
+        TIMEOUT 300
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
+# Offscreen timing of the NMR import dialog with a real JEOL series (Claude Generated) - manual perf tool, not a
+# ctest: benchmark_nmrimport [T5|T1] [repeats]; SUPRAFIT_JEOL_DIR names the directory of the series
+if(BUILD_GUI)
+    qt_add_resources(nmrbenchmark_RES ${CMAKE_SOURCE_DIR}/files.qrc)
+    add_executable(benchmark_nmrimport benchmark_nmrimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${nmrbenchmark_RES})
+    target_link_libraries(benchmark_nmrimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(benchmark_nmrimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(benchmark_nmrimport pthread dl)
+    endif()
+endif()
+
+# Offscreen smoke test of the NMR import dialog (WP3 of roadmap/input_data_editing.md, Claude Generated 2026).
+# SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(nmrimport_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the lists
+    add_executable(test_nmrimport test_nmrimport.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${nmrimport_RES})
+    target_link_libraries(test_nmrimport
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_nmrimport ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_nmrimport pthread dl)
+    endif()
+    add_test(NAME NmrImportTest COMMAND test_nmrimport)
+    set_tests_properties(NmrImportTest PROPERTIES
+        TIMEOUT 60
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
+
 # Quadrature regression tests (Claude Generated 2026) - pins SimpsonIntegrate against analytically
 # known integrals, including the endpoint singularities the BC50 integrands carry.
 add_executable(test_quadrature
@@ -1464,4 +1823,28 @@ if(USE_LLM)
         target_link_libraries(test_tools_inspect pthread dl)
     endif()
     add_test(NAME ToolsInspectTest COMMAND test_tools_inspect)
+endif()
+
+# Offscreen smoke test of the thermogram import dialog (WP5 of roadmap/input_data_editing.md, Claude Generated 2026).
+# SUPRAFIT_TRACE_RENDER_DIR=<dir> writes PNG renders of the dialog.
+if(BUILD_GUI)
+    qt_add_resources(thermogramdialog_RES ${CMAKE_SOURCE_DIR}/files.qrc) # the icons of the buttons
+    add_executable(test_thermogram_dialog test_thermogram_dialog.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/instance.h ${thermogramdialog_RES})
+    target_compile_definitions(test_thermogram_dialog PRIVATE SAMPLE_DIR="${CMAKE_SOURCE_DIR}/data/samples/itc")
+    target_link_libraries(test_thermogram_dialog
+        Qt6::Core Qt6::Widgets Qt6::Charts Qt6::Qml Qt6::Test
+        -Wl,--start-group suprafit_gui models core cutechart -Wl,--end-group
+        fmt::fmt-header-only ${CMAKE_THREAD_LIBS_INIT})
+    if(ML_NEURAL_NETWORKS)
+        target_link_libraries(test_thermogram_dialog ml)
+    endif()
+    if(UNIX)
+        target_link_libraries(test_thermogram_dialog pthread dl)
+    endif()
+    add_test(NAME ThermogramDialogTest COMMAND test_thermogram_dialog)
+    set_tests_properties(ThermogramDialogTest PROPERTIES
+        TIMEOUT 120
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
 endif()

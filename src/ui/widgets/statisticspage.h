@@ -53,6 +53,10 @@ public:
     /*! \brief A finished analysis: list it and show it. */
     void ShowResult(SupraFit::Method type, int index);
 
+    /*! \brief The finished analyses belong to earlier data of the model (Edit Data): a hint above the results. Claude Generated. */
+    void setOutdated(bool outdated);
+    inline class StatusLine* OutdatedHint() const { return m_outdated_hint; }
+
     /*! \brief Short, numbered name of a finished analysis ("Monte Carlo #1"). */
     static QString ResultListTitle(SupraFit::Method type, int index);
     /*! \brief Icon of an analysis method; the project only ships a few, so some are shared. */
@@ -75,4 +79,5 @@ private:
     SectionStack* m_pages;
     QStackedWidget* m_stack = nullptr; ///< [0] statistic dialog (start), [1] results of finished analyses
     int m_index = -1;
+    class StatusLine* m_outdated_hint = nullptr; ///< "These results belong to earlier data of this model." (Claude Generated)
 };

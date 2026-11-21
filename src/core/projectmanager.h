@@ -33,6 +33,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
+#include <QtCore/QPointer>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QUuid>
 #include <QtCore/QVector>
@@ -65,6 +66,44 @@ struct LoadReport {
 
     bool HasProblems() const;
     /*! \brief The first error, or the number of models that are missing. Empty when everything was read. */
+    QString Summary() const;
+    /*! \brief All issues, one per line, errors first. */
+    QString Details() const;
+};
+
+/*! \brief What Edit Data does with the models when the data of a project are replaced (Claude Generated).
+ *  KeepModels: only for compatible data (DataReplaceCheck); the models keep their parameters, are calculated once on the new
+ *  data and marked outdated. DropModels: the models are removed, the data replaced, whatever the check says. Creating a new
+ *  project instead is the caller's way (the GUI), not a policy of the manager. */
+enum class DataReplacePolicy {
+    KeepModels = 0,
+    DropModels = 1
+};
+
+/*! \brief The sum of squares of a model before and after its data were replaced (Claude Generated). */
+struct DataReplaceModel {
+    QString key; ///< "model_N", N its index in the project
+    QString name;
+    double sseBefore = 0, sseAfter = 0;
+};
+
+/*! \brief What `ProjectManager::replaceProjectData` did, or why it did nothing (Claude Generated).
+ *
+ *  `replaced` is false with at least one `Error` issue when nothing was changed; for identical data it is false without an error
+ *  (nothing to do). Issues use the scopes of `LoadIssue` ("data", "model_N", "meta/<title>"). */
+struct DataReplaceReport {
+    QString projectId;
+    DataReplacePolicy policy = DataReplacePolicy::KeepModels;
+    DataReplaceCheck check;
+    bool replaced = false;
+    int modelsKept = 0, modelsRemoved = 0;
+    int uncheckedKept = 0; ///< cells left out of the fit (check mark off) whose marks were kept for the rows of both data sets
+    QList<DataReplaceModel> models; ///< every kept model with its sum of squares before and after
+    QStringList outdatedMetaModels; ///< project ids of the meta models marked outdated
+    QList<LoadIssue> issues;
+
+    bool HasErrors() const;
+    /*! \brief The first error, else one line on what was done. */
     QString Summary() const;
     /*! \brief All issues, one per line, errors first. */
     QString Details() const;
@@ -151,6 +190,31 @@ public:
     QStringList projectsWithUnsavedAttachments() const;
     /** @brief The complete file content of a project: data, models and attachments. */
     QJsonObject getProjectFileJson(const QString& projectId) const;
+
+    // === Replacing the data of a project (Edit Data, Claude Generated) ===
+
+    /*! \brief Replaces the data of project \p projectId by the data block \p newData (as `DataClass::ExportData` writes it).
+     *
+     *  Refused (nothing changed, an `Error` issue) for an unknown project, a meta model, while `hasRunningJobs(projectId)`, and for
+     *  incompatible data with `KeepModels`. Identical data change nothing (a raw block that differs alone is taken over). Otherwise:
+     *  a snapshot for `undoLastDataReplacement`; the new tables and raw block are read with the UUID, title, system parameters,
+     *  root directory and content of the project kept; every kept model is calculated once with its parameters and marked
+     *  outdated (`AbstractModel::isDataOutdated`), every meta model with a model of the project too; the data are unsaved. */
+    DataReplaceReport replaceProjectData(const QString& projectId, const QJsonObject& newData, DataReplacePolicy policy = DataReplacePolicy::KeepModels);
+    /*! \brief Whether `undoLastDataReplacement` has something to restore for the project. */
+    bool canUndoDataReplacement(const QString& projectId) const;
+    /*! \brief Restores the data and models (parameters, statistics, outdated marks) from before the last replacement; one step only.
+     *  Refused if the models of the project changed since (a model added or removed). Returns false if nothing was restored. */
+    bool undoLastDataReplacement(const QString& projectId, QString* reason = nullptr);
+    /*! \brief A job (statistics, search) runs on a model of the project; see `JobManager::hasRunningJobs`. */
+    bool hasRunningJobs(const QString& projectId) const;
+    /*! \brief The data of the project were replaced since the last load or save. */
+    bool hasUnsavedData(const QString& projectId) const;
+    /*! \brief Project ids whose data were replaced and not saved. */
+    QStringList projectsWithUnsavedData() const;
+    /*! \brief The project was written by a caller that does not go through `saveProject` (the GUI writes several projects
+     *  into one file): its replaced data are saved. Claude Generated. */
+    void markDataSaved(const QString& projectId);
 
     // === Project State Management ===
 
@@ -389,6 +453,9 @@ signals:
      */
     void projectDataUpdated(const QString& projectId);
 
+    /*! \brief The data of the project were replaced (or the replacement undone); the report says what happened to the models. Claude Generated. */
+    void projectDataReplaced(const QString& projectId);
+
     /**
      * @brief Emitted when all projects are cleared
      */
@@ -448,6 +515,23 @@ private:
     mutable QMutex m_projectsMutex; ///< Mutex for thread-safe access
     QHash<QString, QJsonObject> m_attachments; ///< per project uuid: extra top-level file blocks
     QSet<QString> m_unsavedAttachments;         ///< project uuids with attachment changes not saved
+    QSet<QString> m_unsavedData; ///< project uuids whose data were replaced and not saved (Claude Generated)
+
+    /*! \brief The state before the last data replacement of a project, for the one-step undo (Claude Generated). */
+    struct DataSnapshot {
+        QJsonObject data; ///< ExportData() before
+        QList<QJsonObject> models; ///< ExportModel() of every model, in project order
+        QList<int> modelIds; ///< SFModel() of every model, to make dropped ones again
+        QList<QList<int>> active, locked; ///< active series and locked parameters (ImportModel does not restore them)
+        QList<Eigen::MatrixXd> tables; ///< the values of the four data tables: `data` holds them with 6 digits only (Claude Generated)
+        QList<QPointer<DataClass>> kept; ///< the models kept (KeepModels); empty after DropModels
+        QHash<QString, bool> metaOutdated; ///< meta model project id -> its mark before
+        bool unsaved = false;
+    };
+    QHash<QString, DataSnapshot> m_dataSnapshots;
+    /*! \brief Reads \p data into the project without the implicit update and calculates the models of \p models afterwards with the
+     *  model tables sized to the new data. */
+    void importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models, const QList<Eigen::MatrixXd>& exact = QList<Eigen::MatrixXd>());
 
     // Singleton instance management
     static QMutex s_instanceMutex; ///< Singleton creation mutex

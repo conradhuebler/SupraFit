@@ -41,6 +41,9 @@ public:
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
     inline QString Text() const { return m_overview->toPlainText(); }
+    /*! \brief The stored statistic results (fast confidence) belong to earlier data of the model (Edit Data): a hint is shown
+     *  above them. Claude Generated. */
+    void setOutdated(bool outdated);
 public slots:
     void Update();
 
@@ -59,6 +62,8 @@ private:
     QWidget* m_subwidget;
     TextWidget* m_overview;
     QString m_short, m_statistics;
+    class StatusLine* m_outdated_hint = nullptr; ///< "These results belong to earlier data of this model." (Claude Generated)
+    bool m_outdated = false;
 
 private slots:
     void toggleView();

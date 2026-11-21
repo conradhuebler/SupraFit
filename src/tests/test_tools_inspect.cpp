@@ -401,6 +401,75 @@ private slots:
         QVERIFY(on.data.value(QStringLiteral("excluded_rows")).toArray().isEmpty());
     }
 
+    /// Rows left out with set_rows_included stay exactly the same rows after the project is stored and read again
+    /// (ExportData -> ImportData, the data block of a project file); DataEnd() is one past the last row in use,
+    /// as Begin/End Data of the GUI and every model loop (i < DataEnd()) read it. Claude Generated (R0)
+    void excludedRowsSurviveStoreAndLoad()
+    {
+        const QList<QList<int>> patterns = { { 0 }, { 19 }, { 7 }, { 0, 1, 18, 19 }, { 3, 10 }, { 5, 6, 12 }, {} };
+        for (const QList<int>& pattern : patterns) {
+            const QString pid = freshProject();
+            QVERIFY(!pid.isEmpty());
+            const QSharedPointer<DataClass> data = SupraFit::ProjectManager::instance().getProjectData(pid);
+            QVERIFY(data);
+            const int total = data->IndependentModel()->rowCount();
+            QCOMPARE(total, 20);
+            QJsonArray rows;
+            for (int r : pattern)
+                rows.append(r);
+            // an empty pattern: "include" an active row, all rows stay in use
+            const bool included = pattern.isEmpty();
+            if (pattern.isEmpty())
+                rows.append(19);
+            const ToolResult res = call(QStringLiteral("set_rows_included"),
+                QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("rows"), rows }, { QStringLiteral("included"), included } });
+            QVERIFY2(res.ok, qPrintable(res.error));
+
+            QList<int> expected;
+            for (int r = 0; r < total; ++r)
+                if (!pattern.contains(r))
+                    expected << r;
+            auto active = [](const DataClass& d) {
+                QList<int> list;
+                for (int r = 0; r < d.IndependentModel()->rowCount(); ++r)
+                    if (d.IndependentModel()->isChecked(r) && d.DependentModel()->isChecked(r))
+                        list << r;
+                return list;
+            };
+            QStringList shown;
+            for (int r : pattern)
+                shown << QString::number(r);
+            const QString name = QStringLiteral("pattern {%1}").arg(shown.join(QLatin1Char(',')));
+            QVERIFY2(active(*data) == expected, qPrintable(name + " before storing"));
+
+            DataClass loaded;
+            QVERIFY(loaded.ImportData(data->ExportData()));
+            QVERIFY2(active(loaded) == expected, qPrintable(name + " after storing and loading"));
+            QCOMPARE(data->DataBegin(), expected.first());
+            QCOMPARE(data->DataEnd(), expected.last() + 1);
+            QCOMPARE(loaded.DataBegin(), data->DataBegin());
+            QCOMPARE(loaded.DataEnd(), data->DataEnd());
+        }
+    }
+
+    /// Characterisation of today's behaviour (decision of R4, roadmap/data_pipeline_work_packages.md): Begin/End
+    /// Data sets the range and marks every row of it as used again, so a single row left out before is back in.
+    /// Claude Generated (R0)
+    void beginEndDataClearsSingleMarks()
+    {
+        const QString pid = freshProject();
+        QVERIFY(!pid.isEmpty());
+        const QSharedPointer<DataClass> data = SupraFit::ProjectManager::instance().getProjectData(pid);
+        QVERIFY(data);
+        QVERIFY(call(QStringLiteral("set_rows_included"),
+            QJsonObject{ { QStringLiteral("project_id"), pid }, { QStringLiteral("rows"), QJsonArray{ 5 } }, { QStringLiteral("included"), false } }).ok);
+        QVERIFY(!data->IndependentModel()->isChecked(5));
+        data->setDataEnd(18); // "End Data" on row 17
+        QVERIFY(data->IndependentModel()->isChecked(5)); // the single mark is lost
+        QVERIFY(!data->IndependentModel()->isChecked(18));
+        QVERIFY(!data->IndependentModel()->isChecked(19));
+    }
+
     void outOfRangeModelIsRefused()
     {
         for (const char* tool : { "get_model_parameters", "get_model_statistics", "get_residuals" })

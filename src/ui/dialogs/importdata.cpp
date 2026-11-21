@@ -28,6 +28,7 @@
 #include "src/ui/guitools/waiter.h"
 
 #include "src/ui/dialogs/generatedatadialog.h"
+#include "src/ui/dialogs/nmrimport.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/thermogram.h"
 
@@ -165,10 +166,17 @@ void ImportData::setUi()
         ImportThermogram(m_filename);
     });
 
-    m_spectra = new QPushButton(tr("Import as Spectras"));
+    m_spectra = new QPushButton(tr("Import as Spectra"));
     m_spectra->setStyleSheet("background-color: #77d740; color: black;");
     connect(m_spectra, &QPushButton::clicked, this, [this]() {
         ImportSpectra(m_filename);
+    });
+
+    m_nmr = new QPushButton(tr("Import as NMR Spectra (Tech Preview)"));
+    m_nmr->setStyleSheet("background-color: #77d740; color: black;");
+    m_nmr->setToolTip(tr("Series of 1D NMR spectra: follow signals through the titration and import their chemical shifts. This feature is new and not yet widely tested; please check the results."));
+    connect(m_nmr, &QPushButton::clicked, this, [this]() {
+        ImportNmr(m_filename);
     });
 
     m_table = new DropTable;
@@ -185,7 +193,8 @@ void ImportData::setUi()
 
     layout->addWidget(m_thermogram, 7, 0);
     layout->addWidget(m_spectra, 7, 1);
-    layout->addWidget(m_buttonbox, 7, 2, 1, 2);
+    layout->addWidget(m_nmr, 7, 2);
+    layout->addWidget(m_buttonbox, 7, 3);
 
     connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
     connect(m_table->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
@@ -236,23 +245,7 @@ QWidget* ImportData::SimulationWidget()
         const QString filename = QFileDialog::getOpenFileName(this, tr("Load simulation recipe"), getDir(), "*.json");
         if (filename.isEmpty() || filename.isNull())
             return;
-        QJsonObject data;
-        JsonHandler::ReadJsonFile(data, filename);
-        if (data.keys().contains("main", Qt::CaseInsensitive)) {
-            QJsonObject tmp;
-            for (auto key : m_project.keys())
-                if (key.compare("main", Qt::CaseInsensitive) == 0) {
-                    tmp = m_project[key].toObject();
-                    data = tmp;
-                    break;
-                }
-        }
-        m_independent_rows->setValue(data["independent"].toInt());
-        m_datapoints->setValue(data["datapoints"].toInt());
-        m_dependent_rows->setValue(data["dependent"].toInt());
-        m_equations = data["equations"].toString().split("|");
-
-        Evaluate(data);
+        LoadRecipe(filename);
         setLastDir(filename);
     });
 
@@ -303,6 +296,29 @@ void ImportData::ReshapeTable()
             m_equations.removeLast();
     }
     Evaluate(Generator());
+}
+
+/*! \brief Reads a simulation recipe (as written by "Store Recipe", or a control file whose block "main"
+ * holds the recipe) and evaluates it: number of independent columns, data points, series and the column
+ * equations. Claude Generated */
+bool ImportData::LoadRecipe(const QString& filename)
+{
+    QJsonObject data;
+    if (!JsonHandler::ReadJsonFile(data, filename))
+        return false;
+    // the block "main" of the file just read (it was looked up in the last loaded project before)
+    for (const QString& key : data.keys())
+        if (key.compare("main", Qt::CaseInsensitive) == 0) {
+            data = data[key].toObject();
+            break;
+        }
+    m_independent_rows->setValue(data["independent"].toInt());
+    m_datapoints->setValue(data["datapoints"].toInt());
+    m_dependent_rows->setValue(data["dependent"].toInt());
+    m_equations = data["equations"].toString().split("|");
+
+    Evaluate(data);
+    return true;
 }
 
 QJsonObject ImportData::Generator() const
@@ -436,14 +452,24 @@ void ImportData::ExportFile()
         return;
 
     setLastDir(filename);
+    ExportTable(filename);
+}
+
+/*! \brief Writes the table of the dialog as text (as "Export table"); an existing file is replaced. Claude Generated */
+bool ImportData::ExportTable(const QString& filename) const
+{
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
+    if (!model)
+        return false;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
-        return;
+    // Truncate: without it the end of a longer older file stayed behind the table (Claude Generated, R0)
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
 
     QTextStream stream(&file);
     stream << model->ExportAsString();
+    return true;
 }
 
 void ImportData::LoadTable(DataTable* model, int independent)
@@ -474,45 +500,12 @@ void ImportData::WriteData(const DataTable* model, int independent)
     for (const QModelIndex& i : m_table->selectionModel()->selectedColumns()) {
         columns << i.column();
     }
-
-    QPointer<DataTable> tmp;
-    for (int i = 0; i < model->columnCount(); ++i) {
-        if (columns.contains(i))
-            continue;
-        DataTable* t = model->BlockColumns(i, 1);
-        if (!tmp) {
-            tmp = t;
-            continue;
-        }
-        tmp->appendColumns(t);
-        delete t;
-    }
     independent = m_independent_rows->value();
-    m_storeddata = new DataClass;
-    // DataTable* indep = model->BlockColumns(0, independent);
-    // DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
-    DataTable* indep = tmp->BlockColumns(0, independent);
-    DataTable* dep = tmp->BlockColumns(independent, tmp->columnCount() - independent);
-    QStringList header_indep, header_dep;
-    QStringList header = tmp->header();
-
-#pragma message("will this still be true after restructureing")
-    if (tmp->columnCount() - independent == 0) {
-        DataTable* model = new DataTable(indep->rowCount(), m_dependent_rows->value(), this);
-        //header_indep = QStringList(header.begin(), header.begin() + independent );
-        m_storeddata->setDependentTable(model);
-        m_storeddata->setType(DataClassPrivate::DataType::Simulation);
+    // the table becomes a data set in the core (DataClass::FromImportTable), as Edit Data makes it without this dialog
+    // (Claude Generated)
+    m_storeddata = DataClass::FromImportTable(model, independent, m_type, m_raw, m_title, columns, m_dependent_rows ? m_dependent_rows->value() : 1);
+    if (m_storeddata && m_storeddata->Type() == DataClassPrivate::DataType::Simulation)
         m_projectfile = QString("Simulation - %1").arg(QDateTime::currentDateTime().toString());
-    } else {
-        m_storeddata->setDataType(m_type);
-        m_storeddata->setDependentTable(dep);
-        //header_dep = QStringList(header.begin() + independent + 1, header.end() );
-    }
-    delete tmp;
-#pragma message("have a look at here, while restructureing stuff")
-    m_storeddata->setIndependentTable(indep);
-    m_storeddata->setRawData(m_raw);
-    m_storeddata->setProjectTitle(m_title);
 }
 
 void ImportData::accept()
@@ -593,7 +586,9 @@ bool ImportData::RunThermogram(Thermogram* thermogram)
 bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
-    if (m_filename.isEmpty()) {
+    // the chosen file is the experiment, also when it is m_filename already (every caller passes it)
+    // (Claude Generated, UX package 2a)
+    if (!filename.isEmpty() && QFileInfo(filename).isFile()) {
         m_filename = filename;
         thermogram->setExperimentFile(filename);
     }
@@ -616,7 +611,8 @@ bool ImportData::ImportThermogram()
 
 bool ImportData::ImportSpectra(const QString& filename)
 {
-    SpectraImport* import = new SpectraImport;
+    SpectraImport dialog; // on the stack: it was not deleted when cancelled
+    SpectraImport* import = &dialog;
     import->setSpectraFile(filename);
 
     if (import->exec() == QDialog::Accepted) {
@@ -631,10 +627,31 @@ bool ImportData::ImportSpectra(const QString& filename)
             m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
         });
         NoChanged();
-        delete import;
         return true;
     }
     return false;
+}
+
+/*! \brief Opens the NMR import (with the selected file, if it can be read as spectra) and takes over
+ * its table of concentrations and chemical shifts; the raw block is stored as a Spectrum project with
+ * "Profile": "nmr". Claude Generated (WP3). */
+bool ImportData::ImportNmr(const QString& filename)
+{
+    NmrImport import(this);
+    if (!filename.isEmpty())
+        import.addFiles({ filename });
+    if (import.exec() != QDialog::Accepted)
+        return false;
+    setSpectraData(import.ProjectData());
+    DataTable* model = new DataTable(import.InputTable());
+    m_table->setModel(model);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        auto list = m_table->selectionModel()->selectedColumns();
+        m_independent_rows->setMaximum(m_table->model()->columnCount() - list.size());
+    });
+    NoChanged();
+    m_independent_rows->setValue(import.IndependentCount());
+    return true;
 }
 
 void ImportData::GenerateData()

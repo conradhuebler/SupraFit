@@ -366,6 +366,19 @@ void DataWidget::UpdateRanges()
     m_wrapper.toStrongRef().data()->restartAnimation();
 }
 
+void DataWidget::RefreshDataInfo()
+{
+    QSharedPointer<DataClass> data = m_data.toStrongRef();
+    if (!data)
+        return;
+    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(data->IndependentModel()->columnCount()));
+    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(data->DependentModel()->rowCount()));
+    m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(data->SeriesCount()));
+    m_concentrations->resizeColumnsToContents();
+    m_signals->resizeColumnsToContents();
+    UpdateRanges();
+}
+
 void DataWidget::SetProjectName()
 {
     qApp->instance()->setProperty("projectname", m_name->text());

@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * SpectraWidget - spectra import: spectra list, x values, chart with processing, concentrations
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,15 @@
 #include <charts.h>
 
 #include <QtCore/QJsonObject>
+#include <QtCore/QList>
+#include <QtCore/QPair>
 
 #include <src/core/spectrahandler.h>
 
+class ConcentrationEditor;
+class DialogMemory;
 class DropTable;
+class TraceEditorWidget;
 
 class QLineEdit;
 class QListWidget;
@@ -44,6 +49,13 @@ public:
     void setDirectory(const QString& directry, const QString& type);
     void setFile(const QString& file);
     void addFile(const QString& file);
+    /*! \brief Appends one spectrum per file (as addFile); a file without a valid spectrum is left out and
+     * listed in *failed with the reason. Returns the number of files read. Claude Generated */
+    int addFiles(const QStringList& files, QList<QPair<QString, QString>>* failed = nullptr);
+    /*! \brief Restores the VarCovar options (# X values, Cluster Results, Cluster Average) from memory
+     * and keeps them there. Claude Generated */
+    void rememberIn(DialogMemory* memory);
+    inline ConcentrationEditor* concentrationEditor() const { return m_indep; }
 
     void clear();
 
@@ -52,22 +64,47 @@ public:
     QJsonObject InputTable() const { return m_input_table; }
     void setData(const QJsonObject& data);
 
+    /*! \brief Number of loaded spectra. Claude Generated */
+    int spectraCount() const;
+    /*! \brief Number of selected x values. Claude Generated */
+    int xValueCount() const;
+    /*! \brief Rows of the pasted concentration table (0 without one). Claude Generated */
+    int concentrationRows() const;
+    /*! \brief Columns of the pasted concentration table (0 without one). Claude Generated */
+    int concentrationColumns() const;
+
+    /*! \brief Can OK hand over a complete table? True if there is at least one spectrum and one x value and
+     * the concentrations (if pasted) have one row per spectrum. *why: the reason, or what OK hands over. Claude Generated */
+    bool ready(QString* why = nullptr) const;
+    /*! \brief Is there anything OK could hand over (at least one spectrum and one x value)? Claude Generated */
+    bool hasTable() const;
+
+    /*! \brief Adds an x value typed by the user ("450.5" or "450,5"); false (and message()) for anything else. Claude Generated */
+    bool addXValueText(const QString& text);
+
+    /*! \brief Writes the table of the selected x values as text; an existing file is replaced. Claude Generated */
+    bool SaveTable(const QString& filename) const;
+
 public slots:
     void UpdateSpectra();
     void UpdateData();
 
 signals:
+    /*! \brief Spectra, x values, processing, range, concentrations or VarCovar options changed. Claude Generated */
+    void changed();
+    /*! \brief A message for the status line of the dialog (level of StatusLine). Claude Generated */
+    void message(const QString& text, int level);
 
 private:
     QTabWidget* m_views;
     QListWidget *m_files, *m_xvalues;
-    ChartView* m_spectra_view;
-    DropTable *m_indep, *m_datatable;
+    TraceEditorWidget* m_editor; ///< chart, range and processing steps of the spectra
+    ConcentrationEditor* m_indep; ///< concentrations, one row per spectrum
+    DropTable* m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
     QLineEdit* m_add_xvalue;
     QPushButton *m_accept_x, *m_varcovar, *m_export_table;
     QSpinBox* m_values;
-    QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
     QCheckBox *m_cluster, *m_averaged;
@@ -77,6 +114,5 @@ private:
 
 private slots:
     void PointDoubleClicked(const QPointF& point);
-    void UpdateXRange(const QPointF& point1, const QPointF& point2);
     void SaveToFile();
 };

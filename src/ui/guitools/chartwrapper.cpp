@@ -19,10 +19,14 @@
 
 #include <charts.h>
 
+#include <algorithm>
+
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 #include "src/core/loadtiming.h"
 #include "src/core/toolset.h"
+
+#include <algorithm>
 
 #include <QtCharts/QAbstractSeries>
 #include <QtCharts/QBoxPlotSeries>
@@ -209,6 +213,10 @@ void ChartWrapper::MakeSeries()
     QVector<QList<QPointF>> series(m_stored_series.size());
     int rows = workingData->DataPoints();
     int cols = workingData->SeriesCount();
+    // the table of a model is sized again on its next Calculate: after Edit Data changed the number of rows, another model's
+    // update can draw this one first (Claude Generated)
+    rows = std::min(rows, int(m_table->rowCount()));
+    cols = std::min(cols, int(m_table->columnCount()));
     int maxdata = qApp->instance()->property("MaxSeriesPoints").toInt();
 
     if (maxdata == 0)

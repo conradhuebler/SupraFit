@@ -221,7 +221,7 @@ private:
     // Claude Generated - ProjectManager integration: UUID to MainWindow mapping
     QHash<QString, QPointer<MainWindow>> m_project_windows;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_spectra, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
+    QAction *m_new_window, *m_new_table, *m_spectra, *m_nmr, *m_thermogram, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
 
     int m_last_index = -1, m_project_tree_size;
@@ -265,6 +265,8 @@ private slots:
     void OpenFile();
     void OpenThermogram();
     void OpenSpectraDir();
+    /*! \brief "Open NMR Spectra": the NMR titration import, then the Import Table dialog with its table. Claude Generated */
+    void OpenNmrSpectra();
     void setWindowTitle();
     void SaveProjectAction();
     void SaveAsProjectAction();

@@ -14,6 +14,8 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **mainwindow/datawidget.cpp/h**: Data table display and editing
 - **mainwindow/projecttree.cpp/h**: Project hierarchy and navigation
 - **mainwindow/modeldataholder.cpp/h**: Model-data association management
+- **mainwindow/editdatacontroller.cpp/h**: `EditDataController` — Edit Data of thermogram/spectra/NMR projects (dialog → `ImportTableData`/`getStoredData` → `checkReplacement` → `replaceProjectData`, incompatible question, stop jobs, undo); dialog/choice/confirm handlers injectable (`test_edit_data`); `ModelDataHolder::ApplyDataReplacement` closes dropped panes and refreshes the rest
+- **guitools/outdatedbanner.cpp/h**: `OutdatedBanner` — "This model was fitted to earlier data." + Fit again / Mark as current in model and meta-model panes; `ModelWidget` keeps `"outdated"` in `m_last_model` so Restore/LoadJson never clear the mark
 
 ### Visualization
 - **mainwindow/chartwidget.cpp/h**: Main charting and plotting interface
@@ -29,8 +31,19 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Data Import/Export
 - **dialogs/importdata.cpp/h**: Data file import wizard
-- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface
-- **dialogs/thermogram.cpp/h**: Thermogram data handling
+- **dialogs/spectraimport.cpp/h**: Spectral data import specialized interface; `ImportKeyGuard` + `StatusLine` (OK off without spectra or x values); test `test_spectraimport` (also the "Open Spectra"/"Open NMR Spectra (Tech Preview)" entries of `SupraFitGui`)
+- **dialogs/nmrimport.cpp/h**: NMR titration import (renders `NmrHandler`: spectra list, trace editor, signals, δ table with status colours, concentrations); opened by "Import as NMR Spectra (Tech Preview)" (`ImportData`) and Edit Data of a Spectrum project whose raw block is NMR; smoke test `test_nmrimport`
+  - Tech Preview label (entries, title, tooltips, `nmrTechPreview` line): remove together, see TODO.md
+  - JEOL: group "Processing (FID)" (`nmrFidPanel`, LB, zero fill, ph0/ph1, Auto phase, Auto phase each spectrum) visible only with FIDs; whole real series visible offscreen since the display envelope (series above 5000 points switch to OpenGL, offscreen empty)
+  - WP4: "Shift from" peak picking / lineshape fit with options; "Fit details" = 5 columns per signal (only the δ column is editable); model (dashed) + residual of the selected spectrum are drawn after `chartUpdated`
+  - Viewer 2: markers/fit/residual drawn with `stackOffset(k)`; hint in `nmrStatus` + cell tooltips when a signal is missing in every used spectrum (`m_missing_hint`; text by threshold: whole spectrum names "search window" first, search window only window/range)
+  - "Detection threshold" (`nmrThresholdScope`, `NmrThresholdScope`): a new series starts with "search window" unless memory `thresholdScope` says otherwise; a project's value wins; disabled with a PickPeaks step
+  - UX 1: `ImportKeyGuard`, readiness `StatusLine` "nmrReady" on both pages, "Double-click adds the signal" (QSettings `nmrimport/doubleClickAdds`), destructive actions ask via `keyGuard()->confirm()`, `AdaptiveWaiter` around tracking/FID
+  - UX 2a: `SeriesSourceBar`, `ConcentrationEditor`, fit options behind `MoreLessToggle` (opens for lineshape fit); `restoreOptions()` (memory) runs before `setData()`, so a project's values win; save only in the `m_updating`-guarded apply paths
+  - Viewer fixes: pick in `pickRange()` (Start..End ∩ visible axis), double-click → `NmrHandler::addSignalAtPeak`, signal labels (`setLabels`, row = number), chart x minus `stackOffset(ref).x()`; LB/ph0/ph1 debounced 300 ms when slow, `handler()`/`accept()` flush; marker/fit series reused; timing tool `benchmark_nmrimport`
+  - Multiplets: signal table columns Name/Type (combo cell widget)/δ/±/½ span/Pattern, "Multiplet from range" (`pickRange`, ≤ `kMaxMultipletRange`), group "Multiplet options" (`nmrMultipletOptions`, MoreLessToggle: grouping J in Hz, MHz from the FIDs, ripple, centre); `TraceEditorWidget::Label::ticks` draws the bracket
+- **dialogs/thermogram.cpp/h**: Thermogram data handling; renders `ItcProcessor`; smoke test `test_thermogram_dialog` (shown/handed-over table = core result, uniform volume, clearing the dilution, `setRaw`)
+  - `setScalingFactor(cal2joule)` is seeded at the end of `setUi()`: it renders, so the table and series must exist
 
 ### Analysis Configuration
 - **dialogs/generatedatadialog.cpp/h**: Data generation parameter setup
@@ -62,8 +75,17 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 - **widgets/systemparameterwidget.cpp/h**: System-level parameter configuration
 
 ### Specialized Components
-- **widgets/spectrawidget.cpp/h**: Spectral data visualization
-- **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis
+- **widgets/spectrawidget.cpp/h**: spectra import (spectra list, x values, VarCovar, concentrations) on the trace editor
+- **widgets/traceeditorwidget.cpp/h**: `TraceEditorWidget` — chart (raw/processed, x direction by `setAxisDirection`), range, editable `TraceOpList`; renders only, host stores the list; `chartUpdated()` lets a host add series after a redraw; smoke test `test_traceeditor`
+  - Hint line `traceEditorHint` (mouse actions + host text `setDoubleClickHint`), shown with setting `thermogram_guidelines` ("Show hints in the import dialogs"; key kept)
+  - View (Viewer 2): user zoom (`m_user_view`) kept over redraws of the same trace ids, moved with a whole-axis shift; wheel/middle button handled in the viewport event filter (`scaleY`, `resetView`), not by CuteChart's `scaleUp/scaleDown` (cursor-based, ITC only)
+  - Viewer 3: wheel = intensity factor (`scaleIntensity`, ×1.25/notch, 0.01..1e6, never stored), Ctrl+wheel = `scaleY`; host series go through `displayPoint(k,x,y)` = level + f·y; scaling keeps the axes (no user view, see below), fit y/middle click/new ids → 1
+  - Stack (view only): `stackOffset(k)` for host series, `setExcludedTraces`, `setHighlightedTrace`, QSettings `traceeditor/<setSettingsKey>/stackY|stackX|stackReverse`; offsets move points by `replace()`, no rebuild (15 × 131072: 16-22 ms release, rebuild 140-160 ms)
+  - Display envelope: traces > `kDisplayPointLimit` drawn from the visible slice, min/max per pixel column (≤ `kMaxEnvelopeColumns`, below CuteChart's OpenGL switch at 5000), recomputed on axis change; series reused when the structure is unchanged (a new series ≈ 8 ms)
+  - Auto vs user view: the wheel never sets `m_user_view`; without it, scaled intensities keep `m_auto_*` and a stack change sets y to the nice range at factor 1; labels (`setLabels`, `labelClicked`) are chart items placed in `updateLabels()`
+  - `setAxisDirection(Auto|Reversed|Normal)`: Auto = reversed for descending data (default, UV/Vis); `NmrImport` sets Reversed/Normal by `nmrReverseAxis` (QSettings `nmrimport/reverseAxis`); test `test_chartzoom` (ChartZoomTest, real mouse events)
+- **widgets/thermogramwidget.cpp/h**: Thermogram display and analysis; `setUi()` = `setupChart`/`setupPeakLists`/`setupControls`/`setupParameterPanel`/`restoreSettings`/`connectControls`, order matters (connections)
+  - Not on `TraceEditorWidget`: needs zoom-by-default, select only in peak edit mode, persistent series, keys/double click/scale — see roadmap WP5
 - **widgets/exportsimulationwidget.cpp/h**: Simulation export configuration
 
 ### Results Display
@@ -111,7 +133,12 @@ Complete graphical user interface for SupraFit providing intuitive access to all
 
 ### Interaction Tools
 - **guitools/mime.h**: Drag-and-drop MIME type handling
-- **guitools/waiter.h**: Progress indication and user feedback
+- **guitools/waiter.h**: Progress indication and user feedback; `AdaptiveWaiter` = wait cursor only if the same work took > 0.3 s last time
+- **guitools/importkeyguard.cpp/h**: `ImportKeyGuard` — Enter never presses OK, dirty after the first Show, `confirmDiscard()` from the host's `reject()`, `setConfirmHandler` for tests; not used by the ITC dialog (own rule)
+- **guitools/statusline.cpp/h**: `StatusLine` — one elided line, Info/Warning/Error in palette-safe colours, full text as tooltip
+- **guitools/dialogmemory.cpp/h**: `DialogMemory` — QSettings `dialogs/<name>/...` of exec() dialogs: geometry as QRect (applied only on a present screen, not below the minimum size), splitters, checked readers that ignore wrong types/out-of-range values
+- **guitools/seriessourcebar.cpp/h**: `SeriesSourceBar` — Open directory/File ending/Load file/Add files/path/count + "n file(s) read, m not read"; drops of files/directories via an application event filter (children that take text drops would swallow them)
+- **widgets/concentrationeditor.cpp/h**: `ConcentrationEditor` — `DropTable` + paste hint + "Load from file" (`FileHandler`, as Open Project) + "n rows for m spectra"; `Edited()` on paste/load/clear/setTable
 - **widgets/messagedock.cpp/h**: Message logging and status display
 
 ### Chart Integration

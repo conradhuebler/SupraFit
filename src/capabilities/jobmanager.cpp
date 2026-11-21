@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2019 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,16 +25,66 @@
 #include "weakenedgridsearch.h"
 
 #include "src/core/toolset.h"
+#include "src/core/models/meta_model.h"
 #include "src/core/models/models.h"
 
 #include "src/global.h"
 
 #include <QtCore/QDateTime>
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
+#include <QtCore/QSet>
 
 #include "src/core/phasetiming.h"
 
 #include "jobmanager.h"
+
+namespace {
+// the managers that run jobs now (Claude Generated): asked by ProjectManager::replaceProjectData
+QMutex s_runningMutex;
+QSet<const JobManager*> s_running;
+}
+
+namespace {
+/*! \brief Whether the model of a job manager belongs to the project \p projectId (its own data, or a model of a meta model). */
+bool runsOnProject(const QSharedPointer<AbstractModel>& model, const QString& projectId)
+{
+    if (!model)
+        return false;
+    if (model->UUID() == projectId)
+        return true;
+    if (const MetaModel* meta = qobject_cast<const MetaModel*>(model.data()))
+        for (const QSharedPointer<AbstractModel>& m : meta->Models())
+            if (m && m->UUID() == projectId)
+                return true;
+    return false;
+}
+}
+
+bool JobManager::hasRunningJobs(const QString& projectId)
+{
+    QMutexLocker locker(&s_runningMutex);
+    for (const JobManager* manager : std::as_const(s_running))
+        if (runsOnProject(manager->m_model, projectId))
+            return true;
+    return false;
+}
+
+int JobManager::interruptJobs(const QString& projectId)
+{
+    QList<JobManager*> managers;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        for (const JobManager* manager : std::as_const(s_running))
+            if (runsOnProject(manager->m_model, projectId))
+                managers << const_cast<JobManager*>(manager);
+    }
+    // outside the lock: the handlers stop by direct connections
+    for (JobManager* manager : std::as_const(managers))
+        emit manager->Interrupt();
+    return int(managers.size());
+}
 
 JobManager::JobManager(QObject* parent)
     : QObject(parent)
@@ -88,11 +138,17 @@ JobManager::JobManager(QObject* parent)
 
 JobManager::~JobManager()
 {
+    QMutexLocker locker(&s_runningMutex);
+    s_running.remove(this);
 }
 
 void JobManager::RunJobs()
 {
     m_working = true;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        s_running.insert(this);
+    }
     m_interrupt = false;
     int start = 0;
     int threads = qApp->instance()->property("threads").toInt();
@@ -158,6 +214,10 @@ void JobManager::RunJobs()
     }
     m_jobs.clear();
     m_working = false;
+    {
+        QMutexLocker locker(&s_runningMutex);
+        s_running.remove(this);
+    }
     qApp->instance()->setProperty("threads", threads);
     emit AllFinished();
 }

@@ -42,6 +42,9 @@ public:
     /** Load a data table (JSON) from a file per a "Source":"file" config block. */
     static QJsonObject loadDataTableFromFile(const QJsonObject& fileConfig);
 
-    /** Apply configured (e.g. Gaussian) noise to a data table in-place; returns the same pointer. */
+    /** Apply configured (e.g. Gaussian) noise to a data table in-place; returns the same pointer.
+     *  "StdDev" (default 0.05) is the ABSOLUTE standard deviation of the normal noise added to every value, in the unit
+     *  of the table, not a fraction of the value; "Seed" (default 42) seeds std::mt19937; raw and working table are
+     *  both replaced by the noisy one. */
     static QPointer<DataClass> applyNoise(QPointer<DataClass> data, const QJsonObject& noiseConfig, bool isIndependent);
 };

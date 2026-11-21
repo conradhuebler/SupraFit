@@ -37,6 +37,7 @@ set(SFGui_SRC
                 guitools/flowlayout.cpp
                 dialogs/parameterdialog.cpp
                 dialogs/spectraimport.cpp
+                dialogs/nmrimport.cpp
                 dialogs/regressionanalysisdialog.cpp
                 dialogs/statisticdialog.cpp
                 dialogs/modaldialog.cpp
@@ -50,6 +51,8 @@ set(SFGui_SRC
                 dialogs/generatedatadialog.cpp
                 widgets/DropTable.h
                 widgets/spectrawidget.cpp
+                widgets/traceeditorwidget.cpp
+                widgets/concentrationeditor.cpp
                 widgets/metamodelparameter.cpp
                 widgets/parameterwidget.cpp
                 widgets/analysisparts.cpp
@@ -83,6 +86,7 @@ set(SFGui_SRC
                 mainwindow/modelusage.cpp
                 mainwindow/quickbardialog.cpp
                 mainwindow/modeldataholder.cpp
+                mainwindow/editdatacontroller.cpp
                 mainwindow/datawidget.cpp
                 mainwindow/metamodelwidget.cpp
                 mainwindow/modelwidget.cpp
@@ -91,6 +95,11 @@ set(SFGui_SRC
                 mainwindow/suprafitgui.cpp
                 settingsregistry.cpp
                 guitools/appearance.cpp
+                guitools/importkeyguard.cpp
+                guitools/statusline.cpp
+                guitools/outdatedbanner.cpp
+                guitools/dialogmemory.cpp
+                guitools/seriessourcebar.cpp
     )
 
 if(USE_LLM)

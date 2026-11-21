@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,12 +42,19 @@ public:
     {
         setContextMenuPolicy(Qt::ActionsContextMenu);
         QAction* clear = new QAction(tr("Clear Table"));
-        connect(clear, &QAction::triggered, this, &DropTable::clear);
-        addAction(clear);
+        connect(clear, &QAction::triggered, this, &DropTable::clear);        addAction(clear);
         setSelectionBehavior(QAbstractItemView::SelectColumns);
         setSelectionMode(QAbstractItemView::MultiSelection);
     }
     inline virtual ~DropTable() {}
+
+    /*! \brief Shows table and makes it the target of Ctrl+B/Ctrl+Y (setModel alone left the paste
+     * target at the previous table). Claude Generated */
+    inline void setTable(DataTable* table)
+    {
+        setModel(table);
+        m_table = table;
+    }
 
 protected:
     inline virtual void keyPressEvent(QKeyEvent* event) override
@@ -123,8 +130,6 @@ private:
         m_table = table;
         m_table->layoutChanged();
     }
-    void deleteRow();
-    void deleteColumn();
 
     QPointer<DataTable> m_table;
 };

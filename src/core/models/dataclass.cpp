@@ -39,12 +39,14 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QPointer>
 #include <QtCore/QReadWriteLock>
+#include <QtCore/QScopedPointer>
 #include <QtCore/QString>
 #include <QtCore/QUuid>
 #include <QtCore/QtGlobal>
 
 #include <QJSEngine>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -382,6 +384,150 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     return true;
 }
 
+QString DataReplaceCheck::Text() const
+{
+    QStringList lines = reasons;
+    lines << warnings;
+    return lines.join(QLatin1Char('\n'));
+}
+
+/*! \brief Compares new data with the data of the project for Edit Data (Claude Generated).
+ *
+ * The rule is taken from what a model is bound to: the number of independent columns (`InputParameterSize()`, checked in
+ * `AbstractModel::PrepareParameter`), the number of series (rows of the local parameter table, active series, local boundaries)
+ * and the data type. The number of data rows is not part of a model: check marks and the data range come with the data,
+ * the model tables are sized again on the next `Calculate()`. The system parameters, title, root directory and content of the
+ * project are not compared: a replacement keeps those of the project.
+ */
+DataReplaceCheck DataClass::checkReplacement(const QJsonObject& newData) const
+{
+    DataReplaceCheck check;
+    const QJsonObject block = (newData.contains("data") && !newData.contains("independent")) ? newData["data"].toObject() : newData;
+    check.oldSeries = SeriesCount();
+    check.oldIndependent = IndependentModel() ? IndependentModel()->columnCount() : 0;
+    check.oldRows = DataPoints();
+    check.oldType = Type();
+
+    if (block["SupraFit"].toInt() > qint_version) {
+        check.reasons << QObject::tr("The new data were written by a newer SupraFit (file version %1, this is %2).").arg(block["SupraFit"].toInt()).arg(qint_version);
+        return check;
+    }
+    if (!block.contains("independent") || !block.contains("dependent")) {
+        check.reasons << QObject::tr("The new data hold no independent and dependent table.");
+        return check;
+    }
+    DataClass candidate(block);
+    check.newSeries = candidate.SeriesCount();
+    check.newIndependent = candidate.IndependentModel() ? candidate.IndependentModel()->columnCount() : 0;
+    check.newRows = candidate.DataPoints();
+    check.newType = candidate.Type();
+
+    if (check.newType != check.oldType)
+        check.reasons << QObject::tr("The data type changes (%1 instead of %2).").arg(check.newType).arg(check.oldType);
+    if (check.newIndependent != check.oldIndependent)
+        check.reasons << QObject::tr("The number of independent columns changes from %1 to %2.").arg(check.oldIndependent).arg(check.newIndependent);
+    if (check.newSeries != check.oldSeries)
+        check.reasons << QObject::tr("The number of series changes from %1 to %2.").arg(check.oldSeries).arg(check.newSeries);
+    if (check.newRows == 0)
+        check.reasons << QObject::tr("The new data have no data points.");
+    if (!check.reasons.isEmpty())
+        return check;
+
+    auto sameTable = [](const DataTable* a, const DataTable* b) {
+        if (!a || !b)
+            return a == b;
+        DataTable* x = const_cast<DataTable*>(a);
+        DataTable* y = const_cast<DataTable*>(b);
+        return x->Table().rows() == y->Table().rows() && x->Table().cols() == y->Table().cols() && x->Table() == y->Table()
+            && a->CheckedTable().rows() == b->CheckedTable().rows() && a->CheckedTable().cols() == b->CheckedTable().cols() && a->CheckedTable() == b->CheckedTable();
+    };
+    check.headersChanged = IndependentModel()->header() != candidate.IndependentModel()->header() || DependentModel()->header() != candidate.DependentModel()->header();
+    check.rawChanged = RawData() != candidate.RawData();
+    const bool sameValues = check.newRows == check.oldRows && sameTable(IndependentModel(), candidate.IndependentModel()) && sameTable(DependentModel(), candidate.DependentModel())
+        && DataBegin() == candidate.DataBegin() && DataEnd() == candidate.DataEnd();
+
+    if (sameValues && !check.headersChanged) {
+        check.result = DataReplaceCheck::Identical;
+        if (check.rawChanged)
+            check.warnings << QObject::tr("The tables are the same, only the raw data or their processing settings differ.");
+        return check;
+    }
+    check.result = DataReplaceCheck::Compatible;
+    if (check.newRows != check.oldRows)
+        check.warnings << QObject::tr("The number of data points changes from %1 to %2.").arg(check.oldRows).arg(check.newRows);
+    if (check.headersChanged)
+        check.warnings << QObject::tr("The column names differ; the models take the columns in their order.");
+    return check;
+}
+
+QVector<QSharedPointer<AbstractModel>> DataClass::takeModels()
+{
+    QVector<QSharedPointer<AbstractModel>> models;
+    QVector<QPointer<DataClass>> keep;
+    for (const QPointer<DataClass>& child : std::as_const(d->m_children)) {
+        AbstractModel* model = qobject_cast<AbstractModel*>(child.data());
+        if (!model) {
+            if (child)
+                keep << child;
+            continue;
+        }
+        models << d->m_stored_models_by_pointer.value(static_cast<void*>(model));
+        d->m_stored_models_by_pointer.remove(static_cast<void*>(model));
+    }
+    d->m_children = keep;
+    return models;
+}
+
+DataClass* DataClass::FromImportTable(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw,
+    const QString& title, const QVector<int>& excludedColumns, int simulatedSeries)
+{
+    if (!table || table->columnCount() == 0)
+        return nullptr;
+    // the columns taken, in their order (the dialog leaves out the selected ones)
+    QPointer<DataTable> kept;
+    for (int i = 0; i < table->columnCount(); ++i) {
+        if (excludedColumns.contains(i))
+            continue;
+        DataTable* column = table->BlockColumns(i, 1);
+        if (!kept) {
+            kept = column;
+            continue;
+        }
+        kept->appendColumns(column);
+        delete column;
+    }
+    if (!kept)
+        return nullptr;
+    independent = std::clamp(independent, 1, kept->columnCount());
+    DataClass* data = new DataClass;
+    DataTable* indep = kept->BlockColumns(0, independent);
+    if (kept->columnCount() - independent == 0) {
+        data->setDependentTable(new DataTable(indep->rowCount(), simulatedSeries, nullptr));
+        data->setType(DataClassPrivate::DataType::Simulation);
+    } else {
+        data->setDataType(type);
+        data->setDependentTable(kept->BlockColumns(independent, kept->columnCount() - independent));
+    }
+    delete kept;
+    data->setIndependentTable(indep);
+    data->setRawData(raw);
+    data->setProjectTitle(title);
+    return data;
+}
+
+QJsonObject DataClass::ImportTableData(const DataTable* table, int independent, DataClassPrivate::DataType type, const QJsonObject& raw, const QString& title)
+{
+    QScopedPointer<DataClass> data(FromImportTable(table, independent, type, raw, title));
+    if (!data)
+        return QJsonObject();
+    QJsonObject block = data->ExportData();
+    QStringList active; // every series shown, as ImportData::accept() writes it
+    for (int i = 0; i < data->DependentModel()->columnCount(); ++i)
+        active << "1";
+    block["active_series"] = active.join(" ");
+    return block;
+}
+
 bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
 {
     int fileversion = topjson["SupraFit"].toInt();
@@ -426,7 +572,7 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
                 return collator.compare(key1, key2) < 0;
             });
         if (DataPoints() == 0) {
-            for (const QString& str : qAsConst(keys)) {
+            for (const QString& str : std::as_const(keys)) {
                 QVector<qreal> concentrationsVector, signalVector;
                 concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
                 signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
@@ -440,7 +586,7 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
             qWarning() << "table size doesn't fit to imported data";
             return false;
         }
-        for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : std::as_const(keys)) {
             QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
             signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
@@ -817,8 +963,10 @@ void DataClass::ReReadCheckedState(int row, bool state)
         if (IndependentModel()->isChecked(i))
             last = i;
     }
-    d->m_begin_data = first;
-    d->m_end_data = last;
+    // [DataBegin, DataEnd): the end is one past the last row in use, as UpdateCheckedState, Begin/End Data and
+    // the model loops read it; the last row in use was left out after storing and loading (Claude Generated, R0)
+    d->m_begin_data = first == -1 ? 0 : first;
+    d->m_end_data = last + 1;
     emit DataRangedChanged();
 }
 

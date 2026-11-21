@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2026 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,8 @@ public:
     void GenerateData();
     void setGeneratedData(const QJsonObject& json);
     QJsonObject Generator() const;
+    bool LoadRecipe(const QString& filename);
+    bool ExportTable(const QString& filename) const;
 
 public slots:
     bool ImportThermogram(const QString& filename);
@@ -89,7 +91,7 @@ private:
 
     QPointer<DropTable> m_table;
     QPointer<QLineEdit> m_line, m_equation;
-    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_store_generater, m_load_generator;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_nmr, m_store_generater, m_load_generator;
     QPointer<QSpinBox> m_independent_rows, m_dependent_rows, m_datapoints;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;
@@ -115,4 +117,5 @@ private slots:
     void NoChanged();
 
     bool ImportSpectra(const QString& filename);
+    bool ImportNmr(const QString& filename);
 };

@@ -20,6 +20,65 @@
 - [ ] Constrained-refit profile likelihood as the cheap interval method: the sampler needs 14-3000x the SSE evaluations for the same intervals (docs/landscape_sampling_measurement_2026-10-24.md); proposal, not decided
 - [ ] WP-C3: `StatisticTool::CalculateLandscapeMetrics`, `analysis_manager`/CLI option, agent tool (name it in docs/ASSISTANT_HELP.md section 8), `MLFeatureExtractor`; ends that stay `Unsampled`
 
+## Input data editing (roadmap/input_data_editing.md, record: docs/input_data_editing_2026-11-08.md)
+- [ ] Tech Preview of the NMR import: remove the label after the click check with real data (strings in `suprafitgui.cpp`, `importdata.cpp`, `nmrimport.cpp`, line `nmrTechPreview`, ASSISTANT_HELP §2, `test_spectraimport`/`test_nmrimport`).
+- [ ] Click-through of the spectra, NMR and thermogram dialogs and a test with real TopSpin/MestReNova series (the totxt header is only rebuilt synthetically); all of WP0-WP5 is machine-tested only.
+- [ ] NMR tracking below 0.75 FWHM: a neighbour line not resolved in the reference spectrum is followed instead of the signal, without a warning (at 0.5 FWHM 1 of 24 cases wrong in both modes); feeding fit positions back into the tracking made it worse.
+- [ ] Weight the NMR fit with the δ errors (`NmrHandler::shiftErrorTable`; too small for smoothed spectra, noise is correlated).
+- [ ] Lineshape fit "Shared": up to 1.5 s per series (20 spectra, debug build) and every dialog change recomputes; neighbour lines come only from peak picking (a line resolved nowhere widens the signal).
+- [ ] NMR: CLI import of a spectra series via `NmrHandler`; loaders Bruker `1r` and Bruker `fid` (reuse `FidProcessing`: only a `fromBruker` with its own group delay); true Voigt; global fit of the spectra against the binding model.
+- [ ] JEOL group delay: ½ Σ (order-1)/Π factor leaves a constant ph1 of about -24° (T1) / -105° (T5) per series (docs/jeol_import_2026-11-20.md); the auto phase absorbs it. Find the exact Delta rule.
+- [ ] NMR: switch the core default of `NmrThresholdScope` to `Window` (at least as good in every measurement, docs/nmr_window_threshold_2026-11-20.md); changes old projects and pins, operator decision.
+- [ ] NMR tracking without Normalise: MinHeight 0.3 of the last height drops cells where the intensity jumps between experiments (real T5: 16 of 60 open, none at 0.1); relate it to the noise or the window instead.
+- [ ] Chart "Tools" button of CuteChart is hard to read in the dark scheme (dark text on dark chart background, offscreen grab); the tracking line stays at its old pixel after a zoom until the mouse moves.
+- [ ] NMR multiplets (docs/nmr_multiplets_2026-11-21.md): T1 at LB 0.3 Hz |Δ lg K| 0.042 vs the reference (LB 1: 0.018, T5 0.005): partly resolved inner pairs of H4/H7 move the outer midpoint by up to 0.75 Hz; the line-count hint fires in 27-35 of 60-75 real cells for the same reason.
+- [ ] NMR multiplets: lineshape fit of a group worse than peak picking (real and synthetic: lines at their bounds); optional pattern fit with common centre and fixed J over the series not done.
+- [ ] NMR dialog with FIDs: times are offscreen (`benchmark_nmrimport`, docs/nmr_dialog_speed_2026-11-20.md), painting on a real screen not measured; y labels of normalised spectra show 2 decimals ("0.01").
+- [ ] NMR lineshape fit reruns on every retrack: 1.2 s release / 29 s debug with 7 signals on T5 (whole spectra); a cache needs a key over cells, signals and fit settings.
+- [ ] NMR "Pick from reference spectrum" without grouping still takes ripple maxima and every multiplet line (T5 7.5..9.0: 18 signals, 206 conflicts; grouped: 3 multiplets, 0). Grouping by J (single linkage) chains close multiplets (T1 7.40-7.51 at J ≤ 20 Hz); grouping is off by default.
+- [ ] Trace editor stack/wheel (Viewer 2) machine-tested only: wheel feel and OpenGL drawing of stacked series > 5000 points not seen on a screen; x labels after an x offset are not nice numbers.
+- [ ] Trace editor intensity wheel (Viewer 3) machine-tested only (real wheel/touchpad, Ctrl on macOS = Cmd not seen). NMR residual without stack lies 10 % of the height below 0, under the frame after "Fit y to the visible range" (it ignores host series).
+- [ ] CuteChart `addSeries` rescales over all points of all series per call: a full rebuild of 15 × 131072 points costs 140-160 ms release (580-610 ms debug); a batch add without rescaling would remove most of it.
+- [ ] Spectra: a project from a table file without raw data brings removed spectra back; processing runs over all spectra on every change (no cache, measure on large sets).
+- [ ] Raw-data page in the main widget instead of the dialog for later editing; fits are marked outdated, not deleted (decided, not built).
+- [ ] Import dialogs, still open: ITC without the second OK (E2); ESC/Cancel question in the ITC dialog.
+- [ ] Edit Data (E1, 🤖 ⚙️) untested by hand: real dialogs and question boxes, Stop of a running analysis from the GUI. The project keeps its system parameters, so cell volume/concentrations changed in the Thermogram dialog are not taken over (decision; ask?).
+- [ ] Data tables are written with 6 significant digits (`DataTable::ExportTable`, `QString::number`): Edit Data and every new import go through `ExportData()`; the undo snapshot keeps the exact values.
+- [ ] Saving several projects into one file clears the unsaved data (`markDataSaved`) but not the unsaved agent chats; "Copy model" (`suprafitgui.cpp` `ImportModel`) clears an outdated mark.
+- [ ] Clones of a finished job or fit (deleter `deleteLater`) share the project data until the event loop deletes them; an `Info()->Update` before that calculates them (NMR MC clone with a null model table: crash). The GUI returns to its loop first; a core caller does not.
+- [ ] Meta model with a replaced project: marked outdated and calculated, but its concatenated tables (`appendModel`) are not rebuilt for another number of rows; `DataTable::ImportTable` never shrinks a table (old ITC Edit Data path keeps the extra rows).
+- [ ] ITC import: the path field of the Thermogram dialog loads on every keystroke.
+- [ ] Import dialogs UX 2a machine-tested only: real drag and drop from a file manager, real file dialogs, restored geometry under a window manager (frame vs. client rectangle, Wayland ignores positions); a drop appends, also a directory (Open directory replaces).
+- [ ] UV/Vis: `SpectraHandler::addSpectrum` picks the reader by "csv"/"absorb" anywhere in the path; the dialog now lists directories by file name, `addDirectory` (core) still by full path. `.csv` concentration files are read with ',' only (`FileHandler::ReadSeperated`).
+- [ ] ITC `PointDoubleClicked`: with peak rules and a start outside the rule it resets the *end* button text (start stays "Click to Undo"); after a calibration pick the button keeps "Click to Undo"; it calls `restoreOverrideCursor()` also without a cursor set.
+- [ ] ITC dark scheme: thermogram curve and peak lines are black (`Qt::black`), the guide line is empty until the first mode change; file fields "color: black" (planned separately).
+- [ ] Spectra: `CompileSimpleTable` allocates a `DataTable` (parent = handler) on every `UpdateData`; concentrations with another row count are padded with 0 (`appendColumns`; the dialog asks before OK).
+- [ ] `docs/ASSISTANT_HELP.md` is about 4200 words, above the ~4000-token goal: shorten section 5 (Landscape Sampling paragraph) first.
+- [ ] `ItcAnyTest` aborts after `testSelfAggregationSpecies` (`PeakPick::LeastSquares` reads an empty vector, `mathhelper.h:262`) and `LandscapeSearchTest` times out (600 s); both fail without this branch too.
+
+## Findings of the recipe plan (not yet fixed)
+- [ ] Column equations of "Simulate Data" and the raw-table headers run in QJSEngine (random functions seeded by the clock: not deterministic), `ApplyCalculationModel` uses stale variables of higher columns and falls back to the raw value without a message.
+- [ ] NMR project file with `StoreRawData` writes the processed spectra `Data` next to the FIDs although the loader skips them for FID entries (about 165 of 250 MB for T5, estimated); ExprTk of the script models has no loop/stack limits (a `while` hangs the thread) and reports no run-time errors.
+
+## Findings of the data manipulator inventory (docs/data_manipulators_inventory_2026-11-21.md; fixes: roadmap/data_pipeline_work_packages.md R0)
+- [ ] **Row selection (decision R4):** Begin/End Data clears all marks, single hidden points are lost (pinned as today's behaviour by `beginEndDataClearsSingleMarks`); NMR `Excluded` is a fourth, separate mechanism; `LegacyImportData` sets `setDataEnd(DataPoints() - 1)` (dataclass.cpp ~625): the last row of the oldest files (1599 layout) may be left out [V]; files saved after a check box click before R0 have `end_data` = last row in use and still load without it.
+- [ ] **ITC:** offset spinner `m_const_offset` never calls `setConstantOffset`; offset subtracted after the scaling (units differ from the GUI hint); `CalibrationStart` is points in the handler and a time in the widget/`Initialise`; `CutBefore`/`Overshot` not stored; three ways to the peak rules (GUI start values 60/150, `CompressRules`, Python heuristic).
+- [ ] **ITC dialog vs `process()` (decision R3):** the dialog has one injection more and differs by up to 5.4 % of the largest heat (inner injections 0.2-1.5 %); `process()` (also the CLI) does not return for `synthetic.itc` (`XtoIndex`, Track B2); [docs/itc_dialog_vs_process_2026-11-21.md](docs/itc_dialog_vs_process_2026-11-21.md).
+- [ ] **Unreachable, keep or remove (decision):** "leave out first n points" (`FileHandler::setStartPoint` never called, CLI `StartPoint` read but never passed on); `ImportData::GenerateData` (`GenerateDataDialog`) is called nowhere; `.itc` `offset` output dropped by every caller; `MinHeight`, `IntensityDivisor` have no GUI/CLI access.
+- [ ] **Import/export:** `,`→`.` always in the import parser; Ctrl+B/Y append/prepend columns (not rows); `DataTable::ExportAsString` (Export table) writes the decimal separator of the locale ("1,000000" under German), files of the two systems differ; `FindFile` does not compare its `hash`.
+- [ ] **Data tools:** "Split Data Set" copies the whole raw block into each part project (no test); the raw-table header expressions (`ApplyCalculationModel`) have no test; drop-in noise generators differ (PrepareMC, DataGenerator, MonteCarlo, Python mt19937_64; DataFactory: decide relative or absolute `StdDev` (today absolute 0.05, now documented so), its `Columns` list of indices is read by `PrepareMC` as 0/1 flags per column (a shorter list noises all columns)); Reservoir is chosen silently by SSE on load (AbstractItcModel.cpp:365-385); no unit conversion for tables, no weighting.
+
+## Open decisions (after longer testing by the operator; recommendation in brackets)
+- [ ] NMR dialog: does "Add" (typed position) snap to the nearest peak like the double click does (double click snaps: kept)? Should "Pick from reference spectrum" use only Start/End or Start/End cut with the visible range (now: cut)? Should the δ column of the signal list take the tracked reference value after a reprocessing (e.g. LB)?
+- [ ] Multiplets: "Group lines into multiplets" on by default for new series (now off)? Default J 20 Hz or 10 Hz [10 Hz: 20 Hz chains the aromatics of T1]? Line-count warning keep, soften to a tooltip, or drop [soften: it fires in 27-35 of 60-75 real cells]?
+- [ ] Tracking: switch the core default of the detection threshold to "search window" (it was at least as good in every measurement; changes pinned numbers and old projects) and make `MinHeight` adjustable in the dialog [0.1 for series that are not normalised].
+- [ ] Edit Data: clear the outdated mark after every finished fit (now) or only after a converged one? Systemparameters changed in the thermogram dialog are not taken over on replacement (the project keeps its own): keep? Edit Data for ITC without the second OK (E2), ESC/Cancel question and path field loading per keystroke in the ITC dialog: after the click check of the ITC dialog.
+- [ ] Release: shorten `docs/ASSISTANT_HELP.md` (above ~4400 words; the Landscape paragraph first, after the histogram paragraph is committed); mouse wheel step 1.25 per notch ok? Click-through of all dialogs with real data before a merge.
+- [ ] Recipes and agent tools: DIRECTION decided 2026-11-21: typed data flow with free order instead of fixed stages (decision 2 of the plan changed), ITC algorithm first as one versioned step "ItcClassic", then decomposed under the golden file; inventory of ALL data manipulators first, then work packages. Rest: ([roadmap/recipes_and_agent_tools.md](roadmap/recipes_and_agent_tools.md), incl. the plan addition: step sequence, project file, table preprocessing, page instead of dialog): 14 decisions (7 + 7, the help budget is decided) (recipe as a view of the flat keys; digest only vs exact table; warn on algorithm change; help budget 8000 -> 9000 tokens [raise]; agent file policy; identity by name + sha256; keep auto-phase values). Known defects found on the way: stored tables/x values/inject volumes have 6 digits.
+
+## Parallelisation of the data processing
+- [ ] Spectra/FID processing: FIDs are transformed in parallel already (OpenMP, per file); still serial: `TraceOpList::apply` per spectrum, tracking per signal (signals are independent: parallel across signals, the spectra of one signal stay sequential because of the prediction), the lineshape fit per group (1.2 s release, 27 s debug per series), reading of the `.jdf` files, the `SpectraHandler` table build. Keep results bit-identical (no reductions across threads) and the "one handler, one thread" rule; measure with `benchmark_nmrimport`.
+
 ## Older project files
 - [ ] `ReferenceProjectsTest`: two checks fail (re-fit SSE of `simulated_2_1_1_1_1_2.json` 0.13 % off the stored one, tolerance 0.1 %; the CV mean of `simulated_2_1_1_1.json` differs between runs); `FileImport*` tests skip because `input/Reference_4Models.json` and `input/test_cli_nmr_4models.json` are not in the repository.
 - [ ] System parameter index 6 (`InptUnit`, old heat unit, value "0") is stored in ITC projects of 2018 but declared by no model (`AbstractItcModel`: commented out): remove it on load or declare it again; it stays "Imported parameter 6".
@@ -196,6 +255,12 @@ against `master`, which did not have the processor.
 - [ ] **Decide F5:** `Raw()` used to write the dilution file path unconditionally, so with
       `StoreFileName` off the dilution kept a path while the experiment did not. Both are symmetric
       now (no path written in that mode). Revertible if the asymmetry was wanted.
+
+### ITC thermogram — findings of WP5 (2026-11-08, not fixed: they change numbers or behaviour)
+- [ ] **Reopening a stored thermogram loses a peak**: the dialog's `setRaw()` of `reaction.dat` (20 peaks) gives 19, also with lossless raw
+      data; suspected the 6-digit `PeakRuleList` (`Points2String`, 3552.29 s instead of 3552.2857 s) pushing the last peak past the end. Not measured.
+- [ ] "Show Dilution" stays disabled for a `.dat` dilution.
+- [ ] `process()` on a short `.itc` (`synthetic.itc`) never returns: `UpdatePeaks()` → `XtoIndex()` loops for a rule in the first four samples (Track B2).
 
 ### ITC thermogram — libpeakpick maths ("Track B", own branch, changes numbers)
 - [ ] **B0 Decouple Eigen** (`CMakeLists.txt:210`) — blocks every structural change below.

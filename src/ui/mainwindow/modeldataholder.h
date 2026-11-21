@@ -50,6 +50,7 @@ struct OptimizerConfig;
 class QToolButton;
 class MetaModelWidget;
 class ModelWidget;
+class EditDataController;
 class DataWidget;
 class QTabWidget;
 class QPushButton;
@@ -114,6 +115,9 @@ public:
      * and spectra open their import dialog instead. Claude Generated. */
     void setEditDataToggles(bool toggles);
     void setEditDataChecked(bool checked);
+    /*! \brief "Undo Edit Data" is offered while the last replacement of the data can be taken back. Claude Generated. */
+    void setUndoEditEnabled(bool enabled);
+    QAction* UndoEditAction() const { return m_undo_edit; }
 
     /** @brief Menus shown in the main toolbar for the current project. Claude Generated. */
     QMenu* DataMenu() const { return m_data_menu; }
@@ -140,7 +144,7 @@ public:
 private:
     QPointer<QMenu> m_data_menu, m_model_menu, m_evaluation_menu;
     QPointer<QMenu> m_nmr_menu, m_uv_vis_menu, m_fl_menu, m_itc_menu, m_kinetics_menu;
-    QPointer<QAction> m_edit_data, m_split_data, m_any_model, m_optimize, m_statistics, m_analyse, m_close_all;
+    QPointer<QAction> m_edit_data, m_undo_edit, m_split_data, m_any_model, m_optimize, m_statistics, m_analyse, m_close_all;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_uv_vis_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model, m_calorimetry;
 
     QAction* m_last_action = nullptr;
@@ -166,6 +170,7 @@ signals:
     void OptimizeAll();
     void Compare();
     void EditData();
+    void UndoEditData();
     //   void SaveTable();
     void SplitData();
     /** @brief Availability of the menus changed (enabled, hidden for meta models). Claude Generated. */
@@ -210,6 +215,14 @@ public:
     QString Compare() const;
 
     inline QPointer<ModelWidget> RecentModel() { return m_last_modelwidget; }
+
+    /*! \brief The Edit Data controller of this project (dialog, replacement, undo). Claude Generated. */
+    inline EditDataController* EditController() const { return m_edit_controller; }
+    /*! \brief Updates the panes after the data were replaced (or the replacement undone): model panes whose model left the
+     *  project are closed, the others take the outdated state and the new rows, the data overview its counts. Claude Generated. */
+    void ApplyDataReplacement(const QString& projectId, const QString& summary);
+    /*! \brief The model panes of this project. Claude Generated. */
+    QVector<QPointer<ModelWidget>> ModelWidgets() const { return m_model_widgets; }
 
     // Claude Generated - ProjectManager Integration Methods
     /**
@@ -316,6 +329,7 @@ private:
     double m_ReductionCutoff = 0;
 
     QPointer<ModelWidget> m_last_modelwidget;
+    EditDataController* m_edit_controller = nullptr; ///< Edit Data of this project, a child of the holder (Claude Generated)
     
     // Claude Generated - ProjectManager Integration Members
     QString m_currentProjectId;
@@ -360,4 +374,6 @@ signals:
     void Warning(const QString& str, int priority);
     void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
     void AddProject(const QJsonObject& project);
+    /*! \brief See MainWindow::DataReplaced. Claude Generated. */
+    void DataReplaced(const QString& summary);
 };

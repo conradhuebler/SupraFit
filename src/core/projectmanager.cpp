@@ -25,6 +25,8 @@
 #include <QtCore/QStandardPaths>
 
 #include "src/core/models/meta_model.h"
+#include "src/capabilities/jobmanager.h"
+#include <QtCore/QSignalBlocker>
 #include "src/version.h"
 
 #include <algorithm>
@@ -241,6 +243,7 @@ bool ProjectManager::saveProject(const QString& filePath, const QString& project
 
         if (success) {
             m_unsavedAttachments.remove(targetProjectId);
+            m_unsavedData.remove(targetProjectId);
             emit projectSaved(targetProjectId, filePath);
 
 #ifdef DEBUG_ON
@@ -554,6 +557,8 @@ bool ProjectManager::removeProject(const QString& projectId)
 
     m_attachments.remove(projectId);
     m_unsavedAttachments.remove(projectId);
+    m_unsavedData.remove(projectId);
+    m_dataSnapshots.remove(projectId);
     emit projectRemoved(projectId);
 
 #ifdef DEBUG_ON
@@ -861,6 +866,8 @@ void ProjectManager::clearAllProjects()
     m_projectHash.clear();
     m_metaBases.clear();
     m_currentProjectId.clear();
+    m_unsavedData.clear();
+    m_dataSnapshots.clear();
 
     emit projectsCleared();
 
@@ -948,6 +955,8 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
         }
         m_attachments[projectId] = attachments;
         m_unsavedAttachments.remove(projectId);
+        m_unsavedData.remove(projectId);
+        m_dataSnapshots.remove(projectId);
 
         // Phase 2: Load all model_X keys and create associated models
         int modelCount = 0;
@@ -1023,7 +1032,11 @@ QString ProjectManager::loadProjectFromJsonImpl(const QJsonObject& jsonData, con
                         if (importSuccess) {
                             // the stored fit must come out of the stored parameters: checked after all models of the project are read
                             const QJsonValue storedValue = modelObject.contains("SSE") ? modelObject["SSE"] : modelObject["sum_of_squares"];
-                            if (storedValue.isDouble() && storedValue.toDouble() > 0)
+                            // a model marked outdated holds the parameters of a fit to earlier data, calculated on the stored ones: it
+                            // says nothing about the fit of the file, it is told as such (Claude Generated)
+                            if (model->isDataOutdated())
+                                addIssue(LoadIssue::Note, key, tr("Fitted to earlier data of the project (marked outdated); fit it again or mark it as current."));
+                            else if (storedValue.isDouble() && storedValue.toDouble() > 0)
                                 reproduce.append(Reproduce{ key, model, storedValue.toDouble() });
                             // Claude Generated - Remove incorrect duplicate detection
                             // Models loaded from JSON are unique by definition (model_1, model_2, etc.)
@@ -1285,7 +1298,9 @@ QString ProjectManager::restoreMetaModel(const QJsonObject& block)
     // The sum of squares of a meta model is the sum of those of its models: the file stores it, the restored one must give it
     // back, as it is checked for the models of a project (Claude Generated)
     const double storedSSE = AbstractModel::StoredSSE(block);
-    if (storedSSE > 0) {
+    if (meta->isDataOutdated()) // a model of it was fitted to earlier data of its project (Claude Generated)
+        addIssue(LoadIssue::Note, label, tr("The meta model was fitted to earlier data of one of its projects (marked outdated); fit it again or mark it as current."));
+    else if (storedSSE > 0) {
         const double nowSSE = meta->SSE();
         const double relative = (nowSSE - storedSSE) / storedSSE;
         if (relative > 1e-3)
@@ -1496,6 +1511,364 @@ bool ProjectManager::registerExistingProject(QSharedPointer<DataClass> dataClass
     }
 }
 
+// === Replacing the data of a project (Edit Data) — Claude Generated ===
+//
+// Workflow of replaceProjectData:
+//  1. refuse: unknown project, meta model (no data of its own), a running job (its clones share the data), incompatible data
+//     with KeepModels (DataClass::checkReplacement);
+//  2. identical data: nothing, or only the differing raw block is taken over;
+//  3. snapshot (data, every model block, meta marks, unsaved state) for the one-step undo;
+//  4. DropModels: the models leave the project first (they are not calculated on the new data);
+//  5. the new tables are read with UUID, title, system parameters, root directory and content of the project kept
+//     (importReplacementData: without the implicit update, model tables sized, then one update = one Calculate per model);
+//  6. every kept model: sum of squares before/after, marked outdated; meta models with a model of the project marked outdated;
+//  7. the data are unsaved; projectDataReplaced is emitted.
+
+namespace {
+/*! \brief The models of a project, in project order (the index is N of "model_N"). */
+QList<AbstractModel*> projectModels(DataClass* project)
+{
+    QList<AbstractModel*> models;
+    for (int i = 0; i < project->ChildrenSize(); ++i)
+        if (AbstractModel* model = qobject_cast<AbstractModel*>(project->Children(i).data()))
+            models << model;
+    return models;
+}
+
+/*! \brief Takes the check marks of \p before (the data of the project) into \p after (the new data block) for every row that
+ *  exists in both, table by table ("independent", "dependent"); rows only \p after has keep their own marks. A data range of
+ *  \p before that is narrower than its rows is taken over, cut to the rows of \p after. Only the "checked" strings change, the
+ *  values stay as they are. Returns the number of cells left out (mark 0) that were taken over. Claude Generated. */
+int carryCheckMarks(const QJsonObject& before, QJsonObject& after)
+{
+    int unchecked = 0;
+    for (const char* key : { "independent", "dependent" }) {
+        const QJsonObject oldTable = before[QLatin1String(key)].toObject();
+        QJsonObject newTable = after[QLatin1String(key)].toObject();
+        if (oldTable["cols"].toInt() != newTable["cols"].toInt() || !oldTable.contains("checked"))
+            continue;
+        const QJsonObject oldChecked = oldTable["checked"].toObject();
+        QJsonObject newChecked = newTable["checked"].toObject();
+        const int rows = std::min(oldTable["rows"].toInt(), newTable["rows"].toInt());
+        for (int i = 0; i < rows; ++i) {
+            const QString row = QString::number(i);
+            const QString marks = oldChecked[row].toString();
+            if (marks.isEmpty())
+                continue;
+            for (double mark : ToolSet::String2DoubleVec(marks))
+                if (mark == 0)
+                    ++unchecked;
+            newChecked[row] = marks;
+        }
+        newTable["checked"] = newChecked;
+        after[QLatin1String(key)] = newTable;
+    }
+    const int oldBegin = before["begin_data"].toInt(), oldEnd = before["end_data"].toInt();
+    const int oldRows = before["dependent"].toObject()["rows"].toInt(), newRows = after["dependent"].toObject()["rows"].toInt();
+    if (oldBegin != oldEnd && (oldBegin > 0 || oldEnd < oldRows)) {
+        const int begin = std::min(oldBegin, newRows), end = std::min(oldEnd, newRows);
+        if (begin < end) {
+            after["begin_data"] = begin;
+            after["end_data"] = end;
+        }
+    }
+    return unchecked;
+}
+
+/*! \brief The models of a meta model that are made on the data of the project \p projectId. */
+QList<AbstractModel*> metaModelsOf(::MetaModel* meta, const QString& projectId)
+{
+    QList<AbstractModel*> models;
+    for (const QSharedPointer<AbstractModel>& m : meta->Models())
+        if (m && m->UUID() == projectId)
+            models << m.data();
+    return models;
+}
+}
+
+void ProjectManager::importReplacementData(const QSharedPointer<DataClass>& project, const QJsonObject& data, const QList<AbstractModel*>& models, const QList<Eigen::MatrixXd>& exact)
+{
+    {
+        // ImportData ends with Info()->Update(): every model on these data would be calculated with tables of the old size before
+        // a model's own slots (the ITC concentration table) are run; the update is emitted below instead
+        const QSignalBlocker blocker(project->Info());
+        // DataTable::ImportTable never shrinks a table (rows = max(stored, present)): emptied first, fewer rows stay fewer
+        for (DataTable* table : { project->IndependentModel(), project->DependentModel(), project->IndependentRawModel(), project->DependentRawModel() })
+            if (table)
+                table->clear(0, 0);
+        project->ImportData(data, false);
+        // the table blocks hold every value with 6 significant digits (DataTable::ExportTable): the undo puts the values back
+        // as they were (Claude Generated)
+        const QList<DataTable*> tables = { project->IndependentModel(), project->DependentModel(), project->IndependentRawModel(), project->DependentRawModel() };
+        for (int i = 0; i < tables.size() && i < exact.size(); ++i)
+            if (tables[i] && tables[i]->Table().rows() == exact[i].rows() && tables[i]->Table().cols() == exact[i].cols())
+                tables[i]->Table() = exact[i];
+    }
+    for (AbstractModel* model : models)
+        model->UpdateParameter(); // tables of the model that follow the data (concentrations of ITC) are made for the new rows
+    emit project->Info()->Update(); // every model on the data: result tables sized again, Calculate()
+}
+
+DataReplaceReport ProjectManager::replaceProjectData(const QString& projectId, const QJsonObject& newData, DataReplacePolicy policy)
+{
+    DataReplaceReport report;
+    report.projectId = projectId;
+    report.policy = policy;
+    auto refuse = [&report](const QString& scope, const QString& message) {
+        report.issues.append(LoadIssue{ LoadIssue::Error, scope, message });
+        return report;
+    };
+
+    QSharedPointer<DataClass> project;
+    QList<QSharedPointer<DataClass>> projects;
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        project = m_projectHash.value(projectId).toStrongRef();
+        projects = QList<QSharedPointer<DataClass>>(m_projects.begin(), m_projects.end());
+    }
+    if (!project)
+        return refuse("data", tr("The project is not open."));
+    if (qobject_cast<::MetaModel*>(project.data()))
+        return refuse("data", tr("A meta model has no data of its own; replace the data of its projects."));
+    if (JobManager::hasRunningJobs(projectId))
+        return refuse("data", tr("A job runs on a model of the project; stop it before the data are replaced."));
+
+    const QJsonObject block = (newData.contains("data") && !newData.contains("independent")) ? newData["data"].toObject() : newData;
+    report.check = project->checkReplacement(block);
+    for (const QString& warning : std::as_const(report.check.warnings))
+        report.issues.append(LoadIssue{ LoadIssue::Note, "data", warning });
+    if (report.check.result == DataReplaceCheck::Incompatible) {
+        for (const QString& reason : std::as_const(report.check.reasons))
+            report.issues.append(LoadIssue{ policy == DataReplacePolicy::KeepModels ? LoadIssue::Error : LoadIssue::Note, "data", reason });
+        if (policy == DataReplacePolicy::KeepModels)
+            return refuse("data", tr("The new data do not fit the models of the project; nothing was changed."));
+    }
+
+    QList<AbstractModel*> models = projectModels(project.data());
+    if (report.check.result == DataReplaceCheck::Identical && !report.check.rawChanged) {
+        report.modelsKept = int(models.size());
+        report.issues.append(LoadIssue{ LoadIssue::Note, "data", tr("The new data are those of the project; nothing was changed.") });
+        return report;
+    }
+
+    // the state before, for the one-step undo
+    DataSnapshot snapshot;
+    snapshot.data = project->ExportData();
+    for (DataTable* table : { project->IndependentModel(), project->DependentModel(), project->IndependentRawModel(), project->DependentRawModel() })
+        snapshot.tables << (table ? Eigen::MatrixXd(table->Table()) : Eigen::MatrixXd());
+    for (AbstractModel* model : std::as_const(models)) {
+        snapshot.models << model->ExportModel(true, false);
+        snapshot.modelIds << int(model->SFModel());
+        snapshot.active << model->ActiveSignals();
+        snapshot.locked << model->LockedParameters();
+    }
+    QList<::MetaModel*> metas;
+    for (const QSharedPointer<DataClass>& p : std::as_const(projects))
+        if (::MetaModel* meta = qobject_cast<::MetaModel*>(p.data()))
+            if (!metaModelsOf(meta, projectId).isEmpty()) {
+                metas << meta;
+                snapshot.metaOutdated[meta->UUID()] = meta->isDataOutdated();
+            }
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        snapshot.unsaved = m_unsavedData.contains(projectId);
+    }
+
+    if (report.check.result == DataReplaceCheck::Identical) {
+        // the tables are the same: only the raw block (processing settings) is new, the models stay as they are
+        project->setRawData(block["raw"].toObject());
+        for (AbstractModel* model : std::as_const(models))
+            snapshot.kept << model;
+        report.modelsKept = int(models.size());
+        report.replaced = true;
+    } else {
+        QVector<QSharedPointer<AbstractModel>> dropped;
+        if (policy == DataReplacePolicy::DropModels) {
+            dropped = project->takeModels();
+            report.modelsRemoved = int(dropped.size());
+            // a model removed may still be held (a widget of the GUI): it keeps a copy of the earlier data and no longer follows
+            // the project, a model of the old shape must not be calculated on the new data
+            for (const QSharedPointer<AbstractModel>& model : std::as_const(dropped))
+                if (model) {
+                    QObject::disconnect(project->Info(), nullptr, model.data(), nullptr);
+                    model->detach();
+                }
+            models.clear();
+        } else {
+            for (AbstractModel* model : std::as_const(models))
+                snapshot.kept << model;
+        }
+
+        // decision 5: the project keeps its identity, title, system parameters, root directory and content
+        QJsonObject prepared = block;
+        for (const char* key : { "uuid", "title", "system", "root_dir", "content" })
+            prepared[QLatin1String(key)] = snapshot.data[QLatin1String(key)];
+        // the models were fitted without the points the user left out: those marks (and the data range) stay with the rows
+        // that exist in both data sets, new rows are used (Claude Generated)
+        if (policy == DataReplacePolicy::KeepModels && report.check.result == DataReplaceCheck::Compatible) {
+            report.uncheckedKept = carryCheckMarks(snapshot.data, prepared);
+            if (report.uncheckedKept > 0)
+                report.issues.append(LoadIssue{ LoadIssue::Note, "data", tr("%1 points left out of the fit stay left out.").arg(report.uncheckedKept) });
+        }
+
+        QList<double> before;
+        for (AbstractModel* model : std::as_const(models))
+            before << model->SSE();
+        QList<AbstractModel*> calculated = models;
+        for (::MetaModel* meta : std::as_const(metas))
+            calculated << metaModelsOf(meta, projectId);
+        importReplacementData(project, prepared, calculated);
+
+        for (int i = 0; i < models.size(); ++i) {
+            AbstractModel* model = models[i];
+            model->Calculate(); // once with the parameters of the earlier fit; no new fit (decision 1)
+            model->setDataOutdated(true);
+            report.models << DataReplaceModel{ QStringLiteral("model_%1").arg(i), model->Name(), before[i], model->SSE() };
+        }
+        report.modelsKept = int(models.size());
+        for (::MetaModel* meta : std::as_const(metas)) {
+            meta->AbstractModel::setDataOutdated(true); // the mark of the meta model only, its models of other projects stay as they are
+            for (AbstractModel* model : metaModelsOf(meta, projectId))
+                model->setDataOutdated(true);
+            meta->Calculate();
+            report.outdatedMetaModels << meta->UUID();
+            report.issues.append(LoadIssue{ LoadIssue::Note, QStringLiteral("meta/%1").arg(meta->ProjectTitle()), tr("The meta model uses a model of the project; it is marked outdated.") });
+        }
+        if (report.modelsRemoved > 0)
+            report.issues.append(LoadIssue{ LoadIssue::Note, "data", tr("%1 models were removed.").arg(report.modelsRemoved) });
+        report.replaced = true;
+    }
+
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        m_unsavedData.insert(projectId);
+        m_dataSnapshots[projectId] = snapshot;
+    }
+    emit projectDataReplaced(projectId);
+    return report;
+}
+
+bool ProjectManager::canUndoDataReplacement(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_dataSnapshots.contains(projectId) && m_projectHash.contains(projectId);
+}
+
+bool ProjectManager::undoLastDataReplacement(const QString& projectId, QString* reason)
+{
+    auto fail = [reason](const QString& text) {
+        if (reason)
+            *reason = text;
+        return false;
+    };
+    QSharedPointer<DataClass> project;
+    DataSnapshot snapshot;
+    QList<QSharedPointer<DataClass>> projects;
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        if (!m_dataSnapshots.contains(projectId))
+            return fail(tr("There is no replacement of the data to undo."));
+        project = m_projectHash.value(projectId).toStrongRef();
+        snapshot = m_dataSnapshots.value(projectId);
+        projects = QList<QSharedPointer<DataClass>>(m_projects.begin(), m_projects.end());
+    }
+    if (!project)
+        return fail(tr("The project is not open."));
+    if (JobManager::hasRunningJobs(projectId))
+        return fail(tr("A job runs on a model of the project; stop it before the data are restored."));
+
+    const QList<AbstractModel*> models = projectModels(project.data());
+    const bool kept = !snapshot.kept.isEmpty();
+    if (kept) {
+        bool same = models.size() == snapshot.kept.size();
+        for (int i = 0; same && i < models.size(); ++i)
+            same = snapshot.kept[i].data() == models[i];
+        if (!same)
+            return fail(tr("The models of the project changed since the data were replaced; the replacement cannot be undone."));
+    } else if (!models.isEmpty())
+        return fail(tr("Models were added since the data were replaced; the replacement cannot be undone."));
+
+    QList<::MetaModel*> metas;
+    QList<AbstractModel*> calculated = models;
+    for (const QSharedPointer<DataClass>& p : std::as_const(projects))
+        if (::MetaModel* meta = qobject_cast<::MetaModel*>(p.data()))
+            if (snapshot.metaOutdated.contains(meta->UUID())) {
+                metas << meta;
+                calculated << metaModelsOf(meta, projectId);
+            }
+    importReplacementData(project, snapshot.data, calculated, snapshot.tables);
+
+    auto restore = [&snapshot](AbstractModel* model, int i) {
+        const bool imported = model->ImportModel(snapshot.models[i]);
+        model->setActiveSignals(snapshot.active[i]); // ImportModel switches every series on
+        model->setLockedParameter(snapshot.locked[i]);
+        return imported;
+    };
+    if (kept) {
+        for (int i = 0; i < models.size(); ++i) {
+            restore(models[i], i);
+            // the update above may not reach a model (ITC: its own tables follow the rows only in its update slot); the restored
+            // parameters are calculated on the restored data, as replaceProjectData does it (Claude Generated)
+            models[i]->Calculate();
+        }
+    } else {
+        for (int i = 0; i < snapshot.models.size(); ++i) {
+            QSharedPointer<AbstractModel> model = CreateModel(snapshot.modelIds[i], project.data());
+            if (!model || !restore(model.data(), i)) {
+                if (model)
+                    project->RemoveChild(model.data());
+                continue;
+            }
+            project->addModel(model);
+            emit modelAdded(projectId, model->ModelUUID());
+        }
+    }
+    for (::MetaModel* meta : std::as_const(metas)) {
+        const bool was = snapshot.metaOutdated.value(meta->UUID());
+        meta->AbstractModel::setDataOutdated(was);
+        for (AbstractModel* model : metaModelsOf(meta, projectId))
+            model->setDataOutdated(was);
+        meta->Calculate();
+    }
+    {
+        QMutexLocker locker(&m_projectsMutex);
+        if (snapshot.unsaved)
+            m_unsavedData.insert(projectId);
+        else
+            m_unsavedData.remove(projectId);
+        m_dataSnapshots.remove(projectId);
+    }
+    emit projectDataReplaced(projectId);
+    return true;
+}
+
+bool ProjectManager::hasRunningJobs(const QString& projectId) const
+{
+    return JobManager::hasRunningJobs(projectId);
+}
+
+bool ProjectManager::hasUnsavedData(const QString& projectId) const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    return m_unsavedData.contains(projectId);
+}
+
+void ProjectManager::markDataSaved(const QString& projectId)
+{
+    QMutexLocker locker(&m_projectsMutex);
+    m_unsavedData.remove(projectId);
+}
+
+QStringList ProjectManager::projectsWithUnsavedData() const
+{
+    QMutexLocker locker(&m_projectsMutex);
+    QStringList ids;
+    for (const QString& id : m_unsavedData)
+        if (m_projectHash.contains(id))
+            ids << id;
+    return ids;
+}
+
 } // namespace SupraFit
 namespace SupraFit {
 
@@ -1532,6 +1905,37 @@ QString LoadReport::Details() const
                 lines << QStringLiteral("%1 [%2]: %3").arg(severity == LoadIssue::Error ? QObject::tr("Error") : severity == LoadIssue::Warning ? QObject::tr("Warning") : QObject::tr("Note"), i.scope, i.message);
     if (fileVersion > 0)
         lines << QObject::tr("File version: %1").arg(fileVersion);
+    return lines.join('\n');
+}
+
+bool DataReplaceReport::HasErrors() const
+{
+    return std::any_of(issues.begin(), issues.end(), [](const LoadIssue& i) { return i.severity == LoadIssue::Error; });
+}
+
+QString DataReplaceReport::Summary() const
+{
+    for (const LoadIssue& i : issues)
+        if (i.severity == LoadIssue::Error)
+            return i.message;
+    if (!replaced)
+        return QObject::tr("The data were not changed.");
+    if (modelsRemoved > 0)
+        return QObject::tr("The data were replaced; %1 models were removed.").arg(modelsRemoved);
+    if (check.result == DataReplaceCheck::Identical)
+        return QObject::tr("The raw data were replaced; the tables and models are unchanged.");
+    return QObject::tr("The data were replaced; %1 models were calculated with their parameters and are marked outdated.").arg(modelsKept);
+}
+
+QString DataReplaceReport::Details() const
+{
+    QStringList lines;
+    for (int severity = LoadIssue::Error; severity >= LoadIssue::Note; --severity)
+        for (const LoadIssue& i : issues)
+            if (i.severity == severity)
+                lines << QStringLiteral("%1 [%2]: %3").arg(severity == LoadIssue::Error ? QObject::tr("Error") : severity == LoadIssue::Warning ? QObject::tr("Warning") : QObject::tr("Note"), i.scope, i.message);
+    for (const DataReplaceModel& m : models)
+        lines << QObject::tr("%1 (%2): sum of squares %3 before, %4 now").arg(m.key, m.name).arg(m.sseBefore, 0, 'g', 6).arg(m.sseAfter, 0, 'g', 6);
     return lines.join('\n');
 }
 

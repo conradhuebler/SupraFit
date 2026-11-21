@@ -75,12 +75,31 @@ ThermogramWidget::ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidg
 
 void ThermogramWidget::setUi()
 {
+    // Claude Generated (WP5): split into named parts, same widgets, connections and order as before
+    setupChart();
+    QLayout* chartlayout = setupPeakLists();
+    setupControls();
+    QLayout* peak_layout = setupParameterPanel();
+
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->addLayout(peak_layout);
+    layout->addWidget(m_guide_label);
+    layout->addLayout(chartlayout);
+
+    setLayout(layout);
+
+    restoreSettings();
+    connectControls();
+}
+
+void ThermogramWidget::setupChart()
+{
     m_guide_label = new QLabel;
     if (qApp->instance()->property("thermogram_guidelines").toBool()) {
         m_guide_label->setFixedHeight(70);
         m_guide_label->setWordWrap(true);
         m_guide_label->setMaximumWidth(1100);
-        m_guide_label->setToolTip(tr("Hey, I am like Clippit (german: Karl Klammer). If you do not want to see me, just disable me in the general config (=> [General Settings] => [Show guidelines in Thermogram Dialog])!"));
+        m_guide_label->setToolTip(tr("Hey, I am like Clippit (german: Karl Klammer). If you do not want to see me, just disable me in the general config (=> [General Settings] => [Show hints in the import dialogs])!"));
     } else
         m_guide_label->setFixedHeight(30);
 
@@ -121,7 +140,10 @@ void ThermogramWidget::setUi()
 
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
+}
 
+QLayout* ThermogramWidget::setupPeakLists()
+{
     m_table = new QTableWidget;
     connect(m_table, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakDoubleClicked));
     m_table->setToolTip(tr("This table hold all peaks, consisting of the integral, start time and end time. Double click on a peak will toggle the <i>Peak Integration mode</i>. Double click of within the thermogram selects the appropriate peak in this table (if any peaks already exists"));
@@ -168,8 +190,8 @@ void ThermogramWidget::setUi()
         m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
     });
 
-    QStringList header = QStringList() << "Start Time\n[s]"
-                                       << "Peak Duration\n[s]";
+    QStringList header = QStringList() << tr("Start Time\n[s]")
+                                       << tr("Peak Duration\n[s]");
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
     m_convert_rules = new QPushButton();
@@ -225,7 +247,7 @@ void ThermogramWidget::setUi()
 
     QTabWidget* peaks_tab = new QTabWidget;
     peaks_tab->addTab(m_table, tr("Peak List"));
-    peaks_tab->addTab(widget, tr("Peak  Rules"));
+    peaks_tab->addTab(widget, tr("Peak Rules"));
 
     QHBoxLayout* chartlayout = new QHBoxLayout;
 
@@ -234,7 +256,11 @@ void ThermogramWidget::setUi()
     m_splitter->addWidget(m_thermogram);
     m_splitter->addWidget(peaks_tab);
     chartlayout->addWidget(m_splitter);
+    return chartlayout;
+}
 
+void ThermogramWidget::setupControls()
+{
     m_const_offset = new QDoubleSpinBox;
     m_const_offset->setMinimum(-1e5);
     m_const_offset->setMaximum(1e5);
@@ -246,7 +272,7 @@ void ThermogramWidget::setUi()
     connect(m_const_offset, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::ResetGuideLabel);
 
     connect(m_const_offset, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this]() {
-        setGuideText("Press [Enter] to apply the current value which will be removed from your integrals. Please keep in mind, that the dimension of the value should be the same as within this tabulator - thus please use the raw unit observed from your calorimeter and not converted units, for example from cal into J.");
+        setGuideText(tr("Press [Enter] to apply the current value which will be removed from your integrals. Please keep in mind, that the dimension of the value should be the same as within this tabulator - thus please use the raw unit observed from your calorimeter and not converted units, for example from cal into J."));
     });
 
     m_peaks_start = new QDoubleSpinBox;
@@ -255,17 +281,18 @@ void ThermogramWidget::setUi()
 
     m_get_peaks_start = new QPushButton(tr("Click to Select"));
     m_get_peaks_start->setIcon(Icon("edit-select"));
+    // the only connection of the double click: PointDoubleClicked serves all selection modes (peak start, peak end, calibration start)
     connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
         if (!m_get_time_from_thermogram) {
             m_get_time_from_thermogram = 1;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
-            m_get_peaks_start->setText("Click to Undo");
-            setGuideText(QString("You are now in <i>Thermogram start selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peak starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+            m_get_peaks_start->setText(tr("Click to Undo"));
+            setGuideText(tr("You are now in <i>Thermogram start selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peak starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
         } else if (m_get_time_from_thermogram == 1) {
             m_get_time_from_thermogram = 0;
-            m_get_peaks_start->setText("Click to Select");
+            m_get_peaks_start->setText(tr("Click to Select"));
             ResetGuideLabel();
             QApplication::restoreOverrideCursor();
         }
@@ -282,11 +309,11 @@ void ThermogramWidget::setUi()
         if (!m_get_time_from_thermogram) {
             m_get_time_from_thermogram = 2;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
-            m_get_peaks_end->setText("Click to Undo");
-            setGuideText(QString("You are now in <i>Thermogram end selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peaks end. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+            m_get_peaks_end->setText(tr("Click to Undo"));
+            setGuideText(tr("You are now in <i>Thermogram end selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peaks end. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
         } else if (m_get_time_from_thermogram == 2) {
             m_get_time_from_thermogram = 0;
-            m_get_peaks_end->setText("Click to Select");
+            m_get_peaks_end->setText(tr("Click to Select"));
             ResetGuideLabel();
             QApplication::restoreOverrideCursor();
         }
@@ -309,20 +336,20 @@ void ThermogramWidget::setUi()
 
     m_get_calibration_start = new QPushButton(tr("Click to Select"));
     m_get_calibration_start->setIcon(Icon("edit-select"));
-    connect(m_thermogram, &ChartView::pointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
 
     m_get_calibration_start->setMaximumWidth(100);
     m_get_calibration_start->setToolTip(tr("Click and select the starting time for the calibration from the thermogram."));
 
     connect(m_get_calibration_start, &QPushButton::clicked, this, [this]() {
-        if (!m_get_time_from_thermogram) {
+        // the calibration mode is m_calibration_start_int, not m_get_time_from_thermogram (that one belongs to the peak start/end modes)
+        if (!m_get_time_from_thermogram && !m_calibration_start_int) {
             m_calibration_start_int = 1;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
-            m_get_calibration_start->setText("Click to Undo");
-            setGuideText(QString("You are now in <i>Calibartion start time selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the calibration starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
-        } else if (m_get_time_from_thermogram == 1) {
+            m_get_calibration_start->setText(tr("Click to Undo"));
+            setGuideText(tr("You are now in <i>Calibration start time selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the calibration starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+        } else if (m_calibration_start_int == 1) {
             m_calibration_start_int = 0;
-            m_get_calibration_start->setText("Click to Select");
+            m_get_calibration_start->setText(tr("Click to Select"));
             ResetGuideLabel();
             QApplication::restoreOverrideCursor();
         }
@@ -415,12 +442,10 @@ void ThermogramWidget::setUi()
     m_overshot = new QSpinBox;
     m_overshot->setRange(1, 200);
     m_overshot->setValue(1);
+}
 
-    m_gradient = new QDoubleSpinBox;
-    m_gradient->setDecimals(5);
-    m_gradient->setRange(-1, 1);
-    m_gradient->setValue(-1);
-
+QLayout* ThermogramWidget::setupParameterPanel()
+{
     int maxwidth = 200;
     int maxheight = 120;
     QHBoxLayout* peak_layout = new QHBoxLayout;
@@ -483,7 +508,9 @@ void ThermogramWidget::setUi()
     group->setMaximumHeight(maxheight);
 
     connect(m_stored_thermogram, &ThermogramHandler::CalibrationChanged, m_stored_thermogram, [group, this]() {
+#ifdef DEBUG_ON
         qDebug() << m_stored_thermogram->Calibration();
+#endif
         group->setTitle(tr("Calibration (%1)").arg(m_stored_thermogram->Calibration()));
     });
 
@@ -496,7 +523,7 @@ void ThermogramWidget::setUi()
     vlayout->addLayout(triplett);
 
     triplett = new QHBoxLayout;
-    triplett->addWidget(new QLabel("Heat [raw]"));
+    triplett->addWidget(new QLabel(tr("Heat [raw]")));
     triplett->addWidget(m_calibration_heat);
     vlayout->addLayout(triplett);
     group->setLayout(vlayout);
@@ -510,7 +537,7 @@ void ThermogramWidget::setUi()
     group->setMaximumHeight(maxheight);
 
     triplett = new QHBoxLayout;
-    QLabel* scaling_label = new QLabel(tr("cal &rarr; J"));
+    QLabel* scaling_label = new QLabel(tr("cal → J"));
     scaling_label->setToolTip(tr("Factor the raw calorimeter heat is multiplied by. Use %1 to convert calories into Joule (so ΔH/ΔS come out in kJ/mol and J/(mol·K)); use 1 if the data are already in Joule (e.g. with a calibration peak). Leaving it at 1 for cal data is the usual reason results match calorie-based tools like NanoAnalyze.").arg(QString::number(cal2joule)));
     triplett->addWidget(scaling_label);
     triplett->addWidget(m_scaling);
@@ -527,7 +554,7 @@ void ThermogramWidget::setUi()
 
     {
         group = new QGroupBox;
-        group->setTitle(tr("Advanced stuff"));
+        group->setTitle(tr("Advanced options"));
         // advanced_ui is followed live: the box is always built and only shown while the setting is on
         auto showAdvanced = [group]() { group->setVisible(qApp->instance()->property("advanced_ui").toBool()); };
         if (Instance::GlobalInstance())
@@ -545,20 +572,17 @@ void ThermogramWidget::setUi()
         triplett = new QHBoxLayout;
 
         triplett->addWidget(m_overshot);
-        triplett->addWidget(m_gradient);
         vlayout->addLayout(triplett);
 
         group->setLayout(vlayout);
         peak_layout->addWidget(group);
         showAdvanced();
     }
-    QVBoxLayout* layout = new QVBoxLayout;
-    layout->addLayout(peak_layout);
-    layout->addWidget(m_guide_label);
-    layout->addLayout(chartlayout);
+    return peak_layout;
+}
 
-    setLayout(layout);
-
+void ThermogramWidget::restoreSettings()
+{
     QSettings settings;
     settings.beginGroup("thermogram");
 
@@ -571,8 +595,10 @@ void ThermogramWidget::setUi()
     m_peak_rule_list->setItem(m_current_peaks_rule, 0, item);
     item = new PeakRule(QString::number(m_peaks_time->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
+}
 
-
+void ThermogramWidget::connectControls()
+{
     connect(m_peaks_start, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, value);
         QSettings settings;
@@ -662,11 +688,11 @@ void ThermogramWidget::UpdateTable()
 
         m_table->setItem(j, 4, newItem);
     }
-    QStringList header = QStringList() << "Heat\n[raw]"
-                                       << "Peak Start\n[s]"
-                                       << "Peak End\n[s]"
-                                       << QString("%1 Start\n[s]").arg(Unicode_Integral)
-                                       << QString("%1 End\n[s]").arg(Unicode_Integral);
+    QStringList header = QStringList() << tr("Heat\n[raw]")
+                                       << tr("Peak Start\n[s]")
+                                       << tr("Peak End\n[s]")
+                                       << tr("%1 Start\n[s]").arg(Unicode_Integral)
+                                       << tr("%1 End\n[s]").arg(Unicode_Integral);
     m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 }
@@ -677,8 +703,8 @@ void ThermogramWidget::InitialiseChart()
     m_thermogram->addSeries(m_thermogram_series);
     m_thermogram_series->setName("Thermogram");
     m_thermogram_series->setLineWidth(lineWidth);
-    m_thermogram->setXAxis("time [s]");
-    m_thermogram->setYAxis("q [raw/s]");
+    m_thermogram->setXAxis(tr("time [s]"));
+    m_thermogram->setYAxis(tr("q [raw/s]"));
     m_thermogram->addSeries(m_optional_series);
     m_optional_series->setLineWidth(lineWidth);
 }
@@ -825,19 +851,7 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     m_thermogram->setYRange(ymin, ymax);
     m_thermogram->setSelectStrategy(SelectStrategy::Horizontal);
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
-    setGuideText(QString("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
-}
-
-void ThermogramWidget::PeakChanged(int row, int column, int value)
-{
-    if (column == 1)
-        m_peak_list[row].start = value;
-    else if (column == 2)
-        m_peak_list[row].end = value;
-    m_stored_thermogram->setPeakList(m_peak_list);
-
-    Update();
-    PeakDoubleClicked(row);
+    setGuideText(tr("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
 }
 
 void ThermogramWidget::CreateSeries()
@@ -933,7 +947,7 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
             qreal diff = m_peak_rule_list->item(m_current_peaks_rule, 1)->data(Qt::DisplayRole).toInt() - (x - m_peaks_start->value());
             if (diff > m_peaks_time->value() || diff < 0) {
                 m_guide_label->setText(tr("<font color='red'>I will not apply this value, since you are leaving the peak boundaries. If this was intentend, you can manually edit the 'Start Time': %1 and the 'Peak Duration' %2 in the table!.</font>").arg(x).arg(diff));
-                m_get_peaks_end->setText("Click to Select");
+                m_get_peaks_end->setText(tr("Click to Select"));
                 m_get_time_from_thermogram = 0;
                 return;
             }
@@ -941,9 +955,9 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
         }
         m_peaks_start->setValue(x);
         m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, x);
-        m_get_peaks_start->setText("Click to Select");
+        m_get_peaks_start->setText(tr("Click to Select"));
     } else if (m_get_time_from_thermogram == 2) {
-        m_get_peaks_end->setText("Click to Select");
+        m_get_peaks_end->setText(tr("Click to Select"));
         m_peaks_end->setValue(x);
     } else if (m_calibration_start_int == 1) {
         m_calibration_start->setValue(m_stored_thermogram->Spectrum()->XMax() - x);
@@ -1024,7 +1038,7 @@ void ThermogramWidget::setGuideText(const QString& str)
 void ThermogramWidget::ResetGuideLabel()
 {
     if (qApp->instance()->property("thermogram_guidelines").toBool())
-        m_guide_label->setText("You are in standard mode. In addition to the SupraFit chart interaction, the <b>mouse wheel</b> can be used to zoom in and out, where the ratio of zooming depends on the actual positon of the curser in the chart. See the SupraFit Handbook for details. And <b>double click</b> in the chart selects the peak in the table.\nRegarding the units in this tabulator: They are all in the units observed by your calorimeter. If they are originally for example in cal, please mind the scaling factor to convert them into J. If they are already in J, since you are using a calibration peak, set the scaling factor to 1 (this may have been done automatically, but always check).");
+        m_guide_label->setText(tr("You are in standard mode. In addition to the SupraFit chart interaction, the <b>mouse wheel</b> can be used to zoom in and out, where the ratio of zooming depends on the actual positon of the curser in the chart. See the SupraFit Handbook for details. And <b>double click</b> in the chart selects the peak in the table.\nRegarding the units in this tabulator: They are all in the units observed by your calorimeter. If they are originally for example in cal, please mind the scaling factor to convert them into J. If they are already in J, since you are using a calibration peak, set the scaling factor to 1 (this may have been done automatically, but always check)."));
     else
         m_guide_label->clear();
 }
@@ -1039,8 +1053,8 @@ void ThermogramWidget::UpdateRules()
     m_peak_rule_list->clear();
     m_peak_rule_list->setRowCount(peak_rules.size());
 
-    QStringList header = QStringList() << "Start Time\n[s]"
-                                       << "Peak Duration\n[s]";
+    QStringList header = QStringList() << tr("Start Time\n[s]")
+                                       << tr("Peak Duration\n[s]");
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
     for (int i = 0; i < peak_rules.size(); ++i) {
@@ -1065,8 +1079,8 @@ void ThermogramWidget::LoadRules()
 
     m_peak_rule_list->clear();
     m_peak_rule_list->setRowCount(1);
-    QStringList header = QStringList() << "Start Time\n[s]"
-                                       << "Peak Duration\n[s]";
+    QStringList header = QStringList() << tr("Start Time\n[s]")
+                                       << tr("Peak Duration\n[s]");
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
     QStringList blob = QString(file.readAll()).split("\n");

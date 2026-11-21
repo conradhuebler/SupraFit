@@ -147,6 +147,10 @@ public:
 public slots:
     virtual void UpdateParameter() override;
 
+    /*! \brief Makes the table of initial concentrations again when the number of injections changed (Edit Data replaced the data):
+     *  it runs before every CalculateVariables, also in a model whose update slot comes after its Calculate. Claude Generated. */
+    virtual void EvaluateOptions() override;
+
 private:
     virtual void DeclareSystemParameter() override;
     bool m_lock_concentrations;

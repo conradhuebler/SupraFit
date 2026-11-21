@@ -29,6 +29,7 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
+#include <QtCore/QDirIterator>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
@@ -38,6 +39,7 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
 #include <functional>
 
 #include "toolset.h"
@@ -48,11 +50,11 @@ void ExportResults(const QString& filename, const QList<QJsonObject>& models)
 {
     QJsonObject toplevel;
     int i = 0;
-    for (const QJsonObject& obj : qAsConst(models)) {
+    for (const QJsonObject& obj : std::as_const(models)) {
         QJsonObject constants = obj["data"].toObject()["constants"].toObject();
         QStringList keys = constants.keys();
         bool valid = true;
-        for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : std::as_const(keys)) {
             double var = constants[str].toString().toDouble();
             valid = valid && (var > 0);
         }
@@ -60,8 +62,12 @@ void ExportResults(const QString& filename, const QList<QJsonObject>& models)
     }
     JsonHandler::WriteJsonFile(toplevel, filename);
 }
+/*! \brief The file of a stored path: \a start if it exists, else the file of the same name in \a path, else (only with
+ * \a recursive, setting "FindFileRecursive") the first file of that name below \a path (fewest directory levels, then
+ * by path). An empty string if none is found. \a hash is not compared yet. Recursive search: Claude Generated (R0) */
 QString FindFile(const QString& start, const QString& path, const QString& hash, bool recursive)
 {
+    Q_UNUSED(hash)
     QString file = start;
     QFileInfo info(start);
 
@@ -71,6 +77,18 @@ QString FindFile(const QString& start, const QString& path, const QString& hash,
             file = path + QDir::separator() + info.fileName();
         else {
             file.clear();
+            if (recursive && !path.isEmpty() && !info.fileName().isEmpty()) {
+                QStringList found;
+                QDirIterator it(path, QStringList{ info.fileName() }, QDir::Files, QDirIterator::Subdirectories);
+                while (it.hasNext())
+                    found << it.next();
+                std::sort(found.begin(), found.end(), [](const QString& a, const QString& b) {
+                    const int da = a.count(QLatin1Char('/')), db = b.count(QLatin1Char('/'));
+                    return da != db ? da < db : a < b;
+                });
+                if (!found.isEmpty())
+                    file = found.first();
+            }
         }
     }
     return file;
@@ -91,6 +109,10 @@ DataTable* LoadTableFile(const QString& filename)
 
     filecontent = QString(blob).split("\n");
     for (const QString& line : filecontent) {
+        // an empty line (e.g. after the final newline, or "\r" of CRLF files) made a row of
+        // uninitialised values; skipped (Claude Generated, WP1 roadmap/input_data_editing.md)
+        if (line.trimmed().isEmpty())
+            continue;
         //qDebug() << line;
         auto vector = String2DoubleEigVec(QString(line).replace("\t", " ").replace(",", "."));
         //  std::cout << vector << std::endl;
@@ -227,9 +249,12 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
         QString file = list.last();
         QString lastdir = qApp->instance()->property("lastdir").toString();
         QFileInfo inf(lastdir + "/" + file);
-        if (inf.exists())
+        if (inf.exists()) {
+            // the stored path is gone, the file of the same name in the last directory is read instead: said, not silent
+            // (Claude Generated, R0)
+            qWarning().noquote() << QStringLiteral("%1 not found, reading %2 instead").arg(filename, lastdir + "/" + file);
             filename = lastdir + "/" + file;
-        else {
+        } else {
             qDebug() << QString(lastdir + "/" + file) << "doesnt work";
             throw 404;
         }

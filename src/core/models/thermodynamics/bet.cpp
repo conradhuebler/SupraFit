@@ -122,6 +122,10 @@ void BETModel::UpdateOption(int index, const QString& str)
 
 void BETModel::CalculateVolume()
 {
+    if (m_volume && m_volume->rowCount() != DataPoints()) { // other data since the table was made (Edit Data, Claude Generated)
+        delete m_volume;
+        m_volume = nullptr;
+    }
     if (!m_volume) {
         m_volume = new DataTable(DataPoints(), 1, this);
     }

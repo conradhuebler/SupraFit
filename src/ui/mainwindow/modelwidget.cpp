@@ -44,6 +44,7 @@
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/flowlayout.h"
 #include "src/ui/guitools/gripsplitter.h"
+#include "src/ui/guitools/outdatedbanner.h"
 #include "src/ui/guitools/sectionstack.h"
 #include "src/ui/widgets/statisticspage.h"
 #include "src/ui/guitools/windowhost.h"
@@ -435,7 +436,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             qobject_cast<LineSeries*>(m_charts.error_wrapper->Series(0))->setShowInLegend(legend);
         });
         name_layout->addWidget(m_legend);
-        QSpinBox* series = new QSpinBox;
+        QSpinBox* series = m_series_box = new QSpinBox;
         series->setRange(1, m_model->DependentModel()->rowCount());
         series->setPrefix(tr("Series "));
         series->setToolTip(tr("Data series the model is applied to"));
@@ -469,6 +470,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->addLayout(name_layout);
     m_layout->addLayout(fit_row);
+    // fitted to earlier data (Edit Data): shown only while the model is marked outdated (Claude Generated)
+    m_outdated_banner = new OutdatedBanner;
+    m_outdated_banner->setFitAvailable(m_model->Type() != DataClassPrivate::Simulation && !m_val_readonly);
+    connect(m_outdated_banner, &OutdatedBanner::fitAgain, this, &ModelWidget::GlobalMinimize);
+    connect(m_outdated_banner, &OutdatedBanner::markCurrent, this, &ModelWidget::MarkCurrent);
+    if (!m_model->isSimulation())
+        m_layout->addWidget(m_outdated_banner);
     m_layout->addLayout(const_layout);
 
     phase.next("mw.ExportSimulationWidget");
@@ -1214,6 +1222,10 @@ void ModelWidget::Repaint()
         text = tr("Model corrupt");
         colour = "#c62828";
         m_converged_label->setToolTip(tr("Probably numerical errors in the concentration calculation; do not rely on these results."));
+    } else if (m_model->isDataOutdated()) { // Edit Data replaced the data after this fit (Claude Generated)
+        text = tr("Data changed – refit");
+        colour = "#5e35b1";
+        m_converged_label->setToolTip(tr("The data of the project changed after this fit. The parameters are those of the earlier fit, calculated on the current data. Fit again, or mark the fit as current."));
     } else if (!m_model->isConverged()) {
         text = tr("Not converged");
         colour = "#e65100";
@@ -1225,6 +1237,7 @@ void ModelWidget::Repaint()
     }
     m_converged_label->setText(text);
     SetStyleSheetIfChanged(m_converged_label, QString("QLabel { background: %1; color: white; border-radius: 9px; padding: 2px 10px; font-weight: bold; }").arg(colour));
+    RefreshOutdated();
 
     /* Model2Text();
     QTextDocument doc;
@@ -1607,7 +1620,11 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     Waiter wait;
+    // parameters loaded from elsewhere are no fit of the current data: an outdated mark stays (Claude Generated)
+    const bool outdated = m_model->isDataOutdated();
     m_model->ImportModel(object);
+    if (outdated)
+        m_model->setDataOutdated(true);
 
     for (int j = 0; j < m_model->GlobalParameterSize(); ++j)
         m_constants[j]->setValue(m_model->GlobalParameter(j));
@@ -1720,6 +1737,18 @@ QColor ModelWidget::ActiveColor() const
 
 void ModelWidget::Restore()
 {
+    // a model table of another number of rows (Edit Data) is not put back: the model is calculated on the data it has now
+    // (Claude Generated)
+    bool calculate = false;
+    if (!m_last_model_rows.isEmpty() && m_last_model_rows.size() != m_model->DataPoints()) {
+        m_last_model_rows.clear();
+        calculate = true;
+    }
+    if (m_last_model.contains("result") && m_last_model["result"].toObject().size() != m_model->DataPoints()) {
+        m_last_model.remove("result");
+        m_last_model.remove("locked_model");
+        calculate = true;
+    }
     if (!m_last_model_rows.isEmpty()) { // as ExportModel(true, true) writes it
         QJsonObject resultObject;
         for (int i = 0; i < m_last_model_rows.size(); ++i)
@@ -1728,8 +1757,50 @@ void ModelWidget::Restore()
         m_last_model["result"] = resultObject;
         m_last_model_rows.clear();
     }
-    m_model->ImportModel(m_last_model, false);
+    m_model->ImportModel(m_last_model, false); // carries "outdated" when the state is from before an Edit Data (Repaint)
+    if (calculate)
+        m_model->Calculate();
     Repaint();
+}
+
+void ModelWidget::DataReplaced()
+{
+    // the state Restore() goes back to was fitted to the data before, unless the model is current again (undo)
+    if (m_model->isDataOutdated())
+        m_last_model["outdated"] = true;
+    else
+        m_last_model.remove("outdated");
+    if (m_last_model_rows.size() != m_model->DataPoints())
+        m_last_model_rows.clear();
+    if (m_series_box)
+        m_series_box->setMaximum(std::max(1, int(m_model->DependentModel()->rowCount())));
+    Repaint();
+}
+
+void ModelWidget::MarkCurrent()
+{
+    m_model->markCurrent();
+    m_last_model.remove("outdated"); // the user takes these parameters as a fit of the current data
+    emit m_model->Info()->Message(tr("%1 is marked as current; it was not fitted to the current data.").arg(m_model->Name()), 3);
+    Repaint();
+}
+
+void ModelWidget::RefreshOutdated()
+{
+    const bool outdated = m_model->isDataOutdated();
+    // a state of Restore() taken before the data were replaced is outdated as well
+    if (outdated && !m_last_model.contains("outdated"))
+        m_last_model["outdated"] = true;
+    if (m_outdated_banner)
+        m_outdated_banner->setOutdated(outdated && !m_model->isSimulation());
+    if (m_statistics)
+        m_statistics->setOutdated(m_model->isStatisticOutdated());
+    if (m_statistic_widget)
+        m_statistic_widget->setOutdated(m_model->isStatisticOutdated());
+    if (outdated != m_shown_outdated) {
+        m_shown_outdated = outdated;
+        emit OutdatedChanged(outdated);
+    }
 }
 
 /*! \brief Write the page "Detailed": input data, model, parameters and, if asked for, the statistical analyses of
